@@ -53,8 +53,9 @@ Not from home-still: W3C, *Web Content Accessibility Guidelines (WCAG) 2.2* — 
 |accent_text|srgb(0.10,0.08,0.05)|srgb(0.97,0.93,0.85)|
 |danger|srgb(0.86,0.27,0.24)|srgb(0.70,0.12,0.10)|
 |focus_ring|srgb(0.45,0.78,1.0)|srgb(0.12,0.38,0.55)|
+|outline|srgb(0.44,0.47,0.54)|srgb(0.48,0.38,0.27)|
 |scrim|srgba(0,0,0,0.6)|srgba(0.08,0.05,0.02,0.55)|
-|sizes|text 20, heading 32, gap 10, padding 14, radius 8, border 3, min_target 44, text_scale 1.0|same|
+|sizes|text 20, heading 32, gap 10, padding 14, radius 8, border 3, meter_height 24, min_target 44, text_scale 1.0|same|
 
 ## Validation targets
 
@@ -67,6 +68,8 @@ WCAG contrast of the presets (relative luminance, `surface` composited over `bac
 |text on hovered button|5.16|4.92|
 |accent_text on accent|9.42|7.38|
 |focus_ring on surface_raised|6.32|3.65|
+|accent on surface_raised (a meter's fill on its track, 3:1)|6.04|4.68|
+|outline on surface (a meter's frame on the panel, 3:1)|3.67|3.79|
 
 - `min_target` ≥ 24 px (44 px default).
 - A focus move is drawn one frame after the input: `GooeySystems::Navigate` runs before `GooeySystems::Style` in the same `Update`.
