@@ -141,18 +141,25 @@ impl GooeySkin {
         self.surface_raised.mix(&self.accent, 0.35)
     }
 
+    /// [`GooeySkin::surface`] as it looks over [`GooeySkin::background`], made opaque: the fill of
+    /// a panel in a [`crate::dialog`], so nothing behind the scrim shows through its text.
+    /// [`GooeySkin::problems`] checks text against it, so the colour checked is the colour drawn.
+    pub fn solid_surface(&self) -> Color {
+        let surface = Srgba::from(self.surface);
+        let [r, g, b] = composite(
+            [surface.red, surface.green, surface.blue],
+            surface.alpha,
+            rgb(self.background),
+        );
+        Color::srgb(r, g, b)
+    }
+
     /// Everything about this skin that breaks the contrast, target-size or size rules, in a fixed
     /// order: low contrast pairs, then a too-small target, then unusable sizes. Empty for a good
     /// skin; both presets are good.
     pub fn problems(&self) -> Vec<SkinProblem> {
         let mut out = Vec::new();
-        let background = rgb(self.background);
-        let surface = Srgba::from(self.surface);
-        let surface = composite(
-            [surface.red, surface.green, surface.blue],
-            surface.alpha,
-            background,
-        );
+        let surface = rgb(self.solid_surface());
         let text = rgb(self.text);
         let pairs = [
             ("text on surface", text, surface, TEXT_CONTRAST),
@@ -344,11 +351,13 @@ struct Look<'a> {
 }
 
 /// The widget state a look depends on.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 struct State {
     pressed: bool,
     disabled: bool,
     hovered: bool,
+    /// The entity is a dialog's scrim: a panel on it is drawn opaque.
+    scrim: bool,
 }
 
 /// A widget whose look may have changed since the last run.
@@ -378,7 +387,12 @@ pub fn apply_skin(
     changed: Query<Entity, Restyle>,
     mut unpressed: RemovedComponents<Pressed>,
     mut enabled: RemovedComponents<InteractionDisabled>,
-    states: Query<(Has<Pressed>, Has<InteractionDisabled>, Option<&Hovered>)>,
+    states: Query<(
+        Has<Pressed>,
+        Has<InteractionDisabled>,
+        Option<&Hovered>,
+        Option<&Role>,
+    )>,
     parents: Query<&ChildOf>,
     children: Query<&Children>,
     mut styled: Query<Styled>,
@@ -394,12 +408,15 @@ pub fn apply_skin(
         focused: visible.0.then(|| focus.get()).flatten(),
     };
     let state_of = |entity: Entity| {
-        let (pressed, disabled, hovered) = states.get(entity).unwrap_or((false, false, None));
-        State {
-            pressed,
-            disabled,
-            hovered: hovered.is_some_and(|h| h.0),
-        }
+        states
+            .get(entity)
+            .map(|(pressed, disabled, hovered, role)| State {
+                pressed,
+                disabled,
+                hovered: hovered.is_some_and(|h| h.0),
+                scrim: role == Some(&Role::Scrim),
+            })
+            .unwrap_or_default()
     };
 
     if skin.is_changed() || fonts.is_changed() {
@@ -455,6 +472,7 @@ fn restyle(
     let skin = look.skin;
     let scaled = |size: f32| FontSize::Px(size * skin.text_scale);
     let fill = match role {
+        Role::Panel if parent.is_some_and(|p| p.scrim) => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
         Role::Button => Some(if state.disabled {
             skin.surface
@@ -517,11 +535,7 @@ fn restyle(
         Role::Heading => Some((skin.text, &look.fonts.heading, skin.heading_size)),
         Role::Label => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::ButtonText => {
-            let parent = parent.unwrap_or(State {
-                pressed: false,
-                disabled: false,
-                hovered: false,
-            });
+            let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted
             } else if parent.pressed {

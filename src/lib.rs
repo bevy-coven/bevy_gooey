@@ -87,7 +87,7 @@ pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
     meter_fraction, relative_luminance,
 };
-pub use nav::{gamepad_select, navigate_by_input};
+pub use nav::{Dialog, focus_opened_dialogs, gamepad_select, navigate_by_input};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
 pub use tooltip::Tooltip;
 pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen};
@@ -146,8 +146,9 @@ impl Plugin for GooeyStylePlugin {
 }
 
 /// Keyboard and gamepad navigation: arrows and the D-pad move focus, the pad's South button
-/// activates, Tab cycles (inside an open [`dialog`]), and focus moves are written as
-/// [`UiFeedback`].
+/// activates, Tab cycles, and focus moves are written as [`UiFeedback`]. An open [`dialog`] holds
+/// focus: it takes it on opening ([`focus_opened_dialogs`]), Tab and the arrows stay inside it, and
+/// closing it gives focus back to the widget that opened it.
 ///
 /// Adds Bevy's `TabNavigationPlugin` and `DirectionalNavigationPlugin` unless the host already has.
 pub struct GooeyNavPlugin;
@@ -163,9 +164,17 @@ impl Plugin for GooeyNavPlugin {
         }
         app.init_resource::<InputFocus>()
             .add_message::<UiFeedback>()
+            .register_type::<Dialog>()
+            .add_observer(nav::remember_opener)
+            .add_observer(nav::return_focus)
             .add_systems(
                 Update,
-                (navigate_by_input, gamepad_select, feedback_on_focus)
+                (
+                    focus_opened_dialogs,
+                    navigate_by_input,
+                    gamepad_select,
+                    feedback_on_focus,
+                )
                     .chain()
                     .in_set(GooeySystems::Navigate),
             );

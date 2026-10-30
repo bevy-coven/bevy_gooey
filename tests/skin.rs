@@ -77,6 +77,28 @@ fn a_new_skin_restyles_what_is_already_on_screen() {
 }
 
 #[test]
+fn a_panel_in_a_dialog_hides_what_is_behind_it() {
+    let mut app = app();
+    let hud = app.world_mut().spawn(panel()).id();
+    let dialog = app.world_mut().spawn((dialog(), children![panel()])).id();
+    app.update();
+    let modal = child_with_role(&mut app, dialog, Role::Panel);
+    let skin = GooeySkin::default();
+    let world = app.world();
+    assert_eq!(
+        world.get::<BackgroundColor>(hud),
+        Some(&BackgroundColor(skin.surface)),
+        "a HUD panel keeps the skin's translucency"
+    );
+    let fill = world.get::<BackgroundColor>(modal).map(|b| b.0.alpha());
+    assert_eq!(fill, Some(1.0), "the menu behind must not show through");
+    assert_eq!(
+        world.get::<BackgroundColor>(modal),
+        Some(&BackgroundColor(skin.solid_surface()))
+    );
+}
+
+#[test]
 fn text_scale_enlarges_every_text() {
     let mut app = app();
     app.insert_resource(GooeySkin {
