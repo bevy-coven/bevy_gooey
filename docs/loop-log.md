@@ -64,3 +64,7 @@ Take these in order, after any bug and any filed issue:
 3. **Couch-distance scale.** At 2560x1440 the UI is 1x (`after/dark-2560x1440.png`), and a 20 px label on a 1440p TV is too small. Make it a skin or settings option that scales `UiScale` from window height against a reference (1080p), off by default if the crate doc's "UiScale is the host's" stays. Research: XAG 101 (text size).
 4. **Dialog elevation.** A `BoxShadow` on a dialog's panel from the skin, and a minimum dialog width, so the dialog reads as a layer above the screen and not a card nested in it.
 5. `Shortcut { key, pad }` on a button (R5), then `HudDetail` (R1), slider/checkbox/toggle, settings kit, scroll list/tabs/toast, press animation, as in iteration 0.
+
+**Release: not published.** bevy_gooey is not on crates.io yet (`crates.io/api/v1/crates/bevy_gooey`: 404), and `cargo publish --dry-run` of `1ac93bb` passes, but sib has no crates.io token (`~/.cargo` holds no `credentials.toml`, `CARGO_REGISTRY_TOKEN` is unset). Publishing needs `cargo login` on sib with the owner's token, and the loop does not handle credentials. No `release:` commit and no tag were made, so `## [Unreleased]` still holds 0.1.0's notes. The next pass with a token publishes 0.1.0.
+
+**Cleanup.** Removed `/tmp/g1` (179 MB of captures, the before binary and scratch scripts); `/tmp` went from 354 MB used to 175 MB. No baseline worktree was made: the before binary was a copy of the pre-fix gallery build. `git worktree list` shows only the clone; no earlier pass left anything behind.
