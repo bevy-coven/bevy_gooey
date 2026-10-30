@@ -164,3 +164,42 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. **Slider, checkbox and toggle** over `bevy_ui_widgets`: their box and track take `GooeySkin::outline`, the colour this pass added for edges a fill does not show.
 4. **Meter damage trail**: the lost part of a meter lingers in a lighter tone, then drains (League of Legends' health bar update makes "current health more visible"); needs a shipping-game write-up in the corpus first.
 5. **Tooltip polish** (balanced wrapping, a shadow that shows on the dark skin), then `Shortcut { key, pad }` (R5) and `HudDetail` (R1).
+
+## Iteration 4 — 2026-10-30 — the interface keeps its share of the screen at every resolution
+
+**Triage.** No open issues on Ladvien/bevy_gooey (`gh issue list`: empty). No new parked branch: `git log --all --grep=parked` shows only `e9c3da6` on `loop/iter-3`, adopted and shipped by iteration 3. No bug recorded in the backlog, so the item is the backlog's first: couch-distance scale. It was measured as a defect before it was built: at 2560x1440 the tooltip line's body height (XAG 101's measure, ascender to descender) is 21 px, under XAG's 24 px PC and 34.7 px console minimums for 1440p, and the menu panel is 21.7 % of the window's height against 43.3 % at 720p (`/tmp/g4/findings.md`). Runner-up: dialog elevation; scale ranked first because it decides whether any widget can be read on a television, and every later widget inherits it.
+
+**What changed** (`6615933`, docs `f6837a5`, research `0f0e85e`):
+- `GooeyScalePlugin`, the third plugin in `GooeyPlugins`: `scale_with_window` (Style set) sets Bevy's `UiScale` to the primary window's shorter side over `UiScaleSettings::reference_short_side` (720), times the player's `UiScaleSettings::scale` (1.0), writing it only when it changes. 1920x1080 → 1.5, 2560x1440 → 2, 1280x800 → 1.11, portrait 720x1280 → 1. A minimised (0x0) window keeps the last scale; a reference or scale at or below zero warns and leaves `UiScale` alone.
+- `UiScaleSettings` (serde data with `serde(default)`) and `model::window_ui_scale`, the engine-free maths with its own tests.
+- Crate doc's *Units*: sizes are logical px at a 720-px short side; the README gains *Screen size* and an install from crates.io (it still said "until the first release").
+- Assumed decision: on by default in `GooeyPlugins` (Unreal applies DPI scaling "to every project"; a game that never tests at 1440p still ships legible text), over opt-in. A host that drives `UiScale` itself leaves the plugin out. Reference 720, not Unreal's 1080: the skin's sizes were set and measured at 1280x720, and at 720 they meet XAG's console minimum at every resolution (31.5 px body at 1080p ≥ 26).
+
+**Sources.** Craft: corpus stem `10.1016_j.ijhcs.2019.06.010` (*Future design of accessibility in games*: "resolution of screen could make text too small"), XAG 101 ("Console: … 26 px at 1080p, 52 px at 4K"), the Game Accessibility Guidelines' font-size page (28 px at 1080p). Shipping game: Wube, *Factorio Friday Facts #277* ("the proportions of everything stay the same, so it is just smaller, but not deformed"). Technical: Unreal's *DPI Scaling* ("Shortest Side … (Most Common Setting)", "default DPI scaling settings applied to every project"), corpus stem `W1728842521` (scikit-learn: "Sensible defaults"), CSS Values 4 ("snap a length as a border width", for the next item), Bevy 0.20 `update.rs` and `popover.rs`. home-still: distill healthy and idle; scribe on big `backend unavailable`, on bmb healthy and busy; `catalog_recent` (200): no new game-UI document.
+
+**Checklist, before → after** (`/tmp/g4/findings.md`, `critique.md`):
+- Body height of the tooltip line: 720p 21 → 21 (identical), 1080p 30 (≥ 26 console, ≥ 28 GAG), 1440p 21 → 41 (≥ 34.7), 1280x800 23 (≥ 19.3).
+- Panel share of the window height: 720p 43.3 %, 1080p 42.8 %, 1440p 21.7 % → 43.2 %. 1440p halved against 720p: RMSE 1.03 %.
+- Focus ring 3 px at 720p → 4 px at 1080p, 6 px at 1440p; hit targets 44 px at 720p → 88 px at 1440p (button fill 41 → 82).
+- Tooltip at 2x: beside Options, centred, clear of Play and Quit, inside the window. Dialog at 1.5x and 2x: scrim, opaque panel, Stay focused.
+- Text contrast, ring contrast, meter fill (108 of 180 px at 60), `problems()`: unchanged; all five 1280x720 captures pixel-identical to the baseline.
+
+**Critique and verdict** (`/tmp/g4/critique.md`): scale with the window, GREAT. Flaw found and left as the next item: at a fractional scale Bevy's layout rounds each border and padding to physical pixels from the node's sub-pixel position, so at 1920x1080 (1.5x) the meter's gap is 5 px above the fill and 4 px below (`after/z-1080-meter.png`). Not new: a window scale factor of 1.5 (a 150 % laptop) did the same before. At 1280x800 the meter is even (3 / 3 / 14 / 3 / 3). Capture note: the Xvfb pointer sits at (960, 540) and is back there after each gallery run, so every 1920x1080 capture shows Options hovered.
+
+**Tests.** `tests/scale.rs`, laid out headless: a button at 2560x1440 is drawn twice its 1280x720 height; a resize to 1920x1080 draws it at 1.5x the next frame, a portrait window by its width, a 0x0 window keeps the scale; the player's `scale` multiplies the window's, a 1080 reference draws 1080p at 1x, an invalid reference leaves `UiScale`; a host that leaves the plugin out keeps its own `UiScale`. `src/model.rs`: `window_ui_scale` cases. `tests/serde.rs`: a settings file with only `scale` keeps the reference.
+
+**mean_ms** (sib, Xvfb, 1280x720, `GOOEY_HEALTH=60`): first captures, before 24.58 / 25.80 / 27.37 / 27.45 / 27.20 (dark, parchment, 1.5x, Options, dialog), after 24.73 / 24.70 / 25.75 / 24.73 / 24.09. Five side-by-side pairs, 240 frames: after − before −0.08, −0.02, −0.31, −0.07, +0.44 ms, mean −0.01. No regression. 2560x1440 (Xvfb, software-bound by window size): before 104–120, after 99–121.
+
+**Gate.** GATE_RESULT
+
+**Release: not this pass.** v0.1.0 was tagged at 13:50 today; the six-hour rule allows the next release after 19:50. `## [Unreleased]` holds this change for it; that pass decides the version with `cargo semver-checks` (the API change is additive, but `UiScale` is now set by the crate, a behaviour change its log should weigh).
+
+**Cleanup.** CLEANUP_RESULT
+
+### Ranked backlog
+
+1. **Line weights snap to whole device pixels** (a measured visual defect at fractional scales, 1080p and 150 % displays): at 1.5x the meter's gap is 5 / 4 px. Snap each border and the meter's gap to whole physical pixels, as CSS's "snap a length as a border width" does (round down above 1 px), from the node's `ComputedUiRenderTargetInfo::scale_factor`, and restyle when it changes. Validation: 4 / 4 / 20 / 4 / 4 px meter at 1080p, even rings at 1.11x and 1.5x.
+2. **Dialog elevation**: a `BoxShadow` and a minimum width on a dialog's panel, reusing the tooltip's shadow recipe, so the dialog reads as a layer.
+3. **Slider, checkbox and toggle** over `bevy_ui_widgets`, framed in `GooeySkin::outline`.
+4. **A settings-screen kit** for the options this crate now has: text size (`GooeySkin::text_scale`), interface size (`UiScaleSettings::scale`), skin preset. Source: R2, XAG 101's "provide players the option to scale larger or smaller".
+5. **Tooltip polish** (balanced wrapping, a shadow that shows on the dark skin), then the meter damage trail, `Shortcut { key, pad }` (R5) and `HudDetail` (R1).
