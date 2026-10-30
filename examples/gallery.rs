@@ -3,7 +3,8 @@
 //! - Arrows or the D-pad move focus; Enter, Space or the pad's South button activate.
 //! - **Options** switches between the dark and the parchment skin; **Shift+T** toggles a 1.5x text
 //!   scale; **Quit** opens a modal dialog that holds focus (Stay first; Tab, arrows and the D-pad
-//!   stay inside it; closing it puts focus back on Quit); hovering **Options** shows its tooltip.
+//!   stay inside it; closing it puts focus back on Quit); focusing or hovering **Options** shows
+//!   its tooltip beside it (`GOOEY_KEYS=down` stages it).
 //! - The health meter drains and refills. Each `UiFeedback` is logged where a game would play a sound.
 //!
 //! Capture mode, for a still and a frame time: `GOOEY_FRAMES=<n>` saves a screenshot at frame `n` to

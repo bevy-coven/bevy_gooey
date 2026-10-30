@@ -7,10 +7,12 @@ use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{FontSize, FontSource};
 use bevy::ui::{InteractionDisabled, Pressed};
+use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 
 use crate::model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
 };
+use crate::tooltip::TooltipBox;
 
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
@@ -341,6 +343,11 @@ type Styled = (
     Option<&'static mut BorderColor>,
     Option<&'static mut TextColor>,
     Option<&'static mut TextFont>,
+    Option<(
+        &'static TooltipBox,
+        &'static mut Popover,
+        &'static mut BoxShadow,
+    )>,
 );
 
 /// Every input a widget's look depends on, read once per run of [`apply_skin`].
@@ -376,6 +383,7 @@ type Restyle = (
         Changed<Pressed>,
         Changed<Hovered>,
         Changed<InteractionDisabled>,
+        Changed<TooltipBox>,
     )>,
 );
 
@@ -463,7 +471,7 @@ pub fn apply_skin(
 }
 
 fn restyle(
-    (entity, role, node, background, border, text_color, text_font): bevy::ecs::query::QueryItem<
+    (entity, role, node, background, border, text_color, text_font, tooltip): bevy::ecs::query::QueryItem<
         '_,
         '_,
         Styled,
@@ -474,6 +482,7 @@ fn restyle(
 ) {
     let skin = look.skin;
     let scaled = |size: f32| FontSize::Px(size * skin.text_scale);
+    let tip = tooltip.as_ref().map(|(tip, ..)| **tip);
     let fill = match role {
         Role::Panel if parent.is_some_and(|p| p.scrim) => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
@@ -486,7 +495,8 @@ fn restyle(
         } else {
             skin.surface_raised
         }),
-        Role::Meter | Role::Tooltip => Some(skin.surface_raised),
+        Role::Meter => Some(skin.surface_raised),
+        Role::Tooltip => Some(skin.solid_surface()),
         Role::MeterFill => Some(skin.accent),
         Role::Scrim => Some(skin.scrim),
         Role::Screen | Role::Menu | Role::Heading | Role::Label | Role::ButtonText => None,
@@ -496,7 +506,7 @@ fn restyle(
     }
 
     let edge = match role {
-        Role::Panel => Some(BorderColor::all(skin.surface_raised)),
+        Role::Panel | Role::Tooltip => Some(BorderColor::all(skin.surface_raised)),
         Role::Button if look.focused == Some(entity) => Some(BorderColor::all(skin.focus_ring)),
         Role::Button => Some(BorderColor::all(Color::NONE)),
         _ => None,
@@ -526,8 +536,10 @@ fn restyle(
             }
             Role::Meter => next.border_radius = radius,
             Role::Tooltip => {
-                next.padding = UiRect::all(Val::Px(skin.padding * 0.5));
+                next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.5));
+                next.border = UiRect::all(Val::Px(skin.border));
                 next.border_radius = radius;
+                next.max_width = Val::Px(tooltip_width(skin, tip.unwrap_or_default()));
             }
             _ => {}
         }
@@ -560,5 +572,67 @@ fn restyle(
             next.font_size = scaled(size);
             text_font.set_if_neq(next);
         }
+    }
+
+    if let Some((tip, mut popover, mut shadow)) = tooltip {
+        // One spacing step outside the panel a widget usually sits in (its padding and border), so
+        // the tooltip never straddles that panel's edge. `Popover` measures from inside the
+        // widget's border, so that border is added once more.
+        let gap = skin.gap + skin.padding + skin.border * 2.0;
+        let next = tooltip_placement(gap, skin.gap, tip.in_row);
+        if *popover != next {
+            *popover = next;
+        }
+        // A soft drop shadow in the background colour lifts the tooltip above the screen.
+        shadow.set_if_neq(BoxShadow::new(
+            skin.background.with_alpha(0.7),
+            Val::Px(0.0),
+            Val::Px(skin.border * 2.0),
+            Val::Px(0.0),
+            Val::Px(skin.padding),
+        ));
+    }
+}
+
+/// A tooltip's widest box, logical px: a comfortable line of about 40 characters (24 text sizes),
+/// narrowed to the room the window leaves beside a widget in a column so the tooltip wraps there
+/// instead of falling back over the next widget. Below 8 text sizes of room, wrapping would make
+/// a ribbon of single words, so the measure stands and `Popover` takes the next side.
+fn tooltip_width(skin: &GooeySkin, tip: TooltipBox) -> f32 {
+    let size = skin.text_size * skin.text_scale;
+    let measure = size * 24.0;
+    if tip.in_row {
+        return measure;
+    }
+    // The box's outer edge sits `gap + padding + border` from the widget, and `gap` from the window.
+    let fit = tip.room - (skin.gap + skin.padding + skin.border) - skin.gap;
+    if fit >= size * 8.0 {
+        measure.min(fit)
+    } else {
+        measure
+    }
+}
+
+/// Where a tooltip opens: across its widget's flow first (beside a widget in a column, below one in
+/// a row), then the opposite side, then along the flow; `gap` from the widget and `margin` from the
+/// window's edge. Centred on the widget, so it reads as attached to that widget and not to its
+/// neighbour.
+fn tooltip_placement(gap: f32, margin: f32, in_row: bool) -> Popover {
+    use PopoverSide::{Bottom, Left, Right, Top};
+    let sides = if in_row {
+        [Bottom, Top, Right, Left]
+    } else {
+        [Right, Left, Bottom, Top]
+    };
+    Popover {
+        positions: sides
+            .into_iter()
+            .map(|side| PopoverPlacement {
+                side,
+                align: PopoverAlign::Center,
+                gap,
+            })
+            .collect(),
+        window_margin: margin,
     }
 }
