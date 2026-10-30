@@ -50,6 +50,7 @@ The player never loses the focus ring: it is inside the dialog the frame the dia
 
 - APG: "`Escape`: Closes the dialog." Not adopted: closing is the game's decision (a "you must choose" dialog has no cancel), and a game's back button (Escape, the pad's East) is its own binding. A design default; the backlog keeps a cancel hook.
 - APG suggests focusing a static heading for long content; `dialog()` has no static focusable element, so D2 focuses the first widget. A design default.
+- Added after the first captures: a panel whose parent is the dialog's scrim is drawn opaque, `GooeySkin::solid_surface()` (`surface` composited over `background`), where a HUD panel keeps `surface`'s 0.92 alpha. APG: mark a dialog modal only when "Visual styling obscures the content outside of it"; the dark preset's translucent panel let the menu's "Play" ghost through "Leave the game?" (luminance spread 0.027 → 0.000). `problems()` now checks text against that same opaque colour. Assumed decision: opaque dialog panels over opaque surfaces everywhere (loses HUD translucency) or a darker scrim (still ghosts).
 
 ## Pending index
 

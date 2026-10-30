@@ -24,10 +24,10 @@ This repository, [`Ladvien/bevy_gooey`](https://github.com/Ladvien/bevy_gooey), 
 - `src/widgets.rs` — `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter`, `dialog`.
 - `src/meter.rs` — `Meter`, `update_meters`.
 - `src/tooltip.rs` — `Tooltip` and its hook.
-- `src/nav.rs` — `navigate_by_input`, `gamepad_select`.
+- `src/nav.rs` — `navigate_by_input` (scoped like Tab: an open dialog's widgets only), `gamepad_select`, `Dialog` and its focus-in and focus-back.
 - `src/feedback.rs` — `UiFeedback`, `UiFeedbackKind`, the activate observer, `feedback_on_focus`.
-- `examples/gallery.rs` — every widget on one screen; capture mode with `GOOEY_FRAMES`, `GOOEY_SHOT`, `GOOEY_SKIN`, `GOOEY_TEXT_SCALE`.
-- `tests/leaf.rs` — the boundary ratchet. `tests/skin.rs`, `tests/nav.rs` — what a game sees. `tests/serde.rs` — the skin as data. `tests/readme.rs` — the README quick start is the doctest.
+- `examples/gallery.rs` — every widget on one screen; capture mode with `GOOEY_FRAMES`, `GOOEY_SHOT`, `GOOEY_SKIN`, `GOOEY_TEXT_SCALE`, `GOOEY_SIZE` and `GOOEY_KEYS` (staged key presses: `GOOEY_KEYS=down,down,enter` opens the Quit dialog).
+- `tests/leaf.rs` — the boundary ratchet. `tests/skin.rs`, `tests/nav.rs` — what a game sees. `tests/dialog.rs` — dialog focus, laid out in a headless window (`RenderPlugin` with no backends, no `WinitPlugin`), driven by real `KeyboardInput`. `tests/serde.rs` — the skin as data. `tests/readme.rs` — the README quick start is the doctest.
 - `docs/research/` — the research note and the corpus. `docs/loop-log.md` — the loop's log and backlog.
 
 ## Build and test
