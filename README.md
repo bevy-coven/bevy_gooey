@@ -79,7 +79,9 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 
 - text under 4.5:1 contrast against the surface, the raised surface, a hovered button, or the accent (WCAG 2.2, 1.4.3);
 - a focus ring under 3:1 against the raised surface (WCAG 2.2, 1.4.11);
+- a meter's fill (the accent) under 3:1 against its track, or its frame (`outline`) under 3:1 against the panel (WCAG 2.2, 1.4.11);
 - `min_target` under 24 px (WCAG 2.2, 2.5.8; the default is 44 px);
+- a meter too thin to show a fill inside its frame and gap (`meter_height × text_scale` at most 4 × `border`);
 - a size that is not finite, or not positive where it must be.
 
 Fonts are yours: set `GooeyFonts { body, heading }`. The default draws Bevy's built-in font when Bevy's `default_font` feature is on.
