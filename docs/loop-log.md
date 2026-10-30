@@ -152,3 +152,15 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **mean_ms** (sib, Xvfb, 240 frames, 1280x720, `GOOEY_HEALTH=60`). Sequential runs were swamped by other loops on the host (load 7 to 60, kswapd active): before median 26.76 (8 runs), after 29.19 (8 runs), paired differences −5.1 to +9.1 ms. Run side by side, six pairs, the paired difference is −0.06 ms mean (−0.42 to +0.24). No regression: the change adds one border to one node and nothing per frame.
 
 **Gate.** All six steps green. The first run sat for an hour linking `--features serde` test binaries while sib thrashed (memory pressure "full" 66%, load 60: three loops linking Bevy at once) and was stopped; rerun with `CARGO_BUILD_JOBS=1` once the load fell, every step passed in under a minute.
+
+**Release: v0.1.0 published**, the crate's first: https://crates.io/crates/bevy_gooey/0.1.0. sib now holds a crates.io login (`~/.cargo/credentials.toml`, dated 2026-10-30 10:06), so the first green-gated pass published as the owner allowed. Nothing was on crates.io before, so `cargo semver-checks` had no baseline; the version is the manifest's 0.1.0. `release: v0.1.0` (`b5cd4a8`) moved `## [Unreleased]` to `## [0.1.0] - 2026-10-30`; `cargo publish --dry-run` then `cargo publish` from the clean tree; tag `v0.1.0` pushed; `cargo info bevy_gooey@0.1.0` resolves from the registry. The next release may go out after 2026-10-31 00:50 local (six hours).
+
+**Cleanup.** Removed `/tmp/g3b` (359 MB: both gallery binaries, captures, rounds, scratch). `/tmp` went from 2.3 GB to 2.0 GB used (other loops share it). No baseline worktree was made (the before binary was a copy of the starting build with the `GOOEY_HEALTH` knob); `git worktree list` shows only the clone. Left for a person: `/tmp/g3`, 181 MB, the killed pass 3's captures, `gallery-before` binary, `critique.md` and a `gestalt.pdf`, untouched since 10:33 except that this pass moved its own files out of it; and the branch `loop/iter-3` (local and on origin) holding `WIP(pass 3, parked)` `e9c3da6`, now superseded by this iteration.
+
+### Ranked backlog
+
+1. **Couch-distance scale**: at 2560x1440 the UI is still 1x (20 px text on a 1440p TV). Scale `UiScale` from window height against 1080p, as a setting. Research: XAG 101.
+2. **Dialog elevation**: a `BoxShadow` and a minimum width on a dialog's panel, reusing the tooltip's shadow recipe, so the dialog reads as a layer.
+3. **Slider, checkbox and toggle** over `bevy_ui_widgets`: their box and track take `GooeySkin::outline`, the colour this pass added for edges a fill does not show.
+4. **Meter damage trail**: the lost part of a meter lingers in a lighter tone, then drains (League of Legends' health bar update makes "current health more visible"); needs a shipping-game write-up in the corpus first.
+5. **Tooltip polish** (balanced wrapping, a shadow that shows on the dark skin), then `Shortcut { key, pad }` (R5) and `HudDetail` (R1).
