@@ -180,6 +180,32 @@ fn a_meter_fills_by_fraction() {
 }
 
 #[test]
+fn a_meter_the_panel_or_its_frame_would_hide_is_reported() {
+    let skin = GooeySkin::default();
+    let problems = GooeySkin {
+        accent: skin.surface_raised,
+        accent_text: Color::WHITE,
+        outline: skin.solid_surface(),
+        border: 6.0,
+        ..default()
+    }
+    .problems();
+    for pair in ["accent on surface_raised", "outline on surface"] {
+        assert!(
+            problems
+                .iter()
+                .any(|p| matches!(p, SkinProblem::LowContrast { pair: q, .. } if *q == pair)),
+            "{pair} not reported: {problems:?}"
+        );
+    }
+    // 24 px of meter, all of it frame and gap: no fill would show.
+    assert!(problems.contains(&SkinProblem::MeterTooThin {
+        px: skin.meter_height,
+        needed: 24.0
+    }));
+}
+
+#[test]
 fn a_tooltip_starts_hidden() {
     let mut app = app();
     let help = app
