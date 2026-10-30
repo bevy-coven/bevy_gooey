@@ -1,0 +1,46 @@
+[package]
+name = "bevy_gooey"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+description = "Game interfaces made easy for Bevy: a skin, ready-made game widgets (buttons, panels, menus, HUD meters, tooltips, modal dialogs) and keyboard and gamepad navigation, on Bevy's own headless widgets."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Ladvien/bevy_gooey"
+keywords = ["bevy", "gamedev", "ui", "gui", "widgets"]
+categories = ["game-development", "gui"]
+# `docs/` holds the gallery still and the research notes, so it is out of the package.
+include = ["src/**", "Cargo.toml", "README.md", "LICENSE-*"]
+
+[features]
+default = []
+# `serde` derives on `GooeySkin` and `Meter`, and Bevy's own `serialize` for `Color`: a project saves its
+# skin as data and an editor (bevy_emerge's family host) edits it live.
+serde = ["dep:serde", "bevy/serialize"]
+# Nothing enables this in normal use. `tests/readme.rs` checks the README's quick start against the
+# crate-root doctest, so the two cannot drift.
+readme-example = []
+
+[dependencies]
+# The umbrella with defaults off. The widgets need bevy_ui + bevy_text, Bevy's headless widgets and
+# input focus, and picking for hover. Features unify with the game's full bevy, so this costs a consumer
+# nothing.
+bevy = { version = "0.20.0", default-features = false, features = [
+    "bevy_asset",       # Handle<Font> in GooeyFonts
+    "bevy_text",        # Text, TextFont, TextColor
+    "bevy_ui",          # Node, BackgroundColor, BorderColor, auto directional navigation
+    "bevy_ui_widgets",  # Button, Activate, observe: the headless widgets this crate skins
+    "bevy_input_focus", # InputFocus, InputFocusVisible, tab navigation
+    "bevy_picking",     # Hovered, PointerOver/PointerOut for tooltips
+    "ui_picking",       # picking backend for UI nodes
+    "bevy_window",      # the window the UI lays out in
+    "bevy_log",         # warn! for a skin that fails its own checks
+    "std",
+] }
+serde = { version = "1", features = ["derive"], optional = true }
+
+# **Tests and examples only.** The gallery needs a window, an event loop and a renderer, so it takes the
+# full umbrella here, where it cannot reach a consumer's dependency graph. `ron` round-trips the skin in
+# tests. `tests/leaf.rs` reads `[dependencies]` only, deliberately.
+[dev-dependencies]
+bevy = { version = "0.20.0" }
+ron = "0.12"
