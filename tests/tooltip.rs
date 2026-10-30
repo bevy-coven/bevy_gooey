@@ -4,6 +4,9 @@
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::input::ButtonState;
+use bevy::input::gamepad::{
+    GamepadConnection, GamepadConnectionEvent, RawGamepadButtonChangedEvent, RawGamepadEvent,
+};
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input_focus::{AutoFocus, InputFocus, InputFocusVisible};
 use bevy::picking::pointer::{Location, PointerAction, PointerId, PointerInput};
@@ -40,8 +43,7 @@ fn app() -> App {
             })
             .disable::<WinitPlugin>(),
         GooeyPlugins,
-    ))
-    .insert_resource(InputFocusVisible(true));
+    ));
     app.world_mut().spawn(Camera2d);
     app
 }
@@ -206,7 +208,6 @@ fn focus_opens_a_tooltip_beside_its_widget_clear_of_the_next() {
 #[test]
 fn the_pointer_opens_a_tooltip_without_visible_focus() {
     let mut app = app();
-    app.insert_resource(InputFocusVisible(false));
     let [_, options, _] = column_menu(&mut app);
     settle(&mut app);
     assert!(!shown(&mut app));
@@ -221,6 +222,8 @@ fn the_pointer_opens_a_tooltip_without_visible_focus() {
 #[test]
 fn a_tooltip_at_the_window_edge_opens_on_the_other_side() {
     let mut app = app();
+    // A game that wants the ring from the first frame inserts this itself.
+    app.insert_resource(InputFocusVisible(true));
     let world = app.world_mut();
     let widget = world
         .spawn((
@@ -257,6 +260,8 @@ fn a_tooltip_at_the_window_edge_opens_on_the_other_side() {
 #[test]
 fn in_a_row_a_tooltip_opens_below_clear_of_its_neighbours() {
     let mut app = app();
+    // A game that wants the ring from the first frame inserts this itself.
+    app.insert_resource(InputFocusVisible(true));
     let world = app.world_mut();
     let left = world.spawn(button("Sword")).id();
     let middle = world
@@ -288,4 +293,97 @@ fn in_a_row_a_tooltip_opens_below_clear_of_its_neighbours() {
     for other in [left, right] {
         assert!(!overlaps(tip, rect(&app, other)), "it covers a neighbour");
     }
+}
+
+/// Plugs in a gamepad, as the platform's own connection event, and returns it.
+fn plug_in_pad(app: &mut App) -> Entity {
+    let pad = app.world_mut().spawn_empty().id();
+    app.world_mut().write_message(GamepadConnectionEvent::new(
+        pad,
+        GamepadConnection::Connected {
+            name: "Test pad".into(),
+            vendor_id: None,
+            product_id: None,
+        },
+    ));
+    app.update();
+    pad
+}
+
+/// Presses and releases `button` on `pad` as the platform's raw input, one update each.
+fn press(app: &mut App, pad: Entity, button: GamepadButton) {
+    for value in [1.0, 0.0] {
+        app.world_mut()
+            .write_message(RawGamepadEvent::Button(RawGamepadButtonChangedEvent::new(
+                pad, button, value,
+            )));
+        app.update();
+    }
+}
+
+fn focus_visible(app: &App) -> bool {
+    app.world().resource::<InputFocusVisible>().0
+}
+
+#[test]
+fn an_arrow_key_shows_focus_even_after_a_click() {
+    let mut app = app();
+    // InputFocusVisible starts false, and every pointer press sets it false again.
+    let [_, options, _] = column_menu(&mut app);
+    settle(&mut app);
+
+    tap(&mut app, KeyCode::ArrowDown);
+    app.update();
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(options));
+    assert!(
+        focus_visible(&app),
+        "an arrow key is keyboard navigation: focus must show"
+    );
+    assert!(
+        shown(&mut app),
+        "focus from an arrow key opens Options' tooltip"
+    );
+    assert_eq!(
+        app.world().get::<BorderColor>(options),
+        Some(&BorderColor::all(GooeySkin::default().focus_ring))
+    );
+}
+
+#[test]
+fn the_d_pad_and_south_show_focus_and_a_press_with_it_shown_restyles_nothing() {
+    let mut app = app();
+    let [_, options, quit] = column_menu(&mut app);
+    let pad = plug_in_pad(&mut app);
+    settle(&mut app);
+
+    press(&mut app, pad, GamepadButton::DPadDown);
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(options));
+    assert!(focus_visible(&app), "the D-pad shows focus");
+    app.update();
+    assert!(shown(&mut app), "focus from the D-pad opens Options' tooltip");
+
+    // A pointer press hides focus; the pad's South button alone brings the ring back.
+    app.insert_resource(InputFocusVisible(false));
+    app.update();
+    press(&mut app, pad, GamepadButton::South);
+    assert!(focus_visible(&app), "South is pad input: focus must show");
+    assert_eq!(
+        app.world().get::<BorderColor>(options),
+        Some(&BorderColor::all(GooeySkin::default().focus_ring))
+    );
+
+    // Focus already shows: the next press leaves the flag untouched, so the skin does not
+    // restyle every widget on every press.
+    let shown_since = app
+        .world()
+        .resource_ref::<InputFocusVisible>()
+        .last_changed();
+    press(&mut app, pad, GamepadButton::DPadDown);
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(quit));
+    assert_eq!(
+        app.world()
+            .resource_ref::<InputFocusVisible>()
+            .last_changed(),
+        shown_since
+    );
 }

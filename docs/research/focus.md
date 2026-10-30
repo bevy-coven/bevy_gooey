@@ -64,3 +64,4 @@ The ring is there the moment a thumb touches the D-pad, on the widget the player
 
 - distill was busy mid-pass (`gpu busy: 4866 MB free < 5000 MB required to load bge-m3`). Search the corpus for "focus indicator visibility keyboard gamepad", "hybrid mouse and controller input in game menus", "menu cursor console RPG", and cite *Future design of accessibility in games* (2019) if it names input-switching.
 - Index XAG 112, Selectors 4 §9.4 and Doucet's article into home-still.
+- Iteration 5 re-checked the quotes above against fetched copies of XAG 112, Selectors 4 and Doucet's article (all match), and retried distill on 2026-10-30 16:3x: `gpu busy: 4350 MB free < 5000 MB required to load bge-m3` (a 14.6 GB vLLM engine holds the card) for all three searches, so no corpus stem is cited. `catalog_recent` (200): no game-UI, HUD, menu, navigation or accessibility document, so `corpus.md` is unchanged.
