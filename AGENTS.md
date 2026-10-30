@@ -25,9 +25,9 @@ This repository, [`Ladvien/bevy_gooey`](https://github.com/Ladvien/bevy_gooey), 
 - `src/widgets.rs` — `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter`, `dialog`.
 - `src/meter.rs` — `Meter`, `update_meters`.
 - `src/tooltip.rs` — `Tooltip`, its hook, `TooltipBox`, `show_tooltips` (hover or visible focus opens it). `apply_skin` places the box (Bevy's `Popover`) and styles it.
-- `src/nav.rs` — `navigate_by_input` (scoped like Tab: an open dialog's widgets only), `gamepad_select`, `Dialog` and its focus-in and focus-back.
+- `src/nav.rs` — `navigate_by_input` (scoped like Tab: an open dialog's widgets only; shows focus; with nothing focused lands where the screen starts, via `FocusScopes`), `gamepad_select` (shows focus), `Dialog` and its focus-in and focus-back.
 - `src/feedback.rs` — `UiFeedback`, `UiFeedbackKind`, the activate observer, `feedback_on_focus`.
-- `examples/gallery.rs` — every widget on one screen; capture mode with `GOOEY_FRAMES`, `GOOEY_SHOT`, `GOOEY_SKIN`, `GOOEY_TEXT_SCALE`, `GOOEY_SIZE` and `GOOEY_KEYS` (staged key presses: `GOOEY_KEYS=down,down,enter` opens the Quit dialog).
+- `examples/gallery.rs` — every widget on one screen; capture mode with `GOOEY_FRAMES`, `GOOEY_SHOT`, `GOOEY_SKIN`, `GOOEY_TEXT_SCALE`, `GOOEY_SIZE` and `GOOEY_KEYS` (staged input, one every 10 frames from frame 30: `GOOEY_KEYS=down,down,enter` opens the Quit dialog; `click` is a primary click on the empty top-left corner, which hides focus and clears it). The gallery does not force `InputFocusVisible`: the first key shows the ring, as in a game.
 - `tests/leaf.rs` — the boundary ratchet. `tests/skin.rs`, `tests/nav.rs` — what a game sees. `tests/dialog.rs` — dialog focus, laid out in a headless window (`RenderPlugin` with no backends, no `WinitPlugin`), driven by real `KeyboardInput`. `tests/tooltip.rs` — a tooltip opens on focus, beside its widget, clear of its neighbours, flipped at the window's edge, in the same headless window. `tests/scale.rs` — the interface keeps its share of the window: sizes at 720p, 1080p, 1440p, a resize, the player's scale, a host that owns `UiScale`. `tests/serde.rs` — the skin and the scale settings as data. `tests/readme.rs` — the README quick start is the doctest.
 - `docs/research/` — the research note and the corpus. `docs/loop-log.md` — the loop's log and backlog.
 
@@ -66,3 +66,4 @@ The gate, every item green before a push:
 - **All run conditions are evaluated — there is no short-circuit.** A bare `Res<T>` in a `.run_if(..)` closure panics whenever that resource is absent.
 - **`Single<..>` silently skips its system on a non-unique match.**
 - In tests, `ButtonInput::clear()` drops `just_pressed` only: also `release` a key before pressing it again.
+- **Focus is two facts.** `InputFocus` is where focus is; `InputFocusVisible` is whether the ring and a focus tooltip show. Bevy's Tab sets the second, every pointer press clears both-ish (`click_to_focus` hides it and a click on empty space clears focus), so `navigate_by_input`, `gamepad_select` and a dialog taking focus set it, writing only on a change (`apply_skin` restyles every widget when it changes). With no `AutoFocus`, Bevy focuses the window at start-up: `InputFocus` can hold a non-widget, so test focus with `FocusScopes::holds`, not `is_some`.
