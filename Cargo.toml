@@ -13,8 +13,8 @@ include = ["src/**", "Cargo.toml", "README.md", "LICENSE-*"]
 
 [features]
 default = []
-# `serde` derives on `GooeySkin` and `Meter`, and Bevy's own `serialize` for `Color`: a project saves its
-# skin as data and an editor (bevy_emerge's family host) edits it live.
+# `serde` derives on `GooeySkin`, `UiScaleSettings` and `Meter`, and Bevy's own `serialize` for `Color`: a
+# project saves its skin and scale as data and an editor (bevy_emerge's family host) edits them live.
 serde = ["dep:serde", "bevy/serialize"]
 # Nothing enables this in normal use. `tests/readme.rs` checks the README's quick start against the
 # crate-root doctest, so the two cannot drift.

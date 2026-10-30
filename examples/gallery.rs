@@ -7,6 +7,8 @@
 //!   its tooltip beside it (`GOOEY_KEYS=down` stages it).
 //! - The health meter drains and refills (`GOOEY_HEALTH=<value>` holds it at that value instead).
 //!   Each `UiFeedback` is logged where a game would play a sound.
+//! - Resize the window: the whole interface keeps its share of it (twice the size at 2560x1440
+//!   as at 1280x720).
 //!
 //! Capture mode, for a still and a frame time: `GOOEY_FRAMES=<n>` saves a screenshot at frame `n` to
 //! `GOOEY_SHOT` (default `gallery.png`), prints `gooey: frames <n> mean_ms <x>` (the mean frame time

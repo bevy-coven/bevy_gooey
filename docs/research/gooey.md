@@ -33,7 +33,7 @@ Not from home-still: W3C, *Web Content Accessibility Guidelines (WCAG) 2.2* — 
 ## Model adopted
 
 - **R1. Show what is relevant, and let the density change.** HUD widgets take a detail level the player changes (backlog: `HudDetail`).
-- **R2. Accessibility is a set of player options.** `GooeySkin::text_scale`; `GooeySkin::problems` checks text contrast against 4.5:1 and the focus ring against 3:1.
+- **R2. Accessibility is a set of player options.** `GooeySkin::text_scale`; `GooeySkin::problems` checks text contrast against 4.5:1 and the focus ring against 3:1. The interface keeps its share of the screen at every resolution, so text stays above XAG 101's minimum on a 4K television, and `UiScaleSettings::scale` is the player's interface size (`docs/research/scale.md`).
 - **R3. Targets a thumb and a pad can reach.** `GooeySkin::min_target` (44 px default, 24 px floor in `problems`); pads move focus between widgets (`navigate_by_input`, `gamepad_select`), never a cursor.
 - **R4. Every action answers at once, on more than one channel, in moderation.** `apply_skin` restyles in the frame of the state change; `UiFeedback` lets the host add sound.
 - **R5. The novice's action rehearses the expert's.** Shortcuts shown on the button they fire (backlog: `Shortcut`).

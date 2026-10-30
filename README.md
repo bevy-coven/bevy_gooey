@@ -9,18 +9,26 @@ Game interfaces made easy for Bevy 0.20: a skin, ready-made game widgets and key
 - **A skin**, `GooeySkin`: every colour and size as plain data, two presets (`dark`, `parchment`), a player text-scale option, and `problems()` to check it against the WCAG 2.2 contrast and target-size rules. Change it and everything on screen restyles that frame.
 - **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `Tooltip` and the modal `dialog`.
 - **Navigation**: arrows and the D-pad move focus to the nearest widget, Enter, Space and the pad's South button activate, Tab cycles.
+- **Scale**: the whole interface keeps its share of the screen at every resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television.
 - **Feedback**: a `UiFeedback` message for every focus move and activation, for your sound.
 
 ## Install
 
-Until the first release on crates.io, take it from git:
+From crates.io:
+
+```toml
+[dependencies]
+bevy_gooey = "0.1"
+```
+
+Or from git, for changes not released yet:
 
 ```toml
 [dependencies]
 bevy_gooey = { git = "https://github.com/Ladvien/bevy_gooey" }
 ```
 
-Features: `serde` (save and load a `GooeySkin` as data).
+Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data).
 
 ## Quick start
 
@@ -85,6 +93,14 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 - a size that is not finite, or not positive where it must be.
 
 Fonts are yours: set `GooeyFonts { body, heading }`. The default draws Bevy's built-in font when Bevy's `default_font` feature is on.
+
+## Screen size
+
+`GooeyScalePlugin` (in `GooeyPlugins`) sets Bevy's `UiScale` from the window's shorter side, so every widget, gap, border and line of text keeps its share of the screen: the skin's sizes are what a 1280x720 window shows, a 1920x1080 window draws them at 1.5x and a 2560x1440 one at 2x. The default text then stays above the Xbox Accessibility Guidelines' console minimum (26 px at 1080p, 52 px at 4K) on any screen. `UiScale` multiplies every `Val::Px`, so your own UI nodes scale with the crate's.
+
+- `UiScaleSettings { reference_short_side, scale }`: the window size at which the skin's sizes are drawn as they are (720; a game designed at 1080p sets 1080), and the player's interface size on top (1.0). `GooeySkin::text_scale` enlarges text alone; `scale` enlarges everything.
+- A minimised window keeps the last scale.
+- The plugin owns `UiScale`. To drive it yourself, leave the plugin out: `GooeyPlugins.build().disable::<GooeyScalePlugin>()`.
 
 ## Feedback
 
