@@ -1,6 +1,8 @@
 //! Every widget on one screen.
 //!
-//! - Arrows or the D-pad move focus; Enter, Space or the pad's South button activate.
+//! - Arrows or the D-pad move focus; Enter, Space or the pad's South button activate. The focus
+//!   ring shows from the first key or pad press and hides on a mouse click; after a click on empty
+//!   space, the next arrow lands on Play again.
 //! - **Options** switches between the dark and the parchment skin; **Shift+T** toggles a 1.5x text
 //!   scale; **Quit** opens a modal dialog that holds focus (Stay first; Tab, arrows and the D-pad
 //!   stay inside it; closing it puts focus back on Quit); focusing or hovering **Options** shows
@@ -15,14 +17,17 @@
 //! over frames 20..n) and exits 10 frames later. `GOOEY_SKIN=parchment` starts in parchment;
 //! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size.
 //! `GOOEY_KEYS=down,down,enter,…` stages a state before the shot: from frame 30 it presses one key
-//! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`).
+//! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`), or
+//! clicks the window's empty top-left corner, as real pointer input (`click`).
 
+use bevy::camera::NormalizedRenderTarget;
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput};
-use bevy::input_focus::{AutoFocus, InputFocusVisible};
+use bevy::input_focus::AutoFocus;
+use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
 use bevy::render::view::screenshot::{Screenshot, save_to_disk};
-use bevy::window::{PrimaryWindow, WindowResolution};
+use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy_gooey::*;
 
 /// The health meter.
@@ -45,8 +50,17 @@ struct Capture {
     frame: u32,
     total_ms: f64,
     counted: u32,
-    /// `GOOEY_KEYS`, pressed one every [`KEY_EVERY`] frames from [`KEY_FROM`].
-    keys: Vec<KeyCode>,
+    /// `GOOEY_KEYS`, staged one every [`KEY_EVERY`] frames from [`KEY_FROM`].
+    keys: Vec<Staged>,
+}
+
+/// One staged input of `GOOEY_KEYS`.
+#[derive(Clone, Copy)]
+enum Staged {
+    /// A key, pressed and released.
+    Key(KeyCode),
+    /// A primary click on the window's empty top-left corner, where no widget is.
+    Click,
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -89,7 +103,6 @@ fn main() {
     ))
     .insert_resource(ClearColor(skin.background))
     .insert_resource(skin)
-    .insert_resource(InputFocusVisible(true))
     .insert_resource(HeldHealth(
         std::env::var("GOOEY_HEALTH")
             .ok()
@@ -121,12 +134,13 @@ fn main() {
                 .unwrap_or_default()
                 .split(',')
                 .filter_map(|k| match k.trim() {
-                    "up" => Some(KeyCode::ArrowUp),
-                    "down" => Some(KeyCode::ArrowDown),
-                    "left" => Some(KeyCode::ArrowLeft),
-                    "right" => Some(KeyCode::ArrowRight),
-                    "enter" => Some(KeyCode::Enter),
-                    "tab" => Some(KeyCode::Tab),
+                    "up" => Some(Staged::Key(KeyCode::ArrowUp)),
+                    "down" => Some(Staged::Key(KeyCode::ArrowDown)),
+                    "left" => Some(Staged::Key(KeyCode::ArrowLeft)),
+                    "right" => Some(Staged::Key(KeyCode::ArrowRight)),
+                    "enter" => Some(Staged::Key(KeyCode::Enter)),
+                    "tab" => Some(Staged::Key(KeyCode::Tab)),
+                    "click" => Some(Staged::Click),
                     _ => None,
                 })
                 .collect(),
@@ -288,12 +302,14 @@ fn capture(
     }
 }
 
-/// `GOOEY_KEYS`: one key every [`KEY_EVERY`] frames, pressed and then released as the window's
-/// own keyboard input, so Bevy's input dispatch, Tab navigation and buttons all see it.
+/// `GOOEY_KEYS`: one input every [`KEY_EVERY`] frames, pressed and then released as the window's
+/// own keyboard or pointer input, so Bevy's input dispatch, picking, Tab navigation and buttons all
+/// see it.
 fn stage_keys(
     capture: Option<Res<Capture>>,
     window: Query<Entity, With<PrimaryWindow>>,
-    mut input: MessageWriter<KeyboardInput>,
+    mut keys: MessageWriter<KeyboardInput>,
+    mut pointer: MessageWriter<PointerInput>,
 ) {
     let (Some(c), Ok(window)) = (capture, window.single()) else {
         return;
@@ -306,14 +322,36 @@ fn stage_keys(
         n if n == KEY_EVERY / 2 => ButtonState::Released,
         _ => return,
     };
-    if let Some(&key_code) = c.keys.get((since / KEY_EVERY) as usize) {
-        input.write(KeyboardInput {
-            key_code,
-            logical_key: Key::Unidentified(bevy::input::keyboard::NativeKey::Unidentified),
-            state,
-            text: None,
-            repeat: false,
-            window,
-        });
+    match c.keys.get((since / KEY_EVERY) as usize) {
+        Some(&Staged::Key(key_code)) => {
+            keys.write(KeyboardInput {
+                key_code,
+                logical_key: Key::Unidentified(bevy::input::keyboard::NativeKey::Unidentified),
+                state,
+                text: None,
+                repeat: false,
+                window,
+            });
+        }
+        Some(Staged::Click) => {
+            let Some(target) = WindowRef::Entity(window).normalize(None) else {
+                return;
+            };
+            let at = Location {
+                target: NormalizedRenderTarget::Window(target),
+                position: Vec2::splat(4.0),
+            };
+            let actions: &[PointerAction] = match state {
+                ButtonState::Pressed => &[
+                    PointerAction::Move { delta: Vec2::ZERO },
+                    PointerAction::Press(PointerButton::Primary),
+                ],
+                ButtonState::Released => &[PointerAction::Release(PointerButton::Primary)],
+            };
+            for &action in actions {
+                pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
+            }
+        }
+        None => {}
     }
 }

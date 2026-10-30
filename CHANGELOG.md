@@ -11,6 +11,11 @@
 
 - `UiScale` is set by `GooeyScalePlugin` rather than left to the host. A host that drives `UiScale` itself leaves the plugin out (`GooeyPlugins.build().disable::<GooeyScalePlugin>()`); a player's interface size goes in `UiScaleSettings::scale`. At 1280x720 nothing changes.
 
+### Fixed
+
+- Arrow keys, the D-pad and the pad's South button now show the focus ring (Bevy's `InputFocusVisible`), so a keyboard or pad player sees where focus is, and focus opens a `Tooltip`, after any mouse click as at start-up. Only Tab did before, so a pad player never saw a ring. A dialog that takes focus shows it too, even when the pointer opened it. The flag is written only when it changes, so a press costs no restyle (#1).
+- With nothing focused (a click on empty space, a despawned or hidden widget, a screen without `AutoFocus`), the first arrow or D-pad press lands where the screen starts: the open dialog on top, or else the screen; its `AutoFocus` widget, or else its first widget in Tab order. Before, no direction press could ever reach a widget again. A focused tab stop without directional navigation (a text field) keeps its arrows (#2).
+
 ## [0.1.0] - 2026-10-30
 
 ### Added

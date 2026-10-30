@@ -68,12 +68,13 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 
 ## Navigation
 
-- Arrow keys and the D-pad move focus to the nearest button in that direction (`navigate_by_input`); a pad moves focus, it never steers a cursor.
+- Arrow keys and the D-pad move focus to the nearest button in that direction (`navigate_by_input`); a pad moves focus, it never steers a cursor. With nothing focused (a click on empty space, a despawned widget), the first press lands where the screen starts.
 - Enter and Space activate the focused button (Bevy's own button handling); the pad's South button does too (`gamepad_select`).
 - Tab and Shift+Tab cycle through a `screen`'s buttons.
 - An open `dialog` holds focus: focus moves to its first button when it opens, Tab, the arrows and the D-pad cannot leave it, and closing it puts focus back on the button that opened it. Put `AutoFocus` on the dialog's safest choice ("Stay", "Cancel") to start there instead.
 - A `Tooltip` opens when its widget has focus from a key or the pad, as it does under the pointer. It opens beside the widget (to the right in a column, below in a row, flipped at the window's edge), one step outside its panel, so it never covers the next button.
-- Put Bevy's `AutoFocus` on the button a screen should start on.
+- The focus ring shows once the player uses a key or the pad (arrows, D-pad, South, Tab) and hides on a mouse click, as a browser's `:focus-visible` does. A pad-first game that wants the ring from the first frame inserts Bevy's `InputFocusVisible(true)`.
+- Put Bevy's `AutoFocus` on the button a screen should start on; a direction press with nothing focused lands there too.
 
 ## Skins
 
