@@ -16,9 +16,11 @@
 //!   [`Role`] that [`apply_skin`] styles it by.
 //! - Navigation — [`GooeyNavPlugin`]: arrows and the D-pad move focus to the nearest widget
 //!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles.
-//!   An open [`dialog`] holds focus: it takes it, keeps arrows, D-pad and Tab inside, and gives it
-//!   back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus, as it
-//!   does under the pointer. Enter and Space are Bevy's own button handling.
+//!   Keys and the pad show the focus ring; a pointer press hides it. With nothing focused (a click
+//!   on empty space, a despawned widget), the first arrow or D-pad press lands where the screen
+//!   starts. An open [`dialog`] holds focus: it takes it, keeps arrows, D-pad and Tab inside, and
+//!   gives it back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus,
+//!   as it does under the pointer. Enter and Space are Bevy's own button handling.
 //! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
 //!   resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television
 //!   ([`UiScaleSettings`], [`scale_with_window`]).
@@ -158,9 +160,11 @@ impl Plugin for GooeyStylePlugin {
 }
 
 /// Keyboard and gamepad navigation: arrows and the D-pad move focus, the pad's South button
-/// activates, Tab cycles, and focus moves are written as [`UiFeedback`]. An open [`dialog`] holds
-/// focus: it takes it on opening ([`focus_opened_dialogs`]), Tab and the arrows stay inside it, and
-/// closing it gives focus back to the widget that opened it.
+/// activates, Tab cycles, and focus moves are written as [`UiFeedback`]. Keys and the pad show
+/// focus (Bevy's `InputFocusVisible`; a pointer press hides it), and a direction press with nothing
+/// focused lands where the screen starts. An open [`dialog`] holds focus: it takes it on opening
+/// ([`focus_opened_dialogs`]), Tab and the arrows stay inside it, and closing it gives focus back
+/// to the widget that opened it.
 ///
 /// Adds Bevy's `TabNavigationPlugin` and `DirectionalNavigationPlugin` unless the host already has.
 pub struct GooeyNavPlugin;
@@ -175,6 +179,7 @@ impl Plugin for GooeyNavPlugin {
             app.add_plugins(DirectionalNavigationPlugin);
         }
         app.init_resource::<InputFocus>()
+            .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<Dialog>()
             .add_observer(nav::remember_opener)
