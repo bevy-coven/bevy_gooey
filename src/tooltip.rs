@@ -75,7 +75,7 @@ fn tooltip_on_add(mut world: DeferredWorld, HookContext { entity, .. }: HookCont
 pub fn show_tooltips(
     focus: Option<Res<InputFocus>>,
     visible: Option<Res<InputFocusVisible>>,
-    widgets: Query<(Option<&Hovered>, Option<&ChildOf>, Option<Placed>), Without<TooltipBox>>,
+    widgets: Query<Described, Without<TooltipBox>>,
     flows: Query<&Node, Without<TooltipBox>>,
     mut boxes: Query<(&ChildOf, &mut Node, &mut TooltipBox)>,
 ) {
@@ -112,9 +112,14 @@ pub fn show_tooltips(
     }
 }
 
-/// Where a widget is laid out: its size, its position and the window it is drawn to.
-type Placed = (
-    &'static ComputedNode,
-    &'static UiGlobalTransform,
-    &'static ComputedUiRenderTargetInfo,
+/// A widget a tooltip describes: whether the pointer is over it, its parent, and where it is laid
+/// out (its size, its position and the window it is drawn to).
+type Described = (
+    Option<&'static Hovered>,
+    Option<&'static ChildOf>,
+    Option<(
+        &'static ComputedNode,
+        &'static UiGlobalTransform,
+        &'static ComputedUiRenderTargetInfo,
+    )>,
 );
