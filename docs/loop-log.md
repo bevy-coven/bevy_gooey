@@ -117,3 +117,38 @@ Flaws left: the wrapped box keeps its full width (about 90 px empty right of "an
 3. **Dialog elevation**: a `BoxShadow` and a minimum width on a dialog's panel, reusing the tooltip's shadow recipe, so the dialog reads as a layer.
 4. **Tooltip polish**: balanced wrapping (the box keeps its full max width when wrapped), and a shadow that shows on the dark skin.
 5. `Shortcut { key, pad }` on a button (R5), then `HudDetail` (R1), slider/checkbox/toggle, settings kit, scroll list/tabs/toast, press animation.
+
+## Iteration 3 — 2026-10-30 — a meter is one framed shape, its whole length legible, as large as the HUD
+
+**Triage.** No open issues on Ladvien/bevy_gooey (`gh issue list`: empty). One parked tree: `WIP(pass 3, parked)` `e9c3da6` on `loop/iter-3`, the cut-off pass 3's draft of the log's top backlog item (the meter's square corners), with its research commit `2b53257`. It was the item this pass would pick, so it was adopted: the research commit cherry-picked (`c4eb24b`), `src/skin.rs`, `src/widgets.rs` and `tests/skin.rs` taken from `e9c3da6`, then finished and gated here. The branch is `loop/iter-3b` because `loop/iter-3` is the parked branch, left as it is. Pass 3's scratch is still in `/tmp/g3` (see Cleanup). Runner-up: couch-distance scale (a 1x UI on a 1440p screen hurts every widget, but the meter's defects are a wrong widget, which ranks first).
+
+**What was wrong** (`/tmp/g3b/findings.md`): the fill's square corners covered the track's rounded ends, and a full meter was a square slab; the track's length was 1.39:1 (dark) and 1.25:1 (parchment) against the panel, so 60 of 100 read as a short full bar; the bar stayed 14 px at text scale 1.5, under a 30 px label.
+
+**What changed** (`cdd5fc5`, format `551b38f`, docs `a51bbe5`, research `517531f` on top of pass 3's `c4eb24b`):
+- The track is framed `border` px wide in a new `GooeySkin::outline` colour; the fill sits one `border` inside the frame, on `surface_raised`, with radius `max(radius − 2 × border, 0)`, concentric with the frame (CSS's content-edge radius; Bevy clips a child to a rectangle, so the fill rounds itself).
+- `GooeySkin::meter_height` (24) × `text_scale` sizes the bar; its least length is 8 text sizes (160 px at 1x).
+- `problems()` checks `accent on surface_raised` (fill on track) and `outline on surface` (frame on panel) at 3:1, and reports the new `SkinProblem::MeterTooThin` when the frame and gap leave no room for a fill.
+- Gallery: `GOOEY_HEALTH=<value>` holds the meter for a still. Hero `docs/media/gallery.png` regenerated (Options focused with its tooltip, health 70).
+- Assumed decision: a frame in a new `outline` colour (Material 3's *Outline* role), over Material's stop dot at the track's end (easy to lose at couch distance) or a frame in `text_muted` (round 1: as bright as the focus ring).
+
+**Sources.** Craft: corpus stem `10.26503_dl.v2011i1.514`, Llanos & Jørgensen, *Do Players Prefer Integrated User Interfaces?* ("information that is critical, or that needs to be gauged on a continuous basis"), and Hodent's GDC 2015 write-up (Gestalt similarity). Shipping game: Naughty Dog, *The Last of Us Part II* accessibility options ("HUD Scale … Changes the size of in-game HUD elements"). Technical: Material's progress indicator *Non-text contrast update* (`indicatorTrackGapSize`), Material 3 colour roles (*Outline*), WCAG 2.2 *Understanding 1.4.11*, CSS Backgrounds 3 §4.2–4.3, and Bevy 0.20's `clipping.rs` and `ui.wesl`. Every quote was checked against a fetched copy. home-still: distill healthy and idle; scribe on big `backend_unavailable`, on bmb healthy with no free slot. `catalog_recent` (200): forestry, medicine and LLM papers only, no game-UI document, so no corpus commit.
+
+**Rounds** (`/tmp/g3b/critique.md`):
+1. Frame in `text_muted` (6.6:1 in the dark skin): the extent read, but the frame was as bright and as thick as the focus ring and the meter looked like a text field (`r1/dark.png`). NOT YET.
+2. Frame in `outline`, about 3.7:1 in both skins: quieter than the ring, louder than the panel border. GREAT.
+
+Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fill reads close to a rectangle (concentric, accepted); the UI is still 1x at 2560x1440.
+
+**Checklist, before → after** (1280x720, dark / parchment):
+- Fill corners: square, over the track's rounded ends → 2 px, concentric with the frame; no fill pixel outside the track (`after/z-all.png`).
+- Meter extent against the panel: 1.39 / 1.25 → 3.67 / 3.96 (pixels).
+- Fill against track: 6.03 / 4.69, unchanged.
+- Height at 1x / 1.5x: 14 / 14 → 24 / 36 px (fill 12 / 24).
+- Fill proportion: 115 of 192 px at 60 → 108 of 180 px interior at 60, 7 at 4, 180 at 100.
+- Focus ring, hit targets, text in boxes, scrim: unchanged. `problems()` empty for both presets.
+
+**Tests.** `tests/meter.rs`, laid out in a headless window: the fill sits `2 × border` inside the frame on every side, as long as its value says, rounded and concentric with the frame; the bar is `meter_height` high and `1.5 × meter_height` at 1.5x, the fill taking the growth; a near-empty meter draws a sliver and an empty one none. `tests/skin.rs`: a fill, a frame or a meter height that hides the reading is reported. The parked draft's test that copied `Node` fields was replaced by the layout test.
+
+**mean_ms** (sib, Xvfb, 240 frames, 1280x720, `GOOEY_HEALTH=60`). Sequential runs were swamped by other loops on the host (load 7 to 60, kswapd active): before median 26.76 (8 runs), after 29.19 (8 runs), paired differences −5.1 to +9.1 ms. Run side by side, six pairs, the paired difference is −0.06 ms mean (−0.42 to +0.24). No regression: the change adds one border to one node and nothing per frame.
+
+**Gate.** All six steps green. The first run sat for an hour linking `--features serde` test binaries while sib thrashed (memory pressure "full" 66%, load 60: three loops linking Bevy at once) and was stopped; rerun with `CARGO_BUILD_JOBS=1` once the load fell, every step passed in under a minute.
