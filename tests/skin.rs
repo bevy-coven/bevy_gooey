@@ -180,6 +180,49 @@ fn a_meter_fills_by_fraction() {
 }
 
 #[test]
+fn a_meter_fill_sits_inside_its_track_with_concentric_corners() {
+    let mut app = app();
+    app.insert_resource(GooeySkin {
+        text_scale: 1.5,
+        ..default()
+    });
+    let meter = app.world_mut().spawn(meter(5.0, 100.0)).id();
+    app.update();
+    let fill = child_with_role(&mut app, meter, Role::MeterFill);
+    let skin = GooeySkin::default();
+    let world = app.world();
+    let track = world.get::<Node>(meter).cloned().unwrap_or_default();
+    let fill = world.get::<Node>(fill).cloned().unwrap_or_default();
+    // As large as the HUD: the track grows with the player's text scale.
+    assert_eq!(track.height, Val::Px(skin.meter_height * 1.5));
+    // A groove one border wide on every side, and the fill rounded inside it.
+    assert_eq!(track.padding, UiRect::all(Val::Px(skin.border)));
+    assert_eq!(track.border_radius, BorderRadius::all(Val::Px(skin.radius)));
+    assert_eq!(
+        fill.border_radius,
+        BorderRadius::all(Val::Px(skin.radius - skin.border))
+    );
+}
+
+#[test]
+fn a_fill_the_track_hides_is_reported() {
+    let skin = GooeySkin::default();
+    let problems = GooeySkin {
+        accent: skin.surface_raised,
+        accent_text: Color::WHITE,
+        ..default()
+    }
+    .problems();
+    assert!(problems.iter().any(|p| matches!(
+        p,
+        SkinProblem::LowContrast {
+            pair: "accent on surface_raised",
+            ..
+        }
+    )));
+}
+
+#[test]
 fn a_tooltip_starts_hidden() {
     let mut app = app();
     let help = app

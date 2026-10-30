@@ -35,6 +35,7 @@ Material's bar meter keeps the fill and the track one shape: "To keep the track 
 - `GooeySkin::meter_height`: 18 logical px at `text_scale` 1 (was 14, set in the widget). The fill is `18 − 2 × 3 = 12` px high; a 14 px track with a 3 px groove would leave an 8 px sliver. A design default.
 - Inset: `GooeySkin::border` (3 px). A design default resting on "one visual language": the panel border width.
 - Fill radius: `max(radius − border, 0)` = 5 px; the track keeps `radius` (8 px, which Bevy clamps to half the height when the track is thinner than 16 px).
+- Least length: 9 meter heights (162 px at 1×, 243 px at 1.5×; was a fixed 160 px in the widget). A design default.
 - Fill against track (1.4.11): dark 6.04:1, parchment 4.68:1.
 
 ## Validation targets
@@ -54,6 +55,7 @@ A health bar a player reads from the couch at a glance: a rounded slot in the pa
 
 - Bevy's rectangular clip is the deviation from CSS §4.3; the crate works around it by rounding the fill itself (M1) instead of relying on the track's clip.
 - The meter's height moves from the widget (`height: 14px`) into the skin, per the crate's rule that only `apply_skin` sizes a widget. Default 18 px (was 14) to make room for the groove; a design default.
+- Open: the track against the panel is 1.45:1 (dark) and 1.25:1 (parchment), under WCAG 1.4.11's 3:1, so the meter's full length is faint. A 1 px `text_muted` outline on the track was tried after the first captures: it made the length clear but added a fourth line weight beside the 3 px panel border and focus ring, and a hairline is lost at couch distance. Reverted; the fix needs a track colour or frame of its own.
 
 ## Pending index
 
