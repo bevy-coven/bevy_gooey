@@ -73,12 +73,24 @@ fn a_fill_sits_inside_its_frame_with_a_gap_all_round_and_concentric_corners() {
     let (outer, inner) = (rect(&app, track), rect(&app, fill));
     let inset = 2.0 * skin.border;
     // The frame and the gap on every side: the fill never touches the frame or pokes out.
-    assert!((inner.min.x - outer.min.x - inset).abs() < 0.5, "{outer:?} {inner:?}");
-    assert!((inner.min.y - outer.min.y - inset).abs() < 0.5, "{outer:?} {inner:?}");
-    assert!((outer.max.y - inner.max.y - inset).abs() < 0.5, "{outer:?} {inner:?}");
+    assert!(
+        (inner.min.x - outer.min.x - inset).abs() < 0.5,
+        "{outer:?} {inner:?}"
+    );
+    assert!(
+        (inner.min.y - outer.min.y - inset).abs() < 0.5,
+        "{outer:?} {inner:?}"
+    );
+    assert!(
+        (outer.max.y - inner.max.y - inset).abs() < 0.5,
+        "{outer:?} {inner:?}"
+    );
     // As long as its value says, of the room inside the frame and gap.
     let room = outer.width() - 2.0 * inset;
-    assert!((inner.width() - 0.6 * room).abs() < 1.0, "{outer:?} {inner:?}");
+    assert!(
+        (inner.width() - 0.6 * room).abs() < 1.0,
+        "{outer:?} {inner:?}"
+    );
     // Framed in a colour the panel cannot hide.
     assert_eq!(
         app.world().get::<BorderColor>(track),

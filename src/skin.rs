@@ -589,8 +589,7 @@ fn restyle(
             // inside it, on the track, because no one colour contrasts with both.
             Role::Meter => {
                 next.height = Val::Px(skin.meter_height * skin.text_scale);
-                next.min_width =
-                    Val::Px(skin.text_size * skin.text_scale * METER_MIN_TEXT_SIZES);
+                next.min_width = Val::Px(skin.text_size * skin.text_scale * METER_MIN_TEXT_SIZES);
                 next.border = UiRect::all(Val::Px(skin.border));
                 next.padding = UiRect::all(Val::Px(skin.border));
                 next.border_radius = radius;
