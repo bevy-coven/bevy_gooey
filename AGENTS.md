@@ -19,7 +19,7 @@ This repository, [`Ladvien/bevy_gooey`](https://github.com/Ladvien/bevy_gooey), 
 ## Layout
 
 - `src/lib.rs` — crate docs (the quick start doctest), re-exports, `GooeySystems`, `GooeyStylePlugin`, `GooeyNavPlugin`, `GooeyScalePlugin`, `GooeyPlugins`.
-- `src/model.rs` — engine-free maths: `relative_luminance`, `contrast_ratio`, `composite`, `meter_fraction`, `window_ui_scale`, the WCAG constants.
+- `src/model.rs` — engine-free maths: `relative_luminance`, `contrast_ratio`, `composite`, `meter_fraction`, `window_ui_scale`, `snap_line_width` (a border on whole device pixels, CSS's rule), the WCAG constants.
 - `src/scale.rs` — `UiScaleSettings`, `scale_with_window` (sets `UiScale` from the window's shorter side).
 - `src/skin.rs` — `GooeySkin` (presets, `hovered`, `problems`), `SkinProblem`, `GooeyFonts`, `Role`, `apply_skin`.
 - `src/widgets.rs` — `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter`, `dialog`.
@@ -28,7 +28,7 @@ This repository, [`Ladvien/bevy_gooey`](https://github.com/Ladvien/bevy_gooey), 
 - `src/nav.rs` — `navigate_by_input` (scoped like Tab: an open dialog's widgets only), `gamepad_select`, `Dialog` and its focus-in and focus-back.
 - `src/feedback.rs` — `UiFeedback`, `UiFeedbackKind`, the activate observer, `feedback_on_focus`.
 - `examples/gallery.rs` — every widget on one screen; capture mode with `GOOEY_FRAMES`, `GOOEY_SHOT`, `GOOEY_SKIN`, `GOOEY_TEXT_SCALE`, `GOOEY_SIZE` and `GOOEY_KEYS` (staged key presses: `GOOEY_KEYS=down,down,enter` opens the Quit dialog).
-- `tests/leaf.rs` — the boundary ratchet. `tests/skin.rs`, `tests/nav.rs` — what a game sees. `tests/dialog.rs` — dialog focus, laid out in a headless window (`RenderPlugin` with no backends, no `WinitPlugin`), driven by real `KeyboardInput`. `tests/tooltip.rs` — a tooltip opens on focus, beside its widget, clear of its neighbours, flipped at the window's edge, in the same headless window. `tests/scale.rs` — the interface keeps its share of the window: sizes at 720p, 1080p, 1440p, a resize, the player's scale, a host that owns `UiScale`. `tests/serde.rs` — the skin and the scale settings as data. `tests/readme.rs` — the README quick start is the doctest.
+- `tests/leaf.rs` — the boundary ratchet. `tests/skin.rs`, `tests/nav.rs` — what a game sees. `tests/dialog.rs` — dialog focus, laid out in a headless window (`RenderPlugin` with no backends, no `WinitPlugin`), driven by real `KeyboardInput`. `tests/tooltip.rs` — a tooltip opens on focus, beside its widget, clear of its neighbours, flipped at the window's edge, in the same headless window. `tests/scale.rs` — the interface keeps its share of the window: sizes at 720p, 1080p, 1440p, a resize, the player's scale, a host that owns `UiScale`. `tests/lines.rs` — every border and the meter's gap one whole-pixel weight on all four sides at 1x to 3x, after a resize and at the player's scale (reads `ComputedNode::border`, physical px). `tests/serde.rs` — the skin and the scale settings as data. `tests/readme.rs` — the README quick start is the doctest.
 - `docs/research/` — the research note and the corpus. `docs/loop-log.md` — the loop's log and backlog.
 
 ## Build and test
