@@ -1,7 +1,9 @@
-//! The engine-free maths under the skin: contrast, compositing and meter fill.
+//! The engine-free maths under the skin: contrast, compositing, meter fill and the interface's
+//! scale against the window.
 //!
-//! Plain functions over `[r, g, b]` arrays in sRGB, testable without an app. [`crate::GooeySkin::problems`]
-//! is built on them, and a host or an editor may call them to check its own colours.
+//! Plain functions over `[r, g, b]` arrays in sRGB and plain sizes, testable without an app.
+//! [`crate::GooeySkin::problems`] is built on them, and a host or an editor may call them to check
+//! its own colours; [`crate::scale_with_window`] on [`window_ui_scale`].
 
 /// The least contrast body text may have against its background: WCAG 2.2, success criterion 1.4.3.
 pub const TEXT_CONTRAST: f32 = 4.5;
@@ -73,6 +75,24 @@ pub fn meter_fraction(value: f32, max: f32) -> f32 {
     }
 }
 
+/// The `UiScale` that keeps an interface's share of a `width` × `height` window (logical px): the
+/// window's shorter side over `reference_short_side`, times the player's `scale`. `None` when there
+/// is no usable scale: a window with no size (minimised), or a reference or a scale that is not
+/// above zero.
+///
+/// ```
+/// assert_eq!(bevy_gooey::window_ui_scale(2560.0, 1440.0, 720.0, 1.0), Some(2.0));
+/// ```
+pub fn window_ui_scale(
+    width: f32,
+    height: f32,
+    reference_short_side: f32,
+    scale: f32,
+) -> Option<f32> {
+    let ui = width.min(height) / reference_short_side * scale;
+    (reference_short_side > 0.0 && scale > 0.0 && ui > 0.0 && ui.is_finite()).then_some(ui)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -92,5 +112,30 @@ mod tests {
         assert_eq!(meter_fraction(5.0, 0.0), 0.0);
         assert_eq!(meter_fraction(f32::NAN, 100.0), 0.0);
         assert_eq!(meter_fraction(5.0, f32::INFINITY), 0.0);
+    }
+
+    #[test]
+    fn the_shorter_side_over_the_reference_sets_the_scale() {
+        assert_eq!(window_ui_scale(1280.0, 720.0, 720.0, 1.0), Some(1.0));
+        assert_eq!(window_ui_scale(1920.0, 1080.0, 720.0, 1.0), Some(1.5));
+        assert_eq!(window_ui_scale(3840.0, 2160.0, 720.0, 1.0), Some(3.0));
+        // Portrait and ultrawide: the shorter side decides.
+        assert_eq!(window_ui_scale(720.0, 1280.0, 720.0, 1.0), Some(1.0));
+        assert_eq!(window_ui_scale(3440.0, 1440.0, 720.0, 1.0), Some(2.0));
+        // The player's size multiplies the window's.
+        assert_eq!(window_ui_scale(1920.0, 1080.0, 720.0, 1.25), Some(1.875));
+        // A window smaller than the reference draws a smaller interface, in proportion.
+        assert_eq!(window_ui_scale(640.0, 360.0, 720.0, 1.0), Some(0.5));
+    }
+
+    #[test]
+    fn no_window_or_an_invalid_setting_gives_no_scale() {
+        assert_eq!(window_ui_scale(0.0, 0.0, 720.0, 1.0), None);
+        assert_eq!(window_ui_scale(1280.0, 0.0, 720.0, 1.0), None);
+        assert_eq!(window_ui_scale(1280.0, 720.0, 0.0, 1.0), None);
+        assert_eq!(window_ui_scale(1280.0, 720.0, -720.0, -1.0), None);
+        assert_eq!(window_ui_scale(1280.0, 720.0, 720.0, 0.0), None);
+        assert_eq!(window_ui_scale(1280.0, 720.0, f32::NAN, 1.0), None);
+        assert_eq!(window_ui_scale(1280.0, 720.0, 720.0, f32::INFINITY), None);
     }
 }

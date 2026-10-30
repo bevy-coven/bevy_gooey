@@ -19,11 +19,14 @@
 //!   An open [`dialog`] holds focus: it takes it, keeps arrows, D-pad and Tab inside, and gives it
 //!   back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus, as it
 //!   does under the pointer. Enter and Space are Bevy's own button handling.
+//! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
+//!   resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television
+//!   ([`UiScaleSettings`], [`scale_with_window`]).
 //! - Feedback — [`UiFeedback`] is written for every focus move and activation, for the host to
 //!   turn into sound.
 //!
-//! [`model`] holds the engine-free maths under the skin: [`contrast_ratio`], [`composite`] and
-//! [`meter_fraction`].
+//! [`model`] holds the engine-free maths under the skin: [`contrast_ratio`], [`composite`],
+//! [`meter_fraction`] and [`window_ui_scale`].
 //!
 //! ```no_run
 //! use bevy::prelude::*;
@@ -69,7 +72,10 @@
 //!
 //! # Units
 //!
-//! Sizes are logical pixels. `UiScale` is the host's, and multiplies all of them.
+//! Sizes are logical pixels at a window whose shorter side is
+//! [`UiScaleSettings::reference_short_side`] (720). [`GooeyScalePlugin`] sets Bevy's `UiScale` from
+//! the window, so a 1920x1080 window draws them at 1.5x; a host that drives `UiScale` itself leaves
+//! that plugin out (`GooeyPlugins.build().disable::<GooeyScalePlugin>()`).
 
 #![warn(missing_docs)]
 
@@ -78,6 +84,7 @@ pub mod model;
 mod feedback;
 mod meter;
 mod nav;
+mod scale;
 mod skin;
 mod tooltip;
 mod widgets;
@@ -87,9 +94,10 @@ pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
-    meter_fraction, relative_luminance,
+    meter_fraction, relative_luminance, window_ui_scale,
 };
 pub use nav::{Dialog, focus_opened_dialogs, gamepad_select, navigate_by_input};
+pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips};
 pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen};
@@ -108,7 +116,7 @@ use bevy::prelude::*;
 pub enum GooeySystems {
     /// Arrow-key, D-pad and pad-button navigation, and the focus feedback.
     Navigate,
-    /// The skin and the meters: every widget's look.
+    /// The skin, the meters and the interface's scale: every widget's look.
     Style,
 }
 
@@ -185,7 +193,25 @@ impl Plugin for GooeyNavPlugin {
     }
 }
 
-/// Every plugin in the crate: [`GooeyStylePlugin`] and [`GooeyNavPlugin`].
+/// Draws the whole interface in proportion to the window: sets Bevy's `UiScale` from the primary
+/// window's shorter side and [`UiScaleSettings`] ([`scale_with_window`]), so a 1440p window draws
+/// everything twice the size a 720p one does.
+///
+/// It owns `UiScale`: a player's interface size goes in [`UiScaleSettings::scale`]. A host that sets
+/// `UiScale` itself leaves this plugin out.
+pub struct GooeyScalePlugin;
+
+impl Plugin for GooeyScalePlugin {
+    fn build(&self, app: &mut App) {
+        chain_sets(app);
+        app.init_resource::<UiScaleSettings>()
+            .init_resource::<UiScale>()
+            .register_type::<UiScaleSettings>()
+            .add_systems(Update, scale_with_window.in_set(GooeySystems::Style));
+    }
+}
+
+/// Every plugin in the crate: [`GooeyStylePlugin`], [`GooeyNavPlugin`] and [`GooeyScalePlugin`].
 pub struct GooeyPlugins;
 
 impl PluginGroup for GooeyPlugins {
@@ -193,5 +219,6 @@ impl PluginGroup for GooeyPlugins {
         PluginGroupBuilder::start::<Self>()
             .add(GooeyStylePlugin)
             .add(GooeyNavPlugin)
+            .add(GooeyScalePlugin)
     }
 }
