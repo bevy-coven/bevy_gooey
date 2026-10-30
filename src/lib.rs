@@ -94,7 +94,7 @@ pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
-    meter_fraction, relative_luminance, window_ui_scale,
+    meter_fraction, relative_luminance, snap_line_width, window_ui_scale,
 };
 pub use nav::{Dialog, focus_opened_dialogs, gamepad_select, navigate_by_input};
 pub use scale::{UiScaleSettings, scale_with_window};
