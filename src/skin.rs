@@ -14,6 +14,10 @@ use crate::model::{
 };
 use crate::tooltip::TooltipBox;
 
+/// A meter's least length, in body text sizes: 8 × 20 px = 160 px at the default size, growing
+/// with [`GooeySkin::text_scale`].
+const METER_MIN_TEXT_SIZES: f32 = 8.0;
+
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
 ///
@@ -43,13 +47,14 @@ pub struct GooeySkin {
     pub background: Color,
     /// A panel's fill. It may be translucent; its contrast is checked over [`GooeySkin::background`].
     pub surface: Color,
-    /// A button at rest, a meter's track, a tooltip and a panel's border.
+    /// A button at rest, a meter's track inside its frame, a tooltip and a panel's border.
     pub surface_raised: Color,
     /// Headings, labels and button text.
     pub text: Color,
     /// The text of a disabled button.
     pub text_muted: Color,
-    /// A pressed button and a meter's fill.
+    /// A pressed button and a meter's fill; checked against [`GooeySkin::surface_raised`], the
+    /// meter's track, at the 3:1 non-text minimum.
     pub accent: Color,
     /// Text drawn on [`GooeySkin::accent`].
     pub accent_text: Color,
@@ -57,6 +62,9 @@ pub struct GooeySkin {
     pub danger: Color,
     /// The border of the focused button while focus is visible.
     pub focus_ring: Color,
+    /// The edge of a widget whose fill does not show its size, so its whole extent stays visible:
+    /// a meter's frame. Checked against the panel at the 3:1 non-text minimum.
+    pub outline: Color,
     /// The veil behind a modal dialog.
     pub scrim: Color,
     /// Body text size, logical px, before [`GooeySkin::text_scale`].
@@ -69,8 +77,13 @@ pub struct GooeySkin {
     pub padding: f32,
     /// The corner radius of panels, buttons, meters and tooltips, logical px.
     pub radius: f32,
-    /// The border width of panels and buttons, logical px. A button's focus ring is drawn in it.
+    /// The border width of panels and buttons, logical px. A button's focus ring is drawn in it,
+    /// and a meter's track is framed this wide, with its fill this far inside the frame.
     pub border: f32,
+    /// A meter's height, frame included, logical px, before [`GooeySkin::text_scale`]: the HUD
+    /// grows with the player's size option, not only its text. It must leave room for a fill
+    /// inside the frame and the gap (more than 4 × [`GooeySkin::border`]).
+    pub meter_height: f32,
     /// The least width and height of a button, logical px.
     pub min_target: f32,
     /// A player option: every text size is multiplied by it.
@@ -90,6 +103,7 @@ impl GooeySkin {
             accent_text: Color::srgb(0.10, 0.08, 0.05),
             danger: Color::srgb(0.86, 0.27, 0.24),
             focus_ring: Color::srgb(0.45, 0.78, 1.0),
+            outline: Color::srgb(0.44, 0.47, 0.54),
             scrim: Color::srgba(0.0, 0.0, 0.0, 0.6),
             ..Self::sizes()
         }
@@ -107,6 +121,7 @@ impl GooeySkin {
             accent_text: Color::srgb(0.97, 0.93, 0.85),
             danger: Color::srgb(0.70, 0.12, 0.10),
             focus_ring: Color::srgb(0.12, 0.38, 0.55),
+            outline: Color::srgb(0.48, 0.38, 0.27),
             scrim: Color::srgba(0.08, 0.05, 0.02, 0.55),
             ..Self::sizes()
         }
@@ -124,6 +139,7 @@ impl GooeySkin {
             accent_text: Color::BLACK,
             danger: Color::WHITE,
             focus_ring: Color::WHITE,
+            outline: Color::WHITE,
             scrim: Color::BLACK,
             text_size: 20.0,
             heading_size: 32.0,
@@ -131,6 +147,7 @@ impl GooeySkin {
             padding: 14.0,
             radius: 8.0,
             border: 3.0,
+            meter_height: 24.0,
             min_target: COMFORT_TARGET_PX,
             text_scale: 1.0,
         }
@@ -157,8 +174,8 @@ impl GooeySkin {
     }
 
     /// Everything about this skin that breaks the contrast, target-size or size rules, in a fixed
-    /// order: low contrast pairs, then a too-small target, then unusable sizes. Empty for a good
-    /// skin; both presets are good.
+    /// order: low contrast pairs, then a too-small target, then a meter too thin for its fill,
+    /// then unusable sizes. Empty for a good skin; both presets are good.
     pub fn problems(&self) -> Vec<SkinProblem> {
         let mut out = Vec::new();
         let surface = rgb(self.solid_surface());
@@ -189,6 +206,18 @@ impl GooeySkin {
                 rgb(self.surface_raised),
                 NON_TEXT_CONTRAST,
             ),
+            (
+                "accent on surface_raised",
+                rgb(self.accent),
+                rgb(self.surface_raised),
+                NON_TEXT_CONTRAST,
+            ),
+            (
+                "outline on surface",
+                rgb(self.outline),
+                surface,
+                NON_TEXT_CONTRAST,
+            ),
         ];
         for (pair, a, b, needed) in pairs {
             let ratio = contrast_ratio(a, b);
@@ -206,11 +235,20 @@ impl GooeySkin {
                 px: self.min_target,
             });
         }
+        let meter = self.meter_height * self.text_scale;
+        let frames = 4.0 * self.border;
+        if meter.is_finite() && meter > 0.0 && frames.is_finite() && meter <= frames {
+            out.push(SkinProblem::MeterTooThin {
+                px: meter,
+                needed: frames,
+            });
+        }
         let positive = [
             ("text_size", self.text_size),
             ("heading_size", self.heading_size),
             ("text_scale", self.text_scale),
             ("min_target", self.min_target),
+            ("meter_height", self.meter_height),
         ];
         let non_negative = [
             ("gap", self.gap),
@@ -266,6 +304,14 @@ pub enum SkinProblem {
         /// The field's name.
         field: &'static str,
     },
+    /// A meter, [`GooeySkin::meter_height`] × [`GooeySkin::text_scale`] high, has no room left for
+    /// its fill inside its frame and gap, 4 × [`GooeySkin::border`]: it would draw empty.
+    MeterTooThin {
+        /// The meter's height.
+        px: f32,
+        /// The frame and gap it must exceed.
+        needed: f32,
+    },
 }
 
 impl fmt::Display for SkinProblem {
@@ -287,7 +333,11 @@ impl fmt::Display for SkinProblem {
             ),
             Self::BadSize { field } => write!(
                 f,
-                "{field} is not a usable size: it must be finite, and above zero for a text size, text_scale or min_target, at least zero otherwise"
+                "{field} is not a usable size: it must be finite, and above zero for a text size, text_scale, min_target or meter_height, at least zero otherwise"
+            ),
+            Self::MeterTooThin { px, needed } => write!(
+                f,
+                "a meter is {px} px high; its frame and gap take {needed} px (4 × border), leaving no room for its fill"
             ),
         }
     }
@@ -325,9 +375,9 @@ pub enum Role {
     Button,
     /// The text inside a button; its colour follows the button's state.
     ButtonText,
-    /// A meter's track.
+    /// A meter's track: a slot framed in [`GooeySkin::outline`].
     Meter,
-    /// A meter's fill.
+    /// A meter's fill, one border inside the track's frame.
     MeterFill,
     /// A tooltip's box.
     Tooltip,
@@ -507,6 +557,7 @@ fn restyle(
 
     let edge = match role {
         Role::Panel | Role::Tooltip => Some(BorderColor::all(skin.surface_raised)),
+        Role::Meter => Some(BorderColor::all(skin.outline)),
         Role::Button if look.focused == Some(entity) => Some(BorderColor::all(skin.focus_ring)),
         Role::Button => Some(BorderColor::all(Color::NONE)),
         _ => None,
@@ -534,7 +585,22 @@ fn restyle(
                 next.min_width = Val::Px(skin.min_target);
                 next.min_height = Val::Px(skin.min_target);
             }
-            Role::Meter => next.border_radius = radius,
+            // A frame marks the whole length at 3:1 against the panel; the fill sits one border
+            // inside it, on the track, because no one colour contrasts with both.
+            Role::Meter => {
+                next.height = Val::Px(skin.meter_height * skin.text_scale);
+                next.min_width = Val::Px(skin.text_size * skin.text_scale * METER_MIN_TEXT_SIZES);
+                next.border = UiRect::all(Val::Px(skin.border));
+                next.padding = UiRect::all(Val::Px(skin.border));
+                next.border_radius = radius;
+            }
+            // CSS's content-edge radius: the track's minus its frame and gap, so the corners are
+            // concentric. Bevy clips a child to a rectangle, never to its parent's curve, so the
+            // fill is rounded itself.
+            Role::MeterFill => {
+                next.border_radius =
+                    BorderRadius::all(Val::Px((skin.radius - 2.0 * skin.border).max(0.0)));
+            }
             Role::Tooltip => {
                 next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.5));
                 next.border = UiRect::all(Val::Px(skin.border));
