@@ -9,6 +9,7 @@ use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 
 use crate::meter::Meter;
 use crate::model::meter_fraction;
+use crate::nav::Dialog;
 use crate::skin::Role;
 
 /// A full-window column that centres its children: the root of a menu screen or a HUD. It is a tab
@@ -158,9 +159,11 @@ pub fn meter(value: f32, max: f32) -> impl Bundle {
     )
 }
 
-/// A modal dialog: a veil over the whole window that centres its children and keeps Tab inside
-/// them. Its contents are yours, in `children![…]`; close it with
-/// `commands.entity(dialog).despawn()`.
+/// A modal dialog: a veil over the whole window that centres its children and holds focus. When it
+/// opens, focus moves to its first button (or to the one carrying Bevy's `AutoFocus`, the way to
+/// pick the least destructive default); Tab, the arrows and the D-pad stay inside it; and when it
+/// closes, focus returns to the button that opened it. Its contents are yours, in `children![…]`;
+/// close it with `commands.entity(dialog).despawn()`.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -180,6 +183,7 @@ pub fn dialog() -> impl Bundle {
             ..default()
         },
         Role::Scrim,
+        Dialog::default(),
         GlobalZIndex(100),
         TabGroup {
             order: 0,
