@@ -62,7 +62,8 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 
 - Arrow keys and the D-pad move focus to the nearest button in that direction (`navigate_by_input`); a pad moves focus, it never steers a cursor.
 - Enter and Space activate the focused button (Bevy's own button handling); the pad's South button does too (`gamepad_select`).
-- Tab and Shift+Tab cycle through a `screen`'s buttons, and only through the open `dialog`'s while one is open.
+- Tab and Shift+Tab cycle through a `screen`'s buttons.
+- An open `dialog` holds focus: focus moves to its first button when it opens, Tab, the arrows and the D-pad cannot leave it, and closing it puts focus back on the button that opened it. Put `AutoFocus` on the dialog's safest choice ("Stay", "Cancel") to start there instead.
 - Put Bevy's `AutoFocus` on the button a screen should start on.
 
 ## Skins
