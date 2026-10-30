@@ -1,6 +1,6 @@
 //! The pad's South button activates the focused button, and never a disabled one.
 
-use bevy::input_focus::InputFocus;
+use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::prelude::*;
 use bevy::ui::InteractionDisabled;
 use bevy_gooey::*;
@@ -13,6 +13,7 @@ fn gamepad_south_activates_the_focused_button() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
         .init_resource::<InputFocus>()
+        .init_resource::<InputFocusVisible>()
         .init_resource::<Count>()
         .add_systems(Update, bevy_gooey::gamepad_select);
     let go = app
