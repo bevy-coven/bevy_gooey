@@ -7,6 +7,10 @@ The home-still sources this crate's design rests on. `docs/research/gooey.md` sa
 - *Do Players Prefer Integrated User Interfaces?* — Llanos & Jørgensen, 2011, DiGRA, doi:10.26503/dl.v2011i1.514
 - *Removing the HUD* — Iacovides et al., 2015, CHI PLAY, doi:10.1145/2793107.2793120
 
+## Perception
+
+- *A century of Gestalt psychology in visual perception: I. Perceptual grouping and figure–ground organization* — Wagemans et al., 2012, Psychological Bulletin, doi:10.1037/a0029333 (similarity grouping: one line weight reads as one family; `docs/research/lines.md`)
+
 ## Accessibility and legibility
 
 - *Future design of accessibility in games: A design vocabulary* — 2019, IJHCS, doi:10.1016/j.ijhcs.2019.06.010
