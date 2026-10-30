@@ -1,9 +1,11 @@
 //! A modal dialog keeps focus: it takes focus when it opens, the arrow keys cannot move it behind
-//! the scrim, and closing the dialog gives it back. Laid out for real in a headless window.
+//! the scrim, and closing the dialog gives it back. A direction press with nothing focused lands
+//! where the screen, or the open dialog, starts. Laid out for real in a headless window.
 
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
-use bevy::input_focus::{AutoFocus, InputFocus};
+use bevy::input_focus::tab_navigation::TabIndex;
+use bevy::input_focus::{AutoFocus, InputFocus, InputFocusVisible};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
@@ -208,4 +210,125 @@ fn an_opening_dialog_takes_focus_and_gives_it_back_when_it_closes() {
     app.world_mut().entity_mut(dialog).despawn();
     settle(&mut app);
     assert_eq!(focus(&app), Some(play));
+}
+
+/// What a click on an empty part of the window does to focus: `bevy_input_focus`'s window
+/// observer clears it.
+fn click_empty_space(app: &mut App) {
+    app.world_mut().resource_mut::<InputFocus>().clear();
+    app.update();
+}
+
+#[test]
+fn a_direction_with_nothing_focused_lands_where_the_screen_starts() {
+    let mut app = app();
+    let [play, options, quit] = menu_screen(&mut app);
+    settle(&mut app);
+    tap(&mut app, KeyCode::ArrowDown);
+    tap(&mut app, KeyCode::ArrowDown);
+    assert_eq!(focus(&app), Some(quit));
+
+    click_empty_space(&mut app);
+    tap(&mut app, KeyCode::ArrowDown);
+    assert_eq!(
+        focus(&app),
+        Some(play),
+        "the first press lands on the screen's AutoFocus widget"
+    );
+    tap(&mut app, KeyCode::ArrowDown);
+    assert_eq!(focus(&app), Some(options), "the next press moves");
+
+    // The focused widget is despawned, as when a game swaps a screen's contents.
+    app.world_mut().entity_mut(options).despawn();
+    app.update();
+    tap(&mut app, KeyCode::ArrowUp);
+    assert_eq!(focus(&app), Some(play));
+}
+
+#[test]
+fn with_no_autofocus_the_first_press_lands_on_the_first_widget() {
+    let mut app = app();
+    let world = app.world_mut();
+    let new_game = world.spawn(button("New game")).id();
+    let load = world.spawn(button("Load")).id();
+    let column = world.spawn(menu()).add_children(&[new_game, load]).id();
+    world.spawn(screen()).add_child(column);
+    settle(&mut app);
+    // Bevy gives the window focus at start-up when nothing has AutoFocus.
+    assert!(focus(&app).is_none_or(|f| f != new_game && f != load));
+
+    tap(&mut app, KeyCode::ArrowUp);
+    assert_eq!(focus(&app), Some(new_game), "first in Tab order");
+}
+
+#[test]
+fn with_a_dialog_open_a_direction_with_nothing_focused_lands_inside_it() {
+    let mut app = app();
+    menu_screen(&mut app);
+    settle(&mut app);
+
+    let [dialog, _, stay] = quit_dialog(&mut app, true);
+    settle(&mut app);
+    click_empty_space(&mut app);
+    tap(&mut app, KeyCode::ArrowDown);
+    assert_eq!(
+        focus(&app),
+        Some(stay),
+        "the dialog's own default, never a button behind the scrim"
+    );
+
+    app.world_mut().entity_mut(dialog).despawn();
+    settle(&mut app);
+    let [_, leave, _] = quit_dialog(&mut app, false);
+    settle(&mut app);
+    click_empty_space(&mut app);
+    tap(&mut app, KeyCode::ArrowLeft);
+    assert_eq!(focus(&app), Some(leave), "no AutoFocus: its first button");
+}
+
+#[test]
+fn a_focused_field_the_host_navigates_itself_keeps_its_arrows() {
+    let mut app = app();
+    menu_screen(&mut app);
+    // A tab stop without directional navigation, as a text field is: its arrows are its own.
+    let field = app
+        .world_mut()
+        .spawn((
+            Node {
+                width: Val::Px(200.0),
+                height: Val::Px(40.0),
+                ..default()
+            },
+            TabIndex(0),
+        ))
+        .id();
+    settle(&mut app);
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(field, bevy::input_focus::FocusCause::Navigated);
+
+    for key in [KeyCode::ArrowLeft, KeyCode::ArrowDown] {
+        tap(&mut app, key);
+        assert_eq!(
+            focus(&app),
+            Some(field),
+            "{key:?} took focus from the field"
+        );
+    }
+}
+
+#[test]
+fn a_dialog_that_takes_focus_shows_it_even_when_the_pointer_opened_it() {
+    let mut app = app();
+    menu_screen(&mut app);
+    settle(&mut app);
+    // A pointer press hides focus, and a click on Quit is what opens the dialog.
+    app.insert_resource(InputFocusVisible(false));
+    let [_, _, stay] = quit_dialog(&mut app, true);
+    settle(&mut app);
+    assert_eq!(focus(&app), Some(stay));
+    assert!(
+        app.world().resource::<InputFocusVisible>().0,
+        "a freshly opened dialog shows which button Enter or South will press"
+    );
 }
