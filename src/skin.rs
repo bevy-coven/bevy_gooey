@@ -360,6 +360,14 @@ struct State {
     scrim: bool,
 }
 
+/// What [`State`] is read from.
+type StateQuery = (
+    Has<Pressed>,
+    Has<InteractionDisabled>,
+    Option<&'static Hovered>,
+    Option<&'static Role>,
+);
+
 /// A widget whose look may have changed since the last run.
 type Restyle = (
     With<Role>,
@@ -387,12 +395,7 @@ pub fn apply_skin(
     changed: Query<Entity, Restyle>,
     mut unpressed: RemovedComponents<Pressed>,
     mut enabled: RemovedComponents<InteractionDisabled>,
-    states: Query<(
-        Has<Pressed>,
-        Has<InteractionDisabled>,
-        Option<&Hovered>,
-        Option<&Role>,
-    )>,
+    states: Query<StateQuery>,
     parents: Query<&ChildOf>,
     children: Query<&Children>,
     mut styled: Query<Styled>,

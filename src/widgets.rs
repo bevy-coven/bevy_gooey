@@ -8,8 +8,8 @@ use bevy::prelude::*;
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 
 use crate::meter::Meter;
-use crate::nav::Dialog;
 use crate::model::meter_fraction;
+use crate::nav::Dialog;
 use crate::skin::Role;
 
 /// A full-window column that centres its children: the root of a menu screen or a HUD. It is a tab

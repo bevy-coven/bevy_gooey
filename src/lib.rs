@@ -15,8 +15,9 @@
 //!   returning a bundle, so they compose inside `children![]` and with [`observe`]; each carries a
 //!   [`Role`] that [`apply_skin`] styles it by.
 //! - Navigation — [`GooeyNavPlugin`]: arrows and the D-pad move focus to the nearest widget
-//!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles,
-//!   and stays inside an open dialog. Enter and Space are Bevy's own button handling.
+//!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles.
+//!   An open [`dialog`] holds focus: it takes it, keeps arrows, D-pad and Tab inside, and gives it
+//!   back to its opener on closing. Enter and Space are Bevy's own button handling.
 //! - Feedback — [`UiFeedback`] is written for every focus move and activation, for the host to
 //!   turn into sound.
 //!

@@ -68,7 +68,10 @@ fn menu_screen(app: &mut App) -> [Entity; 3] {
     let play = world.spawn((button("Play"), AutoFocus)).id();
     let options = world.spawn(button("Options")).id();
     let quit = world.spawn(button("Quit")).id();
-    let column = world.spawn(menu()).add_children(&[play, options, quit]).id();
+    let column = world
+        .spawn(menu())
+        .add_children(&[play, options, quit])
+        .id();
     world.spawn(screen()).add_child(column);
     [play, options, quit]
 }
@@ -125,7 +128,11 @@ fn arrows_never_move_focus_behind_an_open_dialog() {
     settle(&mut app);
     assert_eq!(focus(&app), Some(play));
     tap(&mut app, KeyCode::ArrowDown);
-    assert_eq!(focus(&app), Some(options), "no dialog: arrows reach the menu");
+    assert_eq!(
+        focus(&app),
+        Some(options),
+        "no dialog: arrows reach the menu"
+    );
     tap(&mut app, KeyCode::ArrowDown);
     assert_eq!(focus(&app), Some(quit));
 
@@ -144,7 +151,11 @@ fn arrows_never_move_focus_behind_an_open_dialog() {
     tap(&mut app, KeyCode::ArrowUp);
     assert_eq!(focus(&app), Some(leave), "Up moves within the dialog");
     tap(&mut app, KeyCode::ArrowUp);
-    assert_eq!(focus(&app), Some(leave), "Up from the top stays in the dialog");
+    assert_eq!(
+        focus(&app),
+        Some(leave),
+        "Up from the top stays in the dialog"
+    );
     tap(&mut app, KeyCode::ArrowDown);
     assert_eq!(focus(&app), Some(stay));
     tap(&mut app, KeyCode::Tab);
@@ -177,12 +188,20 @@ fn an_opening_dialog_takes_focus_and_gives_it_back_when_it_closes() {
 
     app.world_mut().entity_mut(dialog).despawn();
     settle(&mut app);
-    assert_eq!(focus(&app), Some(quit), "closing returns focus to the opener");
+    assert_eq!(
+        focus(&app),
+        Some(quit),
+        "closing returns focus to the opener"
+    );
 
     // A host that moves focus itself before closing keeps its choice.
     let [dialog, _, stay] = quit_dialog(&mut app, true);
     settle(&mut app);
-    assert_eq!(focus(&app), Some(stay), "AutoFocus picks the dialog's default");
+    assert_eq!(
+        focus(&app),
+        Some(stay),
+        "AutoFocus picks the dialog's default"
+    );
     app.world_mut()
         .resource_mut::<InputFocus>()
         .set(play, bevy::input_focus::FocusCause::Navigated);

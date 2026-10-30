@@ -83,9 +83,7 @@ pub fn navigate_by_input(
     let candidates: Vec<FocusableArea> = navigable
         .iter()
         .filter(|(entity, _, node, _, visible)| {
-            !node.is_empty()
-                && visible.get()
-                && modal_scope(*entity, &groups, &parents) == scope
+            !node.is_empty() && visible.get() && modal_scope(*entity, &groups, &parents) == scope
         })
         .filter_map(focusable_area)
         .filter_map(|(c, area)| (c == camera).then_some(area))
