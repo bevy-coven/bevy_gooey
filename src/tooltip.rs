@@ -1,17 +1,25 @@
-//! Tooltips: a line of text shown under a widget while the pointer is over it.
+//! Tooltips: a line of text beside a widget while the pointer is over it or it has visible focus.
 
 use bevy::ecs::lifecycle::HookContext;
 use bevy::ecs::world::DeferredWorld;
-use bevy::picking::events::{PointerOut, PointerOver};
+use bevy::input_focus::{InputFocus, InputFocusVisible};
+use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
+use bevy::ui::{ComputedUiRenderTargetInfo, UiGlobalTransform};
+use bevy::ui_widgets::popover::Popover;
 
 use crate::skin::Role;
 
-/// Shows its text in a box under this entity while the pointer is over it.
+/// Shows its text in a box beside this entity while the pointer is over it, or while it has focus
+/// and focus is visible (a keyboard or pad player has moved it), so every input reaches it.
 ///
-/// Adding it spawns the box as a hidden child and observes the pointer on this entity; the box is
-/// styled as [`Role::Tooltip`]. Change the text by editing the box's [`Text`] child, or replace the
-/// entity's widgets.
+/// The box opens across the flow of the entity's parent: to the right of a widget in a column,
+/// below one in a row, on the other side if the window would clip it, so it never covers the next
+/// widget in a menu; a long line wraps to fit the room beside the widget. It sits one
+/// [`crate::GooeySkin::gap`] outside the panel the widget is in (its padding and border), drawn as
+/// a small raised panel with a shadow. Adding it spawns the box as a hidden child, styled as
+/// [`Role::Tooltip`] and placed by Bevy's `Popover`. Change the text by editing the box's [`Text`]
+/// child, or replace the entity's widgets.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -25,41 +33,93 @@ use crate::skin::Role;
 #[component(on_add = tooltip_on_add)]
 pub struct Tooltip(pub String);
 
-/// Marks the box a [`Tooltip`] spawned.
-#[derive(Component)]
-struct TooltipBox;
+/// The box a [`Tooltip`] spawned, a child of the widget it describes: query it to find the box
+/// (its [`Text`] is its child).
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+pub struct TooltipBox {
+    /// The widget's parent lays its children out in a row, so the box opens below or above it
+    /// rather than beside it. [`crate::apply_skin`] places the box from it.
+    pub(crate) in_row: bool,
+    /// The widest gap between the widget and the window's left or right edge, logical px:
+    /// [`crate::apply_skin`] wraps the box to fit in it.
+    pub(crate) room: f32,
+}
 
 fn tooltip_on_add(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     let Some(text) = world.get::<Tooltip>(entity).map(|t| t.0.clone()) else {
         return;
     };
     let mut commands = world.commands();
-    let tip = commands
-        .spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                top: Val::Percent(100.0),
-                left: Val::Px(0.0),
-                display: Display::None,
-                ..default()
-            },
-            Role::Tooltip,
-            GlobalZIndex(200),
-            TooltipBox,
-            ChildOf(entity),
-            children![(Text::new(text), Role::Label)],
-        ))
-        .id();
-    commands
-        .entity(entity)
-        .observe(move |_: On<PointerOver>, mut nodes: Query<&mut Node>| {
-            if let Ok(mut node) = nodes.get_mut(tip) {
-                node.display = Display::Flex;
-            }
-        })
-        .observe(move |_: On<PointerOut>, mut nodes: Query<&mut Node>| {
-            if let Ok(mut node) = nodes.get_mut(tip) {
-                node.display = Display::None;
-            }
-        });
+    // Hover is read from `Hovered`, which `button()` already carries; any other widget gets one.
+    commands.entity(entity).insert_if_new(Hovered::default());
+    commands.spawn((
+        Node {
+            position_type: PositionType::Absolute,
+            display: Display::None,
+            ..default()
+        },
+        Role::Tooltip,
+        Popover::default(),
+        BoxShadow::default(),
+        GlobalZIndex(200),
+        TooltipBox::default(),
+        ChildOf(entity),
+        children![(Text::new(text), Role::Label)],
+    ));
 }
+
+/// Shows each [`Tooltip`] box while its widget is hovered or has visible focus, and hides it
+/// otherwise; records whether the widget sits in a row and how much room the window leaves beside
+/// it, for [`crate::apply_skin`] to place and fit the box. Writes only what changed. Runs in
+/// [`crate::GooeySystems::Style`], before [`crate::apply_skin`].
+pub fn show_tooltips(
+    focus: Option<Res<InputFocus>>,
+    visible: Option<Res<InputFocusVisible>>,
+    widgets: Query<Described, Without<TooltipBox>>,
+    flows: Query<&Node, Without<TooltipBox>>,
+    mut boxes: Query<(&ChildOf, &mut Node, &mut TooltipBox)>,
+) {
+    let focused = visible
+        .is_some_and(|v| v.0)
+        .then(|| focus.and_then(|f| f.get()))
+        .flatten();
+    for (owner, mut node, mut tip) in &mut boxes {
+        let widget = owner.parent();
+        let Ok((hovered, parent, placed)) = widgets.get(widget) else {
+            continue;
+        };
+        let shown = hovered.is_some_and(|h| h.get()) || focused == Some(widget);
+        let display = if shown { Display::Flex } else { Display::None };
+        if node.display != display {
+            node.display = display;
+        }
+        let in_row = parent
+            .and_then(|p| flows.get(p.parent()).ok())
+            .is_some_and(|n| {
+                matches!(
+                    n.flex_direction,
+                    FlexDirection::Row | FlexDirection::RowReverse
+                )
+            });
+        let room = placed.map_or(f32::INFINITY, |(computed, at, target)| {
+            let scale = computed.inverse_scale_factor;
+            let rect = Rect::from_center_size(at.translation * scale, computed.size() * scale);
+            let window = target.logical_size();
+            // Whole pixels, so sub-pixel layout noise never restyles the box.
+            (window.x - rect.max.x).max(rect.min.x).floor()
+        });
+        tip.set_if_neq(TooltipBox { in_row, room });
+    }
+}
+
+/// A widget a tooltip describes: whether the pointer is over it, its parent, and where it is laid
+/// out (its size, its position and the window it is drawn to).
+type Described = (
+    Option<&'static Hovered>,
+    Option<&'static ChildOf>,
+    Option<(
+        &'static ComputedNode,
+        &'static UiGlobalTransform,
+        &'static ComputedUiRenderTargetInfo,
+    )>,
+);

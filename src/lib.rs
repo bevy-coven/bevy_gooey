@@ -17,7 +17,8 @@
 //! - Navigation — [`GooeyNavPlugin`]: arrows and the D-pad move focus to the nearest widget
 //!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles.
 //!   An open [`dialog`] holds focus: it takes it, keeps arrows, D-pad and Tab inside, and gives it
-//!   back to its opener on closing. Enter and Space are Bevy's own button handling.
+//!   back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus, as it
+//!   does under the pointer. Enter and Space are Bevy's own button handling.
 //! - Feedback — [`UiFeedback`] is written for every focus move and activation, for the host to
 //!   turn into sound.
 //!
@@ -90,7 +91,7 @@ pub use model::{
 };
 pub use nav::{Dialog, focus_opened_dialogs, gamepad_select, navigate_by_input};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
-pub use tooltip::Tooltip;
+pub use tooltip::{Tooltip, TooltipBox, show_tooltips};
 pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen};
 
 use bevy::app::PluginGroupBuilder;
@@ -141,7 +142,9 @@ impl Plugin for GooeyStylePlugin {
             .add_observer(feedback::feedback_on_activate)
             .add_systems(
                 Update,
-                (apply_skin, update_meters).in_set(GooeySystems::Style),
+                (show_tooltips, apply_skin, update_meters)
+                    .chain()
+                    .in_set(GooeySystems::Style),
             );
     }
 }

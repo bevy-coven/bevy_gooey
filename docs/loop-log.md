@@ -68,3 +68,52 @@ Take these in order, after any bug and any filed issue:
 **Release: not published.** bevy_gooey is not on crates.io yet (`crates.io/api/v1/crates/bevy_gooey`: 404), and `cargo publish --dry-run` of `1ac93bb` passes, but sib has no crates.io token (`~/.cargo` holds no `credentials.toml`, `CARGO_REGISTRY_TOKEN` is unset). Publishing needs `cargo login` on sib with the owner's token, and the loop does not handle credentials. No `release:` commit and no tag were made, so `## [Unreleased]` still holds 0.1.0's notes. The next pass with a token publishes 0.1.0.
 
 **Cleanup.** Removed `/tmp/g1` (179 MB of captures, the before binary and scratch scripts); `/tmp` went from 354 MB used to 175 MB. No baseline worktree was made: the before binary was a copy of the pre-fix gallery build. `git worktree list` shows only the clone; no earlier pass left anything behind.
+
+## Iteration 2 — 2026-10-30 — a tooltip opens on focus, beside its widget, never over the next one
+
+**Triage.** No open issues on Ladvien/bevy_gooey (`gh issue list`: empty). No parked branches (`wiggum/parked-*`: none). The item is the log's top recorded bug, "the tooltip covers the widget below it". Seen with a pad in hand it was worse: `Tooltip` opened only on `PointerOver`, so a keyboard or pad player never saw one (`/tmp/g2/before/options-focus-1280x720.png`: focus on Options, no tooltip). Both are one widget's defect and were fixed together. Runner-up: the meter fill's square corners (a recorded visual bug, but it costs polish, not information).
+
+**What changed** (`da5c9a8`, `8880a02`, docs `471bd3d`, research `e3f5ddd`):
+- `show_tooltips` (Style set, before `apply_skin`) opens a tooltip while its widget is `Hovered` or has focus with `InputFocusVisible`, and shuts it otherwise. It replaces the two pointer observers. A non-button widget gets a `Hovered` on adding `Tooltip`.
+- `apply_skin` places the box with Bevy's `Popover`, across the container's flow (Right, Left, then Below, Above in a column; Below, Above, then Right, Left in a row), centred on the widget, one `gap` outside the widget's panel, `gap` from the window's edge. It wraps it to at most 24 text sizes wide, or to the room beside the widget in a column. It draws it as a small panel: `solid_surface()` fill, `surface_raised` border, drop shadow in `background`.
+- `TooltipBox` (public) marks the box and records `in_row` and `room`.
+- Assumed decision: placement across the flow, over always-below (covers the next widget in a column) or a fixed description area (a layout the game owns).
+- Gallery hero (`docs/media/gallery.png`) is now a 1280x720 capture with Options focused and its tooltip open; the caption says so.
+
+**Sources.** Craft: Microsoft *XAG 112* ("All aspects of the game, including menu UI's and gameplay, are fully navigable by multiple inputs"). Shipping game: Lars Doucet on the *Defender's Quest DX* gamepad port ("Tooltips -- will players using a controller be at a disadvantage?"; the pad layout "provides all the same tooltip information"). Technical: WCAG 2.1 SC 1.4.13 *Content on Hover or Focus*, and Bevy 0.20 `bevy_ui_widgets/src/popover.rs`. home-still distill answered `500: gpu busy` (4867 MB free < 5000 MB for bge-m3) again. The corpus stem `10.1145_2659796` (*Supporting Novice to Expert Transitions*) is a 40 kB partial conversion with no tooltip content. The searches are under the note's `## Pending index`. `catalog_recent` (200): no new game-UI document, so no corpus commit.
+
+**Rounds** (`/tmp/g2/critique.md`):
+1. Beside the widget at `gap`, but it straddled the panel's border (panel edge x 752, tooltip x 743) and, in a button's `surface_raised` fill, read as a fourth button. FAIL.
+2. One `gap` outside the panel and drawn as a small panel, but at `text_scale` 1.5 the 520 px line fitted neither side, and `Popover` fell back to Below over Quit. FAIL.
+3. Wrapped to the room beside the widget. GREAT.
+
+Flaws left: the wrapped box keeps its full width (about 90 px empty right of "and" at 1.5x); the dark skin's shadow is nearly invisible (background on background); the pointer crossing the 27 px gap closes the tooltip (WCAG *Hoverable* deviation, logged).
+
+**Checklist, before → after** (1280x720 and 2560x1440, dark, parchment, 1.5x, idle and `GOOEY_KEYS=down`):
+- Tooltip on keyboard or pad focus: never → shown beside Options, centred on it (`after/*-options-*.png`).
+- Tooltip over the next widget: flush under Options, over Quit → no overlap with any sibling (`tests/tooltip.rs`), edge 11 px outside the panel (x 763 vs 752).
+- Tooltip text contrast (pixels): dark 14.26:1, parchment 10.24:1.
+- Idle captures: before/after difference only in the moving meter fill (diff bbox x 674–696, y 479–527).
+- Hit targets, focus ring and `problems()` (empty for both presets): unchanged.
+
+**Tests.** `tests/tooltip.rs`, laid out headless:
+- focus opens the tooltip beside the widget, clear of Play and Quit, `gap + padding + border` away and centred; it shuts when focus leaves or focus is not visible;
+- a real pointer move opens and shuts it with focus not visible;
+- at the window's right edge it opens on the left;
+- in a row it opens below, clear of its neighbours.
+
+**mean_ms** (sib, Xvfb, 120 frames): 1280x720, before: dark 24.24, parchment 26.28, 1.5x 26.51, focus on Options 26.70. After: dark 24.91, parchment 24.97, 1.5x 24.85, focus on Options 24.93 / 24.98 / 25.09. 2560x1440, before: 107.9–134.7; after: 94.1–99.4. No regression.
+
+**Gate.** All six steps green (`CARGO_BUILD_JOBS=4`). The first clippy run failed on `type_complexity` in `show_tooltips`, fixed in `8880a02`.
+
+**Release: not published.** sib still has no crates.io token (`~/.cargo/credentials.toml` absent, `CARGO_REGISTRY_TOKEN` unset). `## [Unreleased]` holds 0.1.0's notes.
+
+**Cleanup.** Removed `/tmp/g2` (357 MB: captures, both gallery binaries, scratch scripts). `/tmp` went from 645 MB used to 288 MB. No baseline worktree was made: the before binary was a copy of the starting build. `git worktree list` shows only the clone; earlier passes left nothing.
+
+### Ranked backlog
+
+1. **A meter's fill has square corners inside the rounded track** (recorded visual bug).
+2. **Couch-distance scale**: at 2560x1440 the UI is still 1x (20 px text on a 1440p TV). Scale `UiScale` from window height against 1080p, as a setting. Research: XAG 101.
+3. **Dialog elevation**: a `BoxShadow` and a minimum width on a dialog's panel, reusing the tooltip's shadow recipe, so the dialog reads as a layer.
+4. **Tooltip polish**: balanced wrapping (the box keeps its full max width when wrapped), and a shadow that shows on the dark skin.
+5. `Shortcut { key, pad }` on a button (R5), then `HudDetail` (R1), slider/checkbox/toggle, settings kit, scroll list/tabs/toast, press animation.
