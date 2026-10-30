@@ -81,12 +81,13 @@ the baseline under `/tmp/gN/before/`. Keep a worktree of the starting commit for
 Section 9 says how to name, build and remove that baseline. A baseline left behind costs the next pass
 a build cache's worth of disk, and one with `main` checked out stops anything else checking `main` out.
 
-On **big**, capture on the loop's own display (the unit starts an Xvfb on `:93` and sets `DISPLAY=:93`):
+On **sib** (the loop's host: 16 cores, RTX 3060), capture on the loop's own display (the unit starts an Xvfb on `:93` and sets `DISPLAY=:93`). The unit sets `CARGO_TARGET_DIR`, so the binary is under it, not under `./target`:
 
 ```sh
-GOOEY_FRAMES=120 GOOEY_SHOT=/tmp/gN/before/dark.png ./target/release/examples/gallery
-GOOEY_FRAMES=120 GOOEY_SKIN=parchment GOOEY_SHOT=/tmp/gN/before/parchment.png ./target/release/examples/gallery
-GOOEY_FRAMES=120 GOOEY_TEXT_SCALE=1.5 GOOEY_SHOT=/tmp/gN/before/dark-large.png ./target/release/examples/gallery
+G="$CARGO_TARGET_DIR/release/examples/gallery"
+GOOEY_FRAMES=120 GOOEY_SHOT=/tmp/gN/before/dark.png "$G"
+GOOEY_FRAMES=120 GOOEY_SKIN=parchment GOOEY_SHOT=/tmp/gN/before/parchment.png "$G"
+GOOEY_FRAMES=120 GOOEY_TEXT_SCALE=1.5 GOOEY_SHOT=/tmp/gN/before/dark-large.png "$G"
 ```
 
 - Capture each at two window sizes, 1280x720 and 2560x1440, which the example sets from
@@ -356,8 +357,8 @@ recording of the GIF above it when it shows different objects. Before you push a
 
 ## 9. Clean up when you are done
 
-Worktrees and build directories outside the clone are not free: a `target/` for this crate is tens of GB, big's
-`/tmp` is RAM, and on 2026-10-27 earlier passes had left 37 GB of baseline builds and 5 GB of scratch behind.
+Worktrees and build directories outside the clone are not free: a `target/` for this crate is tens of GB, a
+loop host's `/tmp` may be RAM, and on 2026-10-27 earlier passes had left 37 GB of baseline builds and 5 GB of scratch behind.
 **After you ship and before you write the pass's last log line, whether or not you shipped,** remove what *you*
 made this pass, and list what earlier passes left.
 

@@ -14,7 +14,7 @@ Take these in order, after any bug and any filed issue:
 4. A settings-screen kit for the accessibility options vocabulary: text size, contrast preset, remap row. Source: R2.
 5. Scroll list, tabs and toast.
 6. A moderate press and focus animation. Source: R4, "medium" juice.
-7. A bevy_emerge consumer of `GooeySkin`, filed on bevy_emerge as "Family F13: Game UI skins (`bevy_gooey`)".
+7. A bevy_emerge consumer of `GooeySkin`: filed as [bevy_emerge#147](https://github.com/Ladvien/bevy_emerge/issues/147), "Family F13: Game UI skins (`bevy_gooey`)". It is built in bevy_emerge; this crate's part is to answer any `consumer:bevy_emerge` issue it raises.
 
 ### Known gap, seen while writing slice 1
 
@@ -26,3 +26,4 @@ Take these in order, after any bug and any filed issue:
 
 - `GOOEY_FRAMES=120` stills: dark, parchment and `GOOEY_TEXT_SCALE=1.5`; `mean_ms` 16.66 (vsync-bound) for each.
 - Driven with real key events: Down then Enter on Options switches the skin (`feedback Focus`, `feedback Activate`); Shift+T enlarges every text; Enter on Quit opens the dialog with Stay focused; Tab cycles Leave and Stay only; Stay closes it and focus returns to Quit; Leave exits. Hovering Options shows its tooltip and the hovered fill.
+- The loop runs on **sib** (`wiggum@gooey`, display `:93`, `~/bevy_gooey_loop`, target `~/target/gooey-loop`), moved there from big at setup because big was at load 73 on 24 cores with its swap nearly full. A 120-frame capture there renders (`mean_ms` 23.3 under Xvfb).
