@@ -27,7 +27,7 @@ Doucet, on porting *Defender's Quest* to the pad, lists the risk first: "Tooltip
 
 ## Parameters
 
-- The gap between widget and tooltip is `GooeySkin::gap` (10 px in both presets), the same step a menu puts between its buttons, so a tooltip sits one spacing step away like a sibling. A design default.
+- The tooltip's outer edge sits `gap + padding + border` (27 px in both presets) from its widget's outer edge: one spacing step (`GooeySkin::gap`) outside the panel the widget usually sits in. A design default; see Deviations.
 - The tooltip keeps `gap` from the window's edge (`Popover::window_margin`). A design default.
 - Side order: across the flow first (column → Right, Left; row → Below, Above), then along it. A design default resting on T2.
 - The tooltip is centred on its widget across the main axis (`PopoverAlign::Center`): the eye reads it as attached to that widget, not to its neighbour. A design default.
@@ -35,10 +35,11 @@ Doucet, on porting *Defender's Quest* to the pad, lists the risk first: "Tooltip
 ## Validation targets
 
 - With focus on a widget that has a `Tooltip` and focus visible, its tooltip is displayed; moving focus away hides it (before: never displayed without a pointer; `/tmp/g2/before/options-focus-1280x720.png`).
-- In the gallery's column menu the tooltip's rectangle intersects no other button and is exactly `gap` px from its widget (before: flush against the widget's bottom edge, covering the next one).
+- In the gallery's column menu the tooltip's rectangle intersects no other button and its edge is `gap + padding + border` px from its widget, one `gap` outside the panel (before: flush against the widget's bottom edge, covering the next one).
 - A widget at the window's right edge opens its tooltip to its left, inside the window.
 - In a row the tooltip opens below its widget.
-- Tooltip text against its fill: ≥ 4.5:1 (it is `text` on `surface_raised`, already checked by `problems()`).
+- Tooltip text against its fill: ≥ 4.5:1 (it is `text` on `solid_surface()`, the opaque panel fill, already checked by `problems()`).
+- At `text_scale` 1.5 in a centred menu the tooltip still opens beside the widget (wrapped), not over the next one.
 - No measurable frame-time cost: one pass over the tooltips per frame, writing only on a change.
 
 ## What great looks like
@@ -49,6 +50,9 @@ On a pad, the player lands on "Options" and the line "Sound, controls and displa
 
 - WCAG 1.4.13 *Hoverable* ("the pointer can be moved over the additional content without the additional content disappearing"): the tooltip is a child of its widget, so hovering it keeps it open, but the pointer crosses the `gap` on the way and the tooltip closes there. The tooltip holds only text, never a control. A design default.
 - WCAG 1.4.13 *Dismissible*: no dismiss key. T2 makes the tooltip obscure nothing, the exception the criterion names.
+- Changed after the first captures: the gap was planned as `gap` (10 px) from the widget. At 10 px the tooltip straddled the gallery's panel border (panel edge at x 752, tooltip from x 743), which read as a box cut through another box's frame; it now opens one `gap` outside the panel (tooltip edge at x 763). Measured from the widget, that is `gap + padding + border`. `Popover` measures from inside the widget's border, so `apply_skin` passes `gap + padding + 2 × border`.
+- Changed after the first captures: the tooltip's fill was `surface_raised`, a button's resting fill, so the open tooltip read as a fourth button. It is now drawn as a small panel: `solid_surface()` with a `surface_raised` border of `border` px, `padding` × `padding / 2` inside, and a drop shadow in `background` at 0.7 alpha (y offset `2 × border`, blur `padding`). A design default.
+- Changed after the first captures: at `text_scale` 1.5 the one-line tooltip (≈ 520 px) fitted neither side of the centred menu, so `Popover` fell back to Below and covered Quit (`/tmp/g2/after/dark-large-options-1280x720.png`, first round). The box is now at most 24 text sizes wide (about 40 characters, a comfortable line) and, in a column, no wider than the room the window leaves on the widget's roomier side; under 8 text sizes of room it keeps the 24-size measure and falls back. A design default.
 
 ## Pending index
 
