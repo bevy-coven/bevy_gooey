@@ -14,6 +14,9 @@ use crate::model::{
 };
 use crate::tooltip::TooltipBox;
 
+/// A meter's least length, in meter heights: 9 × 18 px = 162 px at the default size.
+const METER_MIN_LENGTH: f32 = 9.0;
+
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
 ///
@@ -49,7 +52,8 @@ pub struct GooeySkin {
     pub text: Color,
     /// The text of a disabled button.
     pub text_muted: Color,
-    /// A pressed button and a meter's fill.
+    /// A pressed button and a meter's fill; checked against [`GooeySkin::surface_raised`], the
+    /// meter's track, at the 3:1 non-text minimum.
     pub accent: Color,
     /// Text drawn on [`GooeySkin::accent`].
     pub accent_text: Color,
@@ -69,8 +73,12 @@ pub struct GooeySkin {
     pub padding: f32,
     /// The corner radius of panels, buttons, meters and tooltips, logical px.
     pub radius: f32,
-    /// The border width of panels and buttons, logical px. A button's focus ring is drawn in it.
+    /// The border width of panels and buttons, logical px. A button's focus ring is drawn in it,
+    /// and a meter's fill sits this far inside its track.
     pub border: f32,
+    /// A meter's height, logical px, before [`GooeySkin::text_scale`]: the HUD grows with the
+    /// player's size option, not only its text.
+    pub meter_height: f32,
     /// The least width and height of a button, logical px.
     pub min_target: f32,
     /// A player option: every text size is multiplied by it.
@@ -131,6 +139,7 @@ impl GooeySkin {
             padding: 14.0,
             radius: 8.0,
             border: 3.0,
+            meter_height: 18.0,
             min_target: COMFORT_TARGET_PX,
             text_scale: 1.0,
         }
@@ -189,6 +198,12 @@ impl GooeySkin {
                 rgb(self.surface_raised),
                 NON_TEXT_CONTRAST,
             ),
+            (
+                "accent on surface_raised",
+                rgb(self.accent),
+                rgb(self.surface_raised),
+                NON_TEXT_CONTRAST,
+            ),
         ];
         for (pair, a, b, needed) in pairs {
             let ratio = contrast_ratio(a, b);
@@ -211,6 +226,7 @@ impl GooeySkin {
             ("heading_size", self.heading_size),
             ("text_scale", self.text_scale),
             ("min_target", self.min_target),
+            ("meter_height", self.meter_height),
         ];
         let non_negative = [
             ("gap", self.gap),
@@ -534,7 +550,20 @@ fn restyle(
                 next.min_width = Val::Px(skin.min_target);
                 next.min_height = Val::Px(skin.min_target);
             }
-            Role::Meter => next.border_radius = radius,
+            Role::Meter => {
+                let height = skin.meter_height * skin.text_scale;
+                next.height = Val::Px(height);
+                next.min_width = Val::Px(height * METER_MIN_LENGTH);
+                next.padding = UiRect::all(Val::Px(skin.border));
+                next.border_radius = radius;
+            }
+            // CSS's inner radius: the track's minus the inset, so the corners are concentric.
+            // Bevy clips a child to a rectangle, never to its parent's curve, so the fill is
+            // rounded itself.
+            Role::MeterFill => {
+                next.border_radius =
+                    BorderRadius::all(Val::Px((skin.radius - skin.border).max(0.0)));
+            }
             Role::Tooltip => {
                 next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.5));
                 next.border = UiRect::all(Val::Px(skin.border));

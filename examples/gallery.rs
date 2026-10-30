@@ -5,7 +5,8 @@
 //!   scale; **Quit** opens a modal dialog that holds focus (Stay first; Tab, arrows and the D-pad
 //!   stay inside it; closing it puts focus back on Quit); focusing or hovering **Options** shows
 //!   its tooltip beside it (`GOOEY_KEYS=down` stages it).
-//! - The health meter drains and refills. Each `UiFeedback` is logged where a game would play a sound.
+//! - The health meter drains and refills (`GOOEY_HEALTH=<value>` holds it at that value instead).
+//!   Each `UiFeedback` is logged where a game would play a sound.
 //!
 //! Capture mode, for a still and a frame time: `GOOEY_FRAMES=<n>` saves a screenshot at frame `n` to
 //! `GOOEY_SHOT` (default `gallery.png`), prints `gooey: frames <n> mean_ms <x>` (the mean frame time
@@ -25,6 +26,10 @@ use bevy_gooey::*;
 /// The health meter.
 #[derive(Component)]
 struct Health;
+
+/// `GOOEY_HEALTH`: the value the meter holds instead of draining, for a still.
+#[derive(Resource)]
+struct HeldHealth(Option<f32>);
 
 /// The open Quit dialog.
 #[derive(Component)]
@@ -83,6 +88,11 @@ fn main() {
     .insert_resource(ClearColor(skin.background))
     .insert_resource(skin)
     .insert_resource(InputFocusVisible(true))
+    .insert_resource(HeldHealth(
+        std::env::var("GOOEY_HEALTH")
+            .ok()
+            .and_then(|s| s.parse().ok()),
+    ))
     .add_systems(Startup, setup)
     .add_systems(
         Update,
@@ -206,9 +216,18 @@ fn close_quit_dialog(
     }
 }
 
-/// The meter drains by 10 a second and refills when empty.
-fn drain_health(time: Res<Time>, mut meters: Query<&mut Meter, With<Health>>) {
+/// The meter drains by 10 a second and refills when empty, or holds `GOOEY_HEALTH`.
+fn drain_health(
+    time: Res<Time>,
+    held: Res<HeldHealth>,
+    mut meters: Query<&mut Meter, With<Health>>,
+) {
     for mut meter in &mut meters {
+        if let Some(value) = held.0 {
+            let max = meter.max;
+            meter.set_if_neq(Meter { value, max });
+            continue;
+        }
         meter.value -= 10.0 * time.delta_secs();
         if meter.value <= 0.0 {
             meter.value = meter.max;
