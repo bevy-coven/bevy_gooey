@@ -128,8 +128,10 @@ pub fn button(text: impl Into<String>) -> impl Bundle {
     )
 }
 
-/// A HUD meter (health, stamina, progress): a track with a fill `value / max` of its width. Change
-/// its [`Meter`] component to move it.
+/// A HUD meter (health, stamina, progress): a track with a fill `value / max` of its length, drawn
+/// inside it with concentric rounded corners. It is [`crate::GooeySkin::meter_height`] high times
+/// the text scale, so it grows with the player's size option. Change its [`Meter`] component to
+/// move it.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -140,12 +142,7 @@ pub fn button(text: impl Into<String>) -> impl Bundle {
 /// ```
 pub fn meter(value: f32, max: f32) -> impl Bundle {
     (
-        Node {
-            height: Val::Px(14.0),
-            min_width: Val::Px(160.0),
-            overflow: Overflow::clip(),
-            ..default()
-        },
+        Node::default(),
         Role::Meter,
         Meter { value, max },
         children![(

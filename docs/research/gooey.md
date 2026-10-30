@@ -54,7 +54,7 @@ Not from home-still: W3C, *Web Content Accessibility Guidelines (WCAG) 2.2* — 
 |danger|srgb(0.86,0.27,0.24)|srgb(0.70,0.12,0.10)|
 |focus_ring|srgb(0.45,0.78,1.0)|srgb(0.12,0.38,0.55)|
 |scrim|srgba(0,0,0,0.6)|srgba(0.08,0.05,0.02,0.55)|
-|sizes|text 20, heading 32, gap 10, padding 14, radius 8, border 3, min_target 44, text_scale 1.0|same|
+|sizes|text 20, heading 32, gap 10, padding 14, radius 8, border 3, meter_height 18, min_target 44, text_scale 1.0|same|
 
 ## Validation targets
 
@@ -65,6 +65,7 @@ WCAG contrast of the presets (relative luminance, `surface` composited over `bac
 |text on surface|14.20|9.80|
 |text on surface_raised|10.23|8.18|
 |text on hovered button|5.16|4.92|
+|accent on surface_raised (meter fill on its track, 3:1)|6.04|4.68|
 |accent_text on accent|9.42|7.38|
 |focus_ring on surface_raised|6.32|3.65|
 
