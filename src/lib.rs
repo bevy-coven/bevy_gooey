@@ -75,7 +75,10 @@
 //! Sizes are logical pixels at a window whose shorter side is
 //! [`UiScaleSettings::reference_short_side`] (720). [`GooeyScalePlugin`] sets Bevy's `UiScale` from
 //! the window, so a 1920x1080 window draws them at 1.5x; a host that drives `UiScale` itself leaves
-//! that plugin out (`GooeyPlugins.build().disable::<GooeyScalePlugin>()`).
+//! that plugin out (`GooeyPlugins.build().disable::<GooeyScalePlugin>()`). Line weights (borders,
+//! the focus ring, a meter's frame and gap) are the exception to "multiplied": they are drawn a
+//! whole number of device pixels wide at whatever scale the node has, rounded down
+//! ([`snap_line_width`]), so each is one weight on all four sides.
 
 #![warn(missing_docs)]
 
@@ -94,7 +97,7 @@ pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
-    meter_fraction, relative_luminance, window_ui_scale,
+    meter_fraction, relative_luminance, snap_line_width, window_ui_scale,
 };
 pub use nav::{Dialog, focus_opened_dialogs, gamepad_select, navigate_by_input};
 pub use scale::{UiScaleSettings, scale_with_window};

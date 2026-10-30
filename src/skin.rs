@@ -6,11 +6,12 @@ use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{FontSize, FontSource};
-use bevy::ui::{InteractionDisabled, Pressed};
+use bevy::ui::{ComputedUiRenderTargetInfo, InteractionDisabled, Pressed};
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 
 use crate::model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
+    snap_line_width,
 };
 use crate::tooltip::TooltipBox;
 
@@ -78,7 +79,9 @@ pub struct GooeySkin {
     /// The corner radius of panels, buttons, meters and tooltips, logical px.
     pub radius: f32,
     /// The border width of panels and buttons, logical px. A button's focus ring is drawn in it,
-    /// and a meter's track is framed this wide, with its fill this far inside the frame.
+    /// and a meter's track is framed this wide, with its fill this far inside the frame. Drawn as a
+    /// whole number of device pixels at any scale, rounded down (at least one), so a line is the
+    /// same weight on every side: [`snap_line_width`].
     pub border: f32,
     /// A meter's height, frame included, logical px, before [`GooeySkin::text_scale`]: the HUD
     /// grows with the player's size option, not only its text. It must leave room for a fill
@@ -398,6 +401,7 @@ type Styled = (
         &'static mut Popover,
         &'static mut BoxShadow,
     )>,
+    Option<&'static ComputedUiRenderTargetInfo>,
 );
 
 /// Every input a widget's look depends on, read once per run of [`apply_skin`].
@@ -434,16 +438,19 @@ type Restyle = (
         Changed<Hovered>,
         Changed<InteractionDisabled>,
         Changed<TooltipBox>,
+        Changed<ComputedUiRenderTargetInfo>,
     )>,
 );
 
 /// Styles every entity with a [`Role`] from [`GooeySkin`] and [`GooeyFonts`]: the one place
 /// widgets are styled. Runs in [`crate::GooeySystems::Style`].
 ///
-/// A changed skin or font restyles every widget; otherwise only widgets whose role, press, hover or
-/// disabled state changed are restyled (and every button when focus moves), in the frame the change
-/// happens. A changed skin that fails [`GooeySkin::problems`] logs one warning per problem and is
-/// applied anyway.
+/// A changed skin or font restyles every widget; otherwise only widgets whose role, press, hover,
+/// disabled state or scale changed are restyled (and every button when focus moves), in the frame
+/// the change happens. Lines are drawn at the scale Bevy last computed for the node, so the frame a
+/// window is resized draws them at the old scale's snapping and the next frame at the new one's. A
+/// changed skin that fails [`GooeySkin::problems`] logs one warning per problem and is applied
+/// anyway.
 #[allow(clippy::too_many_arguments)]
 pub fn apply_skin(
     skin: Res<GooeySkin>,
@@ -521,7 +528,7 @@ pub fn apply_skin(
 }
 
 fn restyle(
-    (entity, role, node, background, border, text_color, text_font, tooltip): bevy::ecs::query::QueryItem<
+    (entity, role, node, background, border, text_color, text_font, tooltip, target): bevy::ecs::query::QueryItem<
         '_,
         '_,
         Styled,
@@ -533,6 +540,9 @@ fn restyle(
     let skin = look.skin;
     let scaled = |size: f32| FontSize::Px(size * skin.text_scale);
     let tip = tooltip.as_ref().map(|(tip, ..)| **tip);
+    // Every line weight (borders, the focus ring, the meter's frame and gap) on whole device
+    // pixels at the node's scale, so it is one weight on every side wherever the node lands.
+    let line = snap_line_width(skin.border, target.map_or(1.0, |t| t.scale_factor()));
     let fill = match role {
         Role::Panel if parent.is_some_and(|p| p.scrim) => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
@@ -572,40 +582,39 @@ fn restyle(
         match role {
             Role::Panel => {
                 next.padding = UiRect::all(Val::Px(skin.padding));
-                next.border = UiRect::all(Val::Px(skin.border));
+                next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.row_gap = Val::Px(skin.gap);
             }
             Role::Menu => next.row_gap = Val::Px(skin.gap),
             Role::Button => {
-                next.border = UiRect::all(Val::Px(skin.border));
+                next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding =
                     UiRect::axes(Val::Px(skin.padding * 1.5), Val::Px(skin.padding * 0.6));
                 next.min_width = Val::Px(skin.min_target);
                 next.min_height = Val::Px(skin.min_target);
             }
-            // A frame marks the whole length at 3:1 against the panel; the fill sits one border
+            // A frame marks the whole length at 3:1 against the panel; the fill sits one line
             // inside it, on the track, because no one colour contrasts with both.
             Role::Meter => {
                 next.height = Val::Px(skin.meter_height * skin.text_scale);
                 next.min_width = Val::Px(skin.text_size * skin.text_scale * METER_MIN_TEXT_SIZES);
-                next.border = UiRect::all(Val::Px(skin.border));
-                next.padding = UiRect::all(Val::Px(skin.border));
+                next.border = UiRect::all(Val::Px(line));
+                next.padding = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
             }
             // CSS's content-edge radius: the track's minus its frame and gap, so the corners are
             // concentric. Bevy clips a child to a rectangle, never to its parent's curve, so the
             // fill is rounded itself.
             Role::MeterFill => {
-                next.border_radius =
-                    BorderRadius::all(Val::Px((skin.radius - 2.0 * skin.border).max(0.0)));
+                next.border_radius = BorderRadius::all(Val::Px((skin.radius - 2.0 * line).max(0.0)));
             }
             Role::Tooltip => {
                 next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.5));
-                next.border = UiRect::all(Val::Px(skin.border));
+                next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.max_width = Val::Px(tooltip_width(skin, tip.unwrap_or_default()));
+                next.max_width = Val::Px(tooltip_width(skin, tip.unwrap_or_default(), line));
             }
             _ => {}
         }
@@ -644,7 +653,7 @@ fn restyle(
         // One spacing step outside the panel a widget usually sits in (its padding and border), so
         // the tooltip never straddles that panel's edge. `Popover` measures from inside the
         // widget's border, so that border is added once more.
-        let gap = skin.gap + skin.padding + skin.border * 2.0;
+        let gap = skin.gap + skin.padding + line * 2.0;
         let next = tooltip_placement(gap, skin.gap, tip.in_row);
         if *popover != next {
             *popover = next;
@@ -664,14 +673,14 @@ fn restyle(
 /// narrowed to the room the window leaves beside a widget in a column so the tooltip wraps there
 /// instead of falling back over the next widget. Below 8 text sizes of room, wrapping would make
 /// a ribbon of single words, so the measure stands and `Popover` takes the next side.
-fn tooltip_width(skin: &GooeySkin, tip: TooltipBox) -> f32 {
+fn tooltip_width(skin: &GooeySkin, tip: TooltipBox, line: f32) -> f32 {
     let size = skin.text_size * skin.text_scale;
     let measure = size * 24.0;
     if tip.in_row {
         return measure;
     }
     // The box's outer edge sits `gap + padding + border` from the widget, and `gap` from the window.
-    let fit = tip.room - (skin.gap + skin.padding + skin.border) - skin.gap;
+    let fit = tip.room - (skin.gap + skin.padding + line) - skin.gap;
     if fit >= size * 8.0 {
         measure.min(fit)
     } else {
