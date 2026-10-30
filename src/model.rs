@@ -1,9 +1,10 @@
-//! The engine-free maths under the skin: contrast, compositing, meter fill and the interface's
-//! scale against the window.
+//! The engine-free maths under the skin: contrast, compositing, meter fill, the interface's scale
+//! against the window and line weights on whole device pixels.
 //!
 //! Plain functions over `[r, g, b]` arrays in sRGB and plain sizes, testable without an app.
 //! [`crate::GooeySkin::problems`] is built on them, and a host or an editor may call them to check
-//! its own colours; [`crate::scale_with_window`] on [`window_ui_scale`].
+//! its own colours; [`crate::scale_with_window`] on [`window_ui_scale`]; [`crate::apply_skin`] on
+//! [`snap_line_width`].
 
 /// The least contrast body text may have against its background: WCAG 2.2, success criterion 1.4.3.
 pub const TEXT_CONTRAST: f32 = 4.5;
@@ -93,6 +94,47 @@ pub fn window_ui_scale(
     (reference_short_side > 0.0 && scale > 0.0 && ui > 0.0 && ui.is_finite()).then_some(ui)
 }
 
+/// How close to a whole device pixel a line already is to count as that pixel: a thousandth.
+const SNAP_TOLERANCE: f32 = 1.0e-3;
+
+/// A line weight `length` (logical px) snapped so it draws as a whole number of device pixels at
+/// `scale` device pixels per logical px: CSS's "snap a length as a border width". Above one device
+/// pixel it rounds down, below one it rounds up to one, and zero stays zero. Returns logical px.
+///
+/// Bevy lays a node out at `scale × length` and rounds each edge from the node's position, so a
+/// 4.5 px border draws 4 px on one side and 5 px on another; a whole-pixel border draws the same on
+/// every side. The result is chosen so that `scale * result`, as `f32`, is exactly the whole number
+/// wherever an `f32` allows it, and otherwise the least length above it, never below.
+///
+/// A length or scale that is not finite and above zero is returned unchanged.
+///
+/// ```
+/// // 3 px at 1.5x would be 4.5 device px: it is drawn 4.
+/// let line = bevy_gooey::snap_line_width(3.0, 1.5);
+/// assert_eq!(line * 1.5, 4.0);
+/// ```
+pub fn snap_line_width(length: f32, scale: f32) -> f32 {
+    let usable = |x: f32| x.is_finite() && x > 0.0;
+    if !usable(length) || !usable(scale) {
+        return length;
+    }
+    let device = (length * scale + SNAP_TOLERANCE).floor().max(1.0);
+    let mut logical = device / scale;
+    // Division and multiplication each round, so step by ulps until the product is exact, or
+    // failing that, the least one above: a product an ulp short rounds a pixel short.
+    for _ in 0..4 {
+        let drawn = logical * scale;
+        if drawn < device {
+            logical = logical.next_up();
+        } else if drawn > device && logical.next_down() * scale >= device {
+            logical = logical.next_down();
+        } else {
+            break;
+        }
+    }
+    logical
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,5 +179,57 @@ mod tests {
         assert_eq!(window_ui_scale(1280.0, 720.0, 720.0, 0.0), None);
         assert_eq!(window_ui_scale(1280.0, 720.0, f32::NAN, 1.0), None);
         assert_eq!(window_ui_scale(1280.0, 720.0, 720.0, f32::INFINITY), None);
+    }
+
+    #[test]
+    fn a_line_rounds_down_to_whole_device_pixels_and_never_below_one() {
+        // The default 3 px border at the window scales the crate draws.
+        let device = |length: f32, scale: f32| snap_line_width(length, scale) * scale;
+        assert_eq!(device(3.0, 1.0), 3.0);
+        assert_eq!(device(3.0, 800.0 / 720.0), 3.0);
+        assert_eq!(device(3.0, 1.25), 3.0);
+        assert_eq!(device(3.0, 1.5), 4.0);
+        assert_eq!(device(3.0, 2.0), 6.0);
+        assert_eq!(device(3.0, 3.0), 9.0);
+        // Under one device pixel: one. Zero: none.
+        assert_eq!(device(0.25, 1.0), 1.0);
+        assert_eq!(device(1.0, 0.5), 1.0);
+        assert_eq!(snap_line_width(0.0, 1.5), 0.0);
+        // Already whole, within float noise: kept, not rounded a pixel down.
+        assert_eq!(device(4.0 / 1.5, 1.5), 4.0);
+    }
+
+    #[test]
+    fn a_snapped_line_is_never_a_hair_short_of_its_pixel() {
+        // An ulp short of `n` is what Bevy's rounding turns into `n − 1` on a half-pixel edge.
+        for height in 360..=4320 {
+            let scale = height as f32 / 720.0;
+            for length in [1.0, 2.0, 3.0, 5.0, 8.0] {
+                let drawn = snap_line_width(length, scale) * scale;
+                let whole = (length * scale + 1.0e-3).floor().max(1.0);
+                assert!(
+                    drawn >= whole && drawn - whole < 1.0e-5,
+                    "{length} px at {height} px tall draws {drawn}"
+                );
+            }
+        }
+        // Exact at the common window heights.
+        for height in [720, 768, 800, 900, 1050, 1080, 1200, 1440, 1600, 2160] {
+            let scale = height as f32 / 720.0;
+            let drawn = snap_line_width(3.0, scale) * scale;
+            assert_eq!(
+                drawn,
+                drawn.floor(),
+                "3 px at {height} px tall draws {drawn}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_unusable_length_or_scale_is_left_alone() {
+        assert_eq!(snap_line_width(-3.0, 1.5), -3.0);
+        assert!(snap_line_width(f32::NAN, 1.5).is_nan());
+        assert_eq!(snap_line_width(3.0, 0.0), 3.0);
+        assert_eq!(snap_line_width(3.0, f32::INFINITY), 3.0);
     }
 }
