@@ -1,0 +1,8 @@
+# Screen size
+
+`GooeyScalePlugin` (in `GooeyPlugins`) sets Bevy's `UiScale` from the window's shorter side, so every widget, gap, border and line of text keeps its share of the screen: the skin's sizes are what a 1280x720 window shows, a 1920x1080 window draws them at 1.5x and a 2560x1440 one at 2x. The default text then stays above the Xbox Accessibility Guidelines' console minimum (26 px at 1080p, 52 px at 4K) on any screen. `UiScale` multiplies every `Val::Px`, so your own UI nodes scale with the crate's.
+
+- `UiScaleSettings { reference_short_side, scale }`: the window size at which the skin's sizes are drawn as they are (720; a game designed at 1080p sets 1080), and the player's interface size on top (1.0). `GooeySkin::text_scale` enlarges text alone; `scale` enlarges everything.
+- A minimised window keeps the last scale.
+- Every line (a panel's or a button's border, the focus ring, a meter's frame and the gap round its fill) is drawn a whole number of device pixels wide, rounded down as CSS rounds a border, so it is one weight on all four sides at any scale: a 3 px border is 4 px at 1920x1080 (1.5x) and 3 px at 1280x800 (1.11x), and the meter's fill sits centred in its slot. `snap_line_width` is the rule.
+- The plugin owns `UiScale`. To drive it yourself, leave the plugin out: `GooeyPlugins.build().disable::<GooeyScalePlugin>()`.

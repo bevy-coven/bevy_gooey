@@ -2,6 +2,8 @@
 
 The game-UI kit: a skin as data, ready-made game widgets (screen, panel, menu, heading, label, button, HUD meter, toggle, choice, slider, tooltip, modal dialog), keyboard and gamepad navigation and UI feedback, on Bevy 0.20's headless widgets (`bevy_ui_widgets`) and input focus (`bevy_input_focus`). Its design rules and their sources are in `docs/research/gooey.md`.
 
+README and docs follow https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
+
 ## Force pushes and deletions need the user's express permission
 
 Never do any of the following unless the user has approved that specific action, by name, in the current conversation. A loop brief, a skill, a standing instruction such as "commit, push, PR, merge", or an earlier session's approval is not permission.

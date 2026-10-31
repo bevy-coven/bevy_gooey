@@ -1,0 +1,78 @@
+# What a host touches
+
+This page is the list a game needs: which resource, component and system of the crate it writes or
+reads, and which it only sees because `GooeyPlugins` added it. Every item here is exported from the
+crate root.
+
+## Settings, as data
+
+| type | what it holds | where it lives |
+|---|---|---|
+| `GooeySkin` | every colour and size, and the player's `text_scale` | a resource, read by `apply_skin` |
+| `GooeyFonts` | the handles of the host's body and heading fonts | a resource |
+| `UiScaleSettings` | `reference_short_side` and the player's `scale` | a resource, read by `scale_with_window` |
+| `ToastSettings` | `anchor`, `max_visible`, `base_seconds`, `chars_per_second`, `duration_scale`, `fade_seconds` | a resource, read by `update_toasts` |
+| `Meter` | `value` and `max` | a component on a `meter()` |
+
+All four are serde data under the `serde` feature except `GooeyFonts`, which holds asset handles.
+
+## Components a game spawns or marks
+
+- `Meter { value, max }` — put it on the entity a `meter()` bundle returned to drive that bar.
+- `ListView { rows }` — the scrolling viewport of a `list()`, the list's first child. Set its
+  `ScrollPosition` to scroll from code, or its `rows` to change how many rows show.
+- `ChoiceValue(usize)` and `ChoiceCount(usize)` — a `choice`'s selected index and its number of options.
+  Write a `ChoiceValue` to move the choice from code (no `ValueChange` comes back for that); read it to
+  know where the choice stands.
+- `Tooltip(String)` — the hint on any widget. Insert, remove or edit it and the open box follows.
+- `Toast { .. }` — the component `toast()` and `toast_alert()` return; despawn the entity to take one
+  back sooner.
+- `Dialog` — the component `dialog()` returns, for a game that wants to find the open one.
+
+Bevy's own types come through the crate so a host never adds a second copy: `Checked`, `SliderValue`,
+`SliderRange`, `SliderStep`, `ValueChange`, `Activate` and `observe`.
+
+## Messages
+
+`UiFeedback { entity, kind: UiFeedbackKind::Focus | Activate }` is written once for every focus move onto
+a widget and every activation, flip or change of option. A game reads it with `MessageReader<UiFeedback>`
+and plays a sound; the crate plays none. See [feedback](feedback.md).
+
+## Systems, for a host that registers its own
+
+`GooeyStylePlugin` and `GooeyNavPlugin` are independent, and `GooeyPlugins` is both plus
+`GooeyScalePlugin`. A host that wants the systems and not the plugins registers them itself, in
+`GooeySystems::{Navigate, Style}`, chained Navigate before Style:
+
+| system | set | what it does |
+|---|---|---|
+| `navigate_by_input` | Navigate | arrows and the D-pad move focus to the nearest widget; takes `FocusScopes` |
+| `gamepad_select` | Navigate | South activates, flips a toggle and cycles a choice |
+| `gamepad_adjust` | Navigate | the D-pad steps a focused slider or choice, repeating on real time |
+| `focus_opened_dialogs` | Navigate | an open dialog takes focus and gives it back on closing |
+| `feedback_on_focus` | Navigate | writes `UiFeedback::Focus` when focus moves onto a widget |
+| `scroll_to_focus` | Navigate | a list follows the focus on one of its rows |
+| `page_lists` | Navigate | PageUp, PageDown and the pad's triggers move focus a viewport |
+| `show_tooltips` | Style | a hovered or visibly focused widget's tooltip opens |
+| `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
+| `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
+| `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
+| `update_meters` | Style | a meter's fill and frame from its `Meter` |
+| `update_lists` | Style | a list's rail, only on a change |
+| `update_toasts` | Style | the toast clocks, the stack's order and its cap |
+| `apply_skin` | Style | styles every widget carrying a `Role`, and restyles it when the skin changes |
+| `scale_with_window` | Style | keeps `UiScale` at the window's share (`GooeyScalePlugin` adds it) |
+
+The tooltip's and the toast's component hooks are registered by the components themselves, so they come
+with the spawn. The resources and the `UiFeedback` message are `GooeyNavPlugin`'s
+(`init_resource::<InputFocus>()`, `init_resource::<InputFocusVisible>()`,
+`add_message::<UiFeedback>()`); a host that registers the systems by hand adds those three itself.
+
+## The engine-free maths
+
+`model` holds the crate's arithmetic with no `bevy` in it, so a host can run it in its own tests or
+use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `meter_fraction`,
+`slider_fraction`, `slider_text`, `list_height`, `scroll_to_reveal`, `snap_to_row`, `page_target`,
+`snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
+`repeat_steps`, `choice_step`, `choice_next`, and the constants `TEXT_CONTRAST`,
+`NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY` and `PAD_REPEAT_RATE`.

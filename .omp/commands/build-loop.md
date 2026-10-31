@@ -5,6 +5,8 @@ argument-hint: "[optional focus, e.g. 'gamepad only']"
 
 One run of this command is one iteration of a long-running loop on bevy_gooey, a Bevy 0.20 crate that makes game interfaces easy: a skin, ready-made game widgets (buttons, panels, menus, HUD meters, tooltips, modal dialogs), keyboard and gamepad navigation and UI feedback, on Bevy's own headless widgets. Do ONE improvement per iteration, the single most valuable one from a game developer's point of view, finish it completely, then stop.
 
+README and docs follow https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
+
 This crate must be easy AND good-looking AND fast: a widget that needs more than a few lines to use is not done, one that looks merely fine next to shipping games is not done, and one that costs frame time a HUD should not cost is not done. The judgement here is a game UI designer's: legibility at couch distance, a focus that is always visible, hit targets a thumb can hit, one visual language across every screen. Its API is the family's: flat re-exports and no prelude, independent plugins in `GooeyPlugins`, systems in `GooeySystems`, settings as serde data, engine-free maths in `model`. Its design rules are in `docs/research/gooey.md`.
 
 You do all the work yourself, including looking at the images and judging them. Do not delegate
