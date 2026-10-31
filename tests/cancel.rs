@@ -394,7 +394,13 @@ fn a_back_press_changes_no_control() {
     let pad = plug_in_pad(&mut app);
     settle(&mut app);
 
-    for control in [volume, quality, subtitles] {
+    let tab = app
+        .world_mut()
+        .query_filtered::<Entity, With<bevy::ui_widgets::Tab>>()
+        .iter(app.world())
+        .next()
+        .expect("a tab");
+    for control in [volume, quality, subtitles, tab] {
         app.world_mut()
             .resource_mut::<InputFocus>()
             .set(control, FocusCause::Navigated);
@@ -403,7 +409,7 @@ fn a_back_press_changes_no_control() {
         press(&mut app, pad, GamepadButton::East);
     }
 
-    assert_eq!(heard(&app).len(), 6, "each one backs out from the control");
+    assert_eq!(heard(&app).len(), 8, "each one backs out from the control");
     assert_eq!(app.world().resource::<Moves>().0, 0, "and none changed");
     assert_eq!(
         app.world().get::<SliderValue>(volume),
@@ -414,6 +420,7 @@ fn a_back_press_changes_no_control() {
         Some(&ChoiceValue(0))
     );
     assert!(app.world().get::<Checked>(subtitles).is_some());
+    assert_eq!(app.world().get::<TabsValue>(tabs), Some(&TabsValue(0)));
 }
 
 #[test]
