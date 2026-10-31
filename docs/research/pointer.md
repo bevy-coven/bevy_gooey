@@ -46,7 +46,8 @@ None. No setting is added: a component on one bundle, and the opt-back-in is Bev
 - Over the empty part of an open `dialog()`'s scrim the hover map holds the scrim and not the node below.
 - A real primary press on the empty part of a HUD is delivered to the node below (one `PointerPress`, none on the HUD root) and clears `InputFocus` and `InputFocusVisible`.
 - `commands.spawn(screen()).insert(Pickable::default())` blocks again.
-- Gallery, 1280x720 and 2560x1440: every capture is pixel-identical to the baseline (the change draws nothing); `GOOEY_KEYS=click,down` still clears focus and lands on Play with the ring.
+- Gallery, 1280x720 and 2560x1440: every capture is pixel-identical to the baseline (the change draws nothing); `GOOEY_KEYS=down,click,down` still clears focus and lands on Play with the ring.
+- Gallery with `GOOEY_WORLD=1` (a sprite under the interface) and `GOOEY_KEYS=click`, a real press at the empty top-left corner: the old library logs nothing and the sprite stays put; the new one logs `gooey: world` and the sprite turns warm.
 - No frame-time cost: a component on one node.
 
 ## What great looks like
@@ -57,7 +58,7 @@ Invisible: the HUD is there and the game under it still answers the mouse. A spr
 
 - Issue #4's fix direction is `Pickable::IGNORE` on `screen()`; adopted as written. Its test is the first of the validation targets, extended with the cases that must keep blocking (P2, P3) and the focus effect (P4), which the issue names as a consequence.
 - Not adopted: `Pickable::IGNORE` on `menu()`, `label()`, `heading()` or `meter()`. A tooltip on any of them needs the hover (`Tooltip`'s hook adds `Hovered`), and the issue lists them as blocking by intent. A game with a text readout over the world sets `Pickable::IGNORE` on it itself. A design default.
-- Not adopted: a `screen_blocking()` variant or a `GooeySkin` field. One path per feature: the default is the common case (a HUD), and the opt-in is one `insert`.
+- Not adopted: a `screen_blocking()` variant or a `GooeySkin` field. One path per feature, and Buitinck et al.'s first principle is "Sensible defaults. Whenever an operation requires a user-defined parameter, an appropriate default value is defined by the library. The default value should cause the operation to be performed in a sensible way": the default is the common case (a HUD that lets the pointer through), and the opt-in is one `insert`.
 
 ## Pending index
 
