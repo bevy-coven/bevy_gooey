@@ -350,37 +350,41 @@ fn assert_glides(tops: &[f32], limit: f32, what: &str) {
 #[test]
 fn a_new_toast_opens_its_room_and_the_older_one_glides_up_to_make_way() {
     let skin = GooeySkin::default();
-    let mut app = app_at(SIXTY);
-    app.world_mut().spawn(toast("Game saved"));
-    frames(&mut app, 60);
-    let old = toasts(&mut app)[0];
-    let old_body = body_of(&mut app, old);
-    let mut tops = vec![top_of(&app, old_body)];
-    app.world_mut().spawn(toast_alert("Inventory full"));
-    for _ in 0..40 {
-        app.update();
-        tops.push(top_of(&app, old_body));
+    // At the skin's own size and at the player's interface size doubled: the room is measured in
+    // device pixels and written in logical ones, and must come out the same.
+    for scale in [1.0_f32, 2.0] {
+        let mut app = app_at(SIXTY);
+        app.world_mut().resource_mut::<UiScaleSettings>().scale = scale;
+        app.world_mut().spawn(toast("Game saved"));
+        frames(&mut app, 60);
+        let old = toasts(&mut app)[0];
+        let old_body = body_of(&mut app, old);
+        let mut tops = vec![top_of(&app, old_body)];
+        app.world_mut().spawn(toast_alert("Inventory full"));
+        for _ in 0..40 {
+            app.update();
+            tops.push(top_of(&app, old_body));
+        }
+        // Up by the new body's height and a gap, in several frames and not one.
+        let new = toasts(&mut app)[1];
+        let new_body = body_of(&mut app, new);
+        let (_, top, _, bottom) = rect(&app, new_body);
+        let moved = tops[0] - tops[tops.len() - 1];
+        assert!(
+            (moved - (bottom - top + skin.gap * scale)).abs() <= 1.0,
+            "{scale}x: moved {moved} for a body {} high",
+            bottom - top
+        );
+        let down: Vec<f32> = tops.iter().map(|t| -t).collect();
+        assert_glides(&down, 0.4, &format!("the older toast at {scale}x"));
+        // The room was measured from the body's full height while it was held down, in logical px.
+        let measured = app.world().get::<Toast>(new).map(|t| t.body_px());
+        assert!(
+            measured.is_some_and(|px| (px * scale - (bottom - top)).abs() <= 0.5),
+            "{scale}x: measured {measured:?}"
+        );
+        assert_eq!(app.world().get::<Toast>(new).map(|t| t.grow()), Some(1.0));
     }
-    // Up by the new body's height and a gap, in several frames and not one.
-    let new = toasts(&mut app)[1];
-    let new_body = body_of(&mut app, new);
-    let (_, top, _, bottom) = rect(&app, new_body);
-    let moved = tops[0] - tops[tops.len() - 1];
-    assert!(
-        (moved - (bottom - top + skin.gap)).abs() <= 1.0,
-        "moved {moved} for a body {} high",
-        bottom - top
-    );
-    let down: Vec<f32> = tops.iter().map(|t| -t).collect();
-    assert_glides(&down, 0.4, "the older toast");
-    // The room was measured from the body's full height while it was held down.
-    let measured = app.world().get::<Toast>(new).map(|t| t.body_px());
-    assert!(
-        measured.is_some_and(|px| (px - (bottom - top)).abs() <= 0.5),
-        "measured {measured:?}"
-    );
-    // And a toast alone again stands where it did.
-    assert_eq!(app.world().get::<Toast>(new).map(|t| t.grow()), Some(1.0));
 }
 
 #[test]
