@@ -68,6 +68,14 @@ enum Staged {
     Untip,
     /// Insert a new `Tooltip` over the widget's old one.
     Retip,
+    /// Move the pointer onto the Volume slider's thumb.
+    Hover,
+    /// Press the primary button on the thumb and keep it down.
+    Grab,
+    /// Move the held pointer 60 px right of where the thumb was grabbed.
+    Drag,
+    /// Let go.
+    Drop,
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -154,6 +162,10 @@ fn main() {
                     "click" => Some(Staged::Click),
                     "untip" => Some(Staged::Untip),
                     "retip" => Some(Staged::Retip),
+                    "hover" => Some(Staged::Hover),
+                    "grab" => Some(Staged::Grab),
+                    "drag" => Some(Staged::Drag),
+                    "drop" => Some(Staged::Drop),
                     _ => None,
                 })
                 .collect(),
@@ -358,6 +370,7 @@ fn stage_keys(
     capture: Option<Res<Capture>>,
     window: Query<Entity, With<PrimaryWindow>>,
     tipped: Query<Entity, With<Tooltip>>,
+    thumbs: Query<(&Role, &UiGlobalTransform)>,
     mut commands: Commands,
     mut keys: MessageWriter<KeyboardInput>,
     mut pointer: MessageWriter<PointerInput>,
@@ -413,6 +426,39 @@ fn stage_keys(
                 commands.entity(widget).insert(Tooltip(
                     "Unlocked: sound, controls, display and cheats".into(),
                 ));
+            }
+        }
+        Some(&(step @ (Staged::Hover | Staged::Grab | Staged::Drag | Staged::Drop)))
+            if state == ButtonState::Pressed =>
+        {
+            let Some(target) = WindowRef::Entity(window).normalize(None) else {
+                return;
+            };
+            let Some((_, thumb)) = thumbs.iter().find(|(role, _)| **role == Role::SliderThumb)
+            else {
+                return;
+            };
+            let reach = if matches!(step, Staged::Drag) {
+                60.0
+            } else {
+                0.0
+            };
+            let at = Location {
+                target: NormalizedRenderTarget::Window(target),
+                position: thumb.translation + Vec2::new(reach, 0.0),
+            };
+            let actions: &[PointerAction] = match step {
+                Staged::Grab => &[
+                    PointerAction::Move { delta: Vec2::ZERO },
+                    PointerAction::Press(PointerButton::Primary),
+                ],
+                Staged::Drop => &[PointerAction::Release(PointerButton::Primary)],
+                _ => &[PointerAction::Move {
+                    delta: Vec2::new(reach, 0.0),
+                }],
+            };
+            for &action in actions {
+                pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
             }
         }
         _ => {}
