@@ -225,6 +225,26 @@ pub fn choice_next(selected: usize, len: usize) -> usize {
     }
 }
 
+/// Where a [`crate::tabs`] widget lands when it steps `delta` tabs from `selected` among `len`:
+/// round the strip, wrapping from the last to the first and from the first to the last, however
+/// large the step (the bumpers, Ctrl+PageUp and Ctrl+PageDown, the D-pad and the arrows all step
+/// one). A strip is one direction, so it loops; a [`crate::choice`] is a value with ends and stops
+/// ([`choice_step`]). With no tabs it stays at 0, and a `selected` already past the end counts as
+/// the last.
+///
+/// ```
+/// assert_eq!(bevy_gooey::tab_step(0, 3, 1), 1);
+/// assert_eq!(bevy_gooey::tab_step(2, 3, 1), 0);
+/// assert_eq!(bevy_gooey::tab_step(0, 3, -1), 2);
+/// ```
+pub fn tab_step(selected: usize, len: usize, delta: i32) -> usize {
+    if len == 0 {
+        return 0;
+    }
+    let from = selected.min(len - 1) as i64;
+    (from + i64::from(delta)).rem_euclid(len as i64) as usize
+}
+
 /// How many repeats a held button has made between two moments, `held_before` and `held_now`
 /// seconds after it went down: none until `delay`, then `per_second` a second, the first at
 /// `delay` itself. The press itself is not a repeat. Zero for a delay or rate that is not usable.
@@ -791,6 +811,29 @@ mod tests {
             "past the end reads as the last, then wraps"
         );
         assert_eq!(choice_next(0, 0), 0);
+    }
+
+    #[test]
+    fn tabs_step_round_the_strip_in_both_directions() {
+        assert_eq!(tab_step(1, 3, 1), 2);
+        assert_eq!(tab_step(1, 3, -1), 0);
+        // Off either end it wraps to the other.
+        assert_eq!(tab_step(2, 3, 1), 0);
+        assert_eq!(tab_step(0, 3, -1), 2);
+        // A step of nothing stays put, and a whole turn is back where it started.
+        assert_eq!(tab_step(1, 3, 0), 1);
+        assert_eq!(tab_step(1, 3, 3), 1);
+        assert_eq!(tab_step(1, 3, -7), 0);
+        assert_eq!(tab_step(0, 3, i32::MIN), 1);
+        // One tab is always the one tab.
+        assert_eq!(tab_step(0, 1, 1), 0);
+        assert_eq!(tab_step(0, 1, -1), 0);
+        // A value past the end (a game set it carelessly) is read as the last tab.
+        assert_eq!(tab_step(9, 3, 0), 2);
+        assert_eq!(tab_step(9, 3, 1), 0);
+        // No tabs: nowhere to go, and no panic.
+        assert_eq!(tab_step(0, 0, 1), 0);
+        assert_eq!(tab_step(5, 0, -1), 0);
     }
 
     #[test]
