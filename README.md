@@ -2,7 +2,7 @@
 
 Game interfaces made easy for Bevy 0.20: a skin, ready-made game widgets and keyboard and gamepad navigation, on Bevy's own headless widgets.
 
-![The gallery example: a panel with a heading, three buttons, a health meter, a Subtitles switch and a Volume slider; Options has the focus ring and its tooltip, "Sound, controls and display", is open beside it](docs/media/gallery.png)
+![The gallery example: a panel with a heading, three buttons, a health meter, a Subtitles switch and a Volume slider; Options has the focus ring and its tooltip, "Sound, controls and display", is open beside it; two toasts, "Game saved" and "Inventory full", stand at the bottom right](docs/media/gallery.png)
 
 ## What you get
 
