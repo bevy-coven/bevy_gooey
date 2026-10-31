@@ -53,6 +53,20 @@ const TOAST_MARK_LINES: f32 = 4.0;
 /// A choice's chevron is a square this many body text sizes on a side, turned an eighth of a turn.
 const CHEVRON_TEXT_SIZES: f32 = 0.6;
 
+/// A dialog's panel is at least this many body text sizes wide (21 × 20 px = 420 px: a platform
+/// dialog's 320 epx at this crate's 4/3) and at most this many (36 × 20 px = 720 px: its 548 epx).
+/// A short title fills the least; a long body wraps at the most.
+const DIALOG_MIN_TEXT_SIZES: f32 = 21.0;
+const DIALOG_MAX_TEXT_SIZES: f32 = 36.0;
+
+/// A dialog's panel has this many times a screen panel's padding and gap, so its title, body and
+/// choices are read in order and no word stands nearer an edge than the next line.
+const DIALOG_ROOM_FACTOR: f32 = 1.5;
+
+/// The share of the window, on each side, that a dialog's scrim keeps clear: a TV may not show the
+/// outer 5%, so nothing a player must read or press stands there.
+const DIALOG_SAFE_EDGE_PERCENT: f32 = 5.0;
+
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
 ///
@@ -162,7 +176,7 @@ impl GooeySkin {
             danger: Color::srgb(0.70, 0.12, 0.10),
             focus_ring: Color::srgb(0.12, 0.38, 0.55),
             outline: Color::srgb(0.48, 0.38, 0.27),
-            scrim: Color::srgba(0.08, 0.05, 0.02, 0.55),
+            scrim: Color::srgba(0.08, 0.05, 0.02, 0.7),
             ..Self::sizes()
         }
     }
@@ -553,7 +567,8 @@ struct State {
     checked: bool,
     /// A tab that is the selected one of its strip.
     selected: bool,
-    /// The entity is a dialog's scrim: a panel on it is drawn opaque.
+    /// The entity is a dialog's scrim: a panel on it is the dialog, drawn opaque, framed, wider and
+    /// roomier than a screen's.
     scrim: bool,
     /// A toast's opacity; whole for everything that is not one.
     alpha: f32,
@@ -825,8 +840,9 @@ fn restyle(
     let switch = text_px * SWITCH_TEXT_SIZES;
     let knob = (switch - 4.0 * line).max(0.0);
     let chevron = text_px * CHEVRON_TEXT_SIZES;
+    let in_dialog = parent.is_some_and(|p| p.scrim);
     let fill = match role {
-        Role::Panel if parent.is_some_and(|p| p.scrim) => Some(skin.solid_surface()),
+        Role::Panel if in_dialog => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
         Role::Button => Some(if state.disabled {
             skin.surface
@@ -934,6 +950,7 @@ fn restyle(
     }
 
     let edge = match role {
+        Role::Panel if in_dialog => Some(BorderColor::all(skin.outline)),
         Role::Panel | Role::Tooltip => Some(BorderColor::all(skin.surface_raised)),
         // Framed in the outline like the other widgets whose fill is the colour of what is behind
         // them: a toast over a panel keeps its edge at 3:1.
@@ -982,10 +999,17 @@ fn restyle(
         let radius = BorderRadius::all(Val::Px(skin.radius));
         match role {
             Role::Panel => {
-                next.padding = UiRect::all(Val::Px(skin.padding));
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.row_gap = Val::Px(skin.gap);
+                // Over a dialog's scrim a panel is the dialog: a measure, and room between its
+                // title, its body and its choices.
+                let room = if in_dialog { DIALOG_ROOM_FACTOR } else { 1.0 };
+                next.padding = UiRect::all(Val::Px(skin.padding * room));
+                next.row_gap = Val::Px(skin.gap * room);
+                if in_dialog {
+                    next.min_width = Val::Px(text_px * DIALOG_MIN_TEXT_SIZES);
+                    next.max_width = Val::Px(text_px * DIALOG_MAX_TEXT_SIZES);
+                }
             }
             Role::Menu | Role::TabPage | Role::Tabs => next.row_gap = Val::Px(skin.gap),
             // The strip's tabs stand a gap apart like a menu's buttons, and each is a button's size.
@@ -1202,6 +1226,9 @@ fn restyle(
                 next.width = Val::Px(width);
                 next.border_radius = BorderRadius::all(Val::Px(width / 2.0));
             }
+            // The safe area: a long body wraps at the dialog's maximum width or squeezes it in,
+            // and nothing of it ever reaches the bezel.
+            Role::Scrim => next.padding = UiRect::all(Val::Percent(DIALOG_SAFE_EDGE_PERCENT)),
             _ => {}
         }
         node.set_if_neq(next);

@@ -480,7 +480,8 @@ fn open_quit_dialog(_: On<Activate>, open: Query<(), With<QuitDialog>>, mut comm
         children![(
             panel(),
             children![
-                label("Leave the game?"),
+                heading("Leave the game?"),
+                label("Progress since the last autosave is lost."),
                 (
                     menu(),
                     children![

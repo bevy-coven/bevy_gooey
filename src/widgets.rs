@@ -737,14 +737,27 @@ pub fn tab_page(widgets: impl Bundle) -> impl Bundle {
 /// close it with `commands.entity(dialog).despawn()`, from a button's `Activate` and from an
 /// observer of [`crate::Cancel`] on the dialog (Escape and the pad's B send one).
 ///
+/// A [`panel`] that is a direct child of the dialog is the dialog, and looks like one: 21 to 36 body
+/// text sizes wide (420 to 720 px at the default size, wider with a larger
+/// [`text_scale`](crate::GooeySkin::text_scale)), one and a half times a screen panel's padding and
+/// gap, an opaque fill, and its frame in [`outline`](crate::GooeySkin::outline). Put a [`heading`]
+/// in it for the main instruction, a [`label`] for what the choice costs, and a [`menu`] of the
+/// choices. The scrim keeps the window's outer 5% clear, so a long body wraps and the dialog never
+/// reaches the bezel.
+///
 /// ```
 /// # use bevy::prelude::*;
+/// # use bevy::input_focus::AutoFocus;
 /// # use bevy_gooey::*;
 /// # fn ui(mut commands: Commands) {
 /// commands.spawn((
 ///     dialog(),
 ///     observe(|cancel: On<Cancel>, mut commands: Commands| commands.entity(cancel.entity).despawn()),
-///     children![(panel(), children![label("Leave?"), button("Stay")])],
+///     children![(panel(), children![
+///         heading("Leave the game?"),
+///         label("Progress since the last autosave is lost."),
+///         (menu(), children![button("Leave"), (button("Stay"), AutoFocus)]),
+///     ])],
 /// ));
 /// # }
 /// ```
