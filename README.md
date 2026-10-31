@@ -2,12 +2,12 @@
 
 Game interfaces made easy for Bevy 0.20: a skin, ready-made game widgets and keyboard and gamepad navigation, on Bevy's own headless widgets.
 
-![The gallery example: a panel with a heading, three buttons, a health meter, a Subtitles switch, a Quality choice ("Medium" between two chevrons) and a Volume slider; Options has the focus ring and its tooltip, "Sound, controls and display", is open beside it; two toasts, "Game saved" and "Inventory full", stand at the bottom right](docs/media/gallery.png)
+![The gallery example: two panels side by side. The left holds a heading, three buttons, a health meter, a Subtitles switch, a Quality choice ("Medium" between two chevrons) and a Volume slider. The right, "Load game", holds a list of save slots four and a half rows tall, scrolled down so that "Mill, 03:02" is its first row, with "Orchard, 00:20" carrying the focus ring and a fifth row, under "Chapel, 00:12", cut off by the list's edge; a rail down its right edge has a thumb a little over a third of its length. Two toasts, "Game saved" and "Inventory full", stand at the bottom right](docs/media/gallery.png)
 
 ## What you get
 
 - **A skin**, `GooeySkin`: every colour and size as plain data, two presets (`dark`, `parchment`), a player text-scale option, and `problems()` to check it against the WCAG 2.2 contrast and target-size rules. Change it and everything on screen restyles that frame.
-- **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `toggle`, `choice` and `slider` (an options screen's switch, stepper and scrubber), `toast` and `toast_alert` (a line of news at the edge of the screen), `Tooltip` and the modal `dialog`.
+- **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `toggle`, `choice` and `slider` (an options screen's switch, stepper and scrubber), `list` (rows that scroll, following focus), `toast` and `toast_alert` (a line of news at the edge of the screen), `Tooltip` and the modal `dialog`.
 - **Navigation**: arrows and the D-pad move focus to the nearest widget, Enter, Space and the pad's South button activate, Tab cycles.
 - **Scale**: the whole interface keeps its share of the screen at every resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television.
 - **Feedback**: a `UiFeedback` message for every focus move and activation, for your sound.
@@ -75,6 +75,7 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 - A `Tooltip` opens when its widget has focus from a key or the pad, as it does under the pointer. It opens beside the widget (to the right in a column, below in a row, flipped at the window's edge), one step outside its panel, so it never covers the next button.
 - A `Tooltip` is a view of its component: `commands.entity(button).remove::<Tooltip>()` takes the hint off (a "Locked: reach level 5" line once the player unlocks it), and inserting a new `Tooltip`, or editing `Tooltip.0`, changes the line the open tooltip shows.
 - Put Bevy's `AutoFocus` on the button a screen should start on. With nothing focused (a click on empty space, a button despawned under the player), the first arrow or D-pad press lands there, or on the screen's first button in Tab order, and the next press moves on; with a `dialog` open it lands inside the dialog.
+- A `list` scrolls to follow the focus a key, the D-pad or Tab gives its rows (with the next row kept in sight), PageUp and PageDown (the pad's triggers) move a viewport at a time, and Up and Down stay among a list's rows until they run out; see Lists.
 
 ## Settings controls
 
@@ -97,6 +98,39 @@ fn options(mut commands: Commands) {
 - A **choice** is a row: the label on the left, the selected option on the right between two chevrons, for a setting with a few named values (Low, Medium, High). It is one tab stop. With it focused, Left and Right (keys or the D-pad, a held direction repeating as a slider's does) step to the previous and next option and stop at the ends (the chevron that cannot step is dimmed, and a press at an end changes nothing and says nothing), Home and End jump to the ends, and Up and Down still move focus on, so a pad steps a column of settings with no mode to enter. A click on a chevron steps once, on release; Enter, Space, South and a click anywhere else on the row cycle to the next option and wrap round, so one repeated press reaches every option. Every option takes the widest one's room, so the chevrons never move under a thumb. The selected index is `ChoiceValue` on the entity (write one to move it from code; no `ValueChange` comes back for that), and `ValueChange<usize>` fires once per change. Observe that, not `Activate`: only a cycle is an `Activate`.
 - A **slider** is a row: the label and the value (a percentage for a range of 0 to 1, the number otherwise) over a rail with a thumb. The whole row is the target: a click puts the thumb under the pointer and a drag goes on from there. With it focused, Left and Right step by a twentieth of the range (insert a `SliderStep` to change it), Home and End jump to the ends, and Up and Down still move focus on. The D-pad does the same, and a held direction repeats after 0.4 s at 12 steps a second (`PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`), so a pad player never presses A to select the slider nor holds a button to keep it. `ValueChange<f32>` fires as the value moves (`is_final` is false until the drag ends); read the value from `SliderValue`, or write one to move the slider.
 - All three are targets at least `min_target` high (a choice's chevrons are `min_target` wide too), show the same focus ring as a button, and grow with `text_scale`.
+
+## Lists
+
+`list(rows, children![..])` is a column of rows that scrolls when they do not all fit: save slots, an inventory, a key-binding screen. The rows are any widgets, in `children![]`:
+
+```rust
+fn load_game(mut commands: Commands) {
+    commands.spawn((
+        panel(),
+        children![
+            heading("Load game"),
+            list(
+                4.5,
+                children![
+                    (button("Meadow, 12:40"), observe(|_: On<Activate>| info!("load meadow"))),
+                    button("Harbour, 09:15"),
+                    button("Mill, 03:02"),
+                    button("Cellar, 01:48"),
+                    button("Orchard, 00:20"),
+                    button("Autosave"),
+                ]
+            ),
+        ],
+    ));
+}
+```
+
+- `rows` is how many rows tall it stands, a row being a button's height and the `gap` after it: `4.5` shows four rows and half of the fifth. A list that ends exactly on a row looks finished; one that cuts the next row does not (NN/g: "Include signifiers (such as cut-off text) to tell people that there is content below the fold"). The count follows the player's `text_scale`, and `ListView::rows` changes it live.
+- The wheel and a trackpad scroll it, a drag on the thumb moves it and a click on the rail pages a viewport up or down (Bevy's own `ScrollArea` and `Scrollbar`). The rail, `2 × border` wide, shows only while the rows do not fit; its lane is always reserved, so rows never change width when others come and go.
+- **It follows focus.** When a key, the D-pad or Tab moves focus onto a row, the list scrolls by the least that leaves a row and a half beyond it: the next row whole and the one after it cut, so the list visibly goes on at every step, and it ends flush with the last row. A row taller than the list scrolls to its top, and a jump of more than a viewport (PageDown, a focus set from code) centres the row. A focus a pointer press set is not followed: a press that scrolled the content under the pointer would send its release to another row and lose the click.
+- PageUp and PageDown, and the pad's left and right triggers, move focus a viewport up or down the list in one press. Up and Down stay among a list's rows until they run out (rows the list has clipped lie further off than the button under it, so geometry alone would step out past them), and a row the list has clipped away is never the neighbour of a widget outside it.
+- To scroll from code, set the `ScrollPosition` on the `ListView` entity (the first child of the list's root). A list builds every row it is given, so it is for tens of rows, not thousands; a list at its end does not scroll the panel behind it; a wheel notch is Bevy's 100 px.
+- A list is not announced to screen readers yet: Bevy's `ScrollArea` and `Scrollbar` carry no accessibility node.
 
 ## Toasts
 
