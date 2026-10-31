@@ -23,6 +23,7 @@ use bevy::ui_widgets::{
 };
 
 use crate::choice::{ChoiceCount, Move, MoveChoice};
+use crate::list::{ListView, span};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
@@ -84,6 +85,8 @@ pub struct FocusScopes<'w, 's> {
     stops: Query<'w, 's, Option<&'static InheritedVisibility>, With<TabIndex>>,
     /// The sliders and choices that take Left and Right themselves.
     sideways: Query<'w, 's, (), TakesSideways>,
+    /// The lists, to tell a widget one has clipped away from one in view.
+    lists: Query<'w, 's, (&'static ComputedNode, &'static UiGlobalTransform), With<ListView>>,
 }
 
 impl FocusScopes<'_, '_> {
@@ -108,6 +111,36 @@ impl FocusScopes<'_, '_> {
     /// adjust it and never move focus off it. A disabled one takes nothing.
     fn keeps_sideways(&self, entity: Entity) -> bool {
         self.sideways.contains(entity)
+    }
+
+    /// Whether a list has scrolled `candidate` out of sight: it stands in a list that focus (`from`)
+    /// is not in, and none of it is inside that list's viewport. Such a row is no neighbour from
+    /// outside: the button below a list goes Up to the last row the player sees, not to a row that
+    /// happens to lie nearer, clipped. Inside its own list focus does reach the next row, and the
+    /// list scrolls to bring it in ([`crate::scroll_to_focus`]).
+    fn hides(
+        &self,
+        candidate: Entity,
+        node: &ComputedNode,
+        transform: &UiGlobalTransform,
+        from: Entity,
+    ) -> bool {
+        let Some(list) = self
+            .parents
+            .iter_ancestors(candidate)
+            .find(|&a| self.lists.contains(a))
+        else {
+            return false;
+        };
+        if self.parents.iter_ancestors(from).any(|a| a == list) {
+            return false;
+        }
+        let Ok((view, view_transform)) = self.lists.get(list) else {
+            return false;
+        };
+        let (top, height) = span(node, transform);
+        let (view_top, view_height) = span(view, view_transform);
+        top >= view_top + view_height || top + height <= view_top
     }
 
     /// The scope the player is looking at: the topmost open modal group (a dialog), or `None`,
@@ -141,7 +174,7 @@ impl FocusScopes<'_, '_> {
 /// Shows the focus indicator: the player is on a key or the pad. Writes `InputFocusVisible` only
 /// when it changes (reading through `ResMut` does not mark it changed), so the skin does not
 /// restyle every widget on every press.
-fn show_focus(shown: &mut ResMut<InputFocusVisible>) {
+pub(crate) fn show_focus(shown: &mut ResMut<InputFocusVisible>) {
     if !shown.0 {
         shown.0 = true;
     }
@@ -220,8 +253,11 @@ pub fn navigate_by_input(
     let scope = scopes.of(from);
     let candidates: Vec<FocusableArea> = navigable
         .iter()
-        .filter(|(entity, _, node, _, visible)| {
-            !node.is_empty() && visible.get() && scopes.of(*entity) == scope
+        .filter(|(entity, _, node, transform, visible)| {
+            !node.is_empty()
+                && visible.get()
+                && scopes.of(*entity) == scope
+                && !scopes.hides(*entity, node, transform, from)
         })
         .filter_map(focusable_area)
         .filter_map(|(c, area)| (c == camera).then_some(area))

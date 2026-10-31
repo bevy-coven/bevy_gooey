@@ -5,7 +5,8 @@
 use std::ops::RangeInclusive;
 
 use bevy::ecs::lifecycle::HookContext;
-use bevy::ecs::spawn::SpawnIter;
+use bevy::ecs::relationship::RelatedSpawner;
+use bevy::ecs::spawn::{SpawnIter, SpawnRelatedBundle, SpawnWith, SpawnableList};
 use bevy::ecs::world::DeferredWorld;
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::hover::Hovered;
@@ -13,14 +14,16 @@ use bevy::prelude::*;
 use bevy::ui::Checked;
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui_widgets::{
-    Checkbox, Slider, SliderOrientation, SliderRange, SliderStep, SliderThumb, SliderValue,
-    TrackClick, checkbox_self_update, observe, slider_self_update,
+    Checkbox, ControlOrientation, ScrollArea, Scrollbar, ScrollbarThumb, Slider, SliderOrientation,
+    SliderRange, SliderStep, SliderThumb, SliderValue, TrackClick, checkbox_self_update, observe,
+    slider_self_update,
 };
 
 use crate::choice::{
     ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
     choice_on_key_input, choice_on_move, choice_self_update,
 };
+use crate::list::ListView;
 use crate::meter::Meter;
 use crate::model::{meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
@@ -29,6 +32,10 @@ use crate::toast::{Toast, ToastKind};
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
 const SLIDER_STEPS: f32 = 20.0;
+
+/// The least length of a list's thumb, in logical px (about half a comfortable target), so a long
+/// list leaves something to grab.
+const LIST_MIN_THUMB: f32 = 24.0;
 
 /// How far a choice's chevron is moved to put its ink in the middle of its arrow, in percent of
 /// its own width. A square turned an eighth of a turn has its two drawn sides on one side of its
@@ -476,6 +483,95 @@ fn choice_arrow(step: i32) -> impl Bundle {
             mark,
             Pickable::IGNORE,
         )],
+    )
+}
+
+/// A column of rows that scrolls when they do not all fit: save slots, an inventory, a key-binding
+/// screen, a long settings page. `rows` is how many rows tall it stands, in the units of a button
+/// and the gap beside it, so `4.5` shows four rows and half of the fifth, which cuts it, the sign
+/// that more is below. The rows are the list's children, in `children![…]`: any widget, each its
+/// own tab stop.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     panel(),
+///     children![
+///         heading("Load game"),
+///         list(
+///             4.5,
+///             children![
+///                 button("Meadow, 12:40"),
+///                 button("Harbour, 09:15"),
+///                 button("Mill, 03:02"),
+///                 button("Cellar, 01:48"),
+///                 button("Orchard, 00:20"),
+///                 button("Autosave"),
+///             ]
+///         ),
+///     ],
+/// ));
+/// # }
+/// ```
+///
+/// The wheel and a trackpad scroll it, a drag on the thumb and a click on the rail scroll it, and
+/// it follows focus: moving to a row with a key, the D-pad or Tab scrolls it by the least that
+/// leaves the next row in sight, and PageUp, PageDown and the pad's triggers move a viewport at a
+/// time. A click on a half-visible row focuses it and does not scroll under the pointer. The rail
+/// shows only while the rows do not fit. A list shows every row it holds, so it is for tens of
+/// rows, not thousands.
+///
+/// The entity this returns holds the rows' viewport, a [`ListView`] (its first child), and the
+/// rail; to scroll from code, set the `ScrollPosition` on the [`ListView`].
+pub fn list<L>(rows: f32, items: SpawnRelatedBundle<ChildOf, L>) -> impl Bundle
+where
+    L: SpawnableList<ChildOf> + Send + Sync + 'static,
+{
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::List,
+        Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
+            let view = parent
+                .spawn((
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        overflow: Overflow::scroll_y(),
+                        ..default()
+                    },
+                    Role::ListView,
+                    ListView { rows },
+                    ScrollArea,
+                    items,
+                ))
+                .id();
+            // The thumb has no `Node`: Bevy lays it out itself, after layout, from the viewport.
+            // The rail is hidden until `update_lists` finds the rows do not fit.
+            parent.spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(0.0),
+                    bottom: Val::Px(0.0),
+                    right: Val::Px(0.0),
+                    display: Display::None,
+                    ..default()
+                },
+                Role::ListRail,
+                Scrollbar::new(view, ControlOrientation::Vertical, LIST_MIN_THUMB),
+                children![(
+                    Role::ListThumb,
+                    ScrollbarThumb {
+                        border_radius: BorderRadius::MAX,
+                        border: UiRect::ZERO,
+                    },
+                    Hovered::default(),
+                )],
+            ));
+        })),
     )
 }
 
