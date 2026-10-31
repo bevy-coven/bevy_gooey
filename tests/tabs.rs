@@ -37,6 +37,17 @@ struct Activations(Vec<Entity>);
 #[derive(Resource, Default)]
 struct Writes(u32);
 
+/// What a page turn writes: a page's visibility, the strip's selection, the value, a fill, a ring
+/// or a node.
+type Written = Or<(
+    Changed<Visibility>,
+    Changed<SelectedTab>,
+    Changed<TabsValue>,
+    Changed<BackgroundColor>,
+    Changed<BorderColor>,
+    Changed<Node>,
+)>;
+
 /// A headless app with a `width` × `height` window, so UI layout and picking run.
 fn app_sized(width: u32, height: u32) -> App {
     let mut app = App::new();
@@ -79,18 +90,9 @@ fn app_sized(width: u32, height: u32) -> App {
             |mut messages: MessageReader<UiFeedback>, mut seen: ResMut<Feedback>| {
                 seen.0.extend(messages.read().copied());
             },
-            |changed: Query<
-                (),
-                Or<(
-                    Changed<Visibility>,
-                    Changed<SelectedTab>,
-                    Changed<TabsValue>,
-                    Changed<BackgroundColor>,
-                    Changed<BorderColor>,
-                    Changed<Node>,
-                )>,
-            >,
-             mut writes: ResMut<Writes>| writes.0 += changed.iter().count() as u32,
+            |changed: Query<(), Written>, mut writes: ResMut<Writes>| {
+                writes.0 += changed.iter().count() as u32
+            },
         ),
     );
     app.world_mut().spawn(Camera2d);
@@ -1202,4 +1204,49 @@ fn a_long_label_widens_the_strip_and_is_never_squeezed_out_of_its_tab() {
             );
         }
     }
+}
+
+// ---- edges ----
+
+#[test]
+fn a_widget_with_no_tabs_is_harmless_and_one_with_fewer_pages_than_labels_shows_nothing_for_the_rest()
+ {
+    let mut app = app();
+    let bare = app
+        .world_mut()
+        .spawn(tabs(Vec::<&str>::new(), 0, children![]))
+        .id();
+    // Two labels and one page: the second tab opens an empty page.
+    let short = app
+        .world_mut()
+        .spawn(tabs(
+            ["A", "B"],
+            1,
+            children![tab_page(children![button("Only")])],
+        ))
+        .id();
+    let card = app
+        .world_mut()
+        .spawn(panel())
+        .add_children(&[bare, short])
+        .id();
+    app.world_mut().spawn(screen()).add_child(card);
+    settle(&mut app);
+    let pad = plug_in_pad(&mut app);
+    let only = part(&app, short, Role::Button);
+    focus(&mut app, only);
+    press(&mut app, pad, GamepadButton::RightTrigger);
+    assert_eq!(
+        app.world().get::<TabsValue>(short).expect("a value").0,
+        0,
+        "RB from the second of two goes round to the first"
+    );
+    assert_eq!(app.world().get::<TabsValue>(bare).expect("a value").0, 0);
+    let page = pages(&app, short)[0];
+    assert!(
+        app.world()
+            .get::<InheritedVisibility>(page)
+            .is_some_and(|v| v.get()),
+        "the page that exists is shown for the first tab"
+    );
 }
