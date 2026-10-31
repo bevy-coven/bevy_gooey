@@ -191,6 +191,20 @@ fn setup(mut commands: Commands) {
                 ),
                 label("Health"),
                 (meter(100.0, 100.0), Health),
+                (
+                    toggle("Subtitles", true),
+                    observe(|change: On<ValueChange<bool>>| {
+                        info!("gooey: subtitles {}", change.value)
+                    }),
+                ),
+                (
+                    slider("Volume", 0.7, 0.0..=1.0),
+                    observe(|change: On<ValueChange<f32>>| {
+                        if change.is_final {
+                            info!("gooey: volume {:.2}", change.value)
+                        }
+                    }),
+                ),
             ]
         )],
     ));

@@ -6,7 +6,7 @@ use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{FontSize, FontSource};
-use bevy::ui::{ComputedUiRenderTargetInfo, InteractionDisabled, Pressed};
+use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed};
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 
 use crate::model::{
@@ -18,6 +18,18 @@ use crate::tooltip::TooltipBox;
 /// A meter's least length, in body text sizes: 8 × 20 px = 160 px at the default size, growing
 /// with [`GooeySkin::text_scale`].
 const METER_MIN_TEXT_SIZES: f32 = 8.0;
+
+/// A slider's least width, in body text sizes: 10 × 20 px = 200 px at the default size.
+const SLIDER_MIN_TEXT_SIZES: f32 = 10.0;
+
+/// A toggle's track is this many body text sizes high and twice as wide.
+const SWITCH_TEXT_SIZES: f32 = 1.5;
+
+/// A slider's thumb is this many body text sizes wide, and this many rails high.
+const THUMB_TEXT_SIZES: f32 = 0.8;
+
+/// A slider's thumb stands this many rails tall, a little over the rail on each side.
+const THUMB_RAIL_RATIO: f32 = 1.25;
 
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
@@ -52,7 +64,8 @@ pub struct GooeySkin {
     pub surface_raised: Color,
     /// Headings, labels and button text.
     pub text: Color,
-    /// The text of a disabled button.
+    /// The text of a disabled control, and the knob of a switch that is off; the knob is checked
+    /// against [`GooeySkin::surface_raised`], the switch's track, at the 3:1 non-text minimum.
     pub text_muted: Color,
     /// A pressed button and a meter's fill; checked against [`GooeySkin::surface_raised`], the
     /// meter's track, at the 3:1 non-text minimum.
@@ -221,6 +234,12 @@ impl GooeySkin {
                 surface,
                 NON_TEXT_CONTRAST,
             ),
+            (
+                "text_muted on surface_raised",
+                rgb(self.text_muted),
+                rgb(self.surface_raised),
+                NON_TEXT_CONTRAST,
+            ),
         ];
         for (pair, a, b, needed) in pairs {
             let ratio = contrast_ratio(a, b);
@@ -386,6 +405,30 @@ pub enum Role {
     Tooltip,
     /// The veil behind a modal dialog.
     Scrim,
+    /// A [`crate::toggle`]'s row: a label and a switch, on no fill, its border the focus ring.
+    Toggle,
+    /// A toggle's track, framed in [`GooeySkin::outline`]; it is [`GooeySkin::accent`] while on.
+    ToggleTrack,
+    /// A toggle's knob, at the track's start while off and its end while on.
+    ToggleKnob,
+    /// A [`crate::slider`]'s row: a header and a rail, on no fill, its border the focus ring.
+    Slider,
+    /// The line a slider's label and value share.
+    SliderHeader,
+    /// The strip a slider's rail and thumb sit in, as high as the thumb.
+    SliderTrack,
+    /// A slider's rail: a slot framed in [`GooeySkin::outline`], like a meter's.
+    SliderRail,
+    /// A slider's fill, from the rail's start to the thumb's centre.
+    SliderFill,
+    /// The empty room before a slider's thumb, sized by [`crate::update_sliders`] to place it.
+    SliderGap,
+    /// A slider's thumb, the part a pointer grabs.
+    SliderThumb,
+    /// A slider's value, as text, at the end of its header.
+    SliderReadout,
+    /// The label of a toggle or a slider: body text that dims with a disabled control.
+    ControlText,
 }
 
 type Styled = (
@@ -417,6 +460,8 @@ struct State {
     pressed: bool,
     disabled: bool,
     hovered: bool,
+    /// A toggle that is on.
+    checked: bool,
     /// The entity is a dialog's scrim: a panel on it is drawn opaque.
     scrim: bool,
 }
@@ -425,6 +470,7 @@ struct State {
 type StateQuery = (
     Has<Pressed>,
     Has<InteractionDisabled>,
+    Has<Checked>,
     Option<&'static Hovered>,
     Option<&'static Role>,
 );
@@ -437,20 +483,27 @@ type Restyle = (
         Changed<Pressed>,
         Changed<Hovered>,
         Changed<InteractionDisabled>,
+        Changed<Checked>,
         Changed<TooltipBox>,
         Changed<ComputedUiRenderTargetInfo>,
     )>,
 );
 
+/// Whether a role is a widget whose parts follow its state: they are restyled with it.
+fn owns_parts(role: Option<&Role>) -> bool {
+    matches!(role, Some(Role::Button | Role::Toggle | Role::Slider))
+}
+
 /// Styles every entity with a [`Role`] from [`GooeySkin`] and [`GooeyFonts`]: the one place
 /// widgets are styled. Runs in [`crate::GooeySystems::Style`].
 ///
 /// A changed skin or font restyles every widget; otherwise only widgets whose role, press, hover,
-/// disabled state or scale changed are restyled (and every button when focus moves), in the frame
-/// the change happens. Lines are drawn at the scale Bevy last computed for the node, so the frame a
-/// window is resized draws them at the old scale's snapping and the next frame at the new one's. A
-/// changed skin that fails [`GooeySkin::problems`] logs one warning per problem and is applied
-/// anyway.
+/// disabled or on state, or scale changed are restyled (and every button, toggle and slider when
+/// focus moves), in the frame the change happens, with the parts that follow them (a button's text,
+/// a switch's knob, a slider's thumb). Lines are drawn at the scale Bevy last computed for the
+/// node, so the frame a window is resized draws them at the old scale's snapping and the next frame
+/// at the new one's. A changed skin that fails [`GooeySkin::problems`] logs one warning per problem
+/// and is applied anyway.
 #[allow(clippy::too_many_arguments)]
 pub fn apply_skin(
     skin: Res<GooeySkin>,
@@ -460,6 +513,7 @@ pub fn apply_skin(
     changed: Query<Entity, Restyle>,
     mut unpressed: RemovedComponents<Pressed>,
     mut enabled: RemovedComponents<InteractionDisabled>,
+    mut unchecked: RemovedComponents<Checked>,
     states: Query<StateQuery>,
     parents: Query<&ChildOf>,
     children: Query<&Children>,
@@ -478,22 +532,42 @@ pub fn apply_skin(
     let state_of = |entity: Entity| {
         states
             .get(entity)
-            .map(|(pressed, disabled, hovered, role)| State {
+            .map(|(pressed, disabled, checked, hovered, role)| State {
                 pressed,
                 disabled,
                 hovered: hovered.is_some_and(|h| h.0),
+                checked,
                 scrim: role == Some(&Role::Scrim),
             })
+            .unwrap_or_default()
+    };
+    // A part of a toggle or a slider, however deep, follows that toggle or slider's state.
+    let owner_of = |entity: Entity| {
+        parents
+            .iter_ancestors(entity)
+            .find(|&a| {
+                states
+                    .get(a)
+                    .is_ok_and(|(.., role)| matches!(role, Some(Role::Toggle | Role::Slider)))
+            })
+            .map(state_of)
             .unwrap_or_default()
     };
 
     if skin.is_changed() || fonts.is_changed() {
         unpressed.clear();
         enabled.clear();
+        unchecked.clear();
         for item in &mut styled {
             let entity = item.0;
             let parent = parents.get(entity).map(|p| p.parent()).ok();
-            restyle(item, &look, state_of(entity), parent.map(state_of));
+            restyle(
+                item,
+                &look,
+                state_of(entity),
+                parent.map(state_of),
+                owner_of(entity),
+            );
         }
         return;
     }
@@ -501,21 +575,29 @@ pub fn apply_skin(
     let mut dirty: Vec<Entity> = changed.iter().collect();
     dirty.extend(unpressed.read());
     dirty.extend(enabled.read());
+    dirty.extend(unchecked.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
                 .iter()
-                .filter(|item| *item.1 == Role::Button)
+                .filter(|item| matches!(item.1, Role::Button | Role::Toggle | Role::Slider))
                 .map(|item| item.0),
         );
     }
-    // A button's text follows the button's state, so a dirty button dirties its text.
+    // A button's text follows the button's state, so a dirty button dirties its text, and a dirty
+    // toggle or slider every part of it.
     let texts: Vec<Entity> = dirty
         .iter()
         .filter_map(|&e| children.get(e).ok())
         .flat_map(|c| c.iter())
         .collect();
+    let parts: Vec<Entity> = dirty
+        .iter()
+        .filter(|&&e| states.get(e).is_ok_and(|(.., role)| owns_parts(role)))
+        .flat_map(|&e| children.iter_descendants(e))
+        .collect();
     dirty.extend(texts);
+    dirty.extend(parts);
     dirty.sort_unstable();
     dirty.dedup();
     for entity in dirty {
@@ -523,7 +605,13 @@ pub fn apply_skin(
             continue;
         };
         let parent = parents.get(entity).map(|p| p.parent()).ok();
-        restyle(item, &look, state_of(entity), parent.map(state_of));
+        restyle(
+            item,
+            &look,
+            state_of(entity),
+            parent.map(state_of),
+            owner_of(entity),
+        );
     }
 }
 
@@ -536,6 +624,7 @@ fn restyle(
     look: &Look,
     state: State,
     parent: Option<State>,
+    owner: State,
 ) {
     let skin = look.skin;
     let scaled = |size: f32| FontSize::Px(size * skin.text_scale);
@@ -543,6 +632,12 @@ fn restyle(
     // Every line weight (borders, the focus ring, the meter's frame and gap) on whole device
     // pixels at the node's scale, so it is one weight on every side wherever the node lands.
     let line = snap_line_width(skin.border, target.map_or(1.0, |t| t.scale_factor()));
+    // The settings controls' sizes grow with the player's text size, like the meter.
+    let text_px = skin.text_size * skin.text_scale;
+    let rail = skin.meter_height * skin.text_scale;
+    let thumb = Vec2::new(text_px * THUMB_TEXT_SIZES, rail * THUMB_RAIL_RATIO);
+    let switch = text_px * SWITCH_TEXT_SIZES;
+    let knob = (switch - 4.0 * line).max(0.0);
     let fill = match role {
         Role::Panel if parent.is_some_and(|p| p.scrim) => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
@@ -555,11 +650,49 @@ fn restyle(
         } else {
             skin.surface_raised
         }),
-        Role::Meter => Some(skin.surface_raised),
+        Role::Meter | Role::SliderRail => Some(skin.surface_raised),
         Role::Tooltip => Some(skin.solid_surface()),
         Role::MeterFill => Some(skin.accent),
         Role::Scrim => Some(skin.scrim),
-        Role::Screen | Role::Menu | Role::Heading | Role::Label | Role::ButtonText => None,
+        // A switch is lit by the accent while on, and its knob's place says so a second way.
+        Role::ToggleTrack => Some(if owner.disabled {
+            skin.surface
+        } else if owner.checked {
+            skin.accent
+        } else {
+            skin.surface_raised
+        }),
+        Role::ToggleKnob => Some(if owner.checked && !owner.disabled {
+            skin.accent_text
+        } else {
+            skin.text_muted
+        }),
+        Role::SliderFill => Some(if owner.disabled {
+            skin.text_muted
+        } else {
+            skin.accent
+        }),
+        // The thumb is the text colour with a keyline in the panel's, so one of the two contrasts
+        // with the fill, the rail and the panel behind it, in either skin.
+        Role::SliderThumb => Some(if owner.disabled {
+            skin.text_muted
+        } else if owner.pressed {
+            skin.focus_ring
+        } else {
+            skin.text
+        }),
+        Role::Screen
+        | Role::Menu
+        | Role::Heading
+        | Role::Label
+        | Role::ButtonText
+        | Role::Toggle
+        | Role::Slider
+        | Role::SliderHeader
+        | Role::SliderTrack
+        | Role::SliderGap
+        | Role::SliderReadout
+        | Role::ControlText => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(fill));
@@ -567,9 +700,19 @@ fn restyle(
 
     let edge = match role {
         Role::Panel | Role::Tooltip => Some(BorderColor::all(skin.surface_raised)),
-        Role::Meter => Some(BorderColor::all(skin.outline)),
+        Role::Meter | Role::ToggleTrack | Role::SliderRail => Some(BorderColor::all(skin.outline)),
         Role::Button if look.focused == Some(entity) => Some(BorderColor::all(skin.focus_ring)),
         Role::Button => Some(BorderColor::all(Color::NONE)),
+        // A row has no fill of its own, so its border speaks: the ring when focused, the outline
+        // under the pointer, nothing at rest.
+        Role::Toggle | Role::Slider => Some(BorderColor::all(if look.focused == Some(entity) {
+            skin.focus_ring
+        } else if (state.hovered || state.pressed) && !state.disabled {
+            skin.outline
+        } else {
+            Color::NONE
+        })),
+        Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         _ => None,
     };
     if let (Some(edge), Some(mut border)) = (edge, border) {
@@ -607,7 +750,7 @@ fn restyle(
             // CSS's content-edge radius: the track's minus its frame and gap, so the corners are
             // concentric. Bevy clips a child to a rectangle, never to its parent's curve, so the
             // fill is rounded itself.
-            Role::MeterFill => {
+            Role::MeterFill | Role::SliderFill => {
                 next.border_radius =
                     BorderRadius::all(Val::Px((skin.radius - 2.0 * line).max(0.0)));
             }
@@ -616,6 +759,65 @@ fn restyle(
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.max_width = Val::Px(tooltip_width(skin, tip.unwrap_or_default(), line));
+            }
+            // A button's frame and room, a label left and a switch right, the row the target.
+            Role::Toggle => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding =
+                    UiRect::axes(Val::Px(skin.padding * 1.5), Val::Px(skin.padding * 0.6));
+                next.min_height = Val::Px(skin.min_target);
+                next.column_gap = Val::Px(skin.gap);
+            }
+            // A framed pill, one line of frame and one of gap round the knob, which sits at the
+            // start while off and the end while on.
+            Role::ToggleTrack => {
+                next.width = Val::Px(switch * 2.0);
+                next.height = Val::Px(switch);
+                next.flex_shrink = 0.0;
+                next.border = UiRect::all(Val::Px(line));
+                next.padding = UiRect::all(Val::Px(line));
+                next.border_radius = BorderRadius::all(Val::Px(switch / 2.0));
+                next.justify_content = if owner.checked {
+                    JustifyContent::FlexEnd
+                } else {
+                    JustifyContent::FlexStart
+                };
+            }
+            Role::ToggleKnob => {
+                next.width = Val::Px(knob);
+                next.height = Val::Px(knob);
+                next.flex_shrink = 0.0;
+                next.border_radius = BorderRadius::all(Val::Px(knob / 2.0));
+            }
+            // No room at the sides: `bevy_ui_widgets` turns a click into a value across the whole
+            // width of this node, so the thumb must travel that width, less the border.
+            Role::Slider => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(0.0), Val::Px(skin.padding * 0.6));
+                next.min_width = Val::Px(text_px * SLIDER_MIN_TEXT_SIZES);
+                next.row_gap = Val::Px(skin.gap * 0.5);
+            }
+            // The header's text lines up with a toggle's label and a toggle's switch.
+            Role::SliderHeader => next.padding = UiRect::horizontal(Val::Px(skin.padding * 1.5)),
+            Role::SliderTrack => next.height = Val::Px(thumb.y),
+            // From the thumb's centre at the start to its centre at the end.
+            Role::SliderRail => {
+                next.left = Val::Px(thumb.x / 2.0);
+                next.right = Val::Px(thumb.x / 2.0);
+                next.top = Val::Px((thumb.y - rail) / 2.0);
+                next.height = Val::Px(rail);
+                next.border = UiRect::all(Val::Px(line));
+                next.padding = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+            }
+            Role::SliderThumb => {
+                next.width = Val::Px(thumb.x);
+                next.height = Val::Px(thumb.y);
+                next.flex_shrink = 0.0;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
             }
             _ => {}
         }
@@ -631,6 +833,14 @@ fn restyle(
                 skin.text_muted
             } else if parent.pressed {
                 skin.accent_text
+            } else {
+                skin.text
+            };
+            Some((color, &look.fonts.body, skin.text_size))
+        }
+        Role::ControlText | Role::SliderReadout => {
+            let color = if owner.disabled {
+                skin.text_muted
             } else {
                 skin.text
             };

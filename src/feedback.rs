@@ -2,7 +2,7 @@
 
 use bevy::input_focus::InputFocus;
 use bevy::prelude::*;
-use bevy::ui_widgets::Activate;
+use bevy::ui_widgets::{Activate, ValueChange};
 
 use crate::skin::Role;
 
@@ -35,7 +35,8 @@ pub struct UiFeedback {
 pub enum UiFeedbackKind {
     /// Focus moved onto the widget.
     Focus,
-    /// The widget was activated (clicked, Enter, Space or the pad's South button).
+    /// The widget was activated (a button clicked, Enter, Space or the pad's South button) or a
+    /// toggle flipped.
     Activate,
 }
 
@@ -53,7 +54,21 @@ pub(crate) fn feedback_on_activate(
     }
 }
 
-/// Writes [`UiFeedbackKind::Focus`] when focus moves onto a button. Runs in
+/// Writes [`UiFeedbackKind::Activate`] when a toggle flips. A global observer.
+pub(crate) fn feedback_on_toggle(
+    event: On<ValueChange<bool>>,
+    roles: Query<&Role>,
+    mut out: MessageWriter<UiFeedback>,
+) {
+    if roles.get(event.source) == Ok(&Role::Toggle) {
+        out.write(UiFeedback {
+            entity: event.source,
+            kind: UiFeedbackKind::Activate,
+        });
+    }
+}
+
+/// Writes [`UiFeedbackKind::Focus`] when focus moves onto a button, toggle or slider. Runs in
 /// [`crate::GooeySystems::Navigate`], after [`crate::navigate_by_input`].
 pub fn feedback_on_focus(
     focus: Res<InputFocus>,
@@ -64,7 +79,10 @@ pub fn feedback_on_focus(
         return;
     }
     if let Some(entity) = focus.get()
-        && roles.get(entity) == Ok(&Role::Button)
+        && matches!(
+            roles.get(entity),
+            Ok(Role::Button | Role::Toggle | Role::Slider)
+        )
     {
         out.write(UiFeedback {
             entity,
