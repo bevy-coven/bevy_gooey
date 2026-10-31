@@ -359,22 +359,18 @@ fn stage_keys(
                 pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
             }
         }
-        Some(Staged::Untip) => {
-            if state == ButtonState::Pressed {
-                for widget in &tipped {
-                    commands.entity(widget).remove::<Tooltip>();
-                }
+        Some(Staged::Untip) if state == ButtonState::Pressed => {
+            for widget in &tipped {
+                commands.entity(widget).remove::<Tooltip>();
             }
         }
-        Some(Staged::Retip) => {
-            if state == ButtonState::Pressed {
-                for widget in &tipped {
-                    commands.entity(widget).insert(Tooltip(
-                        "Unlocked: sound, controls, display and cheats".into(),
-                    ));
-                }
+        Some(Staged::Retip) if state == ButtonState::Pressed => {
+            for widget in &tipped {
+                commands.entity(widget).insert(Tooltip(
+                    "Unlocked: sound, controls, display and cheats".into(),
+                ));
             }
         }
-        None => {}
+        _ => {}
     }
 }
