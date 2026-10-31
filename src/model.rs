@@ -433,6 +433,39 @@ pub fn scroll_to_reveal(
     want.clamp(0.0, max)
 }
 
+/// A scroll position moved on to the top of a row, so a list that follows focus always stands with a
+/// row flush at the top of its viewport, as it does at rest, and the row it cuts at the bottom is
+/// cut the same way at every step: `want` is where [`scroll_to_reveal`] asked to go from `scroll`,
+/// and `tops` are the rows' tops in the same units. Moving down it takes the first row top at or
+/// after `want`, moving up the last at or before it (half a unit of slack for rounded layout), so
+/// it never scrolls less than was asked. `None` when no row top lies that way (the end of the
+/// list: the caller keeps `want`, which then ends flush with the last row) or `want` is no move.
+///
+/// ```
+/// let tops = [0.0, 57.0, 114.0, 171.0];
+/// // A step of 46.8 down, from the top, goes on to the next row's top.
+/// assert_eq!(bevy_gooey::snap_to_row(46.8, 0.0, &tops), Some(57.0));
+/// // A step up from 171 that asks for 120 stops at the row top above it.
+/// assert_eq!(bevy_gooey::snap_to_row(120.0, 171.0, &tops), Some(114.0));
+/// // Past the last row top there is nothing to snap to.
+/// assert_eq!(bevy_gooey::snap_to_row(190.0, 114.0, &tops), None);
+/// ```
+pub fn snap_to_row(want: f32, scroll: f32, tops: &[f32]) -> Option<f32> {
+    if !(want.is_finite() && scroll.is_finite()) || (want - scroll).abs() < f32::EPSILON {
+        return None;
+    }
+    let usable = tops.iter().copied().filter(|t| t.is_finite());
+    if want > scroll {
+        usable
+            .filter(|&t| t >= want - 0.5)
+            .min_by(|a, b| a.total_cmp(b))
+    } else {
+        usable
+            .filter(|&t| t <= want + 0.5)
+            .max_by(|a, b| a.total_cmp(b))
+    }
+}
+
 /// Which of a list's rows a page away from the focused one is, for PageUp and PageDown: `from` is
 /// the focused row's centre along the list, `centres` the rows' centres in the same units, and
 /// `page` how far to go, positive for down and negative for up. The row furthest from `from` in
@@ -883,5 +916,34 @@ mod tests {
         assert_eq!(page_target(20.0, &[], 100.0), None);
         assert_eq!(page_target(20.0, &rows, 0.0), None);
         assert_eq!(page_target(f32::NAN, &rows, 100.0), None);
+    }
+
+    #[test]
+    fn a_scroll_moves_on_to_a_row_top_and_never_short_of_what_was_asked() {
+        let tops = [0.0, 57.0, 114.0, 171.0, 228.0];
+        assert_eq!(snap_to_row(1.0, 0.0, &tops), Some(57.0));
+        assert_eq!(
+            snap_to_row(57.0, 0.0, &tops),
+            Some(57.0),
+            "already on a top"
+        );
+        assert_eq!(
+            snap_to_row(56.6, 0.0, &tops),
+            Some(57.0),
+            "rounded layout, half a unit of slack"
+        );
+        assert_eq!(snap_to_row(58.0, 0.0, &tops), Some(114.0));
+        // Up takes the top at or before the ask, so the row asked for stays in view.
+        assert_eq!(snap_to_row(120.0, 228.0, &tops), Some(114.0));
+        assert_eq!(snap_to_row(114.0, 228.0, &tops), Some(114.0));
+        assert_eq!(snap_to_row(1.0, 228.0, &tops), Some(0.0));
+        // No row top that way: the end of the list.
+        assert_eq!(snap_to_row(229.0, 171.0, &tops), None);
+        assert_eq!(snap_to_row(-5.0, 57.0, &tops), None);
+        // No move, nothing to snap to, or nothing readable.
+        assert_eq!(snap_to_row(57.0, 57.0, &tops), None);
+        assert_eq!(snap_to_row(60.0, 0.0, &[]), None);
+        assert_eq!(snap_to_row(f32::NAN, 0.0, &tops), None);
+        assert_eq!(snap_to_row(60.0, 0.0, &[f32::NAN, 114.0]), Some(114.0));
     }
 }

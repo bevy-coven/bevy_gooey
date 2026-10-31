@@ -9,11 +9,22 @@
 - `Role::{Choice, ChoiceArrow, ChoiceBack, ChoiceForward, ChoiceCell, ChoiceOption}`, styled in `apply_skin` like every other part.
 - `UiFeedback`: a choice gaining focus writes `Focus`, and each change of its option writes `Activate`, once.
 - The gallery example has a Quality choice (it logs and toasts the option it settles on) and `GOOEY_KEYS` tokens `space`, `home`, `end`, `back` and `forward` (a click on a chevron).
+- `list(rows, children![..])`: rows that scroll, for save slots, an inventory, a key-binding screen. A wrapper (`Role::List`) holding a clipped viewport (the new public `ListView { rows }`, on Bevy's `ScrollArea`, so the wheel and a trackpad scroll it) and a rail with a thumb (Bevy's `Scrollbar`, so a drag on the thumb and a click on the rail scroll it). The viewport stands `rows` rows tall (a row is a button's height and the `gap` after it, following `text_scale`), so `4.5` cuts the fifth row, the sign that more is below. The rail, `2 × border` wide, shows only while the rows do not fit; its lane is always reserved so rows never change width. The thumb is `text_muted` on a `surface_raised` track (the pair `problems()` already holds at 3:1), `text` under the pointer and `accent` while dragged.
+- `scroll_to_focus` (in `GooeySystems::Navigate`): a list follows the focus a key, the D-pad or Tab gives one of its rows, by the least scroll that leaves a row and a half of list beyond it (the next row whole, the one after cut), moved on to a row's top so the list stands as it does at rest with a row flush at its top and the row it cuts cut the same way at every step (not at the end, where it ends flush with the last row); a row taller than the list scrolls to its top and a jump of more than a viewport centres the row. A focus the pointer set is not followed, so a press never scrolls the content from under its own release. `page_lists` (same set): PageUp, PageDown and the pad's left and right triggers move focus a viewport. `update_lists` (in `GooeySystems::Style`) shows each rail only while there is more to scroll, writing it only on a change.
+- `Up` and `Down` stay among a list's rows until they run out, and a row a list has clipped away is not a neighbour from outside the list (`navigate_by_input`): geometry alone stepped out of a list past rows it still held, onto the button below.
+- `model::{list_height, scroll_to_reveal, snap_to_row, page_target}`, the engine-free maths under it (tests and doctests); `Role::{List, ListView, ListRows, ListRail, ListThumb}`, styled in `apply_skin` like every other part.
+- The gallery example has a Load game list of twelve save slots beside its panel, and `GOOEY_KEYS` tokens `slots`, `pagedown`, `pageup` and `wheel`.
 
 ### Changed
 
 - `Role` has six more variants: a `match` over it that is exhaustive needs arms for them.
+- `Role` has five more variants for the list: a `match` over it that is exhaustive needs arms for them.
+- `FocusScopes` gained a query over lists, and `show_focus` is crate-visible: callers of `navigate_by_input` are unchanged.
 - `gamepad_adjust` steps a focused, enabled choice as well as a slider (its query over sliders became one over both, so its signature changed) and `FocusScopes` keeps Left and Right for a focused, enabled choice as it does for a slider; a host that registers these systems by hand gets them from `GooeyNavPlugin` as before, and calling them directly is unchanged.
+
+### Fixed
+
+- A `Tooltip` on a widget inside a clipped container (a row of a `list`) was clipped by it, so its box, which stands beside the widget and outside the container, never showed: the box now carries Bevy's `OverrideClip`.
 
 ## [0.3.0] - 2026-10-31
 
