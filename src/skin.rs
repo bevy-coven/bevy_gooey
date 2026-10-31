@@ -14,6 +14,7 @@ use crate::model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
     snap_line_width,
 };
+use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
 
 /// A meter's least length, in body text sizes: 8 × 20 px = 160 px at the default size, growing
@@ -31,6 +32,13 @@ const THUMB_TEXT_SIZES: f32 = 1.0;
 
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
+
+/// A toast's longest line, in body text sizes: the tooltip's measure, about 40 characters.
+const TOAST_MEASURE_TEXT_SIZES: f32 = 24.0;
+
+/// An information toast's mark is this many lines wide, and an alert's twice that: the kind is the
+/// mark's width first and its colour second, as a switch's state is its knob's place.
+const TOAST_MARK_LINES: f32 = 4.0;
 
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
@@ -68,12 +76,14 @@ pub struct GooeySkin {
     /// The text of a disabled control, and the knob of a switch that is off; the knob is checked
     /// against [`GooeySkin::surface_raised`], the switch's track, at the 3:1 non-text minimum.
     pub text_muted: Color,
-    /// A pressed button and a meter's fill; checked against [`GooeySkin::surface_raised`], the
-    /// meter's track, at the 3:1 non-text minimum.
+    /// A pressed button, a meter's fill and a toast's mark; checked against
+    /// [`GooeySkin::surface_raised`], the meter's track, and against the solid surface a toast
+    /// stands on, at the 3:1 non-text minimum.
     pub accent: Color,
     /// Text drawn on [`GooeySkin::accent`].
     pub accent_text: Color,
-    /// A colour for destructive actions, for the host to use.
+    /// A colour for destructive actions, and the mark of an alert toast ([`crate::toast_alert`]);
+    /// checked against the solid surface a toast stands on at the 3:1 non-text minimum.
     pub danger: Color,
     /// The border of the focused button while focus is visible.
     pub focus_ring: Color,
@@ -239,6 +249,18 @@ impl GooeySkin {
                 "text_muted on surface_raised",
                 rgb(self.text_muted),
                 rgb(self.surface_raised),
+                NON_TEXT_CONTRAST,
+            ),
+            (
+                "accent on surface",
+                rgb(self.accent),
+                surface,
+                NON_TEXT_CONTRAST,
+            ),
+            (
+                "danger on surface",
+                rgb(self.danger),
+                surface,
                 NON_TEXT_CONTRAST,
             ),
         ];
@@ -430,6 +452,19 @@ pub enum Role {
     SliderReadout,
     /// The label of a toggle or a slider: body text that dims with a disabled control.
     ControlText,
+    /// The one full-window column the toasts stand in; not drawn, it pads the toasts.
+    ToastStack,
+    /// A [`crate::toast`]'s room: a clipped column whose height opens and closes, so the toasts
+    /// around it make way and close up; not drawn.
+    Toast,
+    /// A toast's body: a raised row of a mark and a message, framed in [`GooeySkin::outline`], that
+    /// fades in and out.
+    ToastBody,
+    /// A toast's mark down its left edge: [`GooeySkin::accent`], or [`GooeySkin::danger`] for an
+    /// alert, twice as wide.
+    ToastMark,
+    /// A toast's message: body text that fades with its toast.
+    ToastText,
 }
 
 type Styled = (
@@ -456,7 +491,7 @@ struct Look<'a> {
 }
 
 /// The widget state a look depends on.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 struct State {
     pressed: bool,
     disabled: bool,
@@ -465,6 +500,30 @@ struct State {
     checked: bool,
     /// The entity is a dialog's scrim: a panel on it is drawn opaque.
     scrim: bool,
+    /// A toast's opacity; whole for everything that is not one.
+    alpha: f32,
+    /// A toast of the alert kind.
+    alert: bool,
+    /// How much of a toast's room is open, from 0 to 1; whole for everything that is not one.
+    grow: f32,
+    /// How tall a toast's body stands in full, in logical px.
+    body_px: f32,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            pressed: false,
+            disabled: false,
+            hovered: false,
+            checked: false,
+            scrim: false,
+            alpha: 1.0,
+            alert: false,
+            grow: 1.0,
+            body_px: 0.0,
+        }
+    }
 }
 
 /// What [`State`] is read from.
@@ -474,6 +533,7 @@ type StateQuery = (
     Has<InteractionDisabled>,
     Has<Checked>,
     Option<&'static Hovered>,
+    Option<&'static Toast>,
     Option<&'static Role>,
 );
 
@@ -488,13 +548,17 @@ type Restyle = (
         Changed<Checked>,
         Changed<SliderDragState>,
         Changed<TooltipBox>,
+        Changed<Toast>,
         Changed<ComputedUiRenderTargetInfo>,
     )>,
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
 fn owns_parts(role: Option<&Role>) -> bool {
-    matches!(role, Some(Role::Button | Role::Toggle | Role::Slider))
+    matches!(
+        role,
+        Some(Role::Button | Role::Toggle | Role::Slider | Role::Toast)
+    )
 }
 
 /// Styles every entity with a [`Role`] from [`GooeySkin`] and [`GooeyFonts`]: the one place
@@ -535,15 +599,21 @@ pub fn apply_skin(
     let state_of = |entity: Entity| {
         states
             .get(entity)
-            .map(|(pressed, drag, disabled, checked, hovered, role)| State {
-                // `bevy_ui_widgets` marks a slider pressed for a click on its track only; a grab
-                // of the thumb is a drag, so a dragged slider reads as pressed too.
-                pressed: pressed || drag.is_some_and(|d| d.dragging),
-                disabled,
-                hovered: hovered.is_some_and(|h| h.0),
-                checked,
-                scrim: role == Some(&Role::Scrim),
-            })
+            .map(
+                |(pressed, drag, disabled, checked, hovered, toast, role)| State {
+                    // `bevy_ui_widgets` marks a slider pressed for a click on its track only; a grab
+                    // of the thumb is a drag, so a dragged slider reads as pressed too.
+                    pressed: pressed || drag.is_some_and(|d| d.dragging),
+                    disabled,
+                    hovered: hovered.is_some_and(|h| h.0),
+                    checked,
+                    scrim: role == Some(&Role::Scrim),
+                    alpha: toast.map_or(1.0, Toast::alpha),
+                    alert: toast.is_some_and(|t| t.kind() == ToastKind::Alert),
+                    grow: toast.map_or(1.0, Toast::grow),
+                    body_px: toast.map_or(0.0, Toast::body_px),
+                },
+            )
             .unwrap_or_default()
     };
     // A part of a toggle or a slider, however deep, follows that toggle or slider's state.
@@ -551,9 +621,9 @@ pub fn apply_skin(
         parents
             .iter_ancestors(entity)
             .find(|&a| {
-                states
-                    .get(a)
-                    .is_ok_and(|(.., role)| matches!(role, Some(Role::Toggle | Role::Slider)))
+                states.get(a).is_ok_and(|(.., role)| {
+                    matches!(role, Some(Role::Toggle | Role::Slider | Role::Toast))
+                })
             })
             .map(state_of)
             .unwrap_or_default()
@@ -621,11 +691,17 @@ pub fn apply_skin(
 }
 
 fn restyle(
-    (entity, role, node, background, border, text_color, text_font, tooltip, target): bevy::ecs::query::QueryItem<
-        '_,
-        '_,
-        Styled,
-    >,
+    (
+        entity,
+        role,
+        node,
+        background,
+        border,
+        text_color,
+        text_font,
+        tooltip,
+        target,
+    ): bevy::ecs::query::QueryItem<'_, '_, Styled>,
     look: &Look,
     state: State,
     parent: Option<State>,
@@ -657,6 +733,15 @@ fn restyle(
         }),
         Role::Meter | Role::SliderRail => Some(skin.surface_raised),
         Role::Tooltip => Some(skin.solid_surface()),
+        Role::ToastBody => Some(faded(skin.solid_surface(), owner.alpha)),
+        Role::ToastMark => Some(faded(
+            if owner.alert {
+                skin.danger
+            } else {
+                skin.accent
+            },
+            owner.alpha,
+        )),
         Role::MeterFill => Some(skin.accent),
         Role::Scrim => Some(skin.scrim),
         // A switch is lit by the accent while on, and its knob's place says so a second way.
@@ -697,7 +782,10 @@ fn restyle(
         | Role::SliderTrack
         | Role::SliderGap
         | Role::SliderReadout
-        | Role::ControlText => None,
+        | Role::ControlText
+        | Role::Toast
+        | Role::ToastStack
+        | Role::ToastText => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(fill));
@@ -705,6 +793,9 @@ fn restyle(
 
     let edge = match role {
         Role::Panel | Role::Tooltip => Some(BorderColor::all(skin.surface_raised)),
+        // Framed in the outline like the other widgets whose fill is the colour of what is behind
+        // them: a toast over a panel keeps its edge at 3:1.
+        Role::ToastBody => Some(BorderColor::all(faded(skin.outline, owner.alpha))),
         Role::Meter | Role::ToggleTrack | Role::SliderRail => Some(BorderColor::all(skin.outline)),
         Role::Button if look.focused == Some(entity) => Some(BorderColor::all(skin.focus_ring)),
         Role::Button => Some(BorderColor::all(Color::NONE)),
@@ -758,6 +849,50 @@ fn restyle(
             Role::MeterFill | Role::SliderFill => {
                 next.border_radius =
                     BorderRadius::all(Val::Px((skin.radius - 2.0 * line).max(0.0)));
+            }
+            // The toasts' own vertical margins make the gap between rows and stand half a gap off
+            // the stack's ends, so the stack pads its ends half a gap less than the screen's edge
+            // wants and its sides in full.
+            Role::ToastStack => {
+                let edge = skin.padding * 2.0;
+                next.padding =
+                    UiRect::axes(Val::Px(edge), Val::Px((edge - skin.gap / 2.0).max(0.0)));
+            }
+            // The room a toast holds in the column: its body's height and its margins while it
+            // opens or closes, no limit once it has opened. The body inside is clipped to it.
+            Role::Toast => {
+                next.max_height = if state.grow >= 1.0 {
+                    Val::Auto
+                } else {
+                    Val::Px((state.body_px + skin.gap) * state.grow)
+                };
+            }
+            // The tooltip's measure and the meter's frame, a row of a mark and a message, with half
+            // a gap of margin above and below so two toasts stand a gap apart. It is never squeezed
+            // by the room it is clipped to: the room is measured from its full height.
+            Role::ToastBody => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.max_width = Val::Px(text_px * TOAST_MEASURE_TEXT_SIZES);
+                next.margin = UiRect::vertical(Val::Px(skin.gap / 2.0));
+                next.flex_shrink = 0.0;
+            }
+            // Flush with the toast's inside edge, so its outer corners follow the frame's curve.
+            Role::ToastMark => {
+                let inner = Val::Px((skin.radius - line).max(0.0));
+                let marks = if owner.alert { 2.0 } else { 1.0 };
+                next.width = Val::Px(line * TOAST_MARK_LINES * marks);
+                next.flex_shrink = 0.0;
+                next.border_radius = BorderRadius {
+                    top_left: inner.into(),
+                    bottom_left: inner.into(),
+                    top_right: Val::ZERO.into(),
+                    bottom_right: Val::ZERO.into(),
+                };
+            }
+            Role::ToastText => {
+                next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.5));
+                next.flex_shrink = 1.0;
             }
             Role::Tooltip => {
                 next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.5));
@@ -853,6 +988,11 @@ fn restyle(
             };
             Some((color, &look.fonts.body, skin.text_size))
         }
+        Role::ToastText => Some((
+            faded(skin.text, owner.alpha),
+            &look.fonts.body,
+            skin.text_size,
+        )),
         _ => None,
     };
     if let Some((color, font, size)) = text {
@@ -885,6 +1025,19 @@ fn restyle(
             Val::Px(skin.padding),
         ));
     }
+}
+
+/// `color` with its own alpha times `opacity`: a toast fading in or out. Whole opacity returns the
+/// colour untouched.
+fn faded(color: Color, opacity: f32) -> Color {
+    if opacity >= 1.0 {
+        return color;
+    }
+    let c = Srgba::from(color);
+    Color::from(Srgba {
+        alpha: c.alpha * opacity.max(0.0),
+        ..c
+    })
 }
 
 /// A tooltip's widest box, logical px: a comfortable line of about 40 characters (24 text sizes),
