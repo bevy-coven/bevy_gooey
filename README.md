@@ -11,16 +11,17 @@ navigation, on Bevy's own headless widgets.
 [![Bevy](https://img.shields.io/badge/bevy-0.20-blue.svg)](https://bevyengine.org)
 [![licence](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue.svg)](#who-and-licence)
 
-![A menu panel and a Load game list: the focus ring walks down the save slots from Autosave to Harbour, Page Down scrolls the list so Chapel, 00:12 carries the ring, the health meter drains, and a "Game saved" toast appears at the bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
+![A menu panel with a tab strip and a Load game list: the focus ring walks down the save slots from Autosave to Mill, 03:02, Page Down moves it to Chapel, 00:12, the health meter drains, and a "Game saved" toast appears at the bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
 
-*`examples/gallery`: two panels, a meter draining, a switch, a choice, a slider, a list that scrolls to
-follow focus, and toasts.*
+*`examples/gallery`: two panels, a meter draining, settings in tabs (a slider and a switch on the first), a list
+that scrolls to follow focus, and toasts.*
 
-![The same gallery at rest: the left panel with Play, Options and Quit, the meter, the Subtitles
-switch, the Quality choice and the Volume slider; the right a Load game list four and a half rows tall
-with a rail and its thumb; two toasts at the bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
+![The same gallery at rest: the left panel with Play, Options and Quit, the meter, the Audio, Display
+and Controls tabs with Audio lit over the Volume slider and the Subtitles switch; the right a Load game
+list four and a half rows tall with a rail and its thumb, the ring on Chapel, 00:12; one toast at the
+bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
 
-*The still: every widget on one screen, the dark skin, 1280 × 720.*
+*The still: the dark skin, 1280 × 720.*
 
 **Status:** usable · Bevy 0.20 · MSRV 1.97.1
 
@@ -82,18 +83,21 @@ Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data).
 cargo run --example gallery
 ```
 
-Every widget on one screen, exactly what the two pictures above show: arrows or the D-pad move focus,
-Enter, Space and South activate, Shift+T doubles the text, Options swaps the skin, Quit opens a dialog,
-and the save-slot list scrolls with the wheel, a drag on its thumb or PageUp and PageDown.
+Every widget on a screen, what the pictures above show: arrows or the D-pad move focus, Enter, Space and
+South activate, Shift+T doubles the text, Options swaps the skin, Quit opens a dialog, Right on a focused
+tab or Ctrl+PageDown turns the settings page (Display holds the choices), and the save-slot list scrolls
+with the wheel, a drag on its thumb or PageUp and PageDown.
 
 ## What you can do
 
 - **Skin the whole interface from one value** — `GooeySkin` is plain data with two presets and a
   `problems()` check against the WCAG 2.2 contrast and target-size rules:
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
-- **Build an options screen from three rows** — a `toggle`, a `choice` and a `slider` root on Bevy's own
-  `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe` and says
-  each change once in `ValueChange`: [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md).
+- **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
+  Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
+  and says each change once in `ValueChange`, and `tabs` puts them on pages a click, the arrows or LB and
+  RB turn: [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md),
+  [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
 - **Scroll a list that follows the focus** — `list(4.5, children![..])` cuts the fifth row so the player
   sees there is more, and keeps the next row in sight as the arrows walk down it:
   [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md).
@@ -108,6 +112,10 @@ and the save-slot list scrolls with the wheel, a drag on its thumb or PageUp and
   [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).
 - **Let the pointer through a HUD** — the empty part of a `screen` is `Pickable::IGNORE`, so a click on
   the world under it still reaches the world: [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md).
+
+![The gallery's settings panel: the ring moves from Quit onto the lit Audio tab, Right turns to Display (two choices), Right to Controls (two buttons) and Right wraps back to Audio, Down enters the page on the Volume slider, and Ctrl+PageDown turns to Display and then Controls with the ring landing on each new page's first widget](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tabs.gif)
+
+*The tabs: Right on a focused tab, then Ctrl+PageDown from inside a page (a pad's RB). The panel never moves.*
 
 The [guide index](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) lists the rest: every widget in one table, what a host touches
 and what it only sees, and the boundary with the game.

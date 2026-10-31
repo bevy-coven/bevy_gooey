@@ -19,18 +19,30 @@ use bevy::ui::{
     UiGlobalTransform,
 };
 use bevy::ui_widgets::{
-    Activate, Checkbox, SetSliderValue, Slider, SliderValueChange, ToggleChecked,
+    Activate, Checkbox, SetSliderValue, Slider, SliderValueChange, Tab, ToggleChecked,
 };
 
 use crate::choice::{ChoiceCount, Move, MoveChoice};
 use crate::list::{ListView, span};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
+use crate::skin::Role;
+use crate::tabs::{TabsCount, TabsValue};
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
 type TakesSideways = (
     Or<(With<Slider>, With<ChoiceCount>)>,
     Without<InteractionDisabled>,
 );
+
+/// The widgets whose Left and Right never also move focus: [`TakesSideways`] and a tab, whose keys
+/// are Bevy's and whose D-pad is [`crate::step_tabs`]'.
+type KeepsSideways = (
+    Or<(With<Slider>, With<ChoiceCount>, With<Tab>)>,
+    Without<InteractionDisabled>,
+);
+
+/// The tabs widgets focus can be turned from: every enabled one.
+type TurnableTabs = (With<TabsValue>, Without<InteractionDisabled>);
 
 /// What a [`crate::dialog`] remembers: the widget that had focus when it opened, which gets focus
 /// back when the dialog closes, and whether focus has moved in yet. Part of `dialog()`; a game
@@ -83,10 +95,16 @@ pub struct FocusScopes<'w, 's> {
     starts: Query<'w, 's, StartPoint, StartMark>,
     /// Everything focus can rest on.
     stops: Query<'w, 's, Option<&'static InheritedVisibility>, With<TabIndex>>,
-    /// The sliders and choices that take Left and Right themselves.
-    sideways: Query<'w, 's, (), TakesSideways>,
+    /// The sliders, choices and tabs that take Left and Right themselves.
+    sideways: Query<'w, 's, (), KeepsSideways>,
     /// The lists, to tell a widget one has clipped away from one in view.
     lists: Query<'w, 's, (&'static ComputedNode, &'static UiGlobalTransform), With<ListView>>,
+    /// A tab strip's tabs, and the tab widgets that hold them.
+    tab_stops: Query<'w, 's, &'static ChildOf, With<Tab>>,
+    tab_roots: Query<'w, 's, (Entity, &'static InheritedVisibility), TurnableTabs>,
+    tab_values: Query<'w, 's, (&'static TabsValue, &'static TabsCount)>,
+    kids: Query<'w, 's, &'static Children>,
+    roles: Query<'w, 's, &'static Role>,
 }
 
 impl FocusScopes<'_, '_> {
@@ -111,6 +129,75 @@ impl FocusScopes<'_, '_> {
     /// adjust it and never move focus off it. A disabled one takes nothing.
     fn keeps_sideways(&self, entity: Entity) -> bool {
         self.sideways.contains(entity)
+    }
+
+    /// Whether `entity` is one of a tab strip's tabs.
+    pub(crate) fn is_tab(&self, entity: Entity) -> bool {
+        self.tab_stops.contains(entity)
+    }
+
+    /// The tabs widget a bumper or Ctrl+PageUp turns for focus on `from`: the nearest one `from` is
+    /// inside, or else the only visible one in `from`'s scope; none when there is none or two.
+    pub(crate) fn tabs_for(&self, from: Entity) -> Option<Entity> {
+        if let Some(root) = self
+            .parents
+            .iter_ancestors(from)
+            .find(|&a| self.tab_roots.contains(a))
+        {
+            return Some(root);
+        }
+        if !self.holds(from) {
+            return None;
+        }
+        let scope = self.of(from);
+        let mut here = self
+            .tab_roots
+            .iter()
+            .filter(|&(root, visible)| visible.get() && self.of(root) == scope)
+            .map(|(root, _)| root);
+        let only = here.next()?;
+        here.next().is_none().then_some(only)
+    }
+
+    /// A tabs widget's selected tab (clamped to its last) and how many tabs it has.
+    pub(crate) fn tabs_state(&self, root: Entity) -> Option<(usize, usize)> {
+        let (value, count) = self.tab_values.get(root).ok()?;
+        Some((value.0.min(count.0.saturating_sub(1)), count.0))
+    }
+
+    /// The `index`th tab of a tabs widget.
+    pub(crate) fn tab_at(&self, root: Entity, index: usize) -> Option<Entity> {
+        let strip = self
+            .kids
+            .get(root)
+            .ok()?
+            .iter()
+            .find(|&kid| self.roles.get(kid) == Ok(&Role::TabList))?;
+        self.kids.get(strip).ok()?.get(index).copied()
+    }
+
+    /// Where focus lands when it reaches the tab `to` from `from`: the strip's selected tab, when
+    /// `from` is not one of the same strip's tabs (APG: focus moving into the tab list "places focus
+    /// on the active tab element"), else `to`.
+    fn landing(&self, from: Entity, to: Entity) -> Entity {
+        let Ok(strip) = self.tab_stops.get(to).map(ChildOf::parent) else {
+            return to;
+        };
+        if self
+            .tab_stops
+            .get(from)
+            .is_ok_and(|tab| tab.parent() == strip)
+        {
+            return to;
+        }
+        self.parents
+            .get(strip)
+            .ok()
+            .and_then(|root| {
+                let (selected, _) = self.tabs_state(root.parent())?;
+                self.tab_at(root.parent(), selected)
+            })
+            .unwrap_or(to)
     }
 
     /// The list `entity` is a row of, if any: its nearest ancestor with a [`crate::ListView`].
@@ -282,7 +369,8 @@ pub fn navigate_by_input(
         }
     }
     if let Some(to) = find_best_candidate(&origin, direction, &candidates, &config) {
-        nav.focus.set(to, FocusCause::Navigated);
+        nav.focus
+            .set(scopes.landing(from, to), FocusCause::Navigated);
     }
 }
 

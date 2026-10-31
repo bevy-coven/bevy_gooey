@@ -24,6 +24,8 @@ All four are serde data under the `serde` feature except `GooeyFonts`, which hol
 - `ChoiceValue(usize)` and `ChoiceCount(usize)` — a `choice`'s selected index and its number of options.
   Write a `ChoiceValue` to move the choice from code (no `ValueChange` comes back for that); read it to
   know where the choice stands.
+- `TabsValue(usize)` and `TabsCount(usize)` — a `tabs`' selected index and its number of labels. Write a
+  `TabsValue` to turn the page from code (no `ValueChange` comes back for that); read it to know the page.
 - `Tooltip(String)` — the hint on any widget. Insert, remove or edit it and the open box follows.
 - `Toast { .. }` — the component `toast()` and `toast_alert()` return; despawn the entity to take one
   back sooner.
@@ -53,10 +55,13 @@ and plays a sound; the crate plays none. See [feedback](feedback.md).
 | `feedback_on_focus` | Navigate | writes `UiFeedback::Focus` when focus moves onto a widget |
 | `scroll_to_focus` | Navigate | a list follows the focus on one of its rows |
 | `page_lists` | Navigate | PageUp, PageDown and the pad's triggers move focus a viewport |
+| `step_tabs` | Navigate | LB, RB, Ctrl+PageUp and Ctrl+PageDown turn a tabs widget's page, and the D-pad steps a focused tab |
+| `land_tab_focus` | Navigate | focus never rests on a page that is not shown: it moves to the page's first widget |
 | `show_tooltips` | Style | a hovered or visibly focused widget's tooltip opens |
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
+| `update_tabs` | Style | a tabs widget's selected page shown and no other, its tab lit, a value past the end pulled back |
 | `update_meters` | Style | a meter's fill and frame from its `Meter` |
 | `update_lists` | Style | a list's rail, only on a change |
 | `update_toasts` | Style | the toast clocks, the stack's order and its cap |
@@ -74,5 +79,5 @@ with the spawn. The resources and the `UiFeedback` message are `GooeyNavPlugin`'
 use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `meter_fraction`,
 `slider_fraction`, `slider_text`, `list_height`, `scroll_to_reveal`, `snap_to_row`, `page_target`,
 `snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
-`repeat_steps`, `choice_step`, `choice_next`, and the constants `TEXT_CONTRAST`,
+`repeat_steps`, `choice_step`, `choice_next`, `tab_step`, and the constants `TEXT_CONTRAST`,
 `NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY` and `PAD_REPEAT_RATE`.
