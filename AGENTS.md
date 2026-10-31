@@ -1,6 +1,6 @@
 # bevy_gooey — notes for agents
 
-The game-UI kit: a skin as data, ready-made game widgets (screen, panel, menu, heading, label, button, HUD meter, tooltip, modal dialog), keyboard and gamepad navigation and UI feedback, on Bevy 0.20's headless widgets (`bevy_ui_widgets`) and input focus (`bevy_input_focus`). Its design rules and their sources are in `docs/research/gooey.md`.
+The game-UI kit: a skin as data, ready-made game widgets (screen, panel, menu, heading, label, button, HUD meter, toggle, slider, tooltip, modal dialog), keyboard and gamepad navigation and UI feedback, on Bevy 0.20's headless widgets (`bevy_ui_widgets`) and input focus (`bevy_input_focus`). Its design rules and their sources are in `docs/research/gooey.md`.
 
 ## Force pushes and deletions need the user's express permission
 
@@ -22,13 +22,14 @@ This repository, [`Ladvien/bevy_gooey`](https://github.com/Ladvien/bevy_gooey), 
 - `src/model.rs` — engine-free maths: `relative_luminance`, `contrast_ratio`, `composite`, `meter_fraction`, `window_ui_scale`, `snap_line_width` (a border on whole device pixels, CSS's rule), the WCAG constants.
 - `src/scale.rs` — `UiScaleSettings`, `scale_with_window` (sets `UiScale` from the window's shorter side).
 - `src/skin.rs` — `GooeySkin` (presets, `hovered`, `problems`), `SkinProblem`, `GooeyFonts`, `Role`, `apply_skin`.
-- `src/widgets.rs` — `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter`, `dialog`.
-- `src/meter.rs` — `Meter`, `update_meters`.
+- `src/widgets.rs` — `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter`, `toggle`, `slider`, `dialog`. The root of `toggle` and `slider` is Bevy's own widget entity (`Checkbox`, `Slider`), so `ValueChange`, `observe` and `Tooltip` land on what the game spawned; `Option<Checked>` is not a `Bundle`, so a toggle's start state goes through the private `StartsOn` hook.
+- `src/meter.rs` — `Meter`, `update_meters`. `src/controls.rs` — `update_sliders` (a slider's thumb, fill and readout from `SliderValue`; the thumb is placed by a flex gap whose `flex_grow` is the value's fraction, which makes its travel the width less the thumb's, the travel `bevy_ui_widgets` assumes).
 - `src/tooltip.rs` — `Tooltip`, its hooks (`on_insert` and `on_remove` both queue `sync_box`: a `TooltipBox` child exists exactly while the widget has a `Tooltip`), `update_tooltip_text` (a changed `Tooltip`'s text goes into its box in place), `TooltipBox`, `show_tooltips` (hover or visible focus opens it). `apply_skin` places the box (Bevy's `Popover`) and styles it.
-- `src/nav.rs` — `navigate_by_input` (scoped like Tab: an open dialog's widgets only; shows focus; with nothing focused lands where the screen starts, via `FocusScopes`), `gamepad_select` (shows focus), `Dialog` and its focus-in and focus-back.
+- `src/nav.rs` — `navigate_by_input` (scoped like Tab: an open dialog's widgets only; shows focus; with nothing focused lands where the screen starts, via `FocusScopes`; leaves Left and Right to a focused, enabled slider), `gamepad_select` (shows focus; South activates a button and flips a toggle), `gamepad_adjust` (the D-pad steps a focused slider, a held direction repeats on real time, `model::repeat_steps`), `Dialog` and its focus-in and focus-back.
 - `src/feedback.rs` — `UiFeedback`, `UiFeedbackKind`, the activate observer, `feedback_on_focus`.
 - `examples/gallery.rs` — every widget on one screen; capture mode with `GOOEY_FRAMES`, `GOOEY_SHOT`, `GOOEY_SKIN`, `GOOEY_TEXT_SCALE`, `GOOEY_SIZE`, `GOOEY_WORLD` (a sprite under the interface, the game world; a click on it turns it warm and logs `gooey: world`) and `GOOEY_KEYS` (staged input, one every 10 frames from frame 30: `GOOEY_KEYS=down,down,enter` opens the Quit dialog; `click` is a primary click on the empty top-left corner, which hides focus and clears it). The gallery does not force `InputFocusVisible`: the first key shows the ring, as in a game.
 - `tests/leaf.rs` — the boundary ratchet. `tests/skin.rs`, `tests/nav.rs` — what a game sees. `tests/dialog.rs` — dialog focus, and a direction press with nothing focused landing where the screen (or the open dialog) starts, laid out in a headless window (`RenderPlugin` with no backends, no `WinitPlugin`), driven by real `KeyboardInput`. `tests/tooltip.rs` — a tooltip opens on focus, beside its widget, clear of its neighbours, flipped at the window's edge, and an arrow key, the D-pad and South show focus after a click, in the same headless window (a pad is plugged in with `GamepadConnectionEvent` and pressed with `RawGamepadEvent`). `tests/pointer.rs` — a HUD lets the pointer through: the empty part of a `screen()` is not in the hover map and a node below is, a panel, button, meter and a dialog's scrim still are, and a real press on the empty part reaches the world and clears focus (real `PointerInput`, same headless window). `tests/scale.rs` — the interface keeps its share of the window: sizes at 720p, 1080p, 1440p, a resize, the player's scale, a host that owns `UiScale`. `tests/lines.rs` — every border and the meter's gap one whole-pixel weight on all four sides at 1x to 3x, after a resize and at the player's scale (reads `ComputedNode::border`, physical px). `tests/serde.rs` — the skin and the scale settings as data. `tests/readme.rs` — the README quick start is the doctest.
+- `tests/controls.rs` — the toggle and the slider, in the same headless window: state kept and reported through `ValueChange`, a click anywhere on the row, Enter, Space and South, the thumb at the value's fraction (and under the pointer, within the ring's border), a drag, Left, Right, Home and End, the D-pad and its repeat (`TimeUpdateStrategy::ManualDuration` makes `Time<Real>` deterministic), disabled, the ring and the hover outline, whole-pixel lines at 1x to 2x, and `UiFeedback`.
 - `docs/research/` — the research note and the corpus. `docs/loop-log.md` — the loop's log and backlog.
 
 ## Build and test
@@ -58,7 +59,7 @@ The gate, every item green before a push:
 - **No `unwrap()`, no `expect()` outside tests.**
 - **One path per feature.** No fallbacks, no legacy shims, no stub placeholders.
 - **Never re-add plugins `DefaultPlugins` adds** (`UiWidgetsPlugins`, `InputFocusPlugin`, `InputDispatchPlugin`): a second add panics.
-- **Enter and Space belong to `bevy_ui_widgets`, gamepad South to `gamepad_select`.** A second handler would activate twice.
+- **Enter and Space belong to `bevy_ui_widgets`, gamepad South to `gamepad_select`, a slider's Left, Right, Home and End to `bevy_ui_widgets` and its D-pad Left and Right to `gamepad_adjust`.** A second handler would act twice. A slider's row carries no horizontal padding: Bevy turns a click or drag into a value across the slider node's whole width, so a side padding would drift the thumb from the pointer (the focus ring's border, 3 px, is the accepted drift).
 
 ## Rules
 
