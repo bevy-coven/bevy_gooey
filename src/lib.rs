@@ -12,11 +12,13 @@
 //!   [`GooeyFonts`].
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
 //!   (a HUD bar driven by [`Meter`]), [`toggle`] and [`slider`] (an options screen's switch and
-//!   scrubber, reporting through [`ValueChange`]), [`Tooltip`] and the modal [`dialog`]. Each is a
-//!   free function returning a bundle, so they compose inside `children![]` and with [`observe`];
-//!   each carries a [`Role`] that [`apply_skin`] styles it by. A [`screen`] is layout: its empty
-//!   part lets the pointer through to the game under a HUD, while every widget on it takes the
-//!   pointer.
+//!   scrubber, reporting through [`ValueChange`]), [`toast`] and [`toast_alert`] (a line of news
+//!   spawned from any system, stood in one [`ToastStack`] and timed by [`ToastSettings`]),
+//!   [`Tooltip`] and the modal [`dialog`]. Each is a free function returning a bundle, so they
+//!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
+//!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
+//!   to the game under a HUD, while every widget on it takes the pointer. A toast takes no input
+//!   and no focus.
 //! - Navigation — [`GooeyNavPlugin`]: arrows and the D-pad move focus to the nearest widget
 //!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles.
 //!   Keys and the pad show the focus ring; a pointer press hides it. With nothing focused (a click
@@ -33,7 +35,7 @@
 //!   or flip, for the host to turn into sound.
 //!
 //! [`model`] holds the engine-free maths under the skin: [`contrast_ratio`], [`composite`],
-//! [`meter_fraction`], [`slider_fraction`] and [`window_ui_scale`].
+//! [`meter_fraction`], [`slider_fraction`], [`window_ui_scale`] and [`toast_hold`].
 //!
 //! ```no_run
 //! use bevy::prelude::*;
@@ -97,6 +99,7 @@ mod meter;
 mod nav;
 mod scale;
 mod skin;
+mod toast;
 mod tooltip;
 mod widgets;
 
@@ -108,15 +111,19 @@ pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
     TEXT_CONTRAST, composite, contrast_ratio, meter_fraction, relative_luminance, repeat_steps,
-    slider_fraction, slider_text, snap_line_width, window_ui_scale,
+    slider_fraction, slider_text, snap_line_width, toast_alpha, toast_hold, toast_life, toast_lift,
+    window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
 };
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
+pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
-pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen, slider, toggle};
+pub use widgets::{
+    button, dialog, heading, label, menu, meter, panel, screen, slider, toast, toast_alert, toggle,
+};
 
 use bevy::app::PluginGroupBuilder;
 use bevy::input_focus::directional_navigation::DirectionalNavigationPlugin;
@@ -155,6 +162,7 @@ impl Plugin for GooeyStylePlugin {
         chain_sets(app);
         app.init_resource::<GooeySkin>()
             .init_resource::<GooeyFonts>()
+            .init_resource::<ToastSettings>()
             .init_resource::<InputFocus>()
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
@@ -162,12 +170,18 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Role>()
             .register_type::<Meter>()
             .register_type::<Tooltip>()
+            .register_type::<Toast>()
+            .register_type::<ToastStack>()
+            .register_type::<ToastSettings>()
+            .register_type::<ToastAnchor>()
+            .register_type::<ToastKind>()
             .register_type::<UiFeedbackKind>()
             .add_observer(feedback::feedback_on_activate)
             .add_observer(feedback::feedback_on_toggle)
             .add_systems(
                 Update,
                 (
+                    update_toasts,
                     update_tooltip_text,
                     show_tooltips,
                     apply_skin,

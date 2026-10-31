@@ -215,6 +215,102 @@ pub fn repeat_steps(held_before: f32, held_now: f32, delay: f32, per_second: f32
     }
 }
 
+/// How long a toast stands fully shown, in seconds: `(base_seconds + characters ÷ chars_per_second)
+/// × scale`. The reading time is the message's length at a reading speed (Netflix holds timed text to
+/// 20 characters a second for adults), the base is the time to notice a thing at the edge of the eye,
+/// and the scale is the player's own (Xbox Accessibility Guideline 116: adjustable up to at least ten
+/// times the default).
+///
+/// Never negative, infinite or NaN: a base or a reading speed that is not finite and above zero
+/// counts for nothing (no base, no reading time), and a scale that is not finite and above zero
+/// gives no time at all.
+///
+/// ```
+/// // "Game saved" at the defaults: 2 s to notice and half a second to read.
+/// assert_eq!(bevy_gooey::toast_hold(10, 2.0, 20.0, 1.0), 2.5);
+/// ```
+pub fn toast_hold(characters: usize, base_seconds: f32, chars_per_second: f32, scale: f32) -> f32 {
+    let usable = |x: f32| x.is_finite() && x > 0.0;
+    let base = if usable(base_seconds) {
+        base_seconds
+    } else {
+        0.0
+    };
+    let reading = if usable(chars_per_second) {
+        characters as f32 / chars_per_second
+    } else {
+        0.0
+    };
+    if usable(scale) {
+        (base + reading) * scale
+    } else {
+        0.0
+    }
+}
+
+/// How long a toast lives in all: its fade in, `hold` fully shown and its fade out. A `fade` that is
+/// not finite and above zero is no fade.
+///
+/// ```
+/// assert_eq!(bevy_gooey::toast_life(2.5, 0.25), 3.0);
+/// ```
+pub fn toast_life(hold: f32, fade: f32) -> f32 {
+    let fade = if fade.is_finite() && fade > 0.0 {
+        fade
+    } else {
+        0.0
+    };
+    let hold = if hold.is_finite() && hold > 0.0 {
+        hold
+    } else {
+        0.0
+    };
+    hold + 2.0 * fade
+}
+
+/// How opaque a toast is `age` seconds after it was spawned, from 0 to 1: rising over the first
+/// `fade`, whole for `hold`, then falling over the last `fade` (see [`toast_life`]). With no fade
+/// it is whole for `hold` and then gone. Never NaN: an age that is not finite or is negative reads
+/// as not yet shown.
+///
+/// ```
+/// assert_eq!(bevy_gooey::toast_alpha(0.0, 2.5, 0.25), 0.0);
+/// assert_eq!(bevy_gooey::toast_alpha(1.0, 2.5, 0.25), 1.0);
+/// assert_eq!(bevy_gooey::toast_alpha(3.0, 2.5, 0.25), 0.0);
+/// ```
+pub fn toast_alpha(age: f32, hold: f32, fade: f32) -> f32 {
+    if !age.is_finite() || age < 0.0 {
+        return 0.0;
+    }
+    let hold = if hold.is_finite() && hold > 0.0 {
+        hold
+    } else {
+        0.0
+    };
+    if !(fade.is_finite() && fade > 0.0) {
+        return if age < hold { 1.0 } else { 0.0 };
+    }
+    let rising = age / fade;
+    let falling = (hold + 2.0 * fade - age) / fade;
+    rising.min(falling).clamp(0.0, 1.0)
+}
+
+/// How far a toast still has to rise into place `age` seconds after it was spawned: 1 at the
+/// start and 0 once its fade in is over, easing out (cubic), so it settles rather than stops. With
+/// no fade it is 0: the toast simply appears.
+///
+/// ```
+/// assert_eq!(bevy_gooey::toast_lift(0.0, 0.3), 1.0);
+/// assert_eq!(bevy_gooey::toast_lift(0.3, 0.3), 0.0);
+/// ```
+pub fn toast_lift(age: f32, fade: f32) -> f32 {
+    if !(fade.is_finite() && fade > 0.0) || !age.is_finite() {
+        return 0.0;
+    }
+    let left = 1.0 - (age / fade).clamp(0.0, 1.0);
+    left * left * left
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -377,5 +473,82 @@ mod tests {
         assert_eq!(repeat_steps(0.0, 5.0, f32::NAN, 10.0), 0);
         assert_eq!(repeat_steps(0.0, 5.0, 0.5, f32::INFINITY), 0);
         assert_eq!(repeat_steps(0.0, f32::INFINITY, 0.5, 10.0), 0);
+    }
+
+    #[test]
+    fn a_toast_stands_as_long_as_its_message_takes_to_read_times_the_players_scale() {
+        // The defaults: 2 s to notice, 20 characters a second.
+        assert_eq!(toast_hold(10, 2.0, 20.0, 1.0), 2.5);
+        assert_eq!(toast_hold(100, 2.0, 20.0, 1.0), 7.0);
+        assert_eq!(toast_hold(0, 2.0, 20.0, 1.0), 2.0);
+        // XAG 116: the player may stretch it tenfold, and the message still counts.
+        assert_eq!(toast_hold(100, 2.0, 20.0, 10.0), 70.0);
+        assert!(toast_hold(40, 2.0, 20.0, 1.0) < toast_hold(41, 2.0, 20.0, 1.0));
+    }
+
+    #[test]
+    fn an_unusable_hold_setting_never_gives_a_negative_infinite_or_nan_time() {
+        for scale in [-1.0, 0.0, f32::NAN, f32::INFINITY] {
+            assert_eq!(toast_hold(10, 2.0, 20.0, scale), 0.0);
+        }
+        // No reading speed means no reading time, not an infinite one.
+        for speed in [0.0, -5.0, f32::NAN, f32::INFINITY] {
+            assert_eq!(toast_hold(10, 2.0, speed, 1.0), 2.0);
+        }
+        for base in [-2.0, f32::NAN, f32::NEG_INFINITY] {
+            assert_eq!(toast_hold(10, base, 20.0, 1.0), 0.5);
+        }
+    }
+
+    #[test]
+    fn a_toast_fades_in_holds_and_fades_out_over_its_life() {
+        let (hold, fade) = (2.0, 0.5);
+        assert_eq!(toast_life(hold, fade), 3.0);
+        assert_eq!(toast_alpha(0.0, hold, fade), 0.0);
+        assert_eq!(toast_alpha(0.25, hold, fade), 0.5);
+        assert_eq!(toast_alpha(0.5, hold, fade), 1.0);
+        assert_eq!(toast_alpha(2.5, hold, fade), 1.0);
+        assert_eq!(toast_alpha(2.75, hold, fade), 0.5);
+        assert_eq!(toast_alpha(3.0, hold, fade), 0.0);
+        assert_eq!(toast_alpha(10.0, hold, fade), 0.0);
+    }
+
+    #[test]
+    fn a_toast_with_no_fade_appears_whole_and_goes_at_once() {
+        for fade in [0.0, -1.0, f32::NAN] {
+            assert_eq!(toast_alpha(0.0, 2.0, fade), 1.0);
+            assert_eq!(toast_alpha(1.99, 2.0, fade), 1.0);
+            assert_eq!(toast_alpha(2.0, 2.0, fade), 0.0);
+            assert_eq!(toast_life(2.0, fade), 2.0);
+            assert_eq!(toast_lift(0.0, fade), 0.0);
+        }
+    }
+
+    #[test]
+    fn a_toast_shortened_while_fading_in_still_ends_and_is_never_out_of_range() {
+        // A hold cut to nothing: the fade in meets the fade out, and alpha stays in 0..=1.
+        for step in 0..=40 {
+            let age = step as f32 * 0.025;
+            let alpha = toast_alpha(age, 0.0, 0.5);
+            assert!((0.0..=1.0).contains(&alpha), "age {age}: {alpha}");
+        }
+        assert_eq!(toast_alpha(1.0, 0.0, 0.5), 0.0);
+        assert_eq!(toast_alpha(f32::NAN, 2.0, 0.5), 0.0);
+        assert_eq!(toast_alpha(-1.0, 2.0, 0.5), 0.0);
+    }
+
+    #[test]
+    fn the_lift_starts_whole_ends_at_nothing_and_never_goes_back() {
+        assert_eq!(toast_lift(0.0, 0.3), 1.0);
+        assert_eq!(toast_lift(0.3, 0.3), 0.0);
+        assert_eq!(toast_lift(5.0, 0.3), 0.0);
+        let mut last = 1.0;
+        for step in 0..=30 {
+            let lift = toast_lift(step as f32 * 0.01, 0.3);
+            assert!(lift <= last, "lift rose at step {step}");
+            last = lift;
+        }
+        // Easing out: most of the rise is done by the half-way point.
+        assert!(toast_lift(0.15, 0.3) < 0.2);
     }
 }
