@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-31
+
 ### Added
 
 - `choice(label, options, selected)`: the third settings control, for a setting with a few named values (Low, Medium, High). A row with the label on the left and the selected option on the right between two drawn chevrons (two borders of the skin's line weight on a square turned an eighth of a turn, so they are no font glyph and scale with the text). Its root is Bevy's headless `Button` carrying the new `ChoiceValue` (the selected index, the widget's state: read it, or write one to move the choice from code) and `ChoiceCount`, so it takes `observe`, `Tooltip` and `InteractionDisabled`, and says each change once through `ValueChange<usize>`. With it focused, Left and Right (keys, and the D-pad through `gamepad_adjust`, a held direction repeating) step to the previous and next option and stop at the ends, where the chevron that cannot step is dimmed and a press changes and says nothing; Home and End jump to the ends; Up and Down still move focus on. A click on a chevron steps once, on release; Enter, Space, the pad's South button and a click anywhere else on the row cycle to the next option and wrap round. Every option is laid out in one grid cell, so the row, the chevrons and the value never move while stepping. The row is a toggle's height and shares its edges; the chevrons are `min_target` wide.
