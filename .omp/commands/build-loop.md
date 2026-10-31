@@ -5,6 +5,8 @@ argument-hint: "[optional focus, e.g. 'gamepad only']"
 
 One run of this command is one iteration of a long-running loop on bevy_gooey, a Bevy 0.20 crate that makes game interfaces easy: a skin, ready-made game widgets (buttons, panels, menus, HUD meters, tooltips, modal dialogs), keyboard and gamepad navigation and UI feedback, on Bevy's own headless widgets. Do ONE improvement per iteration, the single most valuable one from a game developer's point of view, finish it completely, then stop.
 
+README and docs follow https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
+
 This crate must be easy AND good-looking AND fast: a widget that needs more than a few lines to use is not done, one that looks merely fine next to shipping games is not done, and one that costs frame time a HUD should not cost is not done. The judgement here is a game UI designer's: legibility at couch distance, a focus that is always visible, hit targets a thumb can hit, one visual language across every screen. Its API is the family's: flat re-exports and no prelude, independent plugins in `GooeyPlugins`, systems in `GooeySystems`, settings as serde data, engine-free maths in `model`. Its design rules are in `docs/research/gooey.md`.
 
 You do all the work yourself, including looking at the images and judging them. Do not delegate
@@ -143,7 +145,7 @@ region, not an impression:
 Before you pick an item, list the repository's open issues and triage them:
 
 ```sh
-gh issue list --repo Ladvien/bevy_gooey --state open --limit 100 \
+gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 \
   --json number,title,labels,createdAt --jq '.[] | "#\(.number) \(.title)"'
 ```
 
@@ -158,7 +160,7 @@ Then, in this order:
    others.
 2. **An issue labelled `consumer` is the pass's item next, ahead of the series and your own candidates.**
    A project built on this crate needs it and is waiting. The `consumer:<name>` label says which project;
-   `consumer:bevy_emerge` is the owner's editor. Its own work resumes when the issue is closed as completed
+   `consumer:bevy_grimoire` is the owner's editor. Its own work resumes when the issue is closed as completed
    and it moves its git pin to a `main` commit containing the fix. Take the oldest one you can work this pass.
    - **Build the general form.** The requester is the example, never a name in this crate's API, a path or a
      default: this crate serves other projects too. Where an issue asks for something shaped to one project,
@@ -219,7 +221,7 @@ State in one sentence why your pick beats the runner-up. If it is too big, carve
 self-contained slice. Record the ranked candidate list in the log, not only the winner.
 
 **A pass never ends idle** (owner, 2026-10-29: "If they're not addressing bugs or enhancing features, they need to evolve their own code base to support Bevy Emerge better or add new features. Research these things in home still, implement them. They shouldn't stay idle."). An empty issue list or a stale backlog is this step's input, never a reason to ship nothing, and a candidate is not "speculation" once it is researched. When the ranked list above gives no workable item, take the first of these that applies:
-1. **What the owner's projects hand-roll.** Read Sanctuary's `src/ui/` (`gh repo clone Ladvien/sanctuary /tmp/gN/sanctuary -- --depth 1`, removed afterwards) and bevy_emerge's `crates/bevy_emerge_mapper/src/chrome.rs` (a shallow clone under `/tmp`), find a widget or pattern either builds by hand, and build its general form here, never named for either.
+1. **What the owner's projects hand-roll.** Read Sanctuary's `src/ui/` (`gh repo clone Ladvien/sanctuary /tmp/gN/sanctuary -- --depth 1`, removed afterwards) and bevy_grimoire's `crates/bevy_grimoire_mapper/src/chrome.rs` (a shallow clone under `/tmp`), find a widget or pattern either builds by hand, and build its general form here, never named for either.
 2. **A feature a shipping game in this domain expects and this crate lacks**, found by research: home-still first (`distill_search`; for a paper the corpus lacks, `paper_search`, `paper_download`, `scribe_convert`, then `distill_index`), then shipped-game practice, then section 5 before any code.
 3. **Depth on the weakest existing feature**: measure it against its research note's validation targets and improve the worst gap.
 
