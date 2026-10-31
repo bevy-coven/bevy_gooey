@@ -69,13 +69,14 @@ pub(crate) fn feedback_on_toggle(
 }
 
 /// Writes [`UiFeedbackKind::Activate`] when a choice changes its option, by a step, a jump or a
-/// cycle: once per change, never for a press at an end that changes nothing. A global observer.
+/// cycle, or a tabs widget turns its page: once per change, never for a press at an end that
+/// changes nothing. A global observer.
 pub(crate) fn feedback_on_choice(
     event: On<ValueChange<usize>>,
     roles: Query<&Role>,
     mut out: MessageWriter<UiFeedback>,
 ) {
-    if roles.get(event.source) == Ok(&Role::Choice) {
+    if matches!(roles.get(event.source), Ok(Role::Choice | Role::Tabs)) {
         out.write(UiFeedback {
             entity: event.source,
             kind: UiFeedbackKind::Activate,
@@ -83,8 +84,8 @@ pub(crate) fn feedback_on_choice(
     }
 }
 
-/// Writes [`UiFeedbackKind::Focus`] when focus moves onto a button, toggle, slider or choice. Runs in
-/// [`crate::GooeySystems::Navigate`], after [`crate::navigate_by_input`].
+/// Writes [`UiFeedbackKind::Focus`] when focus moves onto a button, toggle, slider, choice or tab.
+/// Runs in [`crate::GooeySystems::Navigate`], after [`crate::navigate_by_input`].
 pub fn feedback_on_focus(
     focus: Res<InputFocus>,
     roles: Query<&Role>,
@@ -96,7 +97,7 @@ pub fn feedback_on_focus(
     if let Some(entity) = focus.get()
         && matches!(
             roles.get(entity),
-            Ok(Role::Button | Role::Toggle | Role::Slider | Role::Choice)
+            Ok(Role::Button | Role::Toggle | Role::Slider | Role::Choice | Role::Tab)
         )
     {
         out.write(UiFeedback {

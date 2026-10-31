@@ -194,7 +194,8 @@ type PageNode = (
 /// PageUp and PageDown, and the pad's left and right triggers, move focus a viewport up or down
 /// the list it is in, to the row that far away ([`page_target`]), and show focus; the list then
 /// follows ([`scroll_to_focus`]). A single press, as every navigation here is. Focus outside a list
-/// is left alone. Runs in [`crate::GooeySystems::Navigate`].
+/// is left alone. With Ctrl held the page keys are [`crate::step_tabs`]'s: they turn the page of a
+/// [`crate::tabs`] widget and never also page a list. Runs in [`crate::GooeySystems::Navigate`].
 pub fn page_lists(
     keys: Res<ButtonInput<KeyCode>>,
     gamepads: Query<&Gamepad>,
@@ -204,8 +205,9 @@ pub fn page_lists(
     lists: Query<(), With<ListView>>,
     nodes: Query<PageNode>,
 ) {
+    let ctrl = keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]);
     let pressed = |key: KeyCode, pad: GamepadButton| {
-        keys.just_pressed(key) || gamepads.iter().any(|g| g.just_pressed(pad))
+        (!ctrl && keys.just_pressed(key)) || gamepads.iter().any(|g| g.just_pressed(pad))
     };
     let down = pressed(KeyCode::PageDown, GamepadButton::RightTrigger2);
     let up = pressed(KeyCode::PageUp, GamepadButton::LeftTrigger2);
