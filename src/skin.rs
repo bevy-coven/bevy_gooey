@@ -10,6 +10,7 @@ use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed
 use bevy::ui_widgets::SliderDragState;
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 
+use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
     snap_line_width,
@@ -39,6 +40,9 @@ const TOAST_MEASURE_TEXT_SIZES: f32 = 24.0;
 /// An information toast's mark is this many lines wide, and an alert's twice that: the kind is the
 /// mark's width first and its colour second, as a switch's state is its knob's place.
 const TOAST_MARK_LINES: f32 = 4.0;
+
+/// A choice's chevron is a square this many body text sizes on a side, turned an eighth of a turn.
+const CHEVRON_TEXT_SIZES: f32 = 0.5;
 
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
@@ -452,6 +456,19 @@ pub enum Role {
     SliderReadout,
     /// The label of a toggle or a slider: body text that dims with a disabled control.
     ControlText,
+    /// A [`crate::choice`]'s row: a label and the selected option between two arrows, on no fill,
+    /// its border the focus ring.
+    Choice,
+    /// A choice's arrow: the target a click on steps, as wide as a button and as high as a toggle.
+    ChoiceArrow,
+    /// The chevron in a choice's back arrow, drawn in two borders: dimmed on the first option.
+    ChoiceBack,
+    /// The chevron in a choice's forward arrow: dimmed on the last option.
+    ChoiceForward,
+    /// The one grid cell every option of a choice is laid out in, so it is as wide as the widest.
+    ChoiceCell,
+    /// One option's text in a choice; only the selected one is shown.
+    ChoiceOption,
     /// The one full-window column the toasts stand in; not drawn, it pads the toasts.
     ToastStack,
     /// A [`crate::toast`]'s room: a clipped column whose height opens and closes, so the toasts
@@ -508,6 +525,10 @@ struct State {
     grow: f32,
     /// How tall a toast's body stands in full, in logical px.
     body_px: f32,
+    /// A choice on its first option.
+    at_start: bool,
+    /// A choice on its last option.
+    at_end: bool,
 }
 
 impl Default for State {
@@ -522,6 +543,8 @@ impl Default for State {
             alert: false,
             grow: 1.0,
             body_px: 0.0,
+            at_start: false,
+            at_end: false,
         }
     }
 }
@@ -534,6 +557,7 @@ type StateQuery = (
     Has<Checked>,
     Option<&'static Hovered>,
     Option<&'static Toast>,
+    Option<(&'static ChoiceValue, &'static ChoiceCount)>,
     Option<&'static Role>,
 );
 
@@ -549,6 +573,7 @@ type Restyle = (
         Changed<SliderDragState>,
         Changed<TooltipBox>,
         Changed<Toast>,
+        Changed<ChoiceValue>,
         Changed<ComputedUiRenderTargetInfo>,
     )>,
 );
@@ -557,7 +582,7 @@ type Restyle = (
 fn owns_parts(role: Option<&Role>) -> bool {
     matches!(
         role,
-        Some(Role::Button | Role::Toggle | Role::Slider | Role::Toast)
+        Some(Role::Button | Role::Toggle | Role::Slider | Role::Choice | Role::Toast)
     )
 }
 
@@ -600,7 +625,7 @@ pub fn apply_skin(
         states
             .get(entity)
             .map(
-                |(pressed, drag, disabled, checked, hovered, toast, role)| State {
+                |(pressed, drag, disabled, checked, hovered, toast, choice, role)| State {
                     // `bevy_ui_widgets` marks a slider pressed for a click on its track only; a grab
                     // of the thumb is a drag, so a dragged slider reads as pressed too.
                     pressed: pressed || drag.is_some_and(|d| d.dragging),
@@ -612,6 +637,8 @@ pub fn apply_skin(
                     alert: toast.is_some_and(|t| t.kind() == ToastKind::Alert),
                     grow: toast.map_or(1.0, Toast::grow),
                     body_px: toast.map_or(0.0, Toast::body_px),
+                    at_start: choice.is_some_and(|(value, _)| value.0 == 0),
+                    at_end: choice.is_some_and(|(value, count)| value.0 + 1 >= count.0),
                 },
             )
             .unwrap_or_default()
@@ -622,7 +649,10 @@ pub fn apply_skin(
             .iter_ancestors(entity)
             .find(|&a| {
                 states.get(a).is_ok_and(|(.., role)| {
-                    matches!(role, Some(Role::Toggle | Role::Slider | Role::Toast))
+                    matches!(
+                        role,
+                        Some(Role::Toggle | Role::Slider | Role::Choice | Role::Toast)
+                    )
                 })
             })
             .map(state_of)
@@ -655,7 +685,12 @@ pub fn apply_skin(
         dirty.extend(
             styled
                 .iter()
-                .filter(|item| matches!(item.1, Role::Button | Role::Toggle | Role::Slider))
+                .filter(|item| {
+                    matches!(
+                        item.1,
+                        Role::Button | Role::Toggle | Role::Slider | Role::Choice
+                    )
+                })
                 .map(|item| item.0),
         );
     }
@@ -719,6 +754,7 @@ fn restyle(
     let thumb = Vec2::new(text_px * THUMB_TEXT_SIZES, rail * THUMB_RAIL_RATIO);
     let switch = text_px * SWITCH_TEXT_SIZES;
     let knob = (switch - 4.0 * line).max(0.0);
+    let chevron = text_px * CHEVRON_TEXT_SIZES;
     let fill = match role {
         Role::Panel if parent.is_some_and(|p| p.scrim) => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
@@ -778,6 +814,12 @@ fn restyle(
         | Role::ButtonText
         | Role::Toggle
         | Role::Slider
+        | Role::Choice
+        | Role::ChoiceArrow
+        | Role::ChoiceBack
+        | Role::ChoiceForward
+        | Role::ChoiceCell
+        | Role::ChoiceOption
         | Role::SliderHeader
         | Role::SliderTrack
         | Role::SliderGap
@@ -801,13 +843,31 @@ fn restyle(
         Role::Button => Some(BorderColor::all(Color::NONE)),
         // A row has no fill of its own, so its border speaks: the ring when focused, the outline
         // under the pointer, nothing at rest.
-        Role::Toggle | Role::Slider => Some(BorderColor::all(if look.focused == Some(entity) {
+        Role::Toggle | Role::Slider | Role::Choice => Some(BorderColor::all(if look.focused
+            == Some(entity)
+        {
             skin.focus_ring
         } else if (state.hovered || state.pressed) && !state.disabled {
             skin.outline
         } else {
             Color::NONE
         })),
+        // A chevron is drawn in its borders: the text colour, the accent under the pointer, muted
+        // where it cannot step (the first option's back, the last's forward) or on a disabled row.
+        Role::ChoiceBack | Role::ChoiceForward => {
+            let spent = if *role == Role::ChoiceBack {
+                owner.at_start
+            } else {
+                owner.at_end
+            };
+            Some(BorderColor::all(if owner.disabled || spent {
+                skin.text_muted
+            } else if parent.is_some_and(|p| p.hovered) {
+                skin.accent
+            } else {
+                skin.text
+            }))
+        }
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         _ => None,
     };
@@ -961,6 +1021,57 @@ fn restyle(
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
             }
+            // A toggle's frame and room at the start. At the end the room is whatever the arrow's
+            // own width leaves of a toggle's, so the forward chevron's ink stops where a switch's
+            // track does and the two rows share their edges.
+            Role::Choice => {
+                let arrow = skin.min_target;
+                let ink = chevron * std::f32::consts::FRAC_1_SQRT_2;
+                let room = skin.padding * 1.5;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect {
+                    left: Val::Px(room),
+                    right: Val::Px((room - (arrow - ink) / 2.0).max(0.0)),
+                    top: Val::ZERO,
+                    bottom: Val::ZERO,
+                };
+                next.min_height = Val::Px(skin.min_target);
+                next.column_gap = Val::Px(skin.gap);
+            }
+            // As wide as a button and as high as the toggle's row inside its frame, so the row is
+            // the toggle's height and a thumb has the room NN/g asks of a stepper's buttons.
+            Role::ChoiceArrow => {
+                next.min_width = Val::Px(skin.min_target);
+                next.min_height = Val::Px((switch + skin.padding * 1.2).max(skin.min_target));
+                next.flex_shrink = 0.0;
+            }
+            // Two sides of a square, turned by `choice()`: the forward chevron keeps its top and
+            // right, the back one its bottom and left, so each points the way it steps.
+            Role::ChoiceBack | Role::ChoiceForward => {
+                next.width = Val::Px(chevron);
+                next.height = Val::Px(chevron);
+                next.flex_shrink = 0.0;
+                let line = Val::Px(line);
+                next.border = if *role == Role::ChoiceForward {
+                    UiRect {
+                        top: line,
+                        right: line,
+                        ..UiRect::ZERO
+                    }
+                } else {
+                    UiRect {
+                        bottom: line,
+                        left: line,
+                        ..UiRect::ZERO
+                    }
+                };
+            }
+            // The widest option sets the width, and a gap of air stands each side of it.
+            Role::ChoiceCell => {
+                next.padding = UiRect::horizontal(Val::Px(skin.gap));
+                next.flex_shrink = 0.0;
+            }
             _ => {}
         }
         node.set_if_neq(next);
@@ -980,7 +1091,7 @@ fn restyle(
             };
             Some((color, &look.fonts.body, skin.text_size))
         }
-        Role::ControlText | Role::SliderReadout => {
+        Role::ControlText | Role::SliderReadout | Role::ChoiceOption => {
             let color = if owner.disabled {
                 skin.text_muted
             } else {
