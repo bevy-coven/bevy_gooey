@@ -1,6 +1,6 @@
 # The choice: one option out of a few, stepped with Left and Right
 
-Researched 2026-10-31 (iteration 11). home-still's corpus has nothing on settings controls (`hs distill search`, four queries on steppers, option selectors, radio buttons against drop-downs and gamepad settings rows returned papers on exercise machines, VR menus and slot machines; `catalog_recent` limit 200 held no game-UI document), so the three kinds of source below are web copies, read on this pass; the gap is under `## Pending index`.
+Researched 2026-10-31 (iteration 11), built and measured the same day (iteration 12). home-still's corpus has nothing on settings controls (`hs distill search`, four queries on steppers, option selectors, radio buttons against drop-downs and gamepad settings rows returned papers on exercise machines, VR menus and slot machines; `catalog_recent` limit 200 held no game-UI document; iteration 12 ran two more, "option cycling widget gamepad settings menu" and "stepper left right arrows select one of few values interface", and `catalog_recent` again: nothing), so the three kinds of source below are web copies. Every quotation below was fetched again in iteration 12 and matches; the gap is under `## Pending index`.
 
 ## Sources
 
@@ -39,10 +39,10 @@ No new field in `GooeySkin`; every size derives from the existing ones.
 
 |part|size|
 |---|---|
-|row|border `border`, padding `padding × 1.5` left, none above and below, `radius`, `gap` between the label and the stepper; as high as a toggle (`switch + 1.2 × padding + 2 × border` = 52.8 px at 720p)|
-|chevron target|`min_target` wide (44 px), `switch + 1.2 × padding` high (46.8 px, at least `min_target`)|
-|chevron|a square of 0.5 text sizes (10 px) with two borders of `line`, rotated 45°, about 7 × 14 px of ink, centred in its target|
-|value|body text; the cell is the widest option wide, plus `gap` each side|
+|row|border `border`, padding `padding × 1.5` left, the right padding what leaves the forward chevron's ink where a toggle's switch ends (`padding × 1.5 − (arrow − ink) / 2`, 2.5 px at 720p), none above and below, `radius`, `gap` between the label and the stepper; as high as a toggle (`switch + 1.2 × padding + 2 × border` = 52.8 px at 720p)|
+|arrow target|`min_target` wide (44 px), `switch + 1.2 × padding` high (46.8 px, at least `min_target`)|
+|chevron|a square of 0.6 text sizes (12 px; the note first said 0.5, see Deviations) with two borders of `line`, turned an eighth of a turn, about 8.5 × 17 px of ink (10 × 16 px as drawn, the stroke's width included), centred in its target|
+|value|body text; the cell is the widest option wide, plus half a `gap` each side|
 |colours|chevron `text`; under the pointer `accent`; at an end or disabled `text_muted`; the value `text`|
 
 ## Validation targets
@@ -54,6 +54,8 @@ No new field in `GooeySkin`; every size derives from the existing ones.
 - Chevron on the panel at least 3:1 (non-text); a dimmed chevron plainly dimmer than a live one.
 - Left and Right step by one and stop at the ends with no event; Home and End jump; Enter, Space and South cycle and wrap; a click on the right chevron steps once and a click on a dimmed one does nothing; Up and Down move focus; a disabled choice ignores all of it; each change sends exactly one `ValueChange<usize>` and one `UiFeedback::Activate`.
 - Frame time within 0.5 ms of the gallery before this change.
+
+Measured in iteration 12, 1280x720, dark (parchment alike): row 53 px high, the same as a toggle (the ring, 3 px, spans y 463 to 515); the labels of the Subtitles, Quality and Volume rows start at x 517; the forward chevron's ink ends at x 762 and the switch's track at x 762 (0 px); chevron ink 10 × 16 px, centred in its arrow within 1 px (`tests/choice.rs`); arrows 44 × 46.8 px; a live chevron 14.22:1 on the panel (parchment 10.20:1), a spent one 6.64:1 (4.84:1), the value 14.22:1 (10.20:1); the row, the arrows and the value cell do not move through every option (0 px, a 17-character option beside two short ones). The sources of the numbers are in the iteration 12 entry of `docs/loop-log.md`.
 
 ## What great looks like
 
@@ -67,7 +69,15 @@ A settings row that reads at a glance and works without a manual: the label on t
 - APG would adjust the value with Up and Down; Up and Down move focus off the row (assumed decision of iteration 10, kept so a pad never has to leave a column of settings by another route).
 - Wrapping on Activate and not on Left and Right is a design default (a cycling button is the common idiom for a setting that offers a few options; a stepper that wraps hides where the list ends).
 - Bevy's `RadioGroup` is not the base: it wraps around on every arrow, takes Up and Down as well as Left and Right (so the vertical focus move of `navigate_by_input` would act twice), keeps no state (the app must set `Checked` on each button) and has no one-value layout.
+- Built in iteration 12, differing from the first draft of the parameters: the chevron is 0.6 text sizes, not 0.5 (a 7 px wide stroke pair read light beside 14 px text at 3x zoom; 10 × 16 px as drawn is taller than the text's capitals), and the value cell has half a `gap` of air each side, not a whole one (the chevrons stood 30 px from the value and read as two buttons beside a word). Design defaults, `CHEVRON_TEXT_SIZES` in `src/skin.rs` and the `ChoiceCell` arm.
+- The row's root is Bevy's headless `Button` carrying `ChoiceValue` and `ChoiceCount`, so Enter, Space, the pad's South button and a click on the row are Bevy's own `Activate` (one handler, nothing acts twice) and this crate turns that into "next, wrapping". A game that observes `Activate` on a choice hears the cycles but not the steps; the docs say to observe `ValueChange<usize>`, which every change sends once. A design decision (the alternative, a bespoke press handler, would duplicate `bevy_ui_widgets`).
+- `ChoiceCount` is a public component so that `update_choices` can be a public system like `update_sliders`; the options of a choice are fixed for its life. A design default.
+- A press on an arrow stops at the arrow (the row is never pressed; Bevy's `AcquireFocus` still goes up from the press's original target, so the row takes focus and the ring hides); the step happens on release over the arrow (XAG 107's up event, which `PointerClick` is). An arrow that cannot step does nothing and says nothing.
+- A held Left or Right key repeats at the operating system's rate, as a slider's does (Bevy's slider does not filter `repeat` either); the D-pad repeats through `gamepad_adjust` and stops at the end. A design default.
+- The accessibility node stays Bevy's `Button`'s; a spin-button role with a value text ("Quality, Medium") is a backlog item with the slider's and the toasts'.
+
+Assumed decisions (owner may override), all above: the chevron and cell sizes, the `Button` root, public `ChoiceCount`, the arrows' release-activated step, key repeat.
 
 ## Pending index
 
-- Nothing relevant in home-still. Index NN/g's *Design Guidelines for Input Steppers*, *Listboxes vs. Dropdown Lists* and *Checkboxes vs. Radio Buttons*, XAG 107 and the APG spinbutton pattern. Search later for: "gamepad settings menu design", "option cycling widget". The Game Accessibility Guidelines and *The Gamer's Brain* remain pending from `docs/research/gooey.md`.
+- Nothing relevant in home-still (two more queries in iteration 12, and `catalog_recent` limit 200: no game-UI document). Index NN/g's *Design Guidelines for Input Steppers*, *Listboxes vs. Dropdown Lists* and *Checkboxes vs. Radio Buttons*, XAG 107 and the APG spinbutton pattern. Search later for: "gamepad settings menu design", "option cycling widget". The Game Accessibility Guidelines and *The Gamer's Brain* remain pending from `docs/research/gooey.md`.
