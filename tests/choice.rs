@@ -900,6 +900,39 @@ fn ink(app: &App, choice: Entity, role: Role) -> (f32, f32) {
 }
 
 #[test]
+fn the_chevron_keeps_the_rows_whole_pixel_weight_at_fractional_scales() {
+    // 1920x1080 draws at 1.5x, 1280x800 at 1.11x: the scales at which a border can split.
+    for (width, height) in [(1920, 1080), (1280, 800), (2560, 1440)] {
+        let mut app = app_sized(width, height);
+        let ui = options(&mut app);
+        let row = app
+            .world()
+            .get::<ComputedNode>(ui.quality)
+            .expect("laid out")
+            .border;
+        assert_eq!(row.min_inset.x, row.max_inset.x);
+        assert_eq!(row.min_inset.x, row.min_inset.x.round(), "a whole pixel");
+        for (role, kept) in [(Role::ChoiceBack, true), (Role::ChoiceForward, false)] {
+            let mark = app
+                .world()
+                .get::<ComputedNode>(part(&app, ui.quality, role))
+                .expect("laid out")
+                .border;
+            let (first, second) = if kept {
+                (mark.min_inset.x, mark.max_inset.y)
+            } else {
+                (mark.max_inset.x, mark.min_inset.y)
+            };
+            assert_eq!(
+                [first, second],
+                [row.min_inset.x; 2],
+                "{role:?} at {width}x{height}: both sides the weight of the row's frame"
+            );
+        }
+    }
+}
+
+#[test]
 fn a_choice_has_a_role_for_every_part_and_the_skin_has_no_problem_with_it() {
     let mut app = app();
     let ui = options(&mut app);
