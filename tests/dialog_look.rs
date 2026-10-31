@@ -10,6 +10,13 @@ use bevy::window::WindowResolution;
 use bevy::winit::WinitPlugin;
 use bevy_gooey::*;
 
+/// What a restyle writes.
+type Written = Or<(
+    Changed<Node>,
+    Changed<BackgroundColor>,
+    Changed<BorderColor>,
+)>;
+
 /// What the dialog's restyle writes, counted while it idles.
 #[derive(Resource, Default)]
 struct Writes(u32);
@@ -40,15 +47,9 @@ fn app_with(skin: GooeySkin) -> App {
     .init_resource::<Writes>()
     .add_systems(
         Update,
-        |changed: Query<
-            (),
-            Or<(
-                Changed<Node>,
-                Changed<BackgroundColor>,
-                Changed<BorderColor>,
-            )>,
-        >,
-         mut writes: ResMut<Writes>| writes.0 += changed.iter().count() as u32,
+        |changed: Query<(), Written>, mut writes: ResMut<Writes>| {
+            writes.0 += changed.iter().count() as u32
+        },
     )
     .insert_resource(skin);
     app.world_mut().spawn(Camera2d);
