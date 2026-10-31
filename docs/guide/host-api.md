@@ -40,6 +40,10 @@ Bevy's own types come through the crate so a host never adds a second copy: `Che
 a widget and every activation, flip or change of option. A game reads it with `MessageReader<UiFeedback>`
 and plays a sound; the crate plays none. See [feedback](feedback.md).
 
+`Cancel { entity }` is an event a game observes, sent when the player presses Escape or a pad's East
+button (B): it starts at the focused widget, or at the open dialog, and bubbles up to the layer the game
+observes. Nothing is closed for it. See [navigation](navigation.md#back).
+
 ## Systems, for a host that registers its own
 
 `GooeyStylePlugin` and `GooeyNavPlugin` are independent, and `GooeyPlugins` is both plus
@@ -50,6 +54,7 @@ and plays a sound; the crate plays none. See [feedback](feedback.md).
 |---|---|---|
 | `navigate_by_input` | Navigate | arrows and the D-pad move focus to the nearest widget; takes `FocusScopes` |
 | `gamepad_select` | Navigate | South activates, flips a toggle and cycles a choice |
+| `cancel_by_input` | Navigate | Escape and a pad's East button send one `Cancel` to the focused widget or the open dialog |
 | `gamepad_adjust` | Navigate | the D-pad steps a focused slider or choice, repeating on real time |
 | `focus_opened_dialogs` | Navigate | an open dialog takes focus and gives it back on closing |
 | `feedback_on_focus` | Navigate | writes `UiFeedback::Focus` when focus moves onto a widget |

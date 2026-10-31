@@ -734,13 +734,18 @@ pub fn tab_page(widgets: impl Bundle) -> impl Bundle {
 /// opens, focus moves to its first button (or to the one carrying Bevy's `AutoFocus`, the way to
 /// pick the least destructive default); Tab, the arrows and the D-pad stay inside it; and when it
 /// closes, focus returns to the button that opened it. Its contents are yours, in `children![…]`;
-/// close it with `commands.entity(dialog).despawn()`.
+/// close it with `commands.entity(dialog).despawn()`, from a button's `Activate` and from an
+/// observer of [`crate::Cancel`] on the dialog (Escape and the pad's B send one).
 ///
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_gooey::*;
 /// # fn ui(mut commands: Commands) {
-/// commands.spawn((dialog(), children![(panel(), children![label("Leave?"), button("Stay")])]));
+/// commands.spawn((
+///     dialog(),
+///     observe(|cancel: On<Cancel>, mut commands: Commands| commands.entity(cancel.entity).despawn()),
+///     children![(panel(), children![label("Leave?"), button("Stay")])],
+/// ));
 /// # }
 /// ```
 pub fn dialog() -> impl Bundle {

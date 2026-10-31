@@ -101,8 +101,9 @@ with the wheel, a drag on its thumb or PageUp and PageDown.
 - **Scroll a list that follows the focus** — `list(4.5, children![..])` cuts the fifth row so the player
   sees there is more, and keeps the next row in sight as the arrows walk down it:
   [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md).
-- **Reach every screen with keys or a pad** — arrows and the D-pad move focus to the nearest widget, an
-  open dialog holds it, and the ring appears the moment a key is pressed:
+- **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the
+  nearest widget, an open dialog holds it, the ring appears the moment a key is pressed, and Escape or
+  the pad's B is one `Cancel` event that reaches the dialog or screen you are leaving:
   [navigation](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/navigation.md).
 - **Say something without building a layout** — `commands.spawn(toast("Game saved"))` stacks, times
   itself to its own length and ages on real time:
@@ -116,6 +117,10 @@ with the wheel, a drag on its thumb or PageUp and PageDown.
 ![The gallery's settings panel: the ring moves from Quit onto the lit Audio tab, Right turns to Display (two choices), Right to Controls (two buttons) and Right wraps back to Audio, Down enters the page on the Volume slider, and Ctrl+PageDown turns to Display and then Controls with the ring landing on each new page's first widget](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tabs.gif)
 
 *The tabs: Right on a focused tab, then Ctrl+PageDown from inside a page (a pad's RB). The panel never moves.*
+
+![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
+
+*Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
 
 The [guide index](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) lists the rest: every widget in one table, what a host touches
 and what it only sees, and the boundary with the game.
