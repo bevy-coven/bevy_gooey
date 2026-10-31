@@ -18,11 +18,15 @@
 //! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`), or
 //! clicks the window's empty top-left corner, as real pointer input (`click`). `untip` takes
 //! Options' `Tooltip` off and `retip` puts a new line on it, as a game does when a hint goes stale.
+//! `GOOEY_WORLD=1` puts a sprite under the interface, standing in for the game world: the
+//! interface lets the pointer through its empty part, so a click on it (`click` hits it, at the
+//! empty top-left corner) turns it warm and logs `gooey: world`.
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput};
 use bevy::input_focus::AutoFocus;
+use bevy::picking::events::PointerPress;
 use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
 use bevy::render::view::screenshot::{Screenshot, save_to_disk};
@@ -73,6 +77,10 @@ const KEY_EVERY: u32 = 10;
 
 /// The first frame counted into the mean: start-up frames are not a HUD's cost.
 const WARM_FRAMES: u32 = 20;
+
+/// The world's colour before and after a click on it, `GOOEY_WORLD`.
+const WORLD_IDLE: Color = Color::srgb(0.10, 0.19, 0.24);
+const WORLD_PRESSED: Color = Color::srgb(0.42, 0.20, 0.10);
 
 fn main() {
     let mut skin = match std::env::var("GOOEY_SKIN").as_deref() {
@@ -151,6 +159,9 @@ fn main() {
                 .collect(),
         });
     }
+    if std::env::var_os("GOOEY_WORLD").is_some() {
+        app.add_systems(Startup, spawn_world);
+    }
     app.run();
 }
 
@@ -183,6 +194,25 @@ fn setup(mut commands: Commands) {
             ]
         )],
     ));
+}
+
+/// `GOOEY_WORLD`: the game world, a sprite bigger than any window, under the interface.
+fn spawn_world(mut commands: Commands) {
+    commands
+        .spawn((
+            Sprite::from_color(WORLD_IDLE, Vec2::splat(8000.0)),
+            // Bevy's sprite picking considers only sprites that opt in.
+            Pickable::default(),
+        ))
+        .observe(press_world);
+}
+
+/// What a game does when its world is clicked: here, turn warm and log it.
+fn press_world(press: On<PointerPress>, mut sprites: Query<&mut Sprite>) {
+    if let Ok(mut sprite) = sprites.get_mut(press.entity) {
+        sprite.color = WORLD_PRESSED;
+    }
+    info!("gooey: world");
 }
 
 /// Options: dark to parchment and back, keeping the player's text scale.

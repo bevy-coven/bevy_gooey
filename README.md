@@ -76,6 +76,10 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 - A `Tooltip` is a view of its component: `commands.entity(button).remove::<Tooltip>()` takes the hint off (a "Locked: reach level 5" line once the player unlocks it), and inserting a new `Tooltip`, or editing `Tooltip.0`, changes the line the open tooltip shows.
 - Put Bevy's `AutoFocus` on the button a screen should start on. With nothing focused (a click on empty space, a button despawned under the player), the first arrow or D-pad press lands there, or on the screen's first button in Tab order, and the next press moves on; with a `dialog` open it lands inside the dialog.
 
+## Over a game world
+
+A `screen` is layout, not a surface: its empty part is `Pickable::IGNORE`, so a HUD on it lets the pointer through to the sprites, meshes and UI roots under it (a world sprite opts in to picking with `Pickable::default()`), while a `panel`, `button`, `meter` or `dialog` on it still takes the pointer, so a click on one never reaches the world. A click on the empty part still blurs the interface. A menu screen that must swallow the pointer: `commands.spawn(screen()).insert(Pickable::default())`.
+
 ## Skins
 
 `GooeySkin::dark()` is the default; `GooeySkin::parchment()` is the light one. Edit the resource live (an options screen, or an editor) and `apply_skin` restyles every widget that frame. With the `serde` feature a skin is RON or any serde format, and a partial file fills the rest from the default, so a project saves only what it changed:

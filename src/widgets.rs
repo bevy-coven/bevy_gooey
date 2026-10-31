@@ -22,6 +22,21 @@ use crate::skin::Role;
 /// commands.spawn((screen(), children![label("Hello")]));
 /// # }
 /// ```
+///
+/// It is layout, not a surface: its empty part is [`Pickable::IGNORE`], so a HUD built on it lets
+/// the pointer through to the sprites, meshes and other UI roots under it, while the widgets on it
+/// ([`panel`], [`button`], [`meter`]…) still take the pointer. A click on the empty part still
+/// blurs the interface: it lands on whatever is below, or on the window, and Bevy clears focus
+/// there. A menu screen that must swallow the pointer opts back in on the entity (a tuple bundle
+/// cannot carry two `Pickable`s, so `(screen(), Pickable::default())` panics):
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(screen()).insert(Pickable::default());
+/// # }
+/// ```
 pub fn screen() -> impl Bundle {
     (
         Node {
@@ -34,6 +49,7 @@ pub fn screen() -> impl Bundle {
         },
         Role::Screen,
         TabGroup::new(0),
+        Pickable::IGNORE,
     )
 }
 
