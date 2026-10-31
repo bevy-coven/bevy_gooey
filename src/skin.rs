@@ -7,13 +7,14 @@ use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{FontSize, FontSource};
 use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed};
-use bevy::ui_widgets::SliderDragState;
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
+use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
 use crate::choice::{ChoiceCount, ChoiceValue};
+use crate::list::ListView;
 use crate::model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
-    snap_line_width,
+    list_height, snap_line_width,
 };
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
@@ -30,6 +31,14 @@ const SWITCH_TEXT_SIZES: f32 = 1.5;
 
 /// A slider's thumb is this many body text sizes wide, and this many rails high.
 const THUMB_TEXT_SIZES: f32 = 1.0;
+
+/// A list's row is a button: at least `min_target` high, or its text's line (this many text sizes),
+/// its vertical padding (this many paddings, `0.6` each side) and its frame, whichever is more.
+const LIST_LINE_TEXT_SIZES: f32 = 1.2;
+const LIST_PADDING_FACTOR: f32 = 1.2;
+
+/// A list's rail is this many line weights wide, and its thumb is as wide.
+const RAIL_LINES: f32 = 2.0;
 
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
@@ -482,6 +491,20 @@ pub enum Role {
     ToastMark,
     /// A toast's message: body text that fades with its toast.
     ToastText,
+    /// A [`crate::list`]'s root: a column that holds the scrolling viewport and its rail; not drawn.
+    List,
+    /// A list's viewport: a clipped column, [`crate::ListView::rows`] rows tall, with a lane on its
+    /// right for the rail.
+    ListView,
+    /// A list's rows, in one column the viewport scrolls: a [`GooeySkin::gap`] apart, never
+    /// squeezed.
+    ListRows,
+    /// A list's rail, down its right edge: [`GooeySkin::surface_raised`], shown only while the list
+    /// has more than it shows.
+    ListRail,
+    /// A list's thumb, the share of the rail the viewport is of the content: [`GooeySkin::text_muted`],
+    /// [`GooeySkin::text`] under the pointer and [`GooeySkin::accent`] while dragged.
+    ListThumb,
 }
 
 type Styled = (
@@ -529,6 +552,8 @@ struct State {
     at_start: bool,
     /// A choice on its last option.
     at_end: bool,
+    /// How many rows tall a list's viewport stands; none for everything that is not one.
+    rows: f32,
 }
 
 impl Default for State {
@@ -545,6 +570,7 @@ impl Default for State {
             body_px: 0.0,
             at_start: false,
             at_end: false,
+            rows: 0.0,
         }
     }
 }
@@ -558,6 +584,8 @@ type StateQuery = (
     Option<&'static Hovered>,
     Option<&'static Toast>,
     Option<(&'static ChoiceValue, &'static ChoiceCount)>,
+    Option<&'static ScrollbarDragState>,
+    Option<&'static ListView>,
     Option<&'static Role>,
 );
 
@@ -571,6 +599,8 @@ type Restyle = (
         Changed<InteractionDisabled>,
         Changed<Checked>,
         Changed<SliderDragState>,
+        Changed<ScrollbarDragState>,
+        Changed<ListView>,
         Changed<TooltipBox>,
         Changed<Toast>,
         Changed<ChoiceValue>,
@@ -625,20 +655,26 @@ pub fn apply_skin(
         states
             .get(entity)
             .map(
-                |(pressed, drag, disabled, checked, hovered, toast, choice, role)| State {
-                    // `bevy_ui_widgets` marks a slider pressed for a click on its track only; a grab
-                    // of the thumb is a drag, so a dragged slider reads as pressed too.
-                    pressed: pressed || drag.is_some_and(|d| d.dragging),
-                    disabled,
-                    hovered: hovered.is_some_and(|h| h.0),
-                    checked,
-                    scrim: role == Some(&Role::Scrim),
-                    alpha: toast.map_or(1.0, Toast::alpha),
-                    alert: toast.is_some_and(|t| t.kind() == ToastKind::Alert),
-                    grow: toast.map_or(1.0, Toast::grow),
-                    body_px: toast.map_or(0.0, Toast::body_px),
-                    at_start: choice.is_some_and(|(value, _)| value.0 == 0),
-                    at_end: choice.is_some_and(|(value, count)| value.0 + 1 >= count.0),
+                |(pressed, drag, disabled, checked, hovered, toast, choice, bar, list, role)| {
+                    State {
+                        // `bevy_ui_widgets` marks a slider pressed for a click on its track only; a grab
+                        // of the thumb is a drag, so a dragged slider reads as pressed too, and so does
+                        // a dragged scrollbar thumb.
+                        pressed: pressed
+                            || drag.is_some_and(|d| d.dragging)
+                            || bar.is_some_and(|d| d.dragging),
+                        disabled,
+                        hovered: hovered.is_some_and(|h| h.0),
+                        checked,
+                        scrim: role == Some(&Role::Scrim),
+                        alpha: toast.map_or(1.0, Toast::alpha),
+                        alert: toast.is_some_and(|t| t.kind() == ToastKind::Alert),
+                        grow: toast.map_or(1.0, Toast::grow),
+                        body_px: toast.map_or(0.0, Toast::body_px),
+                        at_start: choice.is_some_and(|(value, _)| value.0 == 0),
+                        at_end: choice.is_some_and(|(value, count)| value.0 + 1 >= count.0),
+                        rows: list.map_or(0.0, |list| list.rows),
+                    }
                 },
             )
             .unwrap_or_default()
@@ -779,6 +815,16 @@ fn restyle(
             owner.alpha,
         )),
         Role::MeterFill => Some(skin.accent),
+        Role::ListRail => Some(skin.surface_raised),
+        // The same grey as a switch's off knob on its track, the pair `problems` already holds at
+        // 3:1; the pointer brightens it to the text colour and a drag lights it.
+        Role::ListThumb => Some(if state.pressed {
+            skin.accent
+        } else if state.hovered {
+            skin.text
+        } else {
+            skin.text_muted
+        }),
         Role::Scrim => Some(skin.scrim),
         // A switch is lit by the accent while on, and its knob's place says so a second way.
         Role::ToggleTrack => Some(if owner.disabled {
@@ -827,7 +873,10 @@ fn restyle(
         | Role::ControlText
         | Role::Toast
         | Role::ToastStack
-        | Role::ToastText => None,
+        | Role::ToastText
+        | Role::List
+        | Role::ListView
+        | Role::ListRows => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(fill));
@@ -1072,6 +1121,25 @@ fn restyle(
             Role::ChoiceCell => {
                 next.padding = UiRect::horizontal(Val::Px(skin.gap / 2.0));
                 next.flex_shrink = 0.0;
+            }
+            // The rows stand `rows` of a button's height and a gap apart; to their right a lane the
+            // rail's width and a gap of air, always, so rows never change width when others come
+            // and go. The padding is inside the clip, so the content stops short of the rail and
+            // still counts toward what scrolls.
+            Role::ListView => {
+                let row = (text_px * LIST_LINE_TEXT_SIZES
+                    + skin.padding * LIST_PADDING_FACTOR
+                    + 2.0 * line)
+                    .max(skin.min_target);
+                next.max_height = Val::Px(list_height(state.rows, row, skin.gap));
+                next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
+            }
+            Role::ListRows => next.row_gap = Val::Px(skin.gap),
+            // Flush with the list's right edge, full height; as wide as the thumb it holds.
+            Role::ListRail => {
+                let width = RAIL_LINES * line;
+                next.width = Val::Px(width);
+                next.border_radius = BorderRadius::all(Val::Px(width / 2.0));
             }
             _ => {}
         }

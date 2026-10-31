@@ -12,7 +12,8 @@
 //!   [`GooeyFonts`].
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
 //!   (a HUD bar driven by [`Meter`]), [`toggle`], [`slider`] and [`choice`] (an options screen's
-//!   switch, scrubber and stepper, reporting through [`ValueChange`]), [`toast`] and
+//!   switch, scrubber and stepper, reporting through [`ValueChange`]), [`list`] (rows that scroll,
+//!   following focus), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
 //!   timed by [`ToastSettings`]),
 //!   [`Tooltip`] and the modal [`dialog`]. Each is a free function returning a bundle, so they
@@ -28,7 +29,9 @@
 //!   gives it back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus,
 //!   as it does under the pointer. Enter and Space are Bevy's own button handling. A focused
 //!   [`slider`] or [`choice`] keeps Left and Right (the D-pad steps it, held to repeat:
-//!   [`gamepad_adjust`]); Up and Down still move on.
+//!   [`gamepad_adjust`]); Up and Down still move on. A [`list`] scrolls to keep the focused row and
+//!   the next one in sight ([`scroll_to_focus`]), and PageUp and PageDown ([`page_lists`]) move a
+//!   viewport at a time.
 //! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
 //!   resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television
 //!   ([`UiScaleSettings`], [`scale_with_window`]).
@@ -36,7 +39,8 @@
 //!   or flip, for the host to turn into sound.
 //!
 //! [`model`] holds the engine-free maths under the skin: [`contrast_ratio`], [`composite`],
-//! [`meter_fraction`], [`slider_fraction`], [`window_ui_scale`] and [`toast_hold`].
+//! [`meter_fraction`], [`slider_fraction`], [`scroll_to_reveal`], [`window_ui_scale`] and
+//! [`toast_hold`].
 //!
 //! ```no_run
 //! use bevy::prelude::*;
@@ -97,6 +101,7 @@ pub mod model;
 mod choice;
 mod controls;
 mod feedback;
+mod list;
 mod meter;
 mod nav;
 mod scale;
@@ -110,12 +115,14 @@ pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, Value
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
+pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
-    TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio, meter_fraction,
-    relative_luminance, repeat_steps, slider_fraction, slider_text, snap_line_width, toast_alpha,
-    toast_grow, toast_hold, toast_life, window_ui_scale,
+    TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio, list_height,
+    meter_fraction, page_target, relative_luminance, repeat_steps, scroll_to_reveal,
+    slider_fraction, slider_text, snap_line_width, toast_alpha, toast_grow, toast_hold, toast_life,
+    window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -125,8 +132,8 @@ pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    button, choice, dialog, heading, label, menu, meter, panel, screen, slider, toast, toast_alert,
-    toggle,
+    button, choice, dialog, heading, label, list, menu, meter, panel, screen, slider, toast,
+    toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -175,6 +182,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Meter>()
             .register_type::<ChoiceValue>()
             .register_type::<ChoiceCount>()
+            .register_type::<ListView>()
             .register_type::<Tooltip>()
             .register_type::<Toast>()
             .register_type::<ToastStack>()
@@ -195,6 +203,7 @@ impl Plugin for GooeyStylePlugin {
                     apply_skin,
                     update_meters,
                     update_sliders,
+                    update_lists,
                 )
                     .chain()
                     .in_set(GooeySystems::Style),
@@ -234,6 +243,8 @@ impl Plugin for GooeyNavPlugin {
                     navigate_by_input,
                     gamepad_adjust,
                     gamepad_select,
+                    page_lists,
+                    scroll_to_focus,
                     feedback_on_focus,
                 )
                     .chain()

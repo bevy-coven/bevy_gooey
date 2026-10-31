@@ -347,6 +347,132 @@ pub fn toast_grow(age: f32, hold: f32, fade: f32) -> f32 {
     1.0 - left * left * left
 }
 
+/// How tall a list stands to show `rows` rows, in the units of its inputs: `rows × (row + gap)`,
+/// `row` the height of one row and `gap` the space between two, so each row counts with the gap
+/// after it. `4.5` is four rows and half a pitch of the fifth, which cuts it, the signifier that
+/// more is below (NN/g, *Scrolling and Attention*); `4.0` ends a gap past the fourth row. Zero for
+/// a count that is not finite and above zero.
+///
+/// ```
+/// // Four and a half rows of 48 px with 10 px between: four rows and 29 px of the fifth.
+/// assert_eq!(bevy_gooey::list_height(4.5, 48.0, 10.0), 4.5 * 58.0);
+/// assert_eq!(bevy_gooey::list_height(4.0, 48.0, 10.0), 4.0 * 58.0);
+/// assert_eq!(bevy_gooey::list_height(f32::NAN, 48.0, 10.0), 0.0);
+/// ```
+pub fn list_height(rows: f32, row: f32, gap: f32) -> f32 {
+    if rows.is_finite() && rows > 0.0 && row.is_finite() && gap.is_finite() {
+        (rows * (row + gap)).max(0.0)
+    } else {
+        0.0
+    }
+}
+
+/// The scroll position that brings a span into a list's viewport with context round it, measured
+/// from the start of the scrolled content: the span `top..bottom` (a focused widget), a viewport
+/// `view` tall at `scroll`, a furthest scroll `max`, and `margin` of list to leave beyond the span.
+///
+/// The least scroll that leaves `margin` of list on the side the span would leave through, so the
+/// player always sees what is next (revealing only to the edge glues the focus to the bottom pixel
+/// of the viewport with nothing in sight below it). The margin is cut to what the viewport can hold
+/// beside the span. A span taller than the viewport scrolls to its top, the part read first; a move
+/// of more than one viewport centres the span instead of creeping to the edge; the answer is
+/// always within `0..=max`, and `scroll` itself when the span is already comfortably inside.
+/// Nothing usable (a viewport of no height, a value that is not finite) leaves `scroll` alone.
+///
+/// ```
+/// // A 160 px viewport at the top of a 440 px list of 40 px rows, a margin of one row: the fourth
+/// // row (120..160) wants the fifth in sight too, 160 + 40 − 160 = 40 px of scroll, and from there
+/// // the fifth (160..200) wants 200 + 40 − 160 = 80.
+/// assert_eq!(bevy_gooey::scroll_to_reveal(120.0, 160.0, 160.0, 0.0, 280.0, 40.0), 40.0);
+/// assert_eq!(bevy_gooey::scroll_to_reveal(160.0, 200.0, 160.0, 40.0, 280.0, 40.0), 80.0);
+/// // The third row (80..120) already has a row below it in view: nothing to do.
+/// assert_eq!(bevy_gooey::scroll_to_reveal(80.0, 120.0, 160.0, 0.0, 280.0, 40.0), 0.0);
+/// // The last row stops at the end of the list, not a margin past it.
+/// assert_eq!(bevy_gooey::scroll_to_reveal(400.0, 440.0, 160.0, 200.0, 280.0, 40.0), 280.0);
+/// ```
+pub fn scroll_to_reveal(
+    top: f32,
+    bottom: f32,
+    view: f32,
+    scroll: f32,
+    max: f32,
+    margin: f32,
+) -> f32 {
+    let usable = [top, bottom, view, scroll, max, margin]
+        .iter()
+        .all(|x| x.is_finite());
+    let max = max.max(0.0);
+    if !usable || view <= 0.0 || bottom < top {
+        return if scroll.is_finite() {
+            scroll.clamp(0.0, max)
+        } else {
+            0.0
+        };
+    }
+    let height = bottom - top;
+    // A span taller than the viewport is read from its top, whichever way it is reached.
+    if height > view {
+        return top.clamp(0.0, max);
+    }
+    // What the viewport can hold beside the span, so a short viewport asks for the most margin it
+    // can keep rather than a margin on each side it cannot have both of.
+    let margin = margin.max(0.0).min((view - height) * 0.5);
+    let want = if top - margin < scroll {
+        top - margin
+    } else if bottom + margin > scroll + view {
+        bottom + margin - view
+    } else {
+        scroll
+    };
+    // Further than a viewport is a jump, not a step: put the span in the middle.
+    let want = if (want - scroll).abs() > view {
+        (top + bottom) * 0.5 - view * 0.5
+    } else {
+        want
+    };
+    want.clamp(0.0, max)
+}
+
+/// Which of a list's rows a page away from the focused one is, for PageUp and PageDown: `from` is
+/// the focused row's centre along the list, `centres` the rows' centres in the same units, and
+/// `page` how far to go, positive for down and negative for up. The row furthest from `from` in
+/// that direction that is still within a page of it; if even the next row is further than a page
+/// away (tall rows), the next row. `None` when no row lies that way. Rows less than half a unit
+/// from `from` count as its own row; of rows at one distance the first is taken.
+///
+/// ```
+/// let rows = [20.0, 70.0, 120.0, 170.0, 220.0, 270.0];
+/// // From the first row, a 150-unit page lands on the row at 170.
+/// assert_eq!(bevy_gooey::page_target(20.0, &rows, 150.0), Some(3));
+/// // Up from the last row, the same page lands on the row at 120.
+/// assert_eq!(bevy_gooey::page_target(270.0, &rows, -150.0), Some(2));
+/// // Nothing lies below the last row.
+/// assert_eq!(bevy_gooey::page_target(270.0, &rows, 150.0), None);
+/// // A page shorter than the pitch still takes one step.
+/// assert_eq!(bevy_gooey::page_target(20.0, &rows, 10.0), Some(1));
+/// ```
+pub fn page_target(from: f32, centres: &[f32], page: f32) -> Option<usize> {
+    if !(from.is_finite() && page.is_finite() && page != 0.0) {
+        return None;
+    }
+    let ahead = |centre: f32| (centre - from) * page.signum();
+    let mut nearest: Option<(usize, f32)> = None;
+    let mut farthest: Option<(usize, f32)> = None;
+    for (i, &centre) in centres.iter().enumerate() {
+        let d = ahead(centre);
+        if d.is_nan() || d < 0.5 {
+            continue;
+        }
+        if nearest.is_none_or(|(_, n)| d < n) {
+            nearest = Some((i, d));
+        }
+        if d <= page.abs() && farthest.is_none_or(|(_, f)| d > f) {
+            farthest = Some((i, d));
+        }
+    }
+    farthest.or(nearest).map(|(i, _)| i)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -632,5 +758,130 @@ mod tests {
             "past the end reads as the last, then wraps"
         );
         assert_eq!(choice_next(0, 0), 0);
+    }
+
+    #[test]
+    fn a_list_stands_a_pitch_tall_for_each_row() {
+        assert_eq!(list_height(1.0, 48.0, 10.0), 58.0);
+        assert_eq!(list_height(2.0, 48.0, 10.0), 116.0);
+        assert_eq!(list_height(4.5, 48.0, 10.0), 261.0);
+        assert_eq!(list_height(0.5, 48.0, 10.0), 29.0);
+        for rows in [0.0, -2.0, f32::NAN, f32::INFINITY] {
+            assert_eq!(list_height(rows, 48.0, 10.0), 0.0, "rows {rows}");
+        }
+    }
+
+    #[test]
+    fn a_reveal_keeps_the_next_row_in_sight_and_stays_put_when_it_can() {
+        // Rows of 40 with a 160 viewport, a margin of one row, in a 440 list (280 of scroll).
+        let reveal =
+            |top: f32, scroll: f32| scroll_to_reveal(top, top + 40.0, 160.0, scroll, 280.0, 40.0);
+        assert_eq!(reveal(0.0, 0.0), 0.0);
+        assert_eq!(reveal(40.0, 0.0), 0.0, "a row below it in view: stay");
+        assert_eq!(
+            reveal(80.0, 0.0),
+            0.0,
+            "the third row still has the fourth in view"
+        );
+        assert_eq!(
+            reveal(120.0, 0.0),
+            40.0,
+            "the fourth brings its next row in"
+        );
+        assert_eq!(reveal(160.0, 40.0), 80.0);
+        // Walking back up: the margin is kept above the row too.
+        assert_eq!(reveal(120.0, 200.0), 80.0);
+        assert_eq!(
+            reveal(0.0, 80.0),
+            0.0,
+            "the first row stops at the top, not a margin above"
+        );
+        // The ends of the list clamp: nothing scrolls past them.
+        assert_eq!(reveal(400.0, 200.0), 280.0);
+    }
+
+    #[test]
+    fn a_reveal_of_a_far_row_centres_it_and_a_tall_row_shows_its_top() {
+        // A jump of more than a viewport (a click, a page, a rebuilt list) centres the row.
+        assert_eq!(
+            scroll_to_reveal(300.0, 340.0, 100.0, 0.0, 400.0, 0.0),
+            270.0
+        );
+        assert_eq!(
+            scroll_to_reveal(100.0, 140.0, 100.0, 400.0, 400.0, 0.0),
+            70.0
+        );
+        // A row taller than the viewport is read from its top, whichever way it is reached.
+        assert_eq!(
+            scroll_to_reveal(150.0, 300.0, 100.0, 0.0, 300.0, 40.0),
+            150.0
+        );
+        assert_eq!(
+            scroll_to_reveal(150.0, 300.0, 100.0, 250.0, 300.0, 40.0),
+            150.0
+        );
+        // A viewport too short for row and margin keeps what margin it can.
+        assert_eq!(scroll_to_reveal(80.0, 120.0, 60.0, 0.0, 300.0, 40.0), 70.0);
+    }
+
+    #[test]
+    fn a_reveal_never_leaves_the_list_and_ignores_what_it_cannot_read() {
+        assert_eq!(scroll_to_reveal(0.0, 40.0, 100.0, 50.0, 300.0, 40.0), 0.0);
+        assert_eq!(
+            scroll_to_reveal(390.0, 430.0, 100.0, 0.0, 300.0, 40.0),
+            300.0
+        );
+        // A list that fits has nowhere to scroll.
+        assert_eq!(scroll_to_reveal(60.0, 100.0, 200.0, 30.0, 0.0, 40.0), 0.0);
+        assert_eq!(scroll_to_reveal(60.0, 100.0, 200.0, 30.0, -5.0, 40.0), 0.0);
+        // No viewport, or a value that is not a number: the scroll stays (clamped), never NaN.
+        assert_eq!(scroll_to_reveal(60.0, 100.0, 0.0, 30.0, 300.0, 40.0), 30.0);
+        assert_eq!(
+            scroll_to_reveal(f32::NAN, 100.0, 100.0, 30.0, 300.0, 40.0),
+            30.0
+        );
+        assert_eq!(
+            scroll_to_reveal(60.0, 100.0, 100.0, f32::NAN, 300.0, 40.0),
+            0.0
+        );
+        assert_eq!(
+            scroll_to_reveal(100.0, 60.0, 100.0, 30.0, 300.0, 40.0),
+            30.0
+        );
+    }
+
+    #[test]
+    fn a_page_goes_a_viewport_and_stops_at_the_ends() {
+        let rows = [20.0, 70.0, 120.0, 170.0, 220.0, 270.0];
+        assert_eq!(page_target(20.0, &rows, 150.0), Some(3));
+        assert_eq!(
+            page_target(170.0, &rows, 150.0),
+            Some(5),
+            "the last row within a page"
+        );
+        assert_eq!(page_target(220.0, &rows, 150.0), Some(5));
+        assert_eq!(
+            page_target(270.0, &rows, 150.0),
+            None,
+            "nothing below the last row"
+        );
+        assert_eq!(page_target(270.0, &rows, -150.0), Some(2));
+        assert_eq!(
+            page_target(70.0, &rows, -150.0),
+            Some(0),
+            "the first row within a page"
+        );
+        assert_eq!(page_target(20.0, &rows, -150.0), None);
+        // Tall rows, a short page: still one row.
+        assert_eq!(page_target(20.0, &rows, 10.0), Some(1));
+        assert_eq!(page_target(270.0, &rows, -10.0), Some(4));
+        // Two columns of rows share their centres: the first at the distance is taken, and the
+        // focused row's own neighbours at the same height are not "beyond".
+        let grid = [20.0, 20.0, 70.0, 70.0];
+        assert_eq!(page_target(20.0, &grid, 100.0), Some(2));
+        // Nothing to page over, or a page that is no distance.
+        assert_eq!(page_target(20.0, &[], 100.0), None);
+        assert_eq!(page_target(20.0, &rows, 0.0), None);
+        assert_eq!(page_target(f32::NAN, &rows, 100.0), None);
     }
 }
