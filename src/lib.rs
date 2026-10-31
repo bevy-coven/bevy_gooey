@@ -101,6 +101,7 @@
 
 pub mod model;
 
+mod cancel;
 mod choice;
 mod controls;
 mod feedback;
@@ -116,6 +117,7 @@ mod widgets;
 
 pub use bevy::ui::Checked;
 pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
+pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
@@ -242,6 +244,7 @@ impl Plugin for GooeyNavPlugin {
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<Dialog>()
+            .register_type::<Cancel>()
             .add_observer(nav::remember_opener)
             .add_observer(nav::return_focus)
             .add_systems(
@@ -253,6 +256,7 @@ impl Plugin for GooeyNavPlugin {
                     navigate_by_input,
                     gamepad_adjust,
                     gamepad_select,
+                    cancel_by_input,
                     page_lists,
                     scroll_to_focus,
                     feedback_on_focus,
