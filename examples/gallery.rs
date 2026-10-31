@@ -3,8 +3,9 @@
 //! - Arrows or the D-pad move focus; Enter, Space or the pad's South button activate.
 //! - **Options** switches between the dark and the parchment skin; **Shift+T** toggles a 1.5x text
 //!   scale; **Quit** opens a modal dialog that holds focus (Stay first; Tab, arrows and the D-pad
-//!   stay inside it; closing it puts focus back on Quit); focusing or hovering **Options** shows
-//!   its tooltip beside it (`GOOEY_KEYS=down` stages it).
+//!   stay inside it; **Escape** or the pad's B closes it, as Stay does, and either puts focus back
+//!   on Quit); focusing or hovering **Options** shows its tooltip beside it (`GOOEY_KEYS=down`
+//!   stages it).
 //! - The health meter drains and refills (`GOOEY_HEALTH=<value>` holds it at that value instead).
 //!   Each `UiFeedback` is logged where a game would play a sound.
 //! - **Audio**, **Display** and **Controls** are the tabs of one settings widget: click a tab, Left
@@ -25,7 +26,7 @@
 //! `GOOEY_SKIN=parchment` starts in parchment;
 //! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size.
 //! `GOOEY_KEYS=down,down,enter,…` stages a state before the shot: from frame 30 it presses one key
-//! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`), or
+//! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`, `escape`), or
 //! clicks the window's empty top-left corner, as real pointer input (`click`). `untip` takes
 //! Options' `Tooltip` off and `retip` puts a new line on it, as a game does when a hint goes stale.
 //! `hover`, `grab`, `drag` and `drop` work Volume's thumb with the pointer: move onto it, press and
@@ -250,6 +251,7 @@ fn main() {
                     "left" => Some(Staged::Key(KeyCode::ArrowLeft)),
                     "right" => Some(Staged::Key(KeyCode::ArrowRight)),
                     "enter" => Some(Staged::Key(KeyCode::Enter)),
+                    "escape" => Some(Staged::Key(KeyCode::Escape)),
                     "tab" => Some(Staged::Key(KeyCode::Tab)),
                     "space" => Some(Staged::Key(KeyCode::Space)),
                     "home" => Some(Staged::Key(KeyCode::Home)),
@@ -471,6 +473,10 @@ fn open_quit_dialog(_: On<Activate>, open: Query<(), With<QuitDialog>>, mut comm
     commands.spawn((
         dialog(),
         QuitDialog,
+        observe(|cancel: On<Cancel>, mut commands: Commands| {
+            info!("cancel: the Quit dialog is closed");
+            commands.entity(cancel.entity).despawn();
+        }),
         children![(
             panel(),
             children![

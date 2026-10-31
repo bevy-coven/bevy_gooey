@@ -34,7 +34,8 @@
 //!   widget from anywhere in it ([`step_tabs`]), and focus never rests on a page that is not shown
 //!   ([`land_tab_focus`]). A [`list`] scrolls to keep the focused row and
 //!   the next one in sight ([`scroll_to_focus`]), and PageUp and PageDown ([`page_lists`]) move a
-//!   viewport at a time.
+//!   viewport at a time. Escape and a pad's B are one [`Cancel`] event, sent to the focused widget
+//!   (or the open dialog) and bubbling up to the layer the game observes ([`cancel_by_input`]).
 //! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
 //!   resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television
 //!   ([`UiScaleSettings`], [`scale_with_window`]).
@@ -101,6 +102,7 @@
 
 pub mod model;
 
+mod cancel;
 mod choice;
 mod controls;
 mod feedback;
@@ -116,6 +118,7 @@ mod widgets;
 
 pub use bevy::ui::Checked;
 pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
+pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
@@ -224,7 +227,8 @@ impl Plugin for GooeyStylePlugin {
 /// focus (Bevy's `InputFocusVisible`; a pointer press hides it), and a direction press with nothing
 /// focused lands where the screen starts. An open [`dialog`] holds focus: it takes it on opening
 /// ([`focus_opened_dialogs`]), Tab and the arrows stay inside it, and closing it gives focus back
-/// to the widget that opened it.
+/// to the widget that opened it. Escape and the pad's East button (B) send a [`Cancel`] to the
+/// focused widget or the open dialog ([`cancel_by_input`]), for the game to observe.
 ///
 /// Adds Bevy's `TabNavigationPlugin` and `DirectionalNavigationPlugin` unless the host already has.
 pub struct GooeyNavPlugin;
@@ -242,6 +246,7 @@ impl Plugin for GooeyNavPlugin {
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<Dialog>()
+            .register_type::<Cancel>()
             .add_observer(nav::remember_opener)
             .add_observer(nav::return_focus)
             .add_systems(
@@ -253,6 +258,7 @@ impl Plugin for GooeyNavPlugin {
                     navigate_by_input,
                     gamepad_adjust,
                     gamepad_select,
+                    cancel_by_input,
                     page_lists,
                     scroll_to_focus,
                     feedback_on_focus,

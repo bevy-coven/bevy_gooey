@@ -243,6 +243,16 @@ impl FocusScopes<'_, '_> {
             .map(|(entity, ..)| entity)
     }
 
+    /// Where a [`crate::Cancel`] starts: the focused widget when it is a live, visible tab stop in
+    /// the scope the player sees, else that scope's open dialog (so a dialog can always be
+    /// dismissed), else nowhere.
+    pub(crate) fn cancel_target(&self, focus: Option<Entity>) -> Option<Entity> {
+        let dialog = self.active();
+        focus
+            .filter(|&f| self.holds(f) && self.of(f) == dialog)
+            .or(dialog)
+    }
+
     /// Where focus starts in `scope`: its topmost visible `AutoFocus` widget, or else its first
     /// widget in Tab order.
     fn start(&self, scope: Option<Entity>) -> Option<Entity> {
