@@ -16,7 +16,8 @@
 //! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size.
 //! `GOOEY_KEYS=down,down,enter,…` stages a state before the shot: from frame 30 it presses one key
 //! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`), or
-//! clicks the window's empty top-left corner, as real pointer input (`click`).
+//! clicks the window's empty top-left corner, as real pointer input (`click`). `untip` takes
+//! Options' `Tooltip` off and `retip` puts a new line on it, as a game does when a hint goes stale.
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::input::ButtonState;
@@ -59,6 +60,10 @@ enum Staged {
     Key(KeyCode),
     /// A primary click on the window's empty top-left corner, where no widget is.
     Click,
+    /// Remove the `Tooltip` from the widget that has one.
+    Untip,
+    /// Insert a new `Tooltip` over the widget's old one.
+    Retip,
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -139,6 +144,8 @@ fn main() {
                     "enter" => Some(Staged::Key(KeyCode::Enter)),
                     "tab" => Some(Staged::Key(KeyCode::Tab)),
                     "click" => Some(Staged::Click),
+                    "untip" => Some(Staged::Untip),
+                    "retip" => Some(Staged::Retip),
                     _ => None,
                 })
                 .collect(),
@@ -306,6 +313,8 @@ fn capture(
 fn stage_keys(
     capture: Option<Res<Capture>>,
     window: Query<Entity, With<PrimaryWindow>>,
+    tipped: Query<Entity, With<Tooltip>>,
+    mut commands: Commands,
     mut keys: MessageWriter<KeyboardInput>,
     mut pointer: MessageWriter<PointerInput>,
 ) {
@@ -348,6 +357,22 @@ fn stage_keys(
             };
             for &action in actions {
                 pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
+            }
+        }
+        Some(Staged::Untip) => {
+            if state == ButtonState::Pressed {
+                for widget in &tipped {
+                    commands.entity(widget).remove::<Tooltip>();
+                }
+            }
+        }
+        Some(Staged::Retip) => {
+            if state == ButtonState::Pressed {
+                for widget in &tipped {
+                    commands.entity(widget).insert(Tooltip(
+                        "Unlocked: sound, controls, display and cheats".into(),
+                    ));
+                }
             }
         }
         None => {}

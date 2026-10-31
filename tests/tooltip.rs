@@ -390,3 +390,131 @@ fn the_d_pad_and_south_show_focus_and_a_press_with_it_shown_restyles_nothing() {
         shown_since
     );
 }
+
+/// Every tooltip box in the world: its entity, whether it is open, and the line it shows.
+fn boxes(app: &mut App) -> Vec<(Entity, bool, String)> {
+    let world = app.world_mut();
+    let mut found = world.query_filtered::<(Entity, &Node, &Children), With<TooltipBox>>();
+    let found: Vec<_> = found
+        .iter(world)
+        .map(|(tip, node, lines)| (tip, node.display != Display::None, lines.to_vec()))
+        .collect();
+    found
+        .into_iter()
+        .map(|(tip, open, lines)| {
+            let text = lines
+                .iter()
+                .find_map(|line| world.get::<Text>(*line))
+                .map(|text| text.0.clone())
+                .unwrap_or_default();
+            (tip, open, text)
+        })
+        .collect()
+}
+
+#[test]
+fn a_removed_tooltip_stays_shut_and_a_new_one_replaces_it() {
+    let mut app = app();
+    let [_, options, _] = column_menu(&mut app);
+    settle(&mut app);
+
+    app.world_mut().entity_mut(options).remove::<Tooltip>();
+    tap(&mut app, KeyCode::ArrowDown);
+    app.update();
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(options));
+    assert!(
+        boxes(&mut app).is_empty(),
+        "Options has no Tooltip any more: nothing may open"
+    );
+
+    app.world_mut()
+        .entity_mut(options)
+        .insert(Tooltip("Audio only".into()));
+    settle(&mut app);
+    let found = boxes(&mut app);
+    assert_eq!(found.len(), 1, "one Tooltip, one box");
+    assert_eq!(
+        found[0].2, "Audio only",
+        "the box says what the Tooltip says"
+    );
+    assert!(
+        found[0].1,
+        "Options still has visible focus: its new tooltip is open"
+    );
+}
+
+#[test]
+fn a_tooltip_removed_and_added_in_one_command_buffer_leaves_one_box() {
+    let mut app = app();
+    let [_, options, _] = column_menu(&mut app);
+    settle(&mut app);
+
+    let mut commands = app.world_mut().commands();
+    commands
+        .entity(options)
+        .remove::<Tooltip>()
+        .insert(Tooltip("Unlocked".into()));
+    settle(&mut app);
+    let found = boxes(&mut app);
+    assert_eq!(
+        found.len(),
+        1,
+        "a flush that removes and adds stacks no box"
+    );
+    assert_eq!(found[0].2, "Unlocked");
+}
+
+#[test]
+fn a_tooltip_replaced_or_edited_changes_the_open_box_in_place() {
+    let mut app = app();
+    let [_, options, _] = column_menu(&mut app);
+    settle(&mut app);
+    tap(&mut app, KeyCode::ArrowDown);
+    app.update();
+    let [(tip, open, text)] = boxes(&mut app).try_into().expect("one tooltip, one box");
+    assert!(open);
+    assert_eq!(text, "Sound, controls and display");
+
+    // A new Tooltip over the old one: the box that is open keeps its entity and stays open
+    // on the very next frame, so a tooltip that changes under the player does not blink.
+    app.world_mut()
+        .entity_mut(options)
+        .insert(Tooltip("Audio only".into()));
+    app.update();
+    assert_eq!(boxes(&mut app), vec![(tip, true, "Audio only".to_string())]);
+
+    // An edit in place, as a reflection-driven inspector makes it, runs no hook.
+    app.world_mut()
+        .get_mut::<Tooltip>(options)
+        .expect("Options keeps its Tooltip")
+        .0 = "Video only".into();
+    app.update();
+    assert_eq!(boxes(&mut app), vec![(tip, true, "Video only".to_string())]);
+}
+
+#[test]
+fn removing_a_tooltip_closes_the_open_box_and_a_despawned_widget_takes_its_box() {
+    let mut app = app();
+    let [_, options, _] = column_menu(&mut app);
+    settle(&mut app);
+    let over = rect(&app, options).center();
+    point_at(&mut app, over);
+    assert!(shown(&mut app), "hovering Options opens its tooltip");
+
+    app.world_mut().entity_mut(options).remove::<Tooltip>();
+    app.update();
+    assert!(
+        boxes(&mut app).is_empty(),
+        "the pointer is still over Options, but it has no tooltip now"
+    );
+
+    let world = app.world_mut();
+    let tipped = world
+        .spawn((button("Map"), Tooltip("The world".into())))
+        .id();
+    app.update();
+    assert_eq!(boxes(&mut app).len(), 1);
+    app.world_mut().entity_mut(tipped).despawn();
+    settle(&mut app);
+    assert!(boxes(&mut app).is_empty(), "no box outlives its widget");
+}
