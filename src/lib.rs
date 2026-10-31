@@ -101,7 +101,7 @@ pub use model::{
 pub use nav::{Dialog, FocusScopes, focus_opened_dialogs, gamepad_select, navigate_by_input};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
-pub use tooltip::{Tooltip, TooltipBox, show_tooltips};
+pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen};
 
 use bevy::app::PluginGroupBuilder;
@@ -152,7 +152,12 @@ impl Plugin for GooeyStylePlugin {
             .add_observer(feedback::feedback_on_activate)
             .add_systems(
                 Update,
-                (show_tooltips, apply_skin, update_meters)
+                (
+                    update_tooltip_text,
+                    show_tooltips,
+                    apply_skin,
+                    update_meters,
+                )
                     .chain()
                     .in_set(GooeySystems::Style),
             );
