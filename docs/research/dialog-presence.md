@@ -54,7 +54,7 @@ A panel that is a direct child of a `dialog()` becomes a dialog panel, in `apply
 ## Validation targets
 
 - The Quit dialog's panel is at least 21 text sizes wide at 1280x720, 1440p and 1.5x text, its heading and body inside it with at least the padding on every side, and the buttons the panel's inner width.
-- A body of 160 characters wraps at the maximum (the panel is 36 text sizes wide and every line inside it), the dialog is at least 5% of the window from every edge, and the buttons are still inside the panel.
+- A body of 134 characters wraps at the maximum (the panel is 36 text sizes wide and every line inside it), the dialog is at least 5% of the window from every edge, and the buttons are still inside the panel.
 - The frame is `outline` and a panel not in a dialog keeps `surface_raised`; both presets, frame against the dialog's fill at 3:1 or more and against the dimmed screen behind it more than before.
 - `GooeySkin::problems()` is empty for both presets and the text colours checked are the colours drawn (the fill is unchanged).
 - The four existing stills with no dialog open (dark at 1280x720 and 2560x1440, parchment and 1.5x text at 1280x720) are pixel-identical before and after (the scrim is drawn only while a dialog is open).
