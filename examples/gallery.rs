@@ -16,7 +16,10 @@
 //!
 //! Capture mode, for a still and a frame time: `GOOEY_FRAMES=<n>` saves a screenshot at frame `n` to
 //! `GOOEY_SHOT` (default `gallery.png`), prints `gooey: frames <n> mean_ms <x>` (the mean frame time
-//! over frames 20..n) and exits 10 frames later. `GOOEY_SKIN=parchment` starts in parchment;
+//! over frames 20..n) and exits 10 frames later. `GOOEY_SHOT_DIR=<dir>` also keeps every
+//! `GOOEY_SHOT_EVERY`th frame (`GOOEY_SHOT_FROM`, default frame 30) there as `f_%04d.png`, and prints
+//! `gooey: kept <n> frames in <dir>`: those frames are a GIF's, and the still stays one file.
+//! `GOOEY_SKIN=parchment` starts in parchment;
 //! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size.
 //! `GOOEY_KEYS=down,down,enter,…` stages a state before the shot: from frame 30 it presses one key
 //! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`), or
@@ -88,11 +91,20 @@ const SLOTS: [&str; 12] = [
 struct Capture {
     at: u32,
     shot: String,
+    /// `GOOEY_SHOT_DIR`: keep every [`Self::every`]th frame from [`Self::from`] as
+    /// `<dir>/f_%04d.png`, for a GIF. `GOOEY_SHOT` still writes its one still at [`Self::at`].
+    dir: Option<String>,
+    from: u32,
+    every: u32,
+    kept: u32,
     frame: u32,
     total_ms: f64,
     counted: u32,
-    /// `GOOEY_KEYS`, staged one every [`KEY_EVERY`] frames from [`KEY_FROM`].
+    /// `GOOEY_KEYS`, staged one every [`Self::key_every`] frames from [`KEY_FROM`].
     keys: Vec<Staged>,
+    /// `GOOEY_KEY_EVERY`: frames between two staged inputs ([`KEY_EVERY`]). A GIF of a walk down a
+    /// panel wants a slower beat than a still's state-setting does.
+    key_every: u32,
 }
 
 /// One staged input of `GOOEY_KEYS`.
@@ -199,9 +211,23 @@ fn main() {
         app.insert_resource(Capture {
             at,
             shot: std::env::var("GOOEY_SHOT").unwrap_or_else(|_| "gallery.png".into()),
+            dir: std::env::var("GOOEY_SHOT_DIR").ok(),
+            from: std::env::var("GOOEY_SHOT_FROM")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(KEY_FROM),
+            every: std::env::var("GOOEY_SHOT_EVERY")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(2),
+            kept: 0,
             frame: 0,
             total_ms: 0.0,
             counted: 0,
+            key_every: std::env::var("GOOEY_KEY_EVERY")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(KEY_EVERY),
             keys: std::env::var("GOOEY_KEYS")
                 .unwrap_or_default()
                 .split(',')
@@ -496,12 +522,25 @@ fn capture(
         };
         println!("gooey: frames {} mean_ms {mean:.3}", c.at);
     }
+    if let Some(dir) = c.dir.clone() {
+        let every = c.every.max(1);
+        let due = c.frame >= c.from && (c.frame - c.from) % every == 0;
+        if due {
+            c.kept += 1;
+            commands
+                .spawn(Screenshot::primary_window())
+                .observe(save_to_disk(format!("{dir}/f_{:04}.png", c.kept)));
+        }
+        if c.frame == c.at {
+            println!("gooey: kept {} frames in {dir}", c.kept);
+        }
+    }
     if c.frame == c.at + 10 {
         exit.write(AppExit::Success);
     }
 }
 
-/// `GOOEY_KEYS`: one input every [`KEY_EVERY`] frames, pressed and then released as the window's
+/// `GOOEY_KEYS`: one input every `GOOEY_KEY_EVERY` frames ([`KEY_EVERY`]), pressed and then released as the window's
 /// own keyboard or pointer input, so Bevy's input dispatch, picking, Tab navigation and buttons all
 /// see it.
 #[allow(clippy::too_many_arguments)]
@@ -523,12 +562,13 @@ fn stage_keys(
     let Some(since) = c.frame.checked_sub(KEY_FROM) else {
         return;
     };
-    let state = match since % KEY_EVERY {
+    let every = c.key_every.max(2);
+    let state = match since % every {
         0 => ButtonState::Pressed,
-        n if n == KEY_EVERY / 2 => ButtonState::Released,
+        n if n == every / 2 => ButtonState::Released,
         _ => return,
     };
-    match c.keys.get((since / KEY_EVERY) as usize) {
+    match c.keys.get((since / every) as usize) {
         Some(&Staged::Key(key_code)) => {
             keys.write(KeyboardInput {
                 key_code,
