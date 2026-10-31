@@ -2,6 +2,8 @@
 
 Researched 2026-10-30 (iteration 5). home-still's distill was healthy and idle (`system_status`), so the perception source is a corpus stem; the design-system rule, the shipping game and the layout rule are web pages, each quoted from a fetched copy, and the engine's behaviour is read from the vendored source.
 
+Re-verified 2026-10-30 (iteration 9, which adopted the draft): the Factorio and CSS Values 4 quotes against fresh copies of both pages, the Bevy 0.20.0 `convert.rs` and `update.rs` behaviour against the vendored source, and the Wagemans stem in home-still (`hs distill search` returns `10.1037_a0029333`). The pixel claims in `## Validation targets` were then measured on this pass's captures: 1080p `4 / 4 / 20 / 4 / 4`, 1280x800 `3 / 3 / 15 / 3 / 3`, 1600x900 `3 / 3 / 18 / 3 / 3`, and 1280x720 and 2560x1440 pixel-identical to the baseline.
+
 ## Sources
 
 1. Wagemans, Elder, Kubovy, Palmer, Peterson, Singh and von der Heydt, *A century of Gestalt psychology in visual perception: I. Perceptual grouping and figure–ground organization*, Psychological Bulletin 2012 — home-still `10.1037_a0029333` (craft: why one weight reads as one family).
