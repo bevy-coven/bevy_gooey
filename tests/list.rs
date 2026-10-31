@@ -17,7 +17,7 @@ use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, 
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
-use bevy::ui::{ComputedNode, ScrollPosition, UiGlobalTransform};
+use bevy::ui::{CalculatedClip, ComputedNode, ScrollPosition, UiGlobalTransform};
 use bevy::ui_widgets::Scrollbar;
 use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
@@ -853,4 +853,43 @@ fn changing_rows_resizes_the_list() {
     let row = rect(&app, ui.rows[0]).height();
     assert!(after < before);
     assert!((after - list_height(3.0, row, skin().gap)).abs() < 1.0);
+}
+
+// ---- a tooltip on a row ----
+
+#[test]
+fn a_tooltip_on_a_row_is_not_clipped_by_its_list() {
+    let mut app = app();
+    let world = app.world_mut();
+    let root = world
+        .spawn(list(
+            4.5,
+            Children::spawn(SpawnIter((0..8).map(|i| {
+                (
+                    button(format!("Slot {i:02}")),
+                    Tooltip("The harbour at dusk, 9 h 15 min played".into()),
+                )
+            }))),
+        ))
+        .id();
+    let close = world.spawn(button("Close")).id();
+    let card = world.spawn(panel()).add_children(&[root, close]).id();
+    world.spawn(screen()).add_child(card);
+    settle(&mut app);
+    let ui = found(&app, root, close);
+    focus(&mut app, ui.rows[1]);
+    settle(&mut app);
+    let tip = descendants(app.world(), ui.rows[1])
+        .into_iter()
+        .find(|&e| app.world().get::<TooltipBox>(e).is_some())
+        .expect("the tooltip's box");
+    let (tip_at, view) = (rect(&app, tip), rect(&app, ui.view));
+    assert!(
+        tip_at.width() > 40.0 && tip_at.max.x > view.max.x + 20.0,
+        "the box opens beside the row, outside the list: {tip_at:?} / {view:?}"
+    );
+    assert!(
+        app.world().get::<CalculatedClip>(tip).is_none(),
+        "the list's clip does not reach the tooltip"
+    );
 }
