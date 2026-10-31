@@ -57,7 +57,7 @@ A panel that is a direct child of a `dialog()` becomes a dialog panel, in `apply
 - A body of 160 characters wraps at the maximum (the panel is 36 text sizes wide and every line inside it), the dialog is at least 5% of the window from every edge, and the buttons are still inside the panel.
 - The frame is `outline` and a panel not in a dialog keeps `surface_raised`; both presets, frame against the dialog's fill at 3:1 or more and against the dimmed screen behind it more than before.
 - `GooeySkin::problems()` is empty for both presets and the text colours checked are the colours drawn (the fill is unchanged).
-- Eight existing stills (dark, parchment and 1.5x text at 1280x720, 2560x1440, no dialog open) are pixel-identical before and after.
+- The four existing stills with no dialog open (dark at 1280x720 and 2560x1440, parchment and 1.5x text at 1280x720) are pixel-identical before and after (the scrim is drawn only while a dialog is open).
 - Focus, Tab, arrows, Back and the dialog's focus-in and focus-back are unchanged (the existing `tests/dialog.rs` and `tests/cancel.rs` pass as they are).
 - Frame time of the gallery within 0.5 ms of before.
 
@@ -70,9 +70,10 @@ Down, Down, Enter: the menu dims and a framed dialog stands in the middle of the
 - **The 21-text-size minimum is a design default**: the platform's 320 epx, scaled by this crate's 4/3 and rounded to a whole number of text sizes, taken from a search result and not from the theme file (404). The maximum, 548 epx, is from Microsoft's answer.
 - **The frame is `outline`, not a new colour**: a skin that sets `outline` for the meter's sake changes the dialog's edge with it, and that edge is already held to 3:1 against the panel. The fill is not lifted: a lighter fill would bring the panel closer to its buttons' `surface_raised`, whose 1.39:1 against the panel is already the narrowest pair on the screen. An assumed decision.
 - **No drop shadow.** A shadow in the background colour on a scrim that is 60% black is not visible in the dark preset, and the toast's note explains why a shadow does not belong to a clipped room; the edge and the scrim carry the separation. An assumed decision; revisit if a skin with a light scrim is added.
+- **Parchment's scrim is darker, 0.55 → 0.7 alpha** (`srgba(0.08, 0.05, 0.02)`): the first captures showed the cream dialog over the dimmed cream menu at 1.94:1 against the panel behind it (fill) and 1.96:1 (frame), against dark's frame at 4.25:1, because the renderer blends in linear space and 0.55 of a near-black dims the cream panel only to (160,149,126). At 0.7 it dims to (133,124,104) and the dialog's fill stands 2.71:1 off it, which reads as a card on a darker screen. A change of the preset: a game's own skin keeps its scrim, and every parchment dialog is darker behind it. An assumed decision.
 - **A panel is a dialog panel only when it is a direct child of `dialog()`**, the rule that already selects its opaque fill (`State::scrim`). A game that wraps it in another node gets a screen's panel inside the dialog, as before.
 - **No new API for the body**: `heading` and `label` in the panel are the title and the body (Microsoft: a title, then detail); `dialog()` keeps its signature, and a builder that takes the strings is the next step if games write the same four lines each time.
-- Assumed decisions (owner may override), all above: the measure's two numbers, the padding and gap factors, the frame colour, no lift, no shadow, 5% for the safe area.
+- Assumed decisions (owner may override), all above: the measure's two numbers, the padding and gap factors, the frame colour, no lift, no shadow, 5% for the safe area, parchment's scrim at 0.7.
 
 ## Pending index
 
