@@ -24,7 +24,7 @@ This repository, [`Ladvien/bevy_gooey`](https://github.com/Ladvien/bevy_gooey), 
 - `src/skin.rs` — `GooeySkin` (presets, `hovered`, `problems`), `SkinProblem`, `GooeyFonts`, `Role`, `apply_skin`.
 - `src/widgets.rs` — `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter`, `dialog`.
 - `src/meter.rs` — `Meter`, `update_meters`.
-- `src/tooltip.rs` — `Tooltip`, its hook, `TooltipBox`, `show_tooltips` (hover or visible focus opens it). `apply_skin` places the box (Bevy's `Popover`) and styles it.
+- `src/tooltip.rs` — `Tooltip`, its hooks (`on_insert` and `on_remove` both queue `sync_box`: a `TooltipBox` child exists exactly while the widget has a `Tooltip`), `update_tooltip_text` (a changed `Tooltip`'s text goes into its box in place), `TooltipBox`, `show_tooltips` (hover or visible focus opens it). `apply_skin` places the box (Bevy's `Popover`) and styles it.
 - `src/nav.rs` — `navigate_by_input` (scoped like Tab: an open dialog's widgets only; shows focus; with nothing focused lands where the screen starts, via `FocusScopes`), `gamepad_select` (shows focus), `Dialog` and its focus-in and focus-back.
 - `src/feedback.rs` — `UiFeedback`, `UiFeedbackKind`, the activate observer, `feedback_on_focus`.
 - `examples/gallery.rs` — every widget on one screen; capture mode with `GOOEY_FRAMES`, `GOOEY_SHOT`, `GOOEY_SKIN`, `GOOEY_TEXT_SCALE`, `GOOEY_SIZE` and `GOOEY_KEYS` (staged input, one every 10 frames from frame 30: `GOOEY_KEYS=down,down,enter` opens the Quit dialog; `click` is a primary click on the empty top-left corner, which hides focus and clears it). The gallery does not force `InputFocusVisible`: the first key shows the ring, as in a game.
