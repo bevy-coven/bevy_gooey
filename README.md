@@ -102,9 +102,11 @@ with the wheel, a drag on its thumb or PageUp and PageDown.
   sees there is more, and keeps the next row in sight as the arrows walk down it:
   [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md).
 - **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the
-  nearest widget, an open dialog holds it, the ring appears the moment a key is pressed, and Escape or
-  the pad's B is one `Cancel` event that reaches the dialog or screen you are leaving:
-  [navigation](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/navigation.md).
+  nearest widget, an open dialog (a framed panel with a title, a line of body and its choices) holds it,
+  the ring appears the moment a key is pressed, and Escape or the pad's B is one `Cancel` event that
+  reaches the dialog or screen you are leaving:
+  [navigation](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/navigation.md),
+  [the dialog](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/widgets.md#a-dialog).
 - **Say something without building a layout** — `commands.spawn(toast("Game saved"))` stacks, times
   itself to its own length and ages on real time:
   [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md).
@@ -118,9 +120,13 @@ with the wheel, a drag on its thumb or PageUp and PageDown.
 
 *The tabs: Right on a focused tab, then Ctrl+PageDown from inside a page (a pad's RB). The panel never moves.*
 
-![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
+![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 
 *Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
+
+![The Quit dialog in the dark and the parchment preset: the title "Leave the game?", a line of body, and the choices Leave and Stay in a framed panel over the dimmed screen, the ring on Stay](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dialog.png)
+
+*The dialog in both presets, 540 px wide here, the width of its line of body (a dialog is 420 to 720 px at the default size and grows with the text size); its edge is the skin's `outline` colour.*
 
 The [guide index](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) lists the rest: every widget in one table, what a host touches
 and what it only sees, and the boundary with the game.
