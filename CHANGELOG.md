@@ -21,9 +21,7 @@
 
 ### Changed
 
-- `Role` has six more variants: a `match` over it that is exhaustive needs arms for them.
-- `Role` has six more variants for tabs: a `match` over it that is exhaustive needs arms for them.
-- `Role` has five more variants for the list: a `match` over it that is exhaustive needs arms for them.
+- `Role` has seventeen more variants (six for `choice`, five for `list`, six for `tabs`): a `match` over it that is exhaustive needs arms for them.
 - `FocusScopes` gained a query over lists, and `show_focus` is crate-visible: callers of `navigate_by_input` are unchanged.
 - `FocusScopes` gained queries over tabs and their widgets, and `step_tabs` and `land_tab_focus` join `GooeyNavPlugin`'s chain and `update_tabs` `GooeyStylePlugin`'s; a focused tab keeps Left and Right as a slider and a choice do (`navigate_by_input` does not also move focus).
 - `gamepad_adjust` steps a focused, enabled choice as well as a slider (its query over sliders became one over both, so its signature changed) and `FocusScopes` keeps Left and Right for a focused, enabled choice as it does for a slider; a host that registers these systems by hand gets them from `GooeyNavPlugin` as before, and calling them directly is unchanged.

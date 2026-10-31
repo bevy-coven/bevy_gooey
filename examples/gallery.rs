@@ -9,11 +9,11 @@
 //!   Each `UiFeedback` is logged where a game would play a sound.
 //! - **Audio**, **Display** and **Controls** are the tabs of one settings widget: click a tab, Left
 //!   and Right on a focused tab, or Ctrl+PageDown and Ctrl+PageUp (on a pad, `LB` and `RB`) turn its
-//!   page, and each turn logs the page. **Subtitles** is a switch, **Quality** a choice and
-//!   **Volume** a slider. Left and Right step a focused choice (it stops at its ends; Home and End
-//!   jump; Enter, Space and South cycle it round; a click on an arrow steps it) and a focused
-//!   slider (Home and End jump, the D-pad too, held to repeat; a click or a drag sets it): each
-//!   logs the value it settles on.
+//!   page, and each turn logs the page. Audio holds **Volume**, a slider, and **Subtitles**, a
+//!   switch; Display holds **Quality** and **Window**, choices; Controls holds two buttons. Left and
+//!   Right step a focused choice (it stops at its ends; Home and End jump; Enter, Space and South
+//!   cycle it round; a click on an arrow steps it) and a focused slider (Home and End jump, the
+//!   D-pad too, held to repeat; a click or a drag sets it): each logs the value it settles on.
 //! - Resize the window: the whole interface keeps its share of it (twice the size at 2560x1440
 //!   as at 1280x720).
 //!
@@ -41,7 +41,8 @@
 //! The **Load game** list holds twelve save slots, four and a half rows tall: it scrolls with the
 //! wheel, a drag on its thumb and a click on its rail, and follows focus (the next row stays in
 //! view); PageUp and PageDown move a viewport. `GOOEY_KEYS` tokens `slots` (focus the first slot),
-//! `pagedown`, `pageup` and `wheel` (one notch over the list) stage it.
+//! `pagedown`, `pageup` and `wheel` (one notch over the list) stage it. `nexttab` and `prevtab`
+//! press Ctrl+PageDown and Ctrl+PageUp, and `tab1`, `tab2` and `tab3` click that tab.
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::ecs::spawn::SpawnIter;
