@@ -17,7 +17,7 @@ use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, 
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
-use bevy::ui::{ComputedNode, ScrollPosition, UiGlobalTransform};
+use bevy::ui::{CalculatedClip, ComputedNode, ScrollPosition, UiGlobalTransform};
 use bevy::ui_widgets::Scrollbar;
 use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
@@ -522,6 +522,24 @@ fn walking_down_keeps_the_row_and_the_next_one_whole_and_the_ring_complete() {
                 "the next row whole too, at step {k}"
             );
         }
+        // Away from the end the list stands on a row's top, as at rest, so the row it cuts at the
+        // bottom is cut by the same amount at every step: more than a third of it shows.
+        if (3..=8).contains(&k) {
+            let view = rect(&app, ui.view);
+            assert!(
+                ui.rows
+                    .iter()
+                    .any(|&row| (rect(&app, row).min.y - view.min.y).abs() < 1.5),
+                "a row's top is flush with the list's top at step {k}"
+            );
+            let cut = rect(&app, ui.rows[k + 2]);
+            let shown = view.max.y - cut.min.y;
+            assert!(
+                shown > cut.height() * 0.33 && shown < cut.height() * 0.8,
+                "the row after the next is cut, {shown} of {} showing, at step {k}",
+                cut.height()
+            );
+        }
         let now = scroll_of(&app, ui.view);
         scrolled_by.push(now - last_scroll);
         last_scroll = now;
@@ -530,18 +548,12 @@ fn walking_down_keeps_the_row_and_the_next_one_whole_and_the_ring_complete() {
         (scroll_of(&app, ui.view) - max_scroll(&app, ui.view)).abs() < 1.0,
         "at the end the list ends on the last row"
     );
-    // The first rows need no scroll; the fourth is the first that wants its next rows in view, and
-    // asks for the row's height; after that the list moves a pitch (a row and a gap) at a step.
+    // The first rows need no scroll; from the fourth on the list moves a pitch (a row and a gap) at
+    // a step.
     assert_eq!(scrolled_by[0], 0.0);
     assert_eq!(scrolled_by[1], 0.0);
-    let height = rect(&app, ui.rows[1]).height();
-    assert!(
-        (scrolled_by[2] - height).abs() < 2.0,
-        "the fourth row scrolls a row's height ({height}), not {}",
-        scrolled_by[2]
-    );
     let pitch = rect(&app, ui.rows[1]).min.y - rect(&app, ui.rows[0]).min.y;
-    for (i, by) in scrolled_by.iter().enumerate().take(8).skip(3) {
+    for (i, by) in scrolled_by.iter().enumerate().take(8).skip(2) {
         assert!(
             (by - pitch).abs() < 3.0,
             "step {} moves a row's pitch ({pitch}), not {by}",
@@ -853,4 +865,69 @@ fn changing_rows_resizes_the_list() {
     let row = rect(&app, ui.rows[0]).height();
     assert!(after < before);
     assert!((after - list_height(3.0, row, skin().gap)).abs() < 1.0);
+}
+
+// ---- a tooltip on a row ----
+
+#[test]
+fn a_tooltip_on_a_row_is_not_clipped_by_its_list() {
+    let mut app = app();
+    let world = app.world_mut();
+    let root = world
+        .spawn(list(
+            4.5,
+            Children::spawn(SpawnIter((0..8).map(|i| {
+                (
+                    button(format!("Slot {i:02}")),
+                    Tooltip("The harbour at dusk, 9 h 15 min played".into()),
+                )
+            }))),
+        ))
+        .id();
+    let close = world.spawn(button("Close")).id();
+    let card = world.spawn(panel()).add_children(&[root, close]).id();
+    world.spawn(screen()).add_child(card);
+    settle(&mut app);
+    let ui = found(&app, root, close);
+    focus(&mut app, ui.rows[1]);
+    settle(&mut app);
+    let tip = descendants(app.world(), ui.rows[1])
+        .into_iter()
+        .find(|&e| app.world().get::<TooltipBox>(e).is_some())
+        .expect("the tooltip's box");
+    let (tip_at, view) = (rect(&app, tip), rect(&app, ui.view));
+    assert!(
+        tip_at.width() > 40.0 && tip_at.max.x > view.max.x + 20.0,
+        "the box opens beside the row, outside the list: {tip_at:?} / {view:?}"
+    );
+    assert!(
+        app.world().get::<CalculatedClip>(tip).is_none(),
+        "the list's clip does not reach the tooltip"
+    );
+}
+
+#[test]
+fn a_click_on_the_rail_pages_by_a_viewport() {
+    let mut app = app();
+    let ui = saves(&mut app, 12);
+    let (rail, view) = (rect(&app, ui.rail), rect(&app, ui.view));
+    let below = Vec2::new(rail.center().x, rail.max.y - 10.0);
+    click_at(&mut app, below);
+    let scrolled = scroll_of(&app, ui.view);
+    assert!(
+        (scrolled - view.height()).abs() < 2.0,
+        "a click below the thumb scrolls a viewport ({}), not {scrolled}",
+        view.height()
+    );
+    let above = Vec2::new(rail.center().x, rail.min.y + 5.0);
+    click_at(&mut app, above);
+    assert_eq!(
+        scroll_of(&app, ui.view),
+        0.0,
+        "and a click above pages back"
+    );
+    assert!(
+        focused(&app).is_none_or(|f| index_of(&ui, Some(f)).is_none()),
+        "a click on the rail focuses no row"
+    );
 }

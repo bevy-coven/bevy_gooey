@@ -9,7 +9,7 @@ use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui::{ComputedNode, ScrollPosition, UiGlobalTransform};
 use bevy::ui_widgets::Scrollbar;
 
-use crate::model::{page_target, scroll_to_reveal};
+use crate::model::{page_target, scroll_to_reveal, snap_to_row};
 use crate::nav::show_focus;
 use crate::skin::Role;
 
@@ -93,7 +93,7 @@ fn list_of(
 }
 
 /// Scrolls a list to follow the focus a key, the pad or Tab moved onto one of its widgets: the least
-/// scroll that leaves [`CONTEXT_ROWS`] rows of list beyond it (a row is the widget's height and the
+/// scroll that leaves a row and a half of list beyond it (a row is the widget's height and the
 /// gap), so the player always sees the next row whole and the one after cut: the list visibly goes
 /// on ([`scroll_to_reveal`]). A widget taller than the list scrolls to its top; a jump of more than
 /// a viewport (PageDown, a focus set from code) centres it.
@@ -109,7 +109,7 @@ pub fn scroll_to_focus(
     parents: Query<&ChildOf>,
     lists: Query<(), With<ListView>>,
     nodes: Query<(&ComputedNode, &UiGlobalTransform), Without<ListView>>,
-    styles: Query<&Node>,
+    columns: Query<(&Node, &Children)>,
     mut views: Query<
         (
             &ComputedNode,
@@ -141,14 +141,15 @@ pub fn scroll_to_focus(
     let laid_out = view.scroll_position.y * scale;
     let max = (view.content_size().y + view.scrollbar_size.y - view.size().y).max(0.0) * scale;
     let from_start = top - view_top + laid_out;
-    // The rows' column holds their gap; a list's context is counted in rows, gap included.
-    let gap = view_children
+    // The rows' column holds their gap and the rows; a list's context is counted in rows, gap
+    // included.
+    let column = view_children
         .first()
-        .and_then(|&column| styles.get(column).ok())
-        .map_or(0.0, |column| match column.row_gap {
-            Val::Px(gap) => gap,
-            _ => 0.0,
-        });
+        .and_then(|&column| columns.get(column).ok());
+    let gap = column.map_or(0.0, |(column, _)| match column.row_gap {
+        Val::Px(gap) => gap,
+        _ => 0.0,
+    });
     let want = scroll_to_reveal(
         from_start,
         from_start + height,
@@ -157,6 +158,23 @@ pub fn scroll_to_focus(
         max,
         CONTEXT_ROWS * (height + gap),
     );
+    // Stand on a row's top, as at rest, so the row the list cuts at the bottom is cut the same way
+    // at every step. Not at the end (the list ends flush with its last row), and not if the snap
+    // would push the widget itself out of view (a viewport only a row or two tall).
+    let tops: Vec<f32> = column
+        .into_iter()
+        .flat_map(|(_, rows)| rows.iter())
+        .filter_map(|row| nodes.get(row).ok())
+        .map(|(node, transform)| span(node, transform).0 - view_top + laid_out)
+        .collect();
+    let want = snap_to_row(want, laid_out, &tops)
+        .filter(|&snapped| {
+            want < max - 0.5
+                && snapped <= max
+                && from_start >= snapped - 0.5
+                && from_start + height <= snapped + view_height + 0.5
+        })
+        .unwrap_or(want);
     if (want - scroll.y).abs() > 0.5 {
         scroll.y = want;
     }

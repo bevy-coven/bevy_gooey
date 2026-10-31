@@ -121,8 +121,8 @@ pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
     TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio, list_height,
     meter_fraction, page_target, relative_luminance, repeat_steps, scroll_to_reveal,
-    slider_fraction, slider_text, snap_line_width, toast_alpha, toast_grow, toast_hold, toast_life,
-    window_ui_scale,
+    slider_fraction, slider_text, snap_line_width, snap_to_row, toast_alpha, toast_grow,
+    toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,

@@ -516,12 +516,12 @@ fn choice_arrow(step: i32) -> impl Bundle {
 /// # }
 /// ```
 ///
-/// The wheel and a trackpad scroll it, a drag on the thumb and a click on the rail scroll it, and
-/// it follows focus: moving to a row with a key, the D-pad or Tab scrolls it by the least that
-/// leaves the next row in sight, and PageUp, PageDown and the pad's triggers move a viewport at a
-/// time. A click on a half-visible row focuses it and does not scroll under the pointer. The rail
-/// shows only while the rows do not fit. A list shows every row it holds, so it is for tens of
-/// rows, not thousands.
+/// The wheel and a trackpad scroll it, a drag on the thumb moves it and a click on the rail pages a
+/// viewport, and it follows focus: moving to a row with a key, the D-pad or Tab scrolls it by the
+/// least that leaves the next row whole and the one after it cut in sight, and PageUp, PageDown and
+/// the pad's triggers move a viewport at a time. A click on a half-visible row focuses it and does
+/// not scroll under the pointer. The rail shows only while the rows do not fit. A list shows every
+/// row it holds, so it is for tens of rows, not thousands.
 ///
 /// The entity this returns holds the rows' viewport, a [`ListView`] (its first child), and the
 /// rail; to scroll from code, set the `ScrollPosition` on the [`ListView`].
