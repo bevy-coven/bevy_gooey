@@ -14,7 +14,7 @@ When one of these seems necessary, stop and ask. Name the exact command, what it
 
 ## Source of truth
 
-This repository, [`Ladvien/bevy_gooey`](https://github.com/Ladvien/bevy_gooey), is canonical. MIT OR Apache-2.0. A change a game or the editor (bevy_emerge) needs is made here, in its own commit with its tests here, and requested here as an issue labelled `consumer` and `consumer:<project>`; it is never patched into the consumer.
+This repository, [`bevy-coven/bevy_gooey`](https://github.com/bevy-coven/bevy_gooey), is canonical. MIT OR Apache-2.0. A change a game or the editor (bevy_grimoire) needs is made here, in its own commit with its tests here, and requested here as an issue labelled `consumer` and `consumer:<project>`; it is never patched into the consumer.
 
 ## Layout
 

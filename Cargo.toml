@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.97.1"
 description = "Game interfaces made easy for Bevy: a skin, ready-made game widgets (buttons, panels, menus, HUD meters, tooltips, modal dialogs) and keyboard and gamepad navigation, on Bevy's own headless widgets."
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/Ladvien/bevy_gooey"
+repository = "https://github.com/bevy-coven/bevy_gooey"
 keywords = ["bevy", "gamedev", "ui", "gui", "widgets"]
 categories = ["game-development", "gui"]
 # `docs/` holds the gallery still and the research notes, so it is out of the package.
@@ -14,7 +14,7 @@ include = ["src/**", "Cargo.toml", "README.md", "LICENSE-*"]
 [features]
 default = []
 # `serde` derives on `GooeySkin`, `UiScaleSettings` and `Meter`, and Bevy's own `serialize` for `Color`: a
-# project saves its skin and scale as data and an editor (bevy_emerge's family host) edits them live.
+# project saves its skin and scale as data and an editor (bevy_grimoire's family host) edits them live.
 serde = ["dep:serde", "bevy/serialize"]
 # Nothing enables this in normal use. `tests/readme.rs` checks the README's quick start against the
 # crate-root doctest, so the two cannot drift.

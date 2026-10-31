@@ -25,7 +25,7 @@ Or from git, for changes not released yet:
 
 ```toml
 [dependencies]
-bevy_gooey = { git = "https://github.com/Ladvien/bevy_gooey" }
+bevy_gooey = { git = "https://github.com/bevy-coven/bevy_gooey" }
 ```
 
 Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data).
