@@ -15,8 +15,8 @@ use bevy::ui::Checked;
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui_widgets::{
     Checkbox, ControlOrientation, ScrollArea, Scrollbar, ScrollbarThumb, Slider, SliderOrientation,
-    SliderRange, SliderStep, SliderThumb, SliderValue, TrackClick, checkbox_self_update, observe,
-    slider_self_update,
+    SliderRange, SliderStep, SliderThumb, SliderValue, TabActivation, TabList, TrackClick,
+    checkbox_self_update, observe, slider_self_update,
 };
 
 use crate::choice::{
@@ -28,6 +28,7 @@ use crate::meter::Meter;
 use crate::model::{meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
 use crate::skin::Role;
+use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::toast::{Toast, ToastKind};
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
@@ -583,6 +584,140 @@ where
                 )],
             ));
         })),
+    )
+}
+
+/// Tabs: a strip of one- or two-word labels above pages of widgets, one page shown at a time. The
+/// i-th label opens the i-th page, each a [`tab_page`] in `children![…]`; `selected` is the page
+/// shown first. A settings screen is the use: Audio, Display and Controls, each its own page of
+/// [`toggle`]s, [`slider`]s and [`choice`]s.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     panel(),
+///     children![
+///         heading("Settings"),
+///         (
+///             tabs(
+///                 ["Audio", "Display"],
+///                 0,
+///                 children![
+///                     tab_page(children![slider("Volume", 0.7, 0.0..=1.0), toggle("Subtitles", true)]),
+///                     tab_page(children![choice("Quality", ["Low", "High"], 1)]),
+///                 ]
+///             ),
+///             observe(|change: On<ValueChange<usize>>| info!("page {}", change.value)),
+///         ),
+///     ],
+/// ));
+/// # }
+/// ```
+///
+/// The selected tab is lit and its page shown; a click on a tab, Left and Right on a focused tab
+/// (they wrap), and the D-pad's Left and Right select it. **`LB` and `RB`** (and Ctrl+PageUp and
+/// Ctrl+PageDown) turn the page from anywhere in the widget, so a pad player never has to go back
+/// to the strip ([`step_tabs`](crate::step_tabs)); focus stays in the page and lands on the new
+/// page's first widget ([`land_tab_focus`](crate::land_tab_focus)). Down from a tab goes into the
+/// page and Up from the page goes to the selected tab.
+///
+/// Every page takes the room of the largest, so turning a page moves nothing: keep a handful of
+/// short labels, and let the pages be about the same height. The entity this returns holds
+/// [`TabsValue`](crate::TabsValue), the selected index (read it, or set it to turn the page from
+/// code), and reports each change a player makes as a [`ValueChange<usize>`](crate::ValueChange)
+/// on itself.
+pub fn tabs<S: Into<String>>(
+    labels: impl IntoIterator<Item = S>,
+    selected: usize,
+    pages: impl Bundle,
+) -> impl Bundle {
+    let labels: Vec<String> = labels.into_iter().map(Into::into).collect();
+    let count = labels.len();
+    let selected = selected.min(count.saturating_sub(1));
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Tabs,
+        TabsValue(selected),
+        TabsCount(count),
+        observe(tabs_self_update),
+        Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
+            // Bevy's list: Left and Right on a tab move focus and select it at once, and a click
+            // selects. Its answer is an entity; `tabs_on_select` turns it into the place.
+            parent.spawn((
+                Node::default(),
+                TabList {
+                    orientation: ControlOrientation::Horizontal,
+                    activation: TabActivation::Automatic,
+                },
+                Role::TabList,
+                observe(tabs_on_select),
+                Children::spawn(SpawnIter(labels.into_iter().map(tab))),
+            ));
+            // One grid cell for every page, so the widget is as large as the largest.
+            parent.spawn((
+                Node {
+                    display: Display::Grid,
+                    ..default()
+                },
+                Role::TabPages,
+                pages,
+            ));
+        })),
+    )
+}
+
+/// One tab of a strip: a button-sized target with its label, which Bevy's `TabList` selects on a
+/// click and on Left and Right.
+fn tab(label: String) -> impl Bundle {
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            flex_grow: 1.0,
+            ..default()
+        },
+        bevy::ui_widgets::Tab,
+        Role::Tab,
+        Hovered::default(),
+        AutoDirectionalNavigation::default(),
+        children![(Text::new(label), Role::TabText)],
+    )
+}
+
+/// One page of [`tabs`]: a column of widgets spaced like a [`menu`], shown while its tab is
+/// selected. Its widgets are the page's children, in `children![…]`. It stands hidden until
+/// [`update_tabs`](crate::update_tabs) shows it, so a page never draws on top of another.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(tabs(
+///     ["Game", "Video"],
+///     0,
+///     children![
+///         tab_page(children![button("Resume"), button("Save")]),
+///         tab_page(children![toggle("Fullscreen", false)]),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn tab_page(widgets: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            grid_row: GridPlacement::start(1),
+            grid_column: GridPlacement::start(1),
+            ..default()
+        },
+        Role::TabPage,
+        Visibility::Hidden,
+        widgets,
     )
 }
 

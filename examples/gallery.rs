@@ -7,10 +7,13 @@
 //!   its tooltip beside it (`GOOEY_KEYS=down` stages it).
 //! - The health meter drains and refills (`GOOEY_HEALTH=<value>` holds it at that value instead).
 //!   Each `UiFeedback` is logged where a game would play a sound.
-//! - **Subtitles** is a switch, **Quality** a choice and **Volume** a slider. Left and Right step a
-//!   focused choice (it stops at its ends; Home and End jump; Enter, Space and South cycle it round;
-//!   a click on an arrow steps it) and a focused slider (Home and End jump, the D-pad too, held to
-//!   repeat; a click or a drag sets it): each logs the value it settles on.
+//! - **Audio**, **Display** and **Controls** are the tabs of one settings widget: click a tab, Left
+//!   and Right on a focused tab, or Ctrl+PageDown and Ctrl+PageUp (on a pad, `LB` and `RB`) turn its
+//!   page, and each turn logs the page. **Subtitles** is a switch, **Quality** a choice and
+//!   **Volume** a slider. Left and Right step a focused choice (it stops at its ends; Home and End
+//!   jump; Enter, Space and South cycle it round; a click on an arrow steps it) and a focused
+//!   slider (Home and End jump, the D-pad too, held to repeat; a click or a drag sets it): each
+//!   logs the value it settles on.
 //! - Resize the window: the whole interface keeps its share of it (twice the size at 2560x1440
 //!   as at 1280x720).
 //!
@@ -66,6 +69,9 @@ struct QuitDialog;
 /// A row of the Load game list.
 #[derive(Component)]
 struct SaveSlot;
+
+/// The Quality choice's options.
+const QUALITY: [&str; 4] = ["Low", "Medium", "High", "Ultra"];
 
 /// The Load game list's rows.
 const SLOTS: [&str; 12] = [
@@ -303,37 +309,65 @@ fn setup(mut commands: Commands) {
                         label("Health"),
                         (meter(100.0, 100.0), Health),
                         (
-                            toggle("Subtitles", true),
-                            observe(|change: On<ValueChange<bool>>, mut commands: Commands| {
-                                info!("gooey: subtitles {}", change.value);
-                                commands.spawn(toast(if change.value {
-                                    "Subtitles on"
-                                } else {
-                                    "Subtitles off"
-                                }));
-                            }),
-                        ),
-                        (
-                            choice("Quality", ["Low", "Medium", "High", "Ultra"], 1),
-                            observe(|change: On<ValueChange<usize>>, mut commands: Commands| {
-                                const NAMES: [&str; 4] = ["Low", "Medium", "High", "Ultra"];
-                                info!("gooey: quality {}", change.value);
-                                commands.spawn(toast(format!(
-                                    "Quality {}",
-                                    NAMES.get(change.value).copied().unwrap_or("?")
-                                )));
-                            },),
-                        ),
-                        (
-                            slider("Volume", 0.7, 0.0..=1.0),
-                            observe(|change: On<ValueChange<f32>>, mut commands: Commands| {
-                                if change.is_final {
-                                    info!("gooey: volume {:.2}", change.value);
-                                    commands.spawn(toast(format!(
-                                        "Volume {:.0}%",
-                                        change.value * 100.0
-                                    )));
-                                }
+                            tabs(
+                                ["Audio", "Display", "Controls"],
+                                0,
+                                children![
+                                    tab_page(children![
+                                        (
+                                            slider("Volume", 0.7, 0.0..=1.0),
+                                            observe(
+                                                |change: On<ValueChange<f32>>,
+                                                 mut commands: Commands| {
+                                                    if change.is_final {
+                                                        info!("gooey: volume {:.2}", change.value);
+                                                        commands.spawn(toast(format!(
+                                                            "Volume {:.0}%",
+                                                            change.value * 100.0
+                                                        )));
+                                                    }
+                                                }
+                                            ),
+                                        ),
+                                        (
+                                            toggle("Subtitles", true),
+                                            observe(
+                                                |change: On<ValueChange<bool>>,
+                                                 mut commands: Commands| {
+                                                    info!("gooey: subtitles {}", change.value);
+                                                    commands.spawn(toast(if change.value {
+                                                        "Subtitles on"
+                                                    } else {
+                                                        "Subtitles off"
+                                                    }));
+                                                }
+                                            ),
+                                        ),
+                                    ]),
+                                    tab_page(children![
+                                        (
+                                            choice("Quality", QUALITY, 1),
+                                            observe(
+                                                |change: On<ValueChange<usize>>,
+                                                 mut commands: Commands| {
+                                                    info!("gooey: quality {}", change.value);
+                                                    commands.spawn(toast(format!(
+                                                        "Quality {}",
+                                                        QUALITY.get(change.value).copied().unwrap_or("?")
+                                                    )));
+                                                }
+                                            ),
+                                        ),
+                                        choice("Window", ["Windowed", "Borderless", "Fullscreen"], 0),
+                                    ]),
+                                    tab_page(children![
+                                        button("Rebind keys"),
+                                        button("Gamepad layout"),
+                                    ]),
+                                ]
+                            ),
+                            observe(|change: On<ValueChange<usize>>| {
+                                info!("gooey: tab {}", change.value);
                             }),
                         ),
                     ]

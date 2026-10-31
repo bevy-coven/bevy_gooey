@@ -6,7 +6,7 @@ use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{FontSize, FontSource};
-use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed};
+use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed, Selected};
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
@@ -505,6 +505,19 @@ pub enum Role {
     /// A list's thumb, the share of the rail the viewport is of the content: [`GooeySkin::text_muted`],
     /// [`GooeySkin::text`] under the pointer and [`GooeySkin::accent`] while dragged.
     ListThumb,
+    /// A [`crate::tabs`] widget's column: the strip, a gap, the pages; not drawn.
+    Tabs,
+    /// The strip of tabs, in a row a [`GooeySkin::gap`] apart; not drawn.
+    TabList,
+    /// One tab: a button's size and look, lit [`GooeySkin::accent`] while it is the selected one.
+    Tab,
+    /// A tab's label: [`GooeySkin::accent_text`] on the selected tab, else [`GooeySkin::text`].
+    TabText,
+    /// The one grid cell every page stands in, so the widget is as large as its largest page; not
+    /// drawn.
+    TabPages,
+    /// One page, a column of widgets a [`GooeySkin::gap`] apart; hidden unless its tab is selected.
+    TabPage,
 }
 
 type Styled = (
@@ -538,6 +551,8 @@ struct State {
     hovered: bool,
     /// A toggle that is on.
     checked: bool,
+    /// A tab that is the selected one of its strip.
+    selected: bool,
     /// The entity is a dialog's scrim: a panel on it is drawn opaque.
     scrim: bool,
     /// A toast's opacity; whole for everything that is not one.
@@ -563,6 +578,7 @@ impl Default for State {
             disabled: false,
             hovered: false,
             checked: false,
+            selected: false,
             scrim: false,
             alpha: 1.0,
             alert: false,
@@ -581,6 +597,7 @@ type StateQuery = (
     Option<&'static SliderDragState>,
     Has<InteractionDisabled>,
     Has<Checked>,
+    Has<Selected>,
     Option<&'static Hovered>,
     Option<&'static Toast>,
     Option<(&'static ChoiceValue, &'static ChoiceCount)>,
@@ -597,6 +614,7 @@ type Restyle = (
         Changed<Pressed>,
         Changed<Hovered>,
         Changed<InteractionDisabled>,
+        Added<Selected>,
         Changed<Checked>,
         Changed<SliderDragState>,
         Changed<ScrollbarDragState>,
@@ -636,6 +654,7 @@ pub fn apply_skin(
     mut unpressed: RemovedComponents<Pressed>,
     mut enabled: RemovedComponents<InteractionDisabled>,
     mut unchecked: RemovedComponents<Checked>,
+    mut unselected: RemovedComponents<Selected>,
     states: Query<StateQuery>,
     parents: Query<&ChildOf>,
     children: Query<&Children>,
@@ -655,7 +674,19 @@ pub fn apply_skin(
         states
             .get(entity)
             .map(
-                |(pressed, drag, disabled, checked, hovered, toast, choice, bar, list, role)| {
+                |(
+                    pressed,
+                    drag,
+                    disabled,
+                    checked,
+                    selected,
+                    hovered,
+                    toast,
+                    choice,
+                    bar,
+                    list,
+                    role,
+                )| {
                     State {
                         // `bevy_ui_widgets` marks a slider pressed for a click on its track only; a grab
                         // of the thumb is a drag, so a dragged slider reads as pressed too, and so does
@@ -666,6 +697,7 @@ pub fn apply_skin(
                         disabled,
                         hovered: hovered.is_some_and(|h| h.0),
                         checked,
+                        selected,
                         scrim: role == Some(&Role::Scrim),
                         alpha: toast.map_or(1.0, Toast::alpha),
                         alert: toast.is_some_and(|t| t.kind() == ToastKind::Alert),
@@ -699,6 +731,7 @@ pub fn apply_skin(
         unpressed.clear();
         enabled.clear();
         unchecked.clear();
+        unselected.clear();
         for item in &mut styled {
             let entity = item.0;
             let parent = parents.get(entity).map(|p| p.parent()).ok();
@@ -717,6 +750,7 @@ pub fn apply_skin(
     dirty.extend(unpressed.read());
     dirty.extend(enabled.read());
     dirty.extend(unchecked.read());
+    dirty.extend(unselected.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -724,7 +758,7 @@ pub fn apply_skin(
                 .filter(|item| {
                     matches!(
                         item.1,
-                        Role::Button | Role::Toggle | Role::Slider | Role::Choice
+                        Role::Button | Role::Toggle | Role::Slider | Role::Choice | Role::Tab
                     )
                 })
                 .map(|item| item.0),
@@ -797,6 +831,18 @@ fn restyle(
         Role::Button => Some(if state.disabled {
             skin.surface
         } else if state.pressed {
+            skin.accent
+        } else if state.hovered {
+            skin.hovered()
+        } else {
+            skin.surface_raised
+        }),
+        // The selected tab is lit like everything that is on (a switch, a meter's fill): the
+        // accent, with the text colour inverted on it, two cues by luminance and not by hue. The
+        // others are a button's, full-contrast text on a visible fill, never faded.
+        Role::Tab => Some(if state.disabled {
+            skin.surface
+        } else if state.selected || state.pressed {
             skin.accent
         } else if state.hovered {
             skin.hovered()
@@ -876,7 +922,12 @@ fn restyle(
         | Role::ToastText
         | Role::List
         | Role::ListView
-        | Role::ListRows => None,
+        | Role::ListRows
+        | Role::Tabs
+        | Role::TabList
+        | Role::TabText
+        | Role::TabPages
+        | Role::TabPage => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(fill));
@@ -888,8 +939,10 @@ fn restyle(
         // them: a toast over a panel keeps its edge at 3:1.
         Role::ToastBody => Some(BorderColor::all(faded(skin.outline, owner.alpha))),
         Role::Meter | Role::ToggleTrack | Role::SliderRail => Some(BorderColor::all(skin.outline)),
-        Role::Button if look.focused == Some(entity) => Some(BorderColor::all(skin.focus_ring)),
-        Role::Button => Some(BorderColor::all(Color::NONE)),
+        Role::Button | Role::Tab if look.focused == Some(entity) => {
+            Some(BorderColor::all(skin.focus_ring))
+        }
+        Role::Button | Role::Tab => Some(BorderColor::all(Color::NONE)),
         // A row has no fill of its own, so its border speaks: the ring when focused, the outline
         // under the pointer, nothing at rest.
         Role::Toggle | Role::Slider | Role::Choice => {
@@ -934,8 +987,10 @@ fn restyle(
                 next.border_radius = radius;
                 next.row_gap = Val::Px(skin.gap);
             }
-            Role::Menu => next.row_gap = Val::Px(skin.gap),
-            Role::Button => {
+            Role::Menu | Role::TabPage | Role::Tabs => next.row_gap = Val::Px(skin.gap),
+            // The strip's tabs stand a gap apart like a menu's buttons, and each is a button's size.
+            Role::TabList => next.column_gap = Val::Px(skin.gap),
+            Role::Button | Role::Tab => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding =
@@ -1154,6 +1209,18 @@ fn restyle(
             let color = if parent.disabled {
                 skin.text_muted
             } else if parent.pressed {
+                skin.accent_text
+            } else {
+                skin.text
+            };
+            Some((color, &look.fonts.body, skin.text_size))
+        }
+        // The selected tab's label is drawn on the accent fill, so it takes the accent's text.
+        Role::TabText => {
+            let parent = parent.unwrap_or_default();
+            let color = if parent.disabled {
+                skin.text_muted
+            } else if parent.selected || parent.pressed {
                 skin.accent_text
             } else {
                 skin.text
