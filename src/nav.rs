@@ -369,17 +369,17 @@ pub fn gamepad_adjust(
     focus: Res<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     gamepads: Query<&Gamepad>,
-    sliders: Query<(), (With<Slider>, Without<InteractionDisabled>)>,
-    choices: Query<(), (With<ChoiceCount>, Without<InteractionDisabled>)>,
+    controls: Query<Has<Slider>, TakesSideways>,
     mut held: Local<(i8, f32)>,
     mut commands: Commands,
 ) {
     let down = |button| gamepads.iter().any(|g| g.pressed(button));
     let direction = down(GamepadButton::DPadRight) as i8 - down(GamepadButton::DPadLeft) as i8;
     let vertical = down(GamepadButton::DPadUp) || down(GamepadButton::DPadDown);
-    let Some(control) = focus
+    let Some((control, is_slider)) = focus
         .get()
-        .filter(|&f| direction != 0 && !vertical && (sliders.contains(f) || choices.contains(f)))
+        .filter(|_| direction != 0 && !vertical)
+        .and_then(|f| controls.get(f).ok().map(|slider| (f, slider)))
     else {
         *held = (0, 0.0);
         return;
@@ -395,7 +395,7 @@ pub fn gamepad_adjust(
     };
     if steps > 0 {
         show_focus(&mut shown);
-        if sliders.contains(control) {
+        if is_slider {
             commands.trigger(SetSliderValue {
                 entity: control,
                 change: SliderValueChange::RelativeStep(f32::from(direction) * steps as f32),
