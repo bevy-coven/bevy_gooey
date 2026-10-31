@@ -7,8 +7,10 @@
 //!   its tooltip beside it (`GOOEY_KEYS=down` stages it).
 //! - The health meter drains and refills (`GOOEY_HEALTH=<value>` holds it at that value instead).
 //!   Each `UiFeedback` is logged where a game would play a sound.
-//! - **Subtitles** is a switch and **Volume** a slider (Left and Right step it, Home and End jump,
-//!   the D-pad too, held to repeat; a click or a drag sets it): each logs the value it settles on.
+//! - **Subtitles** is a switch, **Quality** a choice and **Volume** a slider. Left and Right step a
+//!   focused choice (it stops at its ends; Home and End jump; Enter, Space and South cycle it round;
+//!   a click on an arrow steps it) and a focused slider (Home and End jump, the D-pad too, held to
+//!   repeat; a click or a drag sets it): each logs the value it settles on.
 //! - Resize the window: the whole interface keeps its share of it (twice the size at 2560x1440
 //!   as at 1280x720).
 //!
@@ -91,6 +93,10 @@ enum Staged {
     Alert,
     /// Spawn a toast long enough to wrap.
     Long,
+    /// A primary click on the Quality choice's back arrow.
+    Back,
+    /// A primary click on the Quality choice's forward arrow.
+    Forward,
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -175,6 +181,11 @@ fn main() {
                     "right" => Some(Staged::Key(KeyCode::ArrowRight)),
                     "enter" => Some(Staged::Key(KeyCode::Enter)),
                     "tab" => Some(Staged::Key(KeyCode::Tab)),
+                    "space" => Some(Staged::Key(KeyCode::Space)),
+                    "home" => Some(Staged::Key(KeyCode::Home)),
+                    "end" => Some(Staged::Key(KeyCode::End)),
+                    "back" => Some(Staged::Back),
+                    "forward" => Some(Staged::Forward),
                     "click" => Some(Staged::Click),
                     "untip" => Some(Staged::Untip),
                     "retip" => Some(Staged::Retip),
@@ -259,6 +270,17 @@ fn setup(mut commands: Commands) {
                             "Subtitles off"
                         }));
                     }),
+                ),
+                (
+                    choice("Quality", ["Low", "Medium", "High", "Ultra"], 1),
+                    observe(|change: On<ValueChange<usize>>, mut commands: Commands| {
+                        const NAMES: [&str; 4] = ["Low", "Medium", "High", "Ultra"];
+                        info!("gooey: quality {}", change.value);
+                        commands.spawn(toast(format!(
+                            "Quality {}",
+                            NAMES.get(change.value).copied().unwrap_or("?")
+                        )));
+                    },),
                 ),
                 (
                     slider("Volume", 0.7, 0.0..=1.0),
@@ -456,6 +478,37 @@ fn stage_keys(
             let at = Location {
                 target: NormalizedRenderTarget::Window(target),
                 position: Vec2::splat(4.0),
+            };
+            let actions: &[PointerAction] = match state {
+                ButtonState::Pressed => &[
+                    PointerAction::Move { delta: Vec2::ZERO },
+                    PointerAction::Press(PointerButton::Primary),
+                ],
+                ButtonState::Released => &[PointerAction::Release(PointerButton::Primary)],
+            };
+            for &action in actions {
+                pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
+            }
+        }
+        Some(&arrow @ (Staged::Back | Staged::Forward)) => {
+            let Some(target) = WindowRef::Entity(window).normalize(None) else {
+                return;
+            };
+            let arrows = thumbs
+                .iter()
+                .filter(|(role, _)| **role == Role::ChoiceArrow);
+            let x = |(_, at): &(&Role, &UiGlobalTransform)| at.translation.x;
+            let picked = if matches!(arrow, Staged::Back) {
+                arrows.min_by(|a, b| x(a).total_cmp(&x(b)))
+            } else {
+                arrows.max_by(|a, b| x(a).total_cmp(&x(b)))
+            };
+            let Some((_, arrow)) = picked else {
+                return;
+            };
+            let at = Location {
+                target: NormalizedRenderTarget::Window(target),
+                position: arrow.translation,
             };
             let actions: &[PointerAction] = match state {
                 ButtonState::Pressed => &[

@@ -189,6 +189,42 @@ pub fn slider_text(value: f32, min: f32, max: f32) -> String {
     }
 }
 
+/// Where a [`crate::choice`] lands when it steps `delta` options from `selected` among `len`:
+/// clamped to the first and the last, never wrapping, so a player who steps past the end sees that
+/// it is the end. With no options it stays at 0, and a `selected` already past the end counts as
+/// the last.
+///
+/// ```
+/// assert_eq!(bevy_gooey::choice_step(1, 3, 1), 2);
+/// assert_eq!(bevy_gooey::choice_step(2, 3, 1), 2);
+/// assert_eq!(bevy_gooey::choice_step(0, 3, -1), 0);
+/// ```
+pub fn choice_step(selected: usize, len: usize, delta: i32) -> usize {
+    let last = len.saturating_sub(1);
+    let from = selected.min(last);
+    if delta < 0 {
+        from.saturating_sub(delta.unsigned_abs() as usize)
+    } else {
+        from.saturating_add(delta as usize).min(last)
+    }
+}
+
+/// The option after `selected` among `len`, wrapping from the last to the first: what Enter, Space,
+/// the pad's South button and a click on a [`crate::choice`]'s value do, so one repeated press
+/// reaches every option. With no options it stays at 0.
+///
+/// ```
+/// assert_eq!(bevy_gooey::choice_next(0, 3), 1);
+/// assert_eq!(bevy_gooey::choice_next(2, 3), 0);
+/// ```
+pub fn choice_next(selected: usize, len: usize) -> usize {
+    if len == 0 {
+        0
+    } else {
+        (selected.min(len - 1) + 1) % len
+    }
+}
+
 /// How many repeats a held button has made between two moments, `held_before` and `held_now`
 /// seconds after it went down: none until `delay`, then `per_second` a second, the first at
 /// `delay` itself. The press itself is not a repeat. Zero for a delay or rate that is not usable.
@@ -564,5 +600,37 @@ mod tests {
         for age in [f32::NAN, -1.0, 100.0] {
             assert_eq!(toast_grow(age, hold, fade), 0.0);
         }
+    }
+
+    #[test]
+    fn a_choice_steps_to_its_ends_and_stops_there() {
+        // One step each way inside the list, then held against either end.
+        assert_eq!(choice_step(1, 4, 1), 2);
+        assert_eq!(choice_step(1, 4, -1), 0);
+        assert_eq!(choice_step(3, 4, 1), 3);
+        assert_eq!(choice_step(0, 4, -1), 0);
+        // A jump of any size lands on an end, and a step of nothing stays put.
+        assert_eq!(choice_step(1, 4, i32::MAX), 3);
+        assert_eq!(choice_step(2, 4, i32::MIN), 0);
+        assert_eq!(choice_step(2, 4, 0), 2);
+        // A value past the end (a game set it carelessly) is read as the last option.
+        assert_eq!(choice_step(9, 4, 0), 3);
+        assert_eq!(choice_step(9, 4, -1), 2);
+        // Nothing to choose from: nowhere to go, and no panic.
+        assert_eq!(choice_step(0, 0, 1), 0);
+        assert_eq!(choice_step(5, 0, -1), 0);
+    }
+
+    #[test]
+    fn a_choice_cycles_round_when_activated() {
+        assert_eq!(choice_next(0, 3), 1);
+        assert_eq!(choice_next(2, 3), 0);
+        assert_eq!(choice_next(0, 1), 0);
+        assert_eq!(
+            choice_next(9, 3),
+            0,
+            "past the end reads as the last, then wraps"
+        );
+        assert_eq!(choice_next(0, 0), 0);
     }
 }
