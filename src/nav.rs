@@ -18,7 +18,11 @@ use bevy::ui::{
     ComputedNode, ComputedStackIndex, ComputedUiTargetCamera, InteractionDisabled,
     UiGlobalTransform,
 };
-use bevy::ui_widgets::Activate;
+use bevy::ui_widgets::{
+    Activate, Checkbox, SetSliderValue, Slider, SliderValueChange, ToggleChecked,
+};
+
+use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
 
 /// What a [`crate::dialog`] remembers: the widget that had focus when it opened, which gets focus
 /// back when the dialog closes, and whether focus has moved in yet. Part of `dialog()`; a game
@@ -71,6 +75,8 @@ pub struct FocusScopes<'w, 's> {
     starts: Query<'w, 's, StartPoint, StartMark>,
     /// Everything focus can rest on.
     stops: Query<'w, 's, Option<&'static InheritedVisibility>, With<TabIndex>>,
+    /// The sliders that take Left and Right themselves.
+    sliders: Query<'w, 's, (), (With<Slider>, Without<InteractionDisabled>)>,
 }
 
 impl FocusScopes<'_, '_> {
@@ -89,6 +95,12 @@ impl FocusScopes<'_, '_> {
         self.stops
             .get(entity)
             .is_ok_and(|visible| visible.is_none_or(|v| v.get()))
+    }
+
+    /// Whether `entity` is a slider that takes Left and Right itself: those presses adjust it and
+    /// never move focus off it. A disabled slider takes nothing.
+    fn keeps_sideways(&self, entity: Entity) -> bool {
+        self.sliders.contains(entity)
     }
 
     /// The scope the player is looking at: the topmost open modal group (a dialog), or `None`,
@@ -167,11 +179,22 @@ pub fn navigate_by_input(
         pressed(KeyCode::ArrowUp, GamepadButton::DPadUp),
         pressed(KeyCode::ArrowDown, GamepadButton::DPadDown),
     );
+    if net_x == 0.0 && net_y == 0.0 {
+        return;
+    }
+    show_focus(&mut shown);
+    let from = nav.focus.get().filter(|&f| scopes.holds(f));
+    // Left and Right on a slider are the slider's (the keys through `bevy_ui_widgets`, the D-pad
+    // through `gamepad_adjust`): they never also move focus off it. Up and Down still do.
+    let net_x = if from.is_some_and(|f| scopes.keeps_sideways(f)) {
+        0.0
+    } else {
+        net_x
+    };
     let Some(direction) = Dir2::from_xy(net_x, net_y).ok().map(CompassOctant::from) else {
         return;
     };
-    show_focus(&mut shown);
-    let Some(from) = nav.focus.get().filter(|&f| scopes.holds(f)) else {
+    let Some(from) = from else {
         if let Some(start) = scopes.start(scopes.active()) {
             nav.focus.set(start, FocusCause::Navigated);
         }
@@ -295,14 +318,16 @@ fn inside(focus: Option<Entity>, root: Entity, parents: &Query<&ChildOf>) -> boo
     focus.is_some_and(|f| f == root || parents.iter_ancestors(f).any(|a| a == root))
 }
 
-/// Activates the focused, enabled button when any gamepad's South button (A on Xbox, Cross on
-/// PlayStation) is just pressed, and shows focus (`InputFocusVisible`). Enter and Space are
-/// `bevy_ui_widgets`' own, so they are not handled here: a second handler would activate twice.
+/// Activates the focused, enabled button, or flips the focused, enabled [`crate::toggle`], when
+/// any gamepad's South button (A on Xbox, Cross on PlayStation) is just pressed, and shows focus
+/// (`InputFocusVisible`). Enter and Space are `bevy_ui_widgets`' own, so they are not handled here:
+/// a second handler would act twice.
 pub fn gamepad_select(
     focus: Res<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     gamepads: Query<&Gamepad>,
     buttons: Query<(), (With<bevy::ui_widgets::Button>, Without<InteractionDisabled>)>,
+    toggles: Query<(), (With<Checkbox>, Without<InteractionDisabled>)>,
     mut commands: Commands,
 ) {
     if !gamepads
@@ -312,9 +337,58 @@ pub fn gamepad_select(
         return;
     }
     show_focus(&mut shown);
-    if let Some(entity) = focus.get()
-        && buttons.contains(entity)
-    {
-        commands.trigger(Activate { entity });
+    if let Some(entity) = focus.get() {
+        if buttons.contains(entity) {
+            commands.trigger(Activate { entity });
+        } else if toggles.contains(entity) {
+            commands.trigger(ToggleChecked { entity });
+        }
+    }
+}
+
+/// Steps the focused, enabled [`crate::slider`] with the D-pad: Left and Right take one step a
+/// press, and a direction held down repeats after [`PAD_REPEAT_DELAY`] at [`PAD_REPEAT_RATE`] a
+/// second, so a pad player sweeps a volume without twenty presses and never holds a second button
+/// to keep the slider selected. Shows focus (`InputFocusVisible`). Runs in
+/// [`crate::GooeySystems::Navigate`]. The keys are `bevy_ui_widgets`' own (Left and Right step,
+/// Home and End jump) and are not handled here.
+///
+/// Up and Down move focus off the slider ([`navigate_by_input`] leaves them alone), and a press
+/// with either held stops the repeat. The repeat counts real time, so a paused game's menu still
+/// repeats.
+pub fn gamepad_adjust(
+    time: Res<Time<Real>>,
+    focus: Res<InputFocus>,
+    mut shown: ResMut<InputFocusVisible>,
+    gamepads: Query<&Gamepad>,
+    sliders: Query<(), (With<Slider>, Without<InteractionDisabled>)>,
+    mut held: Local<(i8, f32)>,
+    mut commands: Commands,
+) {
+    let down = |button| gamepads.iter().any(|g| g.pressed(button));
+    let direction = down(GamepadButton::DPadRight) as i8 - down(GamepadButton::DPadLeft) as i8;
+    let vertical = down(GamepadButton::DPadUp) || down(GamepadButton::DPadDown);
+    let Some(slider) = focus
+        .get()
+        .filter(|&f| direction != 0 && !vertical && sliders.contains(f))
+    else {
+        *held = (0, 0.0);
+        return;
+    };
+    // `held` is the direction held and for how many seconds.
+    let steps = if held.0 == direction {
+        let before = held.1;
+        held.1 += time.delta_secs();
+        repeat_steps(before, held.1, PAD_REPEAT_DELAY, PAD_REPEAT_RATE)
+    } else {
+        *held = (direction, 0.0);
+        1
+    };
+    if steps > 0 {
+        show_focus(&mut shown);
+        commands.trigger(SetSliderValue {
+            entity: slider,
+            change: SliderValueChange::RelativeStep(f32::from(direction) * steps as f32),
+        });
     }
 }

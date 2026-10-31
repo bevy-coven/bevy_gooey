@@ -135,6 +135,86 @@ pub fn snap_line_width(length: f32, scale: f32) -> f32 {
     logical
 }
 
+/// How long a held D-pad direction waits before it repeats on a [`crate::slider`], in seconds. A
+/// design default: the delay of a keyboard's own repeat.
+pub const PAD_REPEAT_DELAY: f32 = 0.4;
+
+/// How many repeats a second a held D-pad direction makes on a [`crate::slider`], once the delay
+/// is over. A design default: with a twentieth of the range a step, a 0 to 1 slider sweeps in about
+/// two seconds.
+pub const PAD_REPEAT_RATE: f32 = 12.0;
+
+/// How far along its range a slider's thumb is, from 0 to 1. Never NaN: a value outside the range
+/// is clamped to an end, and a range that is not finite or has no length reads as the start.
+///
+/// ```
+/// assert_eq!(bevy_gooey::slider_fraction(25.0, 0.0, 100.0), 0.25);
+/// assert_eq!(bevy_gooey::slider_fraction(2.0, 0.0, 1.0), 1.0);
+/// ```
+pub fn slider_fraction(value: f32, min: f32, max: f32) -> f32 {
+    if min.is_finite() && max.is_finite() && value.is_finite() && max > min {
+        ((value - min) / (max - min)).clamp(0.0, 1.0)
+    } else {
+        0.0
+    }
+}
+
+/// The text a [`crate::slider`] shows for its value: a percentage when the range is 0 to 1 (a
+/// volume, a brightness), the plain number otherwise, rounded to two decimals with trailing zeros
+/// dropped. A value outside the range reads as the end it is clamped to, and one that is not finite
+/// as 0.
+///
+/// ```
+/// assert_eq!(bevy_gooey::slider_text(0.7, 0.0, 1.0), "70%");
+/// assert_eq!(bevy_gooey::slider_text(1.25, 0.5, 2.0), "1.25");
+/// assert_eq!(bevy_gooey::slider_text(40.0, 0.0, 100.0), "40");
+/// ```
+pub fn slider_text(value: f32, min: f32, max: f32) -> String {
+    let value = if value.is_finite() { value } else { 0.0 };
+    let value = if min.is_finite() && max.is_finite() && min <= max {
+        value.clamp(min, max)
+    } else {
+        value
+    };
+    if min == 0.0 && max == 1.0 {
+        return format!("{}%", (value * 100.0).round());
+    }
+    let text = format!("{value:.2}");
+    let text = text.trim_end_matches('0').trim_end_matches('.');
+    // A value that rounds to nothing is "0", never "-0".
+    if text == "-0" || text.is_empty() {
+        "0".into()
+    } else {
+        text.into()
+    }
+}
+
+/// How many repeats a held button has made between two moments, `held_before` and `held_now`
+/// seconds after it went down: none until `delay`, then `per_second` a second, the first at
+/// `delay` itself. The press itself is not a repeat. Zero for a delay or rate that is not usable.
+///
+/// ```
+/// // Held 0.35 s then 0.45 s: the first repeat, at 0.4 s, falls in between.
+/// assert_eq!(bevy_gooey::repeat_steps(0.35, 0.45, 0.4, 10.0), 1);
+/// // Held through a whole second at once, delay 0.5 s: the repeats at 0.5, 0.6 … 1.0 s.
+/// assert_eq!(bevy_gooey::repeat_steps(0.0, 1.0, 0.5, 10.0), 6);
+/// ```
+pub fn repeat_steps(held_before: f32, held_now: f32, delay: f32, per_second: f32) -> u32 {
+    let due = |held: f32| {
+        if held >= delay && held.is_finite() {
+            ((held - delay) * per_second).floor() as u32 + 1
+        } else {
+            0
+        }
+    };
+    let usable = |x: f32| x.is_finite() && x >= 0.0;
+    if usable(delay) && per_second.is_finite() && per_second > 0.0 && held_now > held_before {
+        due(held_now).saturating_sub(due(held_before))
+    } else {
+        0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -231,5 +311,71 @@ mod tests {
         assert!(snap_line_width(f32::NAN, 1.5).is_nan());
         assert_eq!(snap_line_width(3.0, 0.0), 3.0);
         assert_eq!(snap_line_width(3.0, f32::INFINITY), 3.0);
+    }
+
+    #[test]
+    fn a_sliders_fraction_is_clamped_and_never_nan() {
+        assert_eq!(slider_fraction(25.0, 0.0, 100.0), 0.25);
+        assert_eq!(slider_fraction(1.25, 0.5, 2.0), 0.5);
+        assert_eq!(slider_fraction(-3.0, 0.0, 1.0), 0.0);
+        assert_eq!(slider_fraction(9.0, 0.0, 1.0), 1.0);
+        // No range to be along: the start.
+        assert_eq!(slider_fraction(5.0, 5.0, 5.0), 0.0);
+        assert_eq!(slider_fraction(5.0, 9.0, 1.0), 0.0);
+        assert_eq!(slider_fraction(f32::NAN, 0.0, 1.0), 0.0);
+        assert_eq!(slider_fraction(0.5, 0.0, f32::INFINITY), 0.0);
+    }
+
+    #[test]
+    fn a_sliders_text_is_a_percentage_for_zero_to_one_and_the_number_otherwise() {
+        assert_eq!(slider_text(0.7, 0.0, 1.0), "70%");
+        assert_eq!(slider_text(0.0, 0.0, 1.0), "0%");
+        assert_eq!(slider_text(1.0, 0.0, 1.0), "100%");
+        // A float that is a hair under 0.7 still reads 70.
+        assert_eq!(slider_text(0.1 + 0.6, 0.0, 1.0), "70%");
+        assert_eq!(slider_text(40.0, 0.0, 100.0), "40");
+        assert_eq!(slider_text(1.25, 0.5, 2.0), "1.25");
+        assert_eq!(slider_text(1.5, 0.5, 2.0), "1.5");
+        assert_eq!(slider_text(0.333, 0.0, 2.0), "0.33");
+        assert_eq!(slider_text(-0.001, -1.0, 1.0), "0");
+        assert_eq!(slider_text(-2.5, -5.0, 5.0), "-2.5");
+        // Outside the range it reads the end it is clamped to; not finite, 0.
+        assert_eq!(slider_text(7.0, 0.0, 1.0), "100%");
+        assert_eq!(slider_text(300.0, 0.0, 100.0), "100");
+        assert_eq!(slider_text(f32::NAN, 0.0, 100.0), "0");
+    }
+
+    #[test]
+    fn a_held_direction_repeats_after_the_delay_at_the_same_pace_at_any_frame_rate() {
+        // Nothing before the delay, the first repeat at it.
+        assert_eq!(repeat_steps(0.0, 0.3, 0.5, 10.0), 0);
+        assert_eq!(repeat_steps(0.3, 0.5, 0.5, 10.0), 1);
+        // The same total however the time is cut into frames.
+        let total = |frame: f32| {
+            let (mut held, mut steps) = (0.0_f32, 0);
+            while held < 2.0 {
+                let next = held + frame;
+                steps += repeat_steps(held, next, 0.5, 10.0);
+                held = next;
+            }
+            (steps, held)
+        };
+        for frame in [1.0 / 144.0, 1.0 / 60.0, 1.0 / 20.0, 0.25, 1.0] {
+            let (steps, held) = total(frame);
+            let expected = repeat_steps(0.0, held, 0.5, 10.0);
+            assert_eq!(steps, expected, "{frame} s frames");
+        }
+        // A frame that does not advance, or goes back, repeats nothing.
+        assert_eq!(repeat_steps(1.0, 1.0, 0.5, 10.0), 0);
+        assert_eq!(repeat_steps(1.0, 0.5, 0.5, 10.0), 0);
+    }
+
+    #[test]
+    fn an_unusable_repeat_setting_repeats_nothing() {
+        assert_eq!(repeat_steps(0.0, 5.0, 0.5, 0.0), 0);
+        assert_eq!(repeat_steps(0.0, 5.0, 0.5, -10.0), 0);
+        assert_eq!(repeat_steps(0.0, 5.0, f32::NAN, 10.0), 0);
+        assert_eq!(repeat_steps(0.0, 5.0, 0.5, f32::INFINITY), 0);
+        assert_eq!(repeat_steps(0.0, f32::INFINITY, 0.5, 10.0), 0);
     }
 }

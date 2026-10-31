@@ -2,15 +2,43 @@
 //! with [`crate::observe`]. Each carries a [`Role`], and [`crate::apply_skin`] styles it from the
 //! skin; none of them takes a colour or a size.
 
+use std::ops::RangeInclusive;
+
+use bevy::ecs::lifecycle::HookContext;
+use bevy::ecs::world::DeferredWorld;
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
+use bevy::ui::Checked;
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
+use bevy::ui_widgets::{
+    Checkbox, Slider, SliderOrientation, SliderRange, SliderStep, SliderThumb, SliderValue,
+    TrackClick, checkbox_self_update, observe, slider_self_update,
+};
 
 use crate::meter::Meter;
-use crate::model::meter_fraction;
+use crate::model::{meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
 use crate::skin::Role;
+
+/// How many keyboard or D-pad steps span a [`slider`]'s range.
+const SLIDER_STEPS: f32 = 20.0;
+
+/// A toggle's state at spawn. A bundle cannot carry [`Checked`] only when the toggle starts on
+/// (`Option<Checked>` is not a bundle), so this puts it on the entity as it is added and goes.
+#[derive(Component)]
+#[component(on_add = start_state)]
+struct StartsOn(bool);
+
+fn start_state(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    let on = world.get::<StartsOn>(entity).is_some_and(|start| start.0);
+    let mut commands = world.commands();
+    let mut toggle = commands.entity(entity);
+    toggle.remove::<StartsOn>();
+    if on {
+        toggle.insert(Checked);
+    }
+}
 
 /// A full-window column that centres its children: the root of a menu screen or a HUD. It is a tab
 /// group, so Tab cycles through the buttons on it.
@@ -169,6 +197,142 @@ pub fn meter(value: f32, max: f32) -> impl Bundle {
             },
             Role::MeterFill
         )],
+    )
+}
+
+/// A switch for an option that takes effect the moment it flips (Fullscreen, Subtitles): a row with
+/// the label on the left and a framed track with a sliding knob on the right. It is Bevy's headless
+/// [`bevy::ui_widgets::Checkbox`], so a click anywhere on the row, Enter, Space and the pad's South
+/// button flip it, and Tab, the arrows and the D-pad reach it. It keeps its own state, [`Checked`]
+/// on the entity; observe `ValueChange<bool>` on it to apply the setting. The knob's place says
+/// whether it is on, so the state survives a colour-blind player; the label never changes with it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     toggle("Subtitles", true),
+///     observe(|change: On<ValueChange<bool>>| info!("subtitles: {}", change.value)),
+/// ));
+/// # }
+/// ```
+pub fn toggle(label: impl Into<String>, on: bool) -> impl Bundle {
+    (
+        Node {
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Checkbox,
+        StartsOn(on),
+        Role::Toggle,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        observe(checkbox_self_update),
+        children![
+            (Text::new(label), Role::ControlText),
+            (
+                Node {
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                Role::ToggleTrack,
+                children![(Node::default(), Role::ToggleKnob)],
+            ),
+        ],
+    )
+}
+
+/// A slider for a value the player scrubs (volume, brightness, sensitivity): a row with the label
+/// and the value on one line and a rail under them with a thumb on it. It is Bevy's headless
+/// [`bevy::ui_widgets::Slider`], and the whole row is the target: a click anywhere on it puts the
+/// thumb under the pointer and a drag goes on from there. With it focused, Left and Right (keys or
+/// the D-pad, held to repeat) step the value by a twentieth of the range, Home and End jump to the
+/// ends, and Up and Down still move focus on, so one press is enough on a pad.
+///
+/// The value reads as a percentage for a range of 0 to 1 and as the number otherwise
+/// ([`crate::slider_text`]). It keeps its own value, [`SliderValue`] on the entity; observe
+/// `ValueChange<f32>` on it to apply the setting as it changes (`is_final` is false while a drag is
+/// going). To step by something else, insert a [`SliderStep`] after spawning.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     slider("Music", 0.7, 0.0..=1.0),
+///     observe(|change: On<ValueChange<f32>>| info!("music: {}", change.value)),
+/// ));
+/// # }
+/// ```
+pub fn slider(label: impl Into<String>, value: f32, range: RangeInclusive<f32>) -> impl Bundle {
+    let (min, max) = range.into_inner();
+    let fraction = slider_fraction(value, min, max);
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Slider {
+            track_click: TrackClick::Snap,
+            orientation: SliderOrientation::Horizontal,
+        },
+        SliderValue(value),
+        SliderRange::new(min, max),
+        SliderStep((max - min) / SLIDER_STEPS),
+        Role::Slider,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        observe(slider_self_update),
+        children![
+            (
+                Node {
+                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                Role::SliderHeader,
+                children![
+                    (Text::new(label), Role::ControlText),
+                    (Text::new(slider_text(value, min, max)), Role::SliderReadout),
+                ],
+            ),
+            (
+                Node {
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                Role::SliderTrack,
+                children![
+                    (
+                        Node {
+                            position_type: PositionType::Absolute,
+                            ..default()
+                        },
+                        Role::SliderRail,
+                        children![(
+                            Node {
+                                width: Val::Percent(fraction * 100.0),
+                                height: Val::Percent(100.0),
+                                ..default()
+                            },
+                            Role::SliderFill,
+                        )],
+                    ),
+                    (
+                        Node {
+                            flex_grow: fraction,
+                            ..default()
+                        },
+                        Role::SliderGap,
+                    ),
+                    (Node::default(), Role::SliderThumb, SliderThumb),
+                ],
+            ),
+        ],
     )
 }
 

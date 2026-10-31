@@ -11,25 +11,29 @@
 //!   presets, [`GooeySkin::dark`] and [`GooeySkin::parchment`]. Fonts are the host's, in
 //!   [`GooeyFonts`].
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
-//!   (a HUD bar driven by [`Meter`]), [`Tooltip`] and the modal [`dialog`]. Each is a free function
-//!   returning a bundle, so they compose inside `children![]` and with [`observe`]; each carries a
-//!   [`Role`] that [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the
-//!   pointer through to the game under a HUD, while every widget on it takes the pointer.
+//!   (a HUD bar driven by [`Meter`]), [`toggle`] and [`slider`] (an options screen's switch and
+//!   scrubber, reporting through [`ValueChange`]), [`Tooltip`] and the modal [`dialog`]. Each is a
+//!   free function returning a bundle, so they compose inside `children![]` and with [`observe`];
+//!   each carries a [`Role`] that [`apply_skin`] styles it by. A [`screen`] is layout: its empty
+//!   part lets the pointer through to the game under a HUD, while every widget on it takes the
+//!   pointer.
 //! - Navigation — [`GooeyNavPlugin`]: arrows and the D-pad move focus to the nearest widget
 //!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles.
 //!   Keys and the pad show the focus ring; a pointer press hides it. With nothing focused (a click
 //!   on empty space, a despawned widget), the first arrow or D-pad press lands where the screen
 //!   starts. An open [`dialog`] holds focus: it takes it, keeps arrows, D-pad and Tab inside, and
 //!   gives it back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus,
-//!   as it does under the pointer. Enter and Space are Bevy's own button handling.
+//!   as it does under the pointer. Enter and Space are Bevy's own button handling. A focused
+//!   [`slider`] keeps Left and Right (the D-pad steps it, held to repeat: [`gamepad_adjust`]); Up
+//!   and Down still move on.
 //! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
 //!   resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television
 //!   ([`UiScaleSettings`], [`scale_with_window`]).
-//! - Feedback — [`UiFeedback`] is written for every focus move and activation, for the host to
-//!   turn into sound.
+//! - Feedback — [`UiFeedback`] is written for every focus move onto a widget and every activation
+//!   or flip, for the host to turn into sound.
 //!
 //! [`model`] holds the engine-free maths under the skin: [`contrast_ratio`], [`composite`],
-//! [`meter_fraction`] and [`window_ui_scale`].
+//! [`meter_fraction`], [`slider_fraction`] and [`window_ui_scale`].
 //!
 //! ```no_run
 //! use bevy::prelude::*;
@@ -87,6 +91,7 @@
 
 pub mod model;
 
+mod controls;
 mod feedback;
 mod meter;
 mod nav;
@@ -95,18 +100,23 @@ mod skin;
 mod tooltip;
 mod widgets;
 
-pub use bevy::ui_widgets::{Activate, observe};
+pub use bevy::ui::Checked;
+pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
+pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
-    meter_fraction, relative_luminance, snap_line_width, window_ui_scale,
+    COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
+    TEXT_CONTRAST, composite, contrast_ratio, meter_fraction, relative_luminance, repeat_steps,
+    slider_fraction, slider_text, snap_line_width, window_ui_scale,
 };
-pub use nav::{Dialog, FocusScopes, focus_opened_dialogs, gamepad_select, navigate_by_input};
+pub use nav::{
+    Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
+};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
-pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen};
+pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen, slider, toggle};
 
 use bevy::app::PluginGroupBuilder;
 use bevy::input_focus::directional_navigation::DirectionalNavigationPlugin;
@@ -154,6 +164,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Tooltip>()
             .register_type::<UiFeedbackKind>()
             .add_observer(feedback::feedback_on_activate)
+            .add_observer(feedback::feedback_on_toggle)
             .add_systems(
                 Update,
                 (
@@ -161,6 +172,7 @@ impl Plugin for GooeyStylePlugin {
                     show_tooltips,
                     apply_skin,
                     update_meters,
+                    update_sliders,
                 )
                     .chain()
                     .in_set(GooeySystems::Style),
@@ -198,6 +210,7 @@ impl Plugin for GooeyNavPlugin {
                 (
                     focus_opened_dialogs,
                     navigate_by_input,
+                    gamepad_adjust,
                     gamepad_select,
                     feedback_on_focus,
                 )
