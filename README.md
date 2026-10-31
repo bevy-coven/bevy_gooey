@@ -18,7 +18,7 @@ From crates.io:
 
 ```toml
 [dependencies]
-bevy_gooey = "0.2"
+bevy_gooey = "0.3"
 ```
 
 Or from git, for changes not released yet:
