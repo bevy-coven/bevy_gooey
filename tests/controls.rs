@@ -559,6 +559,28 @@ fn dragging_a_slider_follows_the_pointer_and_ends_with_a_final_change() {
 }
 
 #[test]
+fn a_dragged_thumb_reads_pressed_until_it_is_let_go() {
+    let mut app = app();
+    let ui = options(&mut app);
+    let skin = skin();
+    let thumb = part(&app, ui.music, Role::SliderThumb);
+    let from = rect(&app, thumb).center();
+    assert_eq!(fill_of(&app, thumb), skin.text, "at rest");
+
+    point_at(&mut app, from);
+    pointer(&mut app, from, PointerAction::Press(PointerButton::Primary));
+    let to = from + Vec2::new(30.0, 0.0);
+    pointer(&mut app, to, PointerAction::Move { delta: to - from });
+    settle(&mut app);
+    assert_eq!(fill_of(&app, thumb), skin.focus_ring, "mid-drag");
+    assert_eq!(border_of(&app, ui.music), BorderColor::all(skin.outline));
+
+    pointer(&mut app, to, PointerAction::Release(PointerButton::Primary));
+    settle(&mut app);
+    assert_eq!(fill_of(&app, thumb), skin.text, "let go");
+}
+
+#[test]
 fn left_and_right_adjust_a_focused_slider_and_up_and_down_move_on() {
     let mut app = app();
     let ui = options(&mut app);
