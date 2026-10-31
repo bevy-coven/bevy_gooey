@@ -41,6 +41,9 @@ type KeepsSideways = (
     Without<InteractionDisabled>,
 );
 
+/// The tabs widgets focus can be turned from: every enabled one.
+type TurnableTabs = (With<TabsValue>, Without<InteractionDisabled>);
+
 /// What a [`crate::dialog`] remembers: the widget that had focus when it opened, which gets focus
 /// back when the dialog closes, and whether focus has moved in yet. Part of `dialog()`; a game
 /// never builds one.
@@ -98,12 +101,7 @@ pub struct FocusScopes<'w, 's> {
     lists: Query<'w, 's, (&'static ComputedNode, &'static UiGlobalTransform), With<ListView>>,
     /// A tab strip's tabs, and the tab widgets that hold them.
     tab_stops: Query<'w, 's, &'static ChildOf, With<Tab>>,
-    tab_roots: Query<
-        'w,
-        's,
-        (Entity, &'static InheritedVisibility),
-        (With<TabsValue>, Without<InteractionDisabled>),
-    >,
+    tab_roots: Query<'w, 's, (Entity, &'static InheritedVisibility), TurnableTabs>,
     tab_values: Query<'w, 's, (&'static TabsValue, &'static TabsCount)>,
     kids: Query<'w, 's, &'static Children>,
     roles: Query<'w, 's, &'static Role>,
