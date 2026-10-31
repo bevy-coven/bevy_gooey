@@ -11,14 +11,14 @@ navigation, on Bevy's own headless widgets.
 [![Bevy](https://img.shields.io/badge/bevy-0.20-blue.svg)](https://bevyengine.org)
 [![licence](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue.svg)](#who-and-licence)
 
-![A menu and a save-slot list: focus walks down the panel onto Options, the health meter drains, the Load game list scrolls to follow the focus ring onto Orchard, 00:20, and a "Game saved" toast appears](docs/media/gallery.gif)
+![A menu panel and a Load game list: the focus ring walks down the save slots from Autosave to Harbour, Page Down scrolls the list so Chapel, 00:12 carries the ring, the health meter drains, and a "Game saved" toast appears at the bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
 
 *`examples/gallery`: two panels, a meter draining, a switch, a choice, a slider, a list that scrolls to
 follow focus, and toasts.*
 
 ![The same gallery at rest: the left panel with Play, Options and Quit, the meter, the Subtitles
 switch, the Quality choice and the Volume slider; the right a Load game list four and a half rows tall
-with a rail and its thumb; two toasts at the bottom right](docs/media/gallery.png)
+with a rail and its thumb; two toasts at the bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
 
 *The still: every widget on one screen, the dark skin, 1280 × 720.*
 
@@ -90,26 +90,26 @@ and the save-slot list scrolls with the wheel, a drag on its thumb or PageUp and
 
 - **Skin the whole interface from one value** — `GooeySkin` is plain data with two presets and a
   `problems()` check against the WCAG 2.2 contrast and target-size rules:
-  [skins and checks](docs/guide/skins.md).
+  [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
 - **Build an options screen from three rows** — a `toggle`, a `choice` and a `slider` root on Bevy's own
   `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe` and says
-  each change once in `ValueChange`: [settings controls](docs/guide/controls.md).
+  each change once in `ValueChange`: [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md).
 - **Scroll a list that follows the focus** — `list(4.5, children![..])` cuts the fifth row so the player
   sees there is more, and keeps the next row in sight as the arrows walk down it:
-  [lists](docs/guide/lists.md).
+  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md).
 - **Reach every screen with keys or a pad** — arrows and the D-pad move focus to the nearest widget, an
   open dialog holds it, and the ring appears the moment a key is pressed:
-  [navigation](docs/guide/navigation.md).
+  [navigation](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/navigation.md).
 - **Say something without building a layout** — `commands.spawn(toast("Game saved"))` stacks, times
   itself to its own length and ages on real time:
-  [toasts](docs/guide/toasts.md).
+  [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md).
 - **Keep the interface's share of the screen at every resolution** — the skin's sizes scale with the
   window, and every border stays a whole number of device pixels:
-  [screen size](docs/guide/scale.md).
+  [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).
 - **Let the pointer through a HUD** — the empty part of a `screen` is `Pickable::IGNORE`, so a click on
-  the world under it still reaches the world: [over a game world](docs/guide/pointer.md).
+  the world under it still reaches the world: [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md).
 
-The [guide index](docs/guide/README.md) lists the rest: every widget in one table, what a host touches
+The [guide index](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) lists the rest: every widget in one table, what a host touches
 and what it only sees, and the boundary with the game.
 
 ## Part of the Coven
@@ -129,11 +129,11 @@ see [use it in Grimoire](https://bevy-coven.github.io/crates/bevy_gooey.html#use
 
 - [docs.rs](https://docs.rs/bevy_gooey) — the API reference (`cargo doc --open`).
 - [The book page](https://bevy-coven.github.io/crates/bevy_gooey.html) — the same guide with the pictures.
-- [`docs/guide/`](docs/guide/README.md) — the detail: navigation, controls, lists, toasts, skins, screen
+- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, lists, toasts, skins, screen
   size, the pointer, feedback.
-- [`examples/`](examples) — `gallery`, every widget on one screen.
-- [`docs/media/README.md`](docs/media/README.md) — how every picture here is made.
-- [`CHANGELOG.md`](CHANGELOG.md) — what each release changed, and what it broke.
+- [`examples/`](https://github.com/bevy-coven/bevy_gooey/tree/main/examples) — `gallery`, every widget on one screen.
+- [`docs/media/README.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/media/README.md) — how every picture here is made.
+- [`CHANGELOG.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/CHANGELOG.md) — what each release changed, and what it broke.
 
 ## Who and licence
 
@@ -141,6 +141,6 @@ Maintainer [@Ladvien](https://github.com/Ladvien). Questions and bugs go to
 [the issues](https://github.com/bevy-coven/bevy_gooey/issues), and a game asking for a change here uses
 the `consumer` label. Contributions follow the org's
 [`CONTRIBUTING.md`](https://github.com/bevy-coven/.github/blob/main/CONTRIBUTING.md); the crate's own
-rules for changing it are in [`AGENTS.md`](AGENTS.md).
+rules for changing it are in [`AGENTS.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/AGENTS.md).
 
 MIT OR Apache-2.0, at your option.
