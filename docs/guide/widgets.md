@@ -54,6 +54,16 @@ button when it opens, Tab, the arrows and the D-pad cannot leave it, and closing
 the button that opened it. Put `AutoFocus` on the dialog's safest choice ("Stay", "Cancel") to start
 there instead.
 
+A `panel()` that is a direct child of the dialog is the dialog, and looks like one: it is 21 to 36 body
+text sizes wide (420 to 720 px at the default size, and it grows with `text_scale`), so a short title
+fills the least and a long body wraps at the most; it has one and a half times a screen panel's padding
+and gap, an opaque fill, and its frame in the skin's `outline` colour (3:1 against the panel, checked
+by `problems()`), so its edge is the first thing the eye finds on the dimmed screen. The scrim keeps the
+outer 5% of the window clear, which a TV may not show, so a dialog never reaches the bezel. Put in it a
+`heading` (the main instruction), a `label` (what the choice costs) and a `menu` of the choices, in that
+order, and name each choice for what it does ("Leave", "Stay"), not "Yes" and "No". A panel wrapped in
+another node inside the dialog is a screen's panel again.
+
 ```rust
 fn quit(mut commands: Commands) {
     commands.spawn((
@@ -61,13 +71,16 @@ fn quit(mut commands: Commands) {
         children![(
             panel(),
             children![
-                label("Leave the game?"),
+                heading("Leave the game?"),
+                label("Progress since the last autosave is lost."),
                 (menu(), children![(button("Leave"), observe(|_: On<Activate>, mut exit: MessageWriter<AppExit>| { exit.write(AppExit::Success); })), (button("Stay"), AutoFocus)]),
             ]
         )],
     ));
 }
 ```
+
+![The Quit dialog in the dark and the parchment preset: the title "Leave the game?", a line of body, and the choices Leave and Stay in a framed panel over the dimmed screen, the ring on Stay](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dialog.png)
 
 ## Over a game world
 

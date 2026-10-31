@@ -176,7 +176,7 @@ impl GooeySkin {
             danger: Color::srgb(0.70, 0.12, 0.10),
             focus_ring: Color::srgb(0.12, 0.38, 0.55),
             outline: Color::srgb(0.48, 0.38, 0.27),
-            scrim: Color::srgba(0.08, 0.05, 0.02, 0.55),
+            scrim: Color::srgba(0.08, 0.05, 0.02, 0.7),
             ..Self::sizes()
         }
     }
