@@ -12,7 +12,8 @@
 //!   [`GooeyFonts`].
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
 //!   (a HUD bar driven by [`Meter`]), [`toggle`], [`slider`] and [`choice`] (an options screen's
-//!   switch, scrubber and stepper, reporting through [`ValueChange`]), [`list`] (rows that scroll,
+//!   switch, scrubber and stepper, reporting through [`ValueChange`]), [`tabs`] (its pages, each a
+//!   [`tab_page`], turned by a click, the arrows and the pad's bumpers), [`list`] (rows that scroll,
 //!   following focus), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
 //!   timed by [`ToastSettings`]),
@@ -29,7 +30,9 @@
 //!   gives it back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus,
 //!   as it does under the pointer. Enter and Space are Bevy's own button handling. A focused
 //!   [`slider`] or [`choice`] keeps Left and Right (the D-pad steps it, held to repeat:
-//!   [`gamepad_adjust`]); Up and Down still move on. A [`list`] scrolls to keep the focused row and
+//!   [`gamepad_adjust`]); Up and Down still move on. `LB` and `RB` turn the page of a [`tabs`]
+//!   widget from anywhere in it ([`step_tabs`]), and focus never rests on a page that is not shown
+//!   ([`land_tab_focus`]). A [`list`] scrolls to keep the focused row and
 //!   the next one in sight ([`scroll_to_focus`]), and PageUp and PageDown ([`page_lists`]) move a
 //!   viewport at a time.
 //! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
@@ -39,8 +42,8 @@
 //!   or flip, for the host to turn into sound.
 //!
 //! [`model`] holds the engine-free maths under the skin: [`contrast_ratio`], [`composite`],
-//! [`meter_fraction`], [`slider_fraction`], [`scroll_to_reveal`], [`window_ui_scale`] and
-//! [`toast_hold`].
+//! [`meter_fraction`], [`slider_fraction`], [`scroll_to_reveal`], [`tab_step`],
+//! [`window_ui_scale`] and [`toast_hold`].
 //!
 //! ```no_run
 //! use bevy::prelude::*;
@@ -106,6 +109,7 @@ mod meter;
 mod nav;
 mod scale;
 mod skin;
+mod tabs;
 mod toast;
 mod tooltip;
 mod widgets;
@@ -121,7 +125,7 @@ pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
     TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio, list_height,
     meter_fraction, page_target, relative_luminance, repeat_steps, scroll_to_reveal,
-    slider_fraction, slider_text, snap_line_width, snap_to_row, toast_alpha, toast_grow,
+    slider_fraction, slider_text, snap_line_width, snap_to_row, tab_step, toast_alpha, toast_grow,
     toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
@@ -129,11 +133,12 @@ pub use nav::{
 };
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
+pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    button, choice, dialog, heading, label, list, menu, meter, panel, screen, slider, toast,
-    toast_alert, toggle,
+    button, choice, dialog, heading, label, list, menu, meter, panel, screen, slider, tab_page,
+    tabs, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -181,6 +186,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Role>()
             .register_type::<Meter>()
             .register_type::<ChoiceValue>()
+            .register_type::<TabsValue>()
+            .register_type::<TabsCount>()
             .register_type::<ChoiceCount>()
             .register_type::<ListView>()
             .register_type::<Tooltip>()
@@ -200,6 +207,7 @@ impl Plugin for GooeyStylePlugin {
                     update_tooltip_text,
                     show_tooltips,
                     update_choices,
+                    update_tabs,
                     apply_skin,
                     update_meters,
                     update_sliders,
@@ -240,6 +248,8 @@ impl Plugin for GooeyNavPlugin {
                 Update,
                 (
                     focus_opened_dialogs,
+                    land_tab_focus,
+                    step_tabs,
                     navigate_by_input,
                     gamepad_adjust,
                     gamepad_select,
