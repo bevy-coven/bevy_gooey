@@ -54,7 +54,7 @@ Not from home-still: W3C, *Web Content Accessibility Guidelines (WCAG) 2.2* — 
 |danger|srgb(0.86,0.27,0.24)|srgb(0.70,0.12,0.10)|
 |focus_ring|srgb(0.45,0.78,1.0)|srgb(0.12,0.38,0.55)|
 |outline|srgb(0.44,0.47,0.54)|srgb(0.48,0.38,0.27)|
-|scrim|srgba(0,0,0,0.6)|srgba(0.08,0.05,0.02,0.55)|
+|scrim|srgba(0,0,0,0.6)|srgba(0.08,0.05,0.02,0.7) (0.55 until iteration 16: `dialog-presence.md`)|
 |sizes|text 20, heading 32, gap 10, padding 14, radius 8, border 3, meter_height 24, min_target 44, text_scale 1.0|same|
 
 ## Validation targets

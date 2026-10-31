@@ -8,6 +8,11 @@
 - `cancel_by_input` (in `GooeySystems::Navigate`, after `gamepad_select`; `GooeyNavPlugin` registers it and the `Cancel` type), `CancelScope`, the event's traversal, and `docs/research/cancel.md`.
 - The gallery's Quit dialog closes on `Cancel`, and `GOOEY_KEYS` has an `escape` token.
 
+### Changed
+
+- A `panel()` that is a direct child of a `dialog()` is the dialog and looks like one (in `apply_skin`, with no new `GooeySkin` field): 21 to 36 body text sizes wide (420 to 720 px at the default size, growing with `text_scale`), one and a half times a screen panel's padding and gap, and framed in `GooeySkin::outline` (the colour `problems()` already holds at 3:1 against the panel) where a screen's panel keeps `surface_raised`. The scrim pads itself 5% of the window on every side, so a long body wraps at the maximum or squeezes the dialog in and nothing of it reaches the bezel. A game's existing `dialog()` code is better the day it updates, and a `heading` and a `label` in the panel are its title and its body. A panel anywhere else is unchanged, and so is every pixel of a screen with no dialog open. The gallery's Quit dialog has a title and a line of body. `docs/research/dialog-presence.md`.
+- `GooeySkin::parchment()`'s `scrim` is `srgba(0.08, 0.05, 0.02, 0.7)`, from 0.55: over the cream menu a parchment dialog was barely lighter than what it stood on. A skin of your own keeps its scrim.
+
 ## [0.4.0] - 2026-10-31
 
 ### Added
