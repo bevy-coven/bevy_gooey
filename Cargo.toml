@@ -8,8 +8,9 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/bevy-coven/bevy_gooey"
 keywords = ["bevy", "gamedev", "ui", "gui", "widgets"]
 categories = ["game-development", "gui"]
-# `docs/` holds the gallery still and the research notes, so it is out of the package.
-include = ["src/**", "Cargo.toml", "README.md", "LICENSE-*"]
+# `docs/` holds the gallery still and the research notes, so it is out of the package; the README is
+# anchored so the `README.md` of `docs/guide/` and `docs/media/` (relative links, for GitHub) stay out too.
+include = ["src/**", "Cargo.toml", "/README.md", "LICENSE-*"]
 
 [features]
 default = []
