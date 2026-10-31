@@ -246,7 +246,7 @@ pub fn toggle(label: impl Into<String>, on: bool) -> impl Bundle {
 }
 
 /// A slider for a value the player scrubs (volume, brightness, sensitivity): a row with the label
-/// and the value on one line and a rail under them, ended by a thumb. It is Bevy's headless
+/// and the value on one line and a rail under them with a thumb on it. It is Bevy's headless
 /// [`bevy::ui_widgets::Slider`], and the whole row is the target: a click anywhere on it puts the
 /// thumb under the pointer and a drag goes on from there. With it focused, Left and Right (keys or
 /// the D-pad, held to repeat) step the value by a twentieth of the range, Home and End jump to the

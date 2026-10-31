@@ -11,25 +11,29 @@
 //!   presets, [`GooeySkin::dark`] and [`GooeySkin::parchment`]. Fonts are the host's, in
 //!   [`GooeyFonts`].
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
-//!   (a HUD bar driven by [`Meter`]), [`Tooltip`] and the modal [`dialog`]. Each is a free function
-//!   returning a bundle, so they compose inside `children![]` and with [`observe`]; each carries a
-//!   [`Role`] that [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the
-//!   pointer through to the game under a HUD, while every widget on it takes the pointer.
+//!   (a HUD bar driven by [`Meter`]), [`toggle`] and [`slider`] (an options screen's switch and
+//!   scrubber, reporting through [`ValueChange`]), [`Tooltip`] and the modal [`dialog`]. Each is a
+//!   free function returning a bundle, so they compose inside `children![]` and with [`observe`];
+//!   each carries a [`Role`] that [`apply_skin`] styles it by. A [`screen`] is layout: its empty
+//!   part lets the pointer through to the game under a HUD, while every widget on it takes the
+//!   pointer.
 //! - Navigation — [`GooeyNavPlugin`]: arrows and the D-pad move focus to the nearest widget
 //!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles.
 //!   Keys and the pad show the focus ring; a pointer press hides it. With nothing focused (a click
 //!   on empty space, a despawned widget), the first arrow or D-pad press lands where the screen
 //!   starts. An open [`dialog`] holds focus: it takes it, keeps arrows, D-pad and Tab inside, and
 //!   gives it back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus,
-//!   as it does under the pointer. Enter and Space are Bevy's own button handling.
+//!   as it does under the pointer. Enter and Space are Bevy's own button handling. A focused
+//!   [`slider`] keeps Left and Right (the D-pad steps it, held to repeat: [`gamepad_adjust`]); Up
+//!   and Down still move on.
 //! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
 //!   resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television
 //!   ([`UiScaleSettings`], [`scale_with_window`]).
-//! - Feedback — [`UiFeedback`] is written for every focus move and activation, for the host to
-//!   turn into sound.
+//! - Feedback — [`UiFeedback`] is written for every focus move onto a widget and every activation
+//!   or flip, for the host to turn into sound.
 //!
 //! [`model`] holds the engine-free maths under the skin: [`contrast_ratio`], [`composite`],
-//! [`meter_fraction`] and [`window_ui_scale`].
+//! [`meter_fraction`], [`slider_fraction`] and [`window_ui_scale`].
 //!
 //! ```no_run
 //! use bevy::prelude::*;

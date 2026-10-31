@@ -7,6 +7,8 @@
 //!   its tooltip beside it (`GOOEY_KEYS=down` stages it).
 //! - The health meter drains and refills (`GOOEY_HEALTH=<value>` holds it at that value instead).
 //!   Each `UiFeedback` is logged where a game would play a sound.
+//! - **Subtitles** is a switch and **Volume** a slider (Left and Right step it, Home and End jump,
+//!   the D-pad too, held to repeat; a click or a drag sets it): each logs the value it settles on.
 //! - Resize the window: the whole interface keeps its share of it (twice the size at 2560x1440
 //!   as at 1280x720).
 //!
@@ -18,6 +20,8 @@
 //! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`), or
 //! clicks the window's empty top-left corner, as real pointer input (`click`). `untip` takes
 //! Options' `Tooltip` off and `retip` puts a new line on it, as a game does when a hint goes stale.
+//! `hover`, `grab`, `drag` and `drop` work Volume's thumb with the pointer: move onto it, press and
+//! hold, move 60 px right, let go.
 //! `GOOEY_WORLD=1` puts a sprite under the interface, standing in for the game world: the
 //! interface lets the pointer through its empty part, so a click on it (`click` hits it, at the
 //! empty top-left corner) turns it warm and logs `gooey: world`.
@@ -68,6 +72,14 @@ enum Staged {
     Untip,
     /// Insert a new `Tooltip` over the widget's old one.
     Retip,
+    /// Move the pointer onto the Volume slider's thumb.
+    Hover,
+    /// Press the primary button on the thumb and keep it down.
+    Grab,
+    /// Move the held pointer 60 px right of where the thumb was grabbed.
+    Drag,
+    /// Let go.
+    Drop,
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -154,6 +166,10 @@ fn main() {
                     "click" => Some(Staged::Click),
                     "untip" => Some(Staged::Untip),
                     "retip" => Some(Staged::Retip),
+                    "hover" => Some(Staged::Hover),
+                    "grab" => Some(Staged::Grab),
+                    "drag" => Some(Staged::Drag),
+                    "drop" => Some(Staged::Drop),
                     _ => None,
                 })
                 .collect(),
@@ -358,6 +374,7 @@ fn stage_keys(
     capture: Option<Res<Capture>>,
     window: Query<Entity, With<PrimaryWindow>>,
     tipped: Query<Entity, With<Tooltip>>,
+    thumbs: Query<(&Role, &UiGlobalTransform)>,
     mut commands: Commands,
     mut keys: MessageWriter<KeyboardInput>,
     mut pointer: MessageWriter<PointerInput>,
@@ -413,6 +430,39 @@ fn stage_keys(
                 commands.entity(widget).insert(Tooltip(
                     "Unlocked: sound, controls, display and cheats".into(),
                 ));
+            }
+        }
+        Some(&step @ (Staged::Hover | Staged::Grab | Staged::Drag | Staged::Drop))
+            if state == ButtonState::Pressed =>
+        {
+            let Some(target) = WindowRef::Entity(window).normalize(None) else {
+                return;
+            };
+            let Some((_, thumb)) = thumbs.iter().find(|(role, _)| **role == Role::SliderThumb)
+            else {
+                return;
+            };
+            let reach = if matches!(step, Staged::Drag) {
+                60.0
+            } else {
+                0.0
+            };
+            let at = Location {
+                target: NormalizedRenderTarget::Window(target),
+                position: thumb.translation + Vec2::new(reach, 0.0),
+            };
+            let actions: &[PointerAction] = match step {
+                Staged::Grab => &[
+                    PointerAction::Move { delta: Vec2::ZERO },
+                    PointerAction::Press(PointerButton::Primary),
+                ],
+                Staged::Drop => &[PointerAction::Release(PointerButton::Primary)],
+                _ => &[PointerAction::Move {
+                    delta: Vec2::new(reach, 0.0),
+                }],
+            };
+            for &action in actions {
+                pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
             }
         }
         _ => {}

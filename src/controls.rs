@@ -6,6 +6,9 @@ use bevy::ui_widgets::{SliderRange, SliderValue};
 use crate::model::{slider_fraction, slider_text};
 use crate::skin::Role;
 
+/// A slider whose value or range changed since the last run.
+type Moved = Or<(Changed<SliderValue>, Changed<SliderRange>)>;
+
 /// Moves each changed slider's thumb, fill and readout to its [`SliderValue`] within its
 /// [`SliderRange`]: the same frame the value changes, from a drag, a key, the D-pad or the game.
 /// Runs in [`crate::GooeySystems::Style`].
@@ -14,10 +17,7 @@ use crate::skin::Role;
 /// its travel is the slider's width less the thumb's, which is the travel `bevy_ui_widgets` assumes
 /// when it turns a click or a drag into a value. A slider whose value did not change costs nothing.
 pub fn update_sliders(
-    sliders: Query<
-        (Entity, &SliderValue, &SliderRange),
-        Or<(Changed<SliderValue>, Changed<SliderRange>)>,
-    >,
+    sliders: Query<(Entity, &SliderValue, &SliderRange), Moved>,
     children: Query<&Children>,
     mut parts: Query<(&Role, &mut Node, Option<&mut Text>)>,
 ) {

@@ -7,6 +7,7 @@ use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{FontSize, FontSource};
 use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed};
+use bevy::ui_widgets::SliderDragState;
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 
 use crate::model::{
@@ -26,7 +27,7 @@ const SLIDER_MIN_TEXT_SIZES: f32 = 10.0;
 const SWITCH_TEXT_SIZES: f32 = 1.5;
 
 /// A slider's thumb is this many body text sizes wide, and this many rails high.
-const THUMB_TEXT_SIZES: f32 = 0.8;
+const THUMB_TEXT_SIZES: f32 = 1.0;
 
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
@@ -469,6 +470,7 @@ struct State {
 /// What [`State`] is read from.
 type StateQuery = (
     Has<Pressed>,
+    Option<&'static SliderDragState>,
     Has<InteractionDisabled>,
     Has<Checked>,
     Option<&'static Hovered>,
@@ -484,6 +486,7 @@ type Restyle = (
         Changed<Hovered>,
         Changed<InteractionDisabled>,
         Changed<Checked>,
+        Changed<SliderDragState>,
         Changed<TooltipBox>,
         Changed<ComputedUiRenderTargetInfo>,
     )>,
@@ -532,8 +535,10 @@ pub fn apply_skin(
     let state_of = |entity: Entity| {
         states
             .get(entity)
-            .map(|(pressed, disabled, checked, hovered, role)| State {
-                pressed,
+            .map(|(pressed, drag, disabled, checked, hovered, role)| State {
+                // `bevy_ui_widgets` marks a slider pressed for a click on its track only; a grab
+                // of the thumb is a drag, so a dragged slider reads as pressed too.
+                pressed: pressed || drag.is_some_and(|d| d.dragging),
                 disabled,
                 hovered: hovered.is_some_and(|h| h.0),
                 checked,
@@ -802,7 +807,9 @@ fn restyle(
             // The header's text lines up with a toggle's label and a toggle's switch.
             Role::SliderHeader => next.padding = UiRect::horizontal(Val::Px(skin.padding * 1.5)),
             Role::SliderTrack => next.height = Val::Px(thumb.y),
-            // From the thumb's centre at the start to its centre at the end.
+            // From the thumb's centre at the start to its centre at the end, so the thumb
+            // overhangs the rail by half its width at each end and the focus ring has air round
+            // the rail. The fill ends under the thumb.
             Role::SliderRail => {
                 next.left = Val::Px(thumb.x / 2.0);
                 next.right = Val::Px(thumb.x / 2.0);
