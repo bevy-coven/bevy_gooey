@@ -87,6 +87,7 @@
 
 pub mod model;
 
+mod controls;
 mod feedback;
 mod meter;
 mod nav;
@@ -95,18 +96,23 @@ mod skin;
 mod tooltip;
 mod widgets;
 
-pub use bevy::ui_widgets::{Activate, observe};
+pub use bevy::ui::Checked;
+pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
+pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
-    meter_fraction, relative_luminance, snap_line_width, window_ui_scale,
+    COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
+    TEXT_CONTRAST, composite, contrast_ratio, meter_fraction, relative_luminance, repeat_steps,
+    slider_fraction, slider_text, snap_line_width, window_ui_scale,
 };
-pub use nav::{Dialog, FocusScopes, focus_opened_dialogs, gamepad_select, navigate_by_input};
+pub use nav::{
+    Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
+};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
-pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen};
+pub use widgets::{button, dialog, heading, label, menu, meter, panel, screen, slider, toggle};
 
 use bevy::app::PluginGroupBuilder;
 use bevy::input_focus::directional_navigation::DirectionalNavigationPlugin;
@@ -154,6 +160,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Tooltip>()
             .register_type::<UiFeedbackKind>()
             .add_observer(feedback::feedback_on_activate)
+            .add_observer(feedback::feedback_on_toggle)
             .add_systems(
                 Update,
                 (
@@ -161,6 +168,7 @@ impl Plugin for GooeyStylePlugin {
                     show_tooltips,
                     apply_skin,
                     update_meters,
+                    update_sliders,
                 )
                     .chain()
                     .in_set(GooeySystems::Style),
@@ -198,6 +206,7 @@ impl Plugin for GooeyNavPlugin {
                 (
                     focus_opened_dialogs,
                     navigate_by_input,
+                    gamepad_adjust,
                     gamepad_select,
                     feedback_on_focus,
                 )
