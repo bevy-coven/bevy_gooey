@@ -25,6 +25,11 @@
 //! `GOOEY_WORLD=1` puts a sprite under the interface, standing in for the game world: the
 //! interface lets the pointer through its empty part, so a click on it (`click` hits it, at the
 //! empty top-left corner) turns it warm and logs `gooey: world`.
+//! Toasts stand in a stack at the bottom right, clear of the panel (`GOOEY_TOAST_ANCHOR=topright`
+//! moves it; the crate's own default is the bottom centre): Play says "Game saved", the Subtitles
+//! switch and the Volume slider say what they settled on, and pressing Play four times shows the
+//! stack's cap. In capture mode toasts stand 100 times as long as usual, so a still holds them;
+//! `GOOEY_KEYS` tokens `toast`, `alert` and `long` spawn one.
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::input::ButtonState;
@@ -80,6 +85,12 @@ enum Staged {
     Drag,
     /// Let go.
     Drop,
+    /// Spawn a short toast.
+    Toast,
+    /// Spawn an alert toast.
+    Alert,
+    /// Spawn a toast long enough to wrap.
+    Long,
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -126,6 +137,7 @@ fn main() {
     ))
     .insert_resource(ClearColor(skin.background))
     .insert_resource(skin)
+    .insert_resource(toast_settings())
     .insert_resource(HeldHealth(
         std::env::var("GOOEY_HEALTH")
             .ok()
@@ -170,6 +182,9 @@ fn main() {
                     "grab" => Some(Staged::Grab),
                     "drag" => Some(Staged::Drag),
                     "drop" => Some(Staged::Drop),
+                    "toast" => Some(Staged::Toast),
+                    "alert" => Some(Staged::Alert),
+                    "long" => Some(Staged::Long),
                     _ => None,
                 })
                 .collect(),
@@ -179,6 +194,30 @@ fn main() {
         app.add_systems(Startup, spawn_world);
     }
     app.run();
+}
+
+/// `GOOEY_TOAST_ANCHOR` (`topleft`, `topcenter`, `topright`, `bottomleft`, `bottomcenter`,
+/// `bottomright`) places the stack; in capture mode every toast stands 100 times as long, which is
+/// the player's `duration_scale` option at work.
+fn toast_settings() -> ToastSettings {
+    let anchor = match std::env::var("GOOEY_TOAST_ANCHOR").as_deref() {
+        Ok("topleft") => ToastAnchor::TopLeft,
+        Ok("topcenter") => ToastAnchor::TopCenter,
+        Ok("topright") => ToastAnchor::TopRight,
+        Ok("bottomleft") => ToastAnchor::BottomLeft,
+        Ok("bottomright") => ToastAnchor::BottomRight,
+        Ok("bottomcenter") => ToastAnchor::BottomCenter,
+        _ => ToastAnchor::BottomRight,
+    };
+    ToastSettings {
+        anchor,
+        duration_scale: if std::env::var_os("GOOEY_FRAMES").is_some() {
+            100.0
+        } else {
+            1.0
+        },
+        ..default()
+    }
 }
 
 fn setup(mut commands: Commands) {
@@ -195,7 +234,10 @@ fn setup(mut commands: Commands) {
                         (
                             button("Play"),
                             AutoFocus,
-                            observe(|_: On<Activate>| info!("gooey: play")),
+                            observe(|_: On<Activate>, mut commands: Commands| {
+                                info!("gooey: play");
+                                commands.spawn(toast("Game saved"));
+                            }),
                         ),
                         (
                             button("Options"),
@@ -209,15 +251,21 @@ fn setup(mut commands: Commands) {
                 (meter(100.0, 100.0), Health),
                 (
                     toggle("Subtitles", true),
-                    observe(|change: On<ValueChange<bool>>| {
-                        info!("gooey: subtitles {}", change.value)
+                    observe(|change: On<ValueChange<bool>>, mut commands: Commands| {
+                        info!("gooey: subtitles {}", change.value);
+                        commands.spawn(toast(if change.value {
+                            "Subtitles on"
+                        } else {
+                            "Subtitles off"
+                        }));
                     }),
                 ),
                 (
                     slider("Volume", 0.7, 0.0..=1.0),
-                    observe(|change: On<ValueChange<f32>>| {
+                    observe(|change: On<ValueChange<f32>>, mut commands: Commands| {
                         if change.is_final {
-                            info!("gooey: volume {:.2}", change.value)
+                            info!("gooey: volume {:.2}", change.value);
+                            commands.spawn(toast(format!("Volume {:.0}%", change.value * 100.0)));
                         }
                     }),
                 ),
@@ -464,6 +512,17 @@ fn stage_keys(
             for &action in actions {
                 pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
             }
+        }
+        Some(Staged::Toast) if state == ButtonState::Pressed => {
+            commands.spawn(toast("Game saved"));
+        }
+        Some(Staged::Alert) if state == ButtonState::Pressed => {
+            commands.spawn(toast_alert("Inventory full"));
+        }
+        Some(Staged::Long) if state == ButtonState::Pressed => {
+            commands.spawn(toast(
+                "Quest updated: bring the lighthouse keeper three crates of lamp oil",
+            ));
         }
         _ => {}
     }

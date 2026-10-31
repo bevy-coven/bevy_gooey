@@ -20,6 +20,7 @@ use crate::meter::Meter;
 use crate::model::{meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
 use crate::skin::Role;
+use crate::toast::{Toast, ToastKind};
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
 const SLIDER_STEPS: f32 = 20.0;
@@ -366,5 +367,80 @@ pub fn dialog() -> impl Bundle {
             order: 0,
             modal: true,
         },
+    )
+}
+
+/// A line of news at the edge of the screen: "Game saved", "Quest updated". Spawn it from any
+/// system, with no layout and nothing else to set up; it stands as long as its message takes to
+/// read, fades out and removes itself ([`Toast`], [`crate::ToastSettings`]).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn save(mut commands: Commands) {
+///     commands.spawn(toast("Game saved"));
+/// }
+/// ```
+///
+/// It takes no input and no focus, so it never gets in the way of what is under it; it is not
+/// announced to screen readers. See [`Toast`] for its lifecycle.
+pub fn toast(text: impl Into<String>) -> impl Bundle {
+    toast_of(ToastKind::Info, text.into())
+}
+
+/// A [`toast`] for a refusal or a failure ("Inventory full", "Could not save"): the same line with
+/// a mark in [`crate::GooeySkin::danger`] where an ordinary one's is the accent. The words say it
+/// too; the mark is never the only sign.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn full(mut commands: Commands) {
+///     commands.spawn(toast_alert("Inventory full"));
+/// }
+/// ```
+pub fn toast_alert(text: impl Into<String>) -> impl Bundle {
+    toast_of(ToastKind::Alert, text.into())
+}
+
+/// A toast's nodes: a clipped column that holds the room (its height is opened and closed by
+/// [`crate::apply_skin`], and starts closed, so a toast never takes room before it is styled) around
+/// the body, a framed row of a mark and the message. Everything starts transparent and
+/// transparent to the pointer.
+fn toast_of(kind: ToastKind, text: String) -> impl Bundle {
+    (
+        Toast::new(kind, &text),
+        Node {
+            flex_direction: FlexDirection::Column,
+            overflow: Overflow::clip(),
+            max_height: Val::Px(0.0),
+            ..default()
+        },
+        Role::Toast,
+        Pickable::IGNORE,
+        children![(
+            Node {
+                flex_direction: FlexDirection::Row,
+                ..default()
+            },
+            Role::ToastBody,
+            BackgroundColor(Color::NONE),
+            BorderColor::all(Color::NONE),
+            Pickable::IGNORE,
+            children![
+                (
+                    Node::default(),
+                    Role::ToastMark,
+                    BackgroundColor(Color::NONE),
+                    Pickable::IGNORE,
+                ),
+                (
+                    Text::new(text),
+                    TextColor(Color::NONE),
+                    Role::ToastText,
+                    Pickable::IGNORE,
+                ),
+            ],
+        )],
     )
 }
