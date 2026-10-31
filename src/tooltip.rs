@@ -18,8 +18,11 @@ use crate::skin::Role;
 /// widget in a menu; a long line wraps to fit the room beside the widget. It sits one
 /// [`crate::GooeySkin::gap`] outside the panel the widget is in (its padding and border), drawn as
 /// a small raised panel with a shadow. Adding it spawns the box as a hidden child, styled as
-/// [`Role::Tooltip`] and placed by Bevy's `Popover`. Change the text by editing the box's [`Text`]
-/// child, or replace the entity's widgets.
+/// [`Role::Tooltip`] and placed by Bevy's `Popover`.
+///
+/// The box is a view of this component: removing it removes the box, and inserting a new
+/// `Tooltip` over this one, or editing its text in place, changes the line the box shows (an
+/// open tooltip keeps its place and does not blink; [`update_tooltip_text`] copies the text).
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -30,7 +33,7 @@ use crate::skin::Role;
 /// ```
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component, Debug, Clone)]
-#[component(on_add = tooltip_on_add)]
+#[component(on_insert = queue_box_sync, on_remove = queue_box_sync)]
 pub struct Tooltip(pub String);
 
 /// The box a [`Tooltip`] spawned, a child of the widget it describes: query it to find the box
@@ -45,27 +48,77 @@ pub struct TooltipBox {
     pub(crate) room: f32,
 }
 
-fn tooltip_on_add(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
-    let Some(text) = world.get::<Tooltip>(entity).map(|t| t.0.clone()) else {
+/// Both hooks queue [`sync_box`] rather than act on what they saw: a flush that removes a
+/// `Tooltip` and inserts another fires two hooks, and the command reads the entity when it runs.
+fn queue_box_sync(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    world
+        .commands()
+        .queue(move |world: &mut World| sync_box(world, entity));
+}
+
+/// Makes the entity's [`TooltipBox`] exist exactly while it has a [`Tooltip`]: spawns one when
+/// there is none, despawns it when the `Tooltip` is gone, and does nothing when the entity itself
+/// is gone (Bevy has despawned its children). Idempotent, so any order of hooks ends in one box.
+fn sync_box(world: &mut World, entity: Entity) {
+    let Ok(owner) = world.get_entity(entity) else {
         return;
     };
-    let mut commands = world.commands();
-    // Hover is read from `Hovered`, which `button()` already carries; any other widget gets one.
-    commands.entity(entity).insert_if_new(Hovered::default());
-    commands.spawn((
-        Node {
-            position_type: PositionType::Absolute,
-            display: Display::None,
-            ..default()
-        },
-        Role::Tooltip,
-        Popover::default(),
-        BoxShadow::default(),
-        GlobalZIndex(200),
-        TooltipBox::default(),
-        ChildOf(entity),
-        children![(Text::new(text), Role::Label)],
-    ));
+    let text = owner.get::<Tooltip>().map(|tip| tip.0.clone());
+    let boxes: Vec<Entity> = owner
+        .get::<Children>()
+        .into_iter()
+        .flat_map(|children| children.iter())
+        .filter(|child| world.get::<TooltipBox>(*child).is_some())
+        .collect();
+    match (text, boxes.is_empty()) {
+        (Some(text), true) => {
+            // Hover is read from `Hovered`, which `button()` already carries; any other widget
+            // gets one.
+            world.entity_mut(entity).insert_if_new(Hovered::default());
+            world.spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    display: Display::None,
+                    ..default()
+                },
+                Role::Tooltip,
+                Popover::default(),
+                BoxShadow::default(),
+                GlobalZIndex(200),
+                TooltipBox::default(),
+                ChildOf(entity),
+                children![(Text::new(text), Role::Label)],
+            ));
+        }
+        (None, false) => {
+            for tip in boxes {
+                world.entity_mut(tip).despawn();
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Copies each [`Tooltip`]'s text into its box when the `Tooltip` changed: a new `Tooltip`
+/// inserted over the old one, or an edit in place (a reflection-driven inspector makes one, and
+/// no component hook runs for it). Writes only when the line differs. Runs in
+/// [`crate::GooeySystems::Style`], before [`show_tooltips`].
+pub fn update_tooltip_text(
+    tooltips: Query<(&Tooltip, &Children), Changed<Tooltip>>,
+    boxes: Query<&Children, With<TooltipBox>>,
+    mut texts: Query<&mut Text>,
+) {
+    for (tooltip, children) in &tooltips {
+        for lines in children.iter().filter_map(|child| boxes.get(child).ok()) {
+            for line in lines {
+                if let Ok(mut text) = texts.get_mut(*line)
+                    && text.0 != tooltip.0
+                {
+                    text.0.clone_from(&tooltip.0);
+                }
+            }
+        }
+    }
 }
 
 /// Shows each [`Tooltip`] box while its widget is hovered or has visible focus, and hides it
