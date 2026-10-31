@@ -7,7 +7,7 @@ Game interfaces made easy for Bevy 0.20: a skin, ready-made game widgets and key
 ## What you get
 
 - **A skin**, `GooeySkin`: every colour and size as plain data, two presets (`dark`, `parchment`), a player text-scale option, and `problems()` to check it against the WCAG 2.2 contrast and target-size rules. Change it and everything on screen restyles that frame.
-- **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `toggle`, `choice` and `slider` (an options screen's switch, stepper and scrubber), `list` (rows that scroll, following focus), `toast` and `toast_alert` (a line of news at the edge of the screen), `Tooltip` and the modal `dialog`.
+- **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `toggle`, `choice` and `slider` (an options screen's switch, stepper and scrubber), `tabs` and `tab_page` (pages of a settings screen, turned by LB and RB), `list` (rows that scroll, following focus), `toast` and `toast_alert` (a line of news at the edge of the screen), `Tooltip` and the modal `dialog`.
 - **Navigation**: arrows and the D-pad move focus to the nearest widget, Enter, Space and the pad's South button activate, Tab cycles.
 - **Scale**: the whole interface keeps its share of the screen at every resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television.
 - **Feedback**: a `UiFeedback` message for every focus move and activation, for your sound.
@@ -76,6 +76,7 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 - A `Tooltip` is a view of its component: `commands.entity(button).remove::<Tooltip>()` takes the hint off (a "Locked: reach level 5" line once the player unlocks it), and inserting a new `Tooltip`, or editing `Tooltip.0`, changes the line the open tooltip shows.
 - Put Bevy's `AutoFocus` on the button a screen should start on. With nothing focused (a click on empty space, a button despawned under the player), the first arrow or D-pad press lands there, or on the screen's first button in Tab order, and the next press moves on; with a `dialog` open it lands inside the dialog.
 - A `list` scrolls to follow the focus a key, the D-pad or Tab gives its rows (with the next row kept in sight), PageUp and PageDown (the pad's triggers) move a viewport at a time, and Up and Down stay among a list's rows until they run out; see Lists.
+- `tabs` turn their page with a click, Left and Right on a focused tab (they wrap), the D-pad on a tab, and **LB and RB** (or Ctrl+PageUp and Ctrl+PageDown) from anywhere in the widget, so a pad player never goes back up to the strip; focus stays in the page and lands on the new page's first widget. Up from a page goes to the selected tab; see Tabs.
 
 ## Settings controls
 
@@ -98,6 +99,39 @@ fn options(mut commands: Commands) {
 - A **choice** is a row: the label on the left, the selected option on the right between two chevrons, for a setting with a few named values (Low, Medium, High). It is one tab stop. With it focused, Left and Right (keys or the D-pad, a held direction repeating as a slider's does) step to the previous and next option and stop at the ends (the chevron that cannot step is dimmed, and a press at an end changes nothing and says nothing), Home and End jump to the ends, and Up and Down still move focus on, so a pad steps a column of settings with no mode to enter. A click on a chevron steps once, on release; Enter, Space, South and a click anywhere else on the row cycle to the next option and wrap round, so one repeated press reaches every option. Every option takes the widest one's room, so the chevrons never move under a thumb. The selected index is `ChoiceValue` on the entity (write one to move it from code; no `ValueChange` comes back for that), and `ValueChange<usize>` fires once per change. Observe that, not `Activate`: only a cycle is an `Activate`.
 - A **slider** is a row: the label and the value (a percentage for a range of 0 to 1, the number otherwise) over a rail with a thumb. The whole row is the target: a click puts the thumb under the pointer and a drag goes on from there. With it focused, Left and Right step by a twentieth of the range (insert a `SliderStep` to change it), Home and End jump to the ends, and Up and Down still move focus on. The D-pad does the same, and a held direction repeats after 0.4 s at 12 steps a second (`PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`), so a pad player never presses A to select the slider nor holds a button to keep it. `ValueChange<f32>` fires as the value moves (`is_final` is false until the drag ends); read the value from `SliderValue`, or write one to move the slider.
 - All three are targets at least `min_target` high (a choice's chevrons are `min_target` wide too), show the same focus ring as a button, and grow with `text_scale`.
+
+## Tabs
+
+`tabs(labels, selected, children![tab_page(..), ..])` is a strip of one- or two-word labels over pages of widgets, one page shown at a time: the i-th label opens the i-th `tab_page`. It is how a settings screen of more than a handful of rows fits (Audio, Display, Controls):
+
+```rust
+fn settings(mut commands: Commands) {
+    commands.spawn((
+        panel(),
+        children![
+            heading("Settings"),
+            (
+                tabs(
+                    ["Audio", "Display"],
+                    0,
+                    children![
+                        tab_page(children![slider("Volume", 0.7, 0.0..=1.0), toggle("Subtitles", true)]),
+                        tab_page(children![choice("Quality", ["Low", "Medium", "High"], 1)]),
+                    ]
+                ),
+                observe(|c: On<ValueChange<usize>>| info!("page {}", c.value)),
+            ),
+        ],
+    ));
+}
+```
+
+- The selected tab is lit in the accent with the accent's text on it, the others are a button's grey with the text colour, so every tab reads at full contrast and the selected one differs by luminance and not only by hue. The strip is a row of equal columns as wide as the widest label, `min_target` high, with the focus ring of a button; the panel it stands in grows to fit the labels, never squeezing one. NN/g: "Tab labels should usually be 1-2 words" and "The fewer tabs, the better".
+- **Every page takes the room of the largest**, so turning a page moves nothing: not the strip, not the panel round it. The pages not shown are hidden, which keeps their room, hides them from the pointer and takes their widgets out of Tab and the arrows.
+- A click, Left and Right on a focused tab (they wrap, and focus goes with the selection, as the APG's tabs pattern recommends for pages with no latency) and the D-pad's Left and Right turn the page. **LB and RB**, and Ctrl+PageUp and Ctrl+PageDown, turn it from anywhere in the widget (or, with focus beside it and no other tabs in view, from there) and wrap; Xbox's guideline 112 asks that "RB and LB for moving through tabs" be the same on every screen, and the pad's triggers stay the list's. Show your player the button prompt, as XAG 106 notes not every game uses the bumpers.
+- **Focus is never left on a page that is not shown.** A bumper pressed with focus on a slider in the page lands focus on the first widget of the page that opens (or on the tab when it has none); Up from a page lands on the *selected* tab even when another is nearer; a page set from code moves focus the same way, and says nothing.
+- The entity `tabs` returns carries `TabsValue(usize)`, the selected index: read it, or set it to turn the page from code (a value past the end shows the last page). Each change a player makes is one `ValueChange<usize>` on it and one `UiFeedback::Activate`. Set the page back to the first when a menu opens again if you want it to.
+- Not yet: a vertical strip, a tab that is disabled or closable, a strip that scrolls, icons in tabs, and a "Tab, 1 of 3, selected" narration for screen readers (Bevy's `TabList` and `Tab` carry their accessibility roles; the position in the set is a backlog item).
 
 ## Lists
 
