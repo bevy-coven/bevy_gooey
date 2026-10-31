@@ -11,9 +11,10 @@
 //!   presets, [`GooeySkin::dark`] and [`GooeySkin::parchment`]. Fonts are the host's, in
 //!   [`GooeyFonts`].
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
-//!   (a HUD bar driven by [`Meter`]), [`toggle`] and [`slider`] (an options screen's switch and
-//!   scrubber, reporting through [`ValueChange`]), [`toast`] and [`toast_alert`] (a line of news
-//!   spawned from any system, stood in one [`ToastStack`] and timed by [`ToastSettings`]),
+//!   (a HUD bar driven by [`Meter`]), [`toggle`], [`slider`] and [`choice`] (an options screen's
+//!   switch, scrubber and stepper, reporting through [`ValueChange`]), [`toast`] and
+//!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
+//!   timed by [`ToastSettings`]),
 //!   [`Tooltip`] and the modal [`dialog`]. Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
@@ -26,8 +27,8 @@
 //!   starts. An open [`dialog`] holds focus: it takes it, keeps arrows, D-pad and Tab inside, and
 //!   gives it back to its opener on closing. A [`Tooltip`] opens when its widget has visible focus,
 //!   as it does under the pointer. Enter and Space are Bevy's own button handling. A focused
-//!   [`slider`] keeps Left and Right (the D-pad steps it, held to repeat: [`gamepad_adjust`]); Up
-//!   and Down still move on.
+//!   [`slider`] or [`choice`] keeps Left and Right (the D-pad steps it, held to repeat:
+//!   [`gamepad_adjust`]); Up and Down still move on.
 //! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
 //!   resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television
 //!   ([`UiScaleSettings`], [`scale_with_window`]).
@@ -93,6 +94,7 @@
 
 pub mod model;
 
+mod choice;
 mod controls;
 mod feedback;
 mod meter;
@@ -105,14 +107,15 @@ mod widgets;
 
 pub use bevy::ui::Checked;
 pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
+pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
-    TEXT_CONTRAST, composite, contrast_ratio, meter_fraction, relative_luminance, repeat_steps,
-    slider_fraction, slider_text, snap_line_width, toast_alpha, toast_grow, toast_hold, toast_life,
-    window_ui_scale,
+    TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio, meter_fraction,
+    relative_luminance, repeat_steps, slider_fraction, slider_text, snap_line_width, toast_alpha,
+    toast_grow, toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -122,7 +125,8 @@ pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    button, dialog, heading, label, menu, meter, panel, screen, slider, toast, toast_alert, toggle,
+    button, choice, dialog, heading, label, menu, meter, panel, screen, slider, toast, toast_alert,
+    toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -169,6 +173,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<GooeySkin>()
             .register_type::<Role>()
             .register_type::<Meter>()
+            .register_type::<ChoiceValue>()
+            .register_type::<ChoiceCount>()
             .register_type::<Tooltip>()
             .register_type::<Toast>()
             .register_type::<ToastStack>()
@@ -178,12 +184,14 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<UiFeedbackKind>()
             .add_observer(feedback::feedback_on_activate)
             .add_observer(feedback::feedback_on_toggle)
+            .add_observer(feedback::feedback_on_choice)
             .add_systems(
                 Update,
                 (
                     update_toasts,
                     update_tooltip_text,
                     show_tooltips,
+                    update_choices,
                     apply_skin,
                     update_meters,
                     update_sliders,

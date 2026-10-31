@@ -2,12 +2,12 @@
 
 Game interfaces made easy for Bevy 0.20: a skin, ready-made game widgets and keyboard and gamepad navigation, on Bevy's own headless widgets.
 
-![The gallery example: a panel with a heading, three buttons, a health meter, a Subtitles switch and a Volume slider; Options has the focus ring and its tooltip, "Sound, controls and display", is open beside it; two toasts, "Game saved" and "Inventory full", stand at the bottom right](docs/media/gallery.png)
+![The gallery example: a panel with a heading, three buttons, a health meter, a Subtitles switch, a Quality choice ("Medium" between two chevrons) and a Volume slider; Options has the focus ring and its tooltip, "Sound, controls and display", is open beside it; two toasts, "Game saved" and "Inventory full", stand at the bottom right](docs/media/gallery.png)
 
 ## What you get
 
 - **A skin**, `GooeySkin`: every colour and size as plain data, two presets (`dark`, `parchment`), a player text-scale option, and `problems()` to check it against the WCAG 2.2 contrast and target-size rules. Change it and everything on screen restyles that frame.
-- **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `toggle` and `slider` (an options screen's switch and scrubber), `toast` and `toast_alert` (a line of news at the edge of the screen), `Tooltip` and the modal `dialog`.
+- **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `toggle`, `choice` and `slider` (an options screen's switch, stepper and scrubber), `toast` and `toast_alert` (a line of news at the edge of the screen), `Tooltip` and the modal `dialog`.
 - **Navigation**: arrows and the D-pad move focus to the nearest widget, Enter, Space and the pad's South button activate, Tab cycles.
 - **Scale**: the whole interface keeps its share of the screen at every resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television.
 - **Feedback**: a `UiFeedback` message for every focus move and activation, for your sound.
@@ -69,7 +69,7 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 ## Navigation
 
 - Arrow keys and the D-pad move focus to the nearest button in that direction (`navigate_by_input`); a pad moves focus, it never steers a cursor. The first key or D-pad press shows the focus ring (Bevy's `InputFocusVisible`) and a mouse click hides it again, so a mouse player never sees a stray ring and a pad player always sees theirs. A pad-first game that wants the ring from the first frame inserts `InputFocusVisible(true)`.
-- Enter and Space activate the focused button (Bevy's own button handling) and flip the focused `toggle`; the pad's South button does both (`gamepad_select`).
+- Enter and Space activate the focused button (Bevy's own button handling), flip the focused `toggle` and cycle the focused `choice`; the pad's South button does all three (`gamepad_select`).
 - Tab and Shift+Tab cycle through a `screen`'s buttons.
 - An open `dialog` holds focus: focus moves to its first button when it opens, Tab, the arrows and the D-pad cannot leave it, and closing it puts focus back on the button that opened it. Put `AutoFocus` on the dialog's safest choice ("Stay", "Cancel") to start there instead.
 - A `Tooltip` opens when its widget has focus from a key or the pad, as it does under the pointer. It opens beside the widget (to the right in a column, below in a row, flipped at the window's edge), one step outside its panel, so it never covers the next button.
@@ -78,7 +78,7 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 
 ## Settings controls
 
-`toggle` and `slider` are the two controls an options screen is made of. Each is one bundle whose root is Bevy's own headless widget (`Checkbox`, `Slider`), so the widget you spawn is the entity that carries its value, takes `observe`, `Tooltip` and `InteractionDisabled`, and says what changed through `ValueChange`:
+`toggle`, `choice` and `slider` are the controls an options screen is made of. Each is one bundle whose root is Bevy's own headless widget (`Checkbox`, `Button`, `Slider`), so the widget you spawn is the entity that carries its value, takes `observe`, `Tooltip` and `InteractionDisabled`, and says what changed through `ValueChange`:
 
 ```rust
 fn options(mut commands: Commands) {
@@ -86,6 +86,7 @@ fn options(mut commands: Commands) {
         panel(),
         children![
             (toggle("Subtitles", true), observe(|c: On<ValueChange<bool>>| info!("subtitles {}", c.value))),
+            (choice("Quality", ["Low", "Medium", "High"], 1), observe(|c: On<ValueChange<usize>>| info!("quality {}", c.value))),
             (slider("Music", 0.7, 0.0..=1.0), observe(|c: On<ValueChange<f32>>| info!("music {}", c.value))),
         ],
     ));
@@ -93,8 +94,9 @@ fn options(mut commands: Commands) {
 ```
 
 - A **toggle** is a row: the label on the left, a framed switch on the right whose knob slides to the end and fills with the accent when on. Its state is the knob's place first and its colour second, so it reads for a colour-blind player. It flips by itself (`Checked` on the entity); a click anywhere on the row, Enter, Space and South flip it, and `ValueChange<bool>` is the moment to apply the setting.
+- A **choice** is a row: the label on the left, the selected option on the right between two chevrons, for a setting with a few named values (Low, Medium, High). It is one tab stop. With it focused, Left and Right (keys or the D-pad, a held direction repeating as a slider's does) step to the previous and next option and stop at the ends (the chevron that cannot step is dimmed, and a press at an end changes nothing and says nothing), Home and End jump to the ends, and Up and Down still move focus on, so a pad steps a column of settings with no mode to enter. A click on a chevron steps once, on release; Enter, Space, South and a click anywhere else on the row cycle to the next option and wrap round, so one repeated press reaches every option. Every option takes the widest one's room, so the chevrons never move under a thumb. The selected index is `ChoiceValue` on the entity (write one to move it from code; no `ValueChange` comes back for that), and `ValueChange<usize>` fires once per change. Observe that, not `Activate`: only a cycle is an `Activate`.
 - A **slider** is a row: the label and the value (a percentage for a range of 0 to 1, the number otherwise) over a rail with a thumb. The whole row is the target: a click puts the thumb under the pointer and a drag goes on from there. With it focused, Left and Right step by a twentieth of the range (insert a `SliderStep` to change it), Home and End jump to the ends, and Up and Down still move focus on. The D-pad does the same, and a held direction repeats after 0.4 s at 12 steps a second (`PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`), so a pad player never presses A to select the slider nor holds a button to keep it. `ValueChange<f32>` fires as the value moves (`is_final` is false until the drag ends); read the value from `SliderValue`, or write one to move the slider.
-- Both are targets at least `min_target` high, show the same focus ring as a button, and grow with `text_scale`.
+- All three are targets at least `min_target` high (a choice's chevrons are `min_target` wide too), show the same focus ring as a button, and grow with `text_scale`.
 
 ## Toasts
 
@@ -150,7 +152,7 @@ Fonts are yours: set `GooeyFonts { body, heading }`. The default draws Bevy's bu
 
 ## Feedback
 
-Read `UiFeedback` (`entity`, `kind: Focus | Activate`) and play a sound: a button, a toggle and a slider each focus, and a button's activation and a toggle's flip activate. The crate plays none.
+Read `UiFeedback` (`entity`, `kind: Focus | Activate`) and play a sound: a button, a toggle, a choice and a slider each focus, and a button's activation, a toggle's flip and a choice's change of option activate. The crate plays none.
 
 ## What this crate does not own
 
