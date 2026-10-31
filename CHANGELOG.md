@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- `Cancel { entity }`, the player backing out: Escape, or any gamepad's East button (B on Xbox, Circle on PlayStation), one event a press, for a keyboard and a pad in one handler. It starts at the focused widget and bubbles up its parents (Bevy's event propagation, so `observe(|cancel: On<Cancel>, ..| ..)` on the dialog or the screen being left hears it, `cancel.propagate(false)` keeps a layer above from also acting, and `On::original_event_target()` is the widget that had focus), and it never leaves a `dialog()`: a modal dialog is its own scope, so a Back inside it does not reach the screen under it, even one it was spawned beneath. With nothing focused, or focus left behind it, an open dialog still hears it; with no dialog and nothing focused nothing is sent, so Escape stays the game's own pause key. A press that finds a target shows the focus ring. The crate closes nothing: a game observes `Cancel` and despawns its dialog (focus goes back to the button that opened it).
+- `cancel_by_input` (in `GooeySystems::Navigate`, after `gamepad_select`; `GooeyNavPlugin` registers it and the `Cancel` type), `CancelScope`, the event's traversal, and `docs/research/cancel.md`.
+- The gallery's Quit dialog closes on `Cancel`, and `GOOEY_KEYS` has an `escape` token.
+
 ## [0.4.0] - 2026-10-31
 
 ### Added
