@@ -2,12 +2,12 @@
 
 Game interfaces made easy for Bevy 0.20: a skin, ready-made game widgets and keyboard and gamepad navigation, on Bevy's own headless widgets.
 
-![The gallery example: a panel with a heading, three buttons and a health meter; Options has the focus ring and its tooltip, "Sound, controls and display", is open beside it](docs/media/gallery.png)
+![The gallery example: a panel with a heading, three buttons, a health meter, a Subtitles switch and a Volume slider; Options has the focus ring and its tooltip, "Sound, controls and display", is open beside it](docs/media/gallery.png)
 
 ## What you get
 
 - **A skin**, `GooeySkin`: every colour and size as plain data, two presets (`dark`, `parchment`), a player text-scale option, and `problems()` to check it against the WCAG 2.2 contrast and target-size rules. Change it and everything on screen restyles that frame.
-- **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `Tooltip` and the modal `dialog`.
+- **Widgets**, each a free function returning a bundle: `screen`, `panel`, `menu`, `heading`, `label`, `button`, `meter` (a HUD bar), `toggle` and `slider` (an options screen's switch and scrubber), `Tooltip` and the modal `dialog`.
 - **Navigation**: arrows and the D-pad move focus to the nearest widget, Enter, Space and the pad's South button activate, Tab cycles.
 - **Scale**: the whole interface keeps its share of the screen at every resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television.
 - **Feedback**: a `UiFeedback` message for every focus move and activation, for your sound.
@@ -69,12 +69,32 @@ Every widget composes inside `children![]`, and a button acts through an `Activa
 ## Navigation
 
 - Arrow keys and the D-pad move focus to the nearest button in that direction (`navigate_by_input`); a pad moves focus, it never steers a cursor. The first key or D-pad press shows the focus ring (Bevy's `InputFocusVisible`) and a mouse click hides it again, so a mouse player never sees a stray ring and a pad player always sees theirs. A pad-first game that wants the ring from the first frame inserts `InputFocusVisible(true)`.
-- Enter and Space activate the focused button (Bevy's own button handling); the pad's South button does too (`gamepad_select`).
+- Enter and Space activate the focused button (Bevy's own button handling) and flip the focused `toggle`; the pad's South button does both (`gamepad_select`).
 - Tab and Shift+Tab cycle through a `screen`'s buttons.
 - An open `dialog` holds focus: focus moves to its first button when it opens, Tab, the arrows and the D-pad cannot leave it, and closing it puts focus back on the button that opened it. Put `AutoFocus` on the dialog's safest choice ("Stay", "Cancel") to start there instead.
 - A `Tooltip` opens when its widget has focus from a key or the pad, as it does under the pointer. It opens beside the widget (to the right in a column, below in a row, flipped at the window's edge), one step outside its panel, so it never covers the next button.
 - A `Tooltip` is a view of its component: `commands.entity(button).remove::<Tooltip>()` takes the hint off (a "Locked: reach level 5" line once the player unlocks it), and inserting a new `Tooltip`, or editing `Tooltip.0`, changes the line the open tooltip shows.
 - Put Bevy's `AutoFocus` on the button a screen should start on. With nothing focused (a click on empty space, a button despawned under the player), the first arrow or D-pad press lands there, or on the screen's first button in Tab order, and the next press moves on; with a `dialog` open it lands inside the dialog.
+
+## Settings controls
+
+`toggle` and `slider` are the two controls an options screen is made of. Each is one bundle whose root is Bevy's own headless widget (`Checkbox`, `Slider`), so the widget you spawn is the entity that carries its value, takes `observe`, `Tooltip` and `InteractionDisabled`, and says what changed through `ValueChange`:
+
+```rust
+fn options(mut commands: Commands) {
+    commands.spawn((
+        panel(),
+        children![
+            (toggle("Subtitles", true), observe(|c: On<ValueChange<bool>>| info!("subtitles {}", c.value))),
+            (slider("Music", 0.7, 0.0..=1.0), observe(|c: On<ValueChange<f32>>| info!("music {}", c.value))),
+        ],
+    ));
+}
+```
+
+- A **toggle** is a row: the label on the left, a framed switch on the right whose knob slides to the end and fills with the accent when on. Its state is the knob's place first and its colour second, so it reads for a colour-blind player. It flips by itself (`Checked` on the entity); a click anywhere on the row, Enter, Space and South flip it, and `ValueChange<bool>` is the moment to apply the setting.
+- A **slider** is a row: the label and the value (a percentage for a range of 0 to 1, the number otherwise) over a rail with a thumb. The whole row is the target: a click puts the thumb under the pointer and a drag goes on from there. With it focused, Left and Right step by a twentieth of the range (insert a `SliderStep` to change it), Home and End jump to the ends, and Up and Down still move focus on. The D-pad does the same, and a held direction repeats after 0.4 s at 12 steps a second (`PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`), so a pad player never presses A to select the slider nor holds a button to keep it. `ValueChange<f32>` fires as the value moves (`is_final` is false until the drag ends); read the value from `SliderValue`, or write one to move the slider.
+- Both are targets at least `min_target` high, show the same focus ring as a button, and grow with `text_scale`.
 
 ## Over a game world
 
@@ -92,7 +112,7 @@ A `screen` is layout, not a surface: its empty part is `Pickable::IGNORE`, so a 
 
 - text under 4.5:1 contrast against the surface, the raised surface, a hovered button, or the accent (WCAG 2.2, 1.4.3);
 - a focus ring under 3:1 against the raised surface (WCAG 2.2, 1.4.11);
-- a meter's fill (the accent) under 3:1 against its track, or its frame (`outline`) under 3:1 against the panel (WCAG 2.2, 1.4.11);
+- a meter's fill (the accent) under 3:1 against its track, or its frame (`outline`) under 3:1 against the panel, or an off switch's knob (`text_muted`) under 3:1 against its track (WCAG 2.2, 1.4.11);
 - `min_target` under 24 px (WCAG 2.2, 2.5.8; the default is 44 px);
 - a meter too thin to show a fill inside its frame and gap (`meter_height × text_scale` at most 4 × `border`);
 - a size that is not finite, or not positive where it must be.
@@ -110,7 +130,7 @@ Fonts are yours: set `GooeyFonts { body, heading }`. The default draws Bevy's bu
 
 ## Feedback
 
-Read `UiFeedback` (`entity`, `kind: Focus | Activate`) and play a sound. The crate plays none.
+Read `UiFeedback` (`entity`, `kind: Focus | Activate`) and play a sound: a button, a toggle and a slider each focus, and a button's activation and a toggle's flip activate. The crate plays none.
 
 ## What this crate does not own
 

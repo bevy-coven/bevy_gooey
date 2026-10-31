@@ -5,6 +5,17 @@
 ### Added
 
 - `model::snap_line_width`: a line weight snapped to whole device pixels at a scale, CSS's "snap a length as a border width" (rounded down above one device pixel, up to one below it).
+- `toggle(label, on)` and `slider(label, value, range)`: the two controls an options screen is made of. Each returns one bundle whose root is Bevy's own headless widget (`Checkbox`, `Slider`), so the spawned entity carries the state (`Checked`, `SliderValue`), takes `observe`, `Tooltip` and `InteractionDisabled`, and reports `ValueChange<bool>` / `ValueChange<f32>` (re-exported with `Checked`, `SliderValue`, `SliderRange` and `SliderStep`). A toggle is a row with a label and a framed switch whose knob slides to the end and takes the accent when on; a slider is a row with a label, a readout (a percentage for a range of 0 to 1, the number otherwise) and a rail with a thumb, the whole row the click and drag target. Both are at least `min_target` high, wear a button's focus ring, show the pointer with an outline, dim when disabled and grow with `text_scale`.
+- A focused slider takes Left and Right (keys through `bevy_ui_widgets`: a twentieth of the range a step, Home and End to the ends) and the D-pad (`gamepad_adjust`, new, in `GooeySystems::Navigate`), which repeats a held direction after `PAD_REPEAT_DELAY` (0.4 s) at `PAD_REPEAT_RATE` (12 a second), so a pad player adjusts a volume with no select step and no held button. Up and Down still move focus on. The pad's South button flips a focused toggle.
+- `update_sliders` (in `GooeySystems::Style`) keeps a slider's thumb, fill and readout in step with its value; `model::slider_fraction`, `slider_text` and `repeat_steps`, the engine-free maths under it.
+- `Role::{Toggle, ToggleTrack, ToggleKnob, Slider, SliderHeader, SliderTrack, SliderRail, SliderFill, SliderGap, SliderThumb, SliderReadout, ControlText}`, styled in `apply_skin` like every other part.
+- `UiFeedback`: a toggle or a slider gaining focus writes `Focus`, a toggle flipping writes `Activate`.
+- `GooeySkin::problems()` checks one more pair, the off switch's knob (`text_muted`) against its track (`surface_raised`) at 3:1. Both presets pass; a custom skin whose muted colour sits near its raised surface now warns.
+
+### Changed
+
+- `Role` has twelve more variants: a `match` over it that is exhaustive needs arms for them.
+- `gamepad_select` takes one more query parameter (the toggles it flips) and `FocusScopes` one more, so a host that registers these systems by hand gets them from `GooeyNavPlugin` / `GooeyStylePlugin` as before; calling them directly is unchanged. `navigate_by_input` leaves Left and Right to a focused, enabled slider.
 
 ### Fixed
 
