@@ -5,6 +5,7 @@
 use std::ops::RangeInclusive;
 
 use bevy::ecs::lifecycle::HookContext;
+use bevy::ecs::spawn::SpawnIter;
 use bevy::ecs::world::DeferredWorld;
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::hover::Hovered;
@@ -16,6 +17,10 @@ use bevy::ui_widgets::{
     TrackClick, checkbox_self_update, observe, slider_self_update,
 };
 
+use crate::choice::{
+    ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
+    choice_on_key_input, choice_on_move, choice_self_update,
+};
 use crate::meter::Meter;
 use crate::model::{meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
@@ -24,6 +29,12 @@ use crate::toast::{Toast, ToastKind};
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
 const SLIDER_STEPS: f32 = 20.0;
+
+/// How far a choice's chevron is moved to put its ink in the middle of its arrow, in percent of
+/// its own width. A square turned an eighth of a turn has its two drawn sides on one side of its
+/// centre: they run from the centre line out to the corner, which is half a diagonal away, so
+/// the ink's middle is a quarter of the diagonal, `1 / (2 √2)` of the side, off the centre.
+const CHEVRON_INK_SHIFT: f32 = 50.0 * std::f32::consts::FRAC_1_SQRT_2;
 
 /// A toggle's state at spawn. A bundle cannot carry [`Checked`] only when the toggle starts on
 /// (`Option<Checked>` is not a bundle), so this puts it on the entity as it is added and goes.
@@ -334,6 +345,137 @@ pub fn slider(label: impl Into<String>, value: f32, range: RangeInclusive<f32>) 
                 ],
             ),
         ],
+    )
+}
+
+/// A choice for a setting that takes one of a few named values (Low, Medium, High; Easy, Normal,
+/// Hard): a row with the label on the left and the selected option on the right between two
+/// arrows. It is Bevy's headless [`bevy::ui_widgets::Button`] with a state, so Tab, the arrows and
+/// the D-pad reach it, and with it focused Left and Right (keys or the D-pad, held to repeat) step
+/// to the previous and next option and stop at the ends, Home and End jump to the first and last,
+/// and Up and Down still move focus on, so a pad steps a column of settings with no mode to enter.
+/// A click on an arrow steps once, and Enter, Space, the pad's South button and a click anywhere
+/// else on the row cycle to the next option, wrapping from the last to the first, so every option is
+/// reachable by one repeated press. The arrow that cannot step is dimmed.
+///
+/// Every option takes the same room, the widest's, so stepping never moves the arrows under the
+/// player's thumb. It keeps its own state, [`ChoiceValue`] on the entity (the index of the
+/// selected option); observe `ValueChange<usize>` on it to apply the setting when it changes.
+/// Observe that, not `Activate`: only a cycle is an `Activate`, a step is not. A `selected` past the
+/// last option reads as the last.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     choice("Quality", ["Low", "Medium", "High"], 1),
+///     observe(|change: On<ValueChange<usize>>| info!("quality: option {}", change.value)),
+/// ));
+/// # }
+/// ```
+pub fn choice<S: Into<String>>(
+    label: impl Into<String>,
+    options: impl IntoIterator<Item = S>,
+    selected: usize,
+) -> impl Bundle {
+    let options: Vec<String> = options.into_iter().map(Into::into).collect();
+    let count = options.len();
+    let selected = selected.min(count.saturating_sub(1));
+    (
+        Node {
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        ChoiceValue(selected),
+        ChoiceCount(count),
+        Role::Choice,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        observe(choice_self_update),
+        observe(choice_on_move),
+        observe(choice_on_activate),
+        observe(choice_on_key_input),
+        children![
+            (Text::new(label), Role::ControlText, Pickable::IGNORE),
+            (
+                Node {
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                Pickable::IGNORE,
+                children![
+                    choice_arrow(-1),
+                    (
+                        Node {
+                            display: Display::Grid,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        Role::ChoiceCell,
+                        Pickable::IGNORE,
+                        Children::spawn(SpawnIter(options.into_iter().enumerate().map(
+                            move |(index, text)| {
+                                (
+                                    Node {
+                                        grid_row: GridPlacement::start(1),
+                                        grid_column: GridPlacement::start(1),
+                                        justify_self: JustifySelf::Center,
+                                        ..default()
+                                    },
+                                    Text::new(text),
+                                    Role::ChoiceOption,
+                                    Pickable::IGNORE,
+                                    if index == selected {
+                                        Visibility::Inherited
+                                    } else {
+                                        Visibility::Hidden
+                                    },
+                                )
+                            },
+                        ))),
+                    ),
+                    choice_arrow(1),
+                ],
+            ),
+        ],
+    )
+}
+
+/// One of a choice's two arrows: a target as wide as a button, with the chevron drawn in it. The
+/// chevron is a square with two borders turned an eighth of a turn, so it is a line of the skin's
+/// weight and not a glyph the host's font may lack; it is moved by the share of its own width that
+/// puts its ink, not its square, in the middle of the target.
+fn choice_arrow(step: i32) -> impl Bundle {
+    let (mark, shift) = if step < 0 {
+        (Role::ChoiceBack, CHEVRON_INK_SHIFT)
+    } else {
+        (Role::ChoiceForward, -CHEVRON_INK_SHIFT)
+    };
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Role::ChoiceArrow,
+        StepBy(step),
+        Hovered::default(),
+        observe(arrow_on_press),
+        observe(arrow_on_click),
+        children![(
+            Node::default(),
+            UiTransform {
+                translation: Val2::percent(shift, 0.0),
+                rotation: Rot2::degrees(45.0),
+                ..default()
+            },
+            mark,
+            Pickable::IGNORE,
+        )],
     )
 }
 

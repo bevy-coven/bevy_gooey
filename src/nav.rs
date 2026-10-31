@@ -22,7 +22,14 @@ use bevy::ui_widgets::{
     Activate, Checkbox, SetSliderValue, Slider, SliderValueChange, ToggleChecked,
 };
 
+use crate::choice::{ChoiceCount, Move, MoveChoice};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
+
+/// The widgets that take Left and Right themselves: an enabled slider or choice.
+type TakesSideways = (
+    Or<(With<Slider>, With<ChoiceCount>)>,
+    Without<InteractionDisabled>,
+);
 
 /// What a [`crate::dialog`] remembers: the widget that had focus when it opened, which gets focus
 /// back when the dialog closes, and whether focus has moved in yet. Part of `dialog()`; a game
@@ -75,8 +82,8 @@ pub struct FocusScopes<'w, 's> {
     starts: Query<'w, 's, StartPoint, StartMark>,
     /// Everything focus can rest on.
     stops: Query<'w, 's, Option<&'static InheritedVisibility>, With<TabIndex>>,
-    /// The sliders that take Left and Right themselves.
-    sliders: Query<'w, 's, (), (With<Slider>, Without<InteractionDisabled>)>,
+    /// The sliders and choices that take Left and Right themselves.
+    sideways: Query<'w, 's, (), TakesSideways>,
 }
 
 impl FocusScopes<'_, '_> {
@@ -97,10 +104,10 @@ impl FocusScopes<'_, '_> {
             .is_ok_and(|visible| visible.is_none_or(|v| v.get()))
     }
 
-    /// Whether `entity` is a slider that takes Left and Right itself: those presses adjust it and
-    /// never move focus off it. A disabled slider takes nothing.
+    /// Whether `entity` is a slider or a choice that takes Left and Right itself: those presses
+    /// adjust it and never move focus off it. A disabled one takes nothing.
     fn keeps_sideways(&self, entity: Entity) -> bool {
-        self.sliders.contains(entity)
+        self.sideways.contains(entity)
     }
 
     /// The scope the player is looking at: the topmost open modal group (a dialog), or `None`,
@@ -184,8 +191,8 @@ pub fn navigate_by_input(
     }
     show_focus(&mut shown);
     let from = nav.focus.get().filter(|&f| scopes.holds(f));
-    // Left and Right on a slider are the slider's (the keys through `bevy_ui_widgets`, the D-pad
-    // through `gamepad_adjust`): they never also move focus off it. Up and Down still do.
+    // Left and Right on a slider or a choice are its own (the keys through its observers, the
+    // D-pad through `gamepad_adjust`): they never also move focus off it. Up and Down still do.
     let net_x = if from.is_some_and(|f| scopes.keeps_sideways(f)) {
         0.0
     } else {
@@ -346,14 +353,14 @@ pub fn gamepad_select(
     }
 }
 
-/// Steps the focused, enabled [`crate::slider`] with the D-pad: Left and Right take one step a
-/// press, and a direction held down repeats after [`PAD_REPEAT_DELAY`] at [`PAD_REPEAT_RATE`] a
-/// second, so a pad player sweeps a volume without twenty presses and never holds a second button
-/// to keep the slider selected. Shows focus (`InputFocusVisible`). Runs in
-/// [`crate::GooeySystems::Navigate`]. The keys are `bevy_ui_widgets`' own (Left and Right step,
-/// Home and End jump) and are not handled here.
+/// Steps the focused, enabled [`crate::slider`] or [`crate::choice`] with the D-pad: Left and Right
+/// take one step a press, and a direction held down repeats after [`PAD_REPEAT_DELAY`] at
+/// [`PAD_REPEAT_RATE`] a second, so a pad player sweeps a volume without twenty presses and never
+/// holds a second button to keep the control selected. A choice stops at its ends. Shows focus
+/// (`InputFocusVisible`). Runs in [`crate::GooeySystems::Navigate`]. The keys are the controls'
+/// own (Left and Right step, Home and End jump) and are not handled here.
 ///
-/// Up and Down move focus off the slider ([`navigate_by_input`] leaves them alone), and a press
+/// Up and Down move focus off the control ([`navigate_by_input`] leaves them alone), and a press
 /// with either held stops the repeat. The repeat counts real time, so a paused game's menu still
 /// repeats.
 pub fn gamepad_adjust(
@@ -362,15 +369,16 @@ pub fn gamepad_adjust(
     mut shown: ResMut<InputFocusVisible>,
     gamepads: Query<&Gamepad>,
     sliders: Query<(), (With<Slider>, Without<InteractionDisabled>)>,
+    choices: Query<(), (With<ChoiceCount>, Without<InteractionDisabled>)>,
     mut held: Local<(i8, f32)>,
     mut commands: Commands,
 ) {
     let down = |button| gamepads.iter().any(|g| g.pressed(button));
     let direction = down(GamepadButton::DPadRight) as i8 - down(GamepadButton::DPadLeft) as i8;
     let vertical = down(GamepadButton::DPadUp) || down(GamepadButton::DPadDown);
-    let Some(slider) = focus
+    let Some(control) = focus
         .get()
-        .filter(|&f| direction != 0 && !vertical && sliders.contains(f))
+        .filter(|&f| direction != 0 && !vertical && (sliders.contains(f) || choices.contains(f)))
     else {
         *held = (0, 0.0);
         return;
@@ -386,9 +394,16 @@ pub fn gamepad_adjust(
     };
     if steps > 0 {
         show_focus(&mut shown);
-        commands.trigger(SetSliderValue {
-            entity: slider,
-            change: SliderValueChange::RelativeStep(f32::from(direction) * steps as f32),
-        });
+        if sliders.contains(control) {
+            commands.trigger(SetSliderValue {
+                entity: control,
+                change: SliderValueChange::RelativeStep(f32::from(direction) * steps as f32),
+            });
+        } else {
+            commands.trigger(MoveChoice {
+                entity: control,
+                to: Move::Step(i32::from(direction) * steps as i32),
+            });
+        }
     }
 }
