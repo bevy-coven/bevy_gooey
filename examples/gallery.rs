@@ -32,11 +32,18 @@
 //! switch and the Volume slider say what they settled on, and pressing Play four times shows the
 //! stack's cap. In capture mode toasts stand 100 times as long as usual, so a still holds them;
 //! `GOOEY_KEYS` tokens `toast`, `alert` and `long` spawn one.
+//! The **Load game** list holds twelve save slots, four and a half rows tall: it scrolls with the
+//! wheel, a drag on its thumb and a click on its rail, and follows focus (the next row stays in
+//! view); PageUp and PageDown move a viewport. `GOOEY_KEYS` tokens `slots` (focus the first slot),
+//! `pagedown`, `pageup` and `wheel` (one notch over the list) stage it.
 
 use bevy::camera::NormalizedRenderTarget;
+use bevy::ecs::spawn::SpawnIter;
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput};
-use bevy::input_focus::AutoFocus;
+use bevy::input::mouse::MouseScrollUnit;
+use bevy::input::touch::TouchPhase;
+use bevy::input_focus::{AutoFocus, FocusCause, InputFocus, InputFocusVisible};
 use bevy::picking::events::PointerPress;
 use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
@@ -55,6 +62,26 @@ struct HeldHealth(Option<f32>);
 /// The open Quit dialog.
 #[derive(Component)]
 struct QuitDialog;
+
+/// A row of the Load game list.
+#[derive(Component)]
+struct SaveSlot;
+
+/// The Load game list's rows.
+const SLOTS: [&str; 12] = [
+    "Autosave",
+    "Meadow, 12:40",
+    "Harbour, 09:15",
+    "Mill, 03:02",
+    "Cellar, 01:48",
+    "Orchard, 00:20",
+    "Chapel, 00:12",
+    "Quarry, 00:09",
+    "Marsh, 00:07",
+    "Lighthouse, 00:05",
+    "Ridge, 00:03",
+    "Delta, 00:01",
+];
 
 /// Capture mode's state, present only when `GOOEY_FRAMES` is set.
 #[derive(Resource)]
@@ -97,6 +124,10 @@ enum Staged {
     Back,
     /// A primary click on the Quality choice's forward arrow.
     Forward,
+    /// Focus the first row of the Load game list, showing focus.
+    Slots,
+    /// One notch of the wheel down, over the Load game list.
+    Wheel,
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -184,6 +215,10 @@ fn main() {
                     "space" => Some(Staged::Key(KeyCode::Space)),
                     "home" => Some(Staged::Key(KeyCode::Home)),
                     "end" => Some(Staged::Key(KeyCode::End)),
+                    "pagedown" => Some(Staged::Key(KeyCode::PageDown)),
+                    "pageup" => Some(Staged::Key(KeyCode::PageUp)),
+                    "slots" => Some(Staged::Slots),
+                    "wheel" => Some(Staged::Wheel),
                     "back" => Some(Staged::Back),
                     "forward" => Some(Staged::Forward),
                     "click" => Some(Staged::Click),
@@ -236,60 +271,89 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         screen(),
         children![(
-            panel(),
+            Node {
+                column_gap: Val::Px(24.0),
+                align_items: AlignItems::Center,
+                ..default()
+            },
             children![
-                heading("bevy_gooey"),
                 (
-                    menu(),
+                    panel(),
                     children![
+                        heading("bevy_gooey"),
                         (
-                            button("Play"),
-                            AutoFocus,
-                            observe(|_: On<Activate>, mut commands: Commands| {
-                                info!("gooey: play");
-                                commands.spawn(toast("Game saved"));
+                            menu(),
+                            children![
+                                (
+                                    button("Play"),
+                                    AutoFocus,
+                                    observe(|_: On<Activate>, mut commands: Commands| {
+                                        info!("gooey: play");
+                                        commands.spawn(toast("Game saved"));
+                                    }),
+                                ),
+                                (
+                                    button("Options"),
+                                    Tooltip("Sound, controls and display".into()),
+                                    observe(switch_skin),
+                                ),
+                                (button("Quit"), observe(open_quit_dialog)),
+                            ]
+                        ),
+                        label("Health"),
+                        (meter(100.0, 100.0), Health),
+                        (
+                            toggle("Subtitles", true),
+                            observe(|change: On<ValueChange<bool>>, mut commands: Commands| {
+                                info!("gooey: subtitles {}", change.value);
+                                commands.spawn(toast(if change.value {
+                                    "Subtitles on"
+                                } else {
+                                    "Subtitles off"
+                                }));
                             }),
                         ),
                         (
-                            button("Options"),
-                            Tooltip("Sound, controls and display".into()),
-                            observe(switch_skin),
+                            choice("Quality", ["Low", "Medium", "High", "Ultra"], 1),
+                            observe(|change: On<ValueChange<usize>>, mut commands: Commands| {
+                                const NAMES: [&str; 4] = ["Low", "Medium", "High", "Ultra"];
+                                info!("gooey: quality {}", change.value);
+                                commands.spawn(toast(format!(
+                                    "Quality {}",
+                                    NAMES.get(change.value).copied().unwrap_or("?")
+                                )));
+                            },),
                         ),
-                        (button("Quit"), observe(open_quit_dialog)),
+                        (
+                            slider("Volume", 0.7, 0.0..=1.0),
+                            observe(|change: On<ValueChange<f32>>, mut commands: Commands| {
+                                if change.is_final {
+                                    info!("gooey: volume {:.2}", change.value);
+                                    commands.spawn(toast(format!(
+                                        "Volume {:.0}%",
+                                        change.value * 100.0
+                                    )));
+                                }
+                            }),
+                        ),
                     ]
                 ),
-                label("Health"),
-                (meter(100.0, 100.0), Health),
                 (
-                    toggle("Subtitles", true),
-                    observe(|change: On<ValueChange<bool>>, mut commands: Commands| {
-                        info!("gooey: subtitles {}", change.value);
-                        commands.spawn(toast(if change.value {
-                            "Subtitles on"
-                        } else {
-                            "Subtitles off"
-                        }));
-                    }),
-                ),
-                (
-                    choice("Quality", ["Low", "Medium", "High", "Ultra"], 1),
-                    observe(|change: On<ValueChange<usize>>, mut commands: Commands| {
-                        const NAMES: [&str; 4] = ["Low", "Medium", "High", "Ultra"];
-                        info!("gooey: quality {}", change.value);
-                        commands.spawn(toast(format!(
-                            "Quality {}",
-                            NAMES.get(change.value).copied().unwrap_or("?")
-                        )));
-                    },),
-                ),
-                (
-                    slider("Volume", 0.7, 0.0..=1.0),
-                    observe(|change: On<ValueChange<f32>>, mut commands: Commands| {
-                        if change.is_final {
-                            info!("gooey: volume {:.2}", change.value);
-                            commands.spawn(toast(format!("Volume {:.0}%", change.value * 100.0)));
-                        }
-                    }),
+                    panel(),
+                    children![
+                        label("Load game"),
+                        list(
+                            4.5,
+                            Children::spawn(SpawnIter(SLOTS.iter().map(|&name| (
+                                button(name),
+                                SaveSlot,
+                                observe(move |_: On<Activate>, mut commands: Commands| {
+                                    info!("gooey: load {name}");
+                                    commands.spawn(toast(format!("Loaded {name}")));
+                                }),
+                            ))))
+                        ),
+                    ]
                 ),
             ]
         )],
@@ -440,11 +504,15 @@ fn capture(
 /// `GOOEY_KEYS`: one input every [`KEY_EVERY`] frames, pressed and then released as the window's
 /// own keyboard or pointer input, so Bevy's input dispatch, picking, Tab navigation and buttons all
 /// see it.
+#[allow(clippy::too_many_arguments)]
 fn stage_keys(
     capture: Option<Res<Capture>>,
     window: Query<Entity, With<PrimaryWindow>>,
     tipped: Query<Entity, With<Tooltip>>,
     thumbs: Query<(&Role, &UiGlobalTransform)>,
+    slots: Query<(Entity, &UiGlobalTransform), With<SaveSlot>>,
+    mut focus: ResMut<InputFocus>,
+    mut shown: ResMut<InputFocusVisible>,
     mut commands: Commands,
     mut keys: MessageWriter<KeyboardInput>,
     mut pointer: MessageWriter<PointerInput>,
@@ -565,6 +633,42 @@ fn stage_keys(
             for &action in actions {
                 pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
             }
+        }
+        Some(Staged::Slots) if state == ButtonState::Pressed => {
+            let first = slots
+                .iter()
+                .min_by(|a, b| a.1.translation.y.total_cmp(&b.1.translation.y));
+            if let Some((slot, _)) = first {
+                focus.set(slot, FocusCause::Navigated);
+                shown.0 = true;
+            }
+        }
+        Some(Staged::Wheel) if state == ButtonState::Pressed => {
+            let Some(target) = WindowRef::Entity(window).normalize(None) else {
+                return;
+            };
+            let Some((_, list)) = thumbs.iter().find(|(role, _)| **role == Role::ListView) else {
+                return;
+            };
+            let at = Location {
+                target: NormalizedRenderTarget::Window(target),
+                position: list.translation,
+            };
+            pointer.write(PointerInput::new(
+                PointerId::Mouse,
+                at.clone(),
+                PointerAction::Move { delta: Vec2::ZERO },
+            ));
+            pointer.write(PointerInput::new(
+                PointerId::Mouse,
+                at,
+                PointerAction::Scroll {
+                    unit: MouseScrollUnit::Line,
+                    x: 0.0,
+                    y: -1.0,
+                    phase: TouchPhase::Moved,
+                },
+            ));
         }
         Some(Staged::Toast) if state == ButtonState::Pressed => {
             commands.spawn(toast("Game saved"));

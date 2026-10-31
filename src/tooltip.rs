@@ -5,7 +5,7 @@ use bevy::ecs::world::DeferredWorld;
 use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
-use bevy::ui::{ComputedUiRenderTargetInfo, UiGlobalTransform};
+use bevy::ui::{ComputedUiRenderTargetInfo, OverrideClip, UiGlobalTransform};
 use bevy::ui_widgets::popover::Popover;
 
 use crate::skin::Role;
@@ -83,6 +83,9 @@ fn sync_box(world: &mut World, entity: Entity) {
                 },
                 Role::Tooltip,
                 Popover::default(),
+                // A tooltip beside a row of a scrolling list stands outside the list, so the
+                // list's clip must not reach it.
+                OverrideClip,
                 BoxShadow::default(),
                 GlobalZIndex(200),
                 TooltipBox::default(),
