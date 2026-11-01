@@ -31,7 +31,8 @@
 //!   modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
 //!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed), and the
 //!   [`menu_bar`] of [`menu_title`]s with [`menu_item`], [`check_item`], [`radio_item`],
-//!   [`submenu`] and [`separator`] rows (chords right-aligned, [`Disabled`] items that say why). Each is a free function returning a bundle, so they
+//!   [`submenu`] and [`separator`] rows (chords right-aligned, [`Disabled`] items that say why), or a
+//!   [`context_menu`] that any entity opens with [`ContextMenu`] on a right-click or Shift+F10. Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
 //!   to the game under a HUD, while every widget on it takes the pointer. A toast takes no input

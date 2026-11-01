@@ -66,6 +66,10 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   and `MenuOpen` is on its title or submenu item meanwhile. `Disabled(reason)` makes an item unavailable with a
   tooltip. See [menus](menus.md).
 
+- `ContextMenu(menu)`, `ContextTarget(thing)` — on any entity, the menu `context_menu(..)` made that opens for it; the
+  menu's panel carries `ContextTarget` exactly while it is open, and `ContextTarget::of(item, ..)` finds it from an
+  item. See [context menus](context-menus.md).
+
 Bevy's own types come through the crate so a host never adds a second copy: `Checked`, `SliderValue`,
 `SliderRange`, `SliderStep`, `ValueChange`, `Activate` and `observe`.
 
@@ -96,6 +100,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `anchor_pointer_popovers`, `drop_pointer_anchors` | Navigate | a `Placement::AtPointer` popover gets a zero-size node at the pointer to hang from, removed with it |
 | `focus_menu_bar` | Navigate | F10, or Alt pressed and let go alone, focuses the first menu title; again, gives focus back |
 | `menu_by_input` | Navigate | Left, Right, Down, Home and End (and the D-pad) on a menu title or item open, walk and close menus |
+| `context_by_key` | Navigate | Shift+F10 or the Menu key opens the context menu of the focused widget's nearest `ContextMenu`, below it |
 | `switch_menus_on_hover`, `fit_menus`, `scroll_menus_to_focus` | Navigate | the pointer on another title switches menus; an open menu is capped to the window's room and follows focus |
 | `feedback_on_focus` | Navigate | writes `UiFeedback::Focus` when focus moves onto a widget |
 | `scroll_to_focus` | Navigate | a list follows the focus on one of its rows |

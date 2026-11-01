@@ -878,8 +878,9 @@ pub fn switch_menus_on_hover(
 
 // --- long menus ----------------------------------------------------------------------------
 
-/// Caps an open menu's height at the room the window leaves it (below its title, or from the top
-/// of its submenu item), so a long menu scrolls and a short one is unchanged. Runs in
+/// Caps an open menu's height at the room the window leaves it on the larger side of its anchor (below
+/// its title, or from the top of its submenu item, or the side a context menu flips to), so a long
+/// menu scrolls and a short one is unchanged. Runs in
 /// [`crate::GooeySystems::Navigate`].
 pub fn fit_menus(
     skin: Res<GooeySkin>,

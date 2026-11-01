@@ -18,6 +18,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `dialog()` | a modal: a scrim, focus taken on opening and held, and given back to the opener on closing |
 | `popover(anchor, placement)`, `popover_modal(..)` | a panel beside a widget or at the pointer, kept inside the window and closed by Escape or a press elsewhere; the modal one holds focus like a menu does — see [popovers](popovers.md) |
 | `menu_bar`, `menu_title`, `menu_item`, `check_item`, `radio_item`, `submenu`, `separator` | a bar of titles and the menus they open, with chords, checks, radio runs, submenus and `Disabled` items that say why; walked by F10, the arrows and the pad — see [menus](menus.md) |
+| `context_menu(items)` | a menu that belongs to things: name it with `ContextMenu(menu)` on any entity and a right-click or Shift+F10 opens it — see [context menus](context-menus.md) |
 | `toggle`, `choice`, `slider` | the options-screen controls, on Bevy's own `Checkbox`, `Button` and `Slider` — see [controls](controls.md) |
 | `text_size`, `interface_size`, `pad_style`, `skin_preset` | the player's text size, interface size, controller and theme (Dark, Parchment, High contrast, Tool), as `choice` rows that edit the crate's own settings and follow them, with nothing to wire — see [player options](options.md) |
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |

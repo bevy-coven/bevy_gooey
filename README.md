@@ -136,8 +136,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [popovers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/popovers.md); and
   `menu_bar(children![menu_title("File", children![menu_item("Open...").with_shortcut(..), separator(), ..])])`
   is a desktop menu bar for a tool, F10 and the arrows to walk it, with checks, radio runs, submenus and
-  disabled items that say why:
-  [menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/menus.md).
+  disabled items that say why: [menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/menus.md);
+  and `ContextMenu(menu)` on any entity, a sprite in the world or a row of a list, opens a `context_menu(..)`
+  at a right-click or below the focus on Shift+F10:
+  [context menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/context-menus.md).
 - **Keep the interface's share of the screen at every resolution** — the skin's sizes scale with the
   window, and every border stays a whole number of device pixels:
   [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).
@@ -187,6 +189,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 ![The menus example: a bar with File, Edit, View and Help; F10 puts the ring on File, Down opens its menu with Ctrl+N, Ctrl+O and Ctrl+S in a column at the right edge, Down reaches Recent and Right opens its submenu of three levels, Left closes it, Escape closes File, Right then Down opens Edit where the disabled Redo shows "Nothing to redo" in a tooltip beside the menu, and Escape closes it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/menus.gif)
 
 *Menus: `menu_bar(children![menu_title("File", children![menu_item("Open...").with_shortcut(..), ..])])`, F10 and the arrows to walk it, Right into a submenu, Escape one level at a time; a disabled item says why.*
+
+![The context example: a right-click on a crate opens its menu at the pointer, with Locked ticked and the chord I beside Inspect; a right-click on the crate in the bottom-right corner opens the whole menu above and to the left of the pointer; Down and Shift+F10 open an inventory row's menu below the row, Right on Move to opens its submenu, and Enter on Chest 2 says at the bottom which row was moved](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/context-menu.gif)
+
+*Context menus: `ContextMenu(menu)` on a crate, a row or any entity; a right-click opens the menu at the pointer (flipping at the window's edge), Shift+F10 or the Menu key below the focused widget, and `ContextTarget` says which thing a command was for.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 

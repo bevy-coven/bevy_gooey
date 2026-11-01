@@ -261,10 +261,7 @@ fn setup(mut commands: Commands) {
             left: Val::Px(16.0),
             ..default()
         },
-        children![(
-            label("Right-click a crate or a row, or press Shift+F10 on a row"),
-            Status
-        )],
+        children![(label("Right-click a thing, or Shift+F10 on a row"), Status)],
     ));
 }
 
