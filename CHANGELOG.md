@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-01
+
+### Added
+
+- Tables (G-12, #16): `table(columns, rows)` is a header over a scrolling body of rows, virtualized: only the rows in view and one more are entities (at most visible + 2 for ten thousand rows), the rest are the room above and below them, because every row is one height (`GooeySkin::table_pitch`). `RowSource` is the one trait a game implements (`len`, `cell`, and defaults for `key` and `compare`; `Vec<Vec<String>>` is one); `Column { title, width (body text sizes), sortable }`. A click, Enter or Space on a sortable header sorts (`TableSort`, ascending then turned round, a chevron beside the title) and sends one `SortBy`; a column's right edge is dragged, or sized with Ctrl and Left or Right on the focused header, 16 px a press (`TableWidths`). Rows change through `Table::source_mut` or `set_source` and the row at the top of the view stays where it was (by `key`). Selection is by key (`SelectMode` None, Single, Multi; `TableSelection`; Ctrl toggles and Shift ranges), the cursor row (`TableCursor`) is ringed while the table has visible focus, and `ValueChange<TableSelection>`, `RowActivated` (Enter, South, a double click) and `SortBy` are the player's. Keys: Up, Down, Page Up, Page Down, Home, End (the first and last row of the data), Space, Ctrl+A, the D-pad (repeating), the triggers and South; Up from the first row and Down from the last move focus on.
+- `model::{natural_cmp, table_window, table_step, TableStep, table_anchor, column_resize, TABLE_LEAST_COLUMN}`: the engine-free maths, unit-tested and doctested.
+- `examples/table`, `docs/research/table.md`, `docs/guide/tables.md`, `docs/media/table.gif` and `tests/table.rs` (24 tests).
+
+### Changed
+
+- `Role` gains eleven variants (`Table`, `TableHeader`, `TableHeaderCell`, `TableSortUp`, `TableSortDown`, `TableEdge`, `TableView`, `TableRows`, `TableRow`, `TableCell`, `TableCellText`): a `match` on it that has no wildcard needs them. A table's viewport carries a `ListView` (its `rows` is `TableRows`), so `update_lists` shows its rail and a game's query of `ListView`'s `ScrollPosition` reaches a table's scroll. `navigate_by_input` leaves Up and Down to a focused table that has a row that way and Ctrl and Left or Right to a focused table header.
+
 ## [0.18.0] - 2026-11-01
 
 ### Added

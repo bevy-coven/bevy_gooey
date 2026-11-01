@@ -142,6 +142,7 @@ mod scale;
 mod shortcut;
 mod skin;
 mod split;
+mod table;
 mod tabs;
 mod text;
 mod toast;
@@ -171,13 +172,14 @@ pub use model::{
     COMFORT_TARGET_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
     ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST,
     PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, SPLIT_KEY_STEP_PX, STICK_PUSH,
-    TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
-    contrast_ratio, dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone,
-    fuzzy_score, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, nearest_step,
-    pad_name, page_target, relative_luminance, repeat_steps, scroll_to_reveal, shortcut_conflicts,
-    shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row, split_clamp,
-    split_drag, split_mins, tab_step, toast_alpha, toast_grow, toast_hold, toast_life,
-    window_ui_scale,
+    TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TableStep, choice_next, choice_step,
+    cie_lightness, column_resize, composite, contrast_ratio, dock_drop_rect, dock_edge_zone,
+    dock_neighbour, dock_tab_slot, dock_zone, fuzzy_score, is_modifier_key, key_name, list_height,
+    meter_fraction, mouse_name, natural_cmp, nearest_step, pad_name, page_target,
+    relative_luminance, repeat_steps, scroll_to_reveal, shortcut_conflicts, shortcut_label,
+    slider_fraction, slider_text, snap_line_width, snap_to_row, split_clamp, split_drag,
+    split_mins, tab_step, table_anchor, table_step, table_window, toast_alpha, toast_grow,
+    toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -201,6 +203,10 @@ pub use split::{
     Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, split_by_pad,
     update_splits,
 };
+pub use table::{
+    Column, RowActivated, RowSource, SelectMode, SortBy, Table, TableCursor, TableRow, TableRows,
+    TableSelection, TableSort, TableWidths, table_by_input, update_tables,
+};
 pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
 pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
@@ -212,7 +218,8 @@ pub use widgets::{
     binding, button, check_item, choice, command_palette, context_menu, dialog, dock, heading,
     interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter, pad_style, panel,
     popover, popover_modal, prompt, prompts, radio_item, screen, separator, skin_preset, slider,
-    split, submenu, surface, tab_page, tabs, text_input, text_size, toast, toast_alert, toggle,
+    split, submenu, surface, tab_page, table, tabs, text_input, text_size, toast, toast_alert,
+    toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -286,6 +293,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<SplitAxis>()
             .register_type::<SplitFraction>()
             .register_type::<SplitMin>()
+            .register_type::<TableSort>()
+            .register_type::<SelectMode>()
+            .register_type::<TableRows>()
             .register_type::<SplitDivider>()
             .register_type::<Tooltip>()
             .register_type::<Placement>()
@@ -327,6 +337,7 @@ impl Plugin for GooeyStylePlugin {
                     dock::update_dock_drag,
                     update_tabs,
                     update_splits,
+                    update_tables,
                     apply_skin,
                     update_meters,
                     update_sliders,
@@ -391,7 +402,11 @@ impl Plugin for GooeyNavPlugin {
                         fit_menus,
                     )
                         .chain(),
-                    navigate_by_input.run_if(not_capturing),
+                    (
+                        navigate_by_input.run_if(not_capturing),
+                        table_by_input.run_if(not_capturing),
+                    )
+                        .chain(),
                     (
                         gamepad_adjust.run_if(not_capturing),
                         split_by_pad.run_if(not_capturing),
