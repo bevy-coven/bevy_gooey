@@ -19,6 +19,7 @@ use crate::model::{
     TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height, snap_line_width,
 };
 use crate::popover::{PopoverPanel, placement_of};
+use crate::table::TableRow;
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
 
@@ -105,6 +106,12 @@ const DIALOG_MAX_TEXT_SIZES: f32 = 36.0;
 const DIALOG_ROOM_FACTOR: f32 = 1.5;
 /// How much of the ring's colour the landing of a carried tab lets over the panels it covers.
 const DOCK_DROP_ALPHA: f32 = 0.22;
+/// How much of the raised fill a table's banded row has: half, so the band is a hint under the text
+/// and never a second look.
+const TABLE_BAND_ALPHA: f32 = 0.5;
+/// A table's sort mark is this share of a choice's chevron: it stands beside a title, not in a
+/// target of its own.
+const TABLE_SORT_MARK_SCALE: f32 = 0.8;
 
 /// The share of the window, on each side, that a dialog's scrim and a prompts legend keep clear: a
 /// TV may not show the outer 5%, so nothing a player must read or press stands there.
@@ -670,6 +677,17 @@ impl GooeySkin {
         }
     }
 
+    /// The height of one row of a [`crate::table`], logical px: a button's, so a thumb or a pad's
+    /// focus jump hits it, and a whole number of pixels so ten thousand of them add up to what the
+    /// layout lays out. Every row is exactly this tall: it is the one fact that lets a table draw
+    /// only the rows in view.
+    pub fn table_pitch(&self) -> f32 {
+        let text = self.text_size * self.text_scale;
+        (text * LIST_LINE_TEXT_SIZES + self.pad() * LIST_PADDING_FACTOR)
+            .max(self.target())
+            .ceil()
+    }
+
     /// This skin with every colour taken from `look` and every size kept, the text scale and a
     /// game's own gap and padding included: the step of a [`crate::skin_preset`] row, so a player
     /// who set 200% text and then asks for high contrast has both.
@@ -1061,6 +1079,36 @@ pub enum Role {
     /// A list's thumb, the share of the rail the viewport is of the content: [`GooeySkin::text_muted`],
     /// [`GooeySkin::text`] under the pointer and [`GooeySkin::accent`] while dragged.
     ListThumb,
+    /// A [`crate::table`]'s root: a header over the viewport; not drawn.
+    Table,
+    /// A table's header strip: a row of [`Role::TableHeaderCell`]s, as wide as its rows (the same
+    /// lane on its right as the rail's); not drawn.
+    TableHeader,
+    /// One column's header: a button's look and size with the column's title, the sort mark
+    /// after it, and the focus ring.
+    TableHeaderCell,
+    /// The mark of an ascending sort, after a header's title: a chevron pointing up in the
+    /// title's colour.
+    TableSortUp,
+    /// The mark of a descending sort: a chevron pointing down.
+    TableSortDown,
+    /// A column's resize edge: [`crate::MIN_TARGET_PX`] wide over the border between two headers,
+    /// a [`Role::SplitGrip`] in its middle.
+    TableEdge,
+    /// A table's viewport: a clipped column [`crate::TableRows`] rows tall, with a lane on its
+    /// right for the rail; the same as a list's.
+    TableView,
+    /// The column of the pool's rows inside the viewport, padded above and below by the height
+    /// of the rows not drawn; not drawn.
+    TableRows,
+    /// One row of the pool: no fill at rest (a quiet band on every second row), [`GooeySkin::hovered`]
+    /// under the pointer, [`GooeySkin::accent`] while selected, the focus ring while it is the
+    /// cursor of a focused table.
+    TableRow,
+    /// One cell's box: a column wide, one line high, cutting what does not fit; not drawn.
+    TableCell,
+    /// A cell's text: [`GooeySkin::text`], or [`GooeySkin::accent_text`] on a selected row.
+    TableCellText,
     /// A [`crate::split`]'s root: a row or a column of two panes and the divider between them; not
     /// drawn.
     Split,
@@ -1232,6 +1280,8 @@ struct State {
     open: bool,
     /// A menu item whose menu has a check or a radio item in it, so it keeps the mark slot.
     marked: bool,
+    /// A row of a table that is an odd one of the display, drawn with a quiet band.
+    band: bool,
 }
 
 impl Default for State {
@@ -1254,6 +1304,7 @@ impl Default for State {
             focused: false,
             open: false,
             marked: false,
+            band: false,
         }
     }
 }
@@ -1273,6 +1324,7 @@ type StateQuery = (
     Has<Capturing>,
     Has<MenuOpen>,
     Has<MenuMarked>,
+    Option<&'static TableRow>,
     Option<&'static Role>,
 );
 
@@ -1294,7 +1346,12 @@ type Restyle = (
         Changed<ChoiceValue>,
         Changed<ComputedUiRenderTargetInfo>,
         Added<Capturing>,
-        Or<(Added<MenuOpen>, Added<PopoverPanel>, Added<MenuMarked>)>,
+        Or<(
+            Added<MenuOpen>,
+            Added<PopoverPanel>,
+            Added<MenuMarked>,
+            Changed<TableRow>,
+        )>,
     )>,
 );
 
@@ -1326,6 +1383,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
                 | Role::PaletteField
                 | Role::MenuItem
                 | Role::PaletteRow
+                | Role::TableRow
                 | Role::SplitDivider
         )
     )
@@ -1395,6 +1453,7 @@ pub fn apply_skin(
                     capturing,
                     open,
                     marked,
+                    row,
                     role,
                 )| {
                     State {
@@ -1417,9 +1476,11 @@ pub fn apply_skin(
                         at_end: choice.is_some_and(|(value, count)| value.0 + 1 >= count.0),
                         rows: list.map_or(0.0, |list| list.rows),
                         capturing,
-                        focused: look.focused == Some(entity),
+                        focused: look.focused == Some(entity)
+                            || row.is_some_and(|r| r.cursor && look.focused == Some(r.table)),
                         open,
                         marked,
+                        band: row.is_some_and(|r| r.index % 2 == 1),
                     }
                 },
             )
@@ -1443,6 +1504,9 @@ pub fn apply_skin(
                                 | Role::Toast
                                 | Role::MenuItem
                                 | Role::PaletteRow
+                                | Role::TableRow
+                                | Role::TableHeaderCell
+                                | Role::TableEdge
                                 | Role::SplitDivider
                         )
                     )
@@ -1513,6 +1577,8 @@ pub fn apply_skin(
                             | Role::TextField
                             | Role::MenuItem
                             | Role::MenuTitle
+                            | Role::TableRow
+                            | Role::TableHeaderCell
                             | Role::SplitDivider
                     )
                 })
@@ -1587,7 +1653,7 @@ fn restyle(
     let fill = match role {
         Role::Panel if in_dialog => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
-        Role::Button => Some(if state.disabled {
+        Role::Button | Role::TableHeaderCell => Some(if state.disabled {
             skin.surface
         } else if state.pressed {
             skin.accent
@@ -1648,6 +1714,20 @@ fn restyle(
         )),
         Role::MeterFill => Some(skin.accent),
         Role::ListRail => Some(skin.surface_raised),
+        // A row has no fill at rest but a quiet band on every second one (never the only mark of
+        // anything): lit by the pointer like a button, and by the accent while selected, with
+        // the text colour inverted on it.
+        Role::TableRow => Some(if state.disabled {
+            Color::NONE
+        } else if state.selected {
+            skin.accent
+        } else if state.hovered {
+            skin.hovered()
+        } else if state.band {
+            skin.surface_raised.with_alpha(TABLE_BAND_ALPHA)
+        } else {
+            Color::NONE
+        }),
         // The divider is the list rail's colour, lit like a button under the pointer and while held.
         Role::SplitDivider => Some(if state.hovered || state.pressed {
             skin.hovered()
@@ -1753,6 +1833,15 @@ fn restyle(
         | Role::List
         | Role::ListView
         | Role::ListRows
+        | Role::Table
+        | Role::TableHeader
+        | Role::TableSortUp
+        | Role::TableSortDown
+        | Role::TableEdge
+        | Role::TableView
+        | Role::TableRows
+        | Role::TableCell
+        | Role::TableCellText
         | Role::Split
         | Role::SplitPane
         | Role::Dock
@@ -1813,10 +1902,17 @@ fn restyle(
         | Role::BindingCap
         | Role::PromptKey
         | Role::PromptButton => Some(BorderColor::all(skin.outline)),
-        Role::Button | Role::Tab if look.focused == Some(entity) => {
+        Role::Button | Role::Tab | Role::TableHeaderCell if look.focused == Some(entity) => {
             Some(BorderColor::all(skin.focus_ring))
         }
-        Role::Button | Role::Tab => Some(BorderColor::all(Color::NONE)),
+        Role::Button | Role::Tab | Role::TableHeaderCell => Some(BorderColor::all(Color::NONE)),
+        // The ring on the cursor's row; a sort mark is drawn in its header's ink.
+        Role::TableRow => Some(BorderColor::all(if state.focused {
+            skin.focus_ring
+        } else {
+            Color::NONE
+        })),
+        Role::TableSortUp | Role::TableSortDown => Some(BorderColor::all(menu_ink(owner, skin))),
         // A row has no fill of its own, so its border speaks: the ring when focused, the outline
         // under the pointer, nothing at rest.
         Role::Toggle | Role::Slider | Role::Choice | Role::Binding => {
@@ -1892,7 +1988,7 @@ fn restyle(
                 next.column_gap = Val::Px(skin.gap);
                 next.row_gap = Val::Px(skin.gap);
             }
-            Role::Button | Role::Tab => {
+            Role::Button | Role::Tab | Role::TableHeaderCell => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
@@ -2189,15 +2285,59 @@ fn restyle(
             // rail's width and a gap of air, always, so rows never change width when others come
             // and go. The padding is inside the clip, so the content stops short of the rail and
             // still counts toward what scrolls.
-            Role::ListView => {
-                let row = (text_px * LIST_LINE_TEXT_SIZES
-                    + skin.pad() * LIST_PADDING_FACTOR
-                    + 2.0 * line)
-                    .max(skin.target());
-                next.max_height = Val::Px(list_height(state.rows, row, skin.gap));
+            Role::ListView | Role::TableView => {
+                // A table's rows touch and are one pitch tall; a list's are a button's height and a
+                // gap apart.
+                let (row, gap) = if *role == Role::TableView {
+                    (skin.table_pitch(), 0.0)
+                } else {
+                    let row = (text_px * LIST_LINE_TEXT_SIZES
+                        + skin.pad() * LIST_PADDING_FACTOR
+                        + 2.0 * line)
+                        .max(skin.target());
+                    (row, skin.gap)
+                };
+                next.max_height = Val::Px(list_height(state.rows, row, gap));
                 next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
             }
             Role::ListRows => next.row_gap = Val::Px(skin.gap),
+            // The header is as wide as the rows: the same lane on its right as the viewport's.
+            Role::TableHeader => {
+                next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
+            }
+            // One pitch high, the ring inside its box so a row never changes size.
+            Role::TableRow => {
+                next.height = Val::Px(skin.table_pitch());
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+            }
+            // The text stands where a header's title does: a frame and a padding in.
+            Role::TableCell => {
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::ZERO);
+            }
+            // A chevron of two borders, turned an eighth of a turn by the widget: up keeps its top
+            // and left, down its bottom and right.
+            Role::TableSortUp | Role::TableSortDown => {
+                let size = chevron * TABLE_SORT_MARK_SCALE;
+                next.width = Val::Px(size);
+                next.height = Val::Px(size);
+                next.margin = UiRect::left(Val::Px(skin.gap));
+                next.flex_shrink = 0.0;
+                let line = Val::Px(line);
+                next.border = if *role == Role::TableSortUp {
+                    UiRect {
+                        top: line,
+                        left: line,
+                        ..UiRect::ZERO
+                    }
+                } else {
+                    UiRect {
+                        bottom: line,
+                        right: line,
+                        ..UiRect::ZERO
+                    }
+                };
+            }
             // A channel the target's minimum wide (or high), as long as the split, framed only by
             // the focus ring; the grip's own size is laid out with it.
             Role::SplitDivider => {
@@ -2367,6 +2507,15 @@ fn restyle(
             let color = if parent.disabled {
                 skin.text_muted
             } else if parent.selected || parent.pressed {
+                skin.accent_text
+            } else {
+                skin.text
+            };
+            Some((color, &look.fonts.body, skin.text_size))
+        }
+        // A cell's text is the row's ink: inverted on the accent of a selected row.
+        Role::TableCellText => {
+            let color = if owner.selected {
                 skin.accent_text
             } else {
                 skin.text

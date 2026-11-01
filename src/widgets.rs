@@ -53,6 +53,7 @@ use crate::split::{
     divider_on_drag_end, divider_on_drag_start, divider_on_key_input, divider_on_press,
     divider_on_release, split_self_update, toggle_split,
 };
+use crate::table::{Column, RowSource, table_bundle};
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::text::{
     TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
@@ -1058,30 +1059,75 @@ where
                     )],
                 ))
                 .id();
-            // The thumb has no `Node`: Bevy lays it out itself, after layout, from the viewport.
-            // The rail is hidden until `update_lists` finds the rows do not fit.
-            parent.spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    top: Val::Px(0.0),
-                    bottom: Val::Px(0.0),
-                    right: Val::Px(0.0),
-                    display: Display::None,
-                    ..default()
-                },
-                Role::ListRail,
-                Scrollbar::new(view, ControlOrientation::Vertical, LIST_MIN_THUMB),
-                children![(
-                    Role::ListThumb,
-                    ScrollbarThumb {
-                        border_radius: BorderRadius::MAX,
-                        border: UiRect::ZERO,
-                    },
-                    Hovered::default(),
-                )],
-            ));
+            parent.spawn(list_rail(view));
         })),
     )
+}
+
+/// A list's rail: the scrollbar down the viewport's right edge. The thumb has no `Node`: Bevy
+/// lays it out itself, after layout, from the viewport. The rail is hidden until `update_lists`
+/// finds the rows do not fit.
+pub(crate) fn list_rail(view: Entity) -> impl Bundle {
+    (
+        Node {
+            position_type: PositionType::Absolute,
+            top: Val::Px(0.0),
+            bottom: Val::Px(0.0),
+            right: Val::Px(0.0),
+            display: Display::None,
+            ..default()
+        },
+        Role::ListRail,
+        Scrollbar::new(view, ControlOrientation::Vertical, LIST_MIN_THUMB),
+        children![(
+            Role::ListThumb,
+            ScrollbarThumb {
+                border_radius: BorderRadius::MAX,
+                border: UiRect::ZERO,
+            },
+            Hovered::default(),
+        )],
+    )
+}
+
+/// A table of ten thousand rows in a dozen entities: a header of `columns` over rows from a
+/// [`RowSource`], of which only the rows in view are spawned (the rows in view and one more,
+/// whatever the length). A click on a sortable header sorts by the column (the first click
+/// ascending, each next one turning it round) and sends [`SortBy`](crate::SortBy); a column's
+/// right edge is dragged to size it (Ctrl and Left or Right on its focused header does it 16 px a
+/// press, for no drag); a click selects a row (see [`SelectMode`](crate::SelectMode): one by
+/// default, `Multi` for Ctrl and Shift) and sends `ValueChange<TableSelection>`
+/// ([`TableSelection`](crate::TableSelection)), and a double click or Enter opens it
+/// ([`RowActivated`](crate::RowActivated)). Rows change through the [`Table`](crate::Table)
+/// component and the player keeps their place.
+///
+/// The table is one tab stop with a cursor row, like a list box: Up, Down, the Page keys, Home and
+/// End (the first and last rows of the data) move it, Space selects it, and the D-pad, the
+/// triggers and South do the same on a pad. Every row is a button's height and every cell one
+/// line, cut at its column's edge: a row never changes size, which is what lets the table skip the
+/// rows it does not draw. It stands [`TableRows`](crate::TableRows) rows tall (8.5 unless the game
+/// says) with a rail that shows while there is more.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// let rows: Vec<Vec<String>> = (0..10_000)
+///     .map(|i| vec![format!("Item {i}"), format!("{}", i * 7 % 100)])
+///     .collect();
+/// commands.spawn((
+///     panel(),
+///     children![(
+///         table([Column::new("Name").width(14.0), Column::new("Qty").width(6.0)], rows),
+///         SelectMode::Multi,
+///         observe(|sort: On<SortBy>| info!("sorted by {}", sort.column)),
+///         observe(|opened: On<RowActivated>| info!("opened row {}", opened.key)),
+///     )],
+/// ));
+/// # }
+/// ```
+pub fn table(columns: impl IntoIterator<Item = Column>, rows: impl RowSource) -> impl Bundle {
+    table_bundle(columns, rows)
 }
 
 /// Tabs: a strip of one- or two-word labels above pages of widgets, one page shown at a time. The
