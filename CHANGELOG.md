@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-11-01
+
 ### Changed
 
 - The integration tests are one executable, `all` (`autotests = false`, `tests/all.rs`; every other file in `tests/` is a module of it), so Bevy is linked once and not 34 times (650 to 790 MB each). The 647 tests are unchanged (the sorted names match, plus `every_test_file_is_a_module`, which fails when a `tests/*.rs` file is not declared). Nothing a consumer sees changes.
