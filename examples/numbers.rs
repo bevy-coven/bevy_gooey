@@ -311,6 +311,7 @@ fn find(
 
 /// `GOOEY_KEYS`: one step every `GOOEY_KEY_EVERY` frames, as the window's own input. A drag moves
 /// the pointer onto the label, presses, moves a little each frame and releases.
+#[allow(clippy::too_many_arguments)]
 fn stage(
     capture: Option<Res<Capture>>,
     window: Query<(Entity, &Window), With<PrimaryWindow>>,
