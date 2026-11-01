@@ -11,7 +11,9 @@
 //! - **Audio**, **Display** and **Controls** are the tabs of one settings widget: click a tab, Left
 //!   and Right on a focused tab, or Ctrl+PageDown and Ctrl+PageUp (on a pad, `LB` and `RB`) turn its
 //!   page, and each turn logs the page. Audio holds **Volume**, a slider, and **Subtitles**, a
-//!   switch; Display holds **Quality** and **Window**, choices; Controls holds two buttons. Left and
+//!   switch; Display holds **Quality** and **Window**, choices; Controls holds **Jump**, a key row
+//!   (Enter starts a capture, the next key is the new binding, Escape exits, and it logs and toasts
+//!   the key), and **Use**, a pad row (it waits for a pad button). Left and
 //!   Right step a focused choice (it stops at its ends; Home and End jump; Enter, Space and South
 //!   cycle it round; a click on an arrow steps it) and a focused slider (Home and End jump, the
 //!   D-pad too, held to repeat; a click or a drag sets it): each logs the value it settles on.
@@ -43,7 +45,8 @@
 //! wheel, a drag on its thumb and a click on its rail, and follows focus (the next row stays in
 //! view); PageUp and PageDown move a viewport. `GOOEY_KEYS` tokens `slots` (focus the first slot),
 //! `pagedown`, `pageup` and `wheel` (one notch over the list) stage it. `nexttab` and `prevtab`
-//! press Ctrl+PageDown and Ctrl+PageUp, and `tab1`, `tab2` and `tab3` click that tab.
+//! press Ctrl+PageDown and Ctrl+PageUp, and `tab1`, `tab2` and `tab3` click that tab. `q` and `f` press
+//! those keys, to bind one to Jump (`GOOEY_KEYS=tab3,down,enter,q`).
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::ecs::spawn::SpawnIter;
@@ -254,6 +257,8 @@ fn main() {
                     "escape" => Some(Staged::Key(KeyCode::Escape)),
                     "tab" => Some(Staged::Key(KeyCode::Tab)),
                     "space" => Some(Staged::Key(KeyCode::Space)),
+                    "q" => Some(Staged::Key(KeyCode::KeyQ)),
+                    "f" => Some(Staged::Key(KeyCode::KeyF)),
                     "home" => Some(Staged::Key(KeyCode::Home)),
                     "end" => Some(Staged::Key(KeyCode::End)),
                     "pagedown" => Some(Staged::Key(KeyCode::PageDown)),
@@ -401,8 +406,18 @@ fn setup(mut commands: Commands) {
                                         choice("Window", ["Windowed", "Borderless", "Fullscreen"], 0),
                                     ]),
                                     tab_page(children![
-                                        button("Rebind keys"),
-                                        button("Gamepad layout"),
+                                        (
+                                            binding("Jump", Binding::Key(KeyCode::Space)),
+                                            observe(
+                                                |change: On<ValueChange<Binding>>,
+                                                 mut commands: Commands| {
+                                                    let name = change.value.label(PadStyle::Xbox);
+                                                    info!("gooey: jump is {name}");
+                                                    commands.spawn(toast(format!("Jump is {name}")));
+                                                }
+                                            ),
+                                        ),
+                                        binding("Use", Binding::Pad(GamepadButton::South)),
                                     ]),
                                 ]
                             ),
