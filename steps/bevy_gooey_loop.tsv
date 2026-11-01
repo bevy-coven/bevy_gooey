@@ -7011,3 +7011,381 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 53	383	log	model	model		2026-11-01T15:20:49Z	1.5	
 53	384	log	tool	push gate	bash	2026-11-01T15:20:51Z	2.3	Committing and pushing final log :: cd ~/bevy_gooey_loop && git add docs/loop-log.md && git commit -qm "Loop log: iteration 25, release v0.12.0 and cleanup" && git push -q origin main 2>&1 | tail 
 53	385	log	model	model		2026-11-01T15:20:53Z	8.7	
+54	1	orient	model	model		2026-11-01T15:21:30Z	5.7	
+54	2	orient	tool	phase mark	bash	2026-11-01T15:21:36Z	1.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; git status --short | head; git branch --show-current; git fetch -q origi
+54	3	orient	tool	github	bash	2026-11-01T15:21:36Z	1.3	cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+54	4	orient	model	model		2026-11-01T15:21:37Z	4.3	
+54	5	choose	tool	phase mark	bash	2026-11-01T15:21:41Z	1.5	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; gh issue view 9 --repo bevy-coven/bevy_gooey --json body,comments --jq '
+54	6	choose	model	model		2026-11-01T15:21:43Z	5.9	
+54	7	choose	tool	github	bash	2026-11-01T15:21:49Z	10.6	cd /home/ladvien/bevy_gooey_loop && for n in $(seq 9 33); do echo "#$n: $(gh issue view $n --repo bevy-coven/bevy_gooey --json title,body --jq '.title + " || " 
+54	8	choose	model	model		2026-11-01T15:21:59Z	4.1	
+54	9	choose	tool	github	bash	2026-11-01T15:22:03Z	0.4	cd /home/ladvien/bevy_gooey_loop && gh issue view 12 --repo bevy-coven/bevy_gooey --json body,comments --jq '.body, (.comments[]|.body)'; ls docs docs/research 
+54	10	choose	model	model		2026-11-01T15:22:04Z	22.3	
+54	11	orient	tool	phase mark	bash	2026-11-01T15:22:26Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; cat Cargo.toml | sed -n 1,80p; grep -n "bevy" src/model.rs | head; grep 
+54	12	orient	tool	read files	read	2026-11-01T15:22:26Z	0.1	src/binding.rs
+54	13	orient	model	model		2026-11-01T15:22:26Z	2.8	
+54	14	orient	tool	read files	read	2026-11-01T15:22:29Z	0.0	src/binding.rs:38-72
+54	15	orient	tool	read files	read	2026-11-01T15:22:29Z	0.0	src/binding.rs:233-364
+54	16	orient	model	model		2026-11-01T15:22:29Z	29.9	
+54	17	orient	tool	read files	read	2026-11-01T15:22:59Z	0.0	src/tooltip.rs
+54	18	orient	tool	search	grep	2026-11-01T15:22:59Z	0.1	Tooltip usage in src :: src --include=*.rs
+54	19	orient	model	model		2026-11-01T15:22:59Z	11.2	
+54	20	orient	tool	shell	bash	2026-11-01T15:23:10Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -rn "Tooltip(" --include=*.rs --include=*.md . | grep -v "^./target" | wc -l; grep -rn "Tooltip(" --include=*.rs --incl
+54	21	orient	model	model		2026-11-01T15:23:10Z	19.2	
+54	22	research	tool	phase mark	bash	2026-11-01T15:23:29Z	8.0	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; timeout 60 hs distill search "keyboard shortcuts discoverability menus
+54	23	research	tool	shell	bash	2026-11-01T15:23:29Z	8.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,60p docs/research/popover.md | cut -c1-400; grep -n "shortcut\|Shortcut\|chord" docs/research/*.md | head -20
+54	24	research	model	model		2026-11-01T15:23:37Z	7.4	
+54	25	research	tool	homestill	bash	2026-11-01T15:23:45Z	2.7	cd /home/ladvien/bevy_gooey_loop && timeout 60 hs distill search "keyboard shortcuts displayed in menus help users learn hotkeys" --output json 2>/dev/null | py
+54	26	research	tool	web	web_search	2026-11-01T15:23:45Z	5.7	Mac modifier order source :: Apple Human Interface Guidelines keyboards modifier keys order Control Option Shift Command shortcut display
+54	27	research	model	model		2026-11-01T15:23:51Z	5.1	
+54	28	research	tool	homestill	bash	2026-11-01T15:23:56Z	2.3	cd /home/ladvien/bevy_gooey_loop && timeout 60 hs distill search "keyboard shortcuts displayed in menus help users learn hotkeys" --output json 2>/dev/null | py
+54	29	research	tool	web	web_search	2026-11-01T15:23:56Z	6.3	Windows shortcut display convention :: Microsoft Windows keyboard shortcut guidelines display modifier order Ctrl+Shift+Alt "Ctrl+Shift" label in menu accelerator
+54	30	research	model	model		2026-11-01T15:24:02Z	32.7	
+54	31	research	tool	edit files	write	2026-11-01T15:24:35Z	0.0	Writing shortcut research note :: docs/research/shortcut.md
+54	32	research	model	model		2026-11-01T15:24:35Z	4.5	
+54	33	research	tool	shell	bash	2026-11-01T15:24:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "scikit" docs/research/*.md | head -3 | cut -c1-300
+54	34	research	model	model		2026-11-01T15:24:39Z	3.9	
+54	35	research	tool	shell	bash	2026-11-01T15:24:43Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -i 's/(`W17`-stem, in the corpus)/(corpus stem `W1728842521`)/; s/Ctrl+Shift+P labels "Ctrl+Shift+P" and, on a mac, "⇧⌘P
+54	36	research	model	model		2026-11-01T15:24:43Z	4.7	
+54	37	build	tool	phase mark	bash	2026-11-01T15:24:48Z	0.2	cd /home/ladvien/bevy_gooey_loop && sed -i 's/"⌘⇧P"/"⇧⌘P"/' docs/research/shortcut.md && grep -c "⌘⇧" docs/research/shortcut.md; git commit -qam "Research: shor
+54	38	build	model	model		2026-11-01T15:24:48Z	2.8	
+54	39	build	tool	read files	read	2026-11-01T15:24:51Z	0.0	src/lib.rs:112-262
+54	40	build	tool	shell	bash	2026-11-01T15:24:51Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 383,460p src/model.rs; grep -n "pub fn nearest_step\|pub fn pad_name\|pub fn mouse_name" src/model.rs
+54	41	build	model	model		2026-11-01T15:24:51Z	10.3	
+54	42	build	tool	shell	bash	2026-11-01T15:25:01Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "cfg(test)" src/model.rs; sed -n 476,530p src/model.rs; grep -n "fn key_name_" -A12 src/model.rs | head -30
+54	43	build	model	model		2026-11-01T15:25:02Z	11.0	
+54	44	build	tool	edit files	edit	2026-11-01T15:25:13Z	0.0	Add shortcut maths to model :: [src/model.rs#0000] PUT >508: + +/// Whether a key's `KeyCode` variant name is a modifier (`ShiftLeft`, `ControlRight`, `AltLeft`, +/// `SuperLeft`, `MetaRight`
+54	45	build	model	model		2026-11-01T15:25:13Z	4.2	
+54	46	build	tool	read files	read	2026-11-01T15:25:17Z	0.0	src/model.rs:510-522
+54	47	build	model	model		2026-11-01T15:25:17Z	9.3	
+54	48	build	tool	edit files	edit	2026-11-01T15:25:26Z	0.0	Add shortcut maths to model :: [src/model.rs#F3A4] PUT >518: + +/// Whether a key's `KeyCode` variant name is a modifier (`ShiftLeft`, `ControlRight`, `AltLeft`, +/// `SuperLeft`, `MetaRight`
+54	49	build	model	model		2026-11-01T15:25:26Z	28.4	
+54	50	build	tool	edit files	write	2026-11-01T15:25:55Z	0.0	Creating shortcut module :: src/shortcut.rs
+54	51	build	model	model		2026-11-01T15:25:55Z	7.5	
+54	52	build	tool	shell	bash	2026-11-01T15:26:02Z	0.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='src/model.rs' s=open(p).read() s=s.replace(''' code.strip_prefix(name) .is_some_and(|side| side
+54	53	build	model	model		2026-11-01T15:26:02Z	11.8	
+54	54	build	tool	edit files	edit	2026-11-01T15:26:14Z	0.0	Add Chord variant and chord capture :: [src/binding.rs#0662] PUT 15.=16: +use crate::prompt::InputDevice; +use crate::shortcut::{Modifiers, Shortcut}; +use crate::skin::Role; PUT 38.=38: +/// A `Chor
+54	55	build	model	model		2026-11-01T15:26:14Z	10.9	
+54	56	build	tool	edit files	edit	2026-11-01T15:26:25Z	0.0	Add Chord variant and chord capture :: [src/binding.rs#0662] PUT 14.=14: +use crate::model::{PadStyle, is_modifier_key, key_name, mouse_name, pad_name}; PUT 16.=17: +use crate::prompt::InputDevice; +
+54	57	build	model	model		2026-11-01T15:26:25Z	8.2	
+54	58	build	tool	edit files	edit	2026-11-01T15:26:33Z	0.0	Add Chord variant and chord capture :: [src/binding.rs#0662] PUT 14.=14: +use crate::model::{PadStyle, is_modifier_key, key_name, mouse_name, pad_name}; PUT 16.=17: +use crate::prompt::InputDevice; +
+54	59	build	model	model		2026-11-01T15:26:33Z	7.4	
+54	60	build	tool	edit files	edit	2026-11-01T15:26:41Z	0.0	Wire shortcut module in lib.rs :: [src/lib.rs#DE95] PUT 130.=130: +mod shortcut; +mod skin; PUT 153.=156: + contrast_ratio, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, + 
+54	61	build	model	model		2026-11-01T15:26:41Z	8.3	
+54	62	build	tool	shell	bash	2026-11-01T15:26:49Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "PromptKey" src/*.rs | head -30; grep -n "pub fn prompt" -B2 -A45 src/widgets.rs | head -100
+54	63	build	model	model		2026-11-01T15:26:49Z	4.0	
+54	64	build	tool	shell	bash	2026-11-01T15:26:53Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1955,1985p src/skin.rs; sed -n 1612,1625p src/skin.rs; sed -n 1775,1800p src/skin.rs; sed -n 2110,2160p src/skin.rs
+54	65	build	model	model		2026-11-01T15:26:53Z	8.6	
+54	66	build	tool	read files	read	2026-11-01T15:27:01Z	0.0	src/tooltip.rs:1-12
+54	67	build	tool	read files	read	2026-11-01T15:27:01Z	0.0	src/tooltip.rs:62-126
+54	68	build	model	model		2026-11-01T15:27:01Z	16.7	
+54	69	build	tool	edit files	edit	2026-11-01T15:27:18Z	0.0	Tooltip with shortcut chip :: [src/tooltip.rs#67A2] PUT 11.=11: +use crate::shortcut::Shortcut; +use crate::skin::Role; PUT 28.=38: +/// ``` +/// # use bevy::prelude::*; +/// # use bevy_gooe
+54	70	build	model	model		2026-11-01T15:27:18Z	4.9	
+54	71	build	tool	read files	read	2026-11-01T15:27:23Z	0.0	src/tooltip.rs:134-150
+54	72	build	model	model		2026-11-01T15:27:23Z	2.4	
+54	73	build	tool	edit files	edit	2026-11-01T15:27:26Z	0.0	Remove stray brace :: [src/tooltip.rs#0959] CUT 141.=141
+54	74	build	model	model		2026-11-01T15:27:26Z	5.2	
+54	75	build	tool	read files	read	2026-11-01T15:27:31Z	0.0	src/skin.rs:1781-1787
+54	76	build	model	model		2026-11-01T15:27:31Z	2.9	
+54	77	build	tool	edit files	edit	2026-11-01T15:27:34Z	0.0	Tooltip row layout for keycap :: [src/skin.rs#F6CD] PUT >1785: + // The line and, when the command has one, its shortcut's keycap beside it. + next.align_items = AlignItems::Center; + next.colu
+54	78	build	model	model		2026-11-01T15:27:34Z	3.6	
+54	79	build	tool	read files	read	2026-11-01T15:27:37Z	0.0	xd://ast_edit
+54	80	build	model	model		2026-11-01T15:27:37Z	2.6	
+54	81	build	tool	edit files	write	2026-11-01T15:27:40Z	0.1	Migrate Tooltip callers :: xd://ast_edit
+54	82	build	model	model		2026-11-01T15:27:40Z	4.4	
+54	83	build	tool	edit files	write	2026-11-01T15:27:44Z	0.0	Apply codemod :: xd://resolve
+54	84	build	tool	shell	bash	2026-11-01T15:27:44Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn "Tooltip(\|\.0 != \|tooltip\.0\|Tooltip\b.*\.0" tests examples src --include=*.rs | grep -v "Tooltip::" | head; sed
+54	85	build	model	model		2026-11-01T15:27:44Z	2.3	
+54	86	build	tool	edit files	write	2026-11-01T15:27:47Z	0.1	Apply codemod :: xd://resolve
+54	87	build	model	model		2026-11-01T15:27:47Z	3.0	
+54	88	build	tool	cargo build	bash	2026-11-01T15:27:50Z	3.8	cd /home/ladvien/bevy_gooey_loop && grep -rn "Tooltip(" tests examples src --include=*.rs | grep -v "Tooltip::"; grep -rn "Tooltip" tests/*.rs | grep -v "Toolti
+54	89	build	model	model		2026-11-01T15:27:54Z	4.6	
+54	90	build	tool	shell	bash	2026-11-01T15:27:58Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -i '152s/Binding::Key(_) | Binding::Mouse(_) =>/Binding::Key(_) | Binding::Mouse(_) | Binding::Chord(_) =>/' src/prompt.
+54	91	build	model	model		2026-11-01T15:27:58Z	2.7	
+54	92	build	tool	cargo build	bash	2026-11-01T15:28:01Z	7.6	cd /home/ladvien/bevy_gooey_loop && sed -i '379s/Tooltip("Sound, controls and display".into())/Tooltip::new("Sound, controls and display")/' examples/gallery.rs
+54	93	build	model	model		2026-11-01T15:28:09Z	2.8	
+54	94	build	tool	cargo build	bash	2026-11-01T15:28:12Z	1.8	cd /home/ladvien/bevy_gooey_loop && sed -i '490s/\.0 = /.text = /' tests/tooltip.rs && CARGO_BUILD_JOBS=2 cargo check --all-targets --all-features 2>&1 | tail -
+54	95	build	model	model		2026-11-01T15:28:13Z	4.3	
+54	96	build	tool	shell	bash	2026-11-01T15:28:18Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,200p tests/binding.rs
+54	97	build	model	model		2026-11-01T15:28:18Z	3.3	
+54	98	build	tool	shell	bash	2026-11-01T15:28:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 200,330p tests/binding.rs; grep -n "fn .*Enter\|start_capture\|fn start" tests/binding.rs | head; grep -n "fn \(hover
+54	99	build	model	model		2026-11-01T15:28:21Z	5.7	
+54	100	build	tool	shell	bash	2026-11-01T15:28:27Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 20,160p tests/tooltip.rs
+54	101	build	model	model		2026-11-01T15:28:27Z	58.3	
+54	102	build	tool	edit files	write	2026-11-01T15:29:25Z	0.0	Writing shortcut tests :: tests/shortcut.rs
+54	103	build	model	model		2026-11-01T15:29:25Z	6.9	
+54	104	build	tool	cargo test	bash	2026-11-01T15:29:32Z	16.6	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test shortcut 2>&1 | tail -60
+54	105	build	model	model		2026-11-01T15:29:49Z	31.9	
+54	106	build	tool	shell	bash	2026-11-01T15:30:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "fn keycap" -A8 src/tooltip.rs
+54	107	build	model	model		2026-11-01T15:30:20Z	5.9	
+54	108	build	tool	edit files	edit	2026-11-01T15:30:26Z	0.0	Let a long keycap wrap inside the box :: [src/tooltip.rs#D19B] PUT 151.=157: +fn keycap(shortcut: Shortcut) -> impl Bundle { + ( + // A chord wider than the room the window leaves wraps at its spaces (
+54	109	build	tool	cargo test	bash	2026-11-01T15:30:26Z	1.5	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test shortcut 2>&1 | grep -E "^test |panicked|the cap|test resul
+54	110	build	model	model		2026-11-01T15:30:28Z	4.7	
+54	111	build	tool	edit files	edit	2026-11-01T15:30:33Z	0.0	Let a long keycap wrap inside the box :: [src/tooltip.rs#D19B] PUT 151.=157: +fn keycap(shortcut: Shortcut) -> impl Bundle { + ( + // A chord wider than the room the window leaves wraps at its spaces (
+54	112	build	tool	cargo test	bash	2026-11-01T15:30:33Z	8.6	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test shortcut 2>&1 | grep -E "^test .*FAIL|panicked|the cap|test
+54	113	build	model	model		2026-11-01T15:30:41Z	18.1	
+54	114	build	tool	read files	read	2026-11-01T15:30:59Z	0.0	src/tooltip.rs:215-275
+54	115	build	tool	read files	read	2026-11-01T15:30:59Z	0.0	src/tooltip.rs:76-96
+54	116	build	model	model		2026-11-01T15:30:59Z	13.1	
+54	117	build	tool	edit files	edit	2026-11-01T15:31:12Z	0.0	Track keycap width so the box never crops it :: [src/tooltip.rs#940B] PUT 88.=88: + pub(crate) room: f32, + /// The keycap's width, logical px, as last laid out (0 while the tooltip has no shortcut or has + /
+54	118	build	model	model		2026-11-01T15:31:12Z	7.0	
+54	119	build	tool	edit files	edit	2026-11-01T15:31:19Z	0.0	Track keycap width so the box never crops it :: [src/tooltip.rs#940B] PUT 88.=88: + pub(crate) room: f32, + /// The keycap's width, logical px, as last laid out (0 while the tooltip has no shortcut or has + /
+54	120	build	model	model		2026-11-01T15:31:19Z	4.9	
+54	121	build	tool	shell	bash	2026-11-01T15:31:24Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "fn tooltip_width" -B6 -A16 src/skin.rs; grep -n "tooltip_width(" src/skin.rs
+54	122	build	model	model		2026-11-01T15:31:24Z	8.3	
+54	123	build	tool	edit files	edit	2026-11-01T15:31:33Z	0.0	Box never narrower than its keycap :: [src/skin.rs#7819] PUT 2120.=2137: +/// A tooltip's widest box, logical px: a comfortable line of about 40 characters (24 text sizes), +/// narrowed to the room
+54	124	build	model	model		2026-11-01T15:31:33Z	4.9	
+54	125	build	tool	edit files	edit	2026-11-01T15:31:38Z	0.0	Box never narrower than its keycap :: [src/skin.rs#7819] PUT 2120.=2137: +/// A tooltip's widest box, logical px: a comfortable line of about 40 characters (24 text sizes), +/// narrowed to the room
+54	126	build	model	model		2026-11-01T15:31:38Z	6.2	
+54	127	build	tool	cargo test	bash	2026-11-01T15:31:44Z	10.9	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test shortcut 2>&1 | grep -E "^test .*FAIL|panicked|the cap|the 
+54	128	build	model	model		2026-11-01T15:31:55Z	6.9	
+54	129	build	tool	shell	bash	2026-11-01T15:32:01Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Modifiers::CTRL | Modifiers::SHIFT | Modifiers::ALT," -B2 -A8 tests/shortcut.rs
+54	130	build	model	model		2026-11-01T15:32:02Z	3.9	
+54	131	build	tool	edit files	edit	2026-11-01T15:32:05Z	0.0	Realistic 200% chord in test :: [tests/shortcut.rs#DB90] PUT 643.=650: + let chord = Shortcut::new(CTRL_SHIFT, KeyCode::PageDown); + let (_, tip) = tip_for( + &mut app, + Tooltip::new("Write t
+54	132	build	tool	cargo test	bash	2026-11-01T15:32:05Z	4.8	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test shortcut 2>&1 | grep -E "^test .*FAIL|panicked|the cap|the 
+54	133	build	model	model		2026-11-01T15:32:10Z	7.5	
+54	134	build	tool	cargo test	bash	2026-11-01T15:32:18Z	7.9	cd /home/ladvien/bevy_gooey_loop && cp src/skin.rs /tmp/skin.rs.g26 && sed -i 's/ if tip.cap > 0.0 {\n width.max/XX/; s/width.max(tip.cap + skin.gap/width.max(0
+54	135	build	model	model		2026-11-01T15:32:26Z	5.4	
+54	136	prove	tool	phase mark	bash	2026-11-01T15:32:31Z	4.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; CARGO_BUILD_JOBS=2 cargo fmt && CARGO_BUILD_JOBS=2 timeout 2400 cargo cli
+54	137	prove	model	model		2026-11-01T15:32:35Z	2.9	
+54	138	prove	tool	shell	bash	2026-11-01T15:32:38Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "struct Writes(u32);" -B2 tests/shortcut.rs; grep -n "^/// Every .ValueChange" tests/shortcut.rs
+54	139	prove	model	model		2026-11-01T15:32:38Z	3.0	
+54	140	prove	tool	edit files	edit	2026-11-01T15:32:41Z	0.0	Alias complex filter type :: [tests/shortcut.rs#4FFB] PUT <19: +/// What a tooltip's box writes when it is redrawn. +type Written = Or<(Changed<Text>, Changed<Node>, Changed<Tooltip>)>; + P
+54	141	prove	model	model		2026-11-01T15:32:41Z	3.8	
+54	142	prove	tool	edit files	edit	2026-11-01T15:32:45Z	0.0	Alias complex filter type :: [tests/shortcut.rs#DCBA] PUT <19: +/// What a tooltip's box writes when it is redrawn. +type Written = Or<(Changed<Text>, Changed<Node>, Changed<Tooltip>)>; + P
+54	143	prove	tool	cargo clippy	bash	2026-11-01T15:32:45Z	4.7	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 timeout 2400 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -30
+54	144	prove	model	model		2026-11-01T15:32:50Z	4.3	
+54	145	prove	tool	shell	bash	2026-11-01T15:32:54Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l examples/*.rs; sed -n 1,140p examples/popover.rs
+54	146	prove	model	model		2026-11-01T15:32:54Z	2.9	
+54	147	prove	tool	shell	bash	2026-11-01T15:32:57Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 140,401p examples/popover.rs
+54	148	prove	model	model		2026-11-01T15:32:57Z	42.9	
+54	149	prove	tool	edit files	write	2026-11-01T15:33:40Z	0.0	Creating shortcuts example :: examples/shortcuts.rs
+54	150	prove	model	model		2026-11-01T15:33:40Z	7.3	
+54	151	prove	tool	cargo build	bash	2026-11-01T15:33:47Z	60.0	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && echo "D=$DISPLAY T=$CARGO_TARGET_DIR"; CARGO_BUILD_JOBS=2 cargo fmt; (time CARGO_BUILD_JOBS=2 cargo build --release --exampl
+54	152	prove	model	model		2026-11-01T15:34:47Z	7.7	
+54	153	prove	tool	shell	bash	2026-11-01T15:34:55Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l README.md && grep -n "" README.md | sed -n 1,120p | cut -c1-260
+54	154	prove	bg	cargo build	bash	2026-11-01T15:33:53Z	61.6	bg_1 completed: echo "D=$DISPLAY T=$CARGO_TARGET_DIR"; CARGO_BUILD_JOBS=2 cargo fmt; (time CARGO_BUILD_JOBS=2 cargo build --release -...
+54	155	prove	model	model		2026-11-01T15:34:55Z	7.5	
+54	156	prove	tool	shell	bash	2026-11-01T15:35:03Z	5.4	cd /home/ladvien/bevy_gooey_loop && mkdir -p /tmp/g26m/after /tmp/g26m/frames && G="$CARGO_TARGET_DIR/release/examples/shortcuts" && GOOEY_FRAMES=200 GOOEY_SHOT
+54	157	prove	model	model		2026-11-01T15:35:08Z	2.3	
+54	158	prove	tool	read files	read	2026-11-01T15:35:10Z	0.0	/tmp/g26m/after/final.png
+54	159	prove	model	model		2026-11-01T15:35:10Z	13.4	
+54	160	prove	tool	shell	bash	2026-11-01T15:35:24Z	0.3	cd /tmp/g26m/frames && for n in 0008 0020 0036 0040; do magick f_$n.png -crop 560x420+360+150 +repage /tmp/g26m/c_$n.png; done; magick /tmp/g26m/c_0008.png /tmp
+54	161	prove	tool	read files	read	2026-11-01T15:35:24Z	0.3	/tmp/g26m/sheet.png
+54	162	prove	model	model		2026-11-01T15:35:24Z	3.9	
+54	163	prove	tool	shell	bash	2026-11-01T15:35:28Z	0.0	cd /tmp/g26m && ls | head; ls frames | head -3
+54	164	prove	model	model		2026-11-01T15:35:28Z	2.5	
+54	165	prove	tool	read files	read	2026-11-01T15:35:30Z	0.0	/tmp/g26m/sheet.png
+54	166	prove	model	model		2026-11-01T15:35:30Z	8.3	
+54	167	prove	tool	shell	bash	2026-11-01T15:35:39Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 125,200p src/binding.rs; sed -n 430,490p src/binding.rs; grep -rn "key_prompt\|pad_prompt" --include=*.rs --include=*
+54	168	prove	model	model		2026-11-01T15:35:39Z	6.6	
+54	169	prove	tool	edit files	edit	2026-11-01T15:35:45Z	0.0	Add chord prompt to BindingSettings :: [src/binding.rs#E497] PUT 142.=142: + pub pad_prompt: String, + /// What a chord row's keycap says while it waits. Default: "Press a shortcut, {exit} exits". + 
+54	170	prove	model	model		2026-11-01T15:35:45Z	4.7	
+54	171	prove	tool	search	grep	2026-11-01T15:35:50Z	0.0	Find prompt call :: src/binding.rs
+54	172	prove	model	model		2026-11-01T15:35:50Z	4.2	
+54	173	prove	tool	edit files	edit	2026-11-01T15:35:54Z	0.0	Add chord prompt to BindingSettings :: [src/binding.rs#E497] PUT 142.=142: + pub pad_prompt: String, + /// What a chord row's keycap says while it waits. Default: "Press a shortcut, {exit} exits". + 
+54	174	prove	model	model		2026-11-01T15:35:54Z	5.2	
+54	175	prove	tool	shell	bash	2026-11-01T15:35:59Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "start(&mut app, palette);" tests/shortcut.rs | head -2; grep -n 'let keymap: Vec' -A2 examples/shortcuts.rs; grep -
+54	176	prove	model	model		2026-11-01T15:35:59Z	3.7	
+54	177	prove	tool	edit files	edit	2026-11-01T15:36:03Z	0.0	Example polish and prompt test :: [examples/shortcuts.rs#6D9E] PUT 199.=199: + let mut keymap: Vec<(&str, Binding)> = rows.iter().map(|(c, v)| (c.0, v.0)).collect(); + keymap.sort_by_key(|(name,
+54	178	prove	model	model		2026-11-01T15:36:03Z	3.5	
+54	179	prove	tool	edit files	edit	2026-11-01T15:36:07Z	0.0	Example polish and prompt test :: [examples/shortcuts.rs#23DF] PUT 199.=199: + let mut keymap: Vec<(&str, Binding)> = rows.iter().map(|(c, v)| (c.0, v.0)).collect(); + keymap.sort_by_key(|(name,
+54	180	prove	model	model		2026-11-01T15:36:07Z	4.5	
+54	181	prove	tool	cargo test	bash	2026-11-01T15:36:11Z	28.9	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo fmt && (CARGO_BUILD_JOBS=2 cargo build --release --example shortcuts 2>&1 | tail -3) && CARGO_BUILD
+54	182	prove	tool	shell	bash	2026-11-01T15:36:11Z	28.9	cd /home/ladvien/bevy_gooey_loop && cat docs/guide/README.md | head -40; sed -n 1,60p docs/guide/bindings.md; cat docs/media/README.md | head -30; head -30 CHAN
+54	183	prove	model	model		2026-11-01T15:36:40Z	5.9	
+54	184	prove	tool	shell	bash	2026-11-01T15:36:46Z	5.6	cd /home/ladvien/bevy_gooey_loop && rm -rf /tmp/g26m/frames && mkdir -p /tmp/g26m/frames && G="$CARGO_TARGET_DIR/release/examples/shortcuts" && GOOEY_FRAMES=190
+54	185	prove	tool	read files	read	2026-11-01T15:36:46Z	5.6	/tmp/g26m/after/final-crop.png
+54	186	prove	model	model		2026-11-01T15:36:52Z	4.8	
+54	187	prove	tool	shell	bash	2026-11-01T15:36:56Z	0.1	ls -la /tmp/g26m/after/; cd /tmp/g26m && magick after/final.png -crop 920x420+360+150 +repage after/final-crop.png; ls after
+54	188	prove	model	model		2026-11-01T15:36:56Z	2.6	
+54	189	prove	tool	read files	read	2026-11-01T15:36:59Z	0.0	/tmp/g26m/after/final-crop.png
+54	190	prove	model	model		2026-11-01T15:36:59Z	10.9	
+54	191	prove	tool	shell	bash	2026-11-01T15:37:10Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 160,190p examples/shortcuts.rs
+54	192	prove	model	model		2026-11-01T15:37:10Z	4.6	
+54	193	prove	tool	edit files	edit	2026-11-01T15:37:15Z	0.0	Left-align the keymap screen so the tooltip has room :: [examples/shortcuts.rs#2A8A] PUT 169.=187: + commands + .spawn(( + screen(), + children![( + panel(), + children![ + heading("Keymap"), + (row("Save", save), Au
+54	194	prove	model	model		2026-11-01T15:37:15Z	4.5	
+54	195	prove	tool	cargo build	bash	2026-11-01T15:37:19Z	11.2	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo fmt && (CARGO_BUILD_JOBS=2 cargo build --release --example shortcuts 2>&1 | tail -3) && rm -rf /tmp
+54	196	prove	tool	read files	read	2026-11-01T15:37:19Z	11.2	/tmp/g26m/after/final.png
+54	197	prove	model	model		2026-11-01T15:37:30Z	6.3	
+54	198	prove	tool	read files	read	2026-11-01T15:37:37Z	0.0	examples/shortcuts.rs:164-198
+54	199	prove	model	model		2026-11-01T15:37:37Z	6.4	
+54	200	prove	tool	edit files	edit	2026-11-01T15:37:43Z	0.0	Place the keymap panel at the left :: [examples/shortcuts.rs#BDA8] PUT 169.=194: + // At the left of the window, so the Save button's tooltip, which opens beside it, has room. + commands.spawn(( + N
+54	201	prove	tool	cargo build	bash	2026-11-01T15:37:43Z	12.5	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo fmt && (CARGO_BUILD_JOBS=2 cargo build --release --example shortcuts 2>&1 | tail -3) && rm -rf /tmp
+54	202	prove	tool	read files	read	2026-11-01T15:37:43Z	12.5	/tmp/g26m/after/final.png
+54	203	prove	model	model		2026-11-01T15:37:55Z	9.1	
+54	204	prove	tool	shell	bash	2026-11-01T15:38:05Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Role::Panel =>" -B2 -A12 src/skin.rs | sed -n 1,50p; grep -n "pub fn panel" -A22 src/widgets.rs | grep -n "Node"
+54	205	prove	model	model		2026-11-01T15:38:05Z	7.7	
+54	206	prove	tool	shell	bash	2026-11-01T15:38:12Z	0.1	cd /tmp/g26m && magick frames/f_0001.png -resize 50% a.png; magick frames/f_0040.png -resize 50% b.png; magick a.png b.png +append ab.png
+54	207	prove	tool	read files	read	2026-11-01T15:38:12Z	0.1	/tmp/g26m/ab.png
+54	208	prove	model	model		2026-11-01T15:38:12Z	2.6	
+54	209	prove	tool	read files	read	2026-11-01T15:38:15Z	0.0	/tmp/g26m/ab.png
+54	210	prove	model	model		2026-11-01T15:38:15Z	6.7	
+54	211	prove	tool	shell	bash	2026-11-01T15:38:22Z	0.1	cd /tmp/g26m && magick frames/f_0083.png -resize 50% c.png; magick frames/f_0070.png -resize 50% d.png; magick c.png d.png +append cd.png
+54	212	prove	tool	read files	read	2026-11-01T15:38:22Z	0.1	/tmp/g26m/cd.png
+54	213	prove	model	model		2026-11-01T15:38:22Z	2.9	
+54	214	prove	tool	shell	bash	2026-11-01T15:38:25Z	0.1	cd /tmp/g26m && ls frames | tail -3; magick frames/f_0080.png -resize 50% c.png; magick frames/f_0070.png -resize 50% d.png; magick c.png d.png +append cd.png; 
+54	215	prove	model	model		2026-11-01T15:38:25Z	2.5	
+54	216	prove	tool	read files	read	2026-11-01T15:38:27Z	0.0	/tmp/g26m/cd.png
+54	217	prove	model	model		2026-11-01T15:38:27Z	8.5	
+54	218	prove	tool	cargo build	bash	2026-11-01T15:38:36Z	10.8	cd /home/ladvien/bevy_gooey_loop && sed -i 's/Tooltip::new("Write the world to disk")/Tooltip::new("Write to disk")/' examples/shortcuts.rs && (CARGO_BUILD_JOBS
+54	219	prove	model	model		2026-11-01T15:38:47Z	5.7	
+54	220	prove	tool	read files	read	2026-11-01T15:38:52Z	0.0	/tmp/g26m/after/final.png
+54	221	prove	model	model		2026-11-01T15:38:52Z	10.9	
+54	222	prove	tool	phase mark	bash	2026-11-01T15:39:03Z	0.2	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; git worktree add --detach ~/g26_base f81fd74 2>&1 | tail -1; ls ~ | grep 
+54	223	prove	model	model		2026-11-01T15:39:04Z	3.9	
+54	224	prove	tool	cargo build	bash	2026-11-01T15:39:07Z	50.3	cd ~/g26_base && (CARGO_BUILD_JOBS=2 cargo build --release --example gallery 2>&1 | tail -2) && mkdir -p ~/g26_bin && cp $CARGO_TARGET_DIR/release/examples/gall
+54	225	prove	model	model		2026-11-01T15:39:58Z	6.0	
+54	226	prove	tool	shell	bash	2026-11-01T15:40:04Z	60.0	[launched bg_2] mkdir -p /tmp/g26m/before /tmp/g26m/after2 && cd /tmp/g26m && for v in before after; do d=$v; [ $v = after ] && d=after2; for cfg in "dark:1280x720:dark:1.0" "p
+54	227	prove	model	model		2026-11-01T15:41:04Z	2.8	
+54	228	prove	tool	wait: other	wait	2026-11-01T15:41:07Z	0.0	{}
+54	229	prove	model	model		2026-11-01T15:41:07Z	5.5	
+54	230	prove	tool	shell	bash	2026-11-01T15:41:12Z	60.0	[launched bg_3] cd /tmp/g26m && uptime; for i in $(seq 1 10); do for v in before after; do GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SIZE=1280x720 GOOEY_SHOT=/tmp/
+54	231	prove	model	model		2026-11-01T15:42:12Z	18.7	
+54	232	prove	tool	edit files	write	2026-11-01T15:42:31Z	0.0	Writing shortcuts guide page :: docs/guide/shortcuts.md
+54	233	prove	model	model		2026-11-01T15:42:31Z	5.7	
+54	234	prove	tool	shell	bash	2026-11-01T15:42:37Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Binding\|Tooltip\|model::\|shortcut" docs/guide/host-api.md | cut -c1-250; grep -n "tooltip\|binding" docs/guide/wi
+54	235	prove	model	model		2026-11-01T15:42:37Z	4.7	
+54	236	prove	tool	shell	bash	2026-11-01T15:42:41Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 30,40p docs/guide/host-api.md | cut -c1-300; sed -n 105,125p docs/guide/host-api.md | cut -c1-250; sed -n 44,60p docs
+54	237	prove	model	model		2026-11-01T15:42:41Z	2.5	
+54	238	prove	tool	shell	bash	2026-11-01T15:42:44Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 123,135p docs/guide/host-api.md | cut -c1-400; cat /tmp/g26m/perf.txt 2>/dev/null | wc -l
+54	239	prove	model	model		2026-11-01T15:42:44Z	5.5	
+54	240	prove	tool	edit files	edit	2026-11-01T15:42:49Z	0.0	Update host-api docs :: [docs/guide/host-api.md#0000] PUT 15.=15: +| `BindingSettings` | `key_prompt`, `pad_prompt`, `chord_prompt`, `pad_style` (the `pad_style` row edits it), `cancel
+54	241	prove	model	model		2026-11-01T15:42:49Z	6.1	
+54	242	prove	tool	edit files	edit	2026-11-01T15:42:56Z	0.0	Update host-api docs :: [docs/guide/host-api.md#7213] PUT 15.=15: +| `BindingSettings` | `key_prompt`, `pad_prompt`, `chord_prompt`, `pad_style` (the `pad_style` row edits it), `cancel
+54	243	prove	tool	shell	bash	2026-11-01T15:42:56Z	0.0	cat /tmp/g26m/perf.txt | sort | awk '{print}' | tr '\n' ' '; cd /tmp/g26m; for v in before after; do grep "^$v" perf.txt | awk '{print $2}' | sort -n | awk -v v
+54	244	prove	model	model		2026-11-01T15:42:56Z	6.2	
+54	245	prove	tool	read files	read	2026-11-01T15:43:02Z	0.0	docs/guide/widgets.md:17
+54	246	prove	tool	read files	read	2026-11-01T15:43:02Z	0.0	docs/guide/widgets.md:47-54
+54	247	prove	model	model		2026-11-01T15:43:02Z	5.5	
+54	248	prove	tool	edit files	edit	2026-11-01T15:43:07Z	0.0	Update widgets guide for Tooltip::new and shortcut :: [docs/guide/widgets.md#BED1] PUT 17.=17: +| `tooltip` (`Tooltip::new("…")`) | a component on any widget: its box opens beside the widget under the pointer or on
+54	249	prove	tool	read files	read	2026-11-01T15:43:07Z	0.0	docs/guide/README.md:16-21
+54	250	prove	model	model		2026-11-01T15:43:07Z	5.0	
+54	251	prove	tool	edit files	edit	2026-11-01T15:43:12Z	0.0	Guide index entry :: [docs/guide/README.md#F3E3] PUT >15: +- [Shortcuts](shortcuts.md) — `Shortcut`, `Modifiers` and `Platform`: a key chord in the platform's own words + ("Ctrl+Shi
+54	252	prove	tool	read files	read	2026-11-01T15:43:12Z	0.0	docs/guide/bindings.md:7-12
+54	253	prove	tool	search	grep	2026-11-01T15:43:12Z	0.0	Find bindings doc lines :: docs/guide/bindings.md
+54	254	prove	model	model		2026-11-01T15:43:12Z	5.8	
+54	255	prove	tool	search	grep	2026-11-01T15:43:18Z	0.0	Locate lines :: docs/guide/bindings.md
+54	256	prove	model	model		2026-11-01T15:43:18Z	6.1	
+54	257	prove	tool	edit files	edit	2026-11-01T15:43:24Z	0.0	Bindings guide: chords :: [docs/guide/bindings.md#746D] PUT 21.=21: +- **The value** is a `Binding`: `Key(KeyCode)`, `Mouse(MouseButton)`, `Pad(GamepadButton)` or `Chord(Shortcut)`. A ke
+54	258	prove	bg	shell	bash	2026-11-01T15:41:16Z	127.8	bg_3 completed: uptime; for i in $(seq 1 10); do for v in before after; do GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SIZ...
+54	259	prove	model	model		2026-11-01T15:43:24Z	7.1	
+54	260	prove	tool	clip record/render	bash	2026-11-01T15:43:31Z	0.6	cd /home/ladvien/bevy_gooey_loop && ffmpeg -v error -y -framerate 15 -pattern_type glob -i '/tmp/g26m/frames/f_*.png' -vf "crop=940:420:70:95,fps=15,scale=800:-
+54	261	prove	model	model		2026-11-01T15:43:32Z	4.6	
+54	262	prove	tool	shell	bash	2026-11-01T15:43:37Z	0.2	cd /tmp/g26m/gif && montage g_005.png g_020.png g_032.png g_045.png g_057.png g_085.png -tile 2x3 -geometry 600x+4+4 -background '#222' /tmp/g26m/gifsheet.png; 
+54	263	prove	tool	read files	read	2026-11-01T15:43:37Z	0.2	/tmp/g26m/gifsheet.png
+54	264	prove	model	model		2026-11-01T15:43:37Z	2.7	
+54	265	prove	tool	read files	read	2026-11-01T15:43:40Z	0.1	/tmp/g26m/gifsheet.png
+54	266	prove	model	model		2026-11-01T15:43:40Z	9.7	
+54	267	prove	tool	cargo build	bash	2026-11-01T15:43:49Z	11.3	cd /home/ladvien/bevy_gooey_loop && sed -i 's/format!("Conflict: {a} and {b} share a chord")/format!("Conflict: {a} and {b}")/' examples/shortcuts.rs && grep -n
+54	268	prove	tool	read files	read	2026-11-01T15:43:49Z	11.3	/tmp/g26m/gs2.png
+54	269	prove	model	model		2026-11-01T15:44:01Z	3.0	
+54	270	prove	tool	read files	read	2026-11-01T15:44:04Z	0.0	/tmp/g26m/gs2.png
+54	271	prove	model	model		2026-11-01T15:44:04Z	7.7	
+54	272	prove	tool	shell	bash	2026-11-01T15:44:11Z	17.6	cd /tmp/g26m && G="$CARGO_TARGET_DIR/release/examples/shortcuts"; for s in parchment high_contrast; do GOOEY_SKIN=$s GOOEY_FRAMES=190 GOOEY_SHOT=/tmp/g26m/after
+54	273	prove	tool	read files	read	2026-11-01T15:44:11Z	17.6	/tmp/g26m/skins.png
+54	274	prove	tool	read files	read	2026-11-01T15:44:11Z	17.6	/tmp/g26m/after/s_2x.png
+54	275	prove	model	model		2026-11-01T15:44:29Z	4.7	
+54	276	prove	tool	read files	read	2026-11-01T15:44:34Z	0.0	/tmp/g26m/skins.png
+54	277	prove	tool	read files	read	2026-11-01T15:44:34Z	0.1	/tmp/g26m/after/s_2x.png
+54	278	prove	model	model		2026-11-01T15:44:34Z	10.3	
+54	279	prove	tool	shell	bash	2026-11-01T15:44:44Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 119,160p README.md | cut -c1-330
+54	280	prove	model	model		2026-11-01T15:44:44Z	6.9	
+54	281	prove	tool	read files	read	2026-11-01T15:44:51Z	0.0	README.md:105-118
+54	282	prove	tool	search	grep	2026-11-01T15:44:51Z	0.0	Find Rebinding caption :: README.md
+54	283	prove	model	model		2026-11-01T15:44:51Z	6.2	
+54	284	prove	tool	edit files	edit	2026-11-01T15:44:57Z	0.0	README: chord rows and shortcut GIF :: [README.md#ACCA] PUT 108.=108: + key, a mouse button, a pad button or a chord ("Ctrl+Shift+K") on the player's next press, `text_input("Name", "")` is a field t
+54	285	prove	model	model		2026-11-01T15:44:57Z	7.2	
+54	286	prove	tool	edit files	edit	2026-11-01T15:45:04Z	0.0	Fix caption wording :: [README.md#7A89] PUT 151.=151: +![The shortcuts example: a Keymap panel with three rows, Save, Save all and Palette, each showing a chord on a keycap (Ctrl+S, C
+54	287	prove	tool	shell	bash	2026-11-01T15:45:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "popover.gif" docs/media/README.md | cut -c1-40; grep -c "" docs/media/README.md; sed -n 1,12p docs/media/README.md 
+54	288	prove	model	model		2026-11-01T15:45:04Z	6.5	
+54	289	prove	tool	read files	read	2026-11-01T15:45:11Z	0.0	docs/media/README.md:30-41
+54	290	prove	model	model		2026-11-01T15:45:11Z	6.6	
+54	291	prove	tool	edit files	edit	2026-11-01T15:45:18Z	0.0	Media list entry for shortcuts.gif :: [docs/media/README.md#A43A] PUT >30: +| `shortcuts.gif` | shortcuts (5.7 s, 800×357, the panel and the tooltip beside it, a crop of `examples/shortcuts`): the K
+54	292	prove	model	model		2026-11-01T15:45:18Z	3.0	
+54	293	prove	tool	shell	bash	2026-11-01T15:45:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && awk 'NR==30{print substr($0, length($0)-200)}' docs/media/README.md
+54	294	prove	model	model		2026-11-01T15:45:21Z	7.9	
+54	295	prove	tool	edit files	edit	2026-11-01T15:45:29Z	0.0	Media list entry for shortcuts.gif :: [docs/media/README.md#A43A] PUT <31: +| `shortcuts.gif` | shortcuts (5.7 s, 800×357, the panel and the tooltip beside it, a crop of `examples/shortcuts`): the K
+54	296	prove	model	model		2026-11-01T15:45:29Z	7.8	
+54	297	prove	tool	read files	read	2026-11-01T15:45:36Z	0.0	CHANGELOG.md:1-5
+54	298	prove	model	model		2026-11-01T15:45:36Z	9.1	
+54	299	prove	tool	edit files	edit	2026-11-01T15:45:46Z	0.0	Changelog entry :: [CHANGELOG.md#2CA7] PUT >4: +### Added + +- Shortcuts (G-08, #12): `Shortcut { modifiers, key }`, `Modifiers { ctrl, shift, alt, meta }` (the physical modifiers
+54	300	prove	model	model		2026-11-01T15:45:46Z	5.7	
+54	301	prove	tool	search	grep	2026-11-01T15:45:51Z	0.0	Locate AGENTS lines :: AGENTS.md
+54	302	prove	model	model		2026-11-01T15:45:51Z	14.2	
+54	303	prove	tool	edit files	edit	2026-11-01T15:46:05Z	0.1	AGENTS notes for shortcuts :: [AGENTS.md#A622] PUT >38: +- `src/shortcut.rs` — `Shortcut { modifiers, key }` (public fields, `Eq + Hash`, serde, reflected; `new`, `primary`, `is_valid` (a mo
+54	304	prove	model	model		2026-11-01T15:46:06Z	6.7	
+54	305	prove	tool	search	grep	2026-11-01T15:46:12Z	0.0	Find new() mentions in note :: docs/research/shortcut.md
+54	306	prove	model	model		2026-11-01T15:46:12Z	7.0	
+54	307	prove	tool	search	grep	2026-11-01T15:46:19Z	0.0	Locate heading :: docs/research/shortcut.md
+54	308	prove	model	model		2026-11-01T15:46:19Z	6.3	
+54	309	prove	tool	edit files	edit	2026-11-01T15:46:26Z	0.0	Research note matches what was built :: [docs/research/shortcut.md#765B] PUT 22.=22: +- **S2. A modifier is never a shortcut's key.** `Shortcut::new(modifiers, key)` is plain construction (the issue's
+54	310	prove	model	model		2026-11-01T15:46:26Z	4.5	
+54	311	prove	tool	edit files	edit	2026-11-01T15:46:30Z	0.0	Research note matches what was built :: [docs/research/shortcut.md#765B] PUT 22.=22: +- **S2. A modifier is never a shortcut's key.** `Shortcut::new(modifiers, key)` is plain construction (the issue's
+54	312	prove	model	model		2026-11-01T15:46:30Z	6.2	
+54	313	prove	tool	read files	read	2026-11-01T15:46:36Z	0.0	src/lib.rs:20-36
+54	314	prove	model	model		2026-11-01T15:46:36Z	4.4	
+54	315	prove	tool	edit files	edit	2026-11-01T15:46:41Z	0.0	Crate docs mention Shortcut :: [src/lib.rs#B687] PUT 30.=30: +//! [`Tooltip`] (with a command's [`Shortcut`] on a keycap: "Ctrl+S", or "⌘S" on a mac), the +//! modal [`dialog`] and the anchor
+54	316	gate	tool	phase mark	bash	2026-11-01T15:46:41Z	0.5	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; git status --short; CARGO_BUILD_JOBS=2 cargo fmt --check && echo fmt-ok
+54	317	gate	model	model		2026-11-01T15:46:41Z	8.0	
+54	318	gate	tool	cargo test	bash	2026-11-01T15:46:49Z	0.8	cd /home/ladvien/bevy_gooey_loop && git add src tests examples/gallery.rs examples/shortcuts.rs && git commit -qm "Shortcuts: Shortcut, Modifiers and Platform n
+54	319	gate	model	model		2026-11-01T15:46:50Z	5.0	
+54	320	gate	tool	remote wait	bash	2026-11-01T15:46:55Z	20.1	sleep 20; pgrep -af "cargo (fmt|clippy|test|check|doc)" | head -3; tail -3 /tmp/g26m/gate.log
+54	321	gate	model	model		2026-11-01T15:47:15Z	4.6	
+54	322	gate	tool	cargo test	bash	2026-11-01T15:47:20Z	0.0	[launched bg_4] cd /home/ladvien/bevy_gooey_loop && export CARGO_BUILD_JOBS=2 && cargo fmt --check && cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -3 &&
+54	323	gate	model	model		2026-11-01T15:47:20Z	11.9	
+54	324	gate	tool	edit files	write	2026-11-01T15:47:32Z	0.0	Writing critique :: /tmp/g26m/critique.md
+54	325	gate	model	model		2026-11-01T15:47:32Z	2.7	
+54	326	gate	tool	wait: other	wait	2026-11-01T15:47:34Z	166.0	{}
+54	327	gate	model	model		2026-11-01T15:50:20Z	7.9	
+54	328	gate	tool	shell	bash	2026-11-01T15:50:28Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'assert_eq!(save.label_on(Platform::Mac)' -B2 src/shortcut.rs
+54	329	gate	model	model		2026-11-01T15:50:28Z	3.4	
+54	330	gate	tool	edit files	edit	2026-11-01T15:50:32Z	0.0	Fix doctest: primary is the build's platform :: [src/shortcut.rs#4B6C] PUT 141.=141: +/// assert_eq!(save.label(), if cfg!(target_os = "macos") { "⌘S" } else { "Ctrl+S" });
+54	331	gate	model	model		2026-11-01T15:50:32Z	5.5	
+54	332	gate	tool	cargo test	bash	2026-11-01T15:50:37Z	15.6	cd /home/ladvien/bevy_gooey_loop && export CARGO_BUILD_JOBS=2 && cargo fmt --check && echo fmt-ok && cargo test --all-features --doc 2>&1 | grep -E "test result
+54	333	gate	model	model		2026-11-01T15:50:53Z	5.2	
+54	334	log	tool	phase mark	bash	2026-11-01T15:50:58Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; git commit -qam "Docs: Shortcut's doctest names the build's own primary" &&
+54	335	log	model	model		2026-11-01T15:50:58Z	6.5	
+54	336	log	tool	read files	read	2026-11-01T15:51:05Z	0.1	docs/loop-log.md:-3
+54	337	log	model	model		2026-11-01T15:51:05Z	23.6	
+54	338	log	tool	edit files	edit	2026-11-01T15:51:28Z	0.2	Append iteration 26 log :: [docs/loop-log.md#40DB] PUT >$: + +## Iteration 26 — 2026-11-01 — Shortcuts (G-08, #12) + +**Triage.** `gh issue list`: 25 open, all `grimoire-ui` (G-05 to G-29
+54	339	log	model	model		2026-11-01T15:51:28Z	10.8	
+54	340	log	tool	search	grep	2026-11-01T15:51:39Z	0.0	Locate parked-work sentence :: docs/loop-log.md
+54	341	log	model	model		2026-11-01T15:51:39Z	6.7	
+54	342	log	tool	read files	read	2026-11-01T15:51:46Z	0.0	docs/loop-log.md:1040:raw
+54	343	log	model	model		2026-11-01T15:51:46Z	5.0	
+54	344	log	tool	edit files	edit	2026-11-01T15:51:51Z	0.0	Correct parked-work sentence :: [docs/loop-log.md#31C4] PUT 1040.=1040: +**Triage.** `gh issue list`: 25 open, all `grimoire-ui` (G-05 to G-29), none a `bug`. The last audit row (pass 53) had 
+54	345	log	model	model		2026-11-01T15:51:51Z	5.6	
+54	346	log	tool	push gate	bash	2026-11-01T15:51:57Z	2.4	cd /home/ladvien/bevy_gooey_loop && git commit -qam "Loop log: iteration 26, shortcuts" && git status --short && git push -q -u origin loop/iter-26 2>&1 | tail 
+54	347	log	model	model		2026-11-01T15:51:59Z	4.4	
+54	348	ship	tool	phase mark	bash	2026-11-01T15:52:03Z	13.4	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && git push -q origin main 2>&1 | tail -2; python3 ~/.local/share/wiggum/st
+54	349	ship	model	model		2026-11-01T15:52:17Z	5.5	
+54	350	ship	tool	read files	read	2026-11-01T15:52:22Z	0.0	CHANGELOG.md:1-6
+54	351	ship	tool	search	grep	2026-11-01T15:52:22Z	0.0	Locate changed line :: CHANGELOG.md
+54	352	ship	tool	search	grep	2026-11-01T15:52:22Z	0.0	Locate version :: Cargo.toml
+54	353	ship	tool	search	grep	2026-11-01T15:52:22Z	0.0	README version mentions :: README.md
+54	354	ship	model	model		2026-11-01T15:52:22Z	4.5	
+54	355	ship	tool	edit files	edit	2026-11-01T15:52:27Z	0.2	Release 0.13.0: changelog, Cargo.toml, README compat row :: [CHANGELOG.md#FA3D] PUT 3.=4: +## [Unreleased] + +## [0.13.0] - 2026-11-01 + PUT >15: +- `show_tooltips` and `update_tooltip_text` take one more system paramete
+54	356	ship	model	model		2026-11-01T15:52:27Z	6.4	
+54	357	ship	tool	cargo publish	bash	2026-11-01T15:52:33Z	18.9	cd /home/ladvien/bevy_gooey_loop && git status --short && cargo update -p bevy_gooey --offline 2>&1 | tail -1; git commit -qam "release: v0.13.0" && (CARGO_BUIL
+54	358	ship	model	model		2026-11-01T15:52:52Z	3.9	
+54	359	ship	tool	push gate	bash	2026-11-01T15:52:56Z	7.8	cd /home/ladvien/bevy_gooey_loop && (CARGO_BUILD_JOBS=2 cargo publish 2>&1 | tail -4) && git tag -a v0.13.0 -m v0.13.0 && git push -q origin main && git push -q
+54	360	ship	model	model		2026-11-01T15:53:04Z	7.7	
+54	361	ship	tool	github	bash	2026-11-01T15:53:12Z	5.3	cd /home/ladvien/bevy_gooey_loop && git log --oneline -1 origin/main; gh issue view 12 --repo bevy-coven/bevy_gooey --json state --jq .state; gh label create as
+54	362	ship	model	model		2026-11-01T15:53:17Z	5.1	
+54	363	ship	tool	shell	bash	2026-11-01T15:53:22Z	2.0	cd /home/ladvien/bevy_gooey_loop && gh search issues --repo bevy-coven/bevy_grimoire "bevy_gooey#12" --json number,title,state --limit 10 2>&1 | head; gh search
+54	364	ship	model	model		2026-11-01T15:53:24Z	4.8	
+54	365	ship	tool	github	bash	2026-11-01T15:53:29Z	2.4	cd /home/ladvien/bevy_gooey_loop && for n in 250 225 212 235 231; do echo "#$n: $(gh issue view $n --repo bevy-coven/bevy_grimoire --json body --jq '.body' | gr
+54	366	ship	model	model		2026-11-01T15:53:31Z	5.5	
+54	367	ship	tool	github	bash	2026-11-01T15:53:37Z	3.3	cd /home/ladvien/bevy_gooey_loop && for n in 250 225 212; do gh issue comment $n --repo bevy-coven/bevy_grimoire --body "bevy_gooey#12 (G-08, shortcuts) is fixe
+54	368	ship	model	model		2026-11-01T15:53:40Z	7.6	
+54	369	log	tool	phase mark	bash	2026-11-01T15:53:48Z	0.2	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; df -h /home | tail -1; git worktree remove ~/g26_base && echo wt-removed; r
+54	370	log	model	model		2026-11-01T15:53:48Z	3.6	
+54	371	log	tool	shell	bash	2026-11-01T15:53:51Z	0.1	cd /home/ladvien/bevy_gooey_loop && for w in ~/g17_base ~/g17_parked ~/g17s_base; do echo "$w $(du -sh $w | cut -f1) status=[$(git -C $w status --short | wc -l)
+54	372	log	model	model		2026-11-01T15:53:52Z	3.0	
+54	373	log	tool	read files	read	2026-11-01T15:53:55Z	0.0	docs/loop-log.md:-2
+54	374	log	model	model		2026-11-01T15:53:55Z	7.3	
+54	375	log	tool	edit files	edit	2026-11-01T15:54:02Z	0.1	Append release and cleanup to log :: [docs/loop-log.md#46CB] PUT >1070: + +**Merge and release.** `loop/iter-26` pushed and merged `--no-ff` into `main` (`e7206d5`, `Fixes #12`; `git diff --stat lo
+54	376	log	model	model		2026-11-01T15:54:02Z	7.6	
+54	377	log	tool	push gate	bash	2026-11-01T15:54:10Z	1.8	cd /home/ladvien/bevy_gooey_loop && git commit -qam "Loop log: iteration 26, release v0.13.0 and cleanup" && git push -q origin main 2>&1 | tail -1; git status 
+54	378	log	model	model		2026-11-01T15:54:11Z	10.1	
