@@ -85,8 +85,9 @@ cargo run --example gallery
 
 Every widget on a screen, what the pictures above show: arrows or the D-pad move focus, Enter, Space and
 South activate, Shift+T doubles the text, Options swaps the skin, Quit opens a dialog, Right on a focused
-tab or Ctrl+PageDown turns the settings page (Display holds the choices), and the save-slot list scrolls
-with the wheel, a drag on its thumb or PageUp and PageDown.
+tab or Ctrl+PageDown turns the settings page (Display holds the choices, Controls two rebinding rows: Enter
+on Jump, then a key), and the save-slot list scrolls with the wheel, a drag on its thumb or PageUp and
+PageDown.
 
 ## What you can do
 
@@ -95,8 +96,11 @@ with the wheel, a drag on its thumb or PageUp and PageDown.
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
-  and says each change once in `ValueChange`, and `tabs` puts them on pages a click, the arrows or LB and
-  RB turn: [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md),
+  and says each change once in `ValueChange`, `binding("Jump", Binding::Key(KeyCode::Space))` rebinds a
+  key, a mouse button or a pad button on the player's next press, and `tabs` puts them on pages a click,
+  the arrows or LB and RB turn:
+  [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md),
+  [rebinding](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/bindings.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
 - **Scroll a list that follows the focus** — `list(4.5, children![..])` cuts the fifth row so the player
   sees there is more, and keeps the next row in sight as the arrows walk down it:
@@ -116,9 +120,13 @@ with the wheel, a drag on its thumb or PageUp and PageDown.
 - **Let the pointer through a HUD** — the empty part of a `screen` is `Pickable::IGNORE`, so a click on
   the world under it still reaches the world: [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md).
 
-![The gallery's settings panel: the ring moves from Quit onto the lit Audio tab, Right turns to Display (two choices), Right to Controls (two buttons) and Right wraps back to Audio, Down enters the page on the Volume slider, and Ctrl+PageDown turns to Display and then Controls with the ring landing on each new page's first widget](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tabs.gif)
+![The gallery's settings panel: the ring moves from Quit onto the lit Audio tab, Right turns to Display (two choices), Right to Controls (two rebinding rows, Jump and Use) and Right wraps back to Audio, Down enters the page on the Volume slider, and Ctrl+PageDown turns to Display and then Controls with the ring landing on each new page's first widget](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tabs.gif)
 
 *The tabs: Right on a focused tab, then Ctrl+PageDown from inside a page (a pad's RB). The panel never moves.*
+
+![The gallery's settings panel after the Controls tab is clicked: the ring goes down to Jump, whose keycap says Space; Enter lights the keycap amber with "Press a key, Esc exits", Q turns it to Q, and Down to Use (A), whose keycap lights with "Press a button, Menu exits" until Escape puts it back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/binding.gif)
+
+*Rebinding: `binding("Jump", Binding::Key(KeyCode::Space))` waits for the next press and says it once as a `ValueChange<Binding>`. The panel never moves, and nothing else hears the key.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 

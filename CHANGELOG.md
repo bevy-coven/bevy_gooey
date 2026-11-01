@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- `binding(label, value)`: a row that rebinds one action, for a controls screen (Xbox Accessibility Guideline 107, Game Accessibility Guidelines: "remappable controls are one of the best value accessibility features"). The label on the left and a keycap on the right with the key, mouse button or pad button it is bound to ("Space", "Right Click", "A"); its root is Bevy's headless `Button` carrying the new `BindingValue(Binding)` (the state: read it, or write one to change the row from code with no event), so Tab, the arrows, the D-pad, Enter, Space, South and a click reach it and start a capture. The keycap lights in the accent and says what it waits for ("Press a key, Esc exits"); the player's next press is the binding, said once as Bevy's `ValueChange<Binding>`. A key row hears any key and any mouse button, a pad row any pad button; Escape (and Start on a pad row) exits without binding and cannot be bound; a press on the other device exits. The press that started a capture is never the binding. The keycap and the row never change size (the name and the prompt share one cell; at least 17 body text sizes wide, so a column of rows shares its edges), and the row is a toggle's height.
+- `Binding` (`Key(KeyCode)`, `Mouse(MouseButton)`, `Pad(GamepadButton)`; `Eq + Hash`, serde under the `serde` feature, `label(PadStyle)` for hints and tutorials), `BindingValue`, `Capturing` (on a row while it waits), `BindingSettings` (`key_prompt`, `pad_prompt` with `{exit}` filled in, `pad_style`, `cancel_key`, `cancel_button`; a resource `GooeyStylePlugin` and `GooeyNavPlugin` both initialise) and `PadStyle` (`Xbox`, `PlayStation`, `Switch`).
+- While a row waits nothing else hears the player: `not_capturing` (a run condition, now on `navigate_by_input`, `gamepad_select`, `gamepad_adjust`, `cancel_by_input`, `page_lists` and `step_tabs`), the row stopping the key on its way to Bevy's Tab navigation (so Tab is bindable), no `Cancel` for the Escape that exits, and a transparent node over the window (`catch_pointer`) that takes the pointer, so a click is a binding and presses nothing under it. `bind_by_input` (in `GooeySystems::Navigate`, after the held-back systems), `catch_pointer` and `update_bindings` (in `GooeySystems::Style`, before `apply_skin`) join the plugins; nothing runs at rest but one empty query each.
+- `model::{key_name, mouse_name, pad_name, PadStyle}`, the engine-free naming under it (tests and doctests); `Role::{Binding, BindingCap, BindingText, BindingPrompt}`, styled in `apply_skin` like every other part; `UiFeedback` for the start and the bind (focus on a binding row writes `Focus`).
+- The gallery's Controls tab holds two binding rows (Jump on Space, Use on the pad's South), logs and toasts the new key, and `GOOEY_KEYS` has tokens `q` and `f`; `docs/research/binding.md`, `docs/guide/bindings.md` and `docs/media/binding.gif`.
+
+### Changed
+
+- `Role` has four more variants (`Binding`, `BindingCap`, `BindingText`, `BindingPrompt`): a `match` over it that is exhaustive needs arms for them. `GooeyNavPlugin` runs `navigate_by_input`, `gamepad_select`, `gamepad_adjust`, `cancel_by_input`, `page_lists` and `step_tabs` under `not_capturing`, so a host that registers those systems itself adds the condition; with no `binding` row in the game it is always true. The gallery's Controls tab holds `binding` rows where it held two placeholder buttons.
+
 ## [0.4.1] - 2026-10-31
 
 ### Added
