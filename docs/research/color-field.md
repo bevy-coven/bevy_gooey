@@ -67,6 +67,10 @@ A picker that reads at once: a saturated square with a crisp white ring, three s
 - No eyedropper, palette swatches or colour-space switch: a game's palette is a row of buttons it builds itself.
 - Alpha is shown by splitting the swatch, not by a checkerboard (a checkerboard is an image or a shader, and this crate draws none). Design default.
 
+- The strips' labels are outside the sliders (a column of label and slider), so the slider's focus ring surrounds the rail and never touches the text, and the label starts where the area does. Found by capturing: with the label inside a `slider()`'s header the ring ran through the text. Design default.
+- The area is 136 px high at every text size (a pointer needs a plane to aim at; text size does not change it), found by capturing at 200% text: 7 text sizes pushed the Alpha strip off a 720p window. At 200% in a 720p window the picker is still taller than the window: Bevy's `Popover` never shortens a panel (an open item in the log, as for a tooltip no side can hold).
+- The field is `#RRGGBBAA` plus one character wide: Bevy keeps one advance of room after a caret at the end, so nine characters scrolled the `#` away (`tests/color.rs`, mutation-checked).
+
 ## Pending index
 
 None. (home-still has no game-UI or colour-picker document; the sources above are web pages, recorded by URL.)

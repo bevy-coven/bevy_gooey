@@ -22,6 +22,9 @@ per subject. The README links each bullet to its page.
 - [Numbers](numbers.md) — `number_field(label, value, step, range)` and `vec_field`: a number the player
   scrubs with a drag, types or steps with the keys and the D-pad, held to a range, `MixedValue` for a
   multi-selection, and the reason a typed expression is refused.
+- [Colours](colors.md) — `color_field(label, colour)`: a swatch and a hex field the player types (`#ff8800`),
+  and a picker the swatch opens (a saturation and value area, hue, brightness and alpha strips) that
+  a pointer, the keys and a pad all drive, `MixedValue`, and the reason a typed word is refused.
 - [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB
