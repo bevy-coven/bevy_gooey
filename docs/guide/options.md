@@ -25,7 +25,7 @@ fn display_page(mut commands: Commands) {
 | `text_size(label)` | how large every word is | `GooeySkin::text_scale` | 100%, 125%, 150%, 200% (`TEXT_SIZE_STEPS`) |
 | `interface_size(label)` | how large the whole interface is, on top of the window's share | `UiScaleSettings::scale` | 75%, 100%, 125%, 150% (`INTERFACE_SIZE_STEPS`) |
 | `pad_style(label)` | whose button names a pad shows | `BindingSettings::pad_style` | Xbox, PlayStation, Switch (`PAD_STYLES`) |
-| `skin_preset(label)` | the look: the colours of every widget | `GooeySkin`'s colours, and no size | Dark, Parchment, High contrast (`SkinPreset::ALL`) |
+| `skin_preset(label)` | the look: the colours of every widget | `GooeySkin`'s colours, and no size | Dark, Parchment, High contrast, Tool (`SkinPreset::ALL`; Tool is the compact look, but a step writes its colours only) |
 
 Text size is the one the Xbox Accessibility Guideline 101 and WCAG 2.2 (1.4.4) ask for: text that resizes to 200% "without loss of content or functionality", and the rule that it reaches everything the player reads, the dialog, the toast and the legend as well as the menu. `GooeySkin::text_scale` is read by every part, so the row only has to write it. Interface size enlarges the panels and the targets too, and goes below 100% for the player who wants the interface to cover less of the game; EVE Online's UI scaling tops out at 150%, as this one does.
 

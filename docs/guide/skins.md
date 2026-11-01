@@ -22,16 +22,16 @@ Fonts are yours: set `GooeyFonts { body, heading }`. The default draws Bevy's bu
 
 The colours are `background`, `surface`, `surface_raised`, `text`, `text_muted`, `accent`,
 `accent_text`, `danger`, `focus_ring`, `outline`, `scrim` and `surface_edge` (`None` is `surface_raised`); the sizes are `text_size`,
-`heading_size`, `gap`, `padding`, `radius`, `border`, `meter_height` and `min_target`; `text_scale` is
+`heading_size`, `gap`, `padding`, `radius`, `border`, `meter_height`, `min_target` and `density`; `text_scale` is
 the player's option and multiplies text alone. A name ends up in exactly one place: a heading's text
 colour is `text` there and nowhere else, because `apply_skin` styles every widget by its `Role`.
 
 `SkinProblem` is the type `problems()` returns; the plugin warns once per problem on a change and never
 refuses a skin, so an editor can show a half-finished one.
 
-## Three looks, and a high-contrast one that is checked
+## Four looks, and a high-contrast one that is checked
 
-`GooeySkin::dark()` (the default), `GooeySkin::parchment()` and `GooeySkin::high_contrast()` are the presets, and `SkinPreset::{Dark, Parchment, HighContrast}` names them for a settings row (`SkinPreset::ALL`, `name()`, `skin()`, and `SkinPreset::of(&skin)` for the nearest to a skin). They share one set of sizes, so changing the look never moves a layout.
+`GooeySkin::dark()` (the default), `GooeySkin::parchment()`, `GooeySkin::high_contrast()` and `GooeySkin::tool()` are the presets, and `SkinPreset::{Dark, Parchment, HighContrast, Tool}` names them for a settings row (`SkinPreset::ALL`, `name()`, `skin()`, and `SkinPreset::of(&skin)` for the nearest to a skin). The first three share one set of sizes, so changing the look never moves a layout; [Tool](#compact-density-for-a-tool) is the compact one.
 
 High contrast is the mode Xbox Accessibility Guideline 102 asks a game for: "When enabled, the contrast ratios should equal or exceed 7:1 for all UI elements against their background." Opaque black surfaces, white text and white outlines, an amber accent, a cyan focus ring that no other state uses, and a light red for danger (WCAG advises against red on black, for protanopia). A panel, a tooltip and the legend are framed in white (`surface_edge: Some(white)`; the other presets leave it `None`, which keeps their quiet `surface_raised` frame), so a tooltip over a panel is a card of its own. `GooeySkin::high_contrast_problems()` is `problems()` with every pair held to `ENHANCED_CONTRAST`, 7:1, so a game that writes its own high-contrast skin has the check in one call (it is empty for `high_contrast()` and not for the other two, which meet the 4.5:1 and 3:1 minimums and no more).
 
@@ -40,6 +40,25 @@ High contrast is the mode Xbox Accessibility Guideline 102 asks a game for: "Whe
 *`GooeySkin::high_contrast()`: every text is at least 7:1 on what it is drawn on (15.9:1 on a button), the ring is 13.5:1 on the panel, and a button's fill is 1.3:1 from the panel (the focus ring is the one frame that appears).*
 
 `skin.with_colours_of(&other)` is the skin with `other`'s colours and its own sizes: a player who set 200% text and then asks for high contrast gets both, which is what the [theme row](options.md) does. A game that starts in high contrast because the platform asks (Bevy 0.20 exposes no such setting, so the host reads it) inserts `GooeySkin::high_contrast()` before its first frame.
+
+## Compact density for a tool
+
+A game menu is sized for a thumb at couch distance: 44 px targets and 14 px of padding. A desktop tool has dozens of rows on screen and a mouse at arm's length, so it asks for less room:
+
+```rust
+use bevy_gooey::{Density, GooeySkin};
+let tool = GooeySkin { density: Density::Compact, ..GooeySkin::dark() };
+assert_eq!(tool.target(), 24.0);
+assert_eq!(tool.pad(), GooeySkin::dark().padding / 2.0);
+```
+
+`Density::Comfortable` (the default) draws `padding` and `min_target` as they are. `Density::Compact` draws half the padding and caps the least target at `MIN_TARGET_PX`, 24 px, which is WCAG 2.2 SC 2.5.8's own floor; `skin.pad()` and `skin.target()` are the values the widgets read. The floor is still checked: `problems()` tests `target()`, so a compact skin whose `min_target` is 20 reports `SkinProblem::TargetTooSmall { px: 20.0 }`, and one whose `min_target` is 44 (the default) is capped to 24 and passes. Nothing else changes: the colours, the focus ring and the keys are the same, and a skin file without the field reads as comfortable.
+
+`GooeySkin::tool()` (`SkinPreset::Tool`, the fourth row of the theme row) is the whole look for a tool: a cool neutral grey with a blue accent (not a game's amber), `Density::Compact`, 14 px text (21 px at 1080p, over Xbox Accessibility Guideline 101's PC minimum of 18 px), a 6 px gap, a 2 px border (the ring's weight, WCAG 2.4.13) and a 4 px radius. A theme-row step writes its colours only, so a player who steps onto Tool keeps their own text size and density; start in the whole preset by inserting `GooeySkin::tool()`. The gallery's settings panel is 294 px tall in it and 520 px in dark. `examples/density` flips `density` with a switch.
+
+![The gallery in the Tool look: the settings panel (Play, Options, Quit, a health meter, the Audio, Display and Controls tabs with Audio lit blue, the Volume slider and Subtitles switch) and the top of the Load game list, all in grey and blue at 14 px text](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tool.png)
+
+*`GooeySkin::tool()`: buttons 24 px high, 2 px frames, the same ring and keys as every look.*
 
 ## A skin for one subtree
 
