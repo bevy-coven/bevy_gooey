@@ -1009,7 +1009,15 @@ fn only_a_menu_with_a_check_or_a_dot_keeps_the_slot_for_it() {
     let mut app = app();
     spawn_bar(&mut app);
     tap(&mut app, KeyCode::F10);
-    taps(&mut app, &[KeyCode::ArrowDown, KeyCode::ArrowDown, KeyCode::ArrowDown, KeyCode::ArrowRight]);
+    taps(
+        &mut app,
+        &[
+            KeyCode::ArrowDown,
+            KeyCode::ArrowDown,
+            KeyCode::ArrowDown,
+            KeyCode::ArrowRight,
+        ],
+    );
     // File holds Autosave, a check: its rows keep the slot. Recent's rows are plain: they do not.
     let indent = |app: &mut App, label: &str| {
         let text = text_with(app, Role::MenuText, label);

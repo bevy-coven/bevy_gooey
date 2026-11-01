@@ -1413,7 +1413,7 @@ pub fn menu_title(label: impl Into<String>, items: impl Bundle) -> impl Bundle {
     )
 }
 
-/// A command in a menu: a row with `label` that sends [`Activate`] when chosen by Enter, Space, the
+/// A command in a menu: a row with `label` that sends [`Activate`](crate::Activate) when chosen by Enter, Space, the
 /// pad's South button or a click, and closes the menu. Chain [`MenuItem::with_shortcut`] to show
 /// its chord at the end of the row, and add [`Disabled`](crate::Disabled) to make it unavailable
 /// with a reason.
@@ -1433,7 +1433,7 @@ pub fn menu_item(label: impl Into<String>) -> MenuItem {
 }
 
 /// A menu item that is on or off: it keeps its state in Bevy's [`Checked`] (a tick in the mark
-/// slot while on) and flips it on every choice, sending a [`ValueChange<bool>`] with the new value.
+/// slot while on) and flips it on every choice, sending a [`ValueChange<bool>`](crate::ValueChange) with the new value.
 /// The menu closes, like any command.
 ///
 /// ```
@@ -1452,7 +1452,7 @@ pub fn check_item(label: impl Into<String>, checked: bool) -> MenuItem {
 
 /// One of a run of choices in a menu, exactly one of which is on: choosing it sets its own
 /// [`Checked`] (a dot in the mark slot) and clears the [`radio_item`]s next to it, up to the
-/// nearest [`separator`] or other kind of row either way, and sends a [`ValueChange<bool>`] with
+/// nearest [`separator`] or other kind of row either way, and sends a [`ValueChange<bool>`](crate::ValueChange) with
 /// `true` for it. Choosing the one that is on changes nothing and sends nothing.
 ///
 /// ```
