@@ -74,6 +74,10 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   `command_palette()` lists, the ids that ran last, the event a choice sends and what an open palette
   holds (`results()`, `selected()`). See [the command palette](command-palette.md).
 
+- `SplitFraction(f32)`, `SplitMin { first, second }`, `Split`, `SplitDivider` — on the entity `split(axis, first,
+  second)` returned: the first pane's share (the state, serde data), each pane's least size in logical px, the
+  axis, and the divider part. A player's change is one `ValueChange<f32>` on the split. See [split panes](splits.md).
+
 Bevy's own types come through the crate so a host never adds a second copy: `Checked`, `SliderValue`,
 `SliderRange`, `SliderStep`, `ValueChange`, `Activate` and `observe`.
 
@@ -111,6 +115,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `scroll_to_focus` | Navigate | a list follows the focus on one of its rows |
 | `page_lists` | Navigate | PageUp, PageDown and the pad's triggers move focus a viewport |
 | `step_tabs` | Navigate | LB, RB, Ctrl+PageUp and Ctrl+PageDown turn a tabs widget's page, and the D-pad steps a focused tab |
+| `split_by_pad` | Navigate | the D-pad steps a focused split divider along its axis (repeating), South collapses or restores its first pane |
 | `track_input_device` | Navigate | a key or a mouse button is `InputDevice::Keyboard`, a pad button or a pushed stick `Pad`; first in the set |
 | `track_text_editing` | Navigate | `TextEditing` on the `text_input` row whose field has focus, a final change when it loses it, and focus on the row goes to its field; second in the set |
 | `bind_by_input` | Navigate | a waiting `binding` row takes the player's next press, last in the set |
@@ -126,6 +131,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
 | `update_option_rows` | Style | a `text_size`, `interface_size`, `pad_style` or `skin_preset` row follows its setting with no event, and on the frame it is spawned; before `update_choices` |
 | `update_tabs` | Style | a tabs widget's selected page shown and no other, its tab lit, a value past the end pulled back |
+| `update_splits` | Style | a split's two panes' `flex_grow` and least sizes from `SplitFraction` and `SplitMin`, before `apply_skin`; writes only when they differ |
 | `update_meters` | Style | a meter's fill and frame from its `Meter` |
 | `update_lists` | Style | a list's rail, only on a change |
 | `update_toasts` | Style | the toast clocks, the stack's order and its cap |
@@ -148,8 +154,9 @@ use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `met
 `slider_fraction`, `slider_text`, `list_height`, `scroll_to_reveal`, `snap_to_row`, `page_target`,
 `snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
 `repeat_steps`, `choice_step`, `choice_next`, `nearest_step`, `tab_step`, `key_name`, `mouse_name`,
-`shortcut_label`, `shortcut_conflicts`, `is_modifier_key`, `fuzzy_score`,
+`shortcut_label`, `shortcut_conflicts`, `is_modifier_key`, `fuzzy_score`, `split_mins`, `split_clamp`,
+`split_drag`,
 `pad_name` and `PadStyle` (with `PadStyle::name`), and the constants `TEXT_CONTRAST`,
 `NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`,
-`STICK_PUSH`, and the steps the option rows offer: `TEXT_SIZE_STEPS`, `INTERFACE_SIZE_STEPS` and
+`STICK_PUSH`, `SPLIT_KEY_STEP_PX`, and the steps the option rows offer: `TEXT_SIZE_STEPS`, `INTERFACE_SIZE_STEPS` and
 `PAD_STYLES`.

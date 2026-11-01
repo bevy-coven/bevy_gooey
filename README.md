@@ -117,9 +117,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [shortcuts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/shortcuts.md),
   [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
-- **Scroll a list that follows the focus** — `list(4.5, children![..])` cuts the fifth row so the player
-  sees there is more, and keeps the next row in sight as the arrows walk down it:
-  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md).
+- **Scroll a list that follows the focus, and split the screen into panes** — `list(4.5, children![..])`
+  cuts the fifth row so the player sees there is more; `split(SplitAxis::Horizontal, a, b)` is two panes and
+  a divider that a drag, the arrows, the D-pad or a double click moves, never past a `SplitMin`:
+  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md), [split panes](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/splits.md).
 - **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the
   nearest widget, an open dialog (a framed panel with a title, a line of body and its choices) holds it,
   the ring appears the moment a key is pressed, Escape or the pad's B is one `Cancel` event that
@@ -143,11 +144,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
   and `commands.spawn(command_palette())` is one searchable list of every command in a `CommandList`, each
   with its chord and why it is off, "opn prj" finds "File: Open Project", Enter sends one `RunCommand`:
   [the command palette](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/command-palette.md).
-- **Keep the interface's share of the screen at every resolution** — the skin's sizes scale with the
-  window, and every border stays a whole number of device pixels:
-  [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).
-- **Let the pointer through a HUD** — the empty part of a `screen` is `Pickable::IGNORE`, so a click on
-  the world under it still reaches the world: [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md).
+- **Keep the interface's share of the screen at every resolution, and let the pointer through a HUD** — the
+  skin's sizes scale with the window, every border stays a whole number of device pixels, and the empty part
+  of a `screen` is `Pickable::IGNORE`: [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md),
+  [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md).
 
 ![The gallery's settings panel: the ring moves from Quit onto the lit Audio tab, Right turns to Display (two choices), Right to Controls (two rebinding rows, Jump and Use) and Right wraps back to Audio, Down enters the page on the Volume slider, and Ctrl+PageDown turns to Display and then Controls with the ring landing on each new page's first widget](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tabs.gif)
 
@@ -201,6 +201,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *The command palette: `CommandList` holds the commands, `command_palette()` is the modal, "opn prj" is a fuzzy match, Up and Down move the lit row while focus stays in the field, and Enter or a click sends one `RunCommand`; a command that is off shows why and runs nothing.*
 
+![The split example: a Library sidebar beside a Viewport panel over a Log panel; the sidebar's divider is dragged right and back left until the sidebar stops at 240 px, the divider between Viewport and Log is dragged up and down, Up with the ring on it moves it 16 px a press, Home takes the Viewport to its smallest (140 px) and End to its largest (the Log keeps 100 px), and Enter collapses it and gives it back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/split.gif)
+
+*Split panes: `split(axis, first, second)` is two panes and a divider; `SplitFraction` is the first pane's share (plain data) and `SplitMin` each pane's least size, which a drag, a key or a small window never goes below; the arrows along the axis, the D-pad, Home, End and Enter or South work on the focused divider.*
+
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 
 *Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
@@ -212,9 +216,6 @@ grow everything to 200%, and Controller renames the pad's buttons.
 ![The Quit dialog in the dark and the parchment preset: the title "Leave the game?", a line of body, and the choices Leave and Stay in a framed panel over the dimmed screen, the ring on Stay](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dialog.png)
 
 *The dialog in both presets, 540 px wide here, the width of its line of body (a dialog is 420 to 720 px at the default size and grows with the text size); its edge is the skin's `outline` colour.*
-
-The [guide index](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) lists the rest: every widget in one table, what a host touches
-and what it only sees, and the boundary with the game.
 
 ## Part of the Coven
 
@@ -231,10 +232,9 @@ see [use it in Grimoire](https://bevy-coven.github.io/crates/bevy_gooey.html#use
 
 ## Learn more
 
-- [docs.rs](https://docs.rs/bevy_gooey) — the API reference (`cargo doc --open`).
-- [The book page](https://bevy-coven.github.io/crates/bevy_gooey.html) — the same guide with the pictures.
-- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, lists, toasts, skins, screen
-  size, the pointer, feedback.
+- [docs.rs](https://docs.rs/bevy_gooey) — the API reference (`cargo doc --open`); [the book page](https://bevy-coven.github.io/crates/bevy_gooey.html) — the same guide with the pictures.
+- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, lists, split panes, toasts, skins, screen
+  size, the pointer, feedback, every widget in one table, what a host touches and what it only sees, and the boundary with the game.
 - [`examples/`](https://github.com/bevy-coven/bevy_gooey/tree/main/examples) — `gallery`, every widget on one screen.
 - [`docs/media/README.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/media/README.md) — how every picture here is made.
 - [`CHANGELOG.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/CHANGELOG.md) — what each release changed, and what it broke.
