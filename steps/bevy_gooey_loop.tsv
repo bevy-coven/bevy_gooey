@@ -4139,3 +4139,479 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 39	219	log	model	model		2026-11-01T03:31:19Z	7.1	
 39	220	log	tool	learn	learn	2026-11-01T03:31:27Z	0.0	Recording the oomd/memory finding
 39	221	log	model	model		2026-11-01T03:31:27Z	9.2	
+40	1	orient	model	model		2026-11-01T03:32:06Z	4.6	
+40	2	orient	tool	phase mark	bash	2026-11-01T03:32:11Z	0.8	Orienting: marks, status, last audit :: python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git branch --show-current; git log --oneline 
+40	3	orient	tool	git	bash	2026-11-01T03:32:11Z	0.8	Parked work lookup and host load :: cd /home/ladvien/bevy_gooey_loop && git branch -a --list 'wiggum/parked-*' '*iter*'; git log --all --oneline -n 8 --grep='parked'; df -h /tmp . | tail -3; uptim
+40	4	orient	model	model		2026-11-01T03:32:11Z	3.1	
+40	5	orient	tool	shell	bash	2026-11-01T03:32:15Z	0.0	Locating latest log entry :: cd /home/ladvien/bevy_gooey_loop && wc -l docs/loop-log.md && grep -n '^## Iteration' docs/loop-log.md | tail -5; git branch --list 'wiggum/parked-*' -v | head;
+40	6	orient	model	model		2026-11-01T03:32:15Z	1.2	
+40	7	orient	tool	read files	read	2026-11-01T03:32:16Z	0.1	Reading iteration 17 log and backlog :: docs/loop-log.md:682-721
+40	8	orient	model	model		2026-11-01T03:32:16Z	3.4	
+40	9	orient	tool	github	bash	2026-11-01T03:32:19Z	0.4	Triaging open issues :: cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+40	10	orient	tool	read files	read	2026-11-01T03:32:19Z	0.4	Reading home-still status tool doc :: xd://mcp__home_still_system_status
+40	11	orient	model	model		2026-11-01T03:32:20Z	2.2	
+40	12	orient	tool	edit files	write	2026-11-01T03:32:22Z	9.6	Checking home-still status :: xd://mcp__home_still_system_status
+40	13	orient	tool	read files	read	2026-11-01T03:32:32Z	0.0	Reading catalog_recent schema :: xd://mcp__home_still_catalog_recent
+40	14	orient	model	model		2026-11-01T03:32:32Z	4.8	
+40	15	orient	tool	shell	bash	2026-11-01T03:32:36Z	0.0	Checking hs CLI and corpus list :: cd /home/ladvien/bevy_gooey_loop && (hs catalog --help 2>&1 | head -30); tail -40 docs/research/corpus.md
+40	16	orient	model	model		2026-11-01T03:32:36Z	4.6	
+40	17	orient	tool	eval	eval	2026-11-01T03:32:41Z	6.4	{"language": "py", "code": "r = await tool.mcp__home_still_catalog_recent({\"limit\": 200})\nimport json\ns = r if isinstance(r, str) else json.dumps(r)\nprint(
+40	18	orient	model	model		2026-11-01T03:32:47Z	2.4	
+40	19	orient	tool	eval	eval	2026-11-01T03:32:50Z	0.0	{"language": "py", "code": "print(data.keys())\nitems = None\nfor k,v in data.items():\n print(k, type(v), (len(v) if hasattr(v,'__len__') else v))\n if isinsta
+40	20	orient	model	model		2026-11-01T03:32:50Z	2.3	
+40	21	orient	tool	eval	eval	2026-11-01T03:32:52Z	0.0	{"language": "py", "code": "d = json.loads(data['text'])\nitems = d if isinstance(d, list) else next(v for v in d.values() if isinstance(v, list))\nprint(len(it
+40	22	orient	model	model		2026-11-01T03:32:52Z	2.1	
+40	23	orient	tool	eval	eval	2026-11-01T03:32:54Z	0.0	{"language": "py", "code": "t = data['text']\nfor m in re.finditer(r'\"name\":\\s*\"([^\"]*)\"', t):\n n = m.group(1)\n if kw.search(n): print(n)\nprint(t[18700
+40	24	orient	model	model		2026-11-01T03:32:54Z	5.0	
+40	25	orient	tool	git	bash	2026-11-01T03:32:59Z	0.0	Checking unmerged branches :: cd /home/ladvien/bevy_gooey_loop && git branch -a --no-merged main | head -20; git log -3 --format='%h %ad %s' --date=iso wiggum/parked-pass-23-20261030-162214
+40	26	orient	model	model		2026-11-01T03:32:59Z	14.4	
+40	27	orient	tool	cargo build	bash	2026-11-01T03:33:14Z	0.0	[launched bg_1] Building baseline gallery in background :: cd /home/ladvien/bevy_gooey_loop && mkdir -p /tmp/g18/before ~/g18_bin && (CARGO_BUILD_JOBS=1 cargo build --release --examples > /tmp/g18/build-before.log 2>&1;
+40	28	orient	tool	shell	bash	2026-11-01T03:33:14Z	0.0	Listing repo layout :: cd /home/ladvien/bevy_gooey_loop && ls docs docs/research docs/guide docs/media src examples tests; wc -l src/*.rs | tail -30
+40	29	orient	model	model		2026-11-01T03:33:14Z	3.3	
+40	30	orient	tool	shell	bash	2026-11-01T03:33:17Z	0.0	Grepping prompts across research notes :: cd /home/ladvien/bevy_gooey_loop && grep -n -i 'prompt' docs/research/*.md | cut -c1-260 | head -50
+40	31	choose	tool	phase mark	bash	2026-11-01T03:33:17Z	0.1	Reading binding note head :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; sed -n 1,80p docs/research/binding.md | cut -c1-400
+40	32	choose	model	model		2026-11-01T03:33:17Z	26.8	
+40	33	choose	tool	web	web_search	2026-11-01T03:33:44Z	6.2	Finding XAG 112 quotes on prompts :: Xbox Accessibility Guideline 112 UI navigation button prompts bottom-left "B" back consistent
+40	34	choose	tool	web	web_search	2026-11-01T03:33:44Z	9.5	Finding CommonUI input glyph switching :: Unreal CommonUI CommonActionWidget input action icon switches gamepad keyboard mouse last input type
+40	35	choose	model	model		2026-11-01T03:33:53Z	4.5	
+40	36	choose	tool	read files	read	2026-11-01T03:33:58Z	0.6	Reading XAG 112 for verbatim quotes :: https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/112
+40	37	choose	tool	read files	read	2026-11-01T03:33:58Z	0.7	Reading CommonUI quickstart quotes :: https://dev.epicgames.com/documentation/en-us/unreal-engine/common-ui-quickstart-guide-for-unreal-engine
+40	38	choose	model	model		2026-11-01T03:33:59Z	6.4	
+40	39	choose	tool	homestill	bash	2026-11-01T03:34:05Z	6.3	Searching home-still for input prompt literature :: cd /home/ladvien/bevy_gooey_loop && for q in "button prompts controller glyphs game user interface input device switching" "contextual help on-screen controls h
+40	40	choose	bg	cargo build	bash	2026-11-01T03:33:16Z	55.3	bg_1 completed: mkdir -p /tmp/g18/before ~/g18_bin && (CARGO_BUILD_JOBS=1 cargo build --release --examples > /tmp/g18/build-before.lo...
+40	41	choose	model	model		2026-11-01T03:34:11Z	4.7	
+40	42	choose	tool	homestill	bash	2026-11-01T03:34:16Z	2.3	Pulling shortcut-visibility quotes from corpus :: cd /home/ladvien/bevy_gooey_loop && tail -3 /tmp/g18/build-before.log; hs distill search "novices learn keyboard shortcuts by seeing them displayed next to the 
+40	43	choose	model	model		2026-11-01T03:34:18Z	5.0	
+40	44	choose	tool	homestill	bash	2026-11-01T03:34:23Z	5.0	Extracting verbatim awareness quotes :: cd /home/ladvien/bevy_gooey_loop && ls -la ~/g18_bin; for q in "menus display the hotkey beside the command so users become aware of it" "users fail to adopt fa
+40	45	choose	model	model		2026-11-01T03:34:28Z	6.7	
+40	46	choose	tool	read files	read	2026-11-01T03:34:35Z	0.0	Reading binding module for naming and settings :: src/binding.rs:1-200
+40	47	choose	model	model		2026-11-01T03:34:35Z	5.2	
+40	48	choose	tool	read files	read	2026-11-01T03:34:40Z	0.0	Reading rest of binding module :: src/binding.rs:204-451
+40	49	choose	model	model		2026-11-01T03:34:40Z	3.2	
+40	50	choose	tool	search	grep	2026-11-01T03:34:43Z	0.1	Locating Role and apply_skin binding code :: src/skin.rs
+40	51	choose	tool	search	grep	2026-11-01T03:34:43Z	0.1	Locating widget constructors :: src/widgets.rs
+40	52	choose	model	model		2026-11-01T03:34:44Z	1.9	
+40	53	choose	tool	read files	read	2026-11-01T03:34:45Z	0.0	Reading binding widget constructor :: src/widgets.rs:490-620
+40	54	choose	tool	read files	read	2026-11-01T03:34:45Z	0.0	Reading apply_skin fill and border sections :: src/skin.rs:925-1060
+40	55	choose	model	model		2026-11-01T03:34:45Z	10.4	
+40	56	choose	tool	read files	read	2026-11-01T03:34:56Z	0.0	Reading apply_skin state gathering :: src/skin.rs:560-925
+40	57	choose	model	model		2026-11-01T03:34:56Z	2.5	
+40	58	choose	tool	read files	read	2026-11-01T03:34:58Z	0.0	Reading node sizing for Binding and text sections :: src/skin.rs:1255-1388
+40	59	choose	model	model		2026-11-01T03:34:58Z	18.7	
+40	60	choose	tool	read files	read	2026-11-01T03:35:17Z	0.0	Reading widgets head and screen :: src/widgets.rs:1-135
+40	61	choose	model	model		2026-11-01T03:35:17Z	31.8	
+40	62	choose	tool	read files	read	2026-11-01T03:35:49Z	0.0	Reading lib.rs plugins and re-exports :: src/lib.rs:90-317
+40	63	choose	model	model		2026-11-01T03:35:49Z	27.9	
+40	64	choose	tool	search	grep	2026-11-01T03:36:17Z	0.0	Finding skin defaults :: src/skin.rs
+40	65	choose	model	model		2026-11-01T03:36:17Z	8.0	
+40	66	choose	tool	search	grep	2026-11-01T03:36:25Z	0.0	Locating naming maths in model :: src/model.rs
+40	67	choose	model	model		2026-11-01T03:36:25Z	1.2	
+40	68	choose	tool	read files	read	2026-11-01T03:36:26Z	0.0	Reading naming maths :: src/model.rs:244-440
+40	69	choose	model	model		2026-11-01T03:36:26Z	7.3	
+40	70	choose	tool	shell	bash	2026-11-01T03:36:33Z	0.0	Surveying the gallery example :: cd /home/ladvien/bevy_gooey_loop && wc -l examples/gallery.rs && grep -n 'GOOEY_\|fn \|Gamepad\|KeyboardInput' examples/gallery.rs | cut -c1-180
+40	71	choose	model	model		2026-11-01T03:36:33Z	1.9	
+40	72	choose	tool	read files	read	2026-11-01T03:36:35Z	0.0	Reading gallery docs header :: examples/gallery.rs:1,70
+40	73	choose	tool	read files	read	2026-11-01T03:36:35Z	0.0	Reading gallery capture state :: examples/gallery.rs:100,175
+40	74	choose	model	model		2026-11-01T03:36:35Z	2.2	
+40	75	choose	tool	read files	read	2026-11-01T03:36:37Z	0.0	Reading gallery docs header :: examples/gallery.rs:1-60
+40	76	choose	tool	read files	read	2026-11-01T03:36:37Z	0.0	Reading gallery staged input types :: examples/gallery.rs:100-172
+40	77	choose	model	model		2026-11-01T03:36:38Z	27.8	
+40	78	choose	tool	shell	bash	2026-11-01T03:37:05Z	0.0	[launched bg_3] Capturing baseline stills :: mkdir -p /tmp/g18/before /tmp/g18/after && cat > /tmp/g18/cap.sh <<'EOF' #!/bin/bash # usage: cap.sh <binary> <outdir> G="$1"; O="$2"; mkdir -p "$O" export GOOE
+40	79	choose	model	model		2026-11-01T03:37:05Z	12.2	
+40	80	choose	tool	shell	bash	2026-11-01T03:37:18Z	0.0	Checking Bevy 0.20 input message types :: cd ~/.cargo/registry/src/index.crates.io-*/bevy_input-0.20.0/ && grep -n 'pub struct GamepadButtonStateChangedEvent\|pub struct GamepadAxisChangedEvent\|pub str
+40	81	choose	model	model		2026-11-01T03:37:18Z	3.8	
+40	82	choose	tool	shell	bash	2026-11-01T03:37:21Z	0.0	Checking Bevy 0.20 input message types :: ls -d ~/.cargo/registry/src/*/bevy_input-0.20* 2>&1 | head; D=$(ls -d ~/.cargo/registry/src/*/bevy_input-0.20.0 | head -1); cd $D && grep -n 'pub struct Gamepad
+40	83	choose	model	model		2026-11-01T03:37:21Z	3.7	
+40	84	choose	tool	shell	bash	2026-11-01T03:37:25Z	0.0	Reading gamepad event semantics :: D=$(ls -d ~/.cargo/registry/src/*/bevy_input-0.20.1 | head -1); cd $D && sed -n 190,290p src/gamepad.rs; grep -n 'bevy_input\|features\|^bevy' ~/bevy_gooey_loop
+40	85	choose	model	model		2026-11-01T03:37:25Z	6.4	
+40	86	choose	tool	shell	bash	2026-11-01T03:37:32Z	0.0	Checking whether nav reads sticks :: cd ~/bevy_gooey_loop && grep -n 'Axis\|Stick' src/*.rs | head; cat /tmp/g18/before.log
+40	87	choose	model	model		2026-11-01T03:37:32Z	17.3	
+40	88	choose	tool	shell	bash	2026-11-01T03:37:49Z	0.0	Checking Resource trait in Bevy 0.20 :: D=$(ls -d ~/.cargo/registry/src/*/bevy_ecs-0.20.1 | head -1); grep -n 'pub trait Resource' -B6 -A12 $D/src/resource.rs | head -60
+40	89	choose	model	model		2026-11-01T03:37:49Z	21.9	
+40	90	choose	tool	shell	bash	2026-11-01T03:38:11Z	0.0	Listing skin layout constants :: cd ~/bevy_gooey_loop && grep -n 'const [A-Z_]*:' src/skin.rs | head -40; cat /tmp/g18/before.log | tail -3
+40	91	choose	bg	shell	bash	2026-11-01T03:37:22Z	48.9	bg_3 completed: mkdir -p /tmp/g18/before /tmp/g18/after && cat > /tmp/g18/cap.sh <<'EOF' #!/bin/bash # usage: cap.sh <binary> <outdir...
+40	92	choose	model	model		2026-11-01T03:38:11Z	1.6	
+40	93	choose	tool	read files	read	2026-11-01T03:38:12Z	0.0	Viewing baseline dark frame :: /tmp/g18/before/dark-1280x720.png
+40	94	choose	model	model		2026-11-01T03:38:12Z	6.2	
+40	95	choose	tool	shell	bash	2026-11-01T03:38:19Z	0.0	Mirroring an earlier research note's shape :: cd ~/bevy_gooey_loop && grep -n '^#' docs/research/cancel.md; sed -n 1,12p docs/research/cancel.md | cut -c1-500; sed -n 70,95p docs/research/cancel.md | cut -c
+40	96	choose	model	model		2026-11-01T03:38:19Z	37.4	
+40	97	choose	tool	shell	bash	2026-11-01T03:38:56Z	0.1	Checking text justification usage and test harness :: cd ~/bevy_gooey_loop && grep -n 'TextLayout\|Justify::' src/*.rs | head; sed -n 1,60p tests/binding.rs
+40	98	choose	model	model		2026-11-01T03:38:56Z	3.3	
+40	99	choose	tool	shell	bash	2026-11-01T03:39:00Z	0.1	Checking TextLayout API and the test app builder :: D=$(ls -d ~/.cargo/registry/src/*/bevy_text-0.20.1 | head -1); grep -n 'pub struct TextLayout' -A12 $D/src/text.rs | head -40; grep -n 'pub enum Justify' -B3 -A
+40	100	choose	model	model		2026-11-01T03:39:00Z	79.3	
+40	101	choose	tool	edit files	write	2026-11-01T03:40:19Z	0.0	Writing the prompts research note :: docs/research/prompts.md
+40	102	choose	model	model		2026-11-01T03:40:19Z	3.5	
+40	103	choose	tool	shell	bash	2026-11-01T03:40:22Z	0.1	Verifying quotes I reference from other notes :: cd ~/bevy_gooey_loop && grep -n -i 'clearly labeled\|discoverable' docs/research/cancel.md | cut -c1-500; grep -n 'K4' docs/research/cancel.md | cut -c1-200 | h
+40	104	choose	model	model		2026-11-01T03:40:23Z	2.7	
+40	105	choose	tool	shell	bash	2026-11-01T03:40:25Z	0.0	Locating lines to fix in the note :: cd ~/bevy_gooey_loop && grep -n 'East. is positional\|positional' docs/research/cancel.md | cut -c1-160 | head -3; grep -n 'NN/g' docs/research/prompts.md | cut
+40	106	choose	model	model		2026-11-01T03:40:25Z	3.9	
+40	107	choose	tool	shell	bash	2026-11-01T03:40:29Z	0.2	Fixing note wording and committing it alone :: cd ~/bevy_gooey_loop && python3 - <<'EOF' import re p='docs/research/prompts.md' s=open(p).read() s=s.replace('(NN/g\'s "clearly labeled and discoverable exit",
+40	108	choose	model	model		2026-11-01T03:40:29Z	2.8	
+40	109	build	tool	phase mark	bash	2026-11-01T03:40:32Z	0.1	Branching and listing BindingDevice uses :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build && git checkout -q -b loop/iter-18 && git branch --show-current; grep -n 'BindingDevic
+40	110	build	model	model		2026-11-01T03:40:32Z	31.6	
+40	111	build	tool	shell	bash	2026-11-01T03:41:04Z	0.0	Reading Role definition head and tail :: cd ~/bevy_gooey_loop && sed -n 372,402p src/skin.rs; sed -n 500,555p src/skin.rs
+40	112	build	model	model		2026-11-01T03:41:04Z	1.9	
+40	113	build	tool	shell	bash	2026-11-01T03:41:06Z	0.0	Checking Role derive and required components :: cd ~/bevy_gooey_loop && grep -n 'pub enum Role' -B8 src/skin.rs | head -30; sed -n 554,560p src/skin.rs; grep -n 'BackgroundColor' src/widgets.rs | head
+40	114	build	model	model		2026-11-01T03:41:06Z	10.7	
+40	115	build	tool	shell	bash	2026-11-01T03:41:17Z	0.0	Checking for apps without InputPlugin :: cd ~/bevy_gooey_loop && grep -ln 'MinimalPlugins' tests/*.rs; grep -n 'MinimalPlugins' tests/*.rs | head; grep -n 'init_resource::<ButtonInput\|add_message' tes
+40	116	build	model	model		2026-11-01T03:41:17Z	1.4	
+40	117	build	tool	shell	bash	2026-11-01T03:41:18Z	0.0	Reading nav test app setup :: cd ~/bevy_gooey_loop && sed -n 1,50p tests/nav.rs
+40	118	build	model	model		2026-11-01T03:41:18Z	26.6	
+40	119	build	tool	edit files	write	2026-11-01T03:41:45Z	0.0	Writing src/prompt.rs :: src/prompt.rs
+40	120	build	model	model		2026-11-01T03:41:45Z	8.5	
+40	121	build	tool	edit files	edit	2026-11-01T03:41:53Z	0.0	Replacing BindingDevice with InputDevice in binding.rs :: [src/binding.rs#FC92] PUT 94.=109: +/// The device a row listens to: its [`Binding`]'s. A keyboard row takes a key or a mouse button, a +/// pad row a pad butto
+40	122	build	model	model		2026-11-01T03:41:53Z	3.3	
+40	123	build	tool	read files	read	2026-11-01T03:41:57Z	0.0	Reading region to clean up :: src/binding.rs:96-112
+40	124	build	model	model		2026-11-01T03:41:57Z	2.2	
+40	125	build	tool	edit files	edit	2026-11-01T03:41:59Z	0.0	Removing the orphan doc comment :: [src/binding.rs#67C9] CUT 104.=106
+40	126	build	tool	search	grep	2026-11-01T03:41:59Z	0.0	Finding remaining BindingDevice uses :: src/binding.rs
+40	127	build	model	model		2026-11-01T03:41:59Z	1.9	
+40	128	build	tool	read files	read	2026-11-01T03:42:01Z	0.0	Reading bind_by_input head for edit :: src/binding.rs:308-324
+40	129	build	tool	read files	read	2026-11-01T03:42:01Z	0.0	Reading update_bindings head for edit :: src/binding.rs:402-425
+40	130	build	model	model		2026-11-01T03:42:01Z	5.2	
+40	131	build	tool	edit files	edit	2026-11-01T03:42:06Z	0.0	Dropping BindingDevice from the capture and the keycap writers :: [src/binding.rs#8AF3] PUT 311.=311: + rows: Query<(Entity, &BindingValue, Has<Armed>), With<Capturing>>, PUT 315.=315: + for (row, held, armed) in &rows { PUT 3
+40	132	build	tool	shell	bash	2026-11-01T03:42:06Z	0.0	Checking use lines :: cd ~/bevy_gooey_loop && sed -n 12,18p src/binding.rs
+40	133	build	model	model		2026-11-01T03:42:06Z	5.6	
+40	134	build	tool	shell	bash	2026-11-01T03:42:12Z	0.0	Locating constants in model :: cd ~/bevy_gooey_loop && grep -n 'PAD_REPEAT_RATE\|PAD_REPEAT_DELAY' src/model.rs | head -4
+40	135	build	model	model		2026-11-01T03:42:12Z	1.2	
+40	136	build	tool	read files	read	2026-11-01T03:42:13Z	0.0	Reading constants neighbourhood :: src/model.rs:130-150
+40	137	build	model	model		2026-11-01T03:42:13Z	2.7	
+40	138	build	tool	edit files	edit	2026-11-01T03:42:16Z	0.0	Adding STICK_PUSH to model :: [src/model.rs#EF87] PUT >145: + +/// How far a stick must be pushed, as a share of its travel (after the pad's own dead zone), to +/// count as the player using
+40	139	build	model	model		2026-11-01T03:42:16Z	9.0	
+40	140	build	tool	edit files	edit	2026-11-01T03:42:25Z	0.0	Wiring prompts into lib.rs :: [src/lib.rs#9239] PUT 116.=116: +mod prompt; +mod scale; PUT 135.=141: +pub use model::{ + COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY
+40	141	build	model	model		2026-11-01T03:42:25Z	4.6	
+40	142	build	tool	edit files	edit	2026-11-01T03:42:29Z	0.0	Updating widgets.rs imports and binding spawn :: [src/widgets.rs#C2F6] PUT 22.=25: +use crate::binding::{ + Binding, BindingValue, binding_on_activate, binding_on_key_input, binding_self_update, +}; PUT 34.=34
+40	143	build	model	model		2026-11-01T03:42:29Z	5.0	
+40	144	build	tool	read files	read	2026-11-01T03:42:34Z	0.0	Finding insertion point after binding :: src/widgets.rs:560-578
+40	145	build	model	model		2026-11-01T03:42:34Z	5.0	
+40	146	build	tool	shell	bash	2026-11-01T03:42:39Z	0.0	Reading dialog widget for scrim structure :: cd ~/bevy_gooey_loop && grep -n 'pub fn dialog' -B30 -A22 src/widgets.rs | sed -n 1,90p
+40	147	build	model	model		2026-11-01T03:42:39Z	15.7	
+40	148	build	tool	edit files	edit	2026-11-01T03:42:55Z	0.0	Adding prompt and prompts widgets :: [src/widgets.rs#7A67] PUT >573: + +/// One hint of what an input does: a keycap and the words for it ("Esc Back"). The keycap shows +/// the input of the device
+40	149	build	model	model		2026-11-01T03:42:55Z	3.3	
+40	150	build	tool	shell	bash	2026-11-01T03:42:58Z	0.0	Checking TextLayout constructors :: D=$(ls -d ~/.cargo/registry/src/*/bevy_text-0.20.1 | head -1); sed -n 142,175p $D/src/text.rs
+40	151	build	model	model		2026-11-01T03:42:58Z	5.0	
+40	152	build	tool	shell	bash	2026-11-01T03:43:03Z	0.1	Fixing TextLayout call and imports :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() s=s.replace("TextLayout::new_with_justify(Justify::Center),","TextLayout::new(Just
+40	153	build	model	model		2026-11-01T03:43:04Z	8.0	
+40	154	build	tool	read files	read	2026-11-01T03:43:12Z	0.0	Reading Panel and Menu node styling :: src/skin.rs:1055-1100
+40	155	build	model	model		2026-11-01T03:43:12Z	5.9	
+40	156	build	tool	read files	read	2026-11-01T03:43:17Z	0.0	Reading skin constants section :: src/skin.rs:20-80
+40	157	build	model	model		2026-11-01T03:43:17Z	4.4	
+40	158	build	tool	search	grep	2026-11-01T03:43:22Z	0.0	Finding all uses of the safe edge constant :: src
+40	159	build	model	model		2026-11-01T03:43:22Z	15.7	
+40	160	build	tool	edit files	edit	2026-11-01T03:43:38Z	0.1	Adding prompt roles and styling to skin.rs :: [src/skin.rs#E8EE] PUT 73.=75: +/// The share of the window, on each side, that a dialog's scrim and a prompts legend keep clear: a +/// TV may not show the out
+40	161	build	model	model		2026-11-01T03:43:38Z	9.0	
+40	162	build	tool	edit files	edit	2026-11-01T03:43:47Z	0.0	Adding prompt roles and styling to skin.rs (retry) :: [src/skin.rs#E8EE] PUT 73.=75: +/// The share of the window, on each side, that a dialog's scrim and a prompts legend keep clear: a +/// TV may not show the out
+40	163	build	model	model		2026-11-01T03:43:47Z	3.8	
+40	164	build	tool	read files	read	2026-11-01T03:43:51Z	0.0	Reading fill match end :: src/skin.rs:976-992
+40	165	build	model	model		2026-11-01T03:43:51Z	3.3	
+40	166	build	tool	edit files	edit	2026-11-01T03:43:54Z	0.0	Adding fill arms for the prompt roles :: [src/skin.rs#E612] PUT >988: + // The legend is the panel's colour, so its words are at the contrast a panel's are over any + // world; a keycap is a binding ke
+40	167	build	tool	search	grep	2026-11-01T03:43:54Z	0.0	Finding the node and text arms to extend :: src/skin.rs
+40	168	build	model	model		2026-11-01T03:43:54Z	1.3	
+40	169	build	tool	read files	read	2026-11-01T03:43:55Z	0.0	Reading BindingCap arm for insertion :: src/skin.rs:1306-1320
+40	170	build	model	model		2026-11-01T03:43:55Z	7.0	
+40	171	build	tool	edit files	edit	2026-11-01T03:44:02Z	0.0	Adding node arms and text arm for the prompt roles :: [src/skin.rs#E78E] PUT >1316: + // The legend: a bar in its parent's bottom-left corner, inside the safe area, its + // prompts a pair of paddings apart. Absolu
+40	172	build	model	model		2026-11-01T03:44:02Z	6.6	
+40	173	build	tool	read files	read	2026-11-01T03:44:09Z	0.0	Reading gallery setup :: examples/gallery.rs:320-452
+40	174	build	model	model		2026-11-01T03:44:09Z	12.1	
+40	175	build	tool	shell	bash	2026-11-01T03:44:21Z	0.0	Reading how tests plug in and press a pad :: cd ~/bevy_gooey_loop && grep -n 'GamepadConnectionEvent\|RawGamepadButtonChangedEvent\|fn plug\|fn press_pad\|fn pad' tests/binding.rs | head; sed -n '/fn plug_
+40	176	build	model	model		2026-11-01T03:44:21Z	1.7	
+40	177	build	tool	shell	bash	2026-11-01T03:44:23Z	0.0	Reading pad helpers and the gallery's stage_keys :: cd ~/bevy_gooey_loop && sed -n 262,300p tests/binding.rs; sed -n 611,700p examples/gallery.rs
+40	178	build	model	model		2026-11-01T03:44:23Z	16.0	
+40	179	build	tool	read files	read	2026-11-01T03:44:39Z	0.0	Reading key token parsing :: examples/gallery.rs:244-292
+40	180	build	tool	read files	read	2026-11-01T03:44:39Z	0.0	Reading rest of stage_keys :: examples/gallery.rs:700-839
+40	181	build	model	model		2026-11-01T03:44:39Z	7.7	
+40	182	build	tool	edit files	edit	2026-11-01T03:44:47Z	0.0	Adding the gallery's legend and pad staging :: [examples/gallery.rs#0A15] PUT 53.=53: +use bevy::input::ButtonState; +use bevy::input::gamepad::{ + GamepadConnection, GamepadConnectionEvent, RawGamepadButton
+40	183	build	model	model		2026-11-01T03:44:47Z	5.2	
+40	184	build	tool	search	grep	2026-11-01T03:44:52Z	0.0	Locating stage_keys signature and arms :: examples/gallery.rs
+40	185	build	model	model		2026-11-01T03:44:52Z	5.1	
+40	186	build	tool	edit files	edit	2026-11-01T03:44:57Z	0.0	Adding pad staging params and arms :: [examples/gallery.rs#A2B6] PUT 639.=639: + mut pointer: MessageWriter<PointerInput>, + pads: Query<Entity, With<Gamepad>>, + mut connections: MessageWriter<Game
+40	187	build	tool	shell	bash	2026-11-01T03:44:57Z	0.0	Reading the quit dialog spawn :: cd ~/bevy_gooey_loop && sed -n 495,545p examples/gallery.rs
+40	188	build	model	model		2026-11-01T03:44:57Z	4.2	
+40	189	build	tool	search	grep	2026-11-01T03:45:01Z	0.1	Locating the dialog's children close :: examples/gallery.rs
+40	190	build	model	model		2026-11-01T03:45:01Z	2.5	
+40	191	build	tool	edit files	edit	2026-11-01T03:45:04Z	0.0	Adding the legend to the gallery's dialog :: [examples/gallery.rs#7C63] PUT 527.=527: + ), + ( + prompts(), + children![prompt("Select", Prompt::SELECT), prompt("Back", Prompt::BACK)], + )],
+40	192	build	tool	read files	read	2026-11-01T03:45:04Z	0.0	Reading gallery docs end to extend :: examples/gallery.rs:40-52
+40	193	build	model	model		2026-11-01T03:45:04Z	4.0	
+40	194	build	tool	edit files	edit	2026-11-01T03:45:08Z	0.0	Documenting the legend and pad tokens in the gallery header :: [examples/gallery.rs#B31F] PUT >49: +//! The bottom-left corner holds the legend, **Select** and **Back** ([`prompts`]), which also stands +//! in the Quit dial
+40	195	build	tool	cargo build	bash	2026-11-01T03:45:08Z	32.8	Formatting and building release gallery :: cd ~/bevy_gooey_loop && cargo fmt && git diff --stat | tail -3 && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -40
+40	196	build	model	model		2026-11-01T03:45:41Z	4.6	
+40	197	build	tool	shell	bash	2026-11-01T03:45:45Z	10.5	First captures of the legend :: cd /tmp/g18 && G=$CARGO_TARGET_DIR/release/examples/gallery; export GOOEY_HEALTH=60; GOOEY_FRAMES=120 GOOEY_SHOT=/tmp/g18/after/dark-1280x720.png $G 2>&1 | grep
+40	198	build	model	model		2026-11-01T03:45:56Z	1.3	
+40	199	build	tool	read files	read	2026-11-01T03:45:57Z	0.0	Viewing legend in keyboard state :: /tmp/g18/after/dark-1280x720.png
+40	200	build	model	model		2026-11-01T03:45:57Z	12.8	
+40	201	build	tool	shell	bash	2026-11-01T03:46:10Z	0.2	Zooming on the legend in both device states :: cd /tmp/g18/after && magick dark-pad-1280x720.png -crop 460x90+40+600 +repage -filter point -resize 300% pad-zoom.png && magick dark-1280x720.png -crop 460x90+4
+40	202	build	model	model		2026-11-01T03:46:10Z	1.5	
+40	203	build	tool	read files	read	2026-11-01T03:46:12Z	0.0	Viewing keyboard and pad legends zoomed :: /tmp/g18/after/both-zoom.png
+40	204	build	model	model		2026-11-01T03:46:12Z	35.6	
+40	205	build	tool	shell	bash	2026-11-01T03:46:48Z	0.0	Locating wrap settings to remove :: cd ~/bevy_gooey_loop && grep -n 'FlexWrap::Wrap\|next.row_gap = Val::Px(skin.gap);' src/skin.rs | head; grep -n 'wraps rather\|wrapping, so it never' src/skin.r
+40	206	build	model	model		2026-11-01T03:46:48Z	2.1	
+40	207	build	tool	read files	read	2026-11-01T03:46:50Z	0.0	Reading Prompts arm to edit :: src/skin.rs:1316-1334
+40	208	build	tool	read files	read	2026-11-01T03:46:50Z	0.0	Reading max-width constant :: src/skin.rs:76-84
+40	209	build	model	model		2026-11-01T03:46:50Z	5.3	
+40	210	build	tool	edit files	edit	2026-11-01T03:46:55Z	0.0	Dropping flex-wrap from the legend; trimming its vertical padding :: [src/skin.rs#04C3] PUT 81.=83: +/// A prompts legend is no wider than this share of its parent (its 5% margin and the same on the +/// right): a longer legend s
+40	211	build	tool	shell	bash	2026-11-01T03:46:55Z	0.0	Reading the prompts rustdoc wrap claim :: cd ~/bevy_gooey_loop && sed -n 630,637p src/widgets.rs
+40	212	build	model	model		2026-11-01T03:46:55Z	6.7	
+40	213	build	tool	edit files	edit	2026-11-01T03:47:02Z	0.0	Correcting the prompts rustdoc :: [src/widgets.rs#A38F] PUT 634.=635: +/// words read over any game world. It is laid out apart from its parent's other children (absolute, +/// so it moves nothi
+40	214	build	tool	cargo build	bash	2026-11-01T03:47:02Z	16.8	Rebuilding and recapturing legend states :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -5; cd /tmp/g18 && G=$CARGO_TARGET_DIR/release/examples/gal
+40	215	build	model	model		2026-11-01T03:47:19Z	3.5	
+40	216	build	tool	read files	read	2026-11-01T03:47:22Z	0.0	Refreshing widgets.rs tag :: src/widgets.rs:630-637
+40	217	build	tool	read files	read	2026-11-01T03:47:22Z	0.0	Viewing legend both states after fix :: /tmp/g18/after/both-zoom.png
+40	218	build	model	model		2026-11-01T03:47:22Z	5.5	
+40	219	build	tool	edit files	edit	2026-11-01T03:47:28Z	0.0	Correcting the prompts rustdoc :: [src/widgets.rs#A968] PUT 634.=635: +/// words read over any game world. It is laid out apart from its parent's other children (absolute, +/// so it moves nothi
+40	220	build	tool	read files	read	2026-11-01T03:47:28Z	0.0	Viewing the dialog capture :: /tmp/g18/after/dark-dialog-1280x720.png
+40	221	build	model	model		2026-11-01T03:47:28Z	5.4	
+40	222	build	tool	shell	bash	2026-11-01T03:47:33Z	0.0	Reading test helpers for keys and mouse :: cd ~/bevy_gooey_loop && sed -n 140,262p tests/binding.rs
+40	223	build	tool	shell	bash	2026-11-01T03:47:33Z	0.0	Checking how pointer test reads the hover map :: cd ~/bevy_gooey_loop && grep -n 'HoverMap\|fn hit\|fn hovered\|PointerInput' tests/pointer.rs | head -20
+40	224	build	model	model		2026-11-01T03:47:33Z	2.3	
+40	225	build	tool	shell	bash	2026-11-01T03:47:35Z	0.0	Reading hover-map helper and idle-test pattern :: cd ~/bevy_gooey_loop && sed -n 60,125p tests/pointer.rs; grep -n 'fn contrast\|fn luminance\|contrast_ratio' tests/binding.rs | head -5; grep -n 'fn writes_noth
+40	226	build	model	model		2026-11-01T03:47:35Z	1.6	
+40	227	build	tool	shell	bash	2026-11-01T03:47:37Z	0.0	Reading contrast and idle tests in binding.rs :: cd ~/bevy_gooey_loop && sed -n 940,1070p tests/binding.rs
+40	228	build	model	model		2026-11-01T03:47:37Z	1.8	
+40	229	build	tool	shell	bash	2026-11-01T03:47:39Z	0.0	Reading colour helpers in binding tests :: cd ~/bevy_gooey_loop && grep -n '^fn rgb\|^fn text_colour\|^fn background\|^fn skin' -A12 tests/binding.rs | head -60
+40	230	build	model	model		2026-11-01T03:47:39Z	22.6	
+40	231	build	tool	shell	bash	2026-11-01T03:48:01Z	0.0	Reading pointer test world helper and header :: cd ~/bevy_gooey_loop && sed -n 118,200p tests/pointer.rs; sed -n 1,58p tests/pointer.rs | head -80
+40	232	build	model	model		2026-11-01T03:48:01Z	73.7	
+40	233	build	tool	edit files	write	2026-11-01T03:49:15Z	0.0	Writing tests/prompts.rs :: tests/prompts.rs
+40	234	build	model	model		2026-11-01T03:49:15Z	13.2	
+40	235	build	tool	shell	bash	2026-11-01T03:49:28Z	0.0	Locating test lines to tidy :: cd ~/bevy_gooey_loop && grep -n 'screen: Entity\| screen,\|let _ = ui.screen\|a nudge of\|0.3\b\|min.y >= before.max.y\|app.world().get::<Children>(dialog).is_s
+40	236	build	model	model		2026-11-01T03:49:28Z	1.3	
+40	237	build	tool	read files	read	2026-11-01T03:49:30Z	0.0	Reading Ui struct for edit :: tests/prompts.rs:82-116
+40	238	build	model	model		2026-11-01T03:49:30Z	2.7	
+40	239	build	tool	edit files	edit	2026-11-01T03:49:32Z	0.0	Tidying test helpers :: [tests/prompts.rs#C064] PUT 84.=84: PUT 107.=107: + world.spawn(screen()).add_children(&[panel, legend]); PUT 110.=110: PUT 335.=340: + push_stick(&mut app, pad
+40	240	build	model	model		2026-11-01T03:49:32Z	5.3	
+40	241	build	tool	edit files	edit	2026-11-01T03:49:38Z	0.0	Tidying test helpers (retry with CUT) :: [tests/prompts.rs#C064] CUT 84.=84 PUT 107.=107: + world.spawn(screen()).add_children(&[panel, legend]); CUT 110.=110 PUT 335.=340: + push_stick(&mut app, pad, 
+40	242	prove	tool	phase mark	bash	2026-11-01T03:49:38Z	0.0	[launched bg_5] Running the new prompts tests :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; cargo fmt && (CARGO_BUILD_JOBS=1 cargo test --test prompts > /tmp/g18/test-prompts.lo
+40	243	prove	model	model		2026-11-01T03:49:38Z	4.7	
+40	244	prove	tool	read files	read	2026-11-01T03:49:42Z	0.0	Verifying the stick test after auto-repair :: tests/prompts.rs:326-346
+40	245	prove	tool	read files	read	2026-11-01T03:49:42Z	0.0	Reading leftover comment :: tests/prompts.rs:428-436
+40	246	prove	model	model		2026-11-01T03:49:42Z	2.6	
+40	247	prove	tool	search	grep	2026-11-01T03:49:45Z	0.0	Locating the leftover comment :: tests/prompts.rs
+40	248	prove	model	model		2026-11-01T03:49:45Z	1.4	
+40	249	prove	tool	read files	read	2026-11-01T03:49:46Z	0.0	Showing the lines to cut :: tests/prompts.rs:440-448
+40	250	prove	model	model		2026-11-01T03:49:46Z	1.5	
+40	251	prove	tool	edit files	edit	2026-11-01T03:49:48Z	0.0	Removing leftover comment :: [tests/prompts.rs#2D4A] CUT 446.=446
+40	252	prove	bg	phase mark	bash	2026-11-01T03:49:38Z	9.4	bg_5 completed: python3 ~/.local/share/wiggum/steps.py mark prove; cargo fmt && (CARGO_BUILD_JOBS=1 cargo test --test prompts > /tmp/...
+40	253	prove	model	model		2026-11-01T03:49:48Z	1.4	
+40	254	prove	tool	shell	bash	2026-11-01T03:49:49Z	0.0	Reading test run output :: tail -50 /tmp/g18/test-prompts.log
+40	255	prove	model	model		2026-11-01T03:49:49Z	2.9	
+40	256	prove	tool	read files	read	2026-11-01T03:49:52Z	0.0	Reading caps helper :: tests/prompts.rs:112-135
+40	257	prove	tool	read files	read	2026-11-01T03:49:52Z	0.0	Reading dialog test :: tests/prompts.rs:449-468
+40	258	prove	model	model		2026-11-01T03:49:52Z	3.5	
+40	259	prove	tool	edit files	edit	2026-11-01T03:49:56Z	0.0	Fixing entity iteration and the unused dialog :: [tests/prompts.rs#FFBF] PUT 118.=119: + for prompt in world.get::<Children>(legend).expect("prompts").iter() { + for part in world PUT 453.=460: + app.world_mut
+40	260	prove	tool	cargo test	bash	2026-11-01T03:49:56Z	9.9	Running prompts tests :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo test --test prompts 2>&1 | tail -60
+40	261	prove	model	model		2026-11-01T03:50:06Z	6.9	
+40	262	prove	tool	shell	bash	2026-11-01T03:50:13Z	0.1	Backing up files for mutation checks :: cd ~/bevy_gooey_loop && cp src/model.rs /tmp/g18/model.rs.bak && cp src/widgets.rs /tmp/g18/widgets.rs.bak && grep -n 'pub const STICK_PUSH' src/model.rs && gre
+40	263	prove	model	model		2026-11-01T03:50:13Z	2.5	
+40	264	prove	tool	edit files	edit	2026-11-01T03:50:15Z	0.0	Mutation: stick threshold to 0.1 and legend pickable :: [src/model.rs#9D22] PUT 151.=151: +pub const STICK_PUSH: f32 = 0.1;
+40	265	prove	tool	read files	read	2026-11-01T03:50:15Z	0.0	Reading Prompts bundle for mutation :: src/widgets.rs:658-664
+40	266	prove	model	model		2026-11-01T03:50:15Z	2.9	
+40	267	prove	tool	edit files	edit	2026-11-01T03:50:18Z	0.0	Mutation: legend takes the pointer :: [src/widgets.rs#F2B1] PUT 662.=662: + Pickable::default(),
+40	268	prove	tool	cargo test	bash	2026-11-01T03:50:18Z	26.2	Running mutated tests :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --test prompts 2>&1 | grep -E '^test |panicked|test result|assertion|nudge|claims' | head -30
+40	269	prove	model	model		2026-11-01T03:50:44Z	2.8	
+40	270	prove	tool	shell	bash	2026-11-01T03:50:47Z	0.1	Restoring mutated sources :: cd ~/bevy_gooey_loop && cp /tmp/g18/model.rs.bak src/model.rs && cp /tmp/g18/widgets.rs.bak src/widgets.rs && cmp src/model.rs /tmp/g18/model.rs.bak && cmp src/
+40	271	prove	model	model		2026-11-01T03:50:47Z	10.8	
+40	272	prove	tool	shell	bash	2026-11-01T03:50:58Z	0.0	Reading media list and README binding bullets :: cd ~/bevy_gooey_loop && cat docs/media/README.md | cut -c1-900; wc -l README.md; grep -n 'binding' README.md | cut -c1-300
+40	273	prove	model	model		2026-11-01T03:50:58Z	1.7	
+40	274	prove	tool	shell	bash	2026-11-01T03:51:00Z	0.0	Reading README structure :: cd ~/bevy_gooey_loop && sed -n 60,173p README.md | cut -c1-420
+40	275	prove	model	model		2026-11-01T03:51:00Z	14.7	
+40	276	prove	tool	cargo build	bash	2026-11-01T03:51:15Z	36.7	Capturing GIF frames for the legend :: cd /tmp/g18 && rm -rf gif && mkdir gif && G=$CARGO_TARGET_DIR/release/examples/gallery; cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --examp
+40	277	prove	model	model		2026-11-01T03:51:51Z	5.1	
+40	278	prove	tool	shell	bash	2026-11-01T03:51:56Z	1.0	Making a contact sheet of GIF frames :: cd /tmp/g18/gif && ls | head -3; ls | tail -2; ls f_*.png | awk 'NR%9==1' | head -14 | tr '\n' ' ' > /tmp/g18/pick.txt; cat /tmp/g18/pick.txt; cd /tmp/g18 && ma
+40	279	prove	model	model		2026-11-01T03:51:57Z	1.4	
+40	280	prove	tool	read files	read	2026-11-01T03:51:59Z	0.3	Viewing GIF contact sheet :: /tmp/g18/montage.png
+40	281	prove	model	model		2026-11-01T03:51:59Z	6.9	
+40	282	prove	tool	clip record/render	bash	2026-11-01T03:52:06Z	2.2	Encoding the prompts GIF :: cd /tmp/g18 && ffmpeg -y -loglevel error -framerate 15 -pattern_type glob -i '/tmp/g18/gif/f_*.png' -vf "crop=920:490:30:230,fps=15,split[a][b];[a]palettegen=st
+40	283	prove	model	model		2026-11-01T03:52:08Z	2.9	
+40	284	prove	tool	clip record/render	bash	2026-11-01T03:52:11Z	0.6	Extracting GIF frames to check :: cd /tmp/g18 && ffmpeg -y -loglevel error -i prompts.gif -vf "select=eq(n\,88)" -vframes 1 gif88.png && ffmpeg -y -loglevel error -i prompts.gif -vf "select=eq(n
+40	285	prove	model	model		2026-11-01T03:52:12Z	1.4	
+40	286	prove	tool	read files	read	2026-11-01T03:52:13Z	0.1	Viewing GIF frame with pad legend over the dialog :: /tmp/g18/gif100.png
+40	287	prove	model	model		2026-11-01T03:52:13Z	5.4	
+40	288	prove	tool	shell	bash	2026-11-01T03:52:19Z	0.1	Reading guide index and bindings guide :: cd ~/bevy_gooey_loop && cp /tmp/g18/prompts.gif docs/media/prompts.gif && cat docs/guide/README.md | cut -c1-300; echo ------; cat docs/guide/bindings.md | cut 
+40	289	prove	model	model		2026-11-01T03:52:19Z	3.7	
+40	290	prove	tool	shell	bash	2026-11-01T03:52:22Z	0.0	Finding binding rows in other guide pages :: cd ~/bevy_gooey_loop && grep -n 'binding\|Binding' docs/guide/widgets.md docs/guide/host-api.md docs/guide/navigation.md docs/guide/scope.md docs/guide/feedback
+40	291	prove	model	model		2026-11-01T03:52:22Z	2.3	
+40	292	prove	tool	shell	bash	2026-11-01T03:52:25Z	0.1	Reading host-api and widgets guide :: cd ~/bevy_gooey_loop && sed -n 1,100p docs/guide/host-api.md | cut -c1-330; echo ======; grep -n '^|' docs/guide/widgets.md | head -30 | cut -c1-200; sed -n 1,3
+40	293	prove	model	model		2026-11-01T03:52:25Z	18.1	
+40	294	prove	tool	edit files	write	2026-11-01T03:52:43Z	0.0	Writing the prompts guide page :: docs/guide/prompts.md
+40	295	prove	model	model		2026-11-01T03:52:43Z	5.9	
+40	296	prove	tool	shell	bash	2026-11-01T03:52:49Z	0.0	Reading README head, bullet and changelog top :: cd ~/bevy_gooey_loop && grep -n 'Reach every screen' -A6 README.md | cut -c1-200; grep -n 'cancel.gif' README.md | cut -c1-40; sed -n 1,30p README.md | cut -c1-
+40	297	prove	model	model		2026-11-01T03:52:49Z	5.1	
+40	298	prove	tool	edit files	edit	2026-11-01T03:52:54Z	0.0	README: extend navigation bullet, add prompts GIF, bump compat :: [README.md#4DC5] PUT 108.=113: +- **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the + nearest widget, an op
+40	299	prove	tool	read files	read	2026-11-01T03:52:54Z	0.1	Reading README GIF region :: README.md:128-138
+40	300	prove	model	model		2026-11-01T03:52:54Z	9.3	
+40	301	prove	tool	edit files	edit	2026-11-01T03:53:03Z	0.0	README: prompts bullet and GIF :: [README.md#4B26] PUT 108.=113: +- **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the + nearest widget, an op
+40	302	prove	tool	shell	bash	2026-11-01T03:53:03Z	0.0	Checking compat row, version and navigation Back section :: cd ~/bevy_gooey_loop && grep -n '0.1 – 0.4' README.md; grep -n '^version' Cargo.toml | head -2; sed -n 1,6p docs/guide/navigation.md | cut -c1-200; grep -n '## 
+40	303	prove	model	model		2026-11-01T03:53:03Z	1.7	
+40	304	prove	tool	shell	bash	2026-11-01T03:53:05Z	0.0	Reading end of Back section :: cd ~/bevy_gooey_loop && sed -n 26,40p docs/guide/navigation.md | cut -c1-400
+40	305	prove	model	model		2026-11-01T03:53:05Z	4.9	
+40	306	prove	tool	read files	read	2026-11-01T03:53:10Z	0.1	Reading Back's last bullet :: docs/guide/navigation.md:30-32
+40	307	prove	tool	read files	read	2026-11-01T03:53:10Z	0.1	Reading widgets table tail :: docs/guide/widgets.md:19-22
+40	308	prove	tool	read files	read	2026-11-01T03:53:10Z	0.1	Reading guide index lines :: docs/guide/README.md:10-16
+40	309	prove	tool	read files	read	2026-11-01T03:53:10Z	0.1	Reading host-api settings rows :: docs/guide/host-api.md:12-16
+40	310	prove	model	model		2026-11-01T03:53:10Z	7.6	
+40	311	prove	tool	edit files	edit	2026-11-01T03:53:18Z	0.0	Updating navigation, widgets and guide index docs :: [docs/guide/navigation.md#B690] PUT 32.=32: +- Say it on screen: a `prompts()` legend with `prompt("Back", Prompt::BACK)` shows "Esc Back", or "B Back" once the
+40	312	prove	tool	edit files	edit	2026-11-01T03:53:18Z	0.0	host-api: InputDevice, Prompt, systems, constants :: [docs/guide/host-api.md#B87E] PUT >15: +| `InputDevice` | `Keyboard` or `Pad`: the device the player used last, what a `prompt` shows | a resource, kept by `tra
+40	313	prove	tool	shell	bash	2026-11-01T03:53:18Z	0.0	Locating further host-api edits :: cd ~/bevy_gooey_loop && grep -n 'BindingValue(Binding)\|`TabsValue(usize)`\|| `update_bindings`\|| `bind_by_input`\|| `catch_pointer`\|`PadStyle`, and the const
+40	314	prove	model	model		2026-11-01T03:53:18Z	6.3	
+40	315	prove	tool	read files	read	2026-11-01T03:53:24Z	0.0	Reading host-api components section :: docs/guide/host-api.md:19-34
+40	316	prove	tool	read files	read	2026-11-01T03:53:24Z	0.0	Reading host-api systems tail :: docs/guide/host-api.md:62-102
+40	317	prove	model	model		2026-11-01T03:53:24Z	7.2	
+40	318	prove	tool	edit files	edit	2026-11-01T03:53:31Z	0.0	host-api: serde note, Prompt component, systems, resource note, constants :: [docs/guide/host-api.md#D220] PUT 19.=19: +`GooeySkin`, `UiScaleSettings`, `ToastSettings` and `BindingSettings` are serde data under the `serde` +feature; `Goo
+40	319	prove	tool	shell	bash	2026-11-01T03:53:31Z	0.0	Verifying host-api edits :: cd ~/bevy_gooey_loop && sed -n 86,100p docs/guide/host-api.md
+40	320	prove	model	model		2026-11-01T03:53:31Z	4.8	
+40	321	prove	tool	edit files	edit	2026-11-01T03:53:36Z	0.0	Reflowing the host-api paragraph :: [docs/guide/host-api.md#D733] PUT 94.=96: +`add_message::<UiFeedback>()`) and `BindingSettings`'s and `InputDevice`'s; a host that registers the +systems by han
+40	322	prove	tool	shell	bash	2026-11-01T03:53:36Z	0.1	Checking reflowed paragraph :: cd ~/bevy_gooey_loop && sed -n 90,100p docs/guide/host-api.md; grep -n 'media/README\|tabs.gif' docs/media/README.md | head -3 | cut -c1-80
+40	323	prove	model	model		2026-11-01T03:53:36Z	13.2	
+40	324	prove	tool	clip record/render	bash	2026-11-01T03:53:49Z	23.8	Regenerating the hero still and GIF :: cd ~/bevy_gooey_loop && rm -rf /tmp/g18/hero && mkdir -p /tmp/g18/hero && G=$CARGO_TARGET_DIR/release/examples/gallery; GOOEY_FRAMES=200 GOOEY_SHOT=/tmp/g18/her
+40	325	prove	model	model		2026-11-01T03:54:13Z	3.4	
+40	326	prove	tool	shell	bash	2026-11-01T03:54:17Z	0.1	Checking where frames landed :: ls /tmp/g18/hero | head; ls /tmp/g18/hero/frames 2>&1 | head -3; ls ~/bevy_gooey_loop/docs/media
+40	327	prove	model	model		2026-11-01T03:54:17Z	5.9	
+40	328	prove	tool	clip record/render	bash	2026-11-01T03:54:23Z	18.6	Regenerating hero media (retry) :: cd ~/bevy_gooey_loop && mkdir -p /tmp/g18/hero/frames && G=$CARGO_TARGET_DIR/release/examples/gallery; GOOEY_FRAMES=200 GOOEY_SHOT=/tmp/g18/hero/gallery.png GOO
+40	329	prove	model	model		2026-11-01T03:54:41Z	1.4	
+40	330	prove	tool	read files	read	2026-11-01T03:54:43Z	0.0	Viewing the regenerated hero still :: /tmp/g18/hero/gallery.png
+40	331	prove	model	model		2026-11-01T03:54:43Z	6.0	
+40	332	prove	tool	shell	bash	2026-11-01T03:54:49Z	0.1	Installing hero media and reading its rows :: cd ~/bevy_gooey_loop && cp /tmp/g18/hero/gallery.png docs/media/gallery.png && cp /tmp/g18/hero/gallery.gif docs/media/gallery.gif && grep -n '^| `gallery' docs
+40	333	prove	model	model		2026-11-01T03:54:49Z	1.6	
+40	334	prove	tool	read files	read	2026-11-01T03:54:50Z	0.0	Reading media rows for edit :: docs/media/README.md:14-15
+40	335	prove	model	model		2026-11-01T03:54:51Z	14.4	
+40	336	prove	tool	edit files	edit	2026-11-01T03:55:05Z	0.0	Media list: regenerated hero rows and the new prompts.gif row :: [docs/media/README.md#9A28] PUT 14.=15: +| `gallery.png` | the still: Play/Options/Quit, a health meter, the Audio, Display and Controls tabs with Audio lit ove
+40	337	prove	tool	shell	bash	2026-11-01T03:55:05Z	0.0	Reading changelog structure :: cd ~/bevy_gooey_loop && sed -n 1,30p CHANGELOG.md | cut -c1-200; sed -n 14,40p CHANGELOG.md | cut -c1-160 | head -30
+40	338	prove	model	model		2026-11-01T03:55:05Z	3.4	
+40	339	prove	tool	read files	read	2026-11-01T03:55:08Z	0.0	Reading raw line 18 for gap anchor :: docs/media/README.md:18:raw
+40	340	prove	model	model		2026-11-01T03:55:08Z	10.4	
+40	341	prove	tool	edit files	edit	2026-11-01T03:55:19Z	0.0	Media list: regenerated hero rows and the new prompts.gif row :: [docs/media/README.md#9A28] PUT 14.=15: +| `gallery.png` | the still: Play/Options/Quit, a health meter, the Audio, Display and Controls tabs with Audio lit ove
+40	342	prove	tool	shell	bash	2026-11-01T03:55:19Z	0.0	Reading a changelog entry in full for style :: cd ~/bevy_gooey_loop && sed -n 9,12p CHANGELOG.md | cut -c1-1200
+40	343	prove	model	model		2026-11-01T03:55:19Z	16.2	
+40	344	prove	tool	edit files	edit	2026-11-01T03:55:35Z	0.0	Changelog: Unreleased entries for prompts :: [CHANGELOG.md#F7CE] PUT >3: + +### Added + +- `prompts()` and `prompt(label, keys)`: the hints that say which input does what ("Esc Back"), for Xbox Accessibili
+40	345	prove	tool	shell	bash	2026-11-01T03:55:35Z	0.3	Checking changelog head and git status :: cd ~/bevy_gooey_loop && sed -n 1,6p CHANGELOG.md | cut -c1-80; git status --short
+40	346	prove	model	model		2026-11-01T03:55:36Z	10.0	
+40	347	prove	tool	edit files	edit	2026-11-01T03:55:46Z	0.1	Changelog: Unreleased entries for prompts :: [CHANGELOG.md#7B25] PUT >3: + +### Added + +- `prompts()` and `prompt(label, keys)`: the hints that say which input does what ("Esc Back"), for Xbox Accessibili
+40	348	prove	tool	shell	bash	2026-11-01T03:55:46Z	0.2	Locating AGENTS layout lines and crate docs widget list :: cd ~/bevy_gooey_loop && grep -n 'binding.rs\|tests/binding.rs\|`src/tabs.rs`' AGENTS.md | cut -c1-80; grep -n 'What this crate does not own' -B3 -A20 src/lib.rs
+40	349	prove	model	model		2026-11-01T03:55:46Z	2.0	
+40	350	prove	tool	read files	read	2026-11-01T03:55:48Z	0.4	Reading crate docs head for widget list :: src/lib.rs:1-84
+40	351	prove	model	model		2026-11-01T03:55:49Z	4.5	
+40	352	prove	tool	edit files	edit	2026-11-01T03:55:53Z	0.1	Crate docs: mention prompts and InputDevice :: [src/lib.rs#D3F7] PUT 18.=20: +//! bumpers), [`list`] (rows that scroll, following focus), [`prompts`] and [`prompt`] (the "Esc +//! Back" hints in the corner, 
+40	353	prove	tool	shell	bash	2026-11-01T03:55:53Z	0.1	Locating AGENTS lines to extend :: cd ~/bevy_gooey_loop && sed -n 30p AGENTS.md | cut -c1-200; sed -n 44p AGENTS.md | cut -c1-120; grep -n 'A binding row.s capture is the one thing' AGENTS.md | c
+40	354	prove	model	model		2026-11-01T03:55:53Z	5.9	
+40	355	prove	tool	shell	bash	2026-11-01T03:56:00Z	0.1	Reading AGENTS binding layout line in full :: cd ~/bevy_gooey_loop && sed -n 30p AGENTS.md; echo; grep -n 'Pickable::IGNORE. and every part of a toast' AGENTS.md | cut -c1-80
+40	356	prove	model	model		2026-11-01T03:56:00Z	3.9	
+40	357	prove	tool	read files	read	2026-11-01T03:56:05Z	0.0	Reading AGENTS line 30 raw :: AGENTS.md:30:raw
+40	358	prove	model	model		2026-11-01T03:56:05Z	11.9	
+40	359	prove	tool	edit files	edit	2026-11-01T03:56:18Z	0.0	AGENTS: binding line, prompt layout line :: [AGENTS.md#9CDA] PUT 30.=30: +- `src/binding.rs` — `Binding` (`Key(KeyCode)`, `Mouse(MouseButton)`, `Pad(GamepadButton)`; `label(PadStyle)` over `model::{key_na
+40	360	prove	tool	read files	read	2026-11-01T03:56:18Z	0.0	Reading AGENTS tests/binding line neighbourhood :: AGENTS.md:44-46
+40	361	prove	model	model		2026-11-01T03:56:18Z	17.4	
+40	362	prove	tool	edit files	edit	2026-11-01T03:56:36Z	1.0	AGENTS: binding line, prompt layout and tests lines :: [AGENTS.md#B06E] PUT 30.=30: +- `src/binding.rs` — `Binding` (`Key(KeyCode)`, `Mouse(MouseButton)`, `Pad(GamepadButton)`; `label(PadStyle)` over `model::{key_na
+40	363	prove	tool	shell	bash	2026-11-01T03:56:37Z	0.0	Locating the Pickable rule line :: cd ~/bevy_gooey_loop && grep -n 'every part of a toast' AGENTS.md | cut -c1-40
+40	364	prove	model	model		2026-11-01T03:56:37Z	3.8	
+40	365	prove	tool	read files	read	2026-11-01T03:56:42Z	0.0	Reading Pickable rule raw :: AGENTS.md:71:raw
+40	366	prove	model	model		2026-11-01T03:56:42Z	1.4	
+40	367	prove	tool	read files	read	2026-11-01T03:56:43Z	0.0	Reading the lines around the binding rule :: AGENTS.md:80-84
+40	368	prove	model	model		2026-11-01T03:56:43Z	11.6	
+40	369	prove	tool	edit files	edit	2026-11-01T03:56:55Z	0.0	AGENTS: Pickable rule extended, prompts rule added :: [AGENTS.md#92A9] PUT 71.=71: +- **`screen()`, every part of a toast and every part of a prompts legend are `Pickable::IGNORE`; every other widget blocks the poi
+40	370	gate	tool	phase mark	bash	2026-11-01T03:56:55Z	0.1	Writing the gate script and marking gate phase :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; mkdir -p ~/g18 && cat > ~/g18/gate.sh <<'EOF' #!/bin/bash # The six-step gate, one car
+40	371	gate	model	model		2026-11-01T03:56:55Z	7.8	
+40	372	gate	tool	shell	bash	2026-11-01T03:57:03Z	60.1	[launched bg_6] Capturing the after set at both sizes and skins :: cd /tmp/g18 && ./cap.sh $CARGO_TARGET_DIR/release/examples/gallery /tmp/g18/after > /tmp/g18/after.log 2>&1; cat /tmp/g18/after.log; echo ---; cat /tmp/g18/befo
+40	373	gate	model	model		2026-11-01T03:58:03Z	5.3	
+40	374	gate	tool	shell	bash	2026-11-01T03:58:09Z	0.0	Finding stale parameter text in the note :: cd ~/bevy_gooey_loop && grep -n 'wrap\|row_gap\|0.5 padding' docs/research/prompts.md | cut -c1-220
+40	375	gate	bg	shell	bash	2026-11-01T03:57:07Z	61.9	bg_6 completed: ./cap.sh $CARGO_TARGET_DIR/release/examples/gallery /tmp/g18/after > /tmp/g18/after.log 2>&1; cat /tmp/g18/after.log;...
+40	376	gate	model	model		2026-11-01T03:58:09Z	3.4	
+40	377	gate	tool	read files	read	2026-11-01T03:58:12Z	0.0	Reading note parameters for edit :: docs/research/prompts.md:50-62
+40	378	gate	model	model		2026-11-01T03:58:12Z	4.2	
+40	379	gate	tool	edit files	edit	2026-11-01T03:58:16Z	0.0	Note: legend parameters corrected after the build :: [docs/research/prompts.md#2A41] PUT 52.=52: +|legend|`position_type: Absolute`, `left` 5%, `bottom` 5%; a row, centred, not wrapping (taffy broke a line a float
+40	380	gate	tool	read files	read	2026-11-01T03:58:16Z	0.0	Viewing parchment legend at 720p :: /tmp/g18/after/parchment-1280x720.png
+40	381	gate	model	model		2026-11-01T03:58:16Z	3.4	
+40	382	gate	tool	read files	read	2026-11-01T03:58:20Z	0.0	Viewing 1.5x text frame :: /tmp/g18/after/dark-large-1280x720.png
+40	383	gate	model	model		2026-11-01T03:58:20Z	18.9	
+40	384	gate	tool	read files	read	2026-11-01T03:58:38Z	0.1	Viewing 1440p frame :: /tmp/g18/after/dark-2560x1440.png
+40	385	gate	model	model		2026-11-01T03:58:39Z	7.1	
+40	386	gate	tool	shell	bash	2026-11-01T03:58:46Z	1.5	Pixel-comparing before and after outside the legend :: cd /tmp/g18 && for n in dark-1280x720 parchment-1280x720; do magick compare -metric AE before/$n.png after/$n.png null: 2>&1 | head -1; echo " ($n full)"; magic
+40	387	gate	model	model		2026-11-01T03:58:47Z	12.5	
+40	388	gate	tool	shell	bash	2026-11-01T03:59:00Z	0.2	Measuring legend colours and contrast from pixels :: cd /tmp/g18/after && px() { magick $1 -format "%[hex:p{$2,$3}]" info: ; echo " ($1 @ $2,$3)"; }; px dark-1280x720.png 70 660; px dark-1280x720.png 86 657; px da
+40	389	gate	model	model		2026-11-01T03:59:00Z	6.1	
+40	390	gate	tool	shell	bash	2026-11-01T03:59:06Z	0.2	Computing legend contrasts from pixels :: cd /tmp/g18 && cat > meas.py <<'EOF' import subprocess,re def lum(c): def f(v): v/=255 return v/12.92 if v<=0.03928 else ((v+0.055)/1.055)**2.4 r,g,b=c return 0
+40	391	gate	model	model		2026-11-01T03:59:06Z	4.9	
+40	392	gate	tool	shell	bash	2026-11-01T03:59:11Z	0.4	Measuring the legend's bounding box from the diff :: cd /tmp/g18 && for n in dark-1280x720 dark-2560x1440 dark-large-1280x720; do magick before/$n.png after/$n.png -compose difference -composite -channel RGB -sepa
+40	393	gate	model	model		2026-11-01T03:59:11Z	3.4	
+40	394	gate	tool	read files	read	2026-11-01T03:59:15Z	0.0	Viewing keycap zoom :: /tmp/g18/after/cap-zoom.png
+40	395	gate	model	model		2026-11-01T03:59:15Z	8.5	
+40	396	gate	tool	shell	bash	2026-11-01T03:59:23Z	0.0	[launched bg_7] Running 12 alternating frame-time pairs :: cat > /tmp/g18/perf.sh <<'EOF' #!/bin/bash B=~/g18_bin/gallery_before A=$CARGO_TARGET_DIR/release/examples/gallery export GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_
+40	397	gate	model	model		2026-11-01T03:59:23Z	29.8	
+40	398	gate	tool	wait: other	wait	2026-11-01T03:59:53Z	122.7	Waiting for the frame-time pairs to finish
+40	399	gate	model	model		2026-11-01T04:01:56Z	3.5	
+40	400	gate	tool	shell	bash	2026-11-01T04:01:59Z	0.0	Summarising the frame-time pairs :: cat /tmp/g18/perf.tsv; python3 - <<'EOF' import statistics as s rows=[l.split('\t') for l in open('/tmp/g18/perf.tsv').read().strip().splitlines()] b=[float(r[1
+40	401	gate	model	model		2026-11-01T04:01:59Z	4.9	
+40	402	gate	tool	shell	bash	2026-11-01T04:02:04Z	0.0	Backing up the gallery for a throwaway capture :: cd ~/bevy_gooey_loop && cp examples/gallery.rs /tmp/g18/gallery.rs.bak && grep -n 'prompt("Select", Prompt::SELECT), prompt("Back", Prompt::BACK)' examples/gall
+40	403	gate	model	model		2026-11-01T04:02:04Z	2.2	
+40	404	gate	tool	read files	read	2026-11-01T04:02:06Z	0.0	Reading legend spawn line for the throwaway edit :: examples/gallery.rs:460-468
+40	405	gate	tool	read files	read	2026-11-01T04:02:06Z	0.0	Reading app construction :: examples/gallery.rs:205-232
+40	406	gate	model	model		2026-11-01T04:02:06Z	6.7	
+40	407	gate	tool	edit files	edit	2026-11-01T04:02:13Z	0.0	Throwaway: four prompts and PlayStation names :: [examples/gallery.rs#F643] PUT 465.=465: + children![ + prompt("Select", Prompt::SELECT), + prompt("Back", Prompt::BACK), + prompt("Next page", Prompt::new(Bind
+40	408	gate	tool	cargo build	bash	2026-11-01T04:02:13Z	18.5	Building and capturing the throwaway wide legend :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -3; cd /tmp/g18 && G=$CARGO_TARGET_DIR/release/examples/gallery; export 
+40	409	gate	model	model		2026-11-01T04:02:32Z	1.5	
+40	410	gate	tool	read files	read	2026-11-01T04:02:33Z	0.0	Viewing wide legend in both device states :: /tmp/g18/wide.png
+40	411	gate	model	model		2026-11-01T04:02:33Z	3.4	
+40	412	gate	tool	shell	bash	2026-11-01T04:02:37Z	0.0	Restoring the gallery after the throwaway :: cd ~/bevy_gooey_loop && cp /tmp/g18/gallery.rs.bak examples/gallery.rs && cmp examples/gallery.rs /tmp/g18/gallery.rs.bak && git diff --stat examples/gallery.rs
+40	413	gate	model	model		2026-11-01T04:02:37Z	3.6	
+40	414	gate	tool	read files	read	2026-11-01T04:02:40Z	0.0	Reading guide tail for edit :: docs/guide/prompts.md:22-40
+40	415	gate	model	model		2026-11-01T04:02:40Z	9.9	
+40	416	gate	tool	edit files	edit	2026-11-01T04:02:50Z	0.0	Guide: the legend does not make room; sample comment :: [docs/guide/prompts.md#8088] PUT 26.=26: +- **The legend moves nothing, and makes no room.** `prompts()` is absolute, 5% in from its parent's left and bottom ed
+40	417	gate	tool	git	bash	2026-11-01T04:02:50Z	0.1	Committing implementation, gallery and docs separately :: cd ~/bevy_gooey_loop && git status --short | head -30 && git add src/prompt.rs src/binding.rs src/lib.rs src/model.rs src/skin.rs src/widgets.rs tests/prompts.r
+40	418	gate	model	model		2026-11-01T04:02:50Z	5.4	
+40	419	gate	tool	push gate	bash	2026-11-01T04:02:56Z	0.0	[launched bg_8] Pushing the branch and running the six-step gate :: cd ~/bevy_gooey_loop && git push -q -u origin loop/iter-18 2>&1 | tail -2; ~/g18/gate.sh > ~/g18/gate.log 2>&1; tail -3 ~/g18/gate.log
+40	420	gate	model	model		2026-11-01T04:02:56Z	25.6	
+40	421	gate	tool	edit files	write	2026-11-01T04:03:21Z	0.0	Writing the findings checklist :: /tmp/g18/findings.md
+40	422	gate	tool	edit files	write	2026-11-01T04:03:21Z	0.0	Writing the critique before the verdict :: /tmp/g18/critique.md
+40	423	gate	model	model		2026-11-01T04:03:21Z	18.7	
+40	424	gate	tool	wait: gate	wait	2026-11-01T04:03:40Z	653.4	Waiting for the gate to finish
+40	425	gate	model	model		2026-11-01T04:14:33Z	2.1	
+40	426	gate	tool	shell	bash	2026-11-01T04:14:35Z	0.0	Reading the gate log summary :: grep -E '^=== |^exit |test result|FAILED|failed|warning|error' ~/g18/gate.log | head -120
+40	427	gate	model	model		2026-11-01T04:14:36Z	6.9	
+40	428	gate	tool	shell	bash	2026-11-01T04:14:42Z	0.0	Checking the gate's later steps ran :: sed -n '/=== examples/,$p' ~/g18/gate.log | cut -c1-200; grep -c 'test result: ok' ~/g18/gate.log; grep -E 'Running|Doc-tests' ~/g18/gate.log | wc -l
+40	429	gate	model	model		2026-11-01T04:14:42Z	10.2	
+40	430	ship	tool	phase mark	bash	2026-11-01T04:14:53Z	0.1	Marking ship phase and locating the hero caption :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship; grep -n 'two panels, a meter draining' README.md | cut -c1-30; sed -n 14,16p README.md
+40	431	ship	model	model		2026-11-01T04:14:53Z	1.4	
+40	432	ship	tool	read files	read	2026-11-01T04:14:54Z	0.0	Reading hero caption for edit :: README.md:14-18
+40	433	ship	model	model		2026-11-01T04:14:54Z	6.0	
+40	434	ship	tool	edit files	edit	2026-11-01T04:15:00Z	0.0	README: hero captions name the legend :: [README.md#FE55] PUT 14.=14: +![A menu panel with a tab strip and a Load game list: the focus ring walks down the save slots from Autosave to Mill, 03:02, Page 
+40	435	ship	tool	git	bash	2026-11-01T04:15:00Z	1.2	Checking origin/main movement and semver tool :: cd ~/bevy_gooey_loop && git fetch -q origin && git log --oneline HEAD..origin/main | head; git log --oneline main..origin/main | head -3; cargo semver-checks --
+40	436	ship	model	model		2026-11-01T04:15:01Z	8.4	
+40	437	ship	tool	shell	bash	2026-11-01T04:15:10Z	0.0	Checking the log file's end :: cd ~/bevy_gooey_loop && tail -c 600 docs/loop-log.md | cat -A | tail -3 | cut -c1-120; wc -l docs/loop-log.md
+40	438	ship	model	model		2026-11-01T04:15:10Z	1.6	
+40	439	ship	tool	read files	read	2026-11-01T04:15:11Z	0.0	Reading the log's last lines for the anchor :: docs/loop-log.md:719-721
+40	440	ship	model	model		2026-11-01T04:15:11Z	31.6	
+40	441	ship	tool	edit files	edit	2026-11-01T04:15:43Z	0.1	Appending the iteration 18 log entry :: [docs/loop-log.md#2B5B] PUT >721: + +## Iteration 18 — 2026-10-31 — prompts: the Select and Back hints, in the words of the player's last device + +**Triage.** 
+40	442	ship	model	model		2026-11-01T04:15:43Z	9.4	
+40	443	ship	tool	edit files	edit	2026-11-01T04:15:53Z	0.0	Appending the ranked backlog to iteration 18 :: [docs/loop-log.md#4954] PUT >747: + +### Ranked backlog + +1. **A settings-screen kit** from the controls in hand (`choice`, `slider`, `toggle`, `list`, `tabs`,
+40	444	ship	tool	push gate	bash	2026-11-01T04:15:53Z	2.2	Committing log, merging into main :: cd ~/bevy_gooey_loop && git add README.md docs/loop-log.md && git commit -q -m "Loop log: iteration 18, prompts; README captions name the legend" && git push -q
+40	445	ship	model	model		2026-11-01T04:15:55Z	5.3	
+40	446	release	tool	phase mark	bash	2026-11-01T04:16:00Z	13.3	Pushing main and running semver checks :: cd ~/bevy_gooey_loop && git push -q origin main 2>&1 | tail -2; python3 ~/.local/share/wiggum/steps.py mark release; (CARGO_BUILD_JOBS=1 cargo test --features r
+40	447	release	model	model		2026-11-01T04:16:13Z	5.7	
+40	448	release	tool	shell	bash	2026-11-01T04:16:19Z	0.8	Reading version sites and package list :: cd ~/bevy_gooey_loop && sed -n 1,5p Cargo.toml; sed -n 1,6p CHANGELOG.md | cut -c1-60; grep -n '0.1 – 0.4' README.md; git status --short | head -3; git diff --q
+40	449	release	model	model		2026-11-01T04:16:20Z	5.2	
+40	450	release	tool	edit files	edit	2026-11-01T04:16:25Z	0.0	Bumping version, changelog and compat table :: [Cargo.toml#PLACEHOLDER]
+40	451	release	tool	read files	read	2026-11-01T04:16:25Z	0.1	Reading Cargo.toml for tag :: Cargo.toml:1-5
+40	452	release	tool	read files	read	2026-11-01T04:16:25Z	0.1	Reading changelog head for tag :: CHANGELOG.md:1-5
+40	453	release	tool	read files	read	2026-11-01T04:16:25Z	0.1	Reading compat table for tag :: README.md:158-161
+40	454	release	model	model		2026-11-01T04:16:25Z	4.3	
+40	455	release	tool	edit files	edit	2026-11-01T04:16:29Z	0.1	Release edits: Cargo.toml version, changelog heading, README compat row :: [Cargo.toml#F081] PUT 3.=3: +version = "0.6.0" [CHANGELOG.md#9DBA] PUT >3: + +## [0.6.0] - 2026-10-31 [README.md#B12C] PUT 160.=160: +| 0.1 – 0.6 | 0.20 |
+40	456	release	tool	cargo publish	bash	2026-11-01T04:16:30Z	12.2	Committing the release and dry-running the publish :: cd ~/bevy_gooey_loop && sed -n 1,8p CHANGELOG.md | cut -c1-70; cargo update -p bevy_gooey --offline 2>&1 | tail -2; git status --short; git add Cargo.toml CHANG
+40	457	release	model	model		2026-11-01T04:16:42Z	3.3	
+40	458	release	tool	push gate	bash	2026-11-01T04:16:45Z	7.3	Pushing the release commit and publishing :: cd ~/bevy_gooey_loop && git push -q origin main 2>&1 | tail -2; cargo publish 2>&1 | tail -6
+40	459	release	model	model		2026-11-01T04:16:52Z	2.3	
+40	460	release	tool	push gate	bash	2026-11-01T04:16:55Z	1.7	Tagging, pushing the tag, verifying on crates.io :: cd ~/bevy_gooey_loop && git tag -a v0.6.0 -m v0.6.0 && git push -q origin v0.6.0 2>&1 | tail -2; cargo info bevy_gooey@0.6.0 2>&1 | head -5; git log --oneline |
+40	461	release	model	model		2026-11-01T04:16:56Z	3.9	
+40	462	release	tool	shell	bash	2026-11-01T04:17:00Z	0.6	Confirming the publish on crates.io :: curl -s -A "bevy_gooey-loop" https://crates.io/api/v1/crates/bevy_gooey/0.6.0 | python3 -c "import sys,json; d=json.load(sys.stdin); v=d['version']; print(v['nu
+40	463	release	model	model		2026-11-01T04:17:01Z	11.1	
+40	464	release	tool	shell	bash	2026-11-01T04:17:12Z	0.1	Inventorying leftovers and my scratch before removal :: cd ~/bevy_gooey_loop && df -h /home /tmp | tail -2; git worktree list --porcelain | awk '/^worktree /{sub(/^worktree /,""); print}' | tail -n +2 | while read wt
+40	465	release	model	model		2026-11-01T04:17:12Z	6.4	
+40	466	release	tool	shell	bash	2026-11-01T04:17:19Z	0.1	Removing this pass's own scratch :: df -h /home | tail -1; rm -rf ~/g18_bin /tmp/g18 ~/g18; df -h /home | tail -1; ls ~ | grep -c '^g18' ; ls /tmp | grep -c '^g18'
+40	467	release	model	model		2026-11-01T04:17:19Z	1.9	
+40	468	release	tool	read files	read	2026-11-01T04:17:21Z	0.1	Reading log tail for the final fill-in :: docs/loop-log.md:745-756
+40	469	release	model	model		2026-11-01T04:17:21Z	3.7	
+40	470	release	tool	search	grep	2026-11-01T04:17:24Z	0.1	Locating the load figure in the log :: docs/loop-log.md
+40	471	release	model	model		2026-11-01T04:17:24Z	11.3	
+40	472	release	tool	edit files	edit	2026-11-01T04:17:36Z	0.0	Log: load figure, merge, release and cleanup paragraphs :: [docs/loop-log.md#23E5] PUT 743.=743: +**mean_ms** (sib, Xvfb, `GOOEY_HEALTH=60`, `GOOEY_KEYS=down`, 240 frames, 1280x720, 12 alternating pairs of the gallery f
+40	473	log	tool	phase mark	bash	2026-11-01T04:17:36Z	2.1	Committing and pushing the final log :: cd ~/bevy_gooey_loop && git add docs/loop-log.md && git commit -q -m "Loop log: iteration 18, merge, release v0.6.0 and cleanup" && git push -q origin main 2>&1
+40	474	log	model	model		2026-11-01T04:17:38Z	9.6	
+40	475	log	tool	learn	learn	2026-11-01T04:17:47Z	0.0	Capturing reusable lessons from this pass
+40	476	log	model	model		2026-11-01T04:17:47Z	8.9	
