@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-01
+
 ### Added
 
 - `Density` (`Comfortable`, the default, and `Compact`) and `GooeySkin::density`: a compact skin draws half the padding and caps the least target at 24 px (`MIN_TARGET_PX`, WCAG 2.2 SC 2.5.8), so a desktop tool's rows stand close enough for a mouse; `GooeySkin::pad()` and `GooeySkin::target()` are the values the widgets read. `problems()` checks `target()`, so a compact skin whose `min_target` is under 24 px still reports `TargetTooSmall`. A skin file without the field reads as comfortable.
