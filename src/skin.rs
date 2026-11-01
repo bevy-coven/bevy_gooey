@@ -1199,6 +1199,11 @@ pub enum Role {
     /// A palette's field row: a [`Role::TextInput`] with no label and no side padding, so its frame
     /// stands where its card's rows do.
     PaletteField,
+    /// One component of a [`crate::vec_field`]: a text row with no frame and no padding on its right,
+    /// its label (the axis letter) the scrub handle on its left.
+    NumberPart,
+    /// The row of a [`crate::vec_field`]'s components, a gap apart; not drawn.
+    NumberParts,
 }
 
 type Styled = (
@@ -1389,6 +1394,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
                 | Role::Toast
                 | Role::TextInput
                 | Role::PaletteField
+                | Role::NumberPart
                 | Role::MenuItem
                 | Role::PaletteRow
                 | Role::TableRow
@@ -1509,6 +1515,7 @@ pub fn apply_skin(
                                 | Role::Binding
                                 | Role::TextInput
                                 | Role::PaletteField
+                                | Role::NumberPart
                                 | Role::Toast
                                 | Role::MenuItem
                                 | Role::PaletteRow
@@ -1864,6 +1871,8 @@ fn restyle(
         | Role::TabPage
         | Role::TextInput
         | Role::PaletteField
+        | Role::NumberPart
+        | Role::NumberParts
         | Role::TextCell
         | Role::TextHint
         | Role::MenuMark
@@ -1960,7 +1969,9 @@ fn restyle(
         // The row has no frame of its own: the field speaks. Its edge is the outline at rest, the
         // muted text colour under the pointer, and the ring while it holds focus, shown or not
         // (its caret already says who has the keys, and a pointer press hides every other ring).
-        Role::TextInput | Role::PaletteField => Some(BorderColor::all(Color::NONE)),
+        Role::TextInput | Role::PaletteField | Role::NumberPart => {
+            Some(BorderColor::all(Color::NONE))
+        }
         Role::TextField => Some(BorderColor::all(if state.disabled {
             skin.outline
         } else if look.editing == Some(entity) {
@@ -2254,6 +2265,21 @@ fn restyle(
                 next.min_height = Val::Px(skin.target());
                 next.column_gap = Val::Px(skin.gap);
             }
+            // A vec field's component: the label is the scrub handle, so the row's own padding on
+            // its left, a pad wide, makes the handle (padding, letter, gap) a target of at least 24 px
+            // (WCAG 2.5.8); no frame, and none on the right, so the three fields stand a gap apart.
+            Role::NumberPart => {
+                next.border = UiRect::ZERO;
+                next.padding = UiRect {
+                    left: Val::Px(skin.pad()),
+                    right: Val::ZERO,
+                    top: Val::Px(skin.pad() * 0.1),
+                    bottom: Val::Px(skin.pad() * 0.1),
+                };
+                next.min_height = Val::Px(skin.target());
+                next.column_gap = Val::Px(skin.gap * 0.5);
+            }
+            Role::NumberParts => next.column_gap = Val::Px(skin.gap),
             // One line of text in a frame, as high as the target: the text sits at the top of its
             // box, so the padding is what makes the height (the line, the padding twice and the
             // frame twice come to `min_target`) and what centres the line. A `min_height` here is

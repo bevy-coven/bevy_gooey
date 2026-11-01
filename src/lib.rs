@@ -134,6 +134,7 @@ mod list;
 mod menu;
 mod meter;
 mod nav;
+mod number;
 mod options;
 mod palette;
 mod popover;
@@ -172,19 +173,24 @@ pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
     ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST,
-    PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, SPLIT_KEY_STEP_PX, STICK_PUSH,
-    TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, choice_next,
-    choice_step, cie_lightness, column_resize, composite, contrast_ratio, dock_drop_rect,
-    dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, fuzzy_score, is_modifier_key,
-    key_name, list_height, meter_fraction, mouse_name, natural_cmp, nearest_step, pad_name,
-    page_target, relative_luminance, repeat_steps, scroll_to_reveal, shortcut_conflicts,
-    shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row, split_clamp,
-    split_drag, split_mins, tab_step, table_anchor, table_step, table_window, toast_alpha,
+    NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, SPLIT_KEY_STEP_PX,
+    STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep,
+    choice_next, choice_step, cie_lightness, column_resize, composite, contrast_ratio,
+    dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, format_number,
+    fuzzy_score, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, natural_cmp,
+    nearest_step, number_decimals, pad_name, page_target, parse_number, relative_luminance,
+    repeat_steps, scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label,
+    slider_fraction, slider_text, snap_line_width, snap_to_row, split_clamp, split_drag,
+    split_mins, step_value, tab_step, table_anchor, table_step, table_window, toast_alpha,
     toast_grow, toast_hold, toast_life, tree_ends, tree_heir, tree_indent, tree_parent,
     tree_visible, type_ahead, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
+};
+pub use number::{
+    MixedValue, NumberInput, NumberRange, NumberRefused, NumberStep, NumberValue, VecChange,
+    VecMixed, VecPart, VecValue, update_numbers, update_vecs,
 };
 pub use options::{OptionRow, update_option_rows};
 pub use palette::{
@@ -219,10 +225,10 @@ pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use widgets::{
     binding, button, check_item, choice, command_palette, context_menu, dialog, dock, heading,
-    interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter, pad_style, panel,
-    popover, popover_modal, prompt, prompts, radio_item, screen, separator, skin_preset, slider,
-    split, submenu, surface, tab_page, table, tabs, text_input, text_size, toast, toast_alert,
-    toggle, tree,
+    interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter, number_field,
+    pad_style, panel, popover, popover_modal, prompt, prompts, radio_item, screen, separator,
+    skin_preset, slider, split, submenu, surface, tab_page, table, tabs, text_input, text_size,
+    toast, toast_alert, toggle, tree, vec_field,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -287,6 +293,12 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TextHint>()
             .register_type::<TextLimit>()
             .register_type::<TextEditing>()
+            .register_type::<NumberValue>()
+            .register_type::<NumberStep>()
+            .register_type::<NumberRange>()
+            .register_type::<MixedValue>()
+            .register_type::<VecValue>()
+            .register_type::<VecMixed>()
             .register_type::<ChoiceValue>()
             .register_type::<TabsValue>()
             .register_type::<TabsCount>()
@@ -332,6 +344,7 @@ impl Plugin for GooeyStylePlugin {
                     show_tooltips,
                     update_bindings,
                     update_prompts,
+                    (update_vecs, update_numbers).chain(),
                     update_text_inputs,
                     update_palette,
                     update_option_rows,
