@@ -8,7 +8,7 @@ crate root.
 
 | type | what it holds | where it lives |
 |---|---|---|
-| `GooeySkin` | every colour and size, and the player's `text_scale` (the `text_size` row edits it) | a resource, read by `apply_skin` |
+| `GooeySkin` | every colour and size, and the player's `text_scale` (the `text_size` row edits it); `high_contrast()` is a preset, `skin_preset` the row that picks one (`SkinPreset`, `with_colours_of`) | a resource, read by `apply_skin` |
 | `GooeyFonts` | the handles of the host's body and heading fonts | a resource |
 | `UiScaleSettings` | `reference_short_side` and the player's `scale` (the `interface_size` row edits it) | a resource, read by `scale_with_window` |
 | `ToastSettings` | `anchor`, `max_visible`, `base_seconds`, `chars_per_second`, `duration_scale`, `fade_seconds` | a resource, read by `update_toasts` |
@@ -27,7 +27,7 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
 - `ChoiceValue(usize)` and `ChoiceCount(usize)` — a `choice`'s selected index and its number of options.
   Write a `ChoiceValue` to move the choice from code (no `ValueChange` comes back for that); read it to
   know where the choice stands.
-- `OptionRow` — on a `text_size`, `interface_size` or `pad_style` row: which of the crate's own settings it
+- `OptionRow` — on a `text_size`, `interface_size`, `pad_style` or `skin_preset` row: which of the crate's own settings it
   edits. A host that registers `update_option_rows` itself needs nothing else; a game never builds one.
   See [player options](options.md).
 - `BindingValue(Binding)` — a `binding`'s input: a key, a mouse button or a pad button. Write one to change
@@ -92,7 +92,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
-| `update_option_rows` | Style | a `text_size`, `interface_size` or `pad_style` row follows its setting with no event, and on the frame it is spawned; before `update_choices` |
+| `update_option_rows` | Style | a `text_size`, `interface_size`, `pad_style` or `skin_preset` row follows its setting with no event, and on the frame it is spawned; before `update_choices` |
 | `update_tabs` | Style | a tabs widget's selected page shown and no other, its tab lit, a value past the end pulled back |
 | `update_meters` | Style | a meter's fill and frame from its `Meter` |
 | `update_lists` | Style | a list's rail, only on a change |

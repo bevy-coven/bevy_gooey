@@ -87,6 +87,7 @@ fn everything(app: &mut App) -> Entity {
                 meter(60.0, 100.0),
                 toggle("Subtitles", true),
                 choice("Quality", ["Low", "Medium", "Ultra high"], 1),
+                skin_preset("Theme"),
                 slider("Music volume", 0.7, 0.0..=1.0),
                 binding("Jump", Binding::Key(KeyCode::Space)),
                 binding("Use", Binding::Pad(GamepadButton::South)),
@@ -272,6 +273,7 @@ fn a_controls_text_is_one_line_at_every_text_size_from_100_to_200_percent() {
                 world.spawn(text_size("Text size")).id(),
                 world.spawn(interface_size("Interface size")).id(),
                 world.spawn(pad_style("Controller")).id(),
+                world.spawn(skin_preset("Theme")).id(),
                 world.spawn(toggle("Subtitles", true)).id(),
                 world.spawn(slider("Music volume", 0.7, 0.0..=1.0)).id(),
                 world

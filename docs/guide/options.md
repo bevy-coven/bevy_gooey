@@ -1,6 +1,6 @@
 # Player options the crate owns
 
-`text_size`, `interface_size` and `pad_style` are the options-screen rows for the three settings this crate itself reads. Each is one line, needs no observer and no state of your own, and the whole screen answers the frame the player steps it:
+`text_size`, `interface_size`, `pad_style` and `skin_preset` are the options-screen rows for the four settings this crate itself reads. Each is one line, needs no observer and no state of your own, and the whole screen answers the frame the player steps it:
 
 ```rust
 use bevy::prelude::*;
@@ -14,6 +14,7 @@ fn display_page(mut commands: Commands) {
             text_size("Text size"),
             interface_size("Interface size"),
             pad_style("Controller"),
+            skin_preset("Theme"),
         ],
     ));
 }
@@ -24,8 +25,11 @@ fn display_page(mut commands: Commands) {
 | `text_size(label)` | how large every word is | `GooeySkin::text_scale` | 100%, 125%, 150%, 200% (`TEXT_SIZE_STEPS`) |
 | `interface_size(label)` | how large the whole interface is, on top of the window's share | `UiScaleSettings::scale` | 75%, 100%, 125%, 150% (`INTERFACE_SIZE_STEPS`) |
 | `pad_style(label)` | whose button names a pad shows | `BindingSettings::pad_style` | Xbox, PlayStation, Switch (`PAD_STYLES`) |
+| `skin_preset(label)` | the look: the colours of every widget | `GooeySkin`'s colours, and no size | Dark, Parchment, High contrast (`SkinPreset::ALL`) |
 
 Text size is the one the Xbox Accessibility Guideline 101 and WCAG 2.2 (1.4.4) ask for: text that resizes to 200% "without loss of content or functionality", and the rule that it reaches everything the player reads, the dialog, the toast and the legend as well as the menu. `GooeySkin::text_scale` is read by every part, so the row only has to write it. Interface size enlarges the panels and the targets too, and goes below 100% for the player who wants the interface to cover less of the game; EVE Online's UI scaling tops out at 150%, as this one does.
+
+Theme is the high-contrast switch: Xbox Accessibility Guideline 102 asks a game for "a high contrast mode ... the contrast ratios should equal or exceed 7:1 for all UI elements against their background", and WCAG's own technique for it is "a control ... that allows users to switch to a presentation that uses sufficient contrast" (G174). A step writes the preset's colours and keeps every size, so a player at 200% text who asks for high contrast gets both, and the row follows the skin the same way the others follow theirs (a skin you tuned shows the nearest of the three). The preset and its 7:1 check are in [skins](skins.md). The names are English words, not numerals, so a game that localises writes a `choice` over its own strings with `SkinPreset::ALL` and `GooeySkin::with_colours_of`.
 
 ## What a row is
 
@@ -33,18 +37,22 @@ A row is a [`choice`](controls.md) (Bevy's `Button`, one tab stop, Left and Righ
 
 - **The player's step writes one field.** Stepping Text size to 150% sets `text_scale` and nothing else, so a skin of your own, the scale's `reference_short_side` and the binding prompts survive. A step is one write and one `ValueChange<usize>` (the index into the step table), and a press at the end of the row changes nothing and says nothing.
 - **The setting moves the row, with no event.** The row shows the step nearest the resource the frame it is spawned and whenever the resource changes, so a loaded save shows on it, Shift+T in your own code shows on it, and another row for the same setting follows. Nothing is sent for a write the game made, so your observer hears only the player. A value between two steps (a game that set 1.1) shows the nearest step, "100%", and is left alone until the player steps.
-- **Saving is the resources.** Under the `serde` feature `GooeySkin`, `UiScaleSettings` and `BindingSettings` are data: save them when the player leaves the screen (or on each `ValueChange<usize>` you observe), load them before the first frame, and the rows show them. Save `text_scale` and not the whole skin if the skin is yours and not the player's.
-- **The label is yours.** Every widget takes its string from the host; the options are percentages and the makers' names, so there is nothing else to localise.
+- **Saving is the resources.** Under the `serde` feature `GooeySkin`, `UiScaleSettings`, `BindingSettings` and `SkinPreset` are data: save them when the player leaves the screen (or on each `ValueChange<usize>` you observe), load them before the first frame, and the rows show them. Save `text_scale` and the player's preset (`SkinPreset::of(&skin)`, restored with `skin.with_colours_of(&preset.skin())`) and not the whole skin if the skin is yours and not the player's.
+- **The label is yours.** Every widget takes its string from the host; the options of the first three rows are percentages and the makers' names, so there is nothing else to localise. The theme's are English words ("Dark", "Parchment", "High contrast"): a host that localises writes a `choice` over its own strings, with `SkinPreset::ALL` for the order and `GooeySkin::with_colours_of` for the step.
 - **Plugins.** The rows' systems are `GooeyStylePlugin`'s. `interface_size` also needs `GooeyScalePlugin` for the setting itself: without it the row steps and nothing is drawn differently, and nothing panics.
 
-Other steps, or a setting of your own, are a `choice` and eight lines: the steps in a table, an observer that indexes it, and a write when you load. The three rows exist because the crate owns these settings and so can keep them true without you.
+Other steps, or a setting of your own, are a `choice` and eight lines: the steps in a table, an observer that indexes it, and a write when you load. The four rows exist because the crate owns these settings and so can keep them true without you.
 
 ## Every step holds
 
 WCAG asks that a resize offering steps between 100% and 200% have "no loss of content or functionality at these incremental steps", so the steps are sizes the crate lays every widget out at: `tests/large_text.rs` builds a panel of every widget (a heading, a body line, buttons, a meter, a toggle, a choice, a slider, rebinding rows, a text input, tabs and a list) and the dialog, a toast and the legend at each, and finds nothing outside its box; and every 5% from 100% to 200% it finds every control's text on one line. A game's own screen must still fit its window at the size it offers: a panel that is 520 px tall at 100% is 780 px at 150% in a 720p window, and the interface does not scroll for you (put the long part in a [`list`](lists.md), and keep the legend's corner clear: [prompts](prompts.md)).
 
-`cargo run --example options` is the whole screen, three rows and the legend, with the capture knobs the gallery has (`GOOEY_KEYS=right,right,right` is three steps on Text size).
+`cargo run --example options` is the whole screen, four rows and the legend, with the capture knobs the gallery has (`GOOEY_KEYS=right,right,right` is three steps on Text size, `GOOEY_SKIN=high_contrast` starts in high contrast).
 
-![The options screen: the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with it, back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to the pad's, and Controller steps to PlayStation (the legend reads Cross Select, Circle Back), to Switch and back to Xbox](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/options.gif)
+![The options screen: the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with it, back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to the pad's, and Controller steps to PlayStation (the legend reads Cross Select, Circle Back), to Switch and back to Xbox; Theme steps to Parchment and to High contrast, where the screen turns black with white frames, and back to Dark](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/options.gif)
 
-*The three rows in `examples/options`: the whole screen answers each step the frame it is made.*
+*The four rows in `examples/options`: the whole screen answers each step the frame it is made.*
+
+![The gallery's settings panel, Load game list and legend: Theme steps from Dark to Parchment to High contrast, where every widget turns black with white frames, amber fills and a cyan ring, and back; nothing moves](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/theme.gif)
+
+*Theme in the gallery's Display page: `skin_preset("Theme")`, one line, restyles every widget on screen.*

@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- `GooeySkin::high_contrast()`, a third preset for the player who needs more contrast than WCAG's minimum: opaque black surfaces, white text and white outlines, an amber accent, a cyan focus ring and a light red for danger (WCAG advises against red on black, for protanopia), on the sizes of the other presets so a layout never moves. Every pair `problems()` checks is at least 7:1 (`ENHANCED_CONTRAST`, WCAG 2.2 SC 1.4.6 and Xbox Accessibility Guideline 102's "7:1 for all UI elements"), and `GooeySkin::high_contrast_problems()` is that check for any skin, so a game that writes its own high-contrast mode has the test in one call (empty for `high_contrast()`, and not for `dark()` or `parchment()`, which meet the minimums and no more).
+- `skin_preset(label)`: the options-screen row for the look, a `choice` over Dark, Parchment and High contrast (`SkinPreset::ALL`) that follows the skin like `text_size` does: the preset whose colours are nearest (a skin a game tuned shows the nearest and is left alone until the player steps), a step writing the preset's colours and no size (`GooeySkin::with_colours_of`; a player at 200% text who asks for high contrast gets both), a game's own write moving the row with no `ValueChange`. `SkinPreset` (`#[non_exhaustive]`; `ALL`, `name`, `skin`, `of`; serde under the `serde` feature) and `OptionRow::SkinPreset`.
+- `GooeySkin::surface_edge: Option<Color>`, the border of a panel, a tooltip and the prompts legend: `None` (both older presets) is `surface_raised`, the frame they have always drawn, so they are unchanged to the pixel; `high_contrast()` sets white, so a tooltip over a panel is a card of its own. A skin that sets it is checked against the surface at 3:1 (`SkinProblem::LowContrast`, pair `surface_edge on surface`).
+- `examples/gallery` and `examples/options` start in high contrast with `GOOEY_SKIN=high_contrast`; the gallery's Display page has the Theme row (in place of Window), and the options example has it as its fourth row.
+- `docs/research/high-contrast.md`, `docs/guide/skins.md` and `docs/guide/options.md` (the three looks, the 7:1 check, the row) and `docs/media/theme.gif`.
+- `tests/skin.rs` (high contrast holds 7:1 and the other presets do not, so the check can fail; every text a high-contrast screen draws, in every button state, measured against the fill under it at 7:1; the edge of a panel, a tooltip and the legend in each preset) and `tests/options.rs` (the theme row: the three looks in order, a step writing the colours and no size, the skin a game sets moving the row with no event and a tuned skin showing the nearest, a first frame over a loaded high-contrast skin, nothing written idle).
+
+### Changed
+
+- `GooeySkin` has one more public field, `surface_edge`: a struct literal that names every field needs `surface_edge: None`, and one that ends in `..GooeySkin::dark()` (or `default()`) is unchanged. A saved skin file that lacks the field reads as `None`.
+
 ## [0.7.1] - 2026-11-01
 
 ### Added

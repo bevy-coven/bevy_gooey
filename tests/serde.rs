@@ -4,13 +4,38 @@
 
 use bevy::prelude::{GamepadButton, KeyCode, MouseButton};
 use bevy_gooey::{
-    Binding, BindingSettings, GooeySkin, PadStyle, ToastAnchor, ToastSettings, UiScaleSettings,
+    Binding, BindingSettings, GooeySkin, PadStyle, SkinPreset, ToastAnchor, ToastSettings,
+    UiScaleSettings,
 };
 
 #[test]
 fn a_skin_round_trips_through_ron() -> Result<(), Box<dyn std::error::Error>> {
     let text = ron::to_string(&GooeySkin::parchment())?;
     assert_eq!(ron::from_str::<GooeySkin>(&text)?, GooeySkin::parchment());
+    Ok(())
+}
+
+#[test]
+fn a_high_contrast_skin_keeps_its_edge_through_ron_and_a_file_without_one_has_none()
+-> Result<(), Box<dyn std::error::Error>> {
+    let text = ron::to_string(&GooeySkin::high_contrast())?;
+    let back = ron::from_str::<GooeySkin>(&text)?;
+    assert_eq!(back, GooeySkin::high_contrast());
+    assert!(back.surface_edge.is_some());
+    // A skin saved before the field existed reads as the quiet frame.
+    assert_eq!(
+        ron::from_str::<GooeySkin>("(text_scale: 1.5)")?.surface_edge,
+        None
+    );
+    Ok(())
+}
+
+#[test]
+fn the_players_look_is_data_a_game_saves() -> Result<(), Box<dyn std::error::Error>> {
+    for preset in SkinPreset::ALL {
+        let text = ron::to_string(&preset)?;
+        assert_eq!(ron::from_str::<SkinPreset>(&text)?, preset);
+    }
     Ok(())
 }
 

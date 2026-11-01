@@ -9,8 +9,8 @@ per subject. The README links each bullet to its page.
 - [Navigation](navigation.md) — what moves focus, what shows the ring, and what an open dialog holds.
 - [Settings controls](controls.md) — `toggle`, `choice` and `slider`: one bundle each, Bevy's own widget
   at the root, and `ValueChange` once per change.
-- [Player options](options.md) — `text_size`, `interface_size` and `pad_style`: the rows for the three
-  settings the crate itself reads, with nothing to wire, and the sizes every widget is checked at.
+- [Player options](options.md) — `text_size`, `interface_size`, `pad_style` and `skin_preset`: the rows for the four
+  settings the crate itself reads (the theme row is the high-contrast switch), with nothing to wire, and the sizes every widget is checked at.
 - [Rebinding controls](bindings.md) — `binding(label, value)`: a row that waits for the player's next key,
   mouse button or pad button, what it hears and holds back while it waits, and `BindingSettings`.
 - [Text input](text-input.md) — `text_input(label, value)`: a row with a field the player types in, the

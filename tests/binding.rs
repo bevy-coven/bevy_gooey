@@ -960,10 +960,11 @@ fn the_keycaps_line_up_the_row_is_a_target_a_thumb_can_hit_and_a_toggles_height(
 }
 
 #[test]
-fn the_keycap_reads_in_both_presets_at_rest_and_lit() {
+fn the_keycap_reads_in_every_preset_at_rest_and_lit() {
     for (name, skin) in [
         ("dark", GooeySkin::dark()),
         ("parchment", GooeySkin::parchment()),
+        ("high contrast", GooeySkin::high_contrast()),
     ] {
         let mut app = app();
         app.insert_resource(skin.clone());

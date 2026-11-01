@@ -236,7 +236,11 @@ fn the_measure_grows_with_the_players_text_size_and_a_dialog_keeps_out_of_the_ou
 
 #[test]
 fn a_dialog_panel_is_framed_in_the_outline_and_a_screens_panel_is_not() {
-    for skin in [GooeySkin::dark(), GooeySkin::parchment()] {
+    for skin in [
+        GooeySkin::dark(),
+        GooeySkin::parchment(),
+        GooeySkin::high_contrast(),
+    ] {
         let mut app = app_with(skin.clone());
         let ui = confirm(&mut app, "Sure?");
         let on_screen = app.world_mut().spawn((panel(), ScreenPanel)).id();
@@ -258,7 +262,10 @@ fn a_dialog_panel_is_framed_in_the_outline_and_a_screens_panel_is_not() {
 
         // A screen's panel is as it was: one padding and gap, no measure, the raised edge.
         let edge = *app.world().get::<BorderColor>(on_screen).expect("a border");
-        assert_eq!(edge, BorderColor::all(skin.surface_raised));
+        assert_eq!(
+            edge,
+            BorderColor::all(skin.surface_edge.unwrap_or(skin.surface_raised))
+        );
         let fill = app
             .world()
             .get::<BackgroundColor>(on_screen)
@@ -281,6 +288,7 @@ fn the_dialog_edge_stands_out_from_its_panel_and_from_the_screen_the_scrim_dims(
     for (name, skin) in [
         ("dark", GooeySkin::dark()),
         ("parchment", GooeySkin::parchment()),
+        ("high contrast", GooeySkin::high_contrast()),
     ] {
         let edge = rgb(skin.outline);
         let scrim = Srgba::from(skin.scrim);

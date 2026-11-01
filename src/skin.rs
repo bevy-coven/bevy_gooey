@@ -14,8 +14,8 @@ use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::list::ListView;
 use crate::model::{
-    COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, composite, contrast_ratio,
-    list_height, snap_line_width,
+    COMFORT_TARGET_PX, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST,
+    composite, contrast_ratio, list_height, snap_line_width,
 };
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
@@ -138,6 +138,11 @@ pub struct GooeySkin {
     /// The edge of a widget whose fill does not show its size, so its whole extent stays visible:
     /// a meter's frame. Checked against the panel at the 3:1 non-text minimum.
     pub outline: Color,
+    /// The border of a panel, a tooltip and a prompts legend. `None` draws it in
+    /// [`GooeySkin::surface_raised`], the quiet frame the dark and parchment presets have; the
+    /// high-contrast preset sets white, so a tooltip over a panel is a card of its own. Checked
+    /// against [`GooeySkin::surface`] at the 3:1 non-text minimum when set.
+    pub surface_edge: Option<Color>,
     /// The veil behind a modal dialog.
     pub scrim: Color,
     /// Body text size, logical px, before [`GooeySkin::text_scale`].
@@ -202,6 +207,31 @@ impl GooeySkin {
         }
     }
 
+    /// A high-contrast skin, for the player who needs more than WCAG's minimum: opaque black
+    /// surfaces, white text and white outlines, an amber accent, a cyan focus ring and a light red
+    /// for danger (red on black is the one pairing WCAG advises against, for protanopia).
+    ///
+    /// Every pair [`GooeySkin::problems`] checks is at least [`ENHANCED_CONTRAST`], 7:1, which is what
+    /// Xbox Accessibility Guideline 102 asks of a game's high-contrast mode; [`GooeySkin::high_contrast_problems`]
+    /// checks it. The sizes are the other presets', so a layout never moves when the look changes.
+    pub fn high_contrast() -> Self {
+        Self {
+            background: Color::BLACK,
+            surface: Color::srgb(0.02, 0.02, 0.02),
+            surface_raised: Color::srgb(0.133, 0.133, 0.133),
+            text: Color::WHITE,
+            text_muted: Color::srgb(0.72, 0.72, 0.72),
+            accent: Color::srgb(1.0, 0.66, 0.0),
+            accent_text: Color::BLACK,
+            danger: Color::srgb(1.0, 0.5, 0.5),
+            focus_ring: Color::srgb(0.2, 0.9, 1.0),
+            outline: Color::WHITE,
+            surface_edge: Some(Color::WHITE),
+            scrim: Color::srgba(0.0, 0.0, 0.0, 0.8),
+            ..Self::sizes()
+        }
+    }
+
     /// The sizes both presets share; the colours are overwritten by each preset.
     fn sizes() -> Self {
         Self {
@@ -215,6 +245,7 @@ impl GooeySkin {
             danger: Color::WHITE,
             focus_ring: Color::WHITE,
             outline: Color::WHITE,
+            surface_edge: None,
             scrim: Color::BLACK,
             text_size: 20.0,
             heading_size: 32.0,
@@ -250,8 +281,22 @@ impl GooeySkin {
 
     /// Everything about this skin that breaks the contrast, target-size or size rules, in a fixed
     /// order: low contrast pairs, then a too-small target, then a meter too thin for its fill,
-    /// then unusable sizes. Empty for a good skin; both presets are good.
+    /// then unusable sizes. Empty for a good skin; all three presets are good.
     pub fn problems(&self) -> Vec<SkinProblem> {
+        self.check(0.0)
+    }
+
+    /// [`GooeySkin::problems`] with every contrast pair held to [`ENHANCED_CONTRAST`], 7:1 (WCAG 2.2
+    /// success criterion 1.4.6, Xbox Accessibility Guideline 102's high-contrast mode): a skin a
+    /// game writes for its own high-contrast mode is tested with this call. Empty for
+    /// [`GooeySkin::high_contrast`], and not for [`GooeySkin::dark`] or [`GooeySkin::parchment`],
+    /// which meet the 4.5:1 and 3:1 minimums and no more.
+    pub fn high_contrast_problems(&self) -> Vec<SkinProblem> {
+        self.check(ENHANCED_CONTRAST)
+    }
+
+    /// The checks of [`GooeySkin::problems`], with each pair needing at least `floor`.
+    fn check(&self, floor: f32) -> Vec<SkinProblem> {
         let mut out = Vec::new();
         let surface = rgb(self.solid_surface());
         let text = rgb(self.text);
@@ -324,7 +369,19 @@ impl GooeySkin {
                 NON_TEXT_CONTRAST,
             ),
         ];
-        for (pair, a, b, needed) in pairs {
+        // A skin that draws its own edge answers for it: the frame is what a panel, a tooltip and
+        // the legend are told apart by. The quiet default is not checked, as `surface_raised` on
+        // `surface` is the low-key frame both presets have always drawn.
+        let edge = self.surface_edge.map(|edge| {
+            (
+                "surface_edge on surface",
+                rgb(edge),
+                surface,
+                NON_TEXT_CONTRAST,
+            )
+        });
+        for (pair, a, b, needed) in pairs.into_iter().chain(edge) {
+            let needed = needed.max(floor);
             let ratio = contrast_ratio(a, b);
             // A NaN colour gives a NaN ratio, which is reported, not passed.
             if ratio.is_nan() || ratio < needed {
@@ -373,11 +430,129 @@ impl GooeySkin {
         }
         out
     }
+
+    /// This skin with every colour taken from `look` and every size kept, the text scale and a
+    /// game's own gap and padding included: the step of a [`crate::skin_preset`] row, so a player
+    /// who set 200% text and then asks for high contrast has both.
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// let large = GooeySkin { text_scale: 2.0, ..GooeySkin::dark() };
+    /// let high = large.with_colours_of(&GooeySkin::high_contrast());
+    /// assert_eq!(high.text_scale, 2.0);
+    /// assert_eq!(high.text, GooeySkin::high_contrast().text);
+    /// ```
+    pub fn with_colours_of(self, look: &GooeySkin) -> Self {
+        Self {
+            background: look.background,
+            surface: look.surface,
+            surface_raised: look.surface_raised,
+            text: look.text,
+            text_muted: look.text_muted,
+            accent: look.accent,
+            accent_text: look.accent_text,
+            danger: look.danger,
+            focus_ring: look.focus_ring,
+            outline: look.outline,
+            surface_edge: look.surface_edge,
+            scrim: look.scrim,
+            ..self
+        }
+    }
+
+    /// How far this skin's colours are from `other`'s: the sum of the squares of every channel's
+    /// difference over every colour. Zero for equal colours, whatever the sizes.
+    fn colour_distance(&self, other: &GooeySkin) -> f32 {
+        let colours = |skin: &GooeySkin| {
+            [
+                skin.background,
+                skin.surface,
+                skin.surface_raised,
+                skin.text,
+                skin.text_muted,
+                skin.accent,
+                skin.accent_text,
+                skin.danger,
+                skin.focus_ring,
+                skin.outline,
+                skin.surface_edge.unwrap_or(skin.surface_raised),
+                skin.scrim,
+            ]
+        };
+        colours(self)
+            .into_iter()
+            .zip(colours(other))
+            .map(|(a, b)| {
+                let (a, b) = (Srgba::from(a), Srgba::from(b));
+                (a.red - b.red).powi(2)
+                    + (a.green - b.green).powi(2)
+                    + (a.blue - b.blue).powi(2)
+                    + (a.alpha - b.alpha).powi(2)
+            })
+            .sum()
+    }
 }
 
 impl Default for GooeySkin {
     fn default() -> Self {
         Self::dark()
+    }
+}
+
+/// The looks the crate ships, in the order a [`crate::skin_preset`] row offers them.
+///
+/// ```
+/// use bevy_gooey::{GooeySkin, SkinPreset};
+/// assert_eq!(SkinPreset::of(&GooeySkin::parchment()), SkinPreset::Parchment);
+/// assert_eq!(SkinPreset::HighContrast.name(), "High contrast");
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
+pub enum SkinPreset {
+    /// [`GooeySkin::dark`].
+    Dark,
+    /// [`GooeySkin::parchment`].
+    Parchment,
+    /// [`GooeySkin::high_contrast`].
+    HighContrast,
+}
+
+impl SkinPreset {
+    /// Every preset, in the order a [`crate::skin_preset`] row offers them.
+    pub const ALL: [SkinPreset; 3] = [Self::Dark, Self::Parchment, Self::HighContrast];
+
+    /// The preset's name in English, as the row shows it; a host that localises writes its own
+    /// [`crate::choice`] over [`SkinPreset::ALL`].
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Dark => "Dark",
+            Self::Parchment => "Parchment",
+            Self::HighContrast => "High contrast",
+        }
+    }
+
+    /// The whole preset: its colours and the sizes every preset shares.
+    pub fn skin(self) -> GooeySkin {
+        match self {
+            Self::Dark => GooeySkin::dark(),
+            Self::Parchment => GooeySkin::parchment(),
+            Self::HighContrast => GooeySkin::high_contrast(),
+        }
+    }
+
+    /// The preset whose colours are nearest `skin`'s, sizes ignored: what a
+    /// [`crate::skin_preset`] row shows for the skin the game set. A skin a game tuned shows the
+    /// nearest preset; equal distances take the first.
+    pub fn of(skin: &GooeySkin) -> Self {
+        let mut best = (Self::Dark, f32::INFINITY);
+        for preset in Self::ALL {
+            let distance = skin.colour_distance(&preset.skin());
+            if distance < best.1 {
+                best = (preset, distance);
+            }
+        }
+        best.0
     }
 }
 
@@ -1079,7 +1254,9 @@ fn restyle(
 
     let edge = match role {
         Role::Panel if in_dialog => Some(BorderColor::all(skin.outline)),
-        Role::Panel | Role::Tooltip | Role::Prompts => Some(BorderColor::all(skin.surface_raised)),
+        Role::Panel | Role::Tooltip | Role::Prompts => Some(BorderColor::all(
+            skin.surface_edge.unwrap_or(skin.surface_raised),
+        )),
         // Framed in the outline like the other widgets whose fill is the colour of what is behind
         // them: a toast over a panel keeps its edge at 3:1.
         Role::ToastBody => Some(BorderColor::all(faded(skin.outline, owner.alpha))),

@@ -1,5 +1,5 @@
 //! The options screen's rows for the settings the crate itself reads: `text_size`,
-//! `interface_size` and `pad_style`. Each is a choice that edits one field of a resource and shows
+//! `interface_size`, `pad_style` and `skin_preset`. Each is a choice that edits one field of a resource and shows
 //! it, so the setting lives once. Laid out for real in a headless window, driven by real keyboard
 //! input.
 
@@ -431,6 +431,109 @@ fn a_disabled_row_does_nothing() {
     assert_eq!(writes(&app), (0, 0, 0, 0, 0));
 }
 
+// ---- the theme row ----
+
+#[test]
+fn the_theme_row_offers_the_three_looks_and_a_step_writes_the_colours_and_no_size() {
+    let mut app = app();
+    let theirs = GooeySkin {
+        text_size: 22.0,
+        gap: 14.0,
+        text_scale: 1.5,
+        ..GooeySkin::dark()
+    };
+    *app.world_mut().resource_mut::<GooeySkin>() = theirs.clone();
+    let row = app.world_mut().spawn(skin_preset("Theme")).id();
+    screen_of(&mut app, vec![row]);
+    assert_eq!(shown(&app, row), ["Dark"]);
+    focus(&mut app, row);
+    forget_writes(&mut app);
+
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(shown(&app, row), ["Parchment"]);
+    assert_eq!(
+        *app.world().resource::<GooeySkin>(),
+        theirs.clone().with_colours_of(&GooeySkin::parchment()),
+        "the colours change and the player's text size and the game's gap stay"
+    );
+    assert_eq!(changes(&app), [(row, 1)], "one step, one change");
+    assert_eq!(writes(&app).0, 1, "and one write of the skin");
+
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(shown(&app, row), ["High contrast"]);
+    let skin = app.world().resource::<GooeySkin>().clone();
+    assert_eq!(
+        skin,
+        theirs.clone().with_colours_of(&GooeySkin::high_contrast())
+    );
+    assert_eq!(
+        (skin.text_scale, skin.text_size, skin.gap),
+        (1.5, 22.0, 14.0)
+    );
+    assert_eq!(skin.surface_edge, GooeySkin::high_contrast().surface_edge);
+    assert_eq!(skin.high_contrast_problems(), vec![], "and it holds 7:1");
+
+    // The end is the end: nothing is written, nothing said.
+    forget_writes(&mut app);
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(writes(&app), (0, 0, 0, 0, 0));
+    assert_eq!(changes(&app).len(), 2);
+
+    // And back: Home is the first look, whole (the quiet edge too).
+    tap(&mut app, KeyCode::Home);
+    assert_eq!(
+        *app.world().resource::<GooeySkin>(),
+        theirs.with_colours_of(&GooeySkin::dark())
+    );
+    assert_eq!(app.world().resource::<GooeySkin>().surface_edge, None);
+}
+
+#[test]
+fn the_skin_the_game_sets_moves_the_theme_row_with_no_event_and_a_tuned_one_shows_the_nearest() {
+    let mut app = app();
+    let row = app.world_mut().spawn(skin_preset("Theme")).id();
+    screen_of(&mut app, vec![row]);
+    assert_eq!(selected(&app, row), 0);
+
+    *app.world_mut().resource_mut::<GooeySkin>() = GooeySkin::high_contrast();
+    app.update();
+    assert_eq!(shown(&app, row), ["High contrast"]);
+
+    // A theme switch the game makes keeps the player's text scale; the row follows the colours.
+    *app.world_mut().resource_mut::<GooeySkin>() = GooeySkin {
+        text_scale: 2.0,
+        ..GooeySkin::parchment()
+    };
+    app.update();
+    assert_eq!(shown(&app, row), ["Parchment"]);
+
+    // A skin the game tuned shows the nearest look and is not rewritten until the player steps.
+    let tuned = GooeySkin {
+        accent: Color::srgb(0.9, 0.6, 0.2),
+        ..GooeySkin::dark()
+    };
+    *app.world_mut().resource_mut::<GooeySkin>() = tuned.clone();
+    app.update();
+    assert_eq!(shown(&app, row), ["Dark"]);
+    assert_eq!(*app.world().resource::<GooeySkin>(), tuned);
+    assert!(changes(&app).is_empty(), "the game's writes say nothing");
+}
+
+#[test]
+fn a_theme_row_spawned_over_a_high_contrast_skin_shows_it_on_its_first_frame() {
+    let mut app = app();
+    settle(&mut app);
+    // A platform that asks for high contrast: the game inserts the skin before it opens a menu, and
+    // nothing changes on the frame the row appears.
+    *app.world_mut().resource_mut::<GooeySkin>() = GooeySkin::high_contrast();
+    settle(&mut app);
+    let row = app.world_mut().spawn(skin_preset("Theme")).id();
+    app.update();
+    assert_eq!(selected(&app, row), 2);
+    assert_eq!(shown(&app, row), ["High contrast"]);
+    assert!(changes(&app).is_empty());
+}
+
 // ---- a plugin left out ----
 
 #[test]
@@ -483,7 +586,8 @@ fn nothing_is_written_while_the_rows_idle() {
     let text = app.world_mut().spawn(text_size("Text size")).id();
     let interface = app.world_mut().spawn(interface_size("Interface size")).id();
     let pad = app.world_mut().spawn(pad_style("Controller")).id();
-    screen_of(&mut app, vec![text, interface, pad]);
+    let theme = app.world_mut().spawn(skin_preset("Theme")).id();
+    screen_of(&mut app, vec![text, interface, pad, theme]);
     focus(&mut app, text);
     tap(&mut app, KeyCode::ArrowRight);
     settle(&mut app);
