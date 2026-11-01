@@ -7389,3 +7389,283 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 54	376	log	model	model		2026-11-01T15:54:02Z	7.6	
 54	377	log	tool	push gate	bash	2026-11-01T15:54:10Z	1.8	cd /home/ladvien/bevy_gooey_loop && git commit -qam "Loop log: iteration 26, release v0.13.0 and cleanup" && git push -q origin main 2>&1 | tail -1; git status 
 54	378	log	model	model		2026-11-01T15:54:11Z	10.1	
+55	1	orient	model	model		2026-11-01T15:54:49Z	3.9	
+55	2	orient	tool	phase mark	bash	2026-11-01T15:54:52Z	1.3	python3 ~/.local/share/wiggum/steps.py mark orient; cd ~/bevy_gooey_loop && git status --short | head; git fetch -q origin loop-stats; git show origin/loop-stat
+55	3	orient	model	model		2026-11-01T15:54:54Z	4.1	
+55	4	orient	tool	github	bash	2026-11-01T15:54:58Z	0.8	cd ~/bevy_gooey_loop && gh issue view 9 --repo bevy-coven/bevy_gooey --json body,comments --jq '.body, (.comments[]|.body)'; gh issue view 8 --repo bevy-coven/b
+55	5	orient	model	model		2026-11-01T15:54:59Z	3.4	
+55	6	research	tool	phase mark	bash	2026-11-01T15:55:02Z	0.1	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; cat src/popover.rs; cat docs/research/popover.md | head -80; ls examples tests; ca
+55	7	research	model	model		2026-11-01T15:55:02Z	3.8	
+55	8	research	tool	shell	bash	2026-11-01T15:55:06Z	0.0	cd ~/bevy_gooey_loop && sed -n 150,330p examples/popover.rs; grep -n "^pub fn\|^fn \|^const\|^pub const" src/widgets.rs
+55	9	research	tool	shell	bash	2026-11-01T15:55:06Z	0.0	cd ~/bevy_gooey_loop && cat src/popover.rs | sed -n 1,324p
+55	10	research	model	model		2026-11-01T15:55:06Z	55.1	
+55	11	research	tool	shell	bash	2026-11-01T15:56:01Z	0.0	cd ~/bevy_gooey_loop && grep -n "Popover\|popover" src/skin.rs | head -60; grep -n "Dialog\|fn \|KeepsSideways" src/nav.rs | head -120
+55	12	research	model	model		2026-11-01T15:56:01Z	1.5	
+55	13	research	tool	shell	bash	2026-11-01T15:56:03Z	0.0	cd ~/bevy_gooey_loop && sed -n 25,135p src/nav.rs; sed -n 255,530p src/nav.rs
+55	14	research	model	model		2026-11-01T15:56:03Z	7.0	
+55	15	research	tool	shell	bash	2026-11-01T15:56:10Z	0.0	cd ~/bevy_gooey_loop && sed -n 1055,1135p src/skin.rs; sed -n 1755,1800p src/skin.rs; sed -n 2070,2110p src/skin.rs; sed -n 1215,1345p src/widgets.rs
+55	16	research	model	model		2026-11-01T15:56:10Z	33.6	
+55	17	research	tool	shell	bash	2026-11-01T15:56:43Z	0.0	cd ~/bevy_gooey_loop && sed -n 1135,1300p src/skin.rs
+55	18	research	tool	shell	bash	2026-11-01T15:56:43Z	0.0	cd ~/bevy_gooey_loop && sed -n 1400,1640p src/skin.rs; sed -n 200,265p src/widgets.rs
+55	19	research	model	model		2026-11-01T15:56:43Z	14.4	
+55	20	research	tool	shell	bash	2026-11-01T15:56:58Z	0.0	cd ~/bevy_gooey_loop && grep -n "Role::TextHint\|Role::Tab\b\|Role::TabText" src/*.rs tests/*.rs | head -30; sed -n 1640,1700p src/skin.rs
+55	21	research	tool	shell	bash	2026-11-01T15:56:58Z	0.0	cd ~/bevy_gooey_loop && sed -n 1800,1830p src/skin.rs; sed -n 1880,2070p src/skin.rs; sed -n 636,692p src/widgets.rs
+55	22	research	model	model		2026-11-01T15:56:58Z	5.3	
+55	23	research	tool	homestill	bash	2026-11-01T15:57:03Z	11.8	cd ~/bevy_gooey_loop && hs status 2>&1 | head -15; for q in "cascading menus submenu hover delay triangle" "menu bar keyboard navigation accessibility" "pull-do
+55	24	research	model	model		2026-11-01T15:57:15Z	4.9	
+55	25	research	tool	homestill	bash	2026-11-01T15:57:20Z	5.8	cd ~/bevy_gooey_loop && timeout 60 hs distill search "pull-down menu selection time steering law" --output json 2>&1 | python3 -c " import sys,json d=json.load(
+55	26	research	model	model		2026-11-01T15:57:26Z	2.3	
+55	27	research	tool	homestill	bash	2026-11-01T15:57:28Z	4.7	cd ~/bevy_gooey_loop && for q in "pull-down menu selection time steering law" "vertical menu selection predicting human performance"; do timeout 60 hs distill s
+55	28	research	model	model		2026-11-01T15:57:33Z	4.8	
+55	29	research	tool	homestill	bash	2026-11-01T15:57:38Z	2.6	cd ~/bevy_gooey_loop && for q in "Hick's law menu selection time grows with number of items Fitts" "menus navigable with keyboard controller without a mouse gam
+55	30	research	model	model		2026-11-01T15:57:40Z	5.6	
+55	31	research	tool	homestill	bash	2026-11-01T15:57:46Z	5.3	cd ~/bevy_gooey_loop && grep -rn "XAG" docs/research/*.md | cut -c1-220 | head -20; timeout 60 hs distill search "XAG 112 Xbox accessibility guidelines menus na
+55	32	research	tool	read files	read	2026-11-01T15:57:46Z	5.3	APG menubar keyboard contract :: https://www.w3.org/WAI/ARIA/apg/patterns/menubar/
+55	33	research	model	model		2026-11-01T15:57:51Z	20.3	
+55	34	research	tool	shell	bash	2026-11-01T15:58:11Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/ && grep -n "Disabled" bevy_ecs-0.20.0/src/lib.rs | head; grep -rn "Disabled" bevy_internal-0.20.0/src/prelude.rs bev
+55	35	research	model	model		2026-11-01T15:58:11Z	2.8	
+55	36	research	tool	shell	bash	2026-11-01T15:58:14Z	0.1	cd ~/.cargo/registry/src/ && ls; D=$(ls -d */bevy_ecs-0.20.0 | head -1); echo $D; grep -n "Disabled" $D/src/lib.rs | head; U=$(ls -d */bevy_ui_widgets-0.20.0); 
+55	37	research	model	model		2026-11-01T15:58:14Z	4.4	
+55	38	research	tool	shell	bash	2026-11-01T15:58:19Z	0.0	cd ~/.cargo/registry/src/*/bevy_ui_widgets-0.20.0/src && wc -l menu.rs && cat menu.rs
+55	39	research	model	model		2026-11-01T15:58:19Z	2.8	
+55	40	research	tool	shell	bash	2026-11-01T15:58:22Z	0.2	cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.0/src && cat menu.rs
+55	41	research	model	model		2026-11-01T15:58:22Z	2.8	
+55	42	research	tool	shell	bash	2026-11-01T15:58:25Z	0.0	cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.0/src && sed -n 1,460p menu.rs
+55	43	research	model	model		2026-11-01T15:58:25Z	131.3	
+55	44	research	tool	shell	bash	2026-11-01T16:00:36Z	0.0	cd ~/bevy_gooey_loop && sed -n 1300,1402p src/skin.rs; cat src/tooltip.rs | sed -n 1,60p; grep -n "fn show_tooltips" -A60 src/tooltip.rs | head -110
+55	45	research	model	model		2026-11-01T16:00:36Z	7.8	
+55	46	research	tool	shell	bash	2026-11-01T16:00:44Z	0.0	cd ~/bevy_gooey_loop && sed -n 1,114p src/feedback.rs; sed -n 270,300p tests/density.rs
+55	47	research	tool	shell	bash	2026-11-01T16:00:44Z	0.0	cd ~/bevy_gooey_loop && grep -n "feedback" src/lib.rs | head -20; sed -n 100,374p src/lib.rs
+55	48	research	model	model		2026-11-01T16:00:44Z	41.7	
+55	49	research	tool	phase mark	bash	2026-11-01T16:01:25Z	0.1	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research >/dev/null; cat > docs/research/menu.md <<'EOF' # Menu bar and dropdown menus: a ro
+55	50	research	model	model		2026-11-01T16:01:25Z	5.2	
+55	51	build	tool	phase mark	bash	2026-11-01T16:01:31Z	0.1	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; grep -n "fn choice_on_key_input" -B3 -A40 src/choice.rs; grep -n "pub fn scroll_to_fo
+55	52	build	model	model		2026-11-01T16:01:31Z	5.3	
+55	53	build	tool	shell	bash	2026-11-01T16:01:36Z	0.0	cd ~/bevy_gooey_loop && sed -n 975,1082p src/widgets.rs; grep -n "pub fn scroll_to_reveal" -B12 -A25 src/model.rs; grep -n "fn span" -A8 src/list.rs; sed -n 1,6
+55	54	build	model	model		2026-11-01T16:01:36Z	44.3	
+55	55	build	tool	shell	bash	2026-11-01T16:02:20Z	0.0	cd ~/bevy_gooey_loop && sed -n 1826,1882p src/skin.rs; grep -n "CHEVRON_TEXT_SIZES\|CHEVRON_ARROW_FIT\|const LIST_LINE_TEXT_SIZES\|const SAFE_EDGE" src/skin.rs 
+55	56	build	model	model		2026-11-01T16:02:20Z	12.8	
+55	57	build	tool	shell	bash	2026-11-01T16:02:33Z	0.0	cd ~/bevy_gooey_loop && grep -n "text_muted" src/skin.rs | sed -n 1,40p; grep -n "pub fn hovered" -B3 -A25 src/skin.rs; grep -n "pub fn problems" -A80 src/skin.
+55	58	build	model	model		2026-11-01T16:02:33Z	15.4	
+55	59	build	tool	shell	bash	2026-11-01T16:02:49Z	0.0	cd ~/bevy_gooey_loop && grep -n "TextHint,$" src/skin.rs; sed -n 1,60p src/skin.rs | head -80; sed -n 905,925p src/skin.rs
+55	60	build	model	model		2026-11-01T16:02:49Z	10.4	
+55	61	build	tool	shell	bash	2026-11-01T16:02:59Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' import re p='src/skin.rs' s=open(p).read() # 1 Role variants s=s.replace(""" /// A text input's hint: [`GooeySkin::tex
+55	62	build	model	model		2026-11-01T16:02:59Z	8.5	
+55	63	build	tool	shell	bash	2026-11-01T16:03:07Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() def rep(a,b,count=1): global s assert s.count(a)==count,(a,s.count(a)) s=s.replace(a,
+55	64	build	model	model		2026-11-01T16:03:07Z	9.8	
+55	65	build	tool	shell	bash	2026-11-01T16:03:17Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() def rep(a,b,count=1): global s assert s.count(a)==count,(a,s.count(a)) s=s.replace(a,
+55	66	build	model	model		2026-11-01T16:03:17Z	21.2	
+55	67	build	tool	shell	bash	2026-11-01T16:03:38Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() def rep(a,b,count=1): global s assert s.count(a)==count,(a,s.count(a)) s=s.replace(a,
+55	68	build	model	model		2026-11-01T16:03:38Z	40.8	
+55	69	build	tool	shell	bash	2026-11-01T16:04:19Z	0.0	cd ~/bevy_gooey_loop && grep -n "ValueChange {" -B2 -A6 src/text.rs | head -30; grep -n "FocusedInput" src/choice.rs | head -4; grep -n "^use" src/choice.rs; gr
+55	70	build	model	model		2026-11-01T16:04:19Z	177.4	
+55	71	build	tool	edit files	write	2026-11-01T16:07:17Z	0.0	/home/ladvien/bevy_gooey_loop/src/menu.rs
+55	72	build	model	model		2026-11-01T16:07:17Z	15.4	
+55	73	build	tool	shell	bash	2026-11-01T16:07:32Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/popover.rs' s=open(p).read() def rep(a,b): global s assert s.count(a)==1,a s=s.replace(a,b) rep(""" shown: bool
+55	74	build	model	model		2026-11-01T16:07:32Z	23.6	
+55	75	build	tool	shell	bash	2026-11-01T16:07:56Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() marker="/// A line of news at the edge of the screen: \"Game saved\"" assert s.cou
+55	76	build	model	model		2026-11-01T16:07:56Z	19.5	
+55	77	build	tool	cargo build	bash	2026-11-01T16:08:15Z	3.1	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() s=s.replace(""" MenuItem::radio(label) .with_state(checked) """,""" MenuItem::radi
+55	78	build	model	model		2026-11-01T16:08:18Z	5.8	
+55	79	build	tool	cargo build	bash	2026-11-01T16:08:24Z	2.1	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() def rep(a,b): global s assert s.count(a)==1,a s=s.replace(a,b) rep(""" Has<Capturing>
+55	80	build	model	model		2026-11-01T16:08:26Z	8.8	
+55	81	build	tool	cargo build	bash	2026-11-01T16:08:35Z	2.8	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() a=""" Added<MenuOpen>, Added<PopoverPanel>, )>,""" assert a in s s=s.replace(a,""" Or
+55	82	build	model	model		2026-11-01T16:08:38Z	4.0	
+55	83	build	tool	cargo build	bash	2026-11-01T16:08:42Z	0.5	cd ~/bevy_gooey_loop && cargo check --lib 2>&1 | tail -3; sed -n 1,200p tests/popover.rs
+55	84	build	model	model		2026-11-01T16:08:42Z	1.6	
+55	85	build	tool	shell	bash	2026-11-01T16:08:44Z	0.0	cd ~/bevy_gooey_loop && sed -n 200,260p tests/popover.rs; grep -n "fn focused\|InputFocus" tests/popover.rs | head
+55	86	build	model	model		2026-11-01T16:08:44Z	37.9	
+55	87	build	tool	cargo test	bash	2026-11-01T16:09:22Z	14.6	cd ~/bevy_gooey_loop && cat > tests/menu.rs <<'EOF' //! A menu bar as a game sees it, laid out in a headless window and driven by real keyboard and //! pointer 
+55	88	build	model	model		2026-11-01T16:09:37Z	6.3	
+55	89	build	tool	shell	bash	2026-11-01T16:09:43Z	0.0	cd ~/bevy_gooey_loop && sed -n 330,420p examples/popover.rs; grep -n "Cargo\|\[\[example" Cargo.toml | head; grep -n "example" Cargo.toml
+55	90	build	model	model		2026-11-01T16:09:43Z	32.4	
+55	91	build	tool	cargo build	bash	2026-11-01T16:10:15Z	6.9	cd ~/bevy_gooey_loop && python3 - <<'EOF' src=open('examples/popover.rs').read() head_end=src.index("/// The menus: each is the items under one anchor.") cap_st
+55	92	build	model	model		2026-11-01T16:10:22Z	3.7	
+55	93	build	tool	shell	bash	2026-11-01T16:10:26Z	6.8	cd ~/bevy_gooey_loop && echo $DISPLAY $CARGO_TARGET_DIR; mkdir -p /tmp/g27 && G=~/target/gooey-loop/debug/examples/menus; GOOEY_FRAMES=130 GOOEY_KEYS=f10,right,
+55	94	build	model	model		2026-11-01T16:10:33Z	1.3	
+55	95	build	tool	read files	read	2026-11-01T16:10:34Z	0.0	/tmp/g27/m1.png
+55	96	build	model	model		2026-11-01T16:10:34Z	7.1	
+55	97	build	tool	shell	bash	2026-11-01T16:10:41Z	14.9	cd ~/bevy_gooey_loop && G=~/target/gooey-loop/debug/examples/menus; GOOEY_FRAMES=170 GOOEY_KEYS=f10,down,down,down,down,right,down GOOEY_SHOT=/tmp/g27/m2.png ti
+55	98	build	tool	read files	read	2026-11-01T16:10:41Z	14.9	/tmp/g27/m2.png
+55	99	build	tool	read files	read	2026-11-01T16:10:41Z	14.9	/tmp/g27/m3.png
+55	100	build	model	model		2026-11-01T16:10:56Z	4.2	
+55	101	build	tool	shell	bash	2026-11-01T16:11:00Z	8.1	ls -la /tmp/g27; cd ~/bevy_gooey_loop; G=~/target/gooey-loop/debug/examples/menus; GOOEY_FRAMES=170 GOOEY_KEYS=f10,down,down,down,down,right,down GOOEY_SHOT=/tm
+55	102	build	model	model		2026-11-01T16:11:08Z	2.0	
+55	103	build	tool	read files	read	2026-11-01T16:11:10Z	0.0	/tmp/g27/m2.png
+55	104	build	tool	read files	read	2026-11-01T16:11:10Z	0.0	/tmp/g27/m3.png
+55	105	build	model	model		2026-11-01T16:11:10Z	70.0	
+55	106	build	tool	remote wait	bash	2026-11-01T16:12:20Z	4.9	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/menu.rs' s=open(p).read() a=""" Key::Left => { if in_submenu {""" assert a in s s=s.replace(a,""" Key::Left => 
+55	107	build	model	model		2026-11-01T16:12:25Z	7.2	
+55	108	build	tool	cargo test	bash	2026-11-01T16:12:32Z	2.1	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace("""#[derive(Resource, Default)] struct Closed(Vec<Entity>); ""","") s=s
+55	109	build	model	model		2026-11-01T16:12:34Z	1.3	
+55	110	build	tool	shell	bash	2026-11-01T16:12:36Z	0.0	cd ~/bevy_gooey_loop && sed -n 543,556p tests/menu.rs
+55	111	build	model	model		2026-11-01T16:12:36Z	2.6	
+55	112	build	tool	cargo test	bash	2026-11-01T16:12:38Z	7.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(" point_at(&mut app, rect(&app, view).center());"," let at = rect(&app,
+55	113	build	model	model		2026-11-01T16:12:45Z	7.0	
+55	114	build	tool	cargo test	bash	2026-11-01T16:12:52Z	1.2	cd ~/bevy_gooey_loop && sed -n 336,346p tests/menu.rs; cargo test --test menu a_disabled 2>&1 | grep -A6 panicked
+55	115	build	model	model		2026-11-01T16:12:53Z	5.2	
+55	116	build	tool	shell	bash	2026-11-01T16:12:59Z	0.0	cd ~/bevy_gooey_loop && grep -n "Enter" src/*.rs | grep -v "^src/menu.rs\|//" | head -20
+55	117	build	model	model		2026-11-01T16:12:59Z	3.9	
+55	118	build	tool	cargo test	bash	2026-11-01T16:13:03Z	6.5	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(""" for k in [KeyCode::Enter, KeyCode::Space] { tap(&mut app, k);""",""
+55	119	build	model	model		2026-11-01T16:13:09Z	8.7	
+55	120	build	tool	shell	bash	2026-11-01T16:13:18Z	0.0	cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.0/src && sed -n 30,70p button.rs
+55	121	build	model	model		2026-11-01T16:13:18Z	4.8	
+55	122	build	tool	cargo test	bash	2026-11-01T16:13:23Z	6.6	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(""" tap(&mut app, k); assert!(chosen(&app).is_empty(), "{k:?} chose a d
+55	123	build	model	model		2026-11-01T16:13:29Z	6.9	
+55	124	build	tool	cargo test	bash	2026-11-01T16:13:36Z	7.4	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(""" let zoom_out = item(&mut app, "Zoom out"); tap(&mut app, KeyCode::F
+55	125	build	model	model		2026-11-01T16:13:44Z	17.5	
+55	126	build	tool	remote wait	bash	2026-11-01T16:14:01Z	12.1	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/menu.rs' s=open(p).read() s=s.replace("""/// The bundle of a menu panel:""","""/// Enter and Space that reach a
+55	127	build	model	model		2026-11-01T16:14:13Z	3.3	
+55	128	build	tool	cargo test	bash	2026-11-01T16:14:17Z	1.8	cd ~/bevy_gooey_loop && sed -n 452,466p tests/menu.rs; cargo test --test menu a_submenu 2>&1 | grep -A4 panicked
+55	129	build	model	model		2026-11-01T16:14:19Z	5.5	
+55	130	build	tool	cargo test	bash	2026-11-01T16:14:24Z	9.9	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(" taps(&mut app, &[KeyCode::ArrowDown, KeyCode::ArrowDown, KeyCode::Arr
+55	131	build	model	model		2026-11-01T16:14:34Z	4.5	
+55	132	build	tool	shell	bash	2026-11-01T16:14:38Z	0.0	cd ~/bevy_gooey_loop && grep -n "GamepadConnectionEvent\|RawGamepadEvent\|fn plug\|fn pad" -B2 -A22 tests/tooltip.rs | sed -n 1,90p
+55	133	build	model	model		2026-11-01T16:14:38Z	9.4	
+55	134	build	tool	cargo test	bash	2026-11-01T16:14:48Z	8.9	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace("use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};","""use be
+55	135	build	model	model		2026-11-01T16:14:57Z	5.6	
+55	136	build	tool	shell	bash	2026-11-01T16:15:02Z	0.0	cd ~/bevy_gooey_loop && grep -n "contrast" tests/tabs.rs | head -12; grep -n "fn contrast_of\|fn ink\|fn fill_under\|fn ratio" -A25 tests/tabs.rs | head -70
+55	137	build	model	model		2026-11-01T16:15:02Z	5.5	
+55	138	build	tool	shell	bash	2026-11-01T16:15:08Z	0.0	cd ~/bevy_gooey_loop && grep -n "fn rgb" -A6 tests/tabs.rs; sed -n 555,580p tests/tabs.rs
+55	139	build	model	model		2026-11-01T16:15:08Z	23.0	
+55	140	build	tool	remote wait	bash	2026-11-01T16:15:31Z	0.1	cd ~/bevy_gooey_loop && cat >> tests/menu.rs <<'EOF' fn rgb(color: Color) -> [f32; 3] { let c = Srgba::from(color); [c.red, c.green, c.blue] } /// The ink of a 
+55	141	build	model	model		2026-11-01T16:15:31Z	1.7	
+55	142	build	tool	cargo test	bash	2026-11-01T16:15:33Z	2.5	cd ~/bevy_gooey_loop && cargo test --test menu 2>&1 | grep -E "^(test |error)|panicked" -A5 | grep -v "^--" | head -60
+55	143	build	model	model		2026-11-01T16:15:35Z	4.4	
+55	144	build	tool	cargo test	bash	2026-11-01T16:15:40Z	10.2	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(""" let chords = texts_under(&app, panel_of(&app, title(&mut app, "File
+55	145	build	model	model		2026-11-01T16:15:50Z	7.6	
+55	146	build	tool	cargo test	bash	2026-11-01T16:15:57Z	8.4	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(" taps(&mut app, &[KeyCode::ArrowDown, KeyCode::ArrowDown]);\n assert!(
+55	147	build	model	model		2026-11-01T16:16:06Z	6.7	
+55	148	build	tool	cargo test	bash	2026-11-01T16:16:12Z	21.3	cd ~/bevy_gooey_loop && cp src/nav.rs /tmp/g27/nav.rs.orig && python3 - <<'EOF' s=open('src/nav.rs').read() s=s.replace("self.menu_rows.contains(entity) || self
+55	149	build	model	model		2026-11-01T16:16:34Z	9.8	
+55	150	build	tool	cargo test	bash	2026-11-01T16:16:43Z	20.2	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() a=" let canvas = app.world_mut().spawn(button(\"Canvas\")).id();\n" assert a in s s
+55	151	build	model	model		2026-11-01T16:17:04Z	3.4	
+55	152	build	tool	cargo test	bash	2026-11-01T16:17:07Z	0.8	cd ~/bevy_gooey_loop && cargo test --test menu escape_closes 2>&1 | grep -E "panicked|left:|right:" -A2 | head
+55	153	build	model	model		2026-11-01T16:17:08Z	5.0	
+55	154	build	tool	cargo test	bash	2026-11-01T16:17:13Z	21.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() a=s.index(" // Directly under the File title") b=s.index(" .id();\n",a)+len(" .id()
+55	155	build	model	model		2026-11-01T16:17:34Z	10.7	
+55	156	build	tool	cargo test	bash	2026-11-01T16:17:45Z	7.8	cd ~/bevy_gooey_loop && python3 - <<'EOF' s=open('/home/ladvien/bevy_gooey_loop/src/nav.rs').read() s=s.replace("from.is_some_and(|f| scopes.menu_titles.contain
+55	157	build	model	model		2026-11-01T16:17:52Z	5.1	
+55	158	build	tool	cargo test	bash	2026-11-01T16:17:57Z	9.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' s=open('/home/ladvien/bevy_gooey_loop/src/nav.rs').read() s=s.replace("from.is_some_and(|f| scopes.menu_titles.contain
+55	159	build	model	model		2026-11-01T16:18:06Z	12.2	
+55	160	build	tool	shell	bash	2026-11-01T16:18:19Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace("""/// Every `ValueChange<bool>`""","""/// Every widget focus has reste
+55	161	build	model	model		2026-11-01T16:18:19Z	5.9	
+55	162	build	tool	cargo test	bash	2026-11-01T16:18:25Z	23.2	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(""" !app.world().resource::<Rested>().0.contains(&canvas) || app.world(
+55	163	build	model	model		2026-11-01T16:18:48Z	3.2	
+55	164	build	tool	cargo clippy	bash	2026-11-01T16:18:51Z	4.2	cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=3 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(error|warning)" -A12 | head -
+55	165	build	model	model		2026-11-01T16:18:55Z	7.9	
+55	166	build	tool	cargo clippy	bash	2026-11-01T16:19:03Z	7.4	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/menu.rs' s=open(p).read() s=s.replace("rows: Query<(), Or<(With<MenuTitle>, With<MenuItem>)>>,","rows: Query<()
+55	167	build	model	model		2026-11-01T16:19:11Z	3.8	
+55	168	build	tool	cargo clippy	bash	2026-11-01T16:19:14Z	1.7	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/menu.rs' s=open(p).read() s=s.replace(""" let mut skin = GooeySkin::default(); skin.text_scale = scale; ""","
+55	169	build	model	model		2026-11-01T16:19:16Z	7.5	
+55	170	build	tool	shell	bash	2026-11-01T16:19:24Z	0.2	cd ~/bevy_gooey_loop && sed -i 's/menu_item("Open…").with_shortcut(Shortcut::primary(KeyCode::KeyO)),\n command/X/' examples/menus.rs && python3 - <<'EOF' p='ex
+55	171	build	model	model		2026-11-01T16:19:24Z	5.5	
+55	172	build	tool	cargo build	bash	2026-11-01T16:19:29Z	0.0	mkdir -p ~/g27_bin && cat > /tmp/g27/build.sh <<'EOF' #!/bin/bash set -x export CARGO_BUILD_JOBS=3 cd ~/g27_base && cargo build --release --example gallery 2>&1
+55	173	build	tool	shell	bash	2026-11-01T16:19:29Z	0.0	[launched bg_5] /tmp/g27/build.sh > /tmp/g27/build.log 2>&1; tail -5 /tmp/g27/build.log
+55	174	build	model	model		2026-11-01T16:19:29Z	3.0	
+55	175	build	tool	shell	bash	2026-11-01T16:19:32Z	0.0	cd ~/bevy_gooey_loop && sed -n 1,229p README.md | cut -c1-260
+55	176	build	tool	shell	bash	2026-11-01T16:19:32Z	0.0	cd ~/bevy_gooey_loop && cat docs/guide/README.md; cat docs/guide/popovers.md | head -80; head -40 CHANGELOG.md; tail -30 docs/media/README.md | cut -c1-250
+55	177	build	model	model		2026-11-01T16:19:32Z	6.8	
+55	178	build	tool	shell	bash	2026-11-01T16:19:39Z	0.0	cd ~/bevy_gooey_loop && grep -n "popover" docs/guide/widgets.md docs/guide/host-api.md docs/research/corpus.md src/lib.rs docs/guide/navigation.md | cut -c1-240
+55	179	build	model	model		2026-11-01T16:19:39Z	2.2	
+55	180	build	tool	shell	bash	2026-11-01T16:19:41Z	0.0	cd ~/bevy_gooey_loop && sed -n 15,25p docs/guide/widgets.md | cut -c1-400; sed -n 55,66p docs/guide/host-api.md; sed -n 84,94p docs/guide/host-api.md; sed -n 25
+55	181	build	model	model		2026-11-01T16:19:41Z	29.8	
+55	182	build	tool	git	bash	2026-11-01T16:20:11Z	0.1	cd ~/bevy_gooey_loop && cat > docs/guide/menus.md <<'EOF' # Menus A menu bar is a row of titles, each opening a card of commands: the first place a new user of 
+55	183	build	model	model		2026-11-01T16:20:11Z	24.1	
+55	184	build	tool	shell	bash	2026-11-01T16:20:35Z	0.1	cd ~/bevy_gooey_loop && python3 - <<'EOF' def sub(p,a,b): s=open(p).read() assert s.count(a)==1,(p,a,s.count(a)) s=s.replace(a,b) open(p,'w').write(s) sub('AGEN
+55	185	build	model	model		2026-11-01T16:20:35Z	8.7	
+55	186	build	tool	wait: other	wait	2026-11-01T16:20:44Z	8.0	{}
+55	187	build	model	model		2026-11-01T16:20:52Z	3.6	
+55	188	prove	tool	phase mark	bash	2026-11-01T16:20:56Z	50.5	python3 ~/.local/share/wiggum/steps.py mark prove; cd /tmp/g27 && M=~/g27_bin/menus; mkdir -p after; run(){ name=$1; shift; env "$@" GOOEY_FRAMES=190 GOOEY_KEYS
+55	189	prove	model	model		2026-11-01T16:21:46Z	2.2	
+55	190	prove	tool	shell	bash	2026-11-01T16:21:48Z	0.2	cd /tmp/g27/after && magick montage parch.png hc.png tool.png dark-720.png -tile 2x2 -geometry 640x360+4+4 -background '#444' sheet1.png && ls
+55	191	prove	tool	read files	read	2026-11-01T16:21:48Z	0.2	/tmp/g27/after/sheet1.png
+55	192	prove	model	model		2026-11-01T16:21:49Z	1.3	
+55	193	prove	tool	shell	bash	2026-11-01T16:21:50Z	0.0	cd /tmp/g27/after && ls -la sheet1.png; which magick
+55	194	prove	model	model		2026-11-01T16:21:50Z	1.2	
+55	195	prove	tool	read files	read	2026-11-01T16:21:51Z	0.1	/tmp/g27/after/sheet1.png
+55	196	prove	model	model		2026-11-01T16:21:51Z	6.4	
+55	197	prove	tool	read files	read	2026-11-01T16:21:57Z	0.0	/tmp/g27/after/dark-2x.png
+55	198	prove	model	model		2026-11-01T16:21:57Z	32.5	
+55	199	prove	tool	cargo build	bash	2026-11-01T16:22:30Z	4.5	cd ~/bevy_gooey_loop && python3 - <<'EOF' def sub(p,a,b,count=1): s=open(p).read() assert s.count(a)==count,(p,a,s.count(a)) s=s.replace(a,b) open(p,'w').write(
+55	200	prove	model	model		2026-11-01T16:22:34Z	8.4	
+55	201	prove	tool	cargo test	bash	2026-11-01T16:22:43Z	19.1	cd ~/bevy_gooey_loop && python3 - <<'EOF' def sub(p,a,b,count=1): s=open(p).read() assert s.count(a)==count,(p,a,s.count(a)) s=s.replace(a,b) open(p,'w').write(
+55	202	prove	model	model		2026-11-01T16:23:02Z	8.1	
+55	203	prove	tool	cargo test	bash	2026-11-01T16:23:10Z	6.6	cd ~/bevy_gooey_loop && cat >> tests/menu.rs <<'EOF' #[test] fn only_a_menu_with_a_check_or_a_dot_keeps_the_slot_for_it() { let mut app = app(); spawn_bar(&mut 
+55	204	prove	model	model		2026-11-01T16:23:17Z	4.4	
+55	205	prove	tool	cargo build	bash	2026-11-01T16:23:21Z	52.8	cd ~/bevy_gooey_loop && git add -A && git commit -qm "Menus: labels keep the mark slot only in a menu that has a check or a radio item; the chord's air grows wi
+55	206	prove	model	model		2026-11-01T16:24:14Z	3.1	
+55	207	prove	tool	read files	read	2026-11-01T16:24:17Z	0.0	/tmp/g27/after/b-view.png
+55	208	prove	tool	read files	read	2026-11-01T16:24:17Z	0.1	/tmp/g27/after/b-1440.png
+55	209	prove	tool	read files	read	2026-11-01T16:24:17Z	0.1	/tmp/g27/after/b-2x.png
+55	210	prove	model	model		2026-11-01T16:24:17Z	13.3	
+55	211	prove	tool	shell	bash	2026-11-01T16:24:30Z	0.0	cd ~/bevy_gooey_loop && grep -n "popover.gif" docs/media/README.md | cut -c1-1800
+55	212	prove	model	model		2026-11-01T16:24:30Z	1.8	
+55	213	prove	tool	shell	bash	2026-11-01T16:24:32Z	0.0	cd ~/bevy_gooey_loop && sed -n 30p docs/media/README.md | cut -c1400-2600; sed -n 1,12p docs/media/README.md | cut -c1-1500
+55	214	prove	model	model		2026-11-01T16:24:32Z	1.5	
+55	215	prove	tool	shell	bash	2026-11-01T16:24:34Z	0.0	cd ~/bevy_gooey_loop && sed -n 30p docs/media/README.md | rev | cut -c1-900 | rev
+55	216	prove	model	model		2026-11-01T16:24:34Z	4.0	
+55	217	prove	tool	shell	bash	2026-11-01T16:24:38Z	7.7	mkdir -p /tmp/g27/gif && cd /tmp/g27 && GOOEY_FRAMES=290 GOOEY_KEY_EVERY=18 GOOEY_KEYS=f10,down,down,down,down,right,down,left,escape,right,down,down,escape,esc
+55	218	prove	model	model		2026-11-01T16:24:45Z	4.5	
+55	219	prove	tool	shell	bash	2026-11-01T16:24:50Z	0.1	cd /tmp/g27/gif && ls | head -3; for i in 04 12 22 30 38 46 54 62 70 78 86; do echo f_00$i.png; done | tr '\n' ' ' ; montage=$(for i in 05 15 25 33 41 49 57 65 
+55	220	prove	tool	read files	read	2026-11-01T16:24:50Z	0.1	/tmp/g27/gifsheet.png
+55	221	prove	model	model		2026-11-01T16:24:50Z	2.6	
+55	222	prove	tool	shell	bash	2026-11-01T16:24:52Z	0.4	cd /tmp/g27/gif && ls | tail -3; files=$(for i in 05 15 25 33 41 49 57 65 73 81 86 88; do printf "f_00%s.png " $i; done); magick montage $files -crop 640x400+0+
+55	223	prove	model	model		2026-11-01T16:24:53Z	1.3	
+55	224	prove	tool	read files	read	2026-11-01T16:24:54Z	0.1	/tmp/g27/gifsheet.png
+55	225	prove	model	model		2026-11-01T16:24:54Z	7.7	
+55	226	prove	tool	shell	bash	2026-11-01T16:25:02Z	0.0	cd /tmp/g27/gif && md5sum f_*.png | awk '{print $1}' | uniq -c | tail -8; md5sum f_*.png | awk '{print $1}' | uniq -c | wc -l; ls | wc -l
+55	227	prove	model	model		2026-11-01T16:25:02Z	6.6	
+55	228	prove	tool	clip record/render	bash	2026-11-01T16:25:08Z	0.5	cd /tmp/g27 && ffmpeg -y -loglevel error -framerate 15 -pattern_type glob -i '/tmp/g27/gif/f_*.png' -vf "crop=780:460:0:0,split[a][b];[a]palettegen=max_colors=1
+55	229	prove	model	model		2026-11-01T16:25:09Z	3.4	
+55	230	prove	tool	clip record/render	bash	2026-11-01T16:25:12Z	0.2	cd /tmp/g27 && ffmpeg -y -loglevel error -i menus.gif -vf "select=eq(n\,28)" -vframes 1 g28.png && ffmpeg -y -loglevel error -i menus.gif -vf "select=eq(n\,60)"
+55	231	prove	tool	read files	read	2026-11-01T16:25:12Z	0.2	/tmp/g27/gpair.png
+55	232	prove	model	model		2026-11-01T16:25:13Z	1.7	
+55	233	prove	tool	shell	bash	2026-11-01T16:25:14Z	0.1	cd /tmp/g27 && ls *.png | head; magick g28.png g60.png +append gpair.png; ls -la gpair.png
+55	234	prove	model	model		2026-11-01T16:25:14Z	1.3	
+55	235	prove	tool	read files	read	2026-11-01T16:25:16Z	0.0	/tmp/g27/gpair.png
+55	236	prove	model	model		2026-11-01T16:25:16Z	7.0	
+55	237	prove	tool	shell	bash	2026-11-01T16:25:23Z	60.0	[launched bg_7] cp /tmp/g27/menus.gif ~/bevy_gooey_loop/docs/media/menus.gif; cat > /tmp/g27/perf.sh <<'EOF' #!/bin/bash cd /tmp/g27 for i in $(seq 1 10); do for v in before af
+55	238	prove	model	model		2026-11-01T16:26:23Z	13.4	
+55	239	prove	tool	cargo build	bash	2026-11-01T16:26:36Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' def sub(p,a,b,count=1): s=open(p).read() assert s.count(a)==count,(p,a,s.count(a)) s=s.replace(a,b) open(p,'w').write(
+55	240	prove	model	model		2026-11-01T16:26:36Z	5.1	
+55	241	prove	tool	shell	bash	2026-11-01T16:26:41Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='docs/media/README.md' s=open(p).read() s=s.replace('bayer_scale=4" docs/media/menus.gif` | 0.14.0 |','bayer_scale=4
+55	242	prove	model	model		2026-11-01T16:26:41Z	7.1	
+55	243	prove	tool	wait: other	wait	2026-11-01T16:26:48Z	44.9	{}
+55	244	prove	model	model		2026-11-01T16:27:33Z	4.7	
+55	245	prove	tool	shell	bash	2026-11-01T16:27:38Z	28.2	cd /tmp/g27 && mkdir -p cmp && for cfg in "dark GOOEY_X=1" "parch GOOEY_SKIN=parchment" "large GOOEY_TEXT_SCALE=1.5" "hc GOOEY_SKIN=high_contrast"; do set -- $c
+55	246	prove	model	model		2026-11-01T16:28:06Z	5.5	
+55	247	prove	tool	git	bash	2026-11-01T16:28:12Z	0.0	cd ~/bevy_gooey_loop && git branch --show-current; git log --oneline -5; python3 - <<'EOF' p='docs/research/menu.md' s=open(p).read() a="the slot is the width o
+55	248	prove	model	model		2026-11-01T16:28:12Z	9.3	
+55	249	gate	tool	phase mark	bash	2026-11-01T16:28:21Z	0.1	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate >/dev/null; cat > /tmp/g27/critique.md <<'EOF' # Critique (iteration 27, menus) — writt
+55	250	gate	model	model		2026-11-01T16:28:21Z	5.4	
+55	251	gate	tool	cargo test	bash	2026-11-01T16:28:27Z	0.0	[launched bg_8] cat > /tmp/g27/gate.sh <<'EOF' #!/bin/bash cd ~/bevy_gooey_loop export CARGO_BUILD_JOBS=3 step(){ echo "== $*"; "$@" 2>&1 | tail -${TAILN:-4}; echo "rc=${PIPEST
+55	252	gate	model	model		2026-11-01T16:28:27Z	33.5	
+55	253	gate	tool	github	bash	2026-11-01T16:29:00Z	0.0	cd ~/bevy_gooey_loop && python3 - <<'EOF' entry = ''' ## Iteration 27 — 2026-11-01 — Menus (G-05, #9) **Triage.** `gh issue list`: 24 open, all `grimoire-ui` (G
+55	254	gate	model	model		2026-11-01T16:29:00Z	1.1	
+55	255	gate	tool	wait: other	wait	2026-11-01T16:29:01Z	147.5	{}
+55	256	gate	model	model		2026-11-01T16:31:29Z	2.5	
+55	257	gate	tool	cargo build	bash	2026-11-01T16:31:31Z	3.0	cd ~/bevy_gooey_loop && cargo fmt --check 2>&1 | head -30; RUSTDOCFLAGS="-D warnings" cargo doc --no-deps 2>&1 | grep -E "^(error|warning)" -A6 | head -40; grep
+55	258	gate	model	model		2026-11-01T16:31:34Z	5.1	
+55	259	gate	tool	cargo build	bash	2026-11-01T16:31:39Z	3.5	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() s=s.replace("sends [`Activate`] when chosen","sends [`Activate`](crate::Activate) 
+55	260	gate	model	model		2026-11-01T16:31:43Z	4.9	
+55	261	ship	tool	phase mark	bash	2026-11-01T16:31:48Z	9.7	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship >/dev/null; cargo fmt --check && git add -A && git commit -qm "Docs: menu constructors'
+55	262	ship	model	model		2026-11-01T16:31:57Z	4.2	
+55	263	ship	tool	cargo publish	bash	2026-11-01T16:32:02Z	6.6	cd ~/bevy_gooey_loop && python3 - <<'EOF' def sub(p,a,b): s=open(p).read() assert s.count(a)==1,(p,a) open(p,'w').write(s.replace(a,b)) sub('CHANGELOG.md',"## [
+55	264	ship	model	model		2026-11-01T16:32:08Z	3.7	
+55	265	ship	tool	cargo test	bash	2026-11-01T16:32:12Z	22.6	cd ~/bevy_gooey_loop && git add -A && git commit -qm "release: v0.14.0" && git fetch -q origin && git status -sb | head -3 && git log --oneline origin/main -1 &
+55	266	ship	model	model		2026-11-01T16:32:34Z	3.9	
+55	267	ship	tool	push gate	bash	2026-11-01T16:32:38Z	6.4	cd ~/bevy_gooey_loop && git branch loop/iter-27 && git push -q origin main loop/iter-27 2>&1 | tail -2; cargo publish 2>&1 | tail -3
+55	268	ship	model	model		2026-11-01T16:32:45Z	3.2	
+55	269	ship	tool	push gate	bash	2026-11-01T16:32:48Z	2.7	cd ~/bevy_gooey_loop && git tag -a v0.14.0 -m v0.14.0 && git push -q origin v0.14.0 2>&1 | tail -1; cargo info bevy_gooey@0.14.0 2>&1 | head -3; SHA=$(git rev-p
+55	270	ship	model	model		2026-11-01T16:32:51Z	8.4	
+55	271	ship	tool	github	bash	2026-11-01T16:32:59Z	6.7	cd ~/bevy_gooey_loop && curl -s -A "bevy_gooey_loop (ladvien)" https://crates.io/api/v1/crates/bevy_gooey/0.14.0 | python3 -c "import sys,json; d=json.load(sys.
+55	272	ship	model	model		2026-11-01T16:33:06Z	2.9	
+55	273	ship	tool	github	bash	2026-11-01T16:33:09Z	30.3	cd ~/bevy_gooey_loop && gh search issues --repo bevy-coven/bevy_grimoire --state open "bevy_gooey#9" --json number,title --jq '.[]|"#\(.number) \(.title)"' | he
+55	274	ship	model	model		2026-11-01T16:33:39Z	2.0	
+55	275	ship	tool	github	bash	2026-11-01T16:33:41Z	2.0	for n in 224 225; do gh issue comment $n --repo bevy-coven/bevy_grimoire --body "Fixed in bevy-coven/bevy_gooey 756e95f, released as v0.14.0 (G-05, menu bar and
+55	276	ship	model	model		2026-11-01T16:33:43Z	3.9	
+55	277	log	tool	phase mark	bash	2026-11-01T16:33:47Z	0.2	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log >/dev/null; df -h /home | tail -1; git worktree remove ~/g27_base && echo wt-removed; rm
+55	278	log	model	model		2026-11-01T16:33:47Z	10.3	
+55	279	log	tool	push gate	bash	2026-11-01T16:33:58Z	1.6	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='docs/loop-log.md' s=open(p).read().rstrip('\n')+'\n' s+=''' **Merge and release.** The pass committed straight on `
+55	280	log	model	model		2026-11-01T16:33:59Z	9.4	
