@@ -5414,3 +5414,462 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 43	494	log	model	model		2026-11-01T06:52:10Z	13.1	
 43	495	log	tool	learn	learn	2026-11-01T06:52:23Z	0.0	Recording durable lessons from this pass
 43	496	log	model	model		2026-11-01T06:52:23Z	8.8	
+44	1	orient	model	model		2026-11-01T06:52:54Z	5.2	
+44	2	orient	tool	phase mark	bash	2026-11-01T06:53:00Z	0.8	Orienting: status, parked work, last audit :: python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git log --oneline | head -15; git branch --li
+44	3	orient	tool	github	bash	2026-11-01T06:53:00Z	0.8	Reading log headers and open issues :: cd /home/ladvien/bevy_gooey_loop && wc -l docs/loop-log.md && grep -n '^## Iteration' docs/loop-log.md | tail -5; gh issue list --repo bevy-coven/bevy_gooey --s
+44	4	orient	model	model		2026-11-01T06:53:00Z	3.1	
+44	5	orient	tool	github	bash	2026-11-01T06:53:03Z	0.4	Audit columns and issues list :: cd /home/ladvien/bevy_gooey_loop && git show origin/loop-stats:steps/bevy_gooey_loop-audit.tsv | head -2; git show origin/loop-stats:steps/bevy_gooey_loop-audit
+44	6	orient	tool	read files	read	2026-11-01T06:53:03Z	0.4	Reading latest iteration log and backlog :: docs/loop-log.md:795-839
+44	7	orient	model	model		2026-11-01T06:53:04Z	10.2	
+44	8	orient	tool	git	bash	2026-11-01T06:53:14Z	0.7	Parked-work lookup and doc layout :: cd /home/ladvien/bevy_gooey_loop && git fetch -q origin 2>&1|tail -2; git branch -a --list '*iter*'; git log --oneline main..origin/main | head; for b in $(git 
+44	9	orient	tool	shell	bash	2026-11-01T06:53:14Z	0.7	Code size and Cargo manifest :: cd /home/ladvien/bevy_gooey_loop && echo CARGO_TARGET_DIR=$CARGO_TARGET_DIR DISPLAY=$DISPLAY; wc -l src/*.rs tests/*.rs examples/*.rs | sort -n | tail -40; cat 
+44	10	orient	model	model		2026-11-01T06:53:15Z	6.0	
+44	11	bugs	tool	phase mark	bash	2026-11-01T06:53:21Z	0.0	[launched bg_1] Marking phase and building baseline release examples :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark bugs; mkdir -p /tmp/g21m && ls /tmp/g21* ~/g21* 2>&1 | head; uptime; (CARGO_BUIL
+44	12	bugs	tool	read files	read	2026-11-01T06:53:21Z	0.0	Reading catalog_recent schema :: xd://mcp__home_still_catalog_recent
+44	13	bugs	tool	read files	read	2026-11-01T06:53:21Z	0.0	Reading system_status schema :: xd://mcp__home_still_system_status
+44	14	bugs	model	model		2026-11-01T06:53:21Z	2.8	
+44	15	bugs	tool	edit files	write	2026-11-01T06:53:24Z	7.2	Re-scanning corpus for new game-UI sources :: xd://mcp__home_still_catalog_recent
+44	16	bugs	tool	edit files	write	2026-11-01T06:53:31Z	11.3	Checking home-still status :: xd://mcp__home_still_system_status
+44	17	bugs	model	model		2026-11-01T06:53:42Z	29.7	
+44	18	bugs	tool	read files	read	2026-11-01T06:54:12Z	0.0	Viewing current gallery still :: docs/media/gallery.png
+44	19	bugs	tool	search	grep	2026-11-01T06:54:12Z	0.0	Finding ownership section :: src/lib.rs
+44	20	bugs	model	model		2026-11-01T06:54:12Z	5.8	
+44	21	bugs	tool	github	bash	2026-11-01T06:54:17Z	60.0	[launched bg_2] Cloning owner's projects to find hand-rolled UI :: cd /tmp/g21m && (gh repo clone Ladvien/sanctuary sanctuary -- --depth 1 2>&1 | tail -2); (gh repo clone Ladvien/bevy_grimoire grimoire -- --depth 1 2>&1 | tail 
+44	22	bugs	bg	phase mark	bash	2026-11-01T06:54:18Z	59.2	bg_1 completed: python3 ~/.local/share/wiggum/steps.py mark bugs; mkdir -p /tmp/g21m && ls /tmp/g21* ~/g21* 2>&1 | head; uptime; (CAR...
+44	23	bugs	model	model		2026-11-01T06:55:18Z	3.3	
+44	24	choose	tool	phase mark	bash	2026-11-01T06:55:21Z	0.2	Checking baseline build :: tail -3 /tmp/g21m/build.log; ls -la $CARGO_TARGET_DIR/release/examples/ | grep -E 'gallery$|options$'; python3 ~/.local/share/wiggum/steps.py mark choose
+44	25	choose	tool	search	grep	2026-11-01T06:55:21Z	0.2	Searching clones for hand-rolled name box :: /tmp/g21m
+44	26	choose	model	model		2026-11-01T06:55:21Z	4.6	
+44	27	choose	tool	search	grep	2026-11-01T06:55:26Z	0.0	Skin presets and problems :: src/skin.rs
+44	28	choose	model	model		2026-11-01T06:55:26Z	11.0	
+44	29	choose	tool	wait: other	wait	2026-11-01T06:55:37Z	220.9	Waiting for repo clones
+44	30	choose	model	model		2026-11-01T06:59:18Z	3.9	
+44	31	choose	tool	shell	bash	2026-11-01T06:59:21Z	0.0	Looking for local clones of owner's projects :: ls /tmp/g21m; ls -d ~/sanctuary* ~/bevy_grimoire* ~/*grimoire* ~/*sanctuary* 2>/dev/null; ls ~ | head -60
+44	32	choose	model	model		2026-11-01T06:59:21Z	1.7	
+44	33	choose	tool	shell	bash	2026-11-01T06:59:23Z	0.0	Listing more home dirs :: ls ~ | sed -n 60,200p | tr '\n' ' '; echo; ls -d ~/bevy_grimoire* ~/Projects/* 2>/dev/null | head -40
+44	34	choose	model	model		2026-11-01T06:59:23Z	2.8	
+44	35	choose	tool	shell	bash	2026-11-01T06:59:26Z	0.0	Checking family_src :: ls ~/family_src | head -30; ls -d ~/*grim* ~/*sanct* 2>/dev/null
+44	36	choose	model	model		2026-11-01T06:59:26Z	30.7	
+44	37	choose	tool	shell	bash	2026-11-01T06:59:57Z	0.0	Finding high-contrast mentions :: cd /home/ladvien/bevy_gooey_loop && grep -n -i 'contrast' docs/research/options.md | cut -c1-400; grep -n -i 'high.contrast' -r docs README.md src | cut -c1-240
+44	38	choose	tool	read files	read	2026-11-01T06:59:57Z	0.0	Reading GooeySkin struct and presets :: src/skin.rs:60-300
+44	39	choose	model	model		2026-11-01T06:59:57Z	3.6	
+44	40	choose	tool	read files	read	2026-11-01T07:00:00Z	0.0	Reading options note not-adopted line :: docs/research/options.md:57:raw
+44	41	choose	model	model		2026-11-01T07:00:00Z	6.5	
+44	42	choose	tool	search	grep	2026-11-01T07:00:07Z	0.1	Finding dialog usage :: examples/gallery.rs;README.md;docs/guide
+44	43	choose	model	model		2026-11-01T07:00:07Z	34.5	
+44	44	choose	tool	search	grep	2026-11-01T07:00:41Z	0.0	Locating button/panel styling arms :: src/skin.rs
+44	45	choose	model	model		2026-11-01T07:00:41Z	41.8	
+44	46	choose	tool	read files	read	2026-11-01T07:01:23Z	0.8	Fetching XAG 101 for contrast quotes :: https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/101
+44	47	choose	tool	read files	read	2026-11-01T07:01:23Z	0.8	Fetching GAG contrast guideline :: https://gameaccessibilityguidelines.com/provide-a-choice-of-text-colour-low-high-contrast-as-a-minimum/
+44	48	choose	model	model		2026-11-01T07:01:24Z	3.1	
+44	49	choose	tool	read files	read	2026-11-01T07:01:27Z	0.6	Fetching XAG 102 contrast :: https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/102
+44	50	choose	tool	web	web_search	2026-11-01T07:01:27Z	7.4	Finding GAG contrast guideline text :: Game Accessibility Guidelines "high contrast" interface text colour choice
+44	51	choose	model	model		2026-11-01T07:01:35Z	39.1	
+44	52	choose	tool	read files	read	2026-11-01T07:02:14Z	0.0	Reading rest of problems() and SkinProblem :: src/skin.rs:300-470
+44	53	choose	model	model		2026-11-01T07:02:14Z	9.6	
+44	54	choose	tool	read files	read	2026-11-01T07:02:23Z	0.0	Reading options module :: src/options.rs
+44	55	choose	tool	search	grep	2026-11-01T07:02:23Z	0.0	Locating option tables and rows :: src
+44	56	choose	model	model		2026-11-01T07:02:23Z	16.2	
+44	57	choose	tool	search	grep	2026-11-01T07:02:40Z	0.0	Gallery skin env and Display page :: examples/gallery.rs
+44	58	choose	model	model		2026-11-01T07:02:40Z	30.4	
+44	59	choose	tool	shell	bash	2026-11-01T07:03:10Z	0.0	Computing candidate high-contrast palette ratios :: mkdir -p /tmp/g21m && cat > /tmp/g21m/pal.py <<'EOF' def lin(c): return c/12.92 if c<=0.04045 else ((c+0.055)/1.055)**2.4 def L(rgb): r,g,b=[lin(x) for x in rgb
+44	60	choose	model	model		2026-11-01T07:03:10Z	10.3	
+44	61	choose	tool	shell	bash	2026-11-01T07:03:20Z	0.0	Searching palette that meets 7:1 including hover :: cat >> /tmp/g21m/pal.py <<'EOF' print('--- search') best=[] for g in [0x10,0x14,0x18,0x1C,0x20,0x24,0x28]: raised=(g/255,)*3 for acc in ['FFD400','FFC700','FFB8
+44	62	choose	model	model		2026-11-01T07:03:20Z	34.9	
+44	63	choose	tool	homestill	bash	2026-11-01T07:03:55Z	3.7	Searching home-still for high-contrast sources :: cd /tmp/g21m && timeout 120 hs distill search "high contrast mode interface low vision players" --output json 2>&1 | head -c 6000
+44	64	choose	tool	read files	read	2026-11-01T07:03:55Z	3.7	Fetching WCAG 1.4.6 understanding :: https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html
+44	65	choose	model	model		2026-11-01T07:03:59Z	13.9	
+44	66	choose	tool	read files	read	2026-11-01T07:04:13Z	0.3	Fetching MDN forced-colors for technical quote :: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/forced-colors
+44	67	choose	tool	read files	read	2026-11-01T07:04:13Z	0.3	Fetching WCAG 1.4.11 for component edge language :: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
+44	68	choose	model	model		2026-11-01T07:04:13Z	33.6	
+44	69	choose	tool	shell	bash	2026-11-01T07:04:47Z	0.1	Checking trial palette ratios :: cd /tmp/g21m && cat > pal2.py <<'EOF' exec(open('pal.py').read().split("report(P)")[0]) P=dict(bg=h('000000'),surface=h('060606'),raised=h('242424'),text=h('FFF
+44	70	choose	model	model		2026-11-01T07:04:47Z	3.6	
+44	71	choose	tool	shell	bash	2026-11-01T07:04:51Z	0.0	Checking trial palette ratios :: cd /tmp/g21m && python3 - <<'EOF' src=open('pal.py').read() cut=src.index("P=dict(") rep=src.index("def report") end=src.index("report(P)\nprint('--- search')")
+44	72	choose	model	model		2026-11-01T07:04:51Z	5.4	
+44	73	choose	tool	shell	bash	2026-11-01T07:04:56Z	0.0	Reading note structure and corpus listing :: cd /home/ladvien/bevy_gooey_loop && grep -n '^#' docs/research/options.md; sed -n 1,8p docs/research/options.md | cut -c1-900; sed -n 58,66p docs/research/optio
+44	74	choose	model	model		2026-11-01T07:04:56Z	10.2	
+44	75	choose	tool	read files	read	2026-11-01T07:05:06Z	0.0	Reading note body style :: docs/research/options.md:14-31
+44	76	choose	model	model		2026-11-01T07:05:06Z	50.4	
+44	77	choose	tool	edit files	write	2026-11-01T07:05:57Z	0.0	Writing research note :: docs/research/high-contrast.md
+44	78	choose	model	model		2026-11-01T07:05:57Z	4.8	
+44	79	research	tool	phase mark	bash	2026-11-01T07:06:01Z	0.1	Committing research note on iteration branch :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research >/dev/null; git checkout -q -b loop/iter-21 && git add docs/research/hi
+44	80	research	tool	shell	bash	2026-11-01T07:06:01Z	0.1	Saving baseline binaries :: mkdir -p ~/g21_bin /tmp/g21m/before && ls ~/g21_bin | head -2; cp $CARGO_TARGET_DIR/release/examples/gallery ~/g21_bin/gallery_before && cp $CARGO_TARGET_DIR/re
+44	81	research	model	model		2026-11-01T07:06:02Z	7.2	
+44	82	research	tool	shell	bash	2026-11-01T07:06:09Z	46.5	Capturing baseline stills and frame times :: cat > /tmp/g21m/cap.sh <<'EOF' #!/bin/bash # usage: cap.sh <gallery-binary> <outdir> G=$1; D=$2; mkdir -p $D export DISPLAY=:93 GOOEY_HEALTH=60 for size in 1280
+44	83	research	model	model		2026-11-01T07:06:55Z	4.6	
+44	84	research	tool	search	grep	2026-11-01T07:07:00Z	0.0	Locating contrast constants and PadStyle derive :: src/model.rs
+44	85	research	tool	read files	read	2026-11-01T07:07:00Z	0.0	Reading lib re-exports :: src/lib.rs:120-200
+44	86	research	model	model		2026-11-01T07:07:00Z	17.8	
+44	87	research	tool	shell	bash	2026-11-01T07:07:18Z	0.0	Tuning palette candidates with margin :: cd /tmp/g21m && cat > pal3.py <<'EOF' from palib import * for rg in ['20','22','24']: for acc in ['FFA800','FFA400','FFAA00','FFB000']: for mu in ['B4B4B4','B8B
+44	88	research	model	model		2026-11-01T07:07:18Z	4.9	
+44	89	research	tool	read files	read	2026-11-01T07:07:23Z	0.0	Reading skin.rs header and imports :: src/skin.rs:1-58
+44	90	research	model	model		2026-11-01T07:07:23Z	7.1	
+44	91	research	tool	edit files	edit	2026-11-01T07:07:30Z	0.1	Adding high_contrast preset, SkinPreset and checks to skin.rs :: [src/skin.rs#ACEF] PUT 17.=17: + COMFORT_TARGET_PX, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST, + composite, contrast_ratio, PUT 18.=18:
+44	92	research	model	model		2026-11-01T07:07:30Z	6.3	
+44	93	research	tool	edit files	edit	2026-11-01T07:07:36Z	0.0	Adding ENHANCED_CONTRAST to model :: [src/model.rs#9A1A] PUT >14: + +/// The contrast a high-contrast mode holds every part of the interface to, against what it is drawn +/// on: WCAG 2.2 success c
+44	94	research	tool	read files	read	2026-11-01T07:07:36Z	0.0	Re-reading problems() head :: src/skin.rs:254-290
+44	95	research	model	model		2026-11-01T07:07:36Z	3.1	
+44	96	research	tool	read files	read	2026-11-01T07:07:39Z	0.0	Reading problems() loop :: src/skin.rs:350-366
+44	97	research	model	model		2026-11-01T07:07:39Z	5.7	
+44	98	research	tool	edit files	edit	2026-11-01T07:07:45Z	0.0	Refactoring problems() into a floor-aware check :: [src/skin.rs#E72F] PUT 276.=282: + /// Everything about this skin that breaks the contrast, target-size or size rules, in a fixed + /// order: low contrast pair
+44	99	research	model	model		2026-11-01T07:07:45Z	5.4	
+44	100	research	tool	read files	read	2026-11-01T07:07:50Z	0.0	Reading impl end :: src/skin.rs:405-425
+44	101	research	model	model		2026-11-01T07:07:50Z	19.3	
+44	102	research	tool	edit files	edit	2026-11-01T07:08:10Z	0.0	Adding with_colours_of and SkinPreset :: [src/skin.rs#3FB7] PUT >415: + + /// This skin with every colour taken from `look` and every size kept, the text scale and a + /// game's own gap and padding in
+44	103	research	model	model		2026-11-01T07:08:10Z	4.8	
+44	104	research	tool	read files	read	2026-11-01T07:08:15Z	0.0	Reading options module body :: src/options.rs:14-122
+44	105	research	model	model		2026-11-01T07:08:15Z	20.5	
+44	106	research	tool	edit files	edit	2026-11-01T07:08:35Z	0.1	Adding SkinPreset variant to option rows :: [src/options.rs#09AF] PUT 97.=121: + for (row, mut value) in &mut rows { + // The index is looked for only when the setting changed or the row is new. + let ind
+44	107	research	model	model		2026-11-01T07:08:35Z	5.4	
+44	108	research	tool	read files	read	2026-11-01T07:08:41Z	0.0	Reading options() doc :: src/options.rs:30-36
+44	109	research	model	model		2026-11-01T07:08:41Z	3.0	
+44	110	research	tool	edit files	edit	2026-11-01T07:08:44Z	0.0	Fixing options() doc comment :: [src/options.rs#567E] PUT 33.=34: + /// The options the row offers, as the player reads them: a percentage for a size, the maker's + /// name for a controller. 
+44	111	research	tool	read files	read	2026-11-01T07:08:44Z	0.0	Reading option row widget fns :: src/widgets.rs:486-575
+44	112	research	model	model		2026-11-01T07:08:44Z	7.9	
+44	113	research	tool	edit files	edit	2026-11-01T07:08:52Z	0.0	Adding skin_preset widget fn :: [src/widgets.rs#2666] PUT >573: + +/// The player's **theme**: a [`choice`] row over Dark, Parchment and High contrast +/// ([`SkinPreset::ALL`](crate::SkinPres
+44	114	research	tool	shell	bash	2026-11-01T07:08:52Z	0.2	Checking widgets imports :: cd /home/ladvien/bevy_gooey_loop && grep -n "^use crate::" src/widgets.rs | head -20; sed -n 160,163p src/lib.rs
+44	115	research	model	model		2026-11-01T07:08:52Z	4.9	
+44	116	research	tool	edit files	edit	2026-11-01T07:08:57Z	0.0	Re-exporting new API from lib.rs :: [src/lib.rs#A9E0] PUT 169.=171: + binding, button, choice, dialog, heading, interface_size, label, list, menu, meter, pad_style, + panel, prompt, prompts, scree
+44	117	research	tool	search	grep	2026-11-01T07:08:57Z	0.0	Finding other mentions needing update :: src/lib.rs;src/widgets.rs
+44	118	research	model	model		2026-11-01T07:08:57Z	4.6	
+44	119	research	tool	read files	read	2026-11-01T07:09:02Z	0.0	Reading gallery skin setup :: examples/gallery.rs:190-215
+44	120	research	tool	read files	read	2026-11-01T07:09:02Z	0.0	Reading gallery tab pages :: examples/gallery.rs:418-470
+44	121	research	model	model		2026-11-01T07:09:02Z	11.8	
+44	122	research	tool	read files	read	2026-11-01T07:09:13Z	0.0	Reading options example :: examples/options.rs:1-282
+44	123	research	model	model		2026-11-01T07:09:13Z	18.2	
+44	124	research	tool	edit files	edit	2026-11-01T07:09:32Z	0.0	Gallery: high_contrast env and Theme row :: [examples/gallery.rs#2F01] PUT 435.=435: + skin_preset("Theme"), PUT 195.=195: + Ok("parchment") => GooeySkin::parchment(), + Ok("high_contrast") => GooeySkin::
+44	125	research	tool	edit files	edit	2026-11-01T07:09:32Z	0.0	Options example: high_contrast env and Theme row :: [examples/options.rs#082C] PUT 160.=160: + pad_style("Controller"), + skin_preset("Theme"), PUT 69.=69: + Ok("parchment") => GooeySkin::parchment(), + Ok("high_
+44	126	research	model	model		2026-11-01T07:09:32Z	6.1	
+44	127	research	tool	cargo build	bash	2026-11-01T07:09:38Z	60.1	[launched bg_3] Building release examples with new preset :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | grep -E '^(warning|error)|-->|Finished' | head -30
+44	128	research	model	model		2026-11-01T07:10:38Z	3.5	
+44	129	research	tool	read files	read	2026-11-01T07:10:42Z	0.1	Reading skin tests style :: tests/skin.rs:1-80
+44	130	research	tool	read files	read	2026-11-01T07:10:42Z	0.1	Reading options tests harness :: tests/options.rs:1-140
+44	131	research	model	model		2026-11-01T07:10:42Z	1.5	
+44	132	research	tool	read files	read	2026-11-01T07:10:44Z	0.0	Reading options tests bodies :: tests/options.rs:144-330
+44	133	research	model	model		2026-11-01T07:10:44Z	8.4	
+44	134	research	tool	read files	read	2026-11-01T07:10:52Z	0.0	Reading remaining options tests :: tests/options.rs:334-495
+44	135	research	model	model		2026-11-01T07:10:52Z	15.9	
+44	136	research	tool	shell	bash	2026-11-01T07:11:08Z	0.5	Finding tests parameterised over both presets :: cd /home/ladvien/bevy_gooey_loop && grep -n "GooeySkin::parchment()" tests/*.rs | head -60
+44	137	research	bg	cargo build	bash	2026-11-01T07:09:46Z	82.7	bg_3 completed: CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | grep -E '^(warning|error)|-->|Finished' | head -30
+44	138	research	model	model		2026-11-01T07:11:09Z	3.9	
+44	139	research	tool	shell	bash	2026-11-01T07:11:13Z	7.7	Capturing first high-contrast still :: cp $CARGO_TARGET_DIR/release/examples/gallery ~/g21_bin/gallery_after && cp $CARGO_TARGET_DIR/release/examples/options ~/g21_bin/options_after; mkdir -p /tmp/g2
+44	140	research	model	model		2026-11-01T07:11:20Z	1.5	
+44	141	research	tool	read files	read	2026-11-01T07:11:22Z	0.0	Viewing first high-contrast capture :: /tmp/g21m/t/hc1.png
+44	142	research	model	model		2026-11-01T07:11:22Z	42.5	
+44	143	research	tool	shell	bash	2026-11-01T07:12:04Z	53.7	Capturing high-contrast focus, dialog and tabs states :: export DISPLAY=:93 GOOEY_HEALTH=60; cd /tmp/g21m/t; G=~/g21_bin/gallery_after; for k in "down:focus" "down,down,enter:dialog" "down,down,down,down:tabs" "down,d
+44	144	research	model	model		2026-11-01T07:12:58Z	3.4	
+44	145	research	tool	read files	read	2026-11-01T07:13:02Z	0.0	Viewing focus state :: /tmp/g21m/t/hc-focus.png
+44	146	research	tool	read files	read	2026-11-01T07:13:02Z	0.1	Viewing dialog state :: /tmp/g21m/t/hc-dialog.png
+44	147	research	model	model		2026-11-01T07:13:02Z	14.5	
+44	148	research	tool	search	grep	2026-11-01T07:13:16Z	0.1	Locating edit points for surface_edge :: src/skin.rs
+44	149	research	model	model		2026-11-01T07:13:16Z	6.2	
+44	150	research	tool	edit files	edit	2026-11-01T07:13:22Z	0.1	Adding surface_edge field and uses :: [src/skin.rs#60DD] PUT 365.=366: + ]; + // A skin that draws its own edge answers for it: the frame is what a panel, a tooltip and + // the legend are told apar
+44	151	research	tool	read files	read	2026-11-01T07:13:22Z	0.0	Reading panel edge arm :: src/skin.rs:1100-1112
+44	152	research	model	model		2026-11-01T07:13:22Z	3.7	
+44	153	research	tool	search	grep	2026-11-01T07:13:26Z	0.0	Finding panel edge arm :: src/skin.rs
+44	154	research	model	model		2026-11-01T07:13:26Z	3.2	
+44	155	research	tool	edit files	edit	2026-11-01T07:13:29Z	0.1	Using surface_edge for panel, tooltip and legend edges :: [src/skin.rs#6F31] PUT 1256.=1256: + Role::Panel | Role::Tooltip | Role::Prompts => Some(BorderColor::all( + skin.surface_edge.unwrap_or(skin.surface_raised), +
+44	156	research	tool	search	grep	2026-11-01T07:13:30Z	0.0	Finding other outline-field listings :: src/skin.rs
+44	157	research	model	model		2026-11-01T07:13:30Z	5.2	
+44	158	research	tool	edit files	edit	2026-11-01T07:13:35Z	0.0	Carrying surface_edge through colour helpers :: [src/skin.rs#B7D9] PUT 477.=477: + skin.outline, + skin.surface_edge.unwrap_or(skin.surface_raised), PUT 457.=457: + outline: look.outline, + surface_edge: look
+44	159	research	tool	search	grep	2026-11-01T07:13:35Z	0.1	Checking for exhaustive GooeySkin literals elsewhere :: src;tests;examples
+44	160	research	model	model		2026-11-01T07:13:35Z	6.8	
+44	161	research	tool	read files	read	2026-11-01T07:13:42Z	0.1	Reading tabs contrast test :: tests/tabs.rs:550-620
+44	162	research	tool	read files	read	2026-11-01T07:13:42Z	0.1	Reading dialog contrast tests :: tests/dialog_look.rs:236-315
+44	163	research	model	model		2026-11-01T07:13:42Z	17.2	
+44	164	research	tool	read files	read	2026-11-01T07:13:59Z	0.3	Reading rest of skin tests :: tests/skin.rs:100-253
+44	165	research	model	model		2026-11-01T07:13:59Z	20.3	
+44	166	research	tool	shell	bash	2026-11-01T07:14:20Z	0.1	Checking widget fn signatures for tests :: cd /home/ladvien/bevy_gooey_loop && grep -n "^pub fn \(toggle\|slider\|choice\|binding\|prompts\|prompt\|button\|tabs\|tab_page\|list\|text_input\|dialog\|toast
+44	167	research	model	model		2026-11-01T07:14:20Z	20.7	
+44	168	research	tool	edit files	edit	2026-11-01T07:14:41Z	0.0	Adding high-contrast skin tests :: [tests/skin.rs#1EDA] PUT >253: + +fn rgb(color: Color) -> [f32; 3] { + let c = Srgba::from(color); + [c.red, c.green, c.blue] +} + +#[test] +fn high_contrast_ho
+44	169	research	tool	edit files	edit	2026-11-01T07:14:41Z	0.0	Updating the presets test and imports :: [tests/skin.rs#1EDA] PUT 122.=126: +#[test] +fn the_presets_pass_their_own_checks() { + assert_eq!(GooeySkin::dark().problems(), vec![]); + assert_eq!(GooeySkin
+44	170	research	model	model		2026-11-01T07:14:41Z	18.1	
+44	171	research	tool	edit files	edit	2026-11-01T07:14:59Z	0.0	Adding theme row tests to options tests :: [tests/options.rs#E224] PUT 484.=486: + let interface = app.world_mut().spawn(interface_size("Interface size")).id(); + let pad = app.world_mut().spawn(pad_styl
+44	172	build	tool	phase mark	bash	2026-11-01T07:14:59Z	0.4	Checking test imports :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build >/dev/null; sed -n 1,6p tests/options.rs; grep -n "ENHANCED_CONTRAST\|^use
+44	173	build	model	model		2026-11-01T07:14:59Z	4.8	
+44	174	build	tool	edit files	edit	2026-11-01T07:15:04Z	0.0	Fixing blank lines and module doc in options tests :: [tests/options.rs#9B78] PUT 533.=533: +} + PUT 1.=2: +//! The options screen's rows for the settings the crate itself reads: `text_size`, +//! `interface_size`,
+44	175	build	model	model		2026-11-01T07:15:04Z	3.0	
+44	176	build	tool	cargo test	bash	2026-11-01T07:15:08Z	0.0	[launched bg_4] Running skin and options tests :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && git diff --stat | tail -3 && CARGO_BUILD_JOBS=2 cargo test --test skin --test options 2>&1 | grep -E "^(error|w
+44	177	build	model	model		2026-11-01T07:15:08Z	5.2	
+44	178	build	tool	read files	read	2026-11-01T07:15:13Z	0.0	Reading options guide :: docs/guide/options.md
+44	179	build	tool	read files	read	2026-11-01T07:15:13Z	0.0	Reading skins guide :: docs/guide/skins.md
+44	180	build	model	model		2026-11-01T07:15:13Z	13.4	
+44	181	build	tool	edit files	edit	2026-11-01T07:15:27Z	0.0	Documenting presets and high contrast in skins guide :: [docs/guide/skins.md#0A08] PUT >29: + +## Three looks, and a high-contrast one that is checked + +`GooeySkin::dark()` (the default), `GooeySkin::parchment()` an
+44	182	build	model	model		2026-11-01T07:15:27Z	8.5	
+44	183	build	tool	edit files	edit	2026-11-01T07:15:35Z	0.0	Adding surface_edge problem bullet :: [docs/guide/skins.md#1018] PUT >13: +- a `surface_edge` a skin sets under 3:1 against the surface (WCAG 2.2, 1.4.11);
+44	184	build	tool	edit files	edit	2026-11-01T07:15:35Z	0.0	Updating options guide for the theme row :: [docs/guide/options.md#40A7] PUT 3.=3: +`text_size`, `interface_size`, `pad_style` and `skin_preset` are the options-screen rows for the four settings this crat
+44	185	build	model	model		2026-11-01T07:15:35Z	5.9	
+44	186	build	tool	shell	bash	2026-11-01T07:15:41Z	0.1	Finding doc spots that mention option rows :: cd /home/ladvien/bevy_gooey_loop && grep -n "pad_style\|three rows\|SkinProblem\|GooeySkin::problems" README.md docs/guide/*.md AGENTS.md src/lib.rs CHANGELOG.m
+44	187	build	model	model		2026-11-01T07:15:41Z	3.7	
+44	188	build	tool	read files	read	2026-11-01T07:15:45Z	0.0	Reading README options bullet :: README.md:95-150
+44	189	build	tool	read files	read	2026-11-01T07:15:45Z	0.0	Reading changelog top :: CHANGELOG.md:1-14
+44	190	build	model	model		2026-11-01T07:15:45Z	5.6	
+44	191	build	tool	read files	read	2026-11-01T07:15:51Z	0.1	Reading AGENTS skin line raw :: AGENTS.md:26:raw
+44	192	build	tool	read files	read	2026-11-01T07:15:51Z	0.1	Reading AGENTS options line raw :: AGENTS.md:30:raw
+44	193	build	tool	read files	read	2026-11-01T07:15:51Z	0.1	Reading AGENTS setting rule raw :: AGENTS.md:95:raw
+44	194	build	model	model		2026-11-01T07:15:51Z	4.2	
+44	195	build	tool	read files	read	2026-11-01T07:15:55Z	0.5	Getting AGENTS tag and tail lines :: AGENTS.md:96-105
+44	196	build	model	model		2026-11-01T07:15:55Z	15.4	
+44	197	build	tool	edit files	edit	2026-11-01T07:16:11Z	0.3	Updating AGENTS layout lines and rule :: [AGENTS.md#8B6F] PUT 95.=95: +- **A setting lives once, in its resource, and a row of it is a view and an editor.** `text_size`, `interface_size`, `pad_style` a
+44	198	build	model	model		2026-11-01T07:16:11Z	13.5	
+44	199	build	tool	edit files	edit	2026-11-01T07:16:25Z	0.1	Writing changelog entries :: [CHANGELOG.md#36D4] PUT >3: + +### Added + +- `GooeySkin::high_contrast()`, a third preset for the player who needs more contrast than WCAG's minimum: opaque bl
+44	200	build	model	model		2026-11-01T07:16:25Z	3.9	
+44	201	build	tool	shell	bash	2026-11-01T07:16:29Z	0.0	Reading doc lines to patch :: cd /home/ladvien/bevy_gooey_loop && sed -n 8,16p docs/guide/host-api.md | cut -c1-400; sed -n 28,33p docs/guide/host-api.md | cut -c1-500; sed -n 93,96p docs/gu
+44	202	build	model	model		2026-11-01T07:16:29Z	5.0	
+44	203	build	tool	edit files	edit	2026-11-01T07:16:34Z	0.0	Updating lib.rs crate docs :: [src/lib.rs#C050] PUT 19.=22: +//! has the player's keys), [`text_size`], [`interface_size`], [`pad_style`] and [`skin_preset`] +//! (the player's own text size
+44	204	build	tool	shell	bash	2026-11-01T07:16:34Z	0.0	Verifying lib.rs doc edit :: cd /home/ladvien/bevy_gooey_loop && sed -n 8,14p src/lib.rs; sed -n 16,28p src/lib.rs
+44	205	build	model	model		2026-11-01T07:16:34Z	9.1	
+44	206	build	tool	read files	read	2026-11-01T07:16:43Z	0.0	Fresh tag for lib.rs fix :: src/lib.rs:12-18
+44	207	build	model	model		2026-11-01T07:16:43Z	7.1	
+44	208	build	tool	edit files	edit	2026-11-01T07:16:50Z	0.0	Updating host-api, widgets and guide index docs :: [docs/guide/host-api.md#BE2F] PUT 95.=95: +| `update_option_rows` | Style | a `text_size`, `interface_size`, `pad_style` or `skin_preset` row follows its settin
+44	209	build	tool	edit files	edit	2026-11-01T07:16:50Z	0.0	Updating widgets table row :: [docs/guide/widgets.md#524A] PUT 19.=19: +| `text_size`, `interface_size`, `pad_style`, `skin_preset` | the player's text size, interface size, controller and t
+44	210	build	tool	edit files	edit	2026-11-01T07:16:50Z	0.0	Updating guide index entry :: [docs/guide/README.md#B6C7] PUT 12.=13: +- [Player options](options.md) — `text_size`, `interface_size`, `pad_style` and `skin_preset`: the rows for the four + 
+44	211	build	model	model		2026-11-01T07:16:50Z	5.3	
+44	212	build	tool	edit files	edit	2026-11-01T07:16:56Z	0.1	Retrying host-api edit :: [docs/guide/host-api.md#BE2F] PUT 95.=95: +| `update_option_rows` | Style | a `text_size`, `interface_size`, `pad_style` or `skin_preset` row follows its settin
+44	213	build	tool	edit files	edit	2026-11-01T07:16:56Z	0.0	Updating guide index entry :: [docs/guide/README.md#36B0] PUT 12.=13: +- [Player options](options.md) — `text_size`, `interface_size`, `pad_style` and `skin_preset`: the rows for the four + 
+44	214	build	model	model		2026-11-01T07:16:56Z	3.4	
+44	215	build	tool	wait: tests	wait	2026-11-01T07:16:59Z	39.1	Waiting for skin and options tests
+44	216	build	model	model		2026-11-01T07:17:38Z	3.0	
+44	217	build	tool	cargo test	bash	2026-11-01T07:17:41Z	20.2	Seeing the failing assertion message :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --test skin every_text 2>&1 | grep -E "panicked|assert|found|left|right|drawn" -A3 | head -30
+44	218	build	model	model		2026-11-01T07:18:01Z	4.6	
+44	219	build	tool	shell	bash	2026-11-01T07:18:06Z	0.0	Locating the text query in test :: cd /home/ladvien/bevy_gooey_loop && grep -n "query_filtered::<(Entity, &Text, &TextColor)" -B2 -A14 tests/skin.rs
+44	220	build	model	model		2026-11-01T07:18:06Z	1.6	
+44	221	build	tool	read files	read	2026-11-01T07:18:08Z	0.0	Fresh tag for test edit :: tests/skin.rs:345-358
+44	222	build	model	model		2026-11-01T07:18:08Z	3.3	
+44	223	build	tool	edit files	edit	2026-11-01T07:18:11Z	0.0	Skipping hidden text in the drawn-contrast test :: [tests/skin.rs#8AC1] PUT 349.=355: + // What is drawn: a binding's prompt and a choice's other options keep their room and are hidden. + let mut texts = app + .
+44	224	build	model	model		2026-11-01T07:18:11Z	6.4	
+44	225	build	tool	read files	read	2026-11-01T07:18:17Z	0.0	Reading controls preset loop :: tests/controls.rs:905-932
+44	226	build	tool	read files	read	2026-11-01T07:18:17Z	0.0	Reading binding preset loop :: tests/binding.rs:958-1010
+44	227	build	tool	read files	read	2026-11-01T07:18:17Z	0.0	Reading prompts preset loop :: tests/prompts.rs:525-580
+44	228	build	tool	read files	read	2026-11-01T07:18:17Z	0.0	Reading text preset loop :: tests/text.rs:860-900
+44	229	build	model	model		2026-11-01T07:18:17Z	11.6	
+44	230	build	tool	edit files	edit	2026-11-01T07:18:29Z	0.0	Adding high contrast to preset loops in tabs, controls, binding, prompts, text :: [tests/tabs.rs#7281] PUT 556.=557: +fn the_selected_tab_is_lit_and_the_others_stay_readable_in_every_preset() { + for skin in [ + GooeySkin::dark(), + GooeySkin
+44	231	build	tool	edit files	edit	2026-11-01T07:18:29Z	0.0	Adding high contrast to dialog look tests :: [tests/dialog_look.rs#3EAF] PUT 283.=283: + ("parchment", GooeySkin::parchment()), + ("high contrast", GooeySkin::high_contrast()), PUT 261.=261: + assert_eq!( 
+44	232	build	model	model		2026-11-01T07:18:29Z	6.3	
+44	233	build	tool	read files	read	2026-11-01T07:18:35Z	0.0	Reading serde tests :: tests/serde.rs
+44	234	build	model	model		2026-11-01T07:18:35Z	6.8	
+44	235	build	tool	edit files	edit	2026-11-01T07:18:42Z	0.0	Adding serde tests for the high-contrast skin and preset :: [tests/serde.rs#4CB7] PUT >15: + +#[test] +fn a_high_contrast_skin_keeps_its_edge_through_ron_and_a_file_without_one_has_none() +-> Result<(), Box<dyn std::erro
+44	236	build	tool	cargo test	bash	2026-11-01T07:18:42Z	0.0	[launched bg_5] Running affected test binaries :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo test --test skin --test tabs --test dialog_look --test controls --test binding --test 
+44	237	build	model	model		2026-11-01T07:18:42Z	6.0	
+44	238	build	tool	shell	bash	2026-11-01T07:18:48Z	0.0	Locating note lines to update :: cd /home/ladvien/bevy_gooey_loop && grep -n "C4\.\|^- The high-contrast palette\|^## Deviations" docs/research/high-contrast.md | cut -c1-80
+44	239	build	model	model		2026-11-01T07:18:48Z	1.9	
+44	240	build	tool	read files	read	2026-11-01T07:18:50Z	0.1	Reading note lines for update :: docs/research/high-contrast.md:27-52
+44	241	build	model	model		2026-11-01T07:18:50Z	12.2	
+44	242	build	tool	edit files	edit	2026-11-01T07:19:03Z	0.3	Updating research note with the decision and the palette :: [docs/research/high-contrast.md#FB40] PUT 52.=52: +- The crate does not read the operating system's contrast setting (no Bevy API), which XAG asks games to do "
+44	243	build	model	model		2026-11-01T07:19:03Z	7.8	
+44	244	build	tool	shell	bash	2026-11-01T07:19:11Z	0.1	Computing exact ratios of the shipped palette :: cd /tmp/g21m && python3 - <<'EOF' from palib import * P=dict(surface=(0.02,)*3,raised=(0.133,)*3,text=(1,1,1),muted=(0.72,)*3,accent=(1.0,0.66,0.0),accent_text=
+44	245	build	model	model		2026-11-01T07:19:11Z	5.3	
+44	246	build	tool	shell	bash	2026-11-01T07:19:16Z	0.1	Checking the number to fix :: cd /home/ladvien/bevy_gooey_loop && grep -c "11.5:1 under black accent text" docs/research/high-contrast.md
+44	247	build	model	model		2026-11-01T07:19:16Z	4.2	
+44	248	build	tool	edit files	edit	2026-11-01T07:19:20Z	0.0	Fixing accent ratio in note :: [docs/research/high-contrast.md#B127] PUT 33.=33: +- The high-contrast palette (sRGB): background `#000000`, surface `#050505` (opaque), `surface_raised` `#2222
+44	249	build	tool	wait: tests	wait	2026-11-01T07:19:20Z	278.6	Waiting for test binaries
+44	250	build	model	model		2026-11-01T07:23:59Z	4.0	
+44	251	build	tool	cargo build	bash	2026-11-01T07:24:03Z	0.0	[launched bg_6] Rebuilding release examples with surface_edge :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | grep -E '^(warning|error)|-->|Finished' | head; cp $CARGO_TARGET_
+44	252	build	model	model		2026-11-01T07:24:03Z	7.0	
+44	253	build	tool	shell	bash	2026-11-01T07:24:10Z	0.0	Reading media listing and recipes :: cd /home/ladvien/bevy_gooey_loop && cat docs/media/README.md | cut -c1-900
+44	254	build	model	model		2026-11-01T07:24:10Z	14.0	
+44	255	build	tool	wait: build	wait	2026-11-01T07:24:24Z	6.0	Waiting for release build
+44	256	build	model	model		2026-11-01T07:24:30Z	3.9	
+44	257	build	tool	shell	bash	2026-11-01T07:24:34Z	10.2	Capturing HC focus with edge, and theme stepped to high contrast :: cd /tmp/g21m && export DISPLAY=:93 GOOEY_HEALTH=60; G=~/g21_bin/gallery_after; GOOEY_FRAMES=150 GOOEY_SKIN=high_contrast GOOEY_KEYS=down GOOEY_SHOT=/tmp/g21m/t/
+44	258	build	model	model		2026-11-01T07:24:44Z	2.2	
+44	259	build	tool	read files	read	2026-11-01T07:24:46Z	0.0	Viewing HC with white edges :: /tmp/g21m/t/hc-focus2.png
+44	260	build	tool	read files	read	2026-11-01T07:24:46Z	0.0	Viewing theme row stepped to high contrast :: /tmp/g21m/t/theme-hc.png
+44	261	build	model	model		2026-11-01T07:24:46Z	13.7	
+44	262	build	tool	shell	bash	2026-11-01T07:25:00Z	46.2	Capturing after stills and comparing to baseline :: cd /tmp/g21m && ./cap.sh ~/g21_bin/gallery_after /tmp/g21m/after 2>&1 | tail -8; for f in dark-1280x720 parchment-1280x720 dark-large-1280x720 dark-2560x1440 pa
+44	263	build	model	model		2026-11-01T07:25:46Z	10.5	
+44	264	build	tool	shell	bash	2026-11-01T07:25:57Z	47.9	Capturing high-contrast state set :: cd /tmp/g21m && export DISPLAY=:93 GOOEY_HEALTH=60; G=~/g21_bin/gallery_after; mkdir -p hc; run() { name=$1; shift; env "$@" GOOEY_SKIN=high_contrast GOOEY_SHOT
+44	265	build	model	model		2026-11-01T07:26:45Z	2.2	
+44	266	build	tool	read files	read	2026-11-01T07:26:47Z	0.0	Viewing HC at 1.5x text :: /tmp/g21m/hc/large-1280.png
+44	267	build	tool	read files	read	2026-11-01T07:26:47Z	0.0	Viewing HC with toast :: /tmp/g21m/hc/toast-1280.png
+44	268	build	model	model		2026-11-01T07:26:47Z	7.1	
+44	269	build	tool	read files	read	2026-11-01T07:26:54Z	0.1	Viewing HC dialog at 1440p :: /tmp/g21m/hc/dialog-2560.png
+44	270	build	tool	read files	read	2026-11-01T07:26:54Z	0.1	Viewing HC binding state :: /tmp/g21m/hc/binding-1280.png
+44	271	build	tool	read files	read	2026-11-01T07:26:54Z	0.1	Viewing HC text field state :: /tmp/g21m/hc/field-1280.png
+44	272	build	model	model		2026-11-01T07:26:54Z	11.0	
+44	273	build	tool	shell	bash	2026-11-01T07:27:05Z	0.1	Cropping zooms of theme row and audio controls :: cd /tmp/g21m && magick t/theme-hc.png -crop 480x120+190+455 +repage -filter point -resize 300% t/zoom-theme.png; magick hc/base-1280.png -crop 480x150+190+455 +
+44	274	build	model	model		2026-11-01T07:27:05Z	2.5	
+44	275	build	tool	read files	read	2026-11-01T07:27:08Z	0.0	Viewing zoomed theme row :: /tmp/g21m/t/zoom-theme.png
+44	276	build	tool	read files	read	2026-11-01T07:27:08Z	0.0	Viewing zoomed slider and toggle :: /tmp/g21m/t/zoom-audio.png
+44	277	build	model	model		2026-11-01T07:27:08Z	11.3	
+44	278	build	tool	shell	bash	2026-11-01T07:27:19Z	0.1	Sampling pixels for the checklist :: cd /tmp/g21m && python3 -c "import PIL; print(PIL.__version__)" 2>&1; cat > px.py <<'EOF' from PIL import Image from palib import cr def px(img,x,y): r,g,b=img.
+44	279	build	model	model		2026-11-01T07:27:19Z	2.1	
+44	280	build	tool	shell	bash	2026-11-01T07:27:21Z	0.2	Sampling pixels with uv pillow :: cd /tmp/g21m && uv run --no-project --with pillow python px.py 2>&1 | tail -20
+44	281	build	model	model		2026-11-01T07:27:21Z	4.5	
+44	282	build	tool	shell	bash	2026-11-01T07:27:26Z	0.1	Resampling panel fill pixel :: cd /tmp/g21m && sed -i "s/bg=px(a,300,150)/bg=px(a,195,300)/" px.py && uv run --no-project --with pillow python px.py 2>&1 | tail -12
+44	283	build	model	model		2026-11-01T07:27:26Z	4.4	
+44	284	build	tool	shell	bash	2026-11-01T07:27:30Z	6.1	Capturing options example with four rows at three text sizes :: cd /tmp/g21m && export DISPLAY=:93; O=~/g21_bin/options_after; for s in 1.0 1.5 2.0; do GOOEY_FRAMES=60 GOOEY_TEXT_SCALE=$s GOOEY_SIZE=1280x720 GOOEY_SHOT=/tmp/
+44	285	build	model	model		2026-11-01T07:27:36Z	1.8	
+44	286	build	tool	read files	read	2026-11-01T07:27:38Z	0.0	Viewing options example at 100, 150, 200 percent :: /tmp/g21m/t/opt-all.png
+44	287	build	model	model		2026-11-01T07:27:38Z	14.0	
+44	288	build	tool	shell	bash	2026-11-01T07:27:52Z	0.0	Reading tabs.gif recipe tail :: cd /home/ladvien/bevy_gooey_loop && grep -n '^| `tabs.gif`' docs/media/README.md | cut -d: -f1; awk '/^\| `tabs.gif`/' docs/media/README.md | cut -c780-2400
+44	289	build	model	model		2026-11-01T07:27:52Z	2.0	
+44	290	build	tool	shell	bash	2026-11-01T07:27:54Z	0.0	Reading tabs.gif ffmpeg filter :: cd /home/ladvien/bevy_gooey_loop && awk '/^\| `tabs.gif`/' docs/media/README.md | cut -c560-800
+44	291	build	model	model		2026-11-01T07:27:54Z	6.1	
+44	292	build	tool	shell	bash	2026-11-01T07:28:00Z	11.0	Recording theme and tabs GIF frames :: cd /tmp/g21m && export DISPLAY=:93 GOOEY_HEALTH=60; G=~/g21_bin/gallery_after; ls gif-theme gif-tabs 2>&1 | head -2; mkdir -p gif-theme gif-tabs; GOOEY_FRAMES=2
+44	293	build	model	model		2026-11-01T07:28:11Z	3.6	
+44	294	build	tool	shell	bash	2026-11-01T07:28:15Z	0.5	Making contact sheet of theme frames :: cd /tmp/g21m && ls gif-theme | head -3; magick montage $(ls gif-theme/f_*.png | awk 'NR%9==1') -crop 948x600+166+90 +repage -tile 4x -geometry 480x304+4+4 -back
+44	295	build	model	model		2026-11-01T07:28:16Z	1.8	
+44	296	build	tool	read files	read	2026-11-01T07:28:17Z	0.2	Viewing contact sheet of theme frames :: /tmp/g21m/t/theme-sheet.png
+44	297	build	model	model		2026-11-01T07:28:18Z	15.1	
+44	298	build	tool	clip record/render	bash	2026-11-01T07:28:33Z	16.5	Re-recording theme GIF with longer holds and full legend :: cd /tmp/g21m && export DISPLAY=:93 GOOEY_HEALTH=60; G=~/g21_bin/gallery_after; mkdir -p gif-theme2; GOOEY_FRAMES=290 GOOEY_KEY_EVERY=24 GOOEY_KEYS=down,down,dow
+44	299	build	model	model		2026-11-01T07:28:49Z	5.0	
+44	300	build	tool	clip record/render	bash	2026-11-01T07:28:54Z	0.8	Sheet of final GIF frames :: cd /tmp/g21m && ffmpeg -y -loglevel error -i theme.gif -vf "select='not(mod(n,6))',scale=480:-1,tile=4x4" -frames:v 1 t/theme-gif-sheet.png && identify t/theme-
+44	301	build	model	model		2026-11-01T07:28:55Z	1.9	
+44	302	build	tool	read files	read	2026-11-01T07:28:57Z	0.4	Viewing GIF sheet :: /tmp/g21m/t/theme-gif-sheet.png
+44	303	build	model	model		2026-11-01T07:28:57Z	9.9	
+44	304	build	tool	clip record/render	bash	2026-11-01T07:29:07Z	21.1	Re-recording theme GIF and encoding tabs GIF :: cd /tmp/g21m && export DISPLAY=:93 GOOEY_HEALTH=60; G=~/g21_bin/gallery_after; mkdir -p gif-theme3; GOOEY_FRAMES=290 GOOEY_KEY_EVERY=24 GOOEY_KEYS=down,down,dow
+44	305	build	model	model		2026-11-01T07:29:29Z	5.6	
+44	306	build	tool	clip record/render	bash	2026-11-01T07:29:34Z	6.8	Comparing regenerated tabs GIF with the committed one :: cd /tmp/g21m && mkdir -p tn to && rm -f tn/* to/*; ffmpeg -y -loglevel error -i tabs.gif tn/f_%03d.png; ffmpeg -y -loglevel error -i ~/bevy_gooey_loop/docs/medi
+44	307	build	model	model		2026-11-01T07:29:41Z	6.4	
+44	308	build	tool	shell	bash	2026-11-01T07:29:47Z	0.7	Fuzzy-comparing sampled tabs GIF frames :: cd /tmp/g21m && for n in 001 010 020 030 040 050 060 070; do echo -n "$n: "; compare -fuzz 6% -metric AE tn/f_$n.png to/f_$n.png null: 2>&1; echo; done
+44	309	build	model	model		2026-11-01T07:29:48Z	7.2	
+44	310	build	tool	shell	bash	2026-11-01T07:29:55Z	0.3	Installing GIFs and still into docs/media :: cd /home/ladvien/bevy_gooey_loop && cp /tmp/g21m/theme.gif docs/media/theme.gif && cp /tmp/g21m/tabs.gif docs/media/tabs.gif && magick /tmp/g21m/t/hc-focus2.png
+44	311	build	model	model		2026-11-01T07:29:56Z	10.5	
+44	312	build	tool	shell	bash	2026-11-01T07:30:06Z	0.1	Reading options.gif recipe tail :: cd /home/ladvien/bevy_gooey_loop && awk '/^\| `options.gif`/' docs/media/README.md | cut -c700-1800
+44	313	build	model	model		2026-11-01T07:30:06Z	5.4	
+44	314	build	tool	clip record/render	bash	2026-11-01T07:30:12Z	27.2	Recording options GIF with the Theme row :: cd /tmp/g21m && export DISPLAY=:93; O=~/g21_bin/options_after; rm -rf gif-options; mkdir -p gif-options; GOOEY_FRAMES=330 GOOEY_KEY_EVERY=12 GOOEY_KEYS=right,ri
+44	315	build	model	model		2026-11-01T07:30:39Z	1.8	
+44	316	build	tool	read files	read	2026-11-01T07:30:41Z	0.4	Viewing options GIF sheet :: /tmp/g21m/t/options-sheet.png
+44	317	build	model	model		2026-11-01T07:30:41Z	16.9	
+44	318	build	tool	edit files	edit	2026-11-01T07:30:58Z	0.0	Updating README bullets and captions :: [README.md#455B] PUT 145.=147: +![The options example: a panel with the rows Text size, Interface size, Controller and Theme and the legend in the bottom-left c
+44	319	build	tool	shell	bash	2026-11-01T07:30:58Z	0.0	Installing options GIF and checking README :: cd /home/ladvien/bevy_gooey_loop && cp /tmp/g21m/options.gif docs/media/options.gif && wc -l README.md && sed -n 95,112p README.md | cut -c1-140
+44	320	build	model	model		2026-11-01T07:30:58Z	7.0	
+44	321	build	tool	clip record/render	bash	2026-11-01T07:31:05Z	0.5	Final theme GIF sheet for the caption :: cd /tmp/g21m && ffmpeg -y -loglevel error -i theme.gif -vf "select='not(mod(n,4))',scale=480:-1,tile=4x5" -frames:v 1 t/theme-gif-sheet2.png; identify t/theme-g
+44	322	build	model	model		2026-11-01T07:31:06Z	2.0	
+44	323	build	tool	read files	read	2026-11-01T07:31:08Z	0.3	Viewing final theme GIF sheet :: /tmp/g21m/t/theme-gif-sheet2.png
+44	324	build	model	model		2026-11-01T07:31:08Z	7.1	
+44	325	build	tool	edit files	edit	2026-11-01T07:31:15Z	0.0	Correcting theme GIF alt text and caption :: [README.md#4064] PUT 151.=153: +![The gallery's settings panel, Load game list and legend: the Audio tab turns to Display and the ring goes down to Quality and 
+44	326	build	tool	read files	read	2026-11-01T07:31:15Z	0.0	Re-reading options guide tail :: docs/guide/options.md:34-60
+44	327	build	model	model		2026-11-01T07:31:15Z	9.9	
+44	328	build	tool	edit files	edit	2026-11-01T07:31:25Z	0.0	Updating options guide text and captions :: [docs/guide/options.md#7E32] PUT 50.=54: +`cargo run --example options` is the whole screen, four rows and the legend, with the capture knobs the gallery has (`
+44	329	build	model	model		2026-11-01T07:31:25Z	9.4	
+44	330	build	tool	shell	bash	2026-11-01T07:31:34Z	0.1	Finding media table line numbers :: cd /home/ladvien/bevy_gooey_loop && grep -n '^| `' docs/media/README.md | cut -c1-30
+44	331	build	model	model		2026-11-01T07:31:34Z	3.0	
+44	332	build	tool	read files	read	2026-11-01T07:31:37Z	0.0	Reading tabs.gif media row raw :: docs/media/README.md:18:raw
+44	333	build	tool	read files	read	2026-11-01T07:31:37Z	0.0	Reading options.gif media row raw :: docs/media/README.md:23:raw
+44	334	build	model	model		2026-11-01T07:31:37Z	5.0	
+44	335	build	tool	read files	read	2026-11-01T07:31:42Z	0.0	Reading media README tail :: docs/media/README.md:24-33
+44	336	build	model	model		2026-11-01T07:31:42Z	20.4	
+44	337	build	tool	edit files	edit	2026-11-01T07:32:03Z	0.0	Updating media README rows and skins section :: [docs/media/README.md#E5E2] PUT 30.=33: +The presets are one line each: `GOOEY_SKIN=parchment` or `GOOEY_SKIN=high_contrast` starts in that one (dark +is the de
+44	338	build	tool	edit files	edit	2026-11-01T07:32:03Z	0.0	Adding high-contrast still to skins guide :: [docs/guide/skins.md#0DAE] PUT >34: + +![The gallery in high contrast: a black screen with white frames on the settings panel, the Load game list, the field, th
+44	339	build	model	model		2026-11-01T07:32:03Z	5.2	
+44	340	build	tool	read files	read	2026-11-01T07:32:08Z	0.0	Reading skins guide section :: docs/guide/skins.md:31-41
+44	341	build	model	model		2026-11-01T07:32:08Z	3.5	
+44	342	build	tool	edit files	edit	2026-11-01T07:32:12Z	0.0	Inserting high-contrast still in skins guide :: [docs/guide/skins.md#0DAE] PUT >36: + +![The gallery in high contrast: a black screen with white frames on the settings panel, the Load game list, the field, th
+44	343	build	model	model		2026-11-01T07:32:12Z	1.8	
+44	344	build	tool	read files	read	2026-11-01T07:32:13Z	0.0	Reading full line 36 :: docs/guide/skins.md:36:raw
+44	345	build	model	model		2026-11-01T07:32:13Z	3.4	
+44	346	build	tool	edit files	edit	2026-11-01T07:32:17Z	0.0	Inserting high-contrast still in skins guide :: [docs/guide/skins.md#0DAE] PUT >36: + +![The gallery in high contrast: a black screen with white frames on the settings panel, the Load game list, the field, th
+44	347	build	model	model		2026-11-01T07:32:17Z	8.8	
+44	348	build	tool	edit files	edit	2026-11-01T07:32:26Z	0.0	Updating options example header docs :: [examples/options.rs#5C97] PUT 1.=11: +//! An options screen with no wiring: the four settings the crate itself reads, as one line each. +//! +//! - **Text size
+44	349	build	tool	shell	bash	2026-11-01T07:32:26Z	0.0	Checking example header and AGENTS test lines :: cd /home/ladvien/bevy_gooey_loop && sed -n 12,18p examples/options.rs; grep -n '^- `tests/options.rs`\|^- `tests/skin.rs`' AGENTS.md | cut -c1-120
+44	350	build	model	model		2026-11-01T07:32:26Z	8.1	
+44	351	build	tool	shell	bash	2026-11-01T07:32:34Z	0.0	Verifying example header :: cd /home/ladvien/bevy_gooey_loop && sed -n 8,16p examples/options.rs; sed -n 54p AGENTS.md | cut -c1-400
+44	352	build	model	model		2026-11-01T07:32:34Z	3.5	
+44	353	build	tool	read files	read	2026-11-01T07:32:37Z	0.0	Reading AGENTS tests/options line raw :: AGENTS.md:54:raw
+44	354	build	tool	shell	bash	2026-11-01T07:32:37Z	0.0	Finding AGENTS skin tests line :: cd /home/ladvien/bevy_gooey_loop && grep -n 'tests/skin.rs' AGENTS.md | cut -c1-300
+44	355	build	model	model		2026-11-01T07:32:37Z	2.9	
+44	356	build	tool	read files	read	2026-11-01T07:32:40Z	0.0	Fresh AGENTS tag :: AGENTS.md:52-56
+44	357	build	model	model		2026-11-01T07:32:40Z	6.5	
+44	358	build	tool	edit files	edit	2026-11-01T07:32:47Z	0.0	Updating AGENTS tests/options line and adding high-contrast tests line :: [AGENTS.md#B795] PUT 54.=54: +- `tests/options.rs` — the four option rows, in the same headless window, driven by real keyboard input: a row spawned over a load
+44	359	build	tool	shell	bash	2026-11-01T07:32:47Z	1.4	Formatting and checking git status :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && git status --short | head -40
+44	360	build	model	model		2026-11-01T07:32:48Z	6.3	
+44	361	build	tool	git	bash	2026-11-01T07:32:54Z	0.2	Committing implementation and docs separately :: cd /home/ladvien/bevy_gooey_loop && git add src tests examples && git commit -q -m "Add GooeySkin::high_contrast, high_contrast_problems, SkinPreset, skin_prese
+44	362	build	model	model		2026-11-01T07:32:54Z	12.5	
+44	363	build	tool	shell	bash	2026-11-01T07:33:07Z	0.1	Preparing mutation checks :: cd /home/ladvien/bevy_gooey_loop && mkdir -p /tmp/g21m/orig && cp src/skin.rs /tmp/g21m/orig/skin.rs && cp src/options.rs /tmp/g21m/orig/options.rs && grep -n "
+44	364	build	model	model		2026-11-01T07:33:07Z	1.8	
+44	365	build	tool	read files	read	2026-11-01T07:33:09Z	0.1	Fresh tag for mutation edit :: src/skin.rs:384
+44	366	build	model	model		2026-11-01T07:33:09Z	5.3	
+44	367	build	tool	edit files	edit	2026-11-01T07:33:14Z	0.0	Mutation 1 and 3: drop edge copy and ignore the 7:1 floor :: [src/skin.rs#A3D3] PUT 457.=457: + surface_edge: self.surface_edge, PUT 384.=384: + let needed = needed.max(0.0 * floor);
+44	368	build	tool	cargo test	bash	2026-11-01T07:33:14Z	0.0	[launched bg_7] Running mutated tests expecting failures :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --test options --test skin 2>&1 | grep -E "^error|FAILED|failed|test result|panicked" | head -
+44	369	build	model	model		2026-11-01T07:33:14Z	6.0	
+44	370	build	tool	wait: tests	wait	2026-11-01T07:33:20Z	138.4	Waiting for mutation test run
+44	371	build	model	model		2026-11-01T07:35:39Z	7.3	
+44	372	build	tool	cargo test	bash	2026-11-01T07:35:46Z	3.9	Running skin tests with the floor ignored :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --test skin 2>&1 | grep -E "^error|FAILED|test result|panicked" | head -10
+44	373	build	model	model		2026-11-01T07:35:50Z	4.8	
+44	374	build	tool	shell	bash	2026-11-01T07:35:55Z	0.6	Restoring skin.rs and viewing options observer :: cd /home/ladvien/bevy_gooey_loop && cp /tmp/g21m/orig/skin.rs src/skin.rs && cmp src/skin.rs /tmp/g21m/orig/skin.rs && echo restored; git status --short; sed -n
+44	375	build	model	model		2026-11-01T07:35:55Z	2.9	
+44	376	build	tool	read files	read	2026-11-01T07:35:58Z	0.1	Fresh tag for options.rs mutation :: src/options.rs:93-97
+44	377	build	model	model		2026-11-01T07:35:58Z	4.1	
+44	378	build	tool	edit files	edit	2026-11-01T07:36:02Z	0.0	Mutation 2: theme step replaces the whole skin :: [src/options.rs#C4A1] PUT 95.=95: + let next = preset.skin();
+44	379	build	tool	cargo test	bash	2026-11-01T07:36:02Z	15.7	Running options tests under mutation 2 then restoring :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --test options 2>&1 | grep -E "^error|FAILED|test result|panicked" | head -10; cp /tmp/g21m/or
+44	380	build	model	model		2026-11-01T07:36:18Z	8.3	
+44	381	build	tool	cargo test	bash	2026-11-01T07:36:27Z	0.0	Writing the gate script :: ls ~/g21 2>&1 | head -2; mkdir -p ~/g21 && cat > ~/g21/gate.sh <<'EOF' #!/bin/bash cd /home/ladvien/bevy_gooey_loop export CARGO_BUILD_JOBS=2 mem() { echo " mem
+44	382	build	model	model		2026-11-01T07:36:27Z	2.6	
+44	383	gate	tool	phase mark	bash	2026-11-01T07:36:29Z	0.0	[launched bg_8] Running the full gate :: python3 ~/.local/share/wiggum/steps.py mark gate; ~/g21/gate.sh 2>&1 | tee ~/g21/gate.out | tail -60
+44	384	gate	model	model		2026-11-01T07:36:29Z	21.6	
+44	385	gate	tool	search	grep	2026-11-01T07:36:51Z	0.0	Finding option rows in the large-text test :: tests/large_text.rs
+44	386	gate	model	model		2026-11-01T07:36:51Z	20.7	
+44	387	gate	tool	edit files	write	2026-11-01T07:37:12Z	0.0	Writing the checklist findings :: /tmp/g21m/findings.md
+44	388	gate	tool	edit files	write	2026-11-01T07:37:12Z	0.0	Writing the critique :: /tmp/g21m/critique.md
+44	389	gate	model	model		2026-11-01T07:37:12Z	1.6	
+44	390	gate	tool	wait: gate	wait	2026-11-01T07:37:13Z	1800.0	Waiting for the gate
+44	391	gate	model	model		2026-11-01T08:07:13Z	2.5	
+44	392	gate	tool	wait: gate	wait	2026-11-01T08:07:16Z	1153.6	Waiting for the gate to finish
+44	393	gate	model	model		2026-11-01T08:26:29Z	9.7	
+44	394	gate	tool	read files	read	2026-11-01T08:26:39Z	0.0	Reading large-text panel :: tests/large_text.rs:84-104
+44	395	gate	tool	read files	read	2026-11-01T08:26:39Z	0.0	Reading each-widget-alone list :: tests/large_text.rs:266-290
+44	396	gate	model	model		2026-11-01T08:26:39Z	4.0	
+44	397	gate	tool	edit files	edit	2026-11-01T08:26:43Z	0.0	Adding the Theme row to the large-text tests :: [tests/large_text.rs#9956] PUT 274.=274: + world.spawn(pad_style("Controller")).id(), + world.spawn(skin_preset("Theme")).id(), PUT 89.=89: + choice("Quality", 
+44	398	gate	tool	cargo test	bash	2026-11-01T08:26:43Z	0.0	[launched bg_9] Running the large-text test with the Theme row :: cd /home/ladvien/bevy_gooey_loop && cargo fmt --check && echo fmt-ok; (CARGO_BUILD_JOBS=2 cargo test --test large_text 2>&1 | grep -E "^error|FAILED|test result
+44	399	gate	model	model		2026-11-01T08:26:43Z	4.9	
+44	400	gate	tool	wait: tests	wait	2026-11-01T08:26:48Z	21.4	Waiting for large-text test
+44	401	gate	model	model		2026-11-01T08:27:09Z	6.9	
+44	402	gate	tool	cargo test	bash	2026-11-01T08:27:16Z	0.0	Committing large-text test and writing gate part 2 :: cd /home/ladvien/bevy_gooey_loop && git add tests/large_text.rs && git commit -q -m "Tests: the Theme row at every text size (large_text: a panel of every widge
+44	403	gate	model	model		2026-11-01T08:27:16Z	2.8	
+44	404	gate	tool	shell	bash	2026-11-01T08:27:19Z	0.0	[launched bg_10] Running gate part 2: clippy, serde tests, readme test :: ~/g21/gate2.sh 2>&1 | tee ~/g21/gate2.out | tail -80
+44	405	gate	model	model		2026-11-01T08:27:19Z	7.6	
+44	406	gate	tool	shell	bash	2026-11-01T08:27:27Z	0.0	Writing the benchmark script :: cat > /tmp/g21m/bench.sh <<'EOF' #!/bin/bash export DISPLAY=:93 GOOEY_HEALTH=60 B=~/g21_bin/gallery_before; A=~/g21_bin/gallery_after echo "load $(cut -d' ' -f1
+44	407	gate	tool	wait: gate	wait	2026-11-01T08:27:27Z	168.3	Waiting for gate part 2
+44	408	gate	model	model		2026-11-01T08:30:15Z	6.2	
+44	409	prove	tool	phase mark	bash	2026-11-01T08:30:21Z	60.1	[launched bg_11] Running 12 alternating paired frame-time runs :: python3 ~/.local/share/wiggum/steps.py mark prove; /tmp/g21m/bench.sh > /tmp/g21m/bench.out 2>&1; cat /tmp/g21m/bench.out | awk '/^load/ {print} $2=="before"{b[
+44	410	prove	model	model		2026-11-01T08:31:21Z	3.6	
+44	411	prove	tool	wait: other	wait	2026-11-01T08:31:25Z	252.5	Waiting for benchmark
+44	412	prove	model	model		2026-11-01T08:35:38Z	12.6	
+44	413	ship	tool	phase mark	bash	2026-11-01T08:35:50Z	0.0	[launched bg_12] Running cargo semver-checks against 0.7.1 :: cd /home/ladvien/bevy_gooey_loop && cargo semver-checks --version 2>&1 | head -1; python3 ~/.local/share/wiggum/steps.py mark ship; CARGO_BUILD_JOBS=2 cargo sem
+44	414	ship	model	model		2026-11-01T08:35:50Z	7.7	
+44	415	ship	tool	git	bash	2026-11-01T08:35:58Z	0.2	Collecting hashes, sizes and leftovers for the log :: cd /home/ladvien/bevy_gooey_loop && git log --oneline | head -6; du -sh ~/g21_bin ~/g21 /tmp/g21m 2>/dev/null; df -h /home /tmp | tail -2; git worktree list; fo
+44	416	ship	model	model		2026-11-01T08:35:58Z	3.8	
+44	417	ship	tool	shell	bash	2026-11-01T08:36:02Z	0.1	Sizing earlier passes' leftovers :: cd ~ && du -sh g14_bin g17_bin g17b_bin g17s_bin g19_bin g14_gate.sh g17_gate.sh 2>/dev/null | tr '\n' ';'; ls -d /tmp/g[0-9]* /tmp/gooey* 2>/dev/null | head -2
+44	418	ship	model	model		2026-11-01T08:36:02Z	8.1	
+44	419	ship	tool	wait: other	wait	2026-11-01T08:36:10Z	0.0	Waiting for semver-checks
+44	420	ship	model	model		2026-11-01T08:36:10Z	5.9	
+44	421	ship	tool	read files	read	2026-11-01T08:36:16Z	0.1	Fresh tag for log append :: docs/loop-log.md:832-839
+44	422	ship	model	model		2026-11-01T08:36:16Z	4.5	
+44	423	ship	tool	shell	bash	2026-11-01T08:36:21Z	60.0	[launched bg_13] Re-running paired frame-time benchmark :: uptime; /tmp/g21m/bench.sh > /tmp/g21m/bench2.out 2>&1; awk '/^load/ {print} $2=="before"{b[$1]=$3} $2=="after"{a[$1]=$3} END{n=0; for(i=1;i<=12;i++){d=a[i]-b[i
+44	424	ship	model	model		2026-11-01T08:37:21Z	4.0	
+44	425	ship	tool	wait: other	wait	2026-11-01T08:37:25Z	103.0	Waiting for second benchmark run
+44	426	ship	model	model		2026-11-01T08:39:08Z	49.5	
+44	427	ship	tool	edit files	edit	2026-11-01T08:39:57Z	0.2	Appending iteration 21 to the loop log :: [docs/loop-log.md#7042] PUT >839: + +## Iteration 21 — 2026-11-01 — a high-contrast skin, held to 7:1, and the Theme row that picks it + +**Triage.** `gh issue 
+44	428	ship	model	model		2026-11-01T08:39:57Z	4.1	
+44	429	ship	tool	git	bash	2026-11-01T08:40:02Z	0.1	Reading every removed line in src and examples :: cd /home/ladvien/bevy_gooey_loop && git diff e122cb0 -- src examples | grep '^-' | grep -v '^---'
+44	430	ship	tool	git	bash	2026-11-01T08:40:02Z	0.1	Reading every removed line in tests :: cd /home/ladvien/bevy_gooey_loop && git diff e122cb0 -- tests | grep '^-' | grep -v '^---'
+44	431	ship	model	model		2026-11-01T08:40:02Z	5.6	
+44	432	ship	tool	push gate	bash	2026-11-01T08:40:07Z	4.3	Committing log, pushing branch and merging into main :: cd /home/ladvien/bevy_gooey_loop && git add docs/loop-log.md && git commit -q -m "Loop log: iteration 21, a high-contrast skin and the Theme row" && git status 
+44	433	ship	model	model		2026-11-01T08:40:12Z	6.5	
+44	434	release	tool	phase mark	bash	2026-11-01T08:40:18Z	1.5	Pushing main and finding version references :: cd /home/ladvien/bevy_gooey_loop && git push -q origin main 2>&1 | tail -2; python3 ~/.local/share/wiggum/steps.py mark release; grep -n "0\.7\.1\|0\.7\b" READM
+44	435	release	model	model		2026-11-01T08:40:20Z	2.7	
+44	436	release	tool	shell	bash	2026-11-01T08:40:22Z	0.0	Reading README compat table :: cd /home/ladvien/bevy_gooey_loop && sed -n 176,184p README.md; sed -n 1,6p CHANGELOG.md | cut -c1-80; git status -sb | head -3
+44	437	release	model	model		2026-11-01T08:40:22Z	3.6	
+44	438	release	tool	edit files	edit	2026-11-01T08:40:26Z	0.0	Bumping version, changelog and compat row :: [README.md#D431] PUT 181.=181: +| 0.1 – 0.8 | 0.20 |
+44	439	release	tool	read files	read	2026-11-01T08:40:26Z	0.0	Fresh Cargo.toml tag :: Cargo.toml:1-4
+44	440	release	tool	read files	read	2026-11-01T08:40:26Z	0.0	Fresh changelog tag :: CHANGELOG.md:1-6
+44	441	release	model	model		2026-11-01T08:40:26Z	2.5	
+44	442	release	tool	edit files	edit	2026-11-01T08:40:28Z	0.0	Applying version bump edits :: [README.md#D431] PUT 181.=181: +| 0.1 – 0.8 | 0.20 | [Cargo.toml#1D4E] PUT 3.=3: +version = "0.8.0" [CHANGELOG.md#CBD6] PUT >3: + +## [0.8.0] - 2026-11-01
+44	443	release	model	model		2026-11-01T08:40:29Z	4.5	
+44	444	release	tool	cargo publish	bash	2026-11-01T08:40:33Z	6.6	Committing release and running publish dry-run :: cd /home/ladvien/bevy_gooey_loop && git add Cargo.toml CHANGELOG.md README.md && git commit -q -m "release: v0.8.0 (a high-contrast skin and the Theme row)" && 
+44	445	release	model	model		2026-11-01T08:40:40Z	2.4	
+44	446	release	tool	cargo publish	bash	2026-11-01T08:40:42Z	4.7	Publishing v0.8.0 to crates.io :: cd /home/ladvien/bevy_gooey_loop && cargo publish 2>&1 | tail -6
+44	447	release	model	model		2026-11-01T08:40:47Z	3.8	
+44	448	release	tool	push gate	bash	2026-11-01T08:40:51Z	3.6	Tagging, pushing and verifying the release :: cd /home/ladvien/bevy_gooey_loop && git tag -a v0.8.0 -m v0.8.0 && git push -q origin main 2>&1 | tail -2; git push -q origin v0.8.0 2>&1 | tail -2; git status 
+44	449	release	model	model		2026-11-01T08:40:54Z	6.1	
+44	450	log	tool	phase mark	bash	2026-11-01T08:41:00Z	0.2	Cleaning up this pass's scratch :: python3 ~/.local/share/wiggum/steps.py mark log; df -h /home /tmp | tail -2; rm -rf ~/g21 ~/g21_bin /tmp/g21m; df -h /home /tmp | tail -2; ls -d ~/g21* /tmp/g21
+44	451	log	model	model		2026-11-01T08:41:01Z	4.1	
+44	452	log	tool	shell	bash	2026-11-01T08:41:05Z	0.0	Finding the merge paragraph line :: cd /home/ladvien/bevy_gooey_loop && grep -n '^\*\*Merge\.\*\* `loop/iter-21`' docs/loop-log.md | cut -c1-60
+44	453	log	model	model		2026-11-01T08:41:05Z	1.7	
+44	454	log	tool	read files	read	2026-11-01T08:41:06Z	0.0	Fresh log tag :: docs/loop-log.md:866-869
+44	455	log	model	model		2026-11-01T08:41:06Z	9.0	
+44	456	log	tool	edit files	edit	2026-11-01T08:41:15Z	0.0	Finalizing merge, release and cleanup in the log :: [docs/loop-log.md#F791] PUT 867.=867: +**Merge.** `loop/iter-21` pushed and merged into `main` with `--no-ff` (`cc3ac3a`; `git diff --stat loop/iter-21 main` em
+44	457	log	model	model		2026-11-01T08:41:15Z	6.3	
+44	458	log	tool	push gate	bash	2026-11-01T08:41:22Z	2.1	Committing the final log and pushing main :: cd /home/ladvien/bevy_gooey_loop && git add docs/loop-log.md && git commit -q -m "Loop log: iteration 21, merge, release v0.8.0 and cleanup" && git push -q orig
+44	459	log	model	model		2026-11-01T08:41:24Z	13.0	
