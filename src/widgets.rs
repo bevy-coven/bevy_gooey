@@ -145,6 +145,31 @@ pub fn panel() -> impl Bundle {
     )
 }
 
+/// A column filled with one step of the skin's surface ladder, [`GooeySkin::surfaces`], and
+/// nothing else: no padding, frame or corner, which a host takes from the skin's tokens
+/// ([`GooeySkin::space`], [`GooeySkin::corner`]). `level` 0 is the lowest step; a level past the top
+/// is the top.
+///
+/// A tool nests its grounds: a panel's ground, a row on it, a field in the row, each a step above the
+/// one it stands in.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((surface(1), children![(surface(2), children![label("A row")])]));
+/// # }
+/// ```
+pub fn surface(level: u8) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Surface(level),
+    )
+}
+
 /// A column of buttons, stretched to the widest.
 ///
 /// ```

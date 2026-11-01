@@ -14,8 +14,8 @@ use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::list::ListView;
 use crate::model::{
-    COMFORT_TARGET_PX, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST, TEXT_CONTRAST,
-    composite, contrast_ratio, list_height, snap_line_width,
+    COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
+    TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height, snap_line_width,
 };
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
@@ -206,6 +206,25 @@ pub struct GooeySkin {
     pub density: Density,
     /// A player option: every text size is multiplied by it.
     pub text_scale: f32,
+    /// The spacing scale, logical px, smallest first: the gaps and paddings a host's own chrome is
+    /// built from. Read it with [`GooeySkin::space`]. Each preset's [`GooeySkin::gap`] and
+    /// [`GooeySkin::padding`] are on its own. Finite, at least zero, never falling
+    /// ([`SkinProblem::BadScale`]).
+    pub spacing: [f32; 6],
+    /// The corner-radius scale, logical px, smallest first. Read it with [`GooeySkin::corner`]; each
+    /// preset's [`GooeySkin::radius`] is on its own. (Named `radii` because `radius` is the corner
+    /// every widget draws.)
+    pub radii: [f32; 3],
+    /// The type scale, logical px before [`GooeySkin::text_scale`], smallest first. Read it with
+    /// [`GooeySkin::type_size`]; each preset's [`GooeySkin::text_size`] and
+    /// [`GooeySkin::heading_size`] are on its own. Finite, above zero, never falling.
+    pub type_scale: [f32; 5],
+    /// The ladder of flat fills a tool's grounds stand on, lowest first (the window's ground, a
+    /// panel, a row, a field, a card): [`Role::Surface`] draws step `n`, read with
+    /// [`GooeySkin::surface_at`]. Opaque: alpha is ignored. Every adjacent pair must differ by at
+    /// least [`ELEVATION_STEP`] in CIE L\* ([`SkinProblem::ElevationStep`]); a ladder of one is
+    /// valid, an empty one is not.
+    pub surfaces: Vec<Color>,
 }
 
 impl GooeySkin {
@@ -223,6 +242,13 @@ impl GooeySkin {
             focus_ring: Color::srgb(0.45, 0.78, 1.0),
             outline: Color::srgb(0.44, 0.47, 0.54),
             scrim: Color::srgba(0.0, 0.0, 0.0, 0.6),
+            surfaces: vec![
+                Color::srgb(0.07, 0.08, 0.10),
+                Color::srgb(0.12, 0.13, 0.16),
+                Color::srgb(0.16, 0.175, 0.215),
+                Color::srgb(0.20, 0.22, 0.27),
+                Color::srgb(0.273, 0.292, 0.339),
+            ],
             ..Self::sizes()
         }
     }
@@ -241,6 +267,13 @@ impl GooeySkin {
             focus_ring: Color::srgb(0.12, 0.38, 0.55),
             outline: Color::srgb(0.48, 0.38, 0.27),
             scrim: Color::srgba(0.08, 0.05, 0.02, 0.7),
+            surfaces: vec![
+                Color::srgb(0.18, 0.13, 0.09),
+                Color::srgb(0.667, 0.588, 0.458),
+                Color::srgb(0.83, 0.74, 0.58),
+                Color::srgb(0.91, 0.85, 0.72),
+                Color::srgb(0.955, 0.925, 0.86),
+            ],
             ..Self::sizes()
         }
     }
@@ -266,6 +299,13 @@ impl GooeySkin {
             outline: Color::WHITE,
             surface_edge: Some(Color::WHITE),
             scrim: Color::srgba(0.0, 0.0, 0.0, 0.8),
+            surfaces: vec![
+                Color::srgb(0.0, 0.0, 0.0),
+                Color::srgb(0.092, 0.092, 0.092),
+                Color::srgb(0.156, 0.156, 0.156),
+                Color::srgb(0.241, 0.241, 0.241),
+                Color::srgb(0.351, 0.351, 0.351),
+            ],
             ..Self::sizes()
         }
     }
@@ -295,6 +335,16 @@ impl GooeySkin {
             meter_height: 10.0,
             min_target: MIN_TARGET_PX,
             density: Density::Compact,
+            surfaces: vec![
+                Color::srgb(0.07, 0.075, 0.085),
+                Color::srgb(0.11, 0.115, 0.13),
+                Color::srgb(0.15, 0.158, 0.18),
+                Color::srgb(0.19, 0.20, 0.23),
+                Color::srgb(0.261, 0.271, 0.30),
+            ],
+            spacing: [2.0, 4.0, 6.0, 10.0, 16.0, 24.0],
+            radii: [2.0, 4.0, 8.0],
+            type_scale: [11.0, 12.0, 14.0, 16.0, 20.0],
             ..Self::sizes()
         }
     }
@@ -324,7 +374,54 @@ impl GooeySkin {
             min_target: COMFORT_TARGET_PX,
             density: Density::Comfortable,
             text_scale: 1.0,
+            spacing: [4.0, 8.0, 10.0, 14.0, 20.0, 28.0],
+            radii: [4.0, 8.0, 16.0],
+            type_scale: [14.0, 16.0, 20.0, 26.0, 32.0],
+            surfaces: vec![Color::BLACK],
         }
+    }
+
+    /// Step `step` of the [`GooeySkin::spacing`] scale, logical px; a step past the end is the
+    /// last. Not scaled by [`GooeySkin::density`] or [`GooeySkin::text_scale`]: a skin that wants
+    /// tighter chrome has tighter tokens, as [`GooeySkin::tool`] does.
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// let skin = GooeySkin::dark();
+    /// assert_eq!(skin.space(0), 4.0);
+    /// assert_eq!(skin.space(99), skin.spacing[5]);
+    /// ```
+    pub fn space(&self, step: usize) -> f32 {
+        self.spacing[step.min(self.spacing.len() - 1)]
+    }
+
+    /// Step `step` of the [`GooeySkin::radii`] scale, logical px; a step past the end is the last.
+    pub fn corner(&self, step: usize) -> f32 {
+        self.radii[step.min(self.radii.len() - 1)]
+    }
+
+    /// Step `step` of the [`GooeySkin::type_scale`], logical px as drawn: multiplied by
+    /// [`GooeySkin::text_scale`], like every text size; a step past the end is the last.
+    pub fn type_size(&self, step: usize) -> f32 {
+        self.type_scale[step.min(self.type_scale.len() - 1)] * self.text_scale
+    }
+
+    /// Step `level` of the [`GooeySkin::surfaces`] ladder, lowest first; a level past the top is the
+    /// top, and a skin with no surfaces (which [`GooeySkin::problems`] reports) draws
+    /// [`GooeySkin::surface`].
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// let skin = GooeySkin::dark();
+    /// assert_eq!(skin.surface_at(0), skin.background);
+    /// assert_eq!(skin.surface_at(200), skin.surfaces[skin.surfaces.len() - 1]);
+    /// ```
+    pub fn surface_at(&self, level: u8) -> Color {
+        self.surfaces
+            .get(usize::from(level))
+            .or(self.surfaces.last())
+            .copied()
+            .unwrap_or(self.surface)
     }
 
     /// A hovered button's fill: [`GooeySkin::surface_raised`] a third of the way to
@@ -495,6 +592,34 @@ impl GooeySkin {
                 out.push(SkinProblem::BadSize { field });
             }
         }
+        for (i, pair) in self.surfaces.windows(2).enumerate() {
+            let delta = (cie_lightness(rgb(pair[1])) - cie_lightness(rgb(pair[0]))).abs();
+            // A NaN colour gives a NaN step, which is reported, not passed.
+            if delta.is_nan() || delta < ELEVATION_STEP {
+                out.push(SkinProblem::ElevationStep {
+                    lower: i,
+                    upper: i + 1,
+                    delta_l: delta,
+                });
+            }
+        }
+        let usable = |values: &[f32], above_zero: bool| {
+            values
+                .iter()
+                .all(|v| v.is_finite() && if above_zero { *v > 0.0 } else { *v >= 0.0 })
+                && values.windows(2).all(|pair| pair[0] <= pair[1])
+        };
+        let scales = [
+            ("surfaces", !self.surfaces.is_empty()),
+            ("spacing", usable(&self.spacing, false)),
+            ("radii", usable(&self.radii, false)),
+            ("type_scale", usable(&self.type_scale, true)),
+        ];
+        for (field, fine) in scales {
+            if !fine {
+                out.push(SkinProblem::BadScale { field });
+            }
+        }
         out
     }
 
@@ -544,6 +669,7 @@ impl GooeySkin {
             outline: look.outline,
             surface_edge: look.surface_edge,
             scrim: look.scrim,
+            surfaces: look.surfaces.clone(),
             ..self
         }
     }
@@ -570,6 +696,12 @@ impl GooeySkin {
         colours(self)
             .into_iter()
             .zip(colours(other))
+            .chain(
+                self.surfaces
+                    .iter()
+                    .copied()
+                    .zip(other.surfaces.iter().copied()),
+            )
             .map(|(a, b)| {
                 let (a, b) = (Srgba::from(a), Srgba::from(b));
                 (a.red - b.red).powi(2)
@@ -686,6 +818,24 @@ pub enum SkinProblem {
         /// The frame and gap it must exceed.
         needed: f32,
     },
+    /// Two adjacent steps of the surface ladder, [`GooeySkin::surfaces`], differ by less than
+    /// [`ELEVATION_STEP`] in CIE L\*: the eye cannot tell the upper from the lower, so a surface
+    /// on it has no edge.
+    ElevationStep {
+        /// The lower step's index.
+        lower: usize,
+        /// The upper step's index, `lower + 1`.
+        upper: usize,
+        /// The difference they have, L\*.
+        delta_l: f32,
+    },
+    /// A token scale is unusable: no [`GooeySkin::surfaces`] at all, or a [`GooeySkin::spacing`],
+    /// [`GooeySkin::radii`] or [`GooeySkin::type_scale`] with a non-finite, negative (zero for the
+    /// type scale) or falling step.
+    BadScale {
+        /// The field's name.
+        field: &'static str,
+    },
 }
 
 impl fmt::Display for SkinProblem {
@@ -712,6 +862,18 @@ impl fmt::Display for SkinProblem {
             Self::MeterTooThin { px, needed } => write!(
                 f,
                 "a meter is {px} px high; its frame and gap take {needed} px (4 × border), leaving no room for its fill"
+            ),
+            Self::ElevationStep {
+                lower,
+                upper,
+                delta_l,
+            } => write!(
+                f,
+                "surfaces {lower} and {upper} differ by ΔL* {delta_l:.2}; adjacent surfaces of the ladder need at least {ELEVATION_STEP} to be told apart"
+            ),
+            Self::BadScale { field } => write!(
+                f,
+                "{field} is not a usable scale: it must have a step (surfaces), be finite and never fall (spacing, radii, type_scale), and be above zero (type_scale)"
             ),
         }
     }
@@ -763,6 +925,9 @@ pub enum Role {
     Screen,
     /// A framed, padded column on [`GooeySkin::surface`].
     Panel,
+    /// A column filled with one step of [`GooeySkin::surfaces`], lowest first; nothing else is
+    /// drawn (see [`crate::surface`]).
+    Surface(u8),
     /// A column of buttons.
     Menu,
     /// Heading text.
@@ -1343,6 +1508,7 @@ fn restyle(
             skin.text_muted
         }),
         Role::Scrim => Some(skin.scrim),
+        Role::Surface(level) => Some(skin.surface_at(*level)),
         // A switch is lit by the accent while on, and its knob's place says so a second way.
         Role::ToggleTrack => Some(if owner.disabled {
             skin.surface
