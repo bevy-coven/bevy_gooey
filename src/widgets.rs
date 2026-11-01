@@ -29,6 +29,8 @@ use crate::choice::{
     ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
     choice_on_key_input, choice_on_move, choice_self_update,
 };
+use crate::dock::Dock;
+use crate::dock_layout::DockLayout;
 use crate::list::ListView;
 use crate::menu::{MenuBar, MenuItem, MenuTitle, bar_on_cancel, menu_panel};
 use crate::meter::Meter;
@@ -1128,12 +1130,37 @@ pub fn tabs<S: Into<String>>(
     selected: usize,
     pages: impl Bundle,
 ) -> impl Bundle {
-    let labels: Vec<String> = labels.into_iter().map(Into::into).collect();
+    tabs_in(
+        labels.into_iter().map(|label| (label.into(), ())),
+        selected,
+        pages,
+        false,
+    )
+}
+
+/// [`tabs`] with a bundle on each tab (the dock's marker and drag observers), and, with `fill`, a
+/// widget that takes all the room its parent gives it, its page area included, so a panel in a
+/// dock group can fill the group.
+pub(crate) fn tabs_in<B: Bundle>(
+    labels: impl IntoIterator<Item = (String, B)>,
+    selected: usize,
+    pages: impl Bundle,
+    fill: bool,
+) -> impl Bundle {
+    let labels: Vec<(String, B)> = labels.into_iter().collect();
     let count = labels.len();
     let selected = selected.min(count.saturating_sub(1));
+    let (grow, least) = if fill {
+        (1.0, Val::Px(0.0))
+    } else {
+        (0.0, Val::Auto)
+    };
     (
         Node {
             flex_direction: FlexDirection::Column,
+            flex_grow: grow,
+            min_width: least,
+            min_height: least,
             ..default()
         },
         Role::Tabs,
@@ -1161,12 +1188,22 @@ pub fn tabs<S: Into<String>>(
                 },
                 Role::TabList,
                 observe(tabs_on_select),
-                Children::spawn(SpawnIter(labels.into_iter().map(tab))),
+                Children::spawn(SpawnIter(
+                    labels.into_iter().map(|(label, extra)| tab(label, extra)),
+                )),
             ));
             // One grid cell for every page, so the widget is as large as the largest.
             parent.spawn((
                 Node {
                     display: Display::Grid,
+                    flex_grow: grow,
+                    min_width: least,
+                    min_height: least,
+                    overflow: if fill {
+                        Overflow::clip()
+                    } else {
+                        Overflow::visible()
+                    },
                     ..default()
                 },
                 Role::TabPages,
@@ -1178,7 +1215,7 @@ pub fn tabs<S: Into<String>>(
 
 /// One tab of a strip: a button-sized target with its label, which Bevy's `TabList` selects on a
 /// click and on Left and Right.
-fn tab(label: String) -> impl Bundle {
+fn tab(label: String, extra: impl Bundle) -> impl Bundle {
     (
         Node {
             justify_content: JustifyContent::Center,
@@ -1189,6 +1226,7 @@ fn tab(label: String) -> impl Bundle {
         Role::Tab,
         Hovered::default(),
         AutoDirectionalNavigation::default(),
+        extra,
         children![(Text::new(label), Role::TabText)],
     )
 }
@@ -1265,6 +1303,12 @@ pub fn tab_page(widgets: impl Bundle) -> impl Bundle {
 /// double click collapse the first pane to its minimum or give it back ([`split_by_pad`](crate::split_by_pad)); the other
 /// arrows move focus on. Give the divider `InteractionDisabled` to fix the layout.
 pub fn split(axis: SplitAxis, first: impl Bundle, second: impl Bundle) -> impl Bundle {
+    split_in(axis, children![first], children![second])
+}
+
+/// [`split`] with each pane's children given as a bundle of its own (`children![..]`, or the
+/// dock's adoption of a node it built), instead of one child each.
+pub(crate) fn split_in(axis: SplitAxis, first: impl Bundle, second: impl Bundle) -> impl Bundle {
     (
         Node {
             flex_direction: match axis {
@@ -1284,7 +1328,7 @@ pub fn split(axis: SplitAxis, first: impl Bundle, second: impl Bundle) -> impl B
 
 /// One pane of a [`split`]: a clipped cell of one `1fr` track, so content sized to its own content
 /// fills the pane, and one too big for it is cut and never widens it. Its share is
-/// [`update_splits`](crate::update_splits)'.
+/// [`update_splits`](crate::update_splits)'. `content` is the pane's children.
 fn split_pane(content: impl Bundle) -> impl Bundle {
     (
         Node {
@@ -1297,7 +1341,7 @@ fn split_pane(content: impl Bundle) -> impl Bundle {
             ..default()
         },
         Role::SplitPane,
-        children![content],
+        content,
     )
 }
 
@@ -1398,6 +1442,96 @@ pub fn dialog() -> impl Bundle {
             order: 0,
             modal: true,
         },
+    )
+}
+
+/// A workbench of panels the player arranges: a tree of splits and tab groups built from a
+/// [`DockLayout`], which is plain data (serde with the `serde` feature), so it can be saved,
+/// loaded and reset. What a panel shows is spawned once by the function registered under its id in
+/// the [`PanelRegistry`]; the dock builds the tree, and a panel's page is moved, never rebuilt,
+/// when the layout changes.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn ui(mut commands: Commands, mut panels: ResMut<PanelRegistry>) {
+///     panels
+///         .register("scene", "Scene", |page| {
+///             page.with_child(label("Nothing selected"));
+///         })
+///         .register("assets", "Assets", |page| {
+///             page.with_child(button("Import"));
+///         })
+///         .register("log", "Log", |page| {
+///             page.with_child(label("Ready"));
+///         });
+///     commands.spawn((
+///         dock(DockLayout::split(
+///             SplitAxis::Horizontal,
+///             0.3,
+///             DockLayout::group(["scene", "assets"]),
+///             DockLayout::group(["log"]),
+///         )),
+///         observe(|changed: On<DockLayoutChanged>| info!("save {:?}", changed.layout)),
+///     ));
+/// }
+/// ```
+///
+/// The dock fills its parent. Every group is a [`panel`] with a strip of tabs; each divider is a
+/// [`split`]'s, with its keys and its 96 px minimum pane. The player rearranges the layout by
+/// picking a tab up: a card with its title follows the pointer, and the part of the dock the panel
+/// will take is lit before it is let go (on a group's strip, into the group at that place; over
+/// its middle, as a tab; over an edge, in a group of its own on that side; at the dock's own
+/// edge, a quarter of the dock). Escape puts it back. Without a pointer, **Ctrl+Shift and an
+/// arrow** on a focused tab moves its panel to the nearest group that way, or to that edge of the
+/// dock. Each change is one [`DockLayoutChanged`](crate::DockLayoutChanged) with the layout now
+/// shown; write a layout to [`Dock`](crate::Dock) to load or reset it.
+///
+/// A panel id the registry does not know, or one the layout names twice, is left out and reported
+/// once as a [`DockPanelSkipped`](crate::DockPanelSkipped); a group left with no panel collapses.
+pub fn dock(layout: DockLayout) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+        Role::Dock,
+        Dock(layout),
+        children![
+            // One grid cell of `1fr`, so the node the layout is built as fills the dock whatever
+            // it is.
+            (
+                Node {
+                    display: Display::Grid,
+                    grid_template_columns: vec![GridTrack::flex(1.0)],
+                    grid_template_rows: vec![GridTrack::flex(1.0)],
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    ..default()
+                },
+                Role::DockBody,
+            ),
+            (
+                Node {
+                    display: Display::None,
+                    position_type: PositionType::Absolute,
+                    ..default()
+                },
+                Role::DockDrop,
+                Pickable::IGNORE,
+            ),
+            (
+                Node {
+                    display: Display::None,
+                    position_type: PositionType::Absolute,
+                    ..default()
+                },
+                Text::new(""),
+                Role::DockGhost,
+                Pickable::IGNORE,
+            ),
+        ],
     )
 }
 

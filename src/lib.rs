@@ -126,6 +126,8 @@ mod cancel;
 mod choice;
 mod context;
 mod controls;
+mod dock;
+mod dock_layout;
 mod feedback;
 mod list;
 mod menu;
@@ -155,6 +157,8 @@ pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use controls::update_sliders;
+pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
+pub use dock_layout::{DockLayout, DockSkip, DropTarget};
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use menu::{
@@ -163,14 +167,16 @@ pub use menu::{
 };
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
-    NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, SPLIT_KEY_STEP_PX,
-    STICK_PUSH, TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
-    contrast_ratio, fuzzy_score, is_modifier_key, key_name, list_height, meter_fraction,
-    mouse_name, nearest_step, pad_name, page_target, relative_luminance, repeat_steps,
-    scroll_to_reveal, shortcut_conflicts, shortcut_label, slider_fraction, slider_text,
-    snap_line_width, snap_to_row, split_clamp, split_drag, split_mins, tab_step, toast_alpha,
-    toast_grow, toast_hold, toast_life, window_ui_scale,
+    COMFORT_TARGET_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
+    ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST,
+    PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, SPLIT_KEY_STEP_PX, STICK_PUSH,
+    TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
+    contrast_ratio, dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone,
+    fuzzy_score, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, nearest_step,
+    pad_name, page_target, relative_luminance, repeat_steps, scroll_to_reveal, shortcut_conflicts,
+    shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row, split_clamp,
+    split_drag, split_mins, tab_step, toast_alpha, toast_grow, toast_hold, toast_life,
+    window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -202,7 +208,7 @@ pub use text::{
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    binding, button, check_item, choice, command_palette, context_menu, dialog, heading,
+    binding, button, check_item, choice, command_palette, context_menu, dialog, dock, heading,
     interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter, pad_style, panel,
     popover, popover_modal, prompt, prompts, radio_item, screen, separator, skin_preset, slider,
     split, submenu, surface, tab_page, tabs, text_input, text_size, toast, toast_alert, toggle,
@@ -246,6 +252,7 @@ impl Plugin for GooeyStylePlugin {
         app.init_resource::<GooeySkin>()
             .init_resource::<InputDevice>()
             .init_resource::<GooeyFonts>()
+            .init_resource::<PanelRegistry>()
             .init_resource::<ToastSettings>()
             .init_resource::<CommandList>()
             .init_resource::<PaletteHistory>()
@@ -301,6 +308,8 @@ impl Plugin for GooeyStylePlugin {
             .add_observer(feedback::feedback_on_toggle)
             .add_observer(feedback::feedback_on_choice)
             .add_observer(text::text_on_edit)
+            .add_observer(dock::dock_on_select)
+            .add_observer(dock::dock_on_resize)
             .add_systems(
                 Update,
                 (
@@ -313,6 +322,8 @@ impl Plugin for GooeyStylePlugin {
                     update_palette,
                     update_option_rows,
                     update_choices,
+                    dock::update_docks,
+                    dock::update_dock_drag,
                     update_tabs,
                     update_splits,
                     apply_skin,
@@ -369,7 +380,7 @@ impl Plugin for GooeyNavPlugin {
                     drop_pointer_anchors,
                     reveal_popovers,
                     focus_opened_dialogs,
-                    land_tab_focus,
+                    (land_tab_focus, dock::land_dock_focus).chain(),
                     step_tabs.run_if(not_capturing),
                     (
                         focus_menu_bar.run_if(not_capturing),

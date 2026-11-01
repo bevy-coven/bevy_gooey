@@ -1058,6 +1058,156 @@ pub fn split_drag(start: f32, distance: f32, extent: f32, min_first: f32, min_se
     }
 }
 
+/// The least a pane of a [`crate::dock`]'s split may be, in logical pixels: a panel narrower than
+/// this is worse than none, and a drop that made one could not be undone by a drag.
+pub const DOCK_PANE_MIN_PX: f32 = 96.0;
+
+/// How much of a group's width or height, at each end, is an edge for [`dock_zone`]: the outer
+/// quarter is an edge, the middle half is the group.
+pub const DOCK_EDGE_FRACTION: f32 = 0.25;
+
+/// The share of a whole dock a panel dropped on its edge takes ([`dock_drop_rect`]).
+pub const DOCK_EDGE_SHARE: f32 = 0.25;
+
+/// Where a dragged panel of a [`crate::dock`] lands relative to a group: into it, or against one of
+/// its edges (a split of the group on that side).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum DockZone {
+    /// Into the group, as one of its tabs.
+    Into,
+    /// A group of its own to the left.
+    Left,
+    /// A group of its own to the right.
+    Right,
+    /// A group of its own above.
+    Top,
+    /// A group of its own below.
+    Bottom,
+}
+
+/// The zone of a group `width` by `height` that the point `(x, y)`, from the group's top-left, is
+/// in: the middle half of both sides is [`DockZone::Into`], and anywhere else the edge nearest the
+/// point (by its share of the side). A degenerate group is all `Into`.
+///
+/// ```
+/// use bevy_gooey::{DockZone, dock_zone};
+/// assert_eq!(dock_zone(400.0, 200.0, 200.0, 100.0), DockZone::Into);
+/// assert_eq!(dock_zone(400.0, 200.0, 20.0, 100.0), DockZone::Left);
+/// assert_eq!(dock_zone(400.0, 200.0, 200.0, 190.0), DockZone::Bottom);
+/// ```
+pub fn dock_zone(width: f32, height: f32, x: f32, y: f32) -> DockZone {
+    if !(width > 0.0 && height > 0.0 && x.is_finite() && y.is_finite()) {
+        return DockZone::Into;
+    }
+    let (nx, ny) = ((x / width).clamp(0.0, 1.0), (y / height).clamp(0.0, 1.0));
+    let edge = DOCK_EDGE_FRACTION;
+    if (edge..=1.0 - edge).contains(&nx) && (edge..=1.0 - edge).contains(&ny) {
+        return DockZone::Into;
+    }
+    let nearest = [
+        (nx, DockZone::Left),
+        (1.0 - nx, DockZone::Right),
+        (ny, DockZone::Top),
+        (1.0 - ny, DockZone::Bottom),
+    ];
+    nearest
+        .into_iter()
+        .fold((f32::MAX, DockZone::Into), |best, now| {
+            if now.0 < best.0 { now } else { best }
+        })
+        .1
+}
+
+/// The edge of a whole dock `width` by `height` that the point `(x, y)` is within `band` of, the
+/// nearest if two (a corner), or `None` away from every edge (or outside the dock). Dropping on
+/// one splits the whole layout rather than a group.
+///
+/// ```
+/// use bevy_gooey::{DockZone, dock_edge_zone};
+/// assert_eq!(dock_edge_zone(800.0, 400.0, 10.0, 200.0, 24.0), Some(DockZone::Left));
+/// assert_eq!(dock_edge_zone(800.0, 400.0, 400.0, 200.0, 24.0), None);
+/// ```
+pub fn dock_edge_zone(width: f32, height: f32, x: f32, y: f32, band: f32) -> Option<DockZone> {
+    if !(x >= 0.0 && y >= 0.0 && x <= width && y <= height) {
+        return None;
+    }
+    [
+        (x, DockZone::Left),
+        (width - x, DockZone::Right),
+        (y, DockZone::Top),
+        (height - y, DockZone::Bottom),
+    ]
+    .into_iter()
+    .filter(|(distance, _)| *distance < band)
+    .min_by(|a, b| a.0.total_cmp(&b.0))
+    .map(|(_, zone)| zone)
+}
+
+/// The part of a group (or, with `whole`, of the whole dock) `width` by `height` that a panel
+/// dropped in `zone` will take, as `(x, y, width, height)` from the top-left: all of the group for
+/// [`DockZone::Into`], half of it for an edge ([`DOCK_EDGE_SHARE`] of the whole dock). The overlay
+/// that shows the landing is drawn from it, so it is exactly the layout the drop makes.
+pub fn dock_drop_rect(
+    zone: DockZone,
+    width: f32,
+    height: f32,
+    whole: bool,
+) -> (f32, f32, f32, f32) {
+    let share = if whole { DOCK_EDGE_SHARE } else { 0.5 };
+    match zone {
+        DockZone::Into => (0.0, 0.0, width, height),
+        DockZone::Left => (0.0, 0.0, width * share, height),
+        DockZone::Right => (width * (1.0 - share), 0.0, width * share, height),
+        DockZone::Top => (0.0, 0.0, width, height * share),
+        DockZone::Bottom => (0.0, height * (1.0 - share), width, height * share),
+    }
+}
+
+/// The place among a group's tabs a panel dropped at `x` lands in: the number of tabs whose
+/// centre (`centres`, in order, the same units as `x`) is left of it, so `0` is before the first
+/// and `centres.len()` after the last.
+///
+/// ```
+/// assert_eq!(bevy_gooey::dock_tab_slot(&[50.0, 150.0, 250.0], 160.0), 2);
+/// assert_eq!(bevy_gooey::dock_tab_slot(&[], 10.0), 0);
+/// ```
+pub fn dock_tab_slot(centres: &[f32], x: f32) -> usize {
+    centres.iter().filter(|&&centre| centre < x).count()
+}
+
+/// The one of `others` (centres of groups) nearest to `from`, in the direction `toward` names
+/// (an edge zone; [`DockZone::Into`] has no direction), or `None` when none lies that way. A group
+/// off to the side counts against the one straight ahead: distance along the direction, with
+/// twice the sideways distance.
+///
+/// ```
+/// use bevy_gooey::{DockZone, dock_neighbour};
+/// let others = [(100.0, 50.0), (400.0, 60.0), (400.0, 300.0)];
+/// assert_eq!(dock_neighbour((200.0, 50.0), &others, DockZone::Right), Some(1));
+/// assert_eq!(dock_neighbour((200.0, 50.0), &others, DockZone::Top), None);
+/// ```
+pub fn dock_neighbour(from: (f32, f32), others: &[(f32, f32)], toward: DockZone) -> Option<usize> {
+    let (dx, dy) = match toward {
+        DockZone::Into => return None,
+        DockZone::Left => (-1.0, 0.0),
+        DockZone::Right => (1.0, 0.0),
+        DockZone::Top => (0.0, -1.0),
+        DockZone::Bottom => (0.0, 1.0),
+    };
+    others
+        .iter()
+        .enumerate()
+        .filter_map(|(index, &(x, y))| {
+            let (vx, vy) = (x - from.0, y - from.1);
+            let ahead = vx * dx + vy * dy;
+            let aside = vx * dy - vy * dx;
+            (ahead > 1.0).then_some((index, ahead * ahead + 4.0 * aside * aside))
+        })
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        .map(|(index, _)| index)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1671,5 +1821,68 @@ mod tests {
         // A drag by nothing, or by NaN, stays where it is.
         assert_eq!(split_drag(0.4, 0.0, 500.0, 0.0, 0.0), 0.4);
         assert_eq!(split_drag(0.4, f32::NAN, 500.0, 0.0, 0.0), 0.4);
+    }
+
+    #[test]
+    fn a_dock_zone_is_the_middle_half_or_the_nearest_edge() {
+        // The middle half of both sides is the group; the quarter at each end an edge.
+        assert_eq!(dock_zone(400.0, 200.0, 100.0, 50.0), DockZone::Into);
+        assert_eq!(dock_zone(400.0, 200.0, 300.0, 150.0), DockZone::Into);
+        assert_eq!(dock_zone(400.0, 200.0, 99.0, 100.0), DockZone::Left);
+        assert_eq!(dock_zone(400.0, 200.0, 301.0, 100.0), DockZone::Right);
+        assert_eq!(dock_zone(400.0, 200.0, 200.0, 49.0), DockZone::Top);
+        assert_eq!(dock_zone(400.0, 200.0, 200.0, 151.0), DockZone::Bottom);
+        // A corner goes to the edge it is nearer by share of the side: this point is 10% from the
+        // left and 20% from the top.
+        assert_eq!(dock_zone(400.0, 200.0, 40.0, 40.0), DockZone::Left);
+        assert_eq!(dock_zone(400.0, 200.0, 80.0, 10.0), DockZone::Top);
+        // Nothing to hit in a group with no size or a point that is not a number.
+        assert_eq!(dock_zone(0.0, 200.0, 1.0, 1.0), DockZone::Into);
+        assert_eq!(dock_zone(400.0, 200.0, f32::NAN, 1.0), DockZone::Into);
+        // A point past the group still lands in the zone beside it.
+        assert_eq!(dock_zone(400.0, 200.0, -50.0, 100.0), DockZone::Left);
+    }
+
+    #[test]
+    fn the_dock_edge_band_picks_the_nearest_edge_and_nothing_inside() {
+        assert_eq!(
+            dock_edge_zone(800.0, 400.0, 790.0, 200.0, 24.0),
+            Some(DockZone::Right)
+        );
+        assert_eq!(
+            dock_edge_zone(800.0, 400.0, 5.0, 395.0, 24.0),
+            Some(DockZone::Left)
+        );
+        assert_eq!(dock_edge_zone(800.0, 400.0, 30.0, 200.0, 24.0), None);
+        assert_eq!(dock_edge_zone(800.0, 400.0, -1.0, 200.0, 24.0), None);
+    }
+
+    #[test]
+    fn the_drop_rect_is_the_part_the_layout_will_give_the_panel() {
+        assert_eq!(
+            dock_drop_rect(DockZone::Into, 400.0, 200.0, false),
+            (0.0, 0.0, 400.0, 200.0)
+        );
+        assert_eq!(
+            dock_drop_rect(DockZone::Right, 400.0, 200.0, false),
+            (200.0, 0.0, 200.0, 200.0)
+        );
+        assert_eq!(
+            dock_drop_rect(DockZone::Bottom, 400.0, 200.0, true),
+            (0.0, 150.0, 400.0, 50.0)
+        );
+    }
+
+    #[test]
+    fn a_neighbour_is_the_nearest_group_that_way() {
+        let others = [(100.0, 50.0), (400.0, 60.0), (400.0, 300.0), (200.0, 50.0)];
+        let from = (200.0, 50.0);
+        assert_eq!(dock_neighbour(from, &others, DockZone::Left), Some(0));
+        assert_eq!(dock_neighbour(from, &others, DockZone::Right), Some(1));
+        assert_eq!(dock_neighbour(from, &others, DockZone::Bottom), Some(2));
+        // Itself, level with it, is no neighbour; nor is one on the other side.
+        assert_eq!(dock_neighbour(from, &others, DockZone::Top), None);
+        assert_eq!(dock_neighbour(from, &others, DockZone::Into), None);
+        assert_eq!(dock_tab_slot(&[50.0, 150.0], 100.0), 1);
     }
 }
