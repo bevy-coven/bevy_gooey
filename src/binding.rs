@@ -57,6 +57,16 @@ impl Binding {
             Self::Pad(button) => pad_name(&format!("{button:?}"), style),
         }
     }
+
+    /// The device this input is pressed on: the keyboard for a key or a mouse button, a pad for a
+    /// pad button. What a [`crate::binding`] row listens to, and which of a [`crate::Prompt`]'s
+    /// inputs is the player's now.
+    pub fn device(&self) -> InputDevice {
+        match self {
+            Self::Key(_) | Self::Mouse(_) => InputDevice::Keyboard,
+            Self::Pad(_) => InputDevice::Pad,
+        }
+    }
 }
 
 /// What a [`crate::binding`] row has bound: the widget's state. Read it to know the control, or set
@@ -90,23 +100,6 @@ pub struct Capturing;
 /// Removed by [`bind_by_input`] on its first run.
 #[derive(Component)]
 pub struct Armed;
-
-/// Which device a row listens to, from the binding it was spawned with: a keyboard row takes a key
-/// or a mouse button, a pad row a pad button. A press on the other device exits.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum BindingDevice {
-    Keyboard,
-    Pad,
-}
-
-impl From<Binding> for BindingDevice {
-    fn from(value: Binding) -> Self {
-        match value {
-            Binding::Key(_) | Binding::Mouse(_) => Self::Keyboard,
-            Binding::Pad(_) => Self::Pad,
-        }
-    }
-}
 
 /// The transparent node over the whole window while a row waits: the pointer lands on it, so a
 /// click binds the mouse button and cannot press the button under it.
