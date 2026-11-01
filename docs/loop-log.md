@@ -1336,3 +1336,29 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release.** Gate, one script, `CARGO_BUILD_JOBS=2`, on the tree as merged (the merge was a fast-forward of `main`; the later merge only brought in the owner's `.omp/commands/build-loop.md`): fmt, clippy `--all-targets --all-features -D warnings`, `cargo test --all-features`, `cargo check --lib`, the wasm32 check and `cargo doc -D warnings`, green first time (6.5 minutes). `cargo semver-checks check-release`: `enum_variant_added` on `Role` (three variants), a minor bump. **Release: v0.20.0**, https://crates.io/crates/bevy_gooey/0.20.0 (tag `v0.20.0`, release commit `c6c30f6`; `cargo info` resolves it). #15 closed by the merge; commented on #15 (the assumed decisions) and on bevy_grimoire #237 (still needs #20) and #259 (both its Needs are met): move the pin to `c6c30f6`.
 
 **Cleanup.** Removed this pass's `~/g33_bin` (the before and after galleries and the tree example), the baseline worktree `~/g33_base` (plain `git worktree remove`; its build went into the shared `~/target/gooey-loop`), `~/g33_gate.sh`, `/tmp/g33m` (captures, GIF frames, gate log, perf runs) and the two mutation copies `/tmp/nav.rs.bak` and `/tmp/table.rs.bak`. `df -h /home` 195 GB free before the pass, 296 GB after (other jobs freed space; the shared target grew with the tree test binary and is left). **Left for a person, untouched** (earlier passes'): the worktrees `~/g17_base`, `~/g17_parked` and `~/g17s_base` (detached, 1.8 MB each, no `*-target`), and the scripts and binaries `~/g14_bin`, `~/g14_gate.sh`, `~/g14_gate2.sh`, `~/g17_bin`, `~/g17b_bin`, `~/g17s_bin`, `~/g17_build.sh`, `~/g17_gate.sh`, `~/g17s_build.sh`, `~/g17s_gate.sh`, `~/g19_bin`, `~/g70.sh` and `~/gate.sh`.
+
+## Iteration 34 — 2026-11-01 — One test binary (owner's disk job)
+
+**Triage.** `gh issue list`: 17 open, all `grimoire-ui` (#17 to #33), no `bug`. Last audit row (pass 61, v0.20.0): nothing in `missing`. The owner's 2026-11-01 note ("One test binary, not 34") is the first job ahead of the `G-NN` item, so it is this pass's item; the next `G-NN` in line is #17 G-13. Parked work: only `wiggum/parked-pass-23-20261030-162214` (old, ignored). home-still: `catalog_recent` (200) lists psychology, medicine and physics only, no game-UI source, so no `Research: corpus` commit. No visible change, so no capture, no GIF, no research note (the log line is the `demo?` answer).
+
+**What changed** (`b84d039`, merge `f853b36`, release `v0.20.1`):
+- `Cargo.toml`: `autotests = false` and one `[[test]] name = "all"`; `tests/all.rs` declares the 34 other files as `mod <stem>;` and holds `every_test_file_is_a_module` (reads `tests/`, fails on a `.rs` not declared; mutation-checked with a scratch `tests/zz_scratch.rs`, which failed it and was removed). `tests/readme.rs` keeps its inner `#![cfg(feature = "readme-example")]`. No assertion, golden or threshold changed (assumed owner exception, in the commit message).
+- Test count: `cargo test --all-features -- --list`, names sorted with the module prefix stripped: **647 before, 648 after**, the multiset difference is exactly `every_test_file_is_a_module` (49 unit + 465 integration + 134 doctests run).
+- `ci.yml` README step is `--test all readme::`; `AGENTS.md` says how to run one file (`cargo test --all-features --test all <file>::`) and that a new file goes in `all.rs`; CHANGELOG `Changed`.
+- `.omp/commands/build-loop.md` still tells a pass to run `--test <each test file you touched>` and `--test readme`; I may not edit that file, so the next pass must read it as `--test all <file>::`.
+
+**Measured.** Link + build of the tests, `CARGO_BUILD_JOBS=4`: one `all-*` executable of 860 MB (was 34 of 650 to 790 MB, 24 GB per relink); rebuilding after a touch of `tests/readme.rs` took 22 s. Whole gate, one script: fmt 1 s, clippy 11 s, test **119 s** (the integration binary ran 465 tests in 90 s, was about 13 minutes for the gate), check lib 7 s, wasm32 4 s, doc 4 s; green first time, no flaky test from 465 sharing a process. `cargo publish --dry-run` warns `ignoring test all as tests/all.rs is not included in the published package` (the `include` list leaves `tests/` out already) and verifies.
+
+**Release.** `cargo semver-checks`: no change; `Cargo.toml` is a packaged file, so a patch release: **v0.20.1**, https://crates.io/crates/bevy_gooey/0.20.1 (tag `v0.20.1`, release commit after `f853b36`; publish printed "Published").
+
+**Verdict.** Not a visible feature: no verdict, no `mean_ms` (no `src/` change).
+
+### Ranked backlog
+
+1. **#17 G-13 editor fields** (number scrub, vector, colour), then #19 G-15 collapsible sections, #21 G-17 progress and spinner, #22 G-18 toast actions, #20 G-16 searchable select.
+2. The tree's, table's, split's and dock's open items (iterations 30 to 33).
+3. Palette polish; a right-click on a `button` also activates it.
+4. Hover-to-open submenus with a safe triangle.
+5. A tooltip no side can hold at 200% text.
+
+**Cleanup.** This pass made only `/tmp/g34m` (the test lists, the gate script and its log), removed. `df -h /home` 318 GB free before, 294 GB after (the new 860 MB binary and the build; other jobs write here too). **Left for a person, untouched:** the shared target `~/target/gooey-loop` is 398 GB and about 247 GB of it is files over 100 MB in `debug/deps`, mostly the 34 old per-file test executables in several hashes; nothing builds them any more, so `cargo clean -p bevy_gooey` (or removing `debug/deps/<stem>-*` for the 34 stems) frees it, but it is not mine to delete. Also the worktrees `~/g17_base`, `~/g17_parked` and `~/g17s_base` (detached, no `*-target`).
