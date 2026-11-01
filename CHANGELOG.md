@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-01
+
 ### Added
 
 - Split panes (G-09, #13): `split(SplitAxis, first, second)` is two panes with a divider between them, a flex row or column; the panes' content is any bundle each and a `panel()` fills its pane on both axes. `SplitFraction(f32)` (serde, reflected, 0.5 by default, the first pane's share of the room the divider leaves) is the state and `SplitMin { first, second }` (logical px) each pane's least size; both are required components of `Split`, so a game puts its own in the same tuple. A drag of `d` px changes the fraction by `d` over the room at any UI scale, and neither a drag, a key nor a window too small for both minimums takes a pane below its own (the second pane gives way first, then the first); the stored fraction is not rewritten by a small window. A player's change is one `ValueChange<f32>` on the split (`is_final` false while dragging), a value the game sets sends nothing. The divider is a focusable channel `MIN_TARGET_PX` wide on the list rail's colour with a grip (`text_muted`, 3:1 on the rail in every preset; `text` under the pointer or with focus, `accent` while held) and the focus ring, with a resize cursor; the arrows along its axis step it `SPLIT_KEY_STEP_PX` (16 px, held keys repeat), Home and End take the first pane to its smallest and largest, Enter, South and a double click collapse it to its minimum and restore it (WCAG 2.5.7's way that is not a drag), the D-pad steps it (`split_by_pad`, repeating like a slider's), and `InteractionDisabled` fixes the layout. `model::split_mins`, `split_clamp` and `split_drag` are the engine-free maths.
