@@ -138,7 +138,7 @@ impl BitOr for Modifiers {
 /// assert_eq!(palette.label_on(Platform::Mac), "⌃⇧P");
 /// // One "Save" for every platform: Command-S on a mac, Ctrl+S elsewhere.
 /// let save = Shortcut::primary(KeyCode::KeyS);
-/// assert_eq!(save.label_on(Platform::Mac), "⌘S");
+/// assert_eq!(save.label(), if cfg!(target_os = "macos") { "⌘S" } else { "Ctrl+S" });
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect)]
 #[reflect(Debug, PartialEq, Hash, Clone)]
