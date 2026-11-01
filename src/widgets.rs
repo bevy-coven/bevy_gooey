@@ -1264,15 +1264,15 @@ pub fn dialog() -> impl Bundle {
     )
 }
 
-/// A command palette: a modal field over a searchable list of the game's [`CommandList`], each
+/// A command palette: a modal field over a searchable list of the game's [`crate::CommandList`], each
 /// command with its chord and, when it is off, why. Spawn it when the player presses the game's
 /// own chord (Ctrl+Shift+P, say); it takes focus, and everything else is the palette's.
 ///
 /// The player types a few letters of a command ("opn prj" finds "File: Open Project"; recently run
 /// commands come first), Up and Down move the lit row while focus stays in the field, Enter or a
-/// click runs it, Escape or a click outside closes it. Running sends one [`RunCommand`] with the
+/// click runs it, Escape or a click outside closes it. Running sends one [`crate::RunCommand`] with the
 /// command's id and despawns the palette, focus back where it was; a command that is off shows its
-/// reason where its chord would be and runs nothing. See [`PaletteCommand`] for the list's items.
+/// reason where its chord would be and runs nothing. See [`crate::PaletteCommand`] for the list's items.
 ///
 /// ```
 /// # use bevy::prelude::*;
