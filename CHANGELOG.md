@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-01
+
 ### Added
 
 - Docks (G-10, #14): `dock(DockLayout)` is a workbench of tab groups and splits kept as data. `DockLayout` is `Split { axis, fraction, first, second }` or `Group { panels, selected }` (panel ids as `String`s; serde with the `serde` feature, RON round-trips, a file may name only `panels`), with plain-data edits (`panels`, `contains`, `prune`, `moved`). `PanelRegistry` (a resource) maps an id to a title and a function that fills the panel's page, spawned once and then moved, never rebuilt, when the layout changes; `Dock(DockLayout)` on the dock is the state (write one to load or reset it). An unknown or repeated id is left out, a group left empty collapses, and one `DockPanelSkipped` is sent for each. The player picks a tab up (a card with its title follows the pointer and the part of the dock the panel will take is lit before it is let go) and drops it on a group's tab strip (at that place), its middle (as a tab), an outer quarter (a group of its own on that side) or within 24 px of the dock's edge (a quarter of the whole dock); Escape puts it back. Ctrl+Shift and an arrow on a focused tab moves its panel to the nearest group that way or to the dock's edge (WCAG 2.5.7), focus following. Every change is one `DockLayoutChanged { entity, layout }`: a drop, a picked tab, a divider let go. Panes are at least `DOCK_PANE_MIN_PX` (96 px).
