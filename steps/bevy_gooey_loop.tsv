@@ -9723,3 +9723,362 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 60	351	release	model	model		2026-11-01T21:01:30Z	39.4	
 60	352	release	tool	push gate	bash	2026-11-01T21:02:09Z	4.1	cd /home/ladvien/bevy_gooey_loop && git checkout -q -b loop/iter-32-log && cat >> docs/loop-log.md <<'EOF' ## Iteration 32 — 2026-11-01 — Tables (G-12, #16) **T
 60	353	release	model	model		2026-11-01T21:02:13Z	10.6	
+61	1	orient	model	model		2026-11-01T21:04:38Z	4.1	
+61	2	orient	tool	phase mark	bash	2026-11-01T21:04:42Z	1.7	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop; git status --short | head; git branch --list 'wiggum/parked-*'; git log --
+61	3	orient	model	model		2026-11-01T21:04:43Z	3.1	
+61	4	orient	tool	github	bash	2026-11-01T21:04:46Z	0.8	cd /home/ladvien/bevy_gooey_loop; gh issue view 15 --repo bevy-coven/bevy_gooey --comments; git log --oneline -5; git status --short|head; df -h /home | tail -1
+61	5	orient	model	model		2026-11-01T21:04:47Z	1.6	
+61	6	orient	tool	github	bash	2026-11-01T21:04:49Z	0.6	cd /home/ladvien/bevy_gooey_loop; gh issue view 15 --repo bevy-coven/bevy_gooey --json body,comments --jq '.body, (.comments[]|.body)'
+61	7	orient	model	model		2026-11-01T21:04:50Z	3.0	
+61	8	research	tool	phase mark	bash	2026-11-01T21:04:53Z	0.4	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark research; wc -l src/*.rs tests/table.rs examples/table.rs docs/research/table.md d
+61	9	research	model	model		2026-11-01T21:04:53Z	9.3	
+61	10	research	tool	shell	bash	2026-11-01T21:05:02Z	0.0	cd /home/ladvien/bevy_gooey_loop; wc -l src/table.rs src/widgets.rs src/skin.rs src/model.rs tests/table.rs examples/table.rs; grep -n "^pub \|^fn \|^struct \|^
+61	11	research	model	model		2026-11-01T21:05:02Z	15.7	
+61	12	research	tool	read files	read	2026-11-01T21:05:18Z	0.1	src/table.rs:1-240
+61	13	research	model	model		2026-11-01T21:05:18Z	1.3	
+61	14	research	tool	read files	read	2026-11-01T21:05:19Z	0.0	src/table.rs:376-700
+61	15	research	model	model		2026-11-01T21:05:19Z	1.2	
+61	16	research	tool	read files	read	2026-11-01T21:05:21Z	0.0	src/table.rs:950-1423
+61	17	research	model	model		2026-11-01T21:05:21Z	87.3	
+61	18	research	tool	shell	bash	2026-11-01T21:06:48Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "TableSort\|TableCell\|TableRow\b\|Role::TableRow\|TableEdge" src/*.rs | grep -v "^src/table.rs" | head -60; sed -n 70
+61	19	research	model	model		2026-11-01T21:06:48Z	2.9	
+61	20	research	tool	shell	bash	2026-11-01T21:06:51Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 770,953p src/table.rs; sed -n 2300,2340p src/skin.rs; sed -n 2510,2530p src/skin.rs; sed -n 1085,1115p src/skin.rs; sed
+61	21	research	model	model		2026-11-01T21:06:51Z	4.3	
+61	22	research	tool	shell	bash	2026-11-01T21:06:55Z	0.1	cd /home/ladvien/bevy_gooey_loop; sed -n 1315,1420p src/skin.rs; sed -n 1495,1600p src/skin.rs; grep -n "fn menu_ink" -A14 src/skin.rs; grep -n "fn owner_of" -B
+61	23	research	model	model		2026-11-01T21:06:55Z	23.7	
+61	24	research	tool	shell	bash	2026-11-01T21:07:19Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "TableCache\|KeepsSideways\|types_text\|fn takes\|dividers" src/nav.rs src/lib.rs src/skin.rs | head -40
+61	25	research	model	model		2026-11-01T21:07:19Z	1.7	
+61	26	research	tool	shell	bash	2026-11-01T21:07:21Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 36,70p src/nav.rs; sed -n 380,470p src/nav.rs; grep -n "tables" src/nav.rs
+61	27	research	model	model		2026-11-01T21:07:21Z	40.3	
+61	28	research	tool	shell	bash	2026-11-01T21:08:01Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "CHEVRON_INK_SHIFT" -B3 -A12 src/widgets.rs | sed -n 1,90p; grep -n "ChoiceForward" src/skin.rs; grep -n "TABLE_SORT_M
+61	29	research	model	model		2026-11-01T21:08:01Z	3.8	
+61	30	research	tool	shell	bash	2026-11-01T21:08:05Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 676,715p src/widgets.rs; sed -n 2170,2200p src/skin.rs; sed -n 1925,1935p src/skin.rs; sed -n 1700,1730p src/skin.rs; s
+61	31	research	model	model		2026-11-01T21:08:05Z	7.7	
+61	32	research	tool	shell	bash	2026-11-01T21:08:13Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1470,1500p src/skin.rs; grep -n "fn state_of" -A60 src/skin.rs | head -120
+61	33	research	model	model		2026-11-01T21:08:13Z	5.9	
+61	34	research	tool	read files	read	2026-11-01T21:08:19Z	0.2	Fetching APG tree view pattern :: https://www.w3.org/WAI/ARIA/apg/patterns/treeview/
+61	35	research	tool	read files	read	2026-11-01T21:08:19Z	1.0	Fetching Unity TreeView manual :: https://docs.unity3d.com/Manual/UIE-uxml-element-TreeView.html
+61	36	research	model	model		2026-11-01T21:08:20Z	34.7	
+61	37	research	tool	edit files	write	2026-11-01T21:08:54Z	0.0	docs/research/tree.md
+61	38	research	model	model		2026-11-01T21:08:54Z	3.9	
+61	39	build	tool	phase mark	bash	2026-11-01T21:08:58Z	10.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='docs/research/tree.md' s=open(p).read() s=s.replace("so a child's label starts under its parent's label's f
+61	40	build	model	model		2026-11-01T21:09:08Z	7.1	
+61	41	build	tool	shell	bash	2026-11-01T21:09:15Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "table_anchor\|TABLE_LEAST_COLUMN\|mod tests\|pub fn table_step" src/model.rs | head; sed -n 1,40p src/model.rs | head
+61	42	build	model	model		2026-11-01T21:09:15Z	2.2	
+61	43	build	tool	read files	read	2026-11-01T21:09:18Z	0.0	src/model.rs:1290:1400
+61	44	build	model	model		2026-11-01T21:09:18Z	1.8	
+61	45	build	tool	read files	read	2026-11-01T21:09:19Z	0.0	src/model.rs:1290-1400
+61	46	build	model	model		2026-11-01T21:09:19Z	31.1	
+61	47	build	tool	edit files	edit	2026-11-01T21:09:51Z	0.0	Adding tree maths to model :: [src/model.rs#9102] PUT >1382: + +/// How long a pause ends a typed prefix, in seconds: characters typed within this long of each +/// other make one prefix (th
+61	48	build	model	model		2026-11-01T21:09:51Z	65.2	
+61	49	build	tool	shell	bash	2026-11-01T21:10:56Z	0.1	cd /home/ladvien/bevy_gooey_loop; sed -n 285,300p src/lib.rs; sed -n 325,350p src/lib.rs; sed -n 385,440p src/lib.rs; sed -n 195,230p src/lib.rs; grep -n "pub f
+61	50	build	model	model		2026-11-01T21:10:56Z	14.9	
+61	51	build	tool	read files	read	2026-11-01T21:11:11Z	0.0	src/table.rs:764-800
+61	52	build	model	model		2026-11-01T21:11:11Z	6.1	
+61	53	build	tool	edit files	edit	2026-11-01T21:11:17Z	0.0	Table bundle: outlined variant has no header :: [src/table.rs#FA92] PUT 766.=777: +/// The bundle [`crate::table`] returns; `outlined` is a [`crate::tree`]'s: no header, the rows' +/// first column indented a
+61	54	build	model	model		2026-11-01T21:11:17Z	4.7	
+61	55	build	tool	read files	read	2026-11-01T21:11:22Z	0.0	src/table.rs:1010-1100
+61	56	build	model	model		2026-11-01T21:11:22Z	6.9	
+61	57	build	tool	edit files	edit	2026-11-01T21:11:29Z	0.0	Tree-aware pruning of selection and cursor :: [src/table.rs#A3C7] PUT 1065.=1080: + // A selected row that is gone is no longer selected (a tree's node under a + // closed parent is not gone); a cursor row 
+61	58	build	tool	read files	read	2026-11-01T21:11:29Z	0.0	src/table.rs:1114-1230
+61	59	build	model	model		2026-11-01T21:11:29Z	15.7	
+61	60	build	tool	edit files	edit	2026-11-01T21:11:44Z	0.0	Table pool rows: bind and spawn a tree's lead :: [src/table.rs#83F1] PUT >1031: + let tree = table.source::<Tree>(); + let indent = tree_indent(text_px); CUT 1068.=1068 PUT >1165: + if (moved || resized) + && 
+61	61	build	model	model		2026-11-01T21:11:44Z	6.9	
+61	62	build	tool	read files	read	2026-11-01T21:11:51Z	0.0	src/table.rs:436-500
+61	63	build	model	model		2026-11-01T21:11:51Z	5.8	
+61	64	build	tool	edit files	edit	2026-11-01T21:11:57Z	0.0	Expose table internals to the tree module :: [src/table.rs#E783] PUT 441.=441: + pub(crate) keys: Vec<u64>, PUT 455.=455: + pub(crate) fn index_of(&self, key: Option<u64>) -> Option<usize> { PUT 475.=475: 
+61	65	build	tool	read files	read	2026-11-01T21:11:57Z	0.0	src/table.rs:426-434
+61	66	build	model	model		2026-11-01T21:11:57Z	2.3	
+61	67	build	tool	edit files	edit	2026-11-01T21:11:59Z	0.0	PoolRow lead field and imports :: [src/table.rs#5553] PUT 430.=430: + cells: Vec<(Entity, Entity)>, + /// A tree's chevron and indent, in the first cell. + lead: Option<Lead>,
+61	68	build	tool	read files	read	2026-11-01T21:11:59Z	0.0	src/table.rs:34-44
+61	69	build	model	model		2026-11-01T21:11:59Z	2.9	
+61	70	build	tool	edit files	edit	2026-11-01T21:12:02Z	0.0	Imports for the tree module :: [src/table.rs#D9DE] PUT 36.=42: +use crate::model::{ + MIN_TARGET_PX, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, SPLIT_KEY_STEP_PX, TABLE_LEAST_COLUMN, + TableStep, col
+61	71	build	model	model		2026-11-01T21:12:02Z	61.7	
+61	72	build	tool	read files	read	2026-11-01T21:13:04Z	0.0	src/table.rs:346-376
+61	73	build	tool	shell	bash	2026-11-01T21:13:04Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "struct KeyboardInput" -A30 ~/.cargo/registry/src/index.crates.io-*/bevy_input-0.20.0/src/keyboard.rs | head -50; grep
+61	74	build	model	model		2026-11-01T21:13:04Z	3.9	
+61	75	build	tool	search	grep	2026-11-01T21:13:08Z	0.0	Locating anchor field :: src/table.rs
+61	76	build	model	model		2026-11-01T21:13:08Z	1.6	
+61	77	build	tool	edit files	edit	2026-11-01T21:13:10Z	0.0	Expose anchor :: [src/table.rs#7B52] PUT 449.=449: + pub(crate) anchor: Option<u64>,
+61	78	build	model	model		2026-11-01T21:13:10Z	95.2	
+61	79	build	tool	edit files	write	2026-11-01T21:14:45Z	0.0	src/tree.rs
+61	80	build	model	model		2026-11-01T21:14:45Z	11.7	
+61	81	build	tool	shell	bash	2026-11-01T21:14:57Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "^use crate::\|table_bundle" src/widgets.rs | head -30; grep -n "^mod \|^pub mod " src/lib.rs | head -50
+61	82	build	model	model		2026-11-01T21:14:57Z	1.6	
+61	83	build	tool	edit files	edit	2026-11-01T21:14:58Z	0.0	Add tree widget function :: [src/widgets.rs#NONE]
+61	84	build	model	model		2026-11-01T21:14:58Z	1.1	
+61	85	build	tool	read files	read	2026-11-01T21:14:59Z	0.0	src/widgets.rs:1126-1133
+61	86	build	model	model		2026-11-01T21:14:59Z	10.0	
+61	87	build	tool	edit files	edit	2026-11-01T21:15:09Z	0.0	Add tree() and fix table() :: [src/widgets.rs#F3BB] PUT 56.=56: +use crate::table::{Column, RowSource, table_bundle}; +use crate::tree::{Tree, TreeNode, TreeView}; PUT 1130.=1131: + table_bu
+61	88	build	model	model		2026-11-01T21:15:09Z	8.7	
+61	89	build	tool	edit files	edit	2026-11-01T21:15:18Z	0.0	Add tree() and fix table() :: [src/widgets.rs#F3BB] PUT 56.=56: +use crate::table::{Column, RowSource, table_bundle}; +use crate::tree::{Tree, TreeNode, TreeView}; PUT 1130.=1131: + table_bu
+61	90	build	model	model		2026-11-01T21:15:18Z	6.9	
+61	91	build	tool	shell	bash	2026-11-01T21:15:25Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 168,190p src/lib.rs
+61	92	build	model	model		2026-11-01T21:15:25Z	6.1	
+61	93	build	tool	git	bash	2026-11-01T21:15:31Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='src/lib.rs' s=open(p).read() s=s.replace(" TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TableStep, c
+61	94	build	model	model		2026-11-01T21:15:31Z	5.8	
+61	95	build	tool	shell	bash	2026-11-01T21:15:37Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "TableCellText\|TableSortUp" src/skin.rs
+61	96	build	model	model		2026-11-01T21:15:37Z	2.2	
+61	97	build	tool	read files	read	2026-11-01T21:15:39Z	0.0	src/skin.rs:1108-1113
+61	98	build	tool	read files	read	2026-11-01T21:15:39Z	0.0	src/skin.rs:1842-1846
+61	99	build	tool	read files	read	2026-11-01T21:15:39Z	0.0	src/skin.rs:1914-1916
+61	100	build	tool	read files	read	2026-11-01T21:15:39Z	0.0	src/skin.rs:2315-2345
+61	101	build	model	model		2026-11-01T21:15:39Z	9.5	
+61	102	build	tool	edit files	edit	2026-11-01T21:15:49Z	0.0	Skin: tree roles, styling :: [src/skin.rs#17A8] PUT >1111: + /// A [`crate::tree`] row's indent and click target, a row high and [`crate::tree_indent`] + /// wide; not drawn. + TreeTwisty, 
+61	103	build	model	model		2026-11-01T21:15:49Z	6.2	
+61	104	build	tool	edit files	edit	2026-11-01T21:15:55Z	0.0	Chevrons have no fill :: [src/skin.rs#5929] PUT 1852.=1852: + | Role::TreeTwisty + | Role::TreeClosed + | Role::TreeOpen
+61	105	build	tool	shell	bash	2026-11-01T21:15:55Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "^use crate::model" -A8 src/skin.rs | head -20; grep -n "tree_indent\|text_px" src/skin.rs | sed -n 1,8p
+61	106	build	model	model		2026-11-01T21:15:55Z	4.0	
+61	107	build	tool	edit files	edit	2026-11-01T21:15:59Z	0.0	skin import tree_indent :: [src/skin.rs#3638] PUT 17.=20: +use crate::model::{ + COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST, + TEXT_CONTRAST, c
+61	108	build	tool	edit files	edit	2026-11-01T21:15:59Z	0.0	nav keeps sideways for trees :: [src/nav.rs#NONE]
+61	109	build	model	model		2026-11-01T21:15:59Z	2.7	
+61	110	build	tool	edit files	edit	2026-11-01T21:16:02Z	0.0	skin import tree_indent (retry) :: [src/skin.rs#3638] PUT 17.=20: +use crate::model::{ + COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST, + TEXT_CONTRAST, c
+61	111	build	tool	read files	read	2026-11-01T21:16:02Z	0.0	src/nav.rs:30-48
+61	112	build	model	model		2026-11-01T21:16:02Z	4.4	
+61	113	build	tool	edit files	edit	2026-11-01T21:16:06Z	0.0	Trees keep Left and Right :: [src/nav.rs#8A1E] PUT 34.=34: +use crate::tabs::{TabsCount, TabsValue}; +use crate::tree::TreeView; PUT 42.=45: +/// The widgets whose Left and Right never also
+61	114	build	tool	cargo build	bash	2026-11-01T21:16:06Z	6.0	cd /home/ladvien/bevy_gooey_loop; cargo fmt && CARGO_BUILD_JOBS=2 cargo check --lib --all-features 2>&1 | tail -60
+61	115	build	model	model		2026-11-01T21:16:12Z	5.1	
+61	116	build	tool	shell	bash	2026-11-01T21:16:17Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "pub(crate) struct TreeView" -B4 src/tree.rs
+61	117	build	model	model		2026-11-01T21:16:17Z	1.4	
+61	118	build	tool	edit files	edit	2026-11-01T21:16:19Z	0.0	TreeView pub :: [src/tree.rs#NONE]
+61	119	build	model	model		2026-11-01T21:16:19Z	1.6	
+61	120	build	tool	edit files	edit	2026-11-01T21:16:20Z	0.0	TreeView pub :: [src/tree.rs#17ED] PUT 349.=349: +pub struct TreeView;
+61	121	build	model	model		2026-11-01T21:16:20Z	3.3	
+61	122	build	tool	read files	read	2026-11-01T21:16:24Z	0.0	tests/table.rs:1-260
+61	123	build	model	model		2026-11-01T21:16:24Z	3.9	
+61	124	build	tool	shell	bash	2026-11-01T21:16:28Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "^fn \|^#\[test\]" tests/table.rs | sed -n 40,120p; grep -n "fn nothing_is_written_while_idle" -A30 tests/table.rs; gr
+61	125	build	model	model		2026-11-01T21:16:28Z	1.5	
+61	126	build	tool	read files	read	2026-11-01T21:16:29Z	0.0	tests/table.rs:264-310
+61	127	build	tool	read files	read	2026-11-01T21:16:29Z	0.0	tests/table.rs:856-1004
+61	128	build	model	model		2026-11-01T21:16:29Z	150.5	
+61	129	build	tool	edit files	write	2026-11-01T21:19:00Z	0.0	tests/tree.rs
+61	130	prove	tool	phase mark	bash	2026-11-01T21:19:00Z	27.3	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark prove; cargo fmt; CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test
+61	131	prove	model	model		2026-11-01T21:19:27Z	3.5	
+61	132	prove	tool	shell	bash	2026-11-01T21:19:30Z	0.1	cd /home/ladvien/bevy_gooey_loop; wc -l tests/tree.rs; sed -n 833p tests/tree.rs; sed -n 873p tests/tree.rs
+61	133	prove	model	model		2026-11-01T21:19:31Z	2.9	
+61	134	prove	tool	edit files	edit	2026-11-01T21:19:33Z	0.0	Fix borrow errors in tree test :: [tests/tree.rs#EFC5] PUT 833.=833: + let view = viewport(&mut app); + let view_top = rect(&app, view).min.y; PUT 873.=873: + let row = row_of(app, key); + let t
+61	135	prove	model	model		2026-11-01T21:19:33Z	3.1	
+61	136	prove	tool	edit files	edit	2026-11-01T21:19:37Z	0.1	Fix borrow errors in tree test :: [tests/tree.rs#D2C4] PUT 833.=833: + let view = viewport(&mut app); + let view_top = rect(&app, view).min.y; PUT 873.=873: + let row = row_of(app, key); + let t
+61	137	prove	tool	cargo test	bash	2026-11-01T21:19:37Z	17.4	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test tree 2>&1 | tail -80
+61	138	prove	model	model		2026-11-01T21:19:54Z	11.0	
+61	139	prove	tool	shell	bash	2026-11-01T21:20:05Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "align_items: AlignItems::Center,\n flex_shrink" src/tree.rs; grep -n "justify_content: JustifyContent::Center" src/tr
+61	140	prove	model	model		2026-11-01T21:20:05Z	6.2	
+61	141	prove	tool	edit files	edit	2026-11-01T21:20:11Z	0.0	Type-ahead: repeated letter cycles :: [src/tree.rs#BDAD] PUT 703.=713: + prefix + .0 + .extend(characters.chars().flat_map(char::to_lowercase)); + // The same letter again is "the next one": a prefi
+61	142	prove	tool	edit files	edit	2026-11-01T21:20:11Z	0.0	Fix test expectations for heirs :: [tests/tree.rs#23D4] PUT 797.=800: + // An only child: the parent. + select(&mut app, &[5]); PUT 801.=801: + edit(&mut app, |t| { + t.remove(5); + }); PUT 815.=
+61	143	prove	model	model		2026-11-01T21:20:11Z	5.0	
+61	144	prove	tool	edit files	edit	2026-11-01T21:20:16Z	0.0	Fix test expectations for heirs :: [tests/tree.rs#23D4] CUT 797.=800 PUT 815.=815: + assert_eq!(selected(&mut app), vec![6], "Lights' next sibling: Cube");
+61	145	prove	tool	cargo test	bash	2026-11-01T21:20:16Z	17.5	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test tree 2>&1 | grep -v "^ *[0-9]*:\|^ *at " | tail -4
+61	146	prove	model	model		2026-11-01T21:20:34Z	5.0	
+61	147	prove	tool	shell	bash	2026-11-01T21:20:39Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "a row high\|size.height()" tests/tree.rs; grep -n "Node { ..default() }" tests/tree.rs
+61	148	prove	model	model		2026-11-01T21:20:39Z	3.5	
+61	149	prove	tool	edit files	edit	2026-11-01T21:20:42Z	0.0	Test fixes :: [tests/tree.rs#B618] PUT 650.=650: + button("Beside"), PUT 885.=885: + // The ring is inside the row's box, so its inside is the pitch less two lines. + assert!
+61	150	prove	tool	cargo test	bash	2026-11-01T21:20:42Z	5.7	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test tree 2>&1 | grep -v "^ *[0-9]*:\|^ *at \|INFO\|WAR
+61	151	prove	model	model		2026-11-01T21:20:48Z	2.5	
+61	152	prove	tool	read files	read	2026-11-01T21:20:51Z	0.0	tests/tree.rs:648-652
+61	153	prove	tool	read files	read	2026-11-01T21:20:51Z	0.0	tests/tree.rs:884-886
+61	154	prove	model	model		2026-11-01T21:20:51Z	3.4	
+61	155	prove	tool	edit files	edit	2026-11-01T21:20:54Z	0.0	Test fixes :: [tests/tree.rs#B618] PUT 650.=650: + button("Beside"), PUT 885.=885: + // The ring is inside the row's box, so its inside is the pitch less two lines. + assert!
+61	156	prove	tool	cargo test	bash	2026-11-01T21:20:54Z	12.7	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test tree 2>&1 | grep -v "^ *[0-9]*:\|^ *at \|INFO\|WAR
+61	157	prove	model	model		2026-11-01T21:21:07Z	4.9	
+61	158	prove	tool	cargo test	bash	2026-11-01T21:21:12Z	18.8	cd /home/ladvien/bevy_gooey_loop; cp src/nav.rs /tmp/nav.rs.bak; cp src/table.rs /tmp/table.rs.bak; sed -i 's/With<Tab>, With<TreeView>/With<Tab>/' src/nav.rs; 
+61	159	prove	model	model		2026-11-01T21:21:30Z	5.3	
+61	160	prove	tool	read files	read	2026-11-01T21:21:36Z	0.0	examples/table.rs:1-200
+61	161	prove	model	model		2026-11-01T21:21:36Z	1.2	
+61	162	prove	tool	read files	read	2026-11-01T21:21:37Z	0.0	examples/table.rs:204-420
+61	163	prove	model	model		2026-11-01T21:21:37Z	49.3	
+61	164	prove	tool	edit files	write	2026-11-01T21:22:26Z	0.4	examples/tree.rs
+61	165	prove	tool	cargo clippy	bash	2026-11-01T21:22:27Z	18.8	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -40
+61	166	prove	model	model		2026-11-01T21:22:45Z	2.9	
+61	167	prove	tool	edit files	edit	2026-11-01T21:22:48Z	0.0	clippy useless format :: [examples/tree.rs#NONE]
+61	168	prove	model	model		2026-11-01T21:22:48Z	1.2	
+61	169	prove	tool	read files	read	2026-11-01T21:22:49Z	0.0	examples/tree.rs:108-114
+61	170	prove	model	model		2026-11-01T21:22:50Z	2.6	
+61	171	prove	tool	edit files	edit	2026-11-01T21:22:52Z	0.0	clippy useless format :: [examples/tree.rs#12B5] PUT 109.=111: + PROPS.iter().map(|prop| TreeNode::new(next(), *prop)),
+61	172	prove	tool	cargo clippy	bash	2026-11-01T21:22:52Z	8.6	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -40
+61	173	prove	model	model		2026-11-01T21:23:01Z	2.7	
+61	174	prove	tool	read files	read	2026-11-01T21:23:04Z	0.0	tests/tree.rs:185-196
+61	175	prove	model	model		2026-11-01T21:23:04Z	6.9	
+61	176	prove	tool	edit files	edit	2026-11-01T21:23:10Z	0.0	Add label test :: [tests/tree.rs#4B00] PUT >$: + +#[test] +fn each_row_shows_the_label_of_its_node_and_follows_the_tree() { + let mut app = app(); + spawn_scene(&mut app); + let 
+61	177	prove	tool	cargo test	bash	2026-11-01T21:23:10Z	28.3	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -30; CARGO_BUILD_JOBS=2 car
+61	178	prove	model	model		2026-11-01T21:23:39Z	5.3	
+61	179	prove	tool	shell	bash	2026-11-01T21:23:44Z	0.2	cd /home/ladvien/bevy_gooey_loop; git add src tests examples && git commit -qm "Add tree: nodes that open and close in the table's pool (Fixes #15 once document
+61	180	prove	model	model		2026-11-01T21:23:44Z	5.7	
+61	181	prove	tool	cargo build	bash	2026-11-01T21:23:50Z	0.0	[launched bg_1] cd /home/ladvien/g33_base && CARGO_BUILD_JOBS=2 cargo build --release --example gallery 2>&1 | tail -2 && cp $CARGO_TARGET_DIR/release/examples/gallery ~/g33_bi
+61	182	prove	model	model		2026-11-01T21:23:50Z	2.9	
+61	183	prove	tool	shell	bash	2026-11-01T21:23:53Z	0.1	cd /home/ladvien/bevy_gooey_loop; cat docs/guide/tables.md; grep -n -i "table" README.md; sed -n 1,30p CHANGELOG.md; grep -n -i "table" docs/media/README.md doc
+61	184	prove	model	model		2026-11-01T21:23:53Z	5.1	
+61	185	prove	tool	shell	bash	2026-11-01T21:23:58Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 118,124p README.md; sed -n 198,210p README.md; sed -n 30,36p docs/guide/README.md; sed -n 70,75p docs/media/README.md |
+61	186	prove	model	model		2026-11-01T21:23:58Z	7.6	
+61	187	prove	tool	shell	bash	2026-11-01T21:24:06Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "table\|Table" docs/guide/widgets.md docs/guide/navigation.md docs/guide/host-api.md | cut -c1-220 | head -20; grep -n
+61	188	prove	model	model		2026-11-01T21:24:06Z	3.0	
+61	189	prove	tool	shell	bash	2026-11-01T21:24:09Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "dock\|split(" docs/guide/widgets.md | cut -c1-200; sed -n 76,90p docs/guide/host-api.md | cut -c1-250; sed -n 126,132
+61	190	prove	model	model		2026-11-01T21:24:09Z	4.0	
+61	191	prove	tool	read files	read	2026-11-01T21:24:13Z	0.0	docs/guide/widgets.md:26-29
+61	192	prove	tool	read files	read	2026-11-01T21:24:13Z	0.0	docs/guide/host-api.md:80-85
+61	193	prove	tool	read files	read	2026-11-01T21:24:13Z	0.0	docs/guide/host-api.md:130-131
+61	194	prove	tool	read files	read	2026-11-01T21:24:13Z	0.0	docs/guide/host-api.md:147-148
+61	195	prove	tool	read files	read	2026-11-01T21:24:13Z	0.0	docs/guide/host-api.md:171-172
+61	196	prove	model	model		2026-11-01T21:24:13Z	22.3	
+61	197	prove	tool	edit files	edit	2026-11-01T21:24:35Z	0.0	Host API and widget docs :: [docs/guide/widgets.md#FB56] PUT >26: +| `tree(nodes)` | nodes that open and close, ten thousand in a dozen entities: the table's rows in one column, indented, 
+61	198	prove	tool	edit files	write	2026-11-01T21:24:35Z	0.0	docs/guide/trees.md
+61	199	prove	model	model		2026-11-01T21:24:35Z	5.4	
+61	200	prove	tool	read files	read	2026-11-01T21:24:41Z	0.0	CHANGELOG.md:1-4
+61	201	prove	tool	read files	read	2026-11-01T21:24:41Z	0.0	docs/guide/README.md:33-35
+61	202	prove	model	model		2026-11-01T21:24:41Z	9.5	
+61	203	prove	tool	edit files	edit	2026-11-01T21:24:50Z	0.1	Changelog and guide index :: [CHANGELOG.md#BC72] PUT >3: + +### Added + +- Trees (G-11, #15): `tree(nodes)` is nodes that open and close, virtualized like the table it is built on (10,110 n
+61	204	prove	tool	shell	bash	2026-11-01T21:24:50Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "^- \`src/table.rs\`\|^- \`tests/table.rs\`\|^- \`src/split.rs\`" AGENTS.md | cut -c1-80
+61	205	prove	model	model		2026-11-01T21:24:50Z	5.0	
+61	206	prove	tool	read files	read	2026-11-01T21:24:55Z	0.0	AGENTS.md:37-38
+61	207	prove	tool	read files	read	2026-11-01T21:24:55Z	0.0	AGENTS.md:67-68
+61	208	prove	model	model		2026-11-01T21:24:55Z	14.3	
+61	209	prove	tool	edit files	edit	2026-11-01T21:25:10Z	0.0	AGENTS layout notes for the tree :: [AGENTS.md#8438] PUT >37: +- `src/tree.rs` — a tree is a `Table` with no header whose source is `Tree` (`tree(nodes)` in `src/widgets.rs` = `table_bundle(.., ou
+61	210	prove	model	model		2026-11-01T21:25:10Z	13.9	
+61	211	prove	tool	edit files	edit	2026-11-01T21:25:24Z	0.1	AGENTS layout notes for the tree :: [AGENTS.md#8438] PUT <41: +- `src/tree.rs` — a tree is a `Table` with no header whose source is `Tree` (`tree(nodes)` in `src/widgets.rs` = `table_bundle(.., ou
+61	212	prove	model	model		2026-11-01T21:25:24Z	2.8	
+61	213	prove	tool	shell	bash	2026-11-01T21:25:26Z	0.1	ls -la ~/g33_bin; cat /proc/loadavg
+61	214	prove	model	model		2026-11-01T21:25:26Z	4.7	
+61	215	prove	tool	read files	read	2026-11-01T21:25:31Z	0.0	README.md:120-123
+61	216	prove	tool	read files	read	2026-11-01T21:25:31Z	0.0	README.md:204-206
+61	217	prove	model	model		2026-11-01T21:25:31Z	5.2	
+61	218	prove	tool	edit files	edit	2026-11-01T21:25:36Z	0.0	README bullet mentions tree :: [README.md#F41C] PUT 120.=123: +- **Scroll a list, show a table or a tree, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so
+61	219	prove	tool	wait: build	wait	2026-11-01T21:25:36Z	101.4	Waiting for release build
+61	220	prove	model	model		2026-11-01T21:27:18Z	5.6	
+61	221	prove	tool	shell	bash	2026-11-01T21:27:24Z	35.4	cd /tmp/g33m; T=~/g33_bin/tree; mkdir -p after; GOOEY_FRAMES=60 GOOEY_SHOT=after/t_dark.png timeout 100 $T 2>&1 | grep gooey: GOOEY_FRAMES=130 GOOEY_KEYS="tab,d
+61	222	prove	model	model		2026-11-01T21:27:59Z	1.5	
+61	223	prove	tool	read files	read	2026-11-01T21:28:00Z	0.0	/tmp/g33m/after/t_keys.png
+61	224	prove	model	model		2026-11-01T21:28:00Z	7.2	
+61	225	prove	tool	shell	bash	2026-11-01T21:28:08Z	0.2	cd /tmp/g33m/after; magick t_keys.png -crop 300x120+360+160 +repage -filter point -resize 400% z1.png; magick t_x2.png -crop 1000x500+500+260 +repage z2.png; ls
+61	226	prove	tool	read files	read	2026-11-01T21:28:08Z	0.2	/tmp/g33m/after/z1.png
+61	227	prove	model	model		2026-11-01T21:28:08Z	1.4	
+61	228	prove	tool	read files	read	2026-11-01T21:28:09Z	0.0	/tmp/g33m/after/z1.png
+61	229	prove	model	model		2026-11-01T21:28:09Z	12.0	
+61	230	prove	tool	read files	read	2026-11-01T21:28:21Z	0.0	/tmp/g33m/after/z2.png
+61	231	prove	model	model		2026-11-01T21:28:21Z	5.4	
+61	232	prove	tool	read files	read	2026-11-01T21:28:27Z	0.2	/tmp/g33m/after/t_x2.png
+61	233	prove	model	model		2026-11-01T21:28:27Z	4.4	
+61	234	prove	tool	search	grep	2026-11-01T21:28:31Z	0.0	Locate tree chevron styling :: src/skin.rs
+61	235	prove	model	model		2026-11-01T21:28:31Z	3.8	
+61	236	prove	tool	edit files	edit	2026-11-01T21:28:35Z	0.0	Full-size tree chevron :: [src/skin.rs#EE24] PUT 2367.=2367: + let size = chevron;
+61	237	prove	tool	cargo build	bash	2026-11-01T21:28:35Z	17.8	cd /home/ladvien/bevy_gooey_loop; CARGO_BUILD_JOBS=2 cargo build --release --example tree 2>&1 | tail -1 && cp $CARGO_TARGET_DIR/release/examples/tree ~/g33_bin
+61	238	prove	model	model		2026-11-01T21:28:53Z	1.5	
+61	239	prove	tool	read files	read	2026-11-01T21:28:54Z	0.0	/tmp/g33m/after/z1.png
+61	240	prove	model	model		2026-11-01T21:28:54Z	7.0	
+61	241	prove	tool	shell	bash	2026-11-01T21:29:01Z	19.4	cd /tmp/g33m; T=~/g33_bin/tree; for s in dark parchment high_contrast tool; do GOOEY_FRAMES=140 GOOEY_SKIN=$s GOOEY_KEYS="tab,down,down,left,down,down" GOOEY_SH
+61	242	prove	tool	read files	read	2026-11-01T21:29:01Z	19.4	/tmp/g33m/after/grid.png
+61	243	prove	model	model		2026-11-01T21:29:21Z	2.7	
+61	244	prove	tool	shell	bash	2026-11-01T21:29:23Z	0.4	cd /tmp/g33m/after; for f in c_dark c_parchment c_high_contrast c_tool; do magick $f.png -crop 640x560+320+80 +repage ${f}_crop.png; done; magick c_dark_crop.pn
+61	245	prove	tool	read files	read	2026-11-01T21:29:23Z	0.4	/tmp/g33m/after/grid.png
+61	246	prove	model	model		2026-11-01T21:29:24Z	21.1	
+61	247	prove	tool	clip record/render	bash	2026-11-01T21:29:45Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1,12p docs/media/README.md | cut -c1-400; grep -n "table.gif" docs/media/README.md | cut -c1-1500 | tail -1; grep -n "g
+61	248	prove	model	model		2026-11-01T21:29:45Z	2.0	
+61	249	prove	tool	clip record/render	bash	2026-11-01T21:29:47Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 13,20p docs/media/README.md | cut -c1-900; ls ~/.local/share/wiggum/ | head; which gifski ffmpeg
+61	250	prove	model	model		2026-11-01T21:29:47Z	2.7	
+61	251	prove	tool	search	grep	2026-11-01T21:29:50Z	0.0	Locate type stage :: examples/tree.rs
+61	252	prove	model	model		2026-11-01T21:29:50Z	1.3	
+61	253	prove	tool	read files	read	2026-11-01T21:29:51Z	0.0	examples/tree.rs:388-406
+61	254	prove	model	model		2026-11-01T21:29:51Z	2.5	
+61	255	prove	tool	edit files	edit	2026-11-01T21:29:53Z	0.0	Faster typing in the example :: [examples/tree.rs#FBCF] PUT 389.=397: + // A character every two frames: a press and, a frame later, its release. + let at = (phase / 2) as usize; + if let Some
+61	256	prove	model	model		2026-11-01T21:29:54Z	5.8	
+61	257	prove	tool	cargo build	bash	2026-11-01T21:29:59Z	15.5	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 cargo build --release --example tree 2>&1 | tail -1 && cp $CARGO_TARGET_DIR/release/examples/tre
+61	258	prove	model	model		2026-11-01T21:30:15Z	3.6	
+61	259	prove	tool	shell	bash	2026-11-01T21:30:18Z	0.6	cd /tmp/g33m/gif; ls | head -3; montage $(ls f_*.png | awk 'NR%9==1') -crop 600x560+340+85 +repage -tile 5x -geometry 380x355+2+2 ../sheet.png 2>&1 | tail -1; l
+61	260	prove	tool	read files	read	2026-11-01T21:30:18Z	0.6	/tmp/g33m/sheet.png
+61	261	prove	model	model		2026-11-01T21:30:19Z	2.1	
+61	262	prove	tool	shell	bash	2026-11-01T21:30:21Z	0.8	cd /tmp/g33m/gif; ls ../; for f in $(ls f_*.png | awk 'NR%9==1'); do magick $f -crop 600x560+340+85 +repage -resize 380x ../s_$f; done; montage ../s_f_*.png -ti
+61	263	prove	model	model		2026-11-01T21:30:22Z	1.2	
+61	264	prove	tool	read files	read	2026-11-01T21:30:23Z	0.1	/tmp/g33m/sheet.png
+61	265	prove	model	model		2026-11-01T21:30:23Z	5.7	
+61	266	prove	tool	shell	bash	2026-11-01T21:30:29Z	8.9	rm -rf /tmp/g33m/gif /tmp/g33m/s_f_* && mkdir -p /tmp/g33m/gif && cd /tmp/g33m && GOOEY_FRAMES=290 GOOEY_KEY_EVERY=16 GOOEY_KEYS="tab;down;down;right;right;down
+61	267	prove	tool	read files	read	2026-11-01T21:30:29Z	8.9	/tmp/g33m/sheet.png
+61	268	prove	model	model		2026-11-01T21:30:38Z	11.8	
+61	269	prove	tool	shell	bash	2026-11-01T21:30:49Z	0.2	cd /tmp/g33m; ls s_f_* | wc -l; rm -f sheet.png; montage s_f_*.png -tile 6x -geometry +2+2 sheet2.png 2>&1 | head -3; ls -la sheet2.png
+61	270	prove	tool	read files	read	2026-11-01T21:30:49Z	0.2	/tmp/g33m/sheet2.png
+61	271	prove	model	model		2026-11-01T21:30:50Z	2.8	
+61	272	prove	tool	read files	read	2026-11-01T21:30:52Z	0.2	/tmp/g33m/sheet2.png
+61	273	prove	model	model		2026-11-01T21:30:53Z	15.0	
+61	274	prove	tool	shell	bash	2026-11-01T21:31:08Z	0.9	cd /tmp/g33m/gif; rm -f ../s2_*; for i in $(seq 97 3 131); do f=$(printf "f_%04d.png" $i); magick $f -crop 600x330+340+85 +repage -resize 300x ../s2_$f; done; c
+61	275	prove	tool	read files	read	2026-11-01T21:31:08Z	0.9	/tmp/g33m/sheet3.png
+61	276	prove	model	model		2026-11-01T21:31:08Z	1.6	
+61	277	prove	tool	read files	read	2026-11-01T21:31:10Z	0.0	/tmp/g33m/sheet3.png
+61	278	prove	model	model		2026-11-01T21:31:10Z	8.1	
+61	279	prove	tool	search	grep	2026-11-01T21:31:18Z	0.0	Locate readout format :: examples/tree.rs
+61	280	prove	model	model		2026-11-01T21:31:18Z	1.3	
+61	281	prove	tool	read files	read	2026-11-01T21:31:20Z	0.0	examples/tree.rs:244-272
+61	282	prove	model	model		2026-11-01T21:31:20Z	3.3	
+61	283	prove	tool	edit files	edit	2026-11-01T21:31:23Z	0.1	Fixed-width readout :: [examples/tree.rs#BA26] PUT 248.=266: + trees: Query<(&Table, &TableSelection)>, + mut texts: Query<&mut Text, With<Readout>>, +) { + let Ok((table, selection))
+61	284	prove	model	model		2026-11-01T21:31:23Z	6.4	
+61	285	prove	tool	cargo build	bash	2026-11-01T21:31:29Z	15.2	cd /home/ladvien/bevy_gooey_loop; cargo fmt; CARGO_BUILD_JOBS=2 cargo build --release --example tree 2>&1 | tail -1 && cp $CARGO_TARGET_DIR/release/examples/tre
+61	286	prove	tool	read files	read	2026-11-01T21:31:29Z	15.2	/tmp/g33m/sheet4.png
+61	287	prove	model	model		2026-11-01T21:31:45Z	1.4	
+61	288	prove	tool	read files	read	2026-11-01T21:31:46Z	0.1	/tmp/g33m/sheet4.png
+61	289	prove	model	model		2026-11-01T21:31:46Z	6.8	
+61	290	prove	tool	clip record/render	bash	2026-11-01T21:31:53Z	0.5	cd /home/ladvien/bevy_gooey_loop; ffmpeg -y -loglevel error -framerate 15 -pattern_type glob -i '/tmp/g33m/gif/f_*.png' -vf "crop=600:560:340:85,fps=15,split[a]
+61	291	prove	model	model		2026-11-01T21:31:53Z	11.1	
+61	292	prove	tool	edit files	edit	2026-11-01T21:32:05Z	0.0	README: tree GIF block replaces table's :: [README.md#729A] PUT 204.=206: +![The tree example: an outliner of ten thousand nodes; Down and Right walk into Ashfall Market and open Market Cellar, Left goes
+61	293	prove	tool	shell	bash	2026-11-01T21:32:05Z	0.0	cd /home/ladvien/bevy_gooey_loop; wc -l README.md; sed -n 37,38p docs/media/README.md | cut -c1-60; tail -3 docs/media/README.md | cut -c1-100
+61	294	prove	model	model		2026-11-01T21:32:05Z	4.7	
+61	295	prove	tool	shell	bash	2026-11-01T21:32:09Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "^| " docs/media/README.md | tail -3 | cut -c1-60; wc -l docs/media/README.md; awk 'NR>=36 && NR<=40 {print NR": "leng
+61	296	prove	model	model		2026-11-01T21:32:09Z	1.7	
+61	297	prove	tool	read files	read	2026-11-01T21:32:11Z	0.0	docs/media/README.md:38-39
+61	298	prove	model	model		2026-11-01T21:32:11Z	7.3	
+61	299	prove	tool	edit files	edit	2026-11-01T21:32:18Z	0.0	Media README: tree.gif :: [docs/media/README.md#4917] PUT <38: +| `tree.gif` | trees (6.5 s, 600×560, the panel of `examples/tree`, a crop of the 1280×720 window): the World panel, an ou
+61	300	prove	model	model		2026-11-01T21:32:18Z	7.0	
+61	301	prove	tool	phase mark	bash	2026-11-01T21:32:25Z	60.0	[launched bg_2] cd /tmp/g33m; python3 ~/.local/share/wiggum/steps.py mark prove >/dev/null; B=~/g33_bin/gallery_before; A=~/g33_bin/gallery_after; export GOOEY_HEALTH=60 GOOEY_
+61	302	prove	model	model		2026-11-01T21:33:25Z	5.7	
+61	303	prove	tool	edit files	write	2026-11-01T21:33:31Z	7.1	Rescanning corpus for new game-UI sources :: xd://mcp__home_still_catalog_recent
+61	304	prove	model	model		2026-11-01T21:33:38Z	4.4	
+61	305	prove	tool	search	grep	2026-11-01T21:33:43Z	0.0	Locate stale bullet :: docs/research/tree.md
+61	306	prove	model	model		2026-11-01T21:33:43Z	2.9	
+61	307	prove	tool	edit files	edit	2026-11-01T21:33:45Z	0.0	Research note matches the build :: [docs/research/tree.md#248E] PUT 28.=28: +- **`update_tables` reads the tree by downcast** (`table.source::<Tree>()`), not through the `RowSource` trait, so a p
+61	308	prove	model	model		2026-11-01T21:33:45Z	3.8	
+61	309	prove	tool	wait: other	wait	2026-11-01T21:33:49Z	120.4	Waiting for perf comparison
+61	310	prove	model	model		2026-11-01T21:35:50Z	7.9	
+61	311	prove	tool	cargo test	bash	2026-11-01T21:35:57Z	1.8	cd /home/ladvien/bevy_gooey_loop; git fetch -q origin; git log --oneline HEAD..origin/main | head; git add -A docs README.md CHANGELOG.md AGENTS.md src examples
+61	312	prove	model	model		2026-11-01T21:35:59Z	3.5	
+61	313	gate	tool	phase mark	bash	2026-11-01T21:36:03Z	0.0	[launched bg_3] python3 ~/.local/share/wiggum/steps.py mark gate; ~/g33_gate.sh > /tmp/g33m/gate.log 2>&1; grep -n "===\|rc=\|GATE\|test result: F\|FAILED\|error" /tmp/g33m/gat
+61	314	gate	model	model		2026-11-01T21:36:03Z	6.7	
+61	315	gate	tool	shell	bash	2026-11-01T21:36:09Z	0.1	cd /home/ladvien/bevy_gooey_loop; grep -n "text_size: " src/skin.rs | head -4; cd /tmp/g33m/after; magick t_keys.png -crop 40x40+395+160 +repage -format "%[fx:m
+61	316	gate	model	model		2026-11-01T21:36:09Z	6.7	
+61	317	gate	tool	github	bash	2026-11-01T21:36:16Z	3.4	cd /home/ladvien/bevy_gooey_loop; for n in 17 18 19 20 21 22 23; do echo "#$n: $(gh issue view $n --repo bevy-coven/bevy_gooey --json title,body --jq '.title, (
+61	318	gate	model	model		2026-11-01T21:36:20Z	4.5	
+61	319	gate	tool	read files	read	2026-11-01T21:36:24Z	0.1	docs/loop-log.md:-3
+61	320	gate	model	model		2026-11-01T21:36:24Z	3.6	
+61	321	gate	tool	wait: gate	wait	2026-11-01T21:36:28Z	358.9	Waiting for gate
+61	322	gate	model	model		2026-11-01T21:42:27Z	4.7	
+61	323	ship	tool	phase mark	bash	2026-11-01T21:42:31Z	6.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark ship; grep -c "test result: ok" /tmp/g33m/gate.log; grep -n "FAILED\|failed" /tmp/
+61	324	ship	model	model		2026-11-01T21:42:38Z	3.5	
+61	325	release	tool	phase mark	bash	2026-11-01T21:42:41Z	19.6	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark release; which cargo-semver-checks && CARGO_BUILD_JOBS=2 timeout 1500 cargo semver
+61	326	release	model	model		2026-11-01T21:43:01Z	3.3	
+61	327	release	tool	shell	bash	2026-11-01T21:43:06Z	0.1	cd /home/ladvien/bevy_gooey_loop; grep -n "0\.19" README.md Cargo.toml docs/guide/*.md src/lib.rs | head; git tag | tail -2
+61	328	release	model	model		2026-11-01T21:43:06Z	3.4	
+61	329	release	tool	shell	bash	2026-11-01T21:43:10Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "version" README.md | head -5; git tag --sort=-v:refname | head -2
+61	330	release	tool	read files	read	2026-11-01T21:43:10Z	0.0	README.md:231-231
+61	331	release	tool	read files	read	2026-11-01T21:43:10Z	0.0	Cargo.toml:1-5
+61	332	release	tool	read files	read	2026-11-01T21:43:10Z	0.0	CHANGELOG.md:1-5
+61	333	release	model	model		2026-11-01T21:43:10Z	4.5	
+61	334	release	tool	edit files	edit	2026-11-01T21:43:14Z	0.3	Release bump 0.20.0 :: [CHANGELOG.md#E77B] PUT >3: + +## [0.20.0] - 2026-11-01 [Cargo.toml#CA14] PUT 3.=3: +version = "0.20.0" [README.md#25B4] PUT 231.=231: +| 0.1 – 0.20 | 0.20 |
+61	335	release	tool	cargo test	bash	2026-11-01T21:43:15Z	60.0	[launched bg_4] cd /home/ladvien/bevy_gooey_loop; sed -n 1,8p CHANGELOG.md | cut -c1-60; cargo test --features readme-example --test readme 2>&1 | grep "test result"; cargo pub
+61	336	release	model	model		2026-11-01T21:44:15Z	2.6	
+61	337	release	tool	wait: tests	wait	2026-11-01T21:44:17Z	29.0	Waiting for readme test and dry-run
+61	338	release	model	model		2026-11-01T21:44:46Z	2.9	
+61	339	release	tool	push gate	bash	2026-11-01T21:44:49Z	23.3	cd /home/ladvien/bevy_gooey_loop; git add Cargo.toml CHANGELOG.md README.md && git commit -qm "release: v0.20.0" && git push -q origin main 2>&1 | tail -1; carg
+61	340	release	model	model		2026-11-01T21:45:12Z	3.5	
+61	341	release	tool	shell	bash	2026-11-01T21:45:16Z	1.6	cd /home/ladvien/bevy_gooey_loop; git fetch -q origin; git log --oneline main..origin/main; git diff --stat main...origin/main | tail -5; git ls-remote --tags o
+61	342	release	model	model		2026-11-01T21:45:17Z	3.5	
+61	343	release	tool	push gate	bash	2026-11-01T21:45:21Z	1.6	cd /home/ladvien/bevy_gooey_loop; git merge origin/main -m "Merge origin/main into main" 2>&1 | tail -2; git push -q origin main 2>&1 | tail -1; git status -sb 
+61	344	release	model	model		2026-11-01T21:45:23Z	4.6	
+61	345	release	tool	github	bash	2026-11-01T21:45:27Z	1.4	cd /home/ladvien/bevy_gooey_loop; gh issue view 15 --repo bevy-coven/bevy_gooey --json state,closedAt --jq '.state'; gh issue list --repo bevy-coven/bevy_grimoi
+61	346	release	model	model		2026-11-01T21:45:29Z	2.6	
+61	347	release	tool	github	bash	2026-11-01T21:45:31Z	1.1	cd /home/ladvien/bevy_gooey_loop; for n in 237 259; do gh issue view $n --repo bevy-coven/bevy_grimoire --json body --jq '.body' | grep -n -i "needs" | head -3;
+61	348	release	model	model		2026-11-01T21:45:32Z	11.1	
+61	349	release	tool	github	bash	2026-11-01T21:45:43Z	5.8	cd /home/ladvien/bevy_gooey_loop; gh label create assumed-decision --color FBCA04 2>/dev/null; gh issue edit 15 --repo bevy-coven/bevy_gooey --add-label assumed
+61	350	release	model	model		2026-11-01T21:45:49Z	35.1	
+61	351	release	tool	edit files	edit	2026-11-01T21:46:24Z	1.0	Append iteration 33 to the loop log :: [docs/loop-log.md#F3D2] PUT >$: + +## Iteration 33 — 2026-11-01 — Trees (G-11, #15) + +**Triage.** `gh issue list`: 18 open, all `grimoire-ui` (#15 to #33, minu
+61	352	release	model	model		2026-11-01T21:46:25Z	4.3	
+61	353	log	tool	phase mark	bash	2026-11-01T21:46:30Z	0.6	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark log; git worktree remove ~/g33_base && rm -rf ~/g33_bin ~/g33_gate.sh /tmp/g33m /t
+61	354	log	model	model		2026-11-01T21:46:30Z	1.5	
+61	355	log	tool	read files	read	2026-11-01T21:46:32Z	0.7	docs/loop-log.md:1338-1338
+61	356	log	model	model		2026-11-01T21:46:33Z	6.7	
+61	357	log	tool	edit files	edit	2026-11-01T21:46:40Z	0.1	Write the cleanup line :: [docs/loop-log.md#34E5] PUT 1338.=1338: +**Cleanup.** Removed this pass's `~/g33_bin` (the before and after galleries and the tree example), the baseline worktr
+61	358	log	tool	push gate	bash	2026-11-01T21:46:40Z	4.1	cd /home/ladvien/bevy_gooey_loop; git checkout -q -b loop/iter-33-log && git add docs/loop-log.md && git commit -qm "Loop log: iteration 33, trees, release v0.2
+61	359	log	model	model		2026-11-01T21:46:44Z	10.8	
