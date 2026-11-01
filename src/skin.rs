@@ -1783,6 +1783,9 @@ fn restyle(
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.max_width = Val::Px(tooltip_width(skin, tip.unwrap_or_default(), line));
+                // The line and, when the command has one, its shortcut's keycap beside it.
+                next.align_items = AlignItems::Center;
+                next.column_gap = Val::Px(skin.gap);
             }
             // A button's frame and room, a label left and a switch right, the row the target.
             Role::Toggle => {

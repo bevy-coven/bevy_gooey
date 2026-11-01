@@ -149,7 +149,7 @@ pub fn update_prompts(
         let input = keys.binding(*device);
         let shape = match input {
             Binding::Pad(_) => Role::PromptButton,
-            Binding::Key(_) | Binding::Mouse(_) => Role::PromptKey,
+            Binding::Key(_) | Binding::Mouse(_) | Binding::Chord(_) => Role::PromptKey,
         };
         let name = input.label(settings.pad_style);
         for &part in parts {

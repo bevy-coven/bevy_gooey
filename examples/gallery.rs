@@ -376,7 +376,7 @@ fn setup(mut commands: Commands) {
                                 ),
                                 (
                                     button("Options"),
-                                    Tooltip("Sound, controls and display".into()),
+                                    Tooltip::new("Sound, controls and display"),
                                     observe(switch_skin),
                                 ),
                                 (button("Quit"), observe(open_quit_dialog)),
@@ -763,9 +763,7 @@ fn stage_keys(
         }
         Some(Staged::Retip) if state == ButtonState::Pressed => {
             for widget in &tipped {
-                commands.entity(widget).insert(Tooltip(
-                    "Unlocked: sound, controls, display and cheats".into(),
-                ));
+                commands.entity(widget).insert(Tooltip::new("Unlocked: sound, controls, display and cheats"));
             }
         }
         Some(&step @ (Staged::Hover | Staged::Grab | Staged::Drag | Staged::Drop))
