@@ -10150,3 +10150,488 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 62	66	log	model	model		2026-11-01T21:59:20Z	16.7	
 62	67	log	tool	push gate	bash	2026-11-01T21:59:37Z	1.5	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'E' ## Iteration 34 — 2026-11-01 — One test binary (owner's disk job) **Triage.** `gh issue list`:
 62	68	log	model	model		2026-11-01T21:59:38Z	7.4	
+63	1	orient	model	model		2026-11-01T22:00:08Z	3.5	
+63	2	orient	tool	phase mark	bash	2026-11-01T22:00:12Z	0.8	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; git status --short | head; git branch --show-current; git fetch -q origi
+63	3	orient	model	model		2026-11-01T22:00:12Z	3.3	
+63	4	bugs	tool	phase mark	bash	2026-11-01T22:00:16Z	0.7	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark bugs; gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json
+63	5	bugs	model	model		2026-11-01T22:00:16Z	1.4	
+63	6	bugs	tool	github	bash	2026-11-01T22:00:18Z	0.7	cd /home/ladvien/bevy_gooey_loop && gh issue view 17 --repo bevy-coven/bevy_gooey --comments | head -150
+63	7	bugs	model	model		2026-11-01T22:00:19Z	1.5	
+63	8	bugs	tool	github	bash	2026-11-01T22:00:20Z	0.4	cd /home/ladvien/bevy_gooey_loop && gh issue view 17 --repo bevy-coven/bevy_gooey --json body,comments --jq '.body, (.comments[]|.body)'
+63	9	bugs	model	model		2026-11-01T22:00:21Z	18.9	
+63	10	choose	tool	phase mark	bash	2026-11-01T22:00:39Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; wc -l src/*.rs tests/*.rs | sort -n | tail -30; ls docs docs/guide docs/
+63	11	choose	model	model		2026-11-01T22:00:39Z	1.3	
+63	12	choose	tool	shell	bash	2026-11-01T22:00:41Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 780,900p src/widgets.rs; cat src/text.rs
+63	13	choose	model	model		2026-11-01T22:00:41Z	2.8	
+63	14	choose	tool	read files	read	2026-11-01T22:00:44Z	0.0	src/text.rs
+63	15	choose	model	model		2026-11-01T22:00:44Z	23.5	
+63	16	choose	tool	read files	read	2026-11-01T22:01:07Z	0.2	Reading Blender number field docs :: https://docs.blender.org/manual/en/latest/interface/controls/buttons/fields.html
+63	17	choose	tool	read files	read	2026-11-01T22:01:07Z	0.2	Reading APG spinbutton pattern :: https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/
+63	18	choose	tool	read files	read	2026-11-01T22:01:07Z	0.2	Reading WCAG dragging movements :: https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html
+63	19	choose	model	model		2026-11-01T22:01:07Z	3.2	
+63	20	choose	tool	web	web_search	2026-11-01T22:01:10Z	6.3	Finding shipping-tool scrub field doc :: Blender manual number fields "click and drag" "double-click" edit value Ctrl snap Shift precision
+63	21	choose	model	model		2026-11-01T22:01:17Z	59.9	
+63	22	choose	tool	search	grep	2026-11-01T22:02:17Z	0.0	Finding text-field touchpoints :: src
+63	23	choose	model	model		2026-11-01T22:02:17Z	10.3	
+63	24	choose	tool	search	grep	2026-11-01T22:02:27Z	0.0	Finding drag and cursor patterns :: src
+63	25	choose	model	model		2026-11-01T22:02:27Z	1.5	
+63	26	choose	tool	read files	read	2026-11-01T22:02:28Z	0.0	src/split.rs:270-380
+63	27	choose	tool	read files	read	2026-11-01T22:02:28Z	0.0	src/text.rs:80-210
+63	28	choose	model	model		2026-11-01T22:02:28Z	7.5	
+63	29	choose	tool	shell	bash	2026-11-01T22:02:36Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0 && grep -n "ValueChange" -B8 -A12 src/lib.rs | head -60; cd /home/ladvien/bevy_gooey_loop; gre
+63	30	choose	model	model		2026-11-01T22:02:36Z	2.1	
+63	31	choose	tool	shell	bash	2026-11-01T22:02:38Z	0.0	cd /home/ladvien/bevy_gooey_loop; D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0 | head -1); echo $D; grep -rn "pub struct ValueChange
+63	32	choose	model	model		2026-11-01T22:02:38Z	6.4	
+63	33	choose	tool	shell	bash	2026-11-01T22:02:45Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 28,75p src/nav.rs; sed -n 100,200p src/nav.rs; sed -n 340,470p src/nav.rs
+63	34	choose	model	model		2026-11-01T22:02:45Z	43.5	
+63	35	choose	tool	shell	bash	2026-11-01T22:03:28Z	0.0	cd /home/ladvien/bevy_gooey_loop; cat tests/all.rs | head -60; sed -n 1,140p tests/split.rs
+63	36	choose	model	model		2026-11-01T22:03:28Z	4.0	
+63	37	choose	tool	shell	bash	2026-11-01T22:03:32Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "^fn \|^struct \|^const " tests/split.rs | head -60; grep -n "^fn \|^struct \|^const " tests/text.rs | head -60
+63	38	choose	model	model		2026-11-01T22:03:32Z	3.4	
+63	39	choose	tool	shell	bash	2026-11-01T22:03:35Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1,100p tests/text.rs; sed -n 140,165p tests/text.rs; sed -n 186,310p tests/text.rs; sed -n 336,400p tests/text.rs; sed 
+63	40	choose	model	model		2026-11-01T22:03:35Z	6.8	
+63	41	choose	tool	read files	read	2026-11-01T22:03:42Z	1.5	Reading Unity FloatField doc :: https://docs.unity3d.com/Manual/UIE-uxml-element-FloatField.html
+63	42	choose	tool	shell	bash	2026-11-01T22:03:42Z	1.5	cd /home/ladvien/bevy_gooey_loop; sed -n 1,200p docs/research/text-input.md | cut -c1-400 | head -120; grep -n "^#\|^-" docs/research/corpus.md | head -50
+63	43	choose	model	model		2026-11-01T22:03:44Z	6.5	
+63	44	research	tool	phase mark	bash	2026-11-01T22:03:50Z	14.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark research; timeout 60 hs status 2>&1 | head -12; timeout 60 hs distill search "nume
+63	45	research	model	model		2026-11-01T22:04:04Z	38.6	
+63	46	research	tool	edit files	write	2026-11-01T22:04:43Z	0.0	docs/research/number-field.md
+63	47	research	model	model		2026-11-01T22:04:43Z	4.2	
+63	48	research	tool	shell	bash	2026-11-01T22:04:47Z	0.1	cd /home/ladvien/bevy_gooey_loop; git checkout -q -b loop/iter-35 && git add docs/research/number-field.md && git commit -qm "Research: number field" && git log
+63	49	research	model	model		2026-11-01T22:04:47Z	3.9	
+63	50	build	tool	phase mark	bash	2026-11-01T22:04:51Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark build; grep -n "cfg(test)" src/model.rs; grep -n "pub fn tree_indent" -B6 -A8 src/
+63	51	build	model	model		2026-11-01T22:04:51Z	1.8	
+63	52	build	tool	shell	bash	2026-11-01T22:04:53Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1495,1560p src/model.rs; grep -n "model::\|pub use model" src/lib.rs | head; grep -n "tree_indent" src/lib.rs
+63	53	build	model	model		2026-11-01T22:04:53Z	26.8	
+63	54	build	tool	shell	bash	2026-11-01T22:05:20Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_picking-0.20.0 | head -1); sed -n 1,200p $D/src/cursor.rs | grep -n "ancestor\|ChildOf\|fn update\|hover"
+63	55	build	model	model		2026-11-01T22:05:20Z	10.2	
+63	56	build	tool	shell	bash	2026-11-01T22:05:30Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "MoveChoice" -B6 -A10 src/choice.rs | sed -n 1,60p; grep -n "fn choice_on_key_input" -A45 src/choice.rs
+63	57	build	model	model		2026-11-01T22:05:30Z	45.7	
+63	58	build	tool	shell	bash	2026-11-01T22:06:16Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -rn "original_event_target" src | head -5; grep -n "fn show_focus\|InputFocusVisible" src/choice.rs | head -3; grep -n "V
+63	59	build	model	model		2026-11-01T22:06:16Z	1.8	
+63	60	build	tool	shell	bash	2026-11-01T22:06:17Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 330,420p src/lib.rs; sed -n 100,214p src/lib.rs; grep -n "^mod \|^pub mod " src/lib.rs
+63	61	build	model	model		2026-11-01T22:06:17Z	25.4	
+63	62	build	tool	edit files	edit	2026-11-01T22:06:43Z	0.0	Adding number maths to model :: [src/model.rs#0000] PUT <1512: +/// Why [`parse_number`] would not read some text as a number. The words are for the player +/// ([`std::fmt::Display`]): a game
+63	63	build	model	model		2026-11-01T22:06:43Z	20.9	
+63	64	build	tool	edit files	edit	2026-11-01T22:07:04Z	0.0	Adding number maths to model :: [src/model.rs#C065] PUT <1512: +/// Why [`parse_number`] would not read some text as a number. The words are for the player +/// ([`std::fmt::Display`]): a game
+63	65	build	model	model		2026-11-01T22:07:04Z	7.8	
+63	66	build	tool	shell	bash	2026-11-01T22:07:12Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' import re p='src/model.rs' s=open(p).read() s=s.replace(" ((raw * scale).round() / scale).max(min).min(max)\n}
+63	67	build	model	model		2026-11-01T22:07:12Z	36.5	
+63	68	build	tool	shell	bash	2026-11-01T22:07:48Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 2236,2300p src/skin.rs; sed -n 1380,1395p src/skin.rs
+63	69	build	model	model		2026-11-01T22:07:48Z	8.5	
+63	70	build	tool	shell	bash	2026-11-01T22:07:57Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "PaletteField\|Role::TextInput" src/*.rs | grep -v "^src/widgets.rs:8[0-9][0-9]"; sed -n 1500,1520p src/skin.rs; sed -
+63	71	build	model	model		2026-11-01T22:07:57Z	78.2	
+63	72	build	tool	edit files	write	2026-11-01T22:09:15Z	0.0	src/number.rs
+63	73	build	model	model		2026-11-01T22:09:15Z	12.9	
+63	74	build	tool	shell	bash	2026-11-01T22:09:28Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1,100p src/widgets.rs
+63	75	build	model	model		2026-11-01T22:09:28Z	4.6	
+63	76	build	tool	read files	read	2026-11-01T22:09:32Z	0.0	src/widgets.rs:813-900
+63	77	build	model	model		2026-11-01T22:09:32Z	30.2	
+63	78	build	tool	edit files	edit	2026-11-01T22:10:03Z	0.0	Refactoring text_row for number rows :: [src/widgets.rs#ED73] PUT 817.=897: +/// The row under [`text_input`]: a label if it has one and the field, which is `chars` character +/// advances wide, or fi
+63	79	build	model	model		2026-11-01T22:10:03Z	7.5	
+63	80	build	tool	edit files	edit	2026-11-01T22:10:10Z	0.0	Adding imports and constants to widgets :: [src/widgets.rs#595B] PUT <45: +use crate::number::{ + NumberInput, NumberRange, NumberStep, NumberValue, VecPart, VecValue, number_on_cancel, + number_on_drag,
+63	81	build	model	model		2026-11-01T22:10:10Z	3.1	
+63	82	build	tool	read files	read	2026-11-01T22:10:13Z	0.0	src/widgets.rs:36-42
+63	83	build	tool	read files	read	2026-11-01T22:10:13Z	0.0	src/widgets.rs:80-98
+63	84	build	model	model		2026-11-01T22:10:13Z	3.8	
+63	85	build	tool	edit files	edit	2026-11-01T22:10:17Z	0.0	Adding imports and constants to widgets :: [src/widgets.rs#595B] PUT 37.=37: +use crate::model::{PadStyle, format_number, meter_fraction, slider_fraction, slider_text}; +use crate::nav::Dialog; +use crat
+63	86	build	model	model		2026-11-01T22:10:17Z	3.6	
+63	87	build	tool	edit files	edit	2026-11-01T22:10:21Z	0.0	Fixing blank lines :: [src/widgets.rs#7A9C] PUT >95: + CUT 104
+63	88	build	model	model		2026-11-01T22:10:21Z	3.3	
+63	89	build	tool	read files	read	2026-11-01T22:10:24Z	0.0	src/skin.rs:1196-1204
+63	90	build	tool	read files	read	2026-11-01T22:10:24Z	0.0	src/skin.rs:1386-1394
+63	91	build	tool	read files	read	2026-11-01T22:10:24Z	0.0	src/skin.rs:1506-1514
+63	92	build	model	model		2026-11-01T22:10:24Z	1.9	
+63	93	build	tool	read files	read	2026-11-01T22:10:26Z	0.0	src/skin.rs:1862-1870
+63	94	build	tool	read files	read	2026-11-01T22:10:26Z	0.0	src/skin.rs:1960-1966
+63	95	build	tool	read files	read	2026-11-01T22:10:26Z	0.0	src/skin.rs:2238-2262
+63	96	build	model	model		2026-11-01T22:10:26Z	7.2	
+63	97	build	tool	edit files	edit	2026-11-01T22:10:33Z	0.0	Adding NumberPart roles to skin :: [src/skin.rs#0587] PUT >1201: + /// One component of a [`crate::vec_field`]: a text row with no frame and no padding on its right, + /// its label (the axis let
+63	98	build	model	model		2026-11-01T22:10:33Z	4.2	
+63	99	build	tool	shell	bash	2026-11-01T22:10:37Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "pub use text::\|pub use widgets" -A12 src/lib.rs | head -40; sed -n 150,172p src/lib.rs | head -5
+63	100	build	model	model		2026-11-01T22:10:37Z	2.4	
+63	101	build	tool	edit files	edit	2026-11-01T22:10:40Z	0.0	Wiring number module into lib.rs :: [src/lib.rs#AAEC] PUT >138: +mod number; PUT 164.=164: +pub use meter::{Meter, update_meters}; PUT 213.=213: +pub use number::{ + MixedValue, NumberRange, Numbe
+63	102	build	model	model		2026-11-01T22:10:40Z	3.6	
+63	103	build	tool	read files	read	2026-11-01T22:10:43Z	0.0	src/lib.rs:134-140
+63	104	build	tool	read files	read	2026-11-01T22:10:43Z	0.0	src/lib.rs:170-192
+63	105	build	tool	read files	read	2026-11-01T22:10:43Z	0.0	src/lib.rs:212-227
+63	106	build	model	model		2026-11-01T22:10:43Z	3.0	
+63	107	build	tool	edit files	edit	2026-11-01T22:10:46Z	0.0	Wiring number module into lib.rs :: [src/lib.rs#AAEC] PUT >137: +mod number; PUT 184.=184: + tree_visible, type_ahead, window_ui_scale, NumberError, format_number, number_decimals, + parse_number,
+63	108	build	model	model		2026-11-01T22:10:46Z	3.2	
+63	109	build	tool	search	grep	2026-11-01T22:10:49Z	0.0	Locating registration lines :: src/lib.rs
+63	110	build	model	model		2026-11-01T22:10:49Z	2.2	
+63	111	build	tool	edit files	edit	2026-11-01T22:10:52Z	0.0	Registering number types and systems :: [src/lib.rs#1228] PUT >295: + .register_type::<NumberValue>() + .register_type::<NumberStep>() + .register_type::<NumberRange>() + .register_type::<MixedValue>(
+63	112	build	model	model		2026-11-01T22:10:52Z	7.7	
+63	113	build	tool	shell	bash	2026-11-01T22:10:59Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "menu_titles: Query\|let net_y = if from.is_some_and(|f| scopes.menu_titles\|Query<Has<Slider>, TakesSideways>\|is_sli
+63	114	build	model	model		2026-11-01T22:10:59Z	1.5	
+63	115	build	tool	read files	read	2026-11-01T22:11:01Z	0.0	src/nav.rs:408-416
+63	116	build	tool	read files	read	2026-11-01T22:11:01Z	0.0	src/nav.rs:636-682
+63	117	build	model	model		2026-11-01T22:11:01Z	6.3	
+63	118	build	tool	edit files	edit	2026-11-01T22:11:07Z	0.0	Number fields in nav :: [src/nav.rs#2C5B] PUT 29.=29: +use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps}; +use crate::number::{NumberInput, NumberStepBy}; PUT 39.=39:
+63	119	build	model	model		2026-11-01T22:11:07Z	6.2	
+63	120	build	tool	edit files	edit	2026-11-01T22:11:13Z	0.0	Number fields in nav :: [src/nav.rs#2C5B] PUT 29.=29: +use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps}; +use crate::number::{NumberInput, NumberStepBy}; PUT 39.=39:
+63	121	build	model	model		2026-11-01T22:11:13Z	5.8	
+63	122	build	tool	cargo build	bash	2026-11-01T22:11:19Z	4.8	cd /home/ladvien/bevy_gooey_loop; echo $CARGO_TARGET_DIR; nproc; free -g | head -2; CARGO_BUILD_JOBS=4 timeout 900 cargo check --lib 2>&1 | grep -v "^\s*Compili
+63	123	build	model	model		2026-11-01T22:11:24Z	11.0	
+63	124	build	tool	shell	bash	2026-11-01T22:11:35Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "NumberInput\|VecPart" src/number.rs | head -30; sed -n 124,146p src/number.rs
+63	125	build	model	model		2026-11-01T22:11:35Z	3.3	
+63	126	build	tool	edit files	edit	2026-11-01T22:11:38Z	0.0	Making NumberInput and VecPart public :: [src/number.rs#549B] PUT 127.=129: +/// On a number field's text field (the one a [`crate::number_field`] row types in), which steps on +/// Up and Down. Part o
+63	127	build	model	model		2026-11-01T22:11:38Z	3.3	
+63	128	build	tool	edit files	edit	2026-11-01T22:11:41Z	0.0	Removing duplicate doc lines :: [src/number.rs#67AD] CUT 139 CUT 126
+63	129	build	tool	edit files	edit	2026-11-01T22:11:41Z	0.0	Exporting new public markers :: [src/lib.rs#CEE5] PUT 192.=195: +pub use number::{ + MixedValue, NumberInput, NumberRange, NumberRefused, NumberStep, NumberValue, VecChange, + VecMixed, VecPar
+63	130	build	model	model		2026-11-01T22:11:41Z	2.4	
+63	131	build	tool	cargo build	bash	2026-11-01T22:11:44Z	4.1	cd /home/ladvien/bevy_gooey_loop; ls examples; cat examples/options.rs | head -150; cargo fmt; CARGO_BUILD_JOBS=4 cargo check --lib 2>&1 | grep -v "Compiling\|C
+63	132	build	model	model		2026-11-01T22:11:48Z	15.1	
+63	133	build	tool	shell	bash	2026-11-01T22:12:03Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 165,186p tests/text.rs; sed -n 308,336p tests/text.rs; sed -n 405,436p tests/text.rs
+63	134	build	model	model		2026-11-01T22:12:03Z	4.0	
+63	135	build	tool	shell	bash	2026-11-01T22:12:07Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 452,500p tests/split.rs; sed -n 252,284p tests/split.rs
+63	136	build	model	model		2026-11-01T22:12:07Z	111.2	
+63	137	build	tool	edit files	write	2026-11-01T22:13:58Z	0.0	tests/number.rs
+63	138	build	model	model		2026-11-01T22:13:58Z	8.8	
+63	139	build	tool	cargo test	bash	2026-11-01T22:14:07Z	17.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='tests/number.rs' s=open(p).read() s=s.replace(""" let column = app .world_mut() .spawn((panel(), children![
+63	140	build	model	model		2026-11-01T22:14:24Z	5.1	
+63	141	build	tool	edit files	edit	2026-11-01T22:14:29Z	0.0	Fixing literal type :: [tests/number.rs#4C7D] PUT 509.=509: + drag_from(&mut app, field, 80.0);
+63	142	build	model	model		2026-11-01T22:14:29Z	2.5	
+63	143	build	tool	edit files	edit	2026-11-01T22:14:32Z	0.0	Fixing literal type :: [tests/number.rs#0845] PUT 509.=509: + drag_from(&mut app, field, 80.0);
+63	144	build	tool	cargo test	bash	2026-11-01T22:14:32Z	19.9	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 timeout 1500 cargo test --all-features --test all number:: 2>&1 | grep -v "Compiling" | tail -120
+63	145	build	model	model		2026-11-01T22:14:52Z	3.9	
+63	146	build	tool	shell	bash	2026-11-01T22:14:56Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "roots: Query<Vecs>" src/number.rs
+63	147	build	model	model		2026-11-01T22:14:56Z	3.2	
+63	148	build	tool	edit files	edit	2026-11-01T22:14:59Z	0.0	Disjoint vec queries :: [src/number.rs#EB17] PUT 493.=493: +pub fn update_vecs( + roots: Query<Vecs, Without<VecPart>>, + mut parts: Query<Components>, + mut commands: Commands, +) {
+63	149	build	tool	cargo test	bash	2026-11-01T22:14:59Z	2.0	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 timeout 1500 cargo test --all-features --test all number:: 2>&1 | grep -v "Compiling" | grep -B2 -A12 "^-
+63	150	build	model	model		2026-11-01T22:15:01Z	3.4	
+63	151	build	tool	read files	read	2026-11-01T22:15:04Z	0.0	src/number.rs:493-494
+63	152	build	model	model		2026-11-01T22:15:04Z	3.1	
+63	153	build	tool	edit files	edit	2026-11-01T22:15:07Z	0.0	Disjoint vec queries :: [src/number.rs#CA2D] PUT 493.=493: +pub fn update_vecs( + roots: Query<Vecs, Without<VecPart>>, + mut parts: Query<Components>, + mut commands: Commands, +) {
+63	154	build	tool	cargo test	bash	2026-11-01T22:15:07Z	22.8	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 timeout 1500 cargo test --all-features --test all number:: 2>&1 | grep -v "Compiling" > /tmp/g35_t.log; g
+63	155	build	model	model		2026-11-01T22:15:30Z	1.6	
+63	156	build	tool	shell	bash	2026-11-01T22:15:32Z	0.0	grep -A6 "^---- " /tmp/g35_t.log | cut -c1-500
+63	157	build	model	model		2026-11-01T22:15:32Z	16.8	
+63	158	build	tool	shell	bash	2026-11-01T22:15:48Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "let scale = 10f32.powi(number_decimals(rate) as i32);" src/model.rs; grep -n "pub fn number_on_text\|fn number_on_t
+63	159	build	model	model		2026-11-01T22:15:48Z	5.4	
+63	160	build	tool	edit files	edit	2026-11-01T22:15:54Z	0.0	Defer the text write after the row's own update :: [src/number.rs#D258] PUT 287.=292: + rows: Query<( + Reading, + Has<MixedValue>, + &TextInputValue, + Has<InteractionDisabled>, + )>, PUT 299.=299: + let Ok(((v
+63	161	build	tool	edit files	edit	2026-11-01T22:15:54Z	0.0	Scrub keeps the digits of the step :: [src/model.rs#7D68] PUT 1651.=1651: + let scale = 10f32.powi(number_decimals(rate).max(number_decimals(step)) as i32);
+63	162	build	model	model		2026-11-01T22:15:54Z	3.1	
+63	163	build	tool	read files	read	2026-11-01T22:15:57Z	0.0	src/model.rs:1636-1675
+63	164	build	model	model		2026-11-01T22:15:57Z	2.3	
+63	165	build	tool	edit files	edit	2026-11-01T22:15:59Z	0.0	Repairing doc fence and scrub rounding :: [src/model.rs#D4D5] PUT 1651.=1651: + let scale = 10f32.powi(number_decimals(rate).max(number_decimals(step)) as i32); PUT 1658.=1658: +/// ``` +/// use bevy_go
+63	166	build	model	model		2026-11-01T22:15:59Z	2.9	
+63	167	build	tool	read files	read	2026-11-01T22:16:02Z	0.0	src/number.rs:284-334
+63	168	build	model	model		2026-11-01T22:16:02Z	6.6	
+63	169	build	tool	edit files	edit	2026-11-01T22:16:09Z	0.0	Queue the text write :: [src/number.rs#D258] PUT 287.=292: + rows: Query<( + Reading, + Has<MixedValue>, + &TextInputValue, + Has<InteractionDisabled>, + )>, PUT 299.=299: + let Ok(((v
+63	170	build	tool	cargo test	bash	2026-11-01T22:16:09Z	24.9	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 timeout 1500 cargo test --all-features --test all number:: 2>&1 | grep -v "Compiling" > /tmp/g35_t.log; g
+63	171	build	model	model		2026-11-01T22:16:34Z	7.4	
+63	172	build	tool	cargo test	bash	2026-11-01T22:16:41Z	60.0	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && cp src/number.rs /tmp/g35_number.rs.bak && cp src/nav.rs /tmp/g35_nav.rs.bak && sed -i 's/if start.button != PointerButton::
+63	173	build	model	model		2026-11-01T22:17:41Z	9.6	
+63	174	build	tool	wait: other	wait	2026-11-01T22:17:51Z	4.0	Waiting for the nav mutation run
+63	175	build	model	model		2026-11-01T22:17:55Z	2.7	
+63	176	build	tool	shell	bash	2026-11-01T22:17:57Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "original_event_target" src/number.rs
+63	177	build	model	model		2026-11-01T22:17:57Z	1.1	
+63	178	build	tool	read files	read	2026-11-01T22:17:59Z	0.0	src/number.rs:186-224
+63	179	build	model	model		2026-11-01T22:17:59Z	4.7	
+63	180	build	tool	edit files	edit	2026-11-01T22:18:03Z	0.0	Remove dead guards :: [src/number.rs#E3A6] PUT 194.=194: + if start.button != PointerButton::Primary { PUT 218.=220:
+63	181	build	model	model		2026-11-01T22:18:03Z	3.8	
+63	182	build	tool	shell	bash	2026-11-01T22:18:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "A vec field's component: the label" -A3 src/skin.rs
+63	183	build	model	model		2026-11-01T22:18:07Z	1.9	
+63	184	build	tool	edit files	edit	2026-11-01T22:18:09Z	0.0	Fix comment :: [src/skin.rs#8DB0] PUT 2269.=2270: + // its left, a pad wide, makes the handle (padding, letter, gap) a target of at least 24 px + // (WCAG 2.5.8); no frame, an
+63	185	build	model	model		2026-11-01T22:18:09Z	1.9	
+63	186	build	tool	edit files	edit	2026-11-01T22:18:11Z	0.0	Fix comment :: [src/skin.rs#8DB0] PUT 2269.=2270: + // its left, a pad wide, makes the handle (padding, letter, gap) a target of at least 24 px + // (WCAG 2.5.8); no frame, an
+63	187	build	model	model		2026-11-01T22:18:11Z	5.3	
+63	188	build	tool	shell	bash	2026-11-01T22:18:16Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l examples/split.rs && sed -n 1,60p examples/split.rs && grep -n "fn stage_keys" -A120 examples/split.rs | head -220
+63	189	build	model	model		2026-11-01T22:18:16Z	1.3	
+63	190	build	tool	shell	bash	2026-11-01T22:18:17Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 60,375p examples/split.rs
+63	191	build	model	model		2026-11-01T22:18:17Z	16.9	
+63	192	build	tool	shell	bash	2026-11-01T22:18:34Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0 | head -1); grep -rn "SelectAllOnFocus" $D/src | head; grep -n "pub struct SelectAllOnF
+63	193	build	model	model		2026-11-01T22:18:34Z	5.0	
+63	194	build	tool	shell	bash	2026-11-01T22:18:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "NumberInput,$" -B2 -A6 src/widgets.rs | head -30; grep -n "SliderRange, SliderStep, SliderThumb" src/widgets.rs
+63	195	build	model	model		2026-11-01T22:18:39Z	2.0	
+63	196	build	tool	edit files	edit	2026-11-01T22:18:41Z	0.0	Select all on focus for number fields :: [src/widgets.rs#DB24] PUT 910.=910: + NumberInput, + SelectAllOnFocus, PUT 20.=20: + SelectAllOnFocus, SliderRange, SliderStep, SliderThumb, SliderValue, TabAct
+63	197	build	model	model		2026-11-01T22:18:41Z	2.8	
+63	198	build	tool	edit files	edit	2026-11-01T22:18:44Z	0.0	Select all on focus for number fields :: [src/widgets.rs#DB24] PUT 910.=910: + NumberInput, + SelectAllOnFocus, PUT 20.=20: + SelectAllOnFocus, SliderRange, SliderStep, SliderThumb, SliderValue, TabAct
+63	199	build	model	model		2026-11-01T22:18:44Z	3.3	
+63	200	build	tool	shell	bash	2026-11-01T22:18:47Z	0.5	cd /home/ladvien/bevy_gooey_loop && cargo fmt && grep -n "^fn a_number_outside_the_range_is_held_to_its_end" -B2 tests/number.rs
+63	201	build	model	model		2026-11-01T22:18:48Z	1.1	
+63	202	build	tool	read files	read	2026-11-01T22:18:49Z	0.0	tests/number.rs:527-531
+63	203	build	model	model		2026-11-01T22:18:49Z	2.7	
+63	204	build	tool	edit files	edit	2026-11-01T22:18:52Z	0.0	Test typing replaces on focus :: [tests/number.rs#D50A] PUT >529: +#[test] +fn focusing_the_field_selects_its_number_so_typing_replaces_it() { + let mut app = app(); + let ui = rig(&mut app); +
+63	205	build	model	model		2026-11-01T22:18:52Z	47.4	
+63	206	build	tool	edit files	write	2026-11-01T22:19:39Z	0.0	examples/numbers.rs
+63	207	build	model	model		2026-11-01T22:19:39Z	9.1	
+63	208	build	tool	cargo build	bash	2026-11-01T22:19:48Z	33.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='examples/numbers.rs' s=open(p).read() old=s[s.index(" observe(|change: On<VecChange>"):s.index(" ),\n (\n
+63	209	build	model	model		2026-11-01T22:20:22Z	3.9	
+63	210	build	tool	shell	bash	2026-11-01T22:20:26Z	2.2	cd /home/ladvien/bevy_gooey_loop && sed -i 's/use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};/use bevy::input::keyboard::{Key, KeyboardInput};/' exa
+63	211	build	model	model		2026-11-01T22:20:28Z	1.1	
+63	212	build	tool	read files	read	2026-11-01T22:20:29Z	0.0	/tmp/g35m/after/dark.png
+63	213	build	model	model		2026-11-01T22:20:29Z	18.9	
+63	214	build	tool	shell	bash	2026-11-01T22:20:48Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n '2014\|—' src/number.rs src/widgets.rs tests/number.rs examples/numbers.rs | cut -c1-160; grep -n "top: Val::Px(skin
+63	215	build	model	model		2026-11-01T22:20:48Z	3.7	
+63	216	build	tool	read files	read	2026-11-01T22:20:52Z	0.0	src/number.rs:70-74
+63	217	build	tool	read files	read	2026-11-01T22:20:52Z	0.0	src/number.rs:86-89
+63	218	build	tool	read files	read	2026-11-01T22:20:52Z	0.0	src/number.rs:156-160
+63	219	build	tool	read files	read	2026-11-01T22:20:52Z	0.0	src/number.rs:410-436
+63	220	build	model	model		2026-11-01T22:20:52Z	4.5	
+63	221	build	tool	edit files	edit	2026-11-01T22:20:56Z	0.0	Use an ASCII mixed hint :: [src/number.rs#0007] PUT 72.=72: +/// differ. The field is empty and shows a muted [`MIXED_HINT`]; [`NumberValue`] is the number a drag or a PUT 87.=87: +/// On
+63	222	build	model	model		2026-11-01T22:20:56Z	2.2	
+63	223	build	tool	shell	bash	2026-11-01T22:20:59Z	0.5	cd /home/ladvien/bevy_gooey_loop && cargo fmt; grep -n "MixedValue, NumberInput" src/lib.rs; grep -n '"—"' src/widgets.rs; grep -n 'u{2014}' -B1 -A1 tests/numbe
+63	224	build	model	model		2026-11-01T22:20:59Z	3.5	
+63	225	build	tool	read files	read	2026-11-01T22:21:03Z	0.0	src/lib.rs:191-195
+63	226	build	tool	read files	read	2026-11-01T22:21:03Z	0.0	src/widgets.rs:975-977
+63	227	build	tool	read files	read	2026-11-01T22:21:03Z	0.0	src/widgets.rs:1016-1018
+63	228	build	tool	read files	read	2026-11-01T22:21:03Z	0.0	tests/number.rs:759-765
+63	229	build	tool	read files	read	2026-11-01T22:21:03Z	0.0	src/skin.rs:2272-2280
+63	230	build	model	model		2026-11-01T22:21:03Z	3.9	
+63	231	build	tool	edit files	edit	2026-11-01T22:21:07Z	0.0	Mixed hint export and docs, part padding :: [src/lib.rs#7308] PUT 192.=193: + MIXED_HINT, MixedValue, NumberInput, NumberRange, NumberRefused, NumberStep, NumberValue, + VecChange, VecMixed, VecPart, VecV
+63	232	build	model	model		2026-11-01T22:21:07Z	5.1	
+63	233	prove	tool	phase mark	bash	2026-11-01T22:21:12Z	42.0	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; CARGO_BUILD_JOBS=4 cargo build --release --example numbers --example gall
+63	234	prove	model	model		2026-11-01T22:21:54Z	3.9	
+63	235	prove	tool	read files	read	2026-11-01T22:21:58Z	0.0	/tmp/g35m/after/dark.png
+63	236	prove	tool	read files	read	2026-11-01T22:21:58Z	0.0	/tmp/g35m/after/dark-200.png
+63	237	prove	model	model		2026-11-01T22:21:58Z	5.7	
+63	238	prove	tool	read files	read	2026-11-01T22:22:03Z	0.0	/tmp/g35m/after/high_contrast.png
+63	239	prove	tool	read files	read	2026-11-01T22:22:03Z	0.0	/tmp/g35m/after/parchment.png
+63	240	prove	model	model		2026-11-01T22:22:03Z	7.1	
+63	241	prove	tool	shell	bash	2026-11-01T22:22:10Z	7.6	mkdir -p /tmp/g35m/frames && rm -f /tmp/g35m/frames/*; cd /tmp/g35m && G=$CARGO_TARGET_DIR/release/examples/numbers; GOOEY_FRAMES=270 GOOEY_SHOT_DIR=/tmp/g35m/f
+63	242	prove	model	model		2026-11-01T22:22:18Z	2.6	
+63	243	prove	tool	shell	bash	2026-11-01T22:22:21Z	0.4	cd /tmp/g35m/frames && ls | head -3; magick montage f_0010.png f_0030.png f_0050.png f_0060.png f_0070.png f_0080.png f_0095.png f_0105.png f_0121.png -crop 700
+63	244	prove	model	model		2026-11-01T22:22:21Z	3.3	
+63	245	prove	tool	read files	read	2026-11-01T22:22:24Z	0.2	/tmp/g35m/sheet.png
+63	246	prove	model	model		2026-11-01T22:22:24Z	20.1	
+63	247	prove	tool	shell	bash	2026-11-01T22:22:44Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n '"\\"{}\\" refused: {}"' -B3 -A3 examples/numbers.rs
+63	248	prove	model	model		2026-11-01T22:22:45Z	2.0	
+63	249	prove	tool	edit files	edit	2026-11-01T22:22:46Z	0.0	Shorter refusal line :: [examples/numbers.rs#36D3] PUT 237.=237: + text.0 = format!("Refused: {}", refused.reason);
+63	250	prove	model	model		2026-11-01T22:22:46Z	5.0	
+63	251	prove	tool	edit files	edit	2026-11-01T22:22:52Z	0.0	Shorter refusal line :: [examples/numbers.rs#1337] PUT 237.=237: + text.0 = format!("Refused: {}", refused.reason);
+63	252	prove	tool	cargo build	bash	2026-11-01T22:22:52Z	13.4	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example numbers 2>&1 | grep -v Compiling | tail -3; rm -f /tmp/g35m/frames/*; cd 
+63	253	prove	model	model		2026-11-01T22:23:05Z	3.0	
+63	254	prove	tool	read files	read	2026-11-01T22:23:08Z	0.2	/tmp/g35m/sheet.png
+63	255	prove	model	model		2026-11-01T22:23:08Z	16.6	
+63	256	prove	tool	shell	bash	2026-11-01T22:23:25Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "text-input.gif\|tree.gif" -B2 -A12 docs/media/README.md | head -80; ls -la docs/media/*.gif | awk '{print $5, $9}'
+63	257	prove	model	model		2026-11-01T22:23:25Z	3.8	
+63	258	prove	tool	shell	bash	2026-11-01T22:23:29Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n "expressions are not supported" src/*.rs tests/*.rs docs -r | cut -c1-140
+63	259	prove	model	model		2026-11-01T22:23:29Z	1.9	
+63	260	prove	tool	edit files	edit	2026-11-01T22:23:30Z	0.0	Shorter reason :: [src/model.rs#AD77] PUT 1532.=1532: + Self::Expression => "type a number, not an expression", [tests/number.rs#AC68] PUT 590.=590: + "type a number, not an expr
+63	261	prove	model	model		2026-11-01T22:23:31Z	1.8	
+63	262	prove	tool	edit files	edit	2026-11-01T22:23:32Z	0.0	Shorter reason :: [src/model.rs#AD77] PUT 1532.=1532: + Self::Expression => "type a number, not an expression", [tests/number.rs#AC68] PUT 590.=590: + "type a number, not an expr
+63	263	prove	model	model		2026-11-01T22:23:32Z	4.9	
+63	264	prove	tool	read files	read	2026-11-01T22:23:37Z	0.0	src/model.rs:2340-2355
+63	265	prove	model	model		2026-11-01T22:23:37Z	11.6	
+63	266	prove	tool	edit files	edit	2026-11-01T22:23:49Z	0.0	Unit tests for number maths :: [src/model.rs#561D] PUT >2352: + + #[test] + fn a_typed_number_is_read_and_a_sum_a_word_or_an_overflow_is_refused_for_its_own_reason() { + assert_eq!(parse_numb
+63	267	prove	model	model		2026-11-01T22:23:49Z	12.8	
+63	268	prove	tool	shell	bash	2026-11-01T22:24:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "scrub_value(1.0, 5.0, 0.1, 3.0, 0.0" src/model.rs
+63	269	prove	model	model		2026-11-01T22:24:02Z	3.5	
+63	270	prove	tool	edit files	edit	2026-11-01T22:24:05Z	0.0	Fix expectation :: [src/model.rs#5553] PUT 2396.=2396: + assert_eq!(scrub_value(1.0, 5.0, 0.1, 3.0, 0.0, false, false), 1.5);
+63	271	prove	tool	cargo test	bash	2026-11-01T22:24:05Z	25.2	cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo test --all-features --lib model:: 2>&1 | grep "FAILED\|test result\|panicked\|left\|ri
+63	272	prove	model	model		2026-11-01T22:24:30Z	1.9	
+63	273	prove	tool	edit files	edit	2026-11-01T22:24:32Z	0.0	Fix expectation :: [src/model.rs#5553] PUT 2396.=2396: + assert_eq!(scrub_value(1.0, 5.0, 0.1, 3.0, 0.0, false, false), 1.5);
+63	274	prove	model	model		2026-11-01T22:24:32Z	5.9	
+63	275	prove	tool	edit files	edit	2026-11-01T22:24:38Z	0.0	Fix comment :: [src/model.rs#DDAB] PUT 2397.=2397: + // A range given the wrong way round is read either way, and a NaN distance never moves it.
+63	276	gate	tool	phase mark	bash	2026-11-01T22:24:38Z	0.5	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; cargo fmt; git status --short; cat > /tmp/g35m/gate.sh <<'E' #!/bin/bash c
+63	277	gate	model	model		2026-11-01T22:24:39Z	6.6	
+63	278	gate	tool	cargo build	bash	2026-11-01T22:24:45Z	18.4	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example numbers 2>&1 | grep -v Compiling | tail -2; rm -f /tmp/g35m/frames/*; cd 
+63	279	gate	model	model		2026-11-01T22:25:04Z	4.0	
+63	280	gate	tool	clip record/render	bash	2026-11-01T22:25:08Z	0.1	cd /tmp/g35m && rm -rf gf && mkdir gf && ffmpeg -loglevel error -i numbers.gif -vsync 0 gf/g_%04d.png && ls gf | wc -l; magick montage gf/g_0030.png gf/g_0060.p
+63	281	gate	model	model		2026-11-01T22:25:08Z	2.1	
+63	282	gate	tool	clip record/render	bash	2026-11-01T22:25:10Z	0.3	cd /tmp/g35m && ffmpeg -loglevel error -i numbers.gif gf/g_%04d.png && ls gf | wc -l; magick montage gf/g_0030.png gf/g_0060.png gf/g_0090.png gf/g_0110.png gf/
+63	283	gate	model	model		2026-11-01T22:25:10Z	1.3	
+63	284	gate	tool	read files	read	2026-11-01T22:25:11Z	0.2	/tmp/g35m/gsheet.png
+63	285	gate	model	model		2026-11-01T22:25:12Z	10.1	
+63	286	gate	tool	shell	bash	2026-11-01T22:25:22Z	0.1	cd /tmp/g35m/gf && for f in g_0030 g_0090 g_0153; do echo $f; magick $f.png -crop 1x60+300+416 +repage -depth 8 txt:- | awk 'NR>1{print $1, $3}' | tr '\n' ' ' |
+63	287	gate	model	model		2026-11-01T22:25:22Z	4.3	
+63	288	gate	tool	shell	bash	2026-11-01T22:25:26Z	0.0	cd /tmp/g35m/frames && for f in f_0005 f_0140; do magick $f.png -crop 1x300+640+300 +repage -depth 8 txt:- | awk 'NR>1{print $3}' | uniq -c | tail -6 | tr '\n' 
+63	289	gate	model	model		2026-11-01T22:25:26Z	13.5	
+63	290	gate	tool	read files	read	2026-11-01T22:25:40Z	0.0	src/number.rs:190-212
+63	291	gate	model	model		2026-11-01T22:25:40Z	6.3	
+63	292	gate	tool	edit files	edit	2026-11-01T22:25:46Z	0.0	Scrubbing lets go of focus :: [src/number.rs#ECBB] PUT 192.=209: +/// A press that begins on the row itself, its label or its padding, scrubs it: the drag starts +/// from the value the row 
+63	293	gate	tool	shell	bash	2026-11-01T22:25:46Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/number.rs' s=open(p).read() s=s.replace("use bevy::input_focus::FocusedInput;","use bevy::input_focus
+63	294	gate	model	model		2026-11-01T22:25:46Z	3.5	
+63	295	gate	tool	read files	read	2026-11-01T22:25:49Z	0.0	tests/number.rs:419-450
+63	296	gate	model	model		2026-11-01T22:25:49Z	4.6	
+63	297	gate	tool	edit files	edit	2026-11-01T22:25:54Z	0.0	Test scrub lets go of focus :: [tests/number.rs#64B2] PUT >446: +#[test] +fn a_scrub_is_not_typing_so_it_takes_the_field_off_focus_and_the_host_off_the_keys() { + let mut app = app(); + let u
+63	298	gate	model	model		2026-11-01T22:25:54Z	1.7	
+63	299	gate	tool	read files	read	2026-11-01T22:25:56Z	0.0	tests/number.rs:306-322
+63	300	gate	model	model		2026-11-01T22:25:56Z	4.0	
+63	301	gate	tool	edit files	edit	2026-11-01T22:26:00Z	0.0	click helper :: [tests/number.rs#9FAB] PUT >309: +/// A press and release on `at` without moving. +fn click_at(app: &mut App, at: Vec2) { + point_at(app, at); + pointer(app, at
+63	302	gate	tool	cargo test	bash	2026-11-01T22:26:00Z	23.4	cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo test --all-features --test all number:: 2>&1 | grep -v Compiling > /tmp/g35_t.log; gre
+63	303	gate	model	model		2026-11-01T22:26:23Z	7.9	
+63	304	gate	tool	cargo build	bash	2026-11-01T22:26:31Z	19.8	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example numbers 2>&1 | grep -v Compiling | tail -2; rm -f /tmp/g35m/frames/*; cd 
+63	305	gate	model	model		2026-11-01T22:26:51Z	1.3	
+63	306	gate	tool	read files	read	2026-11-01T22:26:52Z	0.1	/tmp/g35m/sheet2.png
+63	307	gate	model	model		2026-11-01T22:26:52Z	5.6	
+63	308	gate	tool	shell	bash	2026-11-01T22:26:58Z	0.2	cd /tmp/g35m && magick frames/f_0034.png -crop 420x110+560+190 +repage -filter point -resize 300% z1.png; magick frames/f_0020.png -crop 420x110+560+190 +repage
+63	309	gate	tool	read files	read	2026-11-01T22:26:58Z	0.2	/tmp/g35m/z.png
+63	310	gate	model	model		2026-11-01T22:26:58Z	1.7	
+63	311	gate	tool	shell	bash	2026-11-01T22:27:00Z	0.1	cd /tmp/g35m && ls z*.png; magick frames/f_0034.png -crop 420x110+560+190 +repage -filter point -resize 300% z1.png; ls -la z1.png frames/f_0034.png
+63	312	gate	model	model		2026-11-01T22:27:00Z	1.3	
+63	313	gate	tool	read files	read	2026-11-01T22:27:01Z	0.0	/tmp/g35m/z.png
+63	314	gate	model	model		2026-11-01T22:27:01Z	6.3	
+63	315	gate	tool	shell	bash	2026-11-01T22:27:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Role::TextField => {" src/skin.rs; sed -n 2600,2640p src/skin.rs
+63	316	gate	model	model		2026-11-01T22:27:07Z	9.1	
+63	317	gate	tool	shell	bash	2026-11-01T22:27:17Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0 | head -1); sed -n 676,760p $D/src/text_input.rs
+63	318	gate	model	model		2026-11-01T22:27:17Z	10.1	
+63	319	gate	tool	shell	bash	2026-11-01T22:27:27Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "selection_color" -B12 -A14 src/skin.rs | sed -n 1,60p; D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_text-
+63	320	gate	model	model		2026-11-01T22:27:27Z	7.9	
+63	321	gate	tool	shell	bash	2026-11-01T22:27:34Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "look.editing\|editing:" src/skin.rs | head; awk 'NR<2657 && /^fn |^pub fn /{l=NR": "$0} END{print l}' src/skin.rs
+63	322	gate	model	model		2026-11-01T22:27:35Z	1.6	
+63	323	gate	tool	read files	read	2026-11-01T22:27:36Z	0.0	src/skin.rs:2655-2665
+63	324	gate	model	model		2026-11-01T22:27:36Z	3.3	
+63	325	gate	tool	shell	bash	2026-11-01T22:27:39Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0 | head -1); grep -rn "selected_text_color" $D/src ~/.cargo/registry/src/index.crates.io-*/bevy_
+63	326	gate	model	model		2026-11-01T22:27:39Z	1.7	
+63	327	gate	tool	shell	bash	2026-11-01T22:27:41Z	0.3	grep -rn "selected_text_color\|unfocused_selection_color" ~/.cargo/registry/src/index.crates.io-*/bevy_*-0.20.*/src 2>/dev/null | grep -v "cursor.rs" | head
+63	328	gate	model	model		2026-11-01T22:27:41Z	5.9	
+63	329	gate	tool	edit files	edit	2026-11-01T22:27:47Z	0.1	Selected text colour only while focused :: [src/skin.rs#3EB4] PUT 2655.=2664: + // A text field's caret is the text colour and its selection the lit accent with the accent's + // text, the pair every "on
+63	330	gate	model	model		2026-11-01T22:27:47Z	1.8	
+63	331	gate	tool	edit files	edit	2026-11-01T22:27:49Z	0.0	Restore struct tail :: [src/skin.rs#B629] PUT >2665: + selection_radius: 0.0, + });
+63	332	gate	model	model		2026-11-01T22:27:49Z	6.1	
+63	333	gate	tool	shell	bash	2026-11-01T22:27:55Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^fn thirty_idle_frames_write_nothing" -B2 tests/number.rs
+63	334	gate	model	model		2026-11-01T22:27:55Z	1.4	
+63	335	gate	tool	read files	read	2026-11-01T22:27:57Z	0.0	tests/number.rs:896-902
+63	336	gate	model	model		2026-11-01T22:27:57Z	7.6	
+63	337	gate	tool	edit files	edit	2026-11-01T22:28:04Z	0.0	Test selected text is readable when unfocused :: [tests/number.rs#626E] PUT >900: +#[test] +fn a_selected_number_is_drawn_in_its_selection_ink_only_while_the_field_has_focus() { + // Bevy applies `selected_tex
+63	338	gate	tool	cargo test	bash	2026-11-01T22:28:04Z	18.8	cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo test --all-features --test all number:: 2>&1 | grep -v Compiling > /tmp/g35_t.log; gre
+63	339	gate	model	model		2026-11-01T22:28:23Z	4.5	
+63	340	gate	tool	shell	bash	2026-11-01T22:28:28Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp src/skin.rs /tmp/g35_skin.bak && grep -n "selected_text_color: (look.editing" src/skin.rs
+63	341	gate	model	model		2026-11-01T22:28:28Z	1.3	
+63	342	gate	tool	read files	read	2026-11-01T22:28:29Z	0.0	src/skin.rs:2665-2665
+63	343	gate	model	model		2026-11-01T22:28:29Z	3.7	
+63	344	gate	tool	edit files	edit	2026-11-01T22:28:33Z	0.0	Mutation: always selected ink :: [src/skin.rs#D932] PUT 2665.=2665: + selected_text_color: Some(skin.accent_text),
+63	345	gate	tool	cargo test	bash	2026-11-01T22:28:33Z	16.1	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo test --all-features --test all number:: 2>&1 | grep "FAILED\|test result"; cp /tmp/g35_skin.bak src
+63	346	gate	model	model		2026-11-01T22:28:49Z	5.7	
+63	347	gate	tool	cargo build	bash	2026-11-01T22:28:54Z	17.5	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example numbers 2>&1 | grep -v Compiling | tail -2; rm -f /tmp/g35m/frames/*; cd 
+63	348	gate	model	model		2026-11-01T22:29:12Z	1.2	
+63	349	gate	tool	read files	read	2026-11-01T22:29:13Z	0.1	/tmp/g35m/sheet2.png
+63	350	gate	model	model		2026-11-01T22:29:13Z	5.6	
+63	351	gate	tool	shell	bash	2026-11-01T22:29:19Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g35m/numbers.gif docs/media/numbers.gif && wc -l README.md && grep -n "text-input\|text_input\|tree.gif\|trees.md" R
+63	352	gate	model	model		2026-11-01T22:29:19Z	2.0	
+63	353	gate	tool	shell	bash	2026-11-01T22:29:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 104,124p README.md; sed -n 196,212p README.md | cut -c1-300; sed -n 10,22p docs/guide/README.md | cut -c1-200; cat do
+63	354	gate	model	model		2026-11-01T22:29:21Z	6.1	
+63	355	gate	tool	shell	bash	2026-11-01T22:29:27Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^!\[" README.md | cut -c1-110; grep -n "split.gif\|binding.gif\|text-input.gif" docs/guide/*.md | cut -c1-120; sed 
+63	356	gate	model	model		2026-11-01T22:29:27Z	8.2	
+63	357	gate	tool	shell	bash	2026-11-01T22:29:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && awk '{print NR": "substr($0,1,110)}' README.md | sed -n 20,60p; awk '{print NR": "substr($0,1,120)}' README.md | sed -n 212,
+63	358	gate	model	model		2026-11-01T22:29:35Z	4.4	
+63	359	gate	tool	shell	bash	2026-11-01T22:29:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn "cancel.gif" docs/guide README.md | cut -c1-100; sed -n 206,211p README.md | cut -c1-200
+63	360	gate	model	model		2026-11-01T22:29:39Z	7.6	
+63	361	gate	tool	read files	read	2026-11-01T22:29:47Z	0.0	README.md:106-112:raw
+63	362	gate	model	model		2026-11-01T22:29:47Z	1.2	
+63	363	gate	tool	read files	read	2026-11-01T22:29:48Z	0.0	README.md:164-168
+63	364	gate	model	model		2026-11-01T22:29:48Z	3.3	
+63	365	gate	tool	read files	read	2026-11-01T22:29:52Z	0.0	README.md:206-212
+63	366	gate	model	model		2026-11-01T22:29:52Z	4.8	
+63	367	gate	tool	edit files	edit	2026-11-01T22:29:56Z	0.0	README: numbers GIF block, bullet, move Back GIF :: [README.md#E4E9] PUT >167: +![The numbers example: an Inspector panel with a Position row of three fields (X, Y, Z), a Scale row whose Y is a muted "--", and He
+63	368	gate	model	model		2026-11-01T22:29:56Z	7.6	
+63	369	gate	tool	read files	read	2026-11-01T22:30:04Z	0.0	README.md:108-122:raw
+63	370	gate	model	model		2026-11-01T22:30:04Z	5.7	
+63	371	gate	tool	edit files	edit	2026-11-01T22:30:10Z	0.0	README bullet mentions numbers :: [README.md#0745] PUT 110.=110: + traps), `number_field("Health", 100.0, 0.5, 0.0..=250.0)` is a number the player scrubs with a drag, types or steps with the ke
+63	372	gate	tool	shell	bash	2026-11-01T22:30:10Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l README.md; grep -n "Back\|cancel" docs/guide/navigation.md | head -12
+63	373	gate	model	model		2026-11-01T22:30:10Z	3.7	
+63	374	gate	tool	read files	read	2026-11-01T22:30:13Z	0.0	docs/guide/navigation.md:26-36
+63	375	gate	model	model		2026-11-01T22:30:13Z	20.8	
+63	376	gate	tool	edit files	edit	2026-11-01T22:30:34Z	0.0	Move Back GIF to the navigation guide :: [docs/guide/navigation.md#DC1E] PUT >26: + +![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Le
+63	377	gate	tool	edit files	write	2026-11-01T22:30:34Z	0.0	docs/guide/numbers.md
+63	378	gate	model	model		2026-11-01T22:30:34Z	5.8	
+63	379	gate	tool	shell	bash	2026-11-01T22:30:40Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "text_input" docs/guide/widgets.md docs/guide/host-api.md src/lib.rs docs/guide/navigation.md docs/guide/skins.md | 
+63	380	gate	model	model		2026-11-01T22:30:40Z	2.3	
+63	381	gate	tool	shell	bash	2026-11-01T22:30:42Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 36,44p docs/guide/host-api.md | cut -c1-220; sed -n 132,146p docs/guide/host-api.md | cut -c1-200; sed -n 14,24p src/
+63	382	gate	model	model		2026-11-01T22:30:42Z	6.3	
+63	383	gate	tool	read files	read	2026-11-01T22:30:49Z	0.0	docs/guide/widgets.md:33-34
+63	384	gate	tool	read files	read	2026-11-01T22:30:49Z	0.0	docs/guide/host-api.md:40-48
+63	385	gate	tool	read files	read	2026-11-01T22:30:49Z	0.0	docs/guide/host-api.md:143-144
+63	386	gate	tool	read files	read	2026-11-01T22:30:49Z	0.0	docs/guide/README.md:19-22
+63	387	gate	model	model		2026-11-01T22:30:49Z	6.8	
+63	388	gate	tool	edit files	edit	2026-11-01T22:30:55Z	0.0	Guide docs for numbers :: [docs/guide/widgets.md#6E43] PUT >33: +| `number_field`, `vec_field` | a row with a number the player scrubs with a drag on its label, types, or steps with Up, 
+63	389	gate	tool	read files	read	2026-11-01T22:30:55Z	0.0	docs/guide/navigation.md:36-40
+63	390	gate	model	model		2026-11-01T22:30:55Z	2.0	
+63	391	gate	tool	read files	read	2026-11-01T22:30:58Z	0.0	docs/guide/navigation.md:11-13
+63	392	gate	tool	read files	read	2026-11-01T22:30:58Z	0.0	src/lib.rs:18-21
+63	393	gate	model	model		2026-11-01T22:30:58Z	3.7	
+63	394	gate	tool	edit files	edit	2026-11-01T22:31:01Z	0.0	Navigation and crate docs for numbers :: [docs/guide/navigation.md#3B2E] PUT >12: +- A focused `number_field` is a text field that takes **Up and Down as steps** (Shift for ten; the APG's spinbutton), 
+63	395	gate	model	model		2026-11-01T22:31:01Z	6.4	
+63	396	gate	tool	edit files	edit	2026-11-01T22:31:08Z	0.0	Fix sentence order :: [src/lib.rs#380B] PUT 20.=23: +//! has the player's keys), [`number_field`] and [`vec_field`] (a number the player scrubs with a +//! drag on its label, types, 
+63	397	gate	tool	shell	bash	2026-11-01T22:31:08Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^- \`src/text.rs\`\|^- \`tests/text.rs\`\|^- \`tests/options.rs\`" AGENTS.md | cut -c1-60; sed -n 1,14p docs/media/
+63	398	gate	model	model		2026-11-01T22:31:08Z	4.3	
+63	399	gate	tool	read files	read	2026-11-01T22:31:12Z	0.0	docs/media/README.md:7:raw
+63	400	gate	tool	read files	read	2026-11-01T22:31:12Z	0.0	docs/media/README.md:38-41
+63	401	gate	model	model		2026-11-01T22:31:12Z	8.1	
+63	402	gate	tool	edit files	edit	2026-11-01T22:31:20Z	0.0	Media README row :: [docs/media/README.md#F2FB] PUT >38: +| `numbers.gif` | numbers (10.1 s, 660×476, the Inspector panel of `examples/numbers`, a crop of the 1280×720 window): a P
+63	403	gate	tool	read files	read	2026-11-01T22:31:20Z	0.0	AGENTS.md:40-41:raw
+63	404	gate	model	model		2026-11-01T22:31:20Z	5.4	
+63	405	gate	tool	read files	read	2026-11-01T22:31:25Z	0.0	AGENTS.md:1-2
+63	406	gate	tool	read files	read	2026-11-01T22:31:25Z	0.0	docs/media/README.md:38:raw
+63	407	gate	model	model		2026-11-01T22:31:25Z	17.6	
+63	408	gate	tool	edit files	edit	2026-11-01T22:31:43Z	0.0	Media README row :: [docs/media/README.md#F2FB] PUT >38: +| `numbers.gif` | numbers (10.1 s, 660×476, the Inspector panel of `examples/numbers`, a crop of the 1280×720 window): a P
+63	409	gate	tool	read files	read	2026-11-01T22:31:43Z	0.0	AGENTS.md:72-73:raw
+63	410	gate	model	model		2026-11-01T22:31:43Z	8.9	
+63	411	gate	tool	edit files	edit	2026-11-01T22:31:52Z	0.0	AGENTS test line :: [AGENTS.md#5F3E] PUT >73: +- `tests/number.rs` — the number field and the vec field, in the same headless window, driven by real pointer, keyboard and gamepad i
+63	412	gate	tool	read files	read	2026-11-01T22:31:52Z	0.0	CHANGELOG.md:1-5
+63	413	gate	model	model		2026-11-01T22:31:52Z	10.8	
+63	414	gate	tool	edit files	edit	2026-11-01T22:32:03Z	0.0	Changelog entry :: [CHANGELOG.md#AA72] PUT >3: + +### Added + +- Number fields (G-13 slice one, #17): `number_field(label, value, step, range)` is a text row whose number the play
+63	415	gate	tool	shell	bash	2026-11-01T22:32:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp src/number.rs /tmp/g35_number.rs.bak && grep -n "focus.clear();" src/number.rs
+63	416	gate	model	model		2026-11-01T22:32:03Z	1.2	
+63	417	gate	tool	read files	read	2026-11-01T22:32:04Z	0.0	src/number.rs:209-213
+63	418	gate	model	model		2026-11-01T22:32:04Z	3.0	
+63	419	gate	tool	edit files	edit	2026-11-01T22:32:07Z	0.0	Mutation: keep focus on scrub :: [src/number.rs#F57F] PUT 211.=211: + let _ = &mut focus;
+63	420	gate	tool	cargo test	bash	2026-11-01T22:32:07Z	22.0	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo test --all-features --test all number:: 2>&1 | grep "FAILED\|test result"; cp /tmp/g35_number.rs.ba
+63	421	gate	model	model		2026-11-01T22:32:29Z	6.5	
+63	422	gate	tool	shell	bash	2026-11-01T22:32:36Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "N5\|N6\|ValueChange<Vec\|\"—\"\|events|\|Escape\|Deviations" docs/research/number-field.md | cut -c1-120
+63	423	gate	model	model		2026-11-01T22:32:36Z	2.6	
+63	424	gate	tool	read files	read	2026-11-01T22:32:38Z	0.0	docs/research/number-field.md:32-33:raw
+63	425	gate	tool	read files	read	2026-11-01T22:32:38Z	0.0	docs/research/number-field.md:42-42:raw
+63	426	gate	tool	read files	read	2026-11-01T22:32:38Z	0.0	docs/research/number-field.md:53-53:raw
+63	427	gate	tool	read files	read	2026-11-01T22:32:38Z	0.0	docs/research/number-field.md:60-72:raw
+63	428	gate	model	model		2026-11-01T22:32:38Z	1.3	
+63	429	gate	tool	read files	read	2026-11-01T22:32:39Z	0.0	docs/research/number-field.md:30-31
+63	430	gate	model	model		2026-11-01T22:32:39Z	11.8	
+63	431	gate	tool	edit files	edit	2026-11-01T22:32:51Z	0.0	Bring the research note up to what was built :: [docs/research/number-field.md#8B9F] PUT 32.=33: +- **N5. `MixedValue`** (a marker on the row) is a multi-selection whose members differ: the field is empty and
+63	432	gate	model	model		2026-11-01T22:32:51Z	10.9	
+63	433	gate	tool	shell	bash	2026-11-01T22:33:02Z	0.5	cd /home/ladvien/bevy_gooey_loop && cargo fmt && git add src tests examples && git commit -qm "Number fields: number_field and vec_field, scrubbed, typed and st
+63	434	gate	tool	shell	bash	2026-11-01T22:33:02Z	2.0	cd /home/ladvien/bevy_gooey_loop && (setsid nohup /tmp/g35m/gate.sh > /tmp/g35m/gate.log 2>&1 < /dev/null & disown); sleep 2; cat /sys/fs/cgroup$(cut -d: -f3 /p
+63	435	gate	model	model		2026-11-01T22:33:04Z	17.6	
+63	436	gate	tool	shell	bash	2026-11-01T22:33:22Z	0.0	mkdir -p /tmp/g35m && cat > /tmp/g35m/findings.md <<'E' # Game-UI checklist, examples/numbers (iteration 35), dark, 1280x720 - text contrast: field text `skin.t
+63	437	gate	tool	wait: gate	wait	2026-11-01T22:33:22Z	0.0	Waiting for the gate to finish
+63	438	gate	model	model		2026-11-01T22:33:22Z	3.3	
+63	439	gate	tool	remote wait	bash	2026-11-01T22:33:25Z	60.0	[launched bg_3] until grep -q "GATE DONE" /tmp/g35m/gate.log; do sleep 10; done; cat /tmp/g35m/gate.log | cut -c1-200
+63	440	gate	model	model		2026-11-01T22:34:25Z	8.2	
+63	441	gate	tool	github	bash	2026-11-01T22:34:33Z	3.6	cd /home/ladvien/bevy_gooey_loop && gh label create assumed-decision --color FBCA04 2>/dev/null; gh issue edit 17 --repo bevy-coven/bevy_gooey --add-label assum
+63	442	gate	model	model		2026-11-01T22:34:37Z	1.2	
+63	443	gate	tool	wait: gate	wait	2026-11-01T22:34:38Z	1427.2	Waiting for the gate
+63	444	gate	model	model		2026-11-01T22:58:25Z	1.9	
+63	445	gate	tool	shell	bash	2026-11-01T22:58:27Z	0.0	cut -c1-200 /tmp/g35m/gate.log | tail -50; pgrep -fa "gate.sh|cargo" | head -5
+63	446	gate	model	model		2026-11-01T22:58:27Z	3.7	
+63	447	gate	tool	shell	bash	2026-11-01T22:58:31Z	0.0	wc -c /tmp/g35m/gate.log; cd /home/ladvien/bevy_gooey_loop && git status --short | head -3; ls target 2>/dev/null | head -2
+63	448	gate	model	model		2026-11-01T22:58:31Z	2.0	
+63	449	gate	tool	shell	bash	2026-11-01T22:58:33Z	0.0	[launched bg_4] /tmp/g35m/gate.sh 2>&1 | cut -c1-220
+63	450	gate	model	model		2026-11-01T22:58:33Z	2.8	
+63	451	gate	tool	wait: gate	wait	2026-11-01T22:58:36Z	239.5	Waiting for the gate
+63	452	gate	model	model		2026-11-01T23:02:35Z	4.3	
+63	453	gate	tool	shell	bash	2026-11-01T23:02:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn "too_many_arguments" examples src | head -3; grep -n "^test result\|FAILED\|failed" /tmp/g35m/gate.log | head
+63	454	gate	model	model		2026-11-01T23:02:39Z	1.7	
+63	455	gate	tool	shell	bash	2026-11-01T23:02:41Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^fn stage" -B3 examples/numbers.rs
+63	456	gate	model	model		2026-11-01T23:02:41Z	1.3	
+63	457	gate	tool	read files	read	2026-11-01T23:02:42Z	0.0	examples/numbers.rs:312-315
+63	458	gate	model	model		2026-11-01T23:02:42Z	3.0	
+63	459	gate	tool	edit files	edit	2026-11-01T23:02:45Z	0.0	Allow too many arguments as the other examples do :: [examples/numbers.rs#E889] PUT <314: +#[allow(clippy::too_many_arguments)]
+63	460	gate	tool	cargo clippy	bash	2026-11-01T23:02:45Z	1.9	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -v "Compiling\|Checking" | tail -20;
+63	461	gate	model	model		2026-11-01T23:02:47Z	8.0	
+63	462	prove	tool	phase mark	bash	2026-11-01T23:02:55Z	58.4	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove >/dev/null; CARGO_BUILD_JOBS=4 cargo build --release --example gallery 2>&
+63	463	prove	model	model		2026-11-01T23:03:54Z	12.8	
+63	464	ship	tool	phase mark	bash	2026-11-01T23:04:07Z	3.8	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship >/dev/null; git add examples/numbers.rs && git commit -qm "Example numbers:
+63	465	ship	model	model		2026-11-01T23:04:10Z	2.6	
+63	466	release	tool	phase mark	bash	2026-11-01T23:04:13Z	10.2	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release >/dev/null; CARGO_BUILD_JOBS=4 timeout 1200 cargo semver-checks check-re
+63	467	release	model	model		2026-11-01T23:04:23Z	3.9	
+63	468	release	tool	shell	bash	2026-11-01T23:04:27Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n '^version' Cargo.toml; grep -n "0.1 – 0.20" README.md; grep -n "^## \[Unreleased\]" CHANGELOG.md
+63	469	release	model	model		2026-11-01T23:04:27Z	1.9	
+63	470	release	tool	read files	read	2026-11-01T23:04:29Z	0.0	Cargo.toml:3-3
+63	471	release	tool	read files	read	2026-11-01T23:04:29Z	0.0	README.md:231-231
+63	472	release	tool	read files	read	2026-11-01T23:04:29Z	0.0	CHANGELOG.md:3-5
+63	473	release	model	model		2026-11-01T23:04:29Z	4.1	
+63	474	release	tool	edit files	edit	2026-11-01T23:04:33Z	0.0	Bump version in Cargo.toml :: [Cargo.toml#AB2F] PUT 3.=3: +version = "0.21.0" [README.md#070B] PUT 231.=231: +| 0.1 – 0.21 | 0.20 | [CHANGELOG.md#E9DF] PUT >3: + +## [0.21.0] - 2026-11-01
+63	475	release	tool	cargo publish	bash	2026-11-01T23:04:33Z	10.4	cd /home/ladvien/bevy_gooey_loop && sed -n 1,8p CHANGELOG.md | cut -c1-80; cargo update -p bevy_gooey --offline 2>&1 | tail -1; git add Cargo.toml README.md CHA
+63	476	release	model	model		2026-11-01T23:04:44Z	3.4	
+63	477	release	tool	push gate	bash	2026-11-01T23:04:47Z	13.4	cd /home/ladvien/bevy_gooey_loop && git push -q origin main 2>&1 | tail -2; timeout 600 cargo publish 2>&1 | tail -3; git tag -a v0.21.0 -m v0.21.0 && git push 
+63	478	release	model	model		2026-11-01T23:05:00Z	6.3	
+63	479	release	tool	github	bash	2026-11-01T23:05:07Z	1.2	cd /home/ladvien/bevy_gooey_loop && git log --oneline | head -3; gh issue comment 17 --repo bevy-coven/bevy_gooey --body "Slice one is on main and released: \`n
+63	480	release	model	model		2026-11-01T23:05:08Z	35.0	
+63	481	release	tool	shell	bash	2026-11-01T23:05:43Z	0.0	rm -rf /tmp/g35m /tmp/g35_*.bak /tmp/g35_t.log; ls /tmp | grep g35; df -h /home | tail -1; cd /home/ladvien/bevy_gooey_loop && git worktree list | tail -n +2; l
+63	482	release	tool	push gate	bash	2026-11-01T23:05:43Z	2.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' entry = r''' ## Iteration 35 — 2026-11-01 — Number fields (#17, slice one) **Triage.** `gh issue list`: 17 o
+63	483	release	model	model		2026-11-01T23:05:46Z	3.8	
+63	484	release	tool	git	bash	2026-11-01T23:05:50Z	2.2	cd /home/ladvien/bevy_gooey_loop && git fetch -q origin && git status -sb | head -3; git rev-parse HEAD origin/main; git ls-remote --tags origin v0.21.0 | head 
+63	485	release	model	model		2026-11-01T23:05:52Z	11.4	
