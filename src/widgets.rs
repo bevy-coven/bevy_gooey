@@ -1258,10 +1258,11 @@ pub fn dialog() -> impl Bundle {
 ///
 /// It does not take focus: it is for a combo box's list, a hover card, a panel the player reads.
 /// Escape (or the pad's B) closes it from the anchor or from inside it, and a pointer press
-/// anywhere that is not the panel or the anchor closes it, each sending one [`PopoverClosed`]
+/// anywhere that is not the panel or the anchor closes it, each sending one
+/// [`PopoverClosed`](crate::PopoverClosed)
 /// before it is despawned; the press goes on to what it landed on. A press on the anchor does not
 /// close it, so the anchor's own `Activate` can toggle it: despawn the popover there when one is
-/// open (it is the [`PopoverPanel`] whose `anchor` is the button). A press on the panel never
+/// open (it is the [`PopoverPanel`](crate::PopoverPanel) whose `anchor` is the button). A press on the panel never
 /// presses the anchor, even though the panel is its child. For a menu that takes focus, use
 /// [`popover_modal`].
 pub fn popover(anchor: Entity, placement: Placement) -> impl Bundle {
