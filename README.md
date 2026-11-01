@@ -183,7 +183,7 @@ see [use it in Grimoire](https://bevy-coven.github.io/crates/bevy_gooey.html#use
 
 | `bevy_gooey` | Bevy |
 |---|---|
-| 0.1 – 0.8 | 0.20 |
+| 0.1 – 0.9 | 0.20 |
 
 ## Learn more
 
