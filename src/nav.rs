@@ -30,6 +30,7 @@ use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
 use crate::popover::PopoverPanel;
 use crate::skin::Role;
 use crate::split::{SplitAxis, SplitDivider};
+use crate::table::{TableCache, TableCursor, TableHeaderCell};
 use crate::tabs::{TabsCount, TabsValue};
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
@@ -121,6 +122,11 @@ pub struct FocusScopes<'w, 's> {
     /// The tabs of a dock, whose arrows with Ctrl and Shift held move their panel
     /// ([`crate::Dock`]).
     dock_tabs: Query<'w, 's, (), With<DockTab>>,
+    /// The tables, which take Up and Down themselves while they have a row to move to that way.
+    tables:
+        Query<'w, 's, (&'static TableCursor, &'static TableCache), Without<InteractionDisabled>>,
+    /// A table's headers, whose Ctrl and Left or Right size their column.
+    table_headers: Query<'w, 's, (), With<TableHeaderCell>>,
     /// Menu titles and items, whose Left, Right, Home and End are [`crate::menu_by_input`]'s.
     menu_rows: Query<'w, 's, (), MenuRow>,
     /// Menu titles, whose Down opens their menu.
@@ -405,6 +411,25 @@ pub fn navigate_by_input(
     } else {
         net_y
     };
+    // Up and Down on a table move its cursor row (`table_by_input`) while there is a row that way,
+    // and move focus on from its first and last rows. Ctrl and Left or Right on a table's header
+    // size its column.
+    let net_y = if from.is_some_and(|f| {
+        scopes
+            .tables
+            .get(f)
+            .is_ok_and(|(cursor, cache)| cache.takes(cursor.0, net_y > 0.0))
+    }) {
+        0.0
+    } else {
+        net_y
+    };
+    if net_x != 0.0
+        && from.is_some_and(|f| scopes.table_headers.contains(f))
+        && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
+    {
+        return;
+    }
     // The arrows along a divider's axis are its own (the keys through its observer, the D-pad
     // through `split_by_pad`): they never also move focus off it. The others still do.
     let divider = from.and_then(|f| scopes.dividers.get(f).ok().map(SplitDivider::axis));
