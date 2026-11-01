@@ -5873,3 +5873,203 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 44	457	log	model	model		2026-11-01T08:41:15Z	6.3	
 44	458	log	tool	push gate	bash	2026-11-01T08:41:22Z	2.1	Committing the final log and pushing main :: cd /home/ladvien/bevy_gooey_loop && git add docs/loop-log.md && git commit -q -m "Loop log: iteration 21, merge, release v0.8.0 and cleanup" && git push -q orig
 44	459	log	model	model		2026-11-01T08:41:24Z	13.0	
+50	1	orient	model	model		2026-11-01T13:20:14Z	3.0	
+50	2	orient	tool	phase mark	bash	2026-11-01T13:20:17Z	0.7	python3 ~/.local/share/wiggum/steps.py mark orient; cd ~/bevy_gooey_loop && git status --short | head; git branch --show-current; git fetch -q origin loop-stats
+50	3	orient	tool	github	bash	2026-11-01T13:20:17Z	0.8	cd ~/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.number) \(.tit
+50	4	orient	model	model		2026-11-01T13:20:18Z	3.4	
+50	5	orient	tool	github	bash	2026-11-01T13:20:21Z	1.7	cd ~/bevy_gooey_loop && git log --oneline -8; git log --all --oneline --grep='G-0' | head; gh issue view 5 --repo bevy-coven/bevy_gooey --comments; gh issue lis
+50	6	orient	model	model		2026-11-01T13:20:23Z	1.0	
+50	7	orient	tool	github	bash	2026-11-01T13:20:24Z	0.4	cd ~/bevy_gooey_loop && gh issue view 5 --repo bevy-coven/bevy_gooey --json title,body,comments --jq '.title,.body,(.comments[]|.body)'
+50	8	orient	model	model		2026-11-01T13:20:24Z	2.1	
+50	9	research	tool	phase mark	bash	2026-11-01T13:20:26Z	0.1	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; wc -l src/*.rs; grep -n "fn apply_skin\|Res<GooeySkin>\|ResMut<GooeySkin>\|skin: \
+50	10	research	model	model		2026-11-01T13:20:27Z	0.7	
+50	11	research	tool	read files	read	2026-11-01T13:20:27Z	0.0	src/skin.rs:780-1100
+50	12	research	model	model		2026-11-01T13:20:27Z	1.3	
+50	13	research	tool	read files	read	2026-11-01T13:20:29Z	0.0	src/skin.rs:1103-1200
+50	14	research	tool	search	grep	2026-11-01T13:20:29Z	0.0	src/skin.rs:1090-1801
+50	15	research	model	model		2026-11-01T13:20:29Z	25.6	
+50	16	research	tool	shell	bash	2026-11-01T13:20:54Z	0.0	cd ~/bevy_gooey_loop && sed -n 1,60p docs/research/high-contrast.md | cut -c1-400; grep -n "SkinPreset\|Toast\b" src/lib.rs | head -20; grep -n "derive" src/ski
+50	17	research	tool	homestill	bash	2026-11-01T13:20:54Z	3.2	cd ~/bevy_gooey_loop && hs distill search "design system theming cascade inheritance scoped style override components" --output json 2>&1 | head -c 3000; echo; 
+50	18	research	model	model		2026-11-01T13:20:57Z	6.3	
+50	19	research	tool	read files	read	2026-11-01T13:21:04Z	0.8	Find preview quote in XAG 101 :: https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/101
+50	20	research	tool	read files	read	2026-11-01T13:21:04Z	0.8	Find inheritance quote for CSS custom properties :: https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Cascading_variables/Using_custom_properties
+50	21	research	model	model		2026-11-01T13:21:04Z	5.3	
+50	22	build	tool	phase mark	bash	2026-11-01T13:21:10Z	0.1	cd ~/bevy_gooey_loop && grep -n "Wagemans\|similarity" docs/research/lines.md | cut -c1-700 | head -8; python3 ~/.local/share/wiggum/steps.py mark build; sed -n
+50	23	build	model	model		2026-11-01T13:21:10Z	20.1	
+50	24	build	tool	edit files	write	2026-11-01T13:21:30Z	0.0	Writing skin-scope research note :: docs/research/skin-scope.md
+50	25	build	model	model		2026-11-01T13:21:30Z	3.0	
+50	26	build	tool	phase mark	bash	2026-11-01T13:21:33Z	0.1	cd ~/bevy_gooey_loop && git checkout -q -b loop/iter-22 && git add docs/research/skin-scope.md && git commit -qm "Research: skin scope" && git log --oneline -1;
+50	27	build	model	model		2026-11-01T13:21:33Z	3.1	
+50	28	build	tool	shell	bash	2026-11-01T13:21:36Z	0.0	cd ~/bevy_gooey_loop && wc -l tests/*.rs && sed -n 1,90p tests/options.rs; grep -n "^use\|^fn app\|^fn " tests/skin.rs | head -50
+50	29	build	model	model		2026-11-01T13:21:36Z	0.7	
+50	30	build	tool	read files	read	2026-11-01T13:21:37Z	0.0	tests/skin.rs:1-125
+50	31	build	model	model		2026-11-01T13:21:37Z	23.4	
+50	32	build	tool	edit files	write	2026-11-01T13:22:00Z	0.0	Writing scoped skin tests :: tests/scope.rs
+50	33	build	model	model		2026-11-01T13:22:00Z	24.7	
+50	34	build	tool	edit files	edit	2026-11-01T13:22:25Z	0.1	Add per-entity skin lookup to apply_skin :: [src/skin.rs#A3D3] PUT 795.=803: +/// Every input a widget's look depends on, read once per run of [`apply_skin`], except the skin, +/// which is the nearest [`
+50	35	build	model	model		2026-11-01T13:22:25Z	5.7	
+50	36	build	tool	read files	read	2026-11-01T13:22:31Z	0.1	src/skin.rs:940-1000
+50	37	build	tool	read files	read	2026-11-01T13:22:31Z	0.1	src/skin.rs:1076-1100
+50	38	build	model	model		2026-11-01T13:22:31Z	3.8	
+50	39	build	tool	edit files	edit	2026-11-01T13:22:35Z	0.1	Fix duplicated block and dropped unselected line :: [src/skin.rs#4B1F] CUT 982.=992 PUT 1084.=1084: + dirty.extend(unselected.read());
+50	40	build	model	model		2026-11-01T13:22:35Z	1.7	
+50	41	build	tool	read files	read	2026-11-01T13:22:36Z	0.0	src/skin.rs:100-115
+50	42	build	tool	git	bash	2026-11-01T13:22:36Z	0.1	cd ~/bevy_gooey_loop && git diff -U0 src/skin.rs | grep '^-' | head -40; grep -n "pub struct GooeyFonts" src/skin.rs; sed -n 1,30p src/skin.rs
+50	43	build	model	model		2026-11-01T13:22:37Z	3.2	
+50	44	build	tool	read files	read	2026-11-01T13:22:40Z	0.0	src/skin.rs:618-634
+50	45	build	model	model		2026-11-01T13:22:40Z	6.2	
+50	46	build	tool	edit files	edit	2026-11-01T13:22:46Z	0.1	Add SkinScope component :: [src/skin.rs#ED6C] PUT <626: +/// A skin for one subtree: the node that carries it and everything below it is styled from this +/// skin and not from the [`Gooe
+50	47	prove	tool	phase mark	bash	2026-11-01T13:22:46Z	6.5	cd ~/bevy_gooey_loop && sed -i 's/pub use skin::{GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, apply_skin};/pub use skin::{GooeyFonts, GooeySkin, Role, 
+50	48	prove	model	model		2026-11-01T13:22:53Z	8.6	
+50	49	prove	tool	read files	read	2026-11-01T13:23:01Z	0.0	src/skin.rs:944-975
+50	50	prove	model	model		2026-11-01T13:23:01Z	4.1	
+50	51	prove	tool	edit files	edit	2026-11-01T13:23:05Z	0.0	Group removal readers into one param :: [src/skin.rs#C973] PUT 958.=967: +/// Styles every entity with a [`Role`] from [`GooeySkin`] (or the [`SkinScope`] it stands in) and +/// [`GooeyFonts`]: the on
+50	52	prove	tool	read files	read	2026-11-01T13:23:05Z	0.0	src/skin.rs:974-1005
+50	53	prove	model	model		2026-11-01T13:23:05Z	4.3	
+50	54	prove	tool	edit files	edit	2026-11-01T13:23:10Z	0.0	Group removal readers into one param :: [src/skin.rs#C973] PUT 958.=967: +/// Styles every entity with a [`Role`] from [`GooeySkin`] (or the [`SkinScope`] it stands in) and +/// [`GooeyFonts`]: the on
+50	55	prove	tool	edit files	edit	2026-11-01T13:23:10Z	0.0	Add Removals alias :: [src/skin.rs#C973] PUT <943: +/// The components whose removal restyles a widget. +type Removals = ( + RemovedComponents<'static, 'static, Pressed>, + RemovedCo
+50	56	prove	model	model		2026-11-01T13:23:10Z	3.3	
+50	57	prove	tool	edit files	edit	2026-11-01T13:23:13Z	0.0	Fix doc comment placement :: [src/skin.rs#22A2] CUT 942.=942 PUT <953: +/// Whether a role is a widget whose parts follow its state: they are restyled with it.
+50	58	prove	tool	cargo test	bash	2026-11-01T13:23:13Z	4.8	cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --all-features --test scope 2>&1 | grep -v "^\s*Compiling" | tail -40
+50	59	prove	model	model		2026-11-01T13:23:18Z	10.5	
+50	60	prove	tool	read files	read	2026-11-01T13:23:28Z	0.0	src/skin.rs:941-952
+50	61	prove	model	model		2026-11-01T13:23:28Z	2.8	
+50	62	prove	tool	edit files	edit	2026-11-01T13:23:31Z	0.0	Make Removals lifetime-generic :: [src/skin.rs#E55E] PUT 943.=950: +type Removals<'w, 's> = ( + RemovedComponents<'w, 's, Pressed>, + RemovedComponents<'w, 's, InteractionDisabled>, + RemovedCom
+50	63	prove	tool	cargo test	bash	2026-11-01T13:23:31Z	10.5	cd ~/bevy_gooey_loop && sed -i 's/ mut removed: Removals,/ mut removed: Removals<'"'_, '_"'>,/' src/skin.rs && grep -n "mut removed" src/skin.rs; CARGO_BUILD_JO
+50	64	prove	model	model		2026-11-01T13:23:42Z	2.7	
+50	65	prove	tool	cargo test	bash	2026-11-01T13:23:44Z	5.8	cd ~/bevy_gooey_loop && sed -i 's/app.world_mut().entity_mut(scope).remove_child(button);/app.world_mut().entity_mut(button).remove::<ChildOf>();/' tests/scope.
+50	66	prove	model	model		2026-11-01T13:23:50Z	6.5	
+50	67	prove	tool	shell	bash	2026-11-01T13:23:57Z	0.1	cd ~/bevy_gooey_loop && sed -i "s/ RemovedComponents<'w, 's, SkinScope>,/ RemovedComponents<'w, 's, SkinScope>,\n RemovedComponents<'w, 's, ChildOf>,/; s/let (u
+50	68	prove	model	model		2026-11-01T13:23:57Z	0.9	
+50	69	prove	tool	read files	read	2026-11-01T13:23:58Z	0.0	src/skin.rs:1084-1116
+50	70	prove	model	model		2026-11-01T13:23:58Z	2.9	
+50	71	prove	tool	edit files	edit	2026-11-01T13:24:01Z	0.0	Handle ChildOf removal :: [src/skin.rs#91CC] PUT 1086.=1086: + unscoped.clear(); + orphaned.clear(); PUT 1109.=1112: + regions.extend(unscoped.read()); + let orphans = orphaned.read(); +
+50	72	prove	tool	cargo test	bash	2026-11-01T13:24:01Z	21.6	cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --all-features --test scope --test skin 2>&1 | grep -v "^\s*Compiling" | cut -c1-300 | grep -E "^test |err
+50	73	prove	model	model		2026-11-01T13:24:22Z	4.2	
+50	74	prove	tool	cargo test	bash	2026-11-01T13:24:26Z	20.9	cd ~/bevy_gooey_loop && cp src/skin.rs /tmp/skin.rs.g22 && sed -i 's/ regions.extend(unscoped.read());/ unscoped.clear();/' src/skin.rs && CARGO_BUILD_JOBS=2 ca
+50	75	prove	model	model		2026-11-01T13:24:47Z	6.4	
+50	76	prove	tool	git	bash	2026-11-01T13:24:54Z	0.2	cd ~/bevy_gooey_loop && git add src tests && git commit -qm "Add SkinScope: a subtree styled from its own skin (nearest scope wins, restyles exactly its subtree
+50	77	prove	model	model		2026-11-01T13:24:54Z	9.3	
+50	78	prove	tool	shell	bash	2026-11-01T13:25:03Z	0.1	cd ~/bevy_gooey_loop && cp examples/options.rs examples/scope.rs && sed -n 200,285p examples/scope.rs; grep -n "options" Cargo.toml
+50	79	prove	model	model		2026-11-01T13:25:03Z	2.8	
+50	80	prove	tool	read files	read	2026-11-01T13:25:06Z	0.1	examples/scope.rs:1-20
+50	81	prove	tool	read files	read	2026-11-01T13:25:06Z	0.1	examples/scope.rs:140-172
+50	82	prove	model	model		2026-11-01T13:25:06Z	9.8	
+50	83	prove	tool	edit files	edit	2026-11-01T13:25:16Z	0.0	Rewrite scope example header and setup :: [examples/scope.rs#2324] PUT 1.=12: +//! A subtree in a skin of its own: the left panel is the interface in the player's skin, with the +//! options rows that c
+50	84	prove	tool	shell	bash	2026-11-01T13:25:16Z	0.0	cd ~/bevy_gooey_loop && grep -n "pub fn toggle\|pub fn slider\|pub fn observe\|pub fn button" src/widgets.rs; grep -rn "Activate" examples/gallery.rs | head -5
+50	85	prove	model	model		2026-11-01T13:25:16Z	3.1	
+50	86	prove	tool	shell	bash	2026-11-01T13:25:19Z	0.0	cd ~/bevy_gooey_loop && grep -n "^use" examples/gallery.rs | head -20; sed -i 's/slider("Volume", 0.0, 100.0, 70.0)/slider("Volume", 70.0, 0.0..=100.0)/' exampl
+50	87	prove	model	model		2026-11-01T13:25:19Z	3.0	
+50	88	prove	tool	cargo build	bash	2026-11-01T13:25:22Z	60.1	[launched bg_3] cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --example scope 2>&1 | grep -E "^(error|warning)" -A8 | head -40; echo DISPLAY=$DISPLAY; echo $
+50	89	prove	model	model		2026-11-01T13:26:22Z	3.7	
+50	90	prove	tool	shell	bash	2026-11-01T13:26:26Z	0.1	cd ~/bevy_gooey_loop && sed -n 1,25p CHANGELOG.md | cut -c1-300; grep -n "high-contrast\|theme.gif\|Theme\|skin" README.md | cut -c1-300; wc -l README.md; grep 
+50	91	prove	model	model		2026-11-01T13:26:26Z	4.7	
+50	92	prove	tool	read files	read	2026-11-01T13:26:31Z	0.1	README.md:94-112
+50	93	prove	tool	read files	read	2026-11-01T13:26:31Z	0.1	docs/guide/host-api.md:24-36
+50	94	prove	model	model		2026-11-01T13:26:31Z	8.2	
+50	95	prove	tool	edit files	edit	2026-11-01T13:26:39Z	0.1	README skin bullet mentions SkinScope :: [README.md#1FB4] PUT 97.=100: +- **Skin the whole interface from one value** — `GooeySkin` is plain data with three presets (dark, + parchment and a high-contra
+50	96	prove	tool	edit files	edit	2026-11-01T13:26:39Z	0.0	host-api lists SkinScope :: [docs/guide/host-api.md#341F] PUT >24: +- `SkinScope(GooeySkin)` — on any node: that node and everything below it is styled from this skin and + not from the `G
+50	97	prove	tool	edit files	edit	2026-11-01T13:26:39Z	0.0	Changelog entry :: [CHANGELOG.md#UNK] PUT >3: + +### Added + +- `SkinScope(GooeySkin)`, a component on any node: that node and everything below it is styled from this skin and not
+50	98	prove	model	model		2026-11-01T13:26:39Z	3.8	
+50	99	prove	tool	edit files	edit	2026-11-01T13:26:43Z	0.0	Changelog entry :: [CHANGELOG.md#1A9C] PUT >3: + +### Added + +- `SkinScope(GooeySkin)`, a component on any node: that node and everything below it is styled from this skin and no
+50	100	prove	tool	shell	bash	2026-11-01T13:26:43Z	0.0	cd ~/bevy_gooey_loop && grep -n "^## " docs/guide/skins.md
+50	101	prove	model	model		2026-11-01T13:26:43Z	1.2	
+50	102	prove	tool	read files	read	2026-11-01T13:26:44Z	0.1	docs/guide/skins.md:40-46
+50	103	prove	model	model		2026-11-01T13:26:45Z	6.2	
+50	104	prove	tool	edit files	edit	2026-11-01T13:26:51Z	0.0	Skins guide section on SkinScope :: [docs/guide/skins.md#FC26] PUT >43: +## A skin for one subtree + +`SkinScope(skin)` on any node styles that node and everything below it from `skin` and not fro
+50	105	prove	model	model		2026-11-01T13:26:51Z	3.6	
+50	106	prove	tool	wait: build	wait	2026-11-01T13:26:54Z	4.8	Waiting for example build
+50	107	prove	model	model		2026-11-01T13:26:59Z	5.8	
+50	108	prove	tool	shell	bash	2026-11-01T13:27:05Z	28.9	mkdir -p /tmp/g22/after && cd ~/bevy_gooey_loop && G=$CARGO_TARGET_DIR/release/examples/scope; export DISPLAY=:93; GOOEY_FRAMES=60 GOOEY_SHOT=/tmp/g22/after/sco
+50	109	prove	model	model		2026-11-01T13:27:34Z	1.8	
+50	110	prove	tool	read files	read	2026-11-01T13:27:36Z	0.0	/tmp/g22/after/scope-dark.png
+50	111	prove	tool	read files	read	2026-11-01T13:27:36Z	0.0	/tmp/g22/after/scope-hc.png
+50	112	prove	model	model		2026-11-01T13:27:36Z	8.1	
+50	113	prove	tool	shell	bash	2026-11-01T13:27:44Z	0.1	cd ~/bevy_gooey_loop && grep -n "options.gif" docs/media/README.md | cut -c1-1200
+50	114	prove	model	model		2026-11-01T13:27:44Z	1.6	
+50	115	prove	tool	shell	bash	2026-11-01T13:27:46Z	0.1	cd ~/bevy_gooey_loop && sed -n 23p docs/media/README.md | cut -c1100-2200; python3 - <<'EOF' EOF
+50	116	prove	model	model		2026-11-01T13:27:46Z	1.5	
+50	117	prove	tool	shell	bash	2026-11-01T13:27:47Z	0.0	cd ~/bevy_gooey_loop && sed -n 23p docs/media/README.md | cut -c740-1200
+50	118	prove	model	model		2026-11-01T13:27:47Z	5.3	
+50	119	prove	tool	shell	bash	2026-11-01T13:27:53Z	25.3	mkdir -p /tmp/g22/frames && cd ~/bevy_gooey_loop && export DISPLAY=:93; GOOEY_FRAMES=215 GOOEY_KEY_EVERY=14 GOOEY_KEYS=down,right,right,up,right,right,down,down
+50	120	prove	tool	read files	read	2026-11-01T13:27:53Z	25.3	/tmp/g22/after/scope-end.png
+50	121	prove	model	model		2026-11-01T13:28:18Z	3.5	
+50	122	prove	tool	shell	bash	2026-11-01T13:28:21Z	1.1	ls /tmp/g22/after /tmp/g22/frames | tail -5; cd /tmp/g22/frames && python3 -c "print()"; magick montage f_0010.png f_0025.png f_0040.png f_0050.png f_0058.png f
+50	123	prove	model	model		2026-11-01T13:28:22Z	1.3	
+50	124	prove	tool	shell	bash	2026-11-01T13:28:24Z	0.8	cd /tmp/g22/frames && magick montage f_0010.png f_0025.png f_0040.png f_0050.png f_0058.png f_0066.png -tile 3x2 -geometry 640x360+2+2 /tmp/g22/montage.png && e
+50	125	prove	model	model		2026-11-01T13:28:25Z	1.3	
+50	126	prove	tool	read files	read	2026-11-01T13:28:26Z	0.7	/tmp/g22/montage.png
+50	127	prove	model	model		2026-11-01T13:28:27Z	5.4	
+50	128	prove	tool	clip record/render	bash	2026-11-01T13:28:32Z	1.5	cd ~/bevy_gooey_loop && ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/tmp/g22/frames/f_*.png' -vf "fps=15,scale=960:-1:flags=lanczos,split[a][
+50	129	prove	model	model		2026-11-01T13:28:34Z	3.6	
+50	130	prove	tool	read files	read	2026-11-01T13:28:37Z	0.0	README.md:144-160
+50	131	prove	model	model		2026-11-01T13:28:37Z	7.2	
+50	132	prove	tool	edit files	edit	2026-11-01T13:28:44Z	0.1	README scope GIF after theme caption :: [README.md#30A2] PUT >154: + +![The scope example: an Options panel with Text size, Theme, Subtitles, Volume and Play beside a smaller cream and brown Preview p
+50	133	prove	tool	shell	bash	2026-11-01T13:28:45Z	0.1	cd ~/bevy_gooey_loop && sed -n 8p docs/media/README.md | cut -c1-300; sed -n 24,25p docs/media/README.md | cut -c1-100
+50	134	prove	model	model		2026-11-01T13:28:45Z	2.0	
+50	135	prove	tool	read files	read	2026-11-01T13:28:47Z	0.2	docs/media/README.md:24-25
+50	136	prove	tool	shell	bash	2026-11-01T13:28:47Z	0.2	cd ~/bevy_gooey_loop && grep -n "examples/options.rs" AGENTS.md | cut -c1-80
+50	137	prove	model	model		2026-11-01T13:28:47Z	5.8	
+50	138	prove	tool	edit files	edit	2026-11-01T13:28:53Z	0.1	Media list row :: [docs/media/README.md#495B] PUT >25: +| `scope.gif` | a skin for one subtree (4.3 s, 960×540, the whole window of `examples/scope`): the Options panel (Text siz
+50	139	prove	tool	shell	bash	2026-11-01T13:28:53Z	0.1	cd ~/bevy_gooey_loop && sed -n 3,9p docs/media/README.md | cut -c1-200; sed -n 42p AGENTS.md | cut -c1-200; grep -n "^- \*\*A setting lives once" AGENTS.md | cu
+50	140	prove	model	model		2026-11-01T13:28:53Z	6.0	
+50	141	prove	tool	read files	read	2026-11-01T13:28:59Z	0.2	docs/media/README.md:7-8
+50	142	prove	tool	read files	read	2026-11-01T13:28:59Z	0.2	AGENTS.md:26-27
+50	143	prove	model	model		2026-11-01T13:28:59Z	5.7	
+50	144	prove	tool	edit files	edit	2026-11-01T13:29:05Z	0.6	AGENTS note and media intro :: [AGENTS.md#4F77] PUT >26: +- `SkinScope(GooeySkin)` (public component, in `src/skin.rs`) — a node and everything below it is styled from this skin, not the `Goo
+50	145	prove	model	model		2026-11-01T13:29:06Z	5.9	
+50	146	prove	tool	read files	read	2026-11-01T13:29:12Z	0.2	AGENTS.md:41-43:raw
+50	147	prove	model	model		2026-11-01T13:29:12Z	4.5	
+50	148	prove	tool	edit files	edit	2026-11-01T13:29:17Z	1.4	AGENTS note and media intro :: [AGENTS.md#4F77] PUT >25: +- `SkinScope(GooeySkin)` (public component, in `src/skin.rs`) — a node and everything below it is styled from this skin, not the `Goo
+50	149	prove	model	model		2026-11-01T13:29:18Z	7.8	
+50	150	prove	tool	shell	bash	2026-11-01T13:29:27Z	1.9	cd ~/bevy_gooey_loop && ls -l --time-style=full-iso $CARGO_TARGET_DIR/release/examples/gallery; git log -1 --format=%cd 3ae9eae; git diff --stat 3ae9eae HEAD --
+50	151	prove	model	model		2026-11-01T13:29:29Z	6.7	
+50	152	prove	tool	phase mark	bash	2026-11-01T13:29:36Z	2.1	cd ~/bevy_gooey_loop && git add -A README.md CHANGELOG.md AGENTS.md docs examples && git status --short && git commit -qm "Docs and demo: a skin for one subtree
+50	153	prove	model	model		2026-11-01T13:29:38Z	1.9	
+50	154	prove	tool	shell	bash	2026-11-01T13:29:40Z	0.1	[launched bg_4] ~/g22_bin/build.sh 2>&1 | grep -E "DONE|^error"
+50	155	prove	model	model		2026-11-01T13:29:40Z	3.4	
+50	156	prove	tool	shell	bash	2026-11-01T13:29:44Z	0.2	hs catalog recent --help 2>&1 | head -15
+50	157	prove	model	model		2026-11-01T13:29:44Z	2.0	
+50	158	prove	tool	edit files	write	2026-11-01T13:29:46Z	8.7	Re-scanning corpus for new game UI sources :: xd://mcp__home_still_catalog_recent
+50	159	prove	model	model		2026-11-01T13:29:55Z	4.3	
+50	160	prove	tool	wait: build	wait	2026-11-01T13:29:59Z	62.8	Waiting for baseline and after gallery builds
+50	161	prove	model	model		2026-11-01T13:31:02Z	5.9	
+50	162	prove	tool	shell	bash	2026-11-01T13:31:08Z	0.0	[launched bg_5] cat > ~/g22_bin/perf.sh <<'EOF' #!/bin/bash export DISPLAY=:93 GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SIZE=1280x720 cd ~/g22_bin mkdir -p /tmp/g
+50	163	prove	model	model		2026-11-01T13:31:08Z	3.0	
+50	164	prove	tool	wait: other	wait	2026-11-01T13:31:11Z	216.5	Waiting for perf runs
+50	165	prove	model	model		2026-11-01T13:34:47Z	3.0	
+50	166	prove	tool	shell	bash	2026-11-01T13:34:50Z	0.2	cd /tmp/g22 && for n in dark parchment large; do echo $n $(compare -metric AE before/$n.png after/$n.png null: 2>&1); done; python3 - <<'EOF' import re,statisti
+50	167	prove	model	model		2026-11-01T13:34:50Z	5.1	
+50	168	log	tool	phase mark	bash	2026-11-01T13:34:55Z	0.1	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; wc -l docs/loop-log.md; tail -c 300 docs/loop-log.md; git log --oneline -4; git worktre
+50	169	log	model	model		2026-11-01T13:34:56Z	20.2	
+50	170	ship	tool	phase mark	bash	2026-11-01T13:35:16Z	0.8	cd ~/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' ## Iteration 22 — 2026-11-01 — SkinScope: a subtree carries its own skin (G-01, #5) **Triage.** `gh issu
+50	171	ship	model	model		2026-11-01T13:35:16Z	3.7	
+50	172	ship	tool	push gate	bash	2026-11-01T13:35:20Z	0.0	[launched bg_6] cd ~/bevy_gooey_loop && git push -q origin loop/iter-22 2>&1 | tail -1; cat > ~/g22_bin/gate.sh <<'EOF' #!/bin/bash export CARGO_BUILD_JOBS=2 cd ~/bevy_gooey_lo
+50	173	ship	model	model		2026-11-01T13:35:20Z	1.2	
+50	174	ship	tool	wait: gate	wait	2026-11-01T13:35:21Z	0.7	Waiting for the gate
+50	175	ship	model	model		2026-11-01T13:35:22Z	2.7	
+50	176	ship	tool	shell	bash	2026-11-01T13:35:25Z	0.0	[launched bg_7] cd ~/bevy_gooey_loop && cargo fmt && git status --short && git add -A tests && git commit -qm "Tests: rustfmt tests/scope.rs" && sed -i 's/The five dark\/parchm
+50	177	ship	model	model		2026-11-01T13:35:25Z	0.8	
+50	178	ship	tool	wait: gate	wait	2026-11-01T13:35:26Z	157.3	Waiting for the gate
+50	179	ship	model	model		2026-11-01T13:38:03Z	3.4	
+50	180	release	tool	phase mark	bash	2026-11-01T13:38:06Z	9.8	cd ~/bevy_gooey_loop && git fetch -q origin && git status -sb | head -3 && git push -q origin main 2>&1 | tail -2; python3 ~/.local/share/wiggum/steps.py mark r
+50	181	release	model	model		2026-11-01T13:38:16Z	3.5	
+50	182	release	tool	shell	bash	2026-11-01T13:38:19Z	0.0	cd ~/bevy_gooey_loop && grep -n "0\.8\.0\|0\.8" README.md Cargo.toml docs/guide/*.md src/lib.rs | cut -c1-200
+50	183	release	model	model		2026-11-01T13:38:20Z	6.1	
+50	184	release	tool	cargo publish	bash	2026-11-01T13:38:26Z	13.4	cd ~/bevy_gooey_loop && sed -i '186s/0.1 – 0.8/0.1 – 0.9/' README.md && sed -i '3s/0.8.0/0.9.0/' Cargo.toml && sed -i 's/^## \[Unreleased\]$/## [Unreleased]\n\n
+50	185	release	model	model		2026-11-01T13:38:39Z	23.5	
+50	186	release	tool	push gate	bash	2026-11-01T13:39:03Z	7.7	cd ~/bevy_gooey_loop && git add CHANGELOG.md Cargo.toml README.md docs/media/README.md && git commit -qm "release: v0.9.0" && git status --short | head -3; carg
+50	187	release	model	model		2026-11-01T13:39:10Z	4.3	
+50	188	release	tool	github	bash	2026-11-01T13:39:15Z	2.7	cd ~/bevy_gooey_loop && SHA=$(git rev-parse --short HEAD~1); FULL=$(git log --format=%h -1 --grep='Add SkinScope'); echo $SHA $FULL; gh issue close 5 --repo bev
+50	189	release	model	model		2026-11-01T13:39:17Z	1.5	
+50	190	release	tool	github	bash	2026-11-01T13:39:19Z	1.3	cd ~/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_grimoire --state open --limit 100 --search "Needs bevy_gooey" --json number,title,body --jq '.[]|se
+50	191	release	model	model		2026-11-01T13:39:20Z	15.1	
+50	192	release	model	model		2026-11-01T13:39:35Z	6.0	
+50	193	release	tool	github	bash	2026-11-01T13:39:41Z	1.6	cd ~/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_grimoire --state open --limit 100 --json number,title,body --jq '.[]|select(.body|test("bevy_gooey#
+50	194	release	model	model		2026-11-01T13:39:43Z	1.9	
+50	195	release	tool	github	bash	2026-11-01T13:39:45Z	1.3	cd ~/bevy_gooey_loop && SHA=$(git rev-parse HEAD); for n in 211; do gh issue comment $n --repo bevy-coven/bevy_grimoire --body "bevy_gooey G-01 (bevy-coven/bevy
+50	196	release	model	model		2026-11-01T13:39:46Z	4.3	
+50	197	release	tool	git	bash	2026-11-01T13:39:50Z	0.1	cd ~/bevy_gooey_loop && git worktree remove ~/g22_base && rm -rf ~/g22_bin /tmp/g22 /tmp/skin.rs.g22 && git worktree list | tail -n +2; du -sh ~/g17_base ~/g17_
+50	198	release	model	model		2026-11-01T13:39:50Z	6.2	
+50	199	release	tool	push gate	bash	2026-11-01T13:39:57Z	1.7	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='docs/loop-log.md' t=open(p).read() t=t.replace("**Gate and ship:** see the lines appended below after the merge.\n"
+50	200	release	model	model		2026-11-01T13:39:58Z	21.3	
