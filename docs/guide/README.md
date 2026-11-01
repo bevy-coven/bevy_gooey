@@ -22,6 +22,8 @@ per subject. The README links each bullet to its page.
   and RB, and focus that never rests on a page that is not shown.
 - [Lists](lists.md) — `list(rows, children![..])`: the row count, the rail, the follow, PageUp and
   PageDown, and what a list cannot do yet.
+- [Popovers](popovers.md) — `popover(anchor, Placement::Below)`: a menu or a context menu beside a widget or at
+  the pointer, flipped to stay in the window, closed by Escape or a press elsewhere, modal or not.
 - [Toasts](toasts.md) — one spawn, the reading-time maths, `ToastSettings`, and the cap on the stack.
 - [Skins](skins.md) — `GooeySkin`, its fields, the two presets, and every rule `problems()` checks.
 - [Screen size](scale.md) — `GooeyScalePlugin`, `UiScaleSettings`, and whole-device-pixel lines.

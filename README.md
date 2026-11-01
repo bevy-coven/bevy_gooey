@@ -127,9 +127,12 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [navigation](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/navigation.md),
   [prompts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/prompts.md),
   [the dialog](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/widgets.md#a-dialog).
-- **Say something without building a layout** — `commands.spawn(toast("Game saved"))` stacks, times
-  itself to its own length and ages on real time:
-  [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md).
+- **Say something, or open a menu, without building a layout** — `commands.spawn(toast("Game saved"))`
+  stacks, times itself to its own length and ages on real time, and `popover(anchor, Placement::Below)`
+  opens a panel beside any widget or at the pointer, kept inside the window and closed by Escape or a
+  press elsewhere:
+  [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md),
+  [popovers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/popovers.md).
 - **Keep the interface's share of the screen at every resolution** — the skin's sizes scale with the
   window, and every border stays a whole number of device pixels:
   [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).
@@ -167,6 +170,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 ![The ladder example: a card "Surface ladder" in dark whose four nested cards, Surface 1 to Surface 4, each step lighter than the one it sits in and each labelled with its CIE L* and the step it makes (12.9, 18.3, 23.6, 31.6), the Theme row in the innermost; Right steps Theme to Parchment (cream cards on tan), High contrast (grey steps on black) and Tool (tighter cards in blue-grey), and Left steps it back to Dark](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/ladder.gif)
 
 *Tokens: `surface(n)` is step `n` of `skin.surfaces`, and `problems()` reports an `ElevationStep` when two neighbours are closer than ΔL\* 2 (the eye's threshold for a flat field); the four presets sit at 5 or more. The cards' padding and corners are `skin.space(3)` and `skin.corner(1)`.*
+
+![The popover example: a menu bar with File, View and Edit over a canvas; Enter opens File's menu under it with the ring on New, Down twice moves it to Save and Escape closes it with the ring back on File; Edit at the window's right edge opens its menu ending at the button's edge; a right-click near the bottom-right corner opens a context menu whose corner is at the pointer, and a click on the empty ground closes it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/popover.gif)
+
+*Popovers: `popover_modal(file_button, Placement::Below)` opens a menu under its anchor that holds focus and gives it back; at the window's edge it slides or flips and never leaves the window, and Escape or a press anywhere else closes it with one `PopoverClosed`.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 
