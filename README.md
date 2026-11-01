@@ -117,10 +117,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [shortcuts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/shortcuts.md),
   [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
-- **Scroll a list, show a table, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so the
-  player sees there is more; `table(columns, rows)` is ten thousand sortable rows in a dozen entities; `split(SplitAxis::Horizontal, a, b)` is two panes
+- **Scroll a list, show a table or a tree, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so the
+  player sees there is more; `table(columns, rows)` is ten thousand sortable rows and `tree(nodes)` ten thousand nodes that open and close, each in a dozen entities; `split(SplitAxis::Horizontal, a, b)` is two panes
   and a divider a drag or the keys move; `dock(DockLayout)` is tab groups of your registered panels the player rearranges by dragging a tab:
-  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md), [tables](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tables.md), [split panes](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/splits.md), [docks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/docks.md).
+  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md), [tables](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tables.md), [trees](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/trees.md), [split panes](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/splits.md), [docks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/docks.md).
 - **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the
   nearest widget, an open dialog (a framed panel with a title, a line of body and its choices) holds it,
   the ring appears the moment a key is pressed, Escape or the pad's B is one `Cancel` event that
@@ -201,9 +201,9 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *The command palette: `CommandList` holds the commands, `command_palette()` is the modal, "opn prj" is a fuzzy match, Up and Down move the lit row while focus stays in the field, and Enter or a click sends one `RunCommand`; a command that is off shows why and runs nothing.*
 
-![The table example: an inventory of ten thousand rows; a click on the Qty header sorts it with a chevron saying which way, a click selects a row, the arrows move the ring, End goes to the last row of the data, a column edge is dragged and the Name header sorts](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/table.gif)
+![The tree example: an outliner of ten thousand nodes; Down and Right walk into Ashfall Market and open Market Cellar, Left goes back and closes it, typing "ashfa" jumps to Ashfall Docks, a star opens every sibling and the count goes from 40 shown to 120, End goes to the last region, and a click on Ashfall's chevron closes it (10 shown) and opens it again](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tree.gif)
 
-*Tables: `table(columns, rows)` over a `RowSource` spawns only the rows in view; a header click sorts (`SortBy`), a column edge drags (or Ctrl and an arrow), a click or Space selects by key, and rows that change under a scroll keep the player's place.*
+*Trees: `tree(nodes)` is the table's pool over `TreeNode`s, ten thousand in a dozen entities; Right and Left open, close and walk, `*` opens the siblings, typing goes to a label, a chevron click opens (`TreeToggled`), and a removed node hands its selection to a neighbour. [Tables](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tables.md) share the pool and the selection.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 

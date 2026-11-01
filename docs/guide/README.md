@@ -32,6 +32,8 @@ per subject. The README links each bullet to its page.
   with an unknown panel does.
 - [Tables](tables.md) — `table(columns, rows)` over a `RowSource`: ten thousand rows in a dozen entities, a header
   that sorts (`SortBy`), columns the player sizes, a cursor and a selection by key, and rows that change under a scroll.
+- [Trees](trees.md) — `tree(nodes)` over `TreeNode`s: ten thousand nodes in a dozen entities that open and close
+  (a chevron, Right and Left, `*`), type-ahead, a selection by key that follows a node and an heir when it is removed.
 - [Popovers](popovers.md) — `popover(anchor, Placement::Below)`: a menu or a context menu beside a widget or at
   the pointer, flipped to stay in the window, closed by Escape or a press elsewhere, modal or not.
 - [Menus](menus.md) — `menu_bar(children![menu_title(..)])`: a bar of titles with menus of commands, checks, radio

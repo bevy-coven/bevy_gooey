@@ -59,6 +59,7 @@ use crate::text::{
     TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
 };
 use crate::toast::{Toast, ToastKind};
+use crate::tree::{Tree, TreeNode, TreeView};
 
 /// A control's label is one line: the row is as wide as its label and its control need, so a label
 /// that wraps was wrapped by a rounding error in the row's width (a label 210 px wide in a row that
@@ -1127,7 +1128,52 @@ pub(crate) fn list_rail(view: Entity) -> impl Bundle {
 /// # }
 /// ```
 pub fn table(columns: impl IntoIterator<Item = Column>, rows: impl RowSource) -> impl Bundle {
-    table_bundle(columns, rows)
+    table_bundle(columns, rows, false)
+}
+
+/// A tree: nodes that open and close, as many as you have, in a handful of entities. A node is a
+/// [`TreeNode`] (a key that is its identity, a label, its children, open or closed to start); the
+/// player opens one with a click on its chevron or Right and closes it with a click or Left, and
+/// the tree shows only the nodes whose parents are open, a row each, a button's height, the
+/// children indented one level more. A closed node keeps its descendants' state (reopened, they
+/// are as they were). It is the [`table`]'s rows in one column: the same scrolling, virtualized
+/// pool (an outliner of 10,000 nodes is a screenful of entities), the same cursor and selection
+/// by key ([`SelectMode`](crate::SelectMode) `Single` by default, `Multi` for Ctrl and Shift), the
+/// same `ValueChange<TableSelection>` ([`TableSelection`](crate::TableSelection)) and
+/// [`RowActivated`](crate::RowActivated) for Enter and a double click.
+///
+/// One tab stop with a cursor row. Up, Down, Home, End and the Page keys move it over the nodes
+/// shown; Right opens a closed node and goes to the first child of an open one; Left closes an
+/// open node and goes to the parent of any other; `*` opens every sibling of the cursor node; and
+/// typing goes to the next node whose label starts with what was typed (within a second). The
+/// D-pad and South do the same on a pad. [`TreeToggled`](crate::TreeToggled) tells the game what
+/// the player opened or closed. Nodes change through the [`Table`](crate::Table) component
+/// (`table.source_mut::<Tree>()`: [`Tree::insert`], [`Tree::remove`], [`Tree::set_open`]); a
+/// removed node that was selected passes the selection to its next sibling, else the one before,
+/// else its parent.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     panel(),
+///     children![(
+///         tree([TreeNode::new(1, "World").expanded().children([
+///             TreeNode::new(2, "Camera"),
+///             TreeNode::new(3, "Lights").child(TreeNode::new(4, "Sun")),
+///         ])]),
+///         SelectMode::Multi,
+///         observe(|picked: On<ValueChange<TableSelection>>| info!("{:?}", picked.value.0)),
+///     )],
+/// ));
+/// # }
+/// ```
+pub fn tree(nodes: impl IntoIterator<Item = TreeNode>) -> impl Bundle {
+    (
+        table_bundle([Column::new("").unsortable()], Tree::new(nodes), true),
+        TreeView,
+    )
 }
 
 /// Tabs: a strip of one- or two-word labels above pages of widgets, one page shown at a time. The
