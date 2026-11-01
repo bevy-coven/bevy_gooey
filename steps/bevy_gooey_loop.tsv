@@ -6626,3 +6626,388 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 52	268	log	tool	edit files	edit	2026-11-01T14:34:38Z	0.0	Tidy gate sentence :: [docs/loop-log.md#43E4] PUT 990.=990: +**Gate.** Run twice with `CARGO_BUILD_JOBS=2`: on the branch (fmt, clippy, all tests and doctests, `cargo check --lib` an
 52	269	log	tool	push gate	bash	2026-11-01T14:34:38Z	1.5	Commit and push final log :: cd ~/bevy_gooey_loop && git add docs/loop-log.md && git commit -q -m "Loop log: iteration 24, release v0.11.0 and cleanup" && git push -q origin main 2>&1 | tai
 52	270	log	model	model		2026-11-01T14:34:39Z	7.3	
+53	1	orient	model	model		2026-11-01T14:35:09Z	2.9	
+53	2	orient	tool	phase mark	bash	2026-11-01T14:35:12Z	2.0	Orienting: audit, issues, parked work :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; git status --short | head; git branch --show-current; git fetch -q origin; git fetch
+53	3	orient	model	model		2026-11-01T14:35:14Z	3.8	
+53	4	orient	tool	github	bash	2026-11-01T14:35:18Z	0.8	Reading G-04 issue and log tail :: cd ~/bevy_gooey_loop && gh issue view 8 --repo bevy-coven/bevy_gooey --comments; tail -60 docs/loop-log.md
+53	5	orient	model	model		2026-11-01T14:35:19Z	1.1	
+53	6	orient	tool	github	bash	2026-11-01T14:35:20Z	0.4	Reading issue #8 body :: cd ~/bevy_gooey_loop && gh issue view 8 --repo bevy-coven/bevy_gooey --json body,comments --jq '.body, (.comments[]|.body)'
+53	7	orient	model	model		2026-11-01T14:35:20Z	2.6	
+53	8	research	tool	phase mark	bash	2026-11-01T14:35:23Z	0.1	Reading tooltip and sources :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; wc -l src/*.rs tests/*.rs | tail -50; cat src/tooltip.rs; ls ~/.cargo/registry/src
+53	9	research	model	model		2026-11-01T14:35:23Z	1.8	
+53	10	research	tool	shell	bash	2026-11-01T14:35:25Z	0.0	Reading Bevy's popover source :: cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0 && ls src; wc -l src/popover.rs; cat src/popover.rs; grep -n "bevy" ~/bevy_gooey_loop/Cargo.to
+53	11	research	tool	read files	read	2026-11-01T14:35:25Z	0.0	Reading tooltip.rs :: src/tooltip.rs
+53	12	research	model	model		2026-11-01T14:35:25Z	1.5	
+53	13	research	tool	shell	bash	2026-11-01T14:35:26Z	0.0	Reading Bevy popover source :: cd ~ && P=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0); echo $P; wc -l $P/src/popover.rs; cat $P/src/popover.rs; grep -n "bevy" ~/bev
+53	14	research	model	model		2026-11-01T14:35:26Z	34.4	
+53	15	research	tool	shell	bash	2026-11-01T14:36:00Z	0.0	Reading cancel and nav scoping :: cd ~/bevy_gooey_loop && cat src/cancel.rs; grep -n "Dialog\|struct FocusScopes\|fn cancel_target\|fn hides\|fn landing\|fn active\|fn scope" src/nav.rs | head -
+53	16	research	model	model		2026-11-01T14:36:00Z	1.7	
+53	17	research	tool	read files	read	2026-11-01T14:36:02Z	0.0	Reading nav scopes :: src/nav.rs:1-300
+53	18	research	tool	read files	read	2026-11-01T14:36:02Z	0.0	Reading dialog focus code :: src/nav.rs:410-578
+53	19	research	model	model		2026-11-01T14:36:02Z	3.4	
+53	20	research	tool	shell	bash	2026-11-01T14:36:06Z	0.0	Reading dialog() and tooltip skin usage :: cd ~/bevy_gooey_loop && grep -n "pub fn dialog" -B30 -A40 src/widgets.rs | head -150; grep -n "Tooltip" src/skin.rs | head -40
+53	21	research	model	model		2026-11-01T14:36:06Z	1.3	
+53	22	research	tool	shell	bash	2026-11-01T14:36:07Z	0.0	Reading tooltip placement in apply_skin :: cd ~/bevy_gooey_loop && sed -n 1740,1830p src/skin.rs; sed -n 1060,1090p src/skin.rs; sed -n 40,110p src/tooltip.rs; sed -n 940,960p src/skin.rs
+53	23	research	model	model		2026-11-01T14:36:07Z	5.8	
+53	24	research	tool	shell	bash	2026-11-01T14:36:13Z	0.0	Reading Bevy Button observers :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.0/src && sed -n 1,140p button.rs; grep -n "Popover\|popover" ~/bevy_gooey_loop/sr
+53	25	research	model	model		2026-11-01T14:36:13Z	43.8	
+53	26	research	tool	shell	bash	2026-11-01T14:36:57Z	0.0	Reading apply_skin structure :: cd ~/bevy_gooey_loop && sed -n 1090,1330p src/skin.rs
+53	27	research	model	model		2026-11-01T14:36:57Z	5.3	
+53	28	research	tool	shell	bash	2026-11-01T14:37:02Z	0.0	Reading apply_skin tail and tooltip placement :: cd ~/bevy_gooey_loop && sed -n 1330,1420p src/skin.rs; sed -n 1960,2138p src/skin.rs
+53	29	research	model	model		2026-11-01T14:37:02Z	67.8	
+53	30	research	tool	shell	bash	2026-11-01T14:38:10Z	0.0	Reading restyle's colours :: cd ~/bevy_gooey_loop && sed -n 1425,1520p src/skin.rs; sed -n 1590,1625p src/skin.rs; grep -n "Role::Panel =>" src/skin.rs
+53	31	research	model	model		2026-11-01T14:38:10Z	7.6	
+53	32	research	tool	homestill	bash	2026-11-01T14:38:17Z	3.5	Reading note format; searching corpus :: cd ~/bevy_gooey_loop && ls docs/research docs/guide; sed -n 1,200p docs/research/tokens.md | cut -c1-400 | head -90; (timeout 90 hs distill search "pop-up menu 
+53	33	research	model	model		2026-11-01T14:38:21Z	5.2	
+53	34	research	tool	homestill	bash	2026-11-01T14:38:26Z	1.9	Searching home-still for popup/menu sources :: cd ~/bevy_gooey_loop && for q in "cascading menus hierarchical menu pointer path submenu selection time" "context menu design right click pop-up menu usability"
+53	35	research	tool	web	web_search	2026-11-01T14:38:26Z	5.8	Finding technical source on flip and shift :: Floating UI flip shift middleware "flip" "shift" keep floating element in view docs
+53	36	research	model	model		2026-11-01T14:38:32Z	4.8	
+53	37	research	tool	web	web_search	2026-11-01T14:38:37Z	10.2	Finding shipping-game popup/menu source :: GDC game UI postmortem context menu dropdown gamepad navigation focus returns to the button that opened it
+53	38	research	tool	read files	read	2026-11-01T14:38:37Z	10.2	Reading APG menu button pattern :: https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/
+53	39	research	model	model		2026-11-01T14:38:47Z	6.3	
+53	40	research	tool	shell	bash	2026-11-01T14:38:53Z	0.0	Checking earlier notes' shipping sources :: cd ~/bevy_gooey_loop && for f in tooltip dialog focus; do echo "== $f"; awk '/## How shipping games do it/{p=1} /## Model adopted/{p=0} p' docs/research/$f.md |
+53	41	research	model	model		2026-11-01T14:38:53Z	3.2	
+53	42	research	tool	homestill	bash	2026-11-01T14:38:57Z	0.7	Fetching craft quote on pop-up menus :: cd ~/bevy_gooey_loop && timeout 90 hs distill search "marking menus pop-up menu appear at pointer cursor reduce travel distance" --output json 2>&1 | python3 -c
+53	43	research	model	model		2026-11-01T14:38:57Z	16.9	
+53	44	research	model	model		2026-11-01T14:39:14Z	32.8	
+53	45	research	tool	edit files	write	2026-11-01T14:39:47Z	0.0	Writing popover research note :: docs/research/popover.md
+53	46	research	model	model		2026-11-01T14:39:47Z	4.3	
+53	47	research	tool	homestill	bash	2026-11-01T14:39:51Z	2.2	Verifying quotes before committing :: cd ~/bevy_gooey_loop && timeout 90 hs distill search "A Comparison of Virtual Reality Menu Archetypes marking menus" --output json 2>&1 | python3 -c " import js
+53	48	research	model	model		2026-11-01T14:39:53Z	5.5	
+53	49	research	tool	shell	bash	2026-11-01T14:39:59Z	0.1	Fixing quotes and committing research note :: cd ~/bevy_gooey_loop && python3 - <<'E' p='docs/research/popover.md' t=open(p).read() t=t.replace("1. Gallo et al., *A Comparison","1. Lakier et al., *A Compari
+53	50	research	model	model		2026-11-01T14:39:59Z	3.4	
+53	51	build	tool	phase mark	bash	2026-11-01T14:40:02Z	53.6	Building baseline gallery :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; ls ~/g25_bin /tmp/g25 2>&1 | head -3; echo $CARGO_TARGET_DIR $DISPLAY; git checkout -
+53	52	build	model	model		2026-11-01T14:40:56Z	5.4	
+53	53	build	tool	shell	bash	2026-11-01T14:41:01Z	0.0	Reading lib.rs wiring :: cd ~/bevy_gooey_loop && sed -n 1,354p src/lib.rs | grep -v "^//!" | head -230
+53	54	build	model	model		2026-11-01T14:41:01Z	5.0	
+53	55	build	tool	shell	bash	2026-11-01T14:41:06Z	0.0	Reading Bevy picking API :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_picking-0.20.0/src && grep -n "pub struct PointerInput" -B3 -A12 input.rs pointer.rs | head -50; 
+53	56	build	model	model		2026-11-01T14:41:06Z	4.8	
+53	57	build	tool	read files	read	2026-11-01T14:41:11Z	0.0	Reading pointer test harness :: tests/pointer.rs
+53	58	build	model	model		2026-11-01T14:41:11Z	0.9	
+53	59	build	tool	read files	read	2026-11-01T14:41:12Z	0.0	Reading harness details :: tests/pointer.rs:5-120
+53	60	build	model	model		2026-11-01T14:41:12Z	9.1	
+53	61	build	tool	shell	bash	2026-11-01T14:41:21Z	0.0	Reading click_to_focus and observe() :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_input_focus-0.20.0/src && grep -n "fn click_to_focus" -B4 -A40 lib.rs | head -80; grep -n "pub fn
+53	62	build	model	model		2026-11-01T14:41:21Z	2.1	
+53	63	build	tool	shell	bash	2026-11-01T14:41:23Z	0.0	Reading click_to_focus :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_input_focus-0.20.0/src && grep -rn "click_to_focus" . | head; grep -n "fn click_to_focus" -B3 -A3
+53	64	build	model	model		2026-11-01T14:41:23Z	23.1	
+53	65	build	tool	shell	bash	2026-11-01T14:41:47Z	0.0	Checking UI scale semantics :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui-0.20.0/src && grep -n "impl ComputedUiRenderTargetInfo" -A40 ui_node.rs | head -60; grep -rn "
+53	66	build	model	model		2026-11-01T14:41:47Z	9.8	
+53	67	build	tool	shell	bash	2026-11-01T14:41:56Z	0.0	Checking FixedNode usage :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui-0.20.0/src && grep -rn "FixedNode" --include=*.rs . | grep -v "^./ui_node.rs:35[0-9][0-9]" | h
+53	68	build	model	model		2026-11-01T14:41:56Z	14.6	
+53	69	build	tool	shell	bash	2026-11-01T14:42:11Z	0.0	Reading Panel/Menu arms :: cd ~/bevy_gooey_loop && sed -n 1636,1700p src/skin.rs; grep -n "Role::Menu\|Role::Scrim" src/skin.rs | head; grep -n "pub fn menu" -B14 -A16 src/widgets.rs | he
+53	70	build	model	model		2026-11-01T14:42:11Z	54.8	
+53	71	build	tool	edit files	write	2026-11-01T14:43:06Z	0.0	Writing popover module :: src/popover.rs
+53	72	build	model	model		2026-11-01T14:43:06Z	4.6	
+53	73	build	tool	shell	bash	2026-11-01T14:43:11Z	0.0	Dropping dead code from popover.rs :: cd ~/bevy_gooey_loop && python3 - <<'E' p='src/popover.rs' t=open(p).read() i=t.index("/// The anchor a popover is placed against, and where") t=t[:i].rstrip()+
+53	74	build	model	model		2026-11-01T14:43:11Z	3.4	
+53	75	build	tool	shell	bash	2026-11-01T14:43:14Z	0.0	Locating Role::Tooltip uses :: cd ~/bevy_gooey_loop && grep -n "Role::Tooltip\|Role::Scrim\|Tooltip,$\|TooltipBox" src/skin.rs
+53	76	build	tool	read files	read	2026-11-01T14:43:14Z	0.0	Reading Role enum spot :: src/skin.rs:944-952
+53	77	build	model	model		2026-11-01T14:43:14Z	4.7	
+53	78	build	tool	read files	read	2026-11-01T14:43:19Z	0.0	Reading fill None list :: src/skin.rs:1538-1572
+53	79	build	model	model		2026-11-01T14:43:19Z	3.9	
+53	80	build	tool	read files	read	2026-11-01T14:43:23Z	0.0	Reading Styled tuple :: src/skin.rs:1066-1078
+53	81	build	tool	search	grep	2026-11-01T14:43:23Z	0.0	Locating tooltip lines :: src/skin.rs
+53	82	build	model	model		2026-11-01T14:43:23Z	14.0	
+53	83	build	model	model		2026-11-01T14:43:37Z	8.0	
+53	84	build	tool	read files	read	2026-11-01T14:43:45Z	0.0	Reading tooltip block fresh :: src/skin.rs:2053-2076
+53	85	build	model	model		2026-11-01T14:43:45Z	8.1	
+53	86	build	tool	edit files	edit	2026-11-01T14:43:53Z	0.0	Wiring Role::Popover into apply_skin :: [src/skin.rs#E667] PUT 947.=947: + Tooltip, + /// A [`crate::popover`]'s panel: a card floating beside its anchor, opaque and framed in + /// [`GooeySkin::outli
+53	87	build	model	model		2026-11-01T14:43:53Z	5.5	
+53	88	build	tool	edit files	edit	2026-11-01T14:43:58Z	0.0	Wiring Role::Popover into apply_skin :: [src/skin.rs#E667] PUT 947.=947: + Tooltip, + /// A [`crate::popover`]'s panel: a card floating beside its anchor, opaque and framed in + /// [`GooeySkin::outli
+53	89	build	model	model		2026-11-01T14:43:58Z	2.9	
+53	90	build	tool	shell	bash	2026-11-01T14:44:01Z	0.0	Locating tooltip binding names :: cd ~/bevy_gooey_loop && grep -n "tooltip,$\|tooltip\.as_ref" src/skin.rs; sed -n 15,24p src/skin.rs
+53	91	build	model	model		2026-11-01T14:44:01Z	0.9	
+53	92	build	tool	read files	read	2026-11-01T14:44:02Z	0.0	Reading restyle params :: src/skin.rs:1442-1456
+53	93	build	model	model		2026-11-01T14:44:02Z	1.3	
+53	94	build	tool	edit files	edit	2026-11-01T14:44:03Z	0.0	Renaming binding and import :: [src/skin.rs#8B70] PUT 1444.=1444: + floating, PUT 1455.=1455: + let tip = floating.as_ref().and_then(|(_, _, tip, _)| tip.copied()); PUT <21: +use crate::popov
+53	95	build	model	model		2026-11-01T14:44:03Z	1.3	
+53	96	build	tool	edit files	edit	2026-11-01T14:44:05Z	0.0	Renaming binding and import :: [src/skin.rs#8B70] PUT 1444.=1444: + floating, PUT 1455.=1455: + let tip = floating.as_ref().and_then(|(_, _, tip, _)| tip.copied()); PUT <21: +use crate::popov
+53	97	build	model	model		2026-11-01T14:44:05Z	8.1	
+53	98	build	tool	shell	bash	2026-11-01T14:44:13Z	0.0	Reading widgets.rs imports :: cd ~/bevy_gooey_loop && sed -n 1,40p src/widgets.rs; sed -n 1226,1236p src/widgets.rs
+53	99	build	model	model		2026-11-01T14:44:13Z	10.9	
+53	100	build	tool	edit files	edit	2026-11-01T14:44:24Z	0.0	Adding popover widget functions :: [src/widgets.rs#6F1A] PUT >1231: + +/// A panel that opens beside `anchor`, stays inside the window, and closes when the player +/// presses anywhere else or ba
+53	101	build	model	model		2026-11-01T14:44:24Z	2.7	
+53	102	build	tool	read files	read	2026-11-01T14:44:26Z	0.0	Getting widgets.rs tag :: src/widgets.rs:1228-1233
+53	103	build	tool	read files	read	2026-11-01T14:44:26Z	0.0	Getting imports lines :: src/widgets.rs:38-42
+53	104	build	model	model		2026-11-01T14:44:26Z	9.4	
+53	105	build	tool	edit files	edit	2026-11-01T14:44:36Z	0.0	Adding popover widget functions :: [src/widgets.rs#E306] PUT >1231: + +/// A panel that opens beside `anchor`, stays inside the window, and closes when the player +/// presses anywhere else or ba
+53	106	build	model	model		2026-11-01T14:44:36Z	8.6	
+53	107	build	tool	edit files	edit	2026-11-01T14:44:44Z	0.1	Adding popover widget functions :: [src/widgets.rs#E306] PUT >1231: + +/// A panel that opens beside `anchor`, stays inside the window, and closes when the player +/// presses anywhere else or ba
+53	108	build	model	model		2026-11-01T14:44:45Z	6.1	
+53	109	build	tool	shell	bash	2026-11-01T14:44:51Z	0.1	Locating lib.rs anchors :: cd ~/bevy_gooey_loop && grep -n "^mod options\|^mod prompt\|pub use options\|pub use prompt\|panel, prompt, prompts\|register_type::<Tooltip>\|register_type::<D
+53	110	build	model	model		2026-11-01T14:44:51Z	0.9	
+53	111	build	tool	read files	read	2026-11-01T14:44:52Z	0.0	Reading lib.rs exports :: src/lib.rs:123-178
+53	112	build	model	model		2026-11-01T14:44:52Z	2.4	
+53	113	build	tool	edit files	edit	2026-11-01T14:44:54Z	0.0	Exporting popover and wiring plugins :: [src/lib.rs#7011] PUT <126: +mod popover; PUT <161: +pub use popover::{ + CloseReason, Placement, PopoverClosed, PopoverPanel, anchor_pointer_popovers, + close_
+53	114	build	tool	read files	read	2026-11-01T14:44:54Z	0.0	Reading register spot :: src/lib.rs:238-244
+53	115	build	model	model		2026-11-01T14:44:54Z	3.5	
+53	116	build	tool	edit files	edit	2026-11-01T14:44:58Z	0.0	Registering types and systems :: [src/lib.rs#9D04] PUT >244: + .register_type::<Placement>() + .register_type::<PopoverPanel>() + .register_type::<CloseReason>() + .register_type::<PopoverClose
+53	117	build	tool	search	grep	2026-11-01T14:44:58Z	0.0	Locating nav chain :: src/lib.rs
+53	118	build	model	model		2026-11-01T14:44:58Z	1.1	
+53	119	build	tool	edit files	edit	2026-11-01T14:44:59Z	0.0	Adding popover systems to nav chain :: [src/lib.rs#A9AA] PUT >315: + close_popovers_on_press, + anchor_pointer_popovers, + drop_pointer_anchors,
+53	120	build	model	model		2026-11-01T14:44:59Z	5.1	
+53	121	build	tool	edit files	edit	2026-11-01T14:45:04Z	0.0	Targeting Cancel at non-modal popovers :: [src/nav.rs#4B37] PUT >97: + /// The popovers open: a `Cancel` from the widget one is anchored to reaches the popover. + popovers: Query< + 'w, + 's, + ( + Enti
+53	122	build	model	model		2026-11-01T14:45:04Z	2.6	
+53	123	build	tool	edit files	edit	2026-11-01T14:45:06Z	0.0	Importing PopoverPanel in nav :: [src/nav.rs#0E4F] PUT <28: +use crate::popover::PopoverPanel;
+53	124	build	model	model		2026-11-01T14:45:06Z	1.5	
+53	125	build	tool	cargo build	bash	2026-11-01T14:45:08Z	25.2	Compiling the library :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo check --lib --all-features 2>&1 | grep -E "^(error|warning)" -A12 | head -80
+53	126	build	model	model		2026-11-01T14:45:33Z	3.3	
+53	127	build	tool	shell	bash	2026-11-01T14:45:36Z	0.0	Locating PopoverPoint :: cd ~/bevy_gooey_loop && grep -n "PopoverPoint" -B3 src/popover.rs | head -12
+53	128	build	model	model		2026-11-01T14:45:36Z	0.9	
+53	129	build	tool	read files	read	2026-11-01T14:45:37Z	0.0	Reading for edit tag :: src/popover.rs:93-97
+53	130	build	model	model		2026-11-01T14:45:37Z	1.6	
+53	131	build	tool	edit files	edit	2026-11-01T14:45:39Z	0.0	Making PopoverPoint public :: [src/popover.rs#DEA0] PUT 94.=96: +/// The zero-size node at the pointer that a [`Placement::AtPointer`] popover is anchored to: a +/// child of the popover's a
+53	132	build	model	model		2026-11-01T14:45:39Z	3.1	
+53	133	build	tool	edit files	edit	2026-11-01T14:45:42Z	0.0	Exporting PopoverPoint :: [src/lib.rs#2EA7] PUT 163.=163: + CloseReason, Placement, PopoverClosed, PopoverPanel, PopoverPoint, anchor_pointer_popovers,
+53	134	build	model	model		2026-11-01T14:45:42Z	7.9	
+53	135	build	tool	shell	bash	2026-11-01T14:45:50Z	0.0	Checking resize and contrast test idioms :: cd ~/bevy_gooey_loop && grep -n "set_physical_resolution\|resolution.set\|fn resize" tests/*.rs | head -5; sed -n 1,120p tests/dialog_look.rs | head -150; grep 
+53	136	build	model	model		2026-11-01T14:45:50Z	1.4	
+53	137	build	tool	shell	bash	2026-11-01T14:45:51Z	0.0	Reading test idioms for keys and contrast :: cd ~/bevy_gooey_loop && sed -n 78,100p tests/scale.rs; sed -n 270,323p tests/dialog_look.rs; grep -n "KeyboardInput" tests/dialog.rs | head -3; sed -n 30,80p te
+53	138	build	model	model		2026-11-01T14:45:51Z	37.6	
+53	139	build	model	model		2026-11-01T14:46:29Z	93.6	
+53	140	build	tool	edit files	write	2026-11-01T14:48:03Z	0.0	Writing popover tests :: tests/popover.rs
+53	141	build	model	model		2026-11-01T14:48:03Z	8.4	
+53	142	build	tool	remote wait	bash	2026-11-01T14:48:11Z	8.6	Running popover tests :: cd ~/bevy_gooey_loop && python3 - <<'E' p='tests/popover.rs' t=open(p).read() a=t.index("fn inside(app: &App") b=t.index("fn closed(app: &App)") t=t[:a]+'''fn i
+53	143	build	model	model		2026-11-01T14:48:20Z	3.4	
+53	144	build	tool	cargo test	bash	2026-11-01T14:48:23Z	7.7	Running popover tests :: cd ~/bevy_gooey_loop && python3 - <<'E' import re p='tests/popover.rs' t=open(p).read() t=re.sub(r"click_at\(&mut app, rect\(&app, (\w+)\)\.center\(\)\);",r"cli
+53	145	build	model	model		2026-11-01T14:48:31Z	31.8	
+53	146	build	tool	shell	bash	2026-11-01T14:49:02Z	0.0	Fixing test helpers :: cd ~/bevy_gooey_loop && python3 - <<'E' p='tests/popover.rs' t=open(p).read() t=t.replace('''fn child_named(app: &mut App, root: Entity, text: &str) -> Entity {
+53	147	build	model	model		2026-11-01T14:49:02Z	1.3	
+53	148	build	tool	shell	bash	2026-11-01T14:49:04Z	0.0	Locating OverrideClip in popover_panel :: cd ~/bevy_gooey_loop && grep -n "OverrideClip" src/widgets.rs
+53	149	build	model	model		2026-11-01T14:49:04Z	0.9	
+53	150	build	tool	read files	read	2026-11-01T14:49:05Z	0.0	Reading popover_panel :: src/widgets.rs:1296-1330
+53	151	build	model	model		2026-11-01T14:49:05Z	2.4	
+53	152	build	tool	edit files	edit	2026-11-01T14:49:07Z	0.0	Making the panel a FixedNode :: [src/widgets.rs#EC65] PUT 1309.=1311: + // Laid out on the window, not inside its anchor: its width is the room the window leaves + // and not the anchor's (a n
+53	153	build	model	model		2026-11-01T14:49:07Z	1.5	
+53	154	build	tool	edit files	edit	2026-11-01T14:49:09Z	0.0	Making the panel a FixedNode :: [src/widgets.rs#EC65] PUT 1309.=1311: + // Laid out on the window, not inside its anchor: its width is the room the window leaves + // and not the anchor's (a n
+53	155	build	model	model		2026-11-01T14:49:09Z	1.6	
+53	156	build	tool	cargo test	bash	2026-11-01T14:49:10Z	9.4	Re-running popover tests :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 timeout 3000 cargo test --all-features --test popover 2>&1 | grep -E "^test |panicked|test result|^error
+53	157	build	model	model		2026-11-01T14:49:20Z	1.6	
+53	158	build	tool	cargo test	bash	2026-11-01T14:49:21Z	8.3	Summarising popover test results :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --all-features --test popover 2>&1 | grep -E "^test |panicked|test result" -A2 | grep -v "INFO\|WARN\|ERRO
+53	159	build	model	model		2026-11-01T14:49:30Z	2.6	
+53	160	build	tool	cargo test	bash	2026-11-01T14:49:32Z	0.0	Seeing the two failures :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --all-features --test popover each_side a_popover_stays 2>&1 | grep -E "panicked" -A2 | grep -v "INFO\|WAR
+53	161	build	model	model		2026-11-01T14:49:32Z	4.6	
+53	162	build	tool	cargo test	bash	2026-11-01T14:49:37Z	13.9	Re-running popover tests :: cd ~/bevy_gooey_loop && python3 - <<'E' import re p='tests/popover.rs' t=open(p).read() t=re.sub(r"\.abs\(\) <= 1\.0,(\s+)\"\{placement:\?\}: (left|top) edges\"
+53	163	build	model	model		2026-11-01T14:49:51Z	22.0	
+53	164	build	tool	shell	bash	2026-11-01T14:50:13Z	0.0	Locating spots to edit :: cd ~/bevy_gooey_loop && grep -n "PopoverAlign::Start, PopoverAlign::End" src/popover.rs; grep -n "Role::Popover =>" -A10 src/skin.rs | head -14; grep -n "x, y)\
+53	165	build	model	model		2026-11-01T14:50:13Z	1.6	
+53	166	build	tool	read files	read	2026-11-01T14:50:14Z	0.0	Reading candidates :: src/popover.rs:112-134
+53	167	build	tool	search	grep	2026-11-01T14:50:14Z	0.0	Locating Popover arm :: src/skin.rs
+53	168	build	model	model		2026-11-01T14:50:14Z	5.0	
+53	169	build	tool	edit files	edit	2026-11-01T14:50:19Z	0.0	Adding centre alignment and a width cap :: [src/popover.rs#F068] PUT 111.=114: +/// The candidate positions Bevy's `Popover` chooses from for a placement: the preferred side +/// aligned to the anchor's 
+53	170	build	tool	edit files	edit	2026-11-01T14:50:19Z	0.0	Capping the popover's width to the window :: [src/skin.rs#9216] PUT 1770.=1770: + next.align_items = AlignItems::Stretch; + // Never wider than the window leaves room for, so a long line wraps and the pane
+53	171	build	model	model		2026-11-01T14:50:19Z	4.5	
+53	172	build	tool	shell	bash	2026-11-01T14:50:24Z	0.0	Reading stays-inside test :: cd ~/bevy_gooey_loop && grep -n "fn a_popover_stays_inside" -A45 tests/popover.rs
+53	173	build	model	model		2026-11-01T14:50:24Z	1.0	
+53	174	build	tool	read files	read	2026-11-01T14:50:25Z	0.0	Reading loop lines :: tests/popover.rs:773-786
+53	175	build	model	model		2026-11-01T14:50:25Z	3.5	
+53	176	build	tool	edit files	edit	2026-11-01T14:50:28Z	0.0	Keeping anchors inside the window in the test :: [tests/popover.rs#FDA7] PUT 784.=784: + let anchor = anchor_at(&mut app, "Edit", Val::Px(x), Val::Px(y)); + // The far corners are the anchor's own far edges, 5
+53	177	build	model	model		2026-11-01T14:50:28Z	1.5	
+53	178	build	tool	cargo test	bash	2026-11-01T14:50:30Z	21.0	Re-running popover tests :: cd ~/bevy_gooey_loop && cargo fmt; CARGO_BUILD_JOBS=2 cargo test --all-features --test popover 2>&1 | grep -E "panicked|test result" -A2 | grep -v "INFO\|WARN\|
+53	179	build	model	model		2026-11-01T14:50:51Z	5.7	
+53	180	build	tool	cargo test	bash	2026-11-01T14:50:57Z	27.2	Re-running popover tests :: cd ~/bevy_gooey_loop && python3 - <<'E' p='tests/popover.rs' t=open(p).read() i=t.index("fn a_popover_stays_inside_the_window_at_large_text") head,tail=t[:i],t[
+53	181	build	model	model		2026-11-01T14:51:24Z	5.1	
+53	182	prove	tool	phase mark	bash	2026-11-01T14:51:29Z	9.7	Mutation check: stop observers removed :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; cp src/widgets.rs /tmp/g25/widgets.rs.orig && python3 - <<'E' p='src/widgets.rs' t=op
+53	183	prove	model	model		2026-11-01T14:51:39Z	4.5	
+53	184	prove	tool	cargo test	bash	2026-11-01T14:51:43Z	8.0	Mutation check: arming :: cd ~/bevy_gooey_loop && cp src/popover.rs /tmp/g25/popover.rs.orig && python3 - <<'E' p='src/popover.rs' t=open(p).read() t=t.replace(" armed: false,"," armed: 
+53	185	prove	model	model		2026-11-01T14:51:51Z	3.1	
+53	186	prove	tool	shell	bash	2026-11-01T14:51:54Z	0.0	Reading options example for capture knobs :: cd ~/bevy_gooey_loop && wc -l examples/*.rs && cat examples/options.rs
+53	187	prove	model	model		2026-11-01T14:51:54Z	0.9	
+53	188	prove	tool	read files	read	2026-11-01T14:51:55Z	0.0	Reading ladder example in full :: examples/ladder.rs
+53	189	prove	model	model		2026-11-01T14:51:55Z	8.4	
+53	190	prove	tool	read files	read	2026-11-01T14:52:03Z	0.0	Reading imports :: examples/ladder.rs:17-24
+53	191	prove	tool	read files	read	2026-11-01T14:52:03Z	0.0	Reading main :: examples/ladder.rs:34-117
+53	192	prove	tool	read files	read	2026-11-01T14:52:03Z	0.0	Reading capture systems :: examples/ladder.rs:204-275
+53	193	prove	model	model		2026-11-01T14:52:03Z	40.8	
+53	194	prove	tool	edit files	write	2026-11-01T14:52:44Z	0.0	Writing popover example :: examples/popover.rs
+53	195	prove	model	model		2026-11-01T14:52:44Z	5.8	
+53	196	prove	tool	cargo clippy	bash	2026-11-01T14:52:50Z	4.5	Clippy over everything :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(error|warning)" -A14 | head -
+53	197	prove	model	model		2026-11-01T14:52:55Z	1.8	
+53	198	prove	tool	cargo clippy	bash	2026-11-01T14:52:56Z	4.2	Clippy again :: cd ~/bevy_gooey_loop && sed -i 's/let Ok(target) = WindowRef::Entity(window).normalize(None) else {/let Some(target) = WindowRef::Entity(window).normalize(None)
+53	199	prove	model	model		2026-11-01T14:53:01Z	5.2	
+53	200	prove	tool	cargo build	bash	2026-11-01T14:53:06Z	60.0	[launched bg_1] Building and capturing popover example :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -2 && cp $CARGO_TARGET_DIR/release/examples/popover ~/g25_bin/popover &&
+53	201	prove	model	model		2026-11-01T14:54:06Z	3.7	
+53	202	prove	tool	read files	read	2026-11-01T14:54:10Z	0.0	Viewing menu capture :: /tmp/g25/after/pop-menu.png
+53	203	prove	bg	cargo build	bash	2026-11-01T14:53:09Z	60.4	bg_1 completed: CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -2 && cp $CARGO_TARGET_DIR/release/examples/popover ~...
+53	204	prove	model	model		2026-11-01T14:54:10Z	3.7	
+53	205	prove	tool	read files	read	2026-11-01T14:54:13Z	0.0	Viewing edit capture :: /tmp/g25/after/pop-edit.png
+53	206	prove	tool	read files	read	2026-11-01T14:54:13Z	0.0	Viewing context capture :: /tmp/g25/after/pop-context.png
+53	207	prove	tool	read files	read	2026-11-01T14:54:13Z	0.0	Viewing away capture :: /tmp/g25/after/pop-away.png
+53	208	prove	model	model		2026-11-01T14:54:13Z	13.2	
+53	209	prove	tool	shell	bash	2026-11-01T14:54:26Z	0.0	[launched bg_2] Capturing before/after stills and skins :: cat > /tmp/g25/caps.sh <<'E' #!/bin/bash cd /tmp/g25 for v in before after; do G=~/g25_bin/gallery_$v for sz in 1280x720 2560x1440; do GOOEY_HEALTH=60 GOOEY_SIZ
+53	210	prove	model	model		2026-11-01T14:54:26Z	3.9	
+53	211	prove	tool	shell	bash	2026-11-01T14:54:30Z	0.0	Reading README, guide index, changelog, media list :: cd ~/bevy_gooey_loop && wc -l README.md && sed -n 1,80p README.md | cut -c1-260; cat docs/guide/README.md | cut -c1-200; head -40 CHANGELOG.md | cut -c1-200; ta
+53	212	prove	model	model		2026-11-01T14:54:30Z	2.4	
+53	213	prove	tool	shell	bash	2026-11-01T14:54:33Z	0.0	Reading README bullets :: cd ~/bevy_gooey_loop && sed -n 80,217p README.md | cut -c1-330
+53	214	prove	model	model		2026-11-01T14:54:33Z	4.8	
+53	215	prove	tool	shell	bash	2026-11-01T14:54:38Z	0.2	Checking org README rules :: curl -s https://raw.githubusercontent.com/bevy-coven/.github/main/DOCUMENTATION.md | grep -n -i "bullet\|at most\|250\|what you can do" | head
+53	216	prove	model	model		2026-11-01T14:54:38Z	7.7	
+53	217	prove	tool	shell	bash	2026-11-01T14:54:46Z	0.0	Reading media recipe for ladder.gif :: cd ~/bevy_gooey_loop && grep -n "ladder" docs/media/README.md | cut -c1-1500; sed -n 1,25p docs/media/README.md | cut -c1-400
+53	218	prove	model	model		2026-11-01T14:54:46Z	1.3	
+53	219	prove	tool	shell	bash	2026-11-01T14:54:47Z	0.0	Reading rest of ladder row (ffmpeg command) :: cd ~/bevy_gooey_loop && sed -n 29p docs/media/README.md | cut -c1500-2600
+53	220	prove	model	model		2026-11-01T14:54:47Z	1.3	
+53	221	prove	tool	shell	bash	2026-11-01T14:54:48Z	0.0	Reading rest of ladder row :: cd ~/bevy_gooey_loop && sed -n 29p docs/media/README.md | cut -c900-2600; wc -c docs/media/ladder.gif
+53	222	prove	model	model		2026-11-01T14:54:48Z	1.1	
+53	223	prove	tool	shell	bash	2026-11-01T14:54:49Z	0.0	Reading middle of ladder row :: cd ~/bevy_gooey_loop && sed -n 29p docs/media/README.md | cut -c600-1000
+53	224	prove	model	model		2026-11-01T14:54:49Z	22.0	
+53	225	prove	tool	edit files	write	2026-11-01T14:55:11Z	0.0	Writing popovers guide :: docs/guide/popovers.md
+53	226	prove	model	model		2026-11-01T14:55:11Z	5.2	
+53	227	prove	tool	shell	bash	2026-11-01T14:55:17Z	0.0	Locating doc table rows :: cd ~/bevy_gooey_loop && grep -n "dialog\|surface" docs/guide/widgets.md | head -12; grep -n "dialog\|Dialog\|Tooltip\|focus_opened" docs/guide/host-api.md | hea
+53	228	prove	model	model		2026-11-01T14:55:17Z	1.6	
+53	229	prove	tool	shell	bash	2026-11-01T14:55:18Z	0.0	Reading table context :: cd ~/bevy_gooey_loop && sed -n 14,20p docs/guide/widgets.md | cut -c1-200; sed -n 48,60p docs/guide/host-api.md | cut -c1-200; sed -n 76,84p docs/guide/host-api
+53	230	prove	model	model		2026-11-01T14:55:18Z	7.4	
+53	231	prove	tool	shell	bash	2026-11-01T14:55:26Z	0.0	Editing guide, host-api and README text :: cd ~/bevy_gooey_loop && python3 - <<'E' def sub(path, old, new, count=1): t=open(path).read() assert old in t, (path, old[:40]) t=t.replace(old,new,count) open(
+53	232	prove	model	model		2026-11-01T14:55:26Z	3.5	
+53	233	prove	tool	wait: clip	wait	2026-11-01T14:55:29Z	67.5	Waiting for capture job
+53	234	prove	model	model		2026-11-01T14:56:37Z	4.0	
+53	235	prove	tool	shell	bash	2026-11-01T14:56:41Z	0.8	Comparing before/after stills :: cd /tmp/g25 && for f in dark-1280x720 parchment-1280x720 dark-large-1280x720 dark-2560x1440 parchment-2560x1440 dark-large-2560x1440; do echo -n "$f: "; compare
+53	236	prove	tool	read files	read	2026-11-01T14:56:41Z	0.8	Viewing parchment menu :: /tmp/g25/after/pop-menu-parchment.png
+53	237	prove	tool	read files	read	2026-11-01T14:56:41Z	0.8	Viewing high contrast menu :: /tmp/g25/after/pop-menu-high_contrast.png
+53	238	prove	tool	read files	read	2026-11-01T14:56:41Z	0.8	Viewing 2x text edit menu :: /tmp/g25/after/pop-edit-2x.png
+53	239	prove	model	model		2026-11-01T14:56:41Z	4.7	
+53	240	prove	tool	read files	read	2026-11-01T14:56:46Z	0.1	Viewing 1440p context capture :: /tmp/g25/after/pop-context-1440.png
+53	241	prove	model	model		2026-11-01T14:56:46Z	5.5	
+53	242	prove	tool	shell	bash	2026-11-01T14:56:52Z	0.0	[launched bg_3] Running 12 paired perf runs :: cat > /tmp/g25/perf.sh <<'E' #!/bin/bash cd /tmp/g25 : > perf_before.txt; : > perf_after.txt for i in $(seq 1 12); do for v in before after; do GOOEY_HEALTH=60 
+53	243	prove	model	model		2026-11-01T14:56:52Z	7.0	
+53	244	prove	tool	edit files	edit	2026-11-01T14:56:59Z	0.0	Changelog entry :: [CHANGELOG.md#0000] PUT >3: + +### Added + +- `popover(anchor, placement)` and `popover_modal(anchor, placement)` (G-04, #8): a panel that opens beside a widget
+53	245	prove	model	model		2026-11-01T14:56:59Z	0.9	
+53	246	prove	tool	read files	read	2026-11-01T14:57:00Z	0.0	Reading changelog head :: CHANGELOG.md:1-5
+53	247	prove	model	model		2026-11-01T14:57:00Z	4.6	
+53	248	prove	tool	edit files	edit	2026-11-01T14:57:04Z	0.0	Changelog entry :: [CHANGELOG.md#DFFB] PUT >3: + +### Added + +- `popover(anchor, placement)` and `popover_modal(anchor, placement)` (G-04, #8): a panel that opens beside a widget
+53	249	prove	model	model		2026-11-01T14:57:04Z	3.9	
+53	250	prove	tool	shell	bash	2026-11-01T14:57:08Z	0.0	Locating AGENTS.md anchors :: cd ~/bevy_gooey_loop && grep -n "^- \`src/cancel.rs\`\|^- \`examples/ladder.rs\`\|^- \`tests/tokens.rs\`\|^- \*\*Tabs: one place" AGENTS.md | cut -c1-80
+53	251	prove	model	model		2026-11-01T14:57:08Z	1.1	
+53	252	prove	tool	read files	read	2026-11-01T14:57:09Z	0.0	Reading AGENTS anchor :: AGENTS.md:40-41
+53	253	prove	model	model		2026-11-01T14:57:09Z	9.6	
+53	254	prove	tool	edit files	edit	2026-11-01T14:57:19Z	0.0	AGENTS.md: popover layout and rule :: [AGENTS.md#9AC6] PUT >41: +- `src/popover.rs` — `Placement` (`Below`, `Above`, `Right`, `Left`, `AtPointer`), `PopoverPanel { anchor, placement, modal }` (priva
+53	255	prove	model	model		2026-11-01T14:57:19Z	1.0	
+53	256	prove	tool	read files	read	2026-11-01T14:57:20Z	0.0	Reading raw AGENTS lines :: AGENTS.md:46,98:raw
+53	257	prove	model	model		2026-11-01T14:57:20Z	6.9	
+53	258	prove	tool	edit files	edit	2026-11-01T14:57:27Z	0.0	AGENTS.md: popover layout and rule :: [AGENTS.md#9AC6] PUT >41: +- `src/popover.rs` — `Placement` (`Below`, `Above`, `Right`, `Left`, `AtPointer`), `PopoverPanel { anchor, placement, modal }` (priva
+53	259	prove	model	model		2026-11-01T14:57:27Z	4.8	
+53	260	prove	tool	shell	bash	2026-11-01T14:57:32Z	0.0	Checking crate docs mention widgets :: cd ~/bevy_gooey_loop && grep -n "tooltip\|dialog" src/lib.rs | head -12
+53	261	prove	model	model		2026-11-01T14:57:32Z	0.9	
+53	262	prove	tool	read files	read	2026-11-01T14:57:32Z	0.0	Reading crate doc widget list :: src/lib.rs:26-34
+53	263	prove	model	model		2026-11-01T14:57:32Z	1.8	
+53	264	prove	tool	edit files	edit	2026-11-01T14:57:34Z	0.0	Mentioning popover in crate docs :: [src/lib.rs#FE3B] PUT 30.=30: +//! [`Tooltip`], the modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds +//! focus; [`Placement`] says where 
+53	265	prove	model	model		2026-11-01T14:57:34Z	3.4	
+53	266	prove	tool	shell	bash	2026-11-01T14:57:38Z	0.0	Locating note lines to update :: cd ~/bevy_gooey_loop && grep -n "so the list is\|candidates |\|laid out by Bevy\|The panel is \`Display\|P6\|least occluded and is clipped\|start/end candidates
+53	267	prove	model	model		2026-11-01T14:57:38Z	4.2	
+53	268	prove	tool	shell	bash	2026-11-01T14:57:42Z	0.0	Updating research note :: cd ~/bevy_gooey_loop && python3 - <<'E' p='docs/research/popover.md' t=open(p).read() t=t.replace("so the list is: the preferred side aligned to the anchor's st
+53	269	prove	model	model		2026-11-01T14:57:42Z	0.8	
+53	270	prove	tool	wait: other	wait	2026-11-01T14:57:43Z	108.2	Waiting for perf run
+53	271	prove	model	model		2026-11-01T14:59:31Z	8.2	
+53	272	prove	tool	shell	bash	2026-11-01T14:59:39Z	0.0	[launched bg_4] Second perf set plus null run :: cp ~/g25_bin/gallery_before ~/g25_bin/gallery_before2; cat > /tmp/g25/perf2.sh <<'E' #!/bin/bash cd /tmp/g25 for f in a_after a_before b_before b_before2; do : 
+53	273	prove	model	model		2026-11-01T14:59:39Z	6.0	
+53	274	prove	tool	shell	bash	2026-11-01T14:59:45Z	0.2	Measuring contrast from pixels :: cd /tmp/g25/after && python3 - <<'E' from PIL import Image def lum(c): def f(v): v/=255 return v/12.92 if v<=0.03928 else ((v+0.055)/1.055)**2.4 r,g,b=c[:3]; re
+53	275	prove	model	model		2026-11-01T14:59:45Z	2.6	
+53	276	prove	tool	read files	read	2026-11-01T14:59:48Z	0.0	Viewing tool menu :: /tmp/g25/after/pop-menu-tool.png
+53	277	prove	model	model		2026-11-01T14:59:48Z	7.5	
+53	278	prove	tool	wait: other	wait	2026-11-01T14:59:55Z	294.1	Waiting for second perf run
+53	279	prove	model	model		2026-11-01T15:04:49Z	12.9	
+53	280	prove	tool	shell	bash	2026-11-01T15:05:02Z	0.0	[launched bg_5] Third perf set, before-first order :: sed -e 's/p2_/p3_/g' -e 's/for i in $(seq 1 12); do\n run before b_before.*//' /tmp/g25/perf2.sh > /tmp/g25/perf3.sh; python3 - <<'E' t=open('/tmp/g25/perf3.sh'
+53	281	prove	model	model		2026-11-01T15:05:02Z	0.9	
+53	282	prove	tool	wait: other	wait	2026-11-01T15:05:03Z	220.1	Waiting for third perf run
+53	283	prove	model	model		2026-11-01T15:08:43Z	13.7	
+53	284	prove	tool	cargo test	bash	2026-11-01T15:08:57Z	13.2	Throwaway microbench of the new systems :: cd ~/bevy_gooey_loop && cat > tests/zz_bench.rs <<'E' use bevy::prelude::*; use bevy::render::RenderPlugin; use bevy::render::settings::WgpuSettings; use bevy::
+53	285	prove	model	model		2026-11-01T15:09:10Z	8.1	
+53	286	prove	tool	shell	bash	2026-11-01T15:09:18Z	5.7	Recording popover frames :: mkdir -p /tmp/g25/gif && rm -f /tmp/g25/gif/*.png; cd /tmp/g25 && GOOEY_FRAMES=225 GOOEY_KEY_EVERY=18 GOOEY_KEYS=enter,down,down,escape,right,right,enter,escape
+53	287	prove	model	model		2026-11-01T15:09:24Z	3.9	
+53	288	prove	tool	clip record/render	bash	2026-11-01T15:09:28Z	0.8	Encoding the GIF and making contact sheets :: cd /tmp/g25 && ffmpeg -y -loglevel error -framerate 15 -pattern_type glob -i '/tmp/g25/gif/f_*.png' -vf "scale=960:-1:flags=lanczos,fps=15,split[a][b];[a]palett
+53	289	prove	model	model		2026-11-01T15:09:29Z	1.5	
+53	290	prove	tool	read files	read	2026-11-01T15:09:30Z	0.2	Viewing first contact sheet :: /tmp/g25/fr/sheet1.png
+53	291	prove	tool	read files	read	2026-11-01T15:09:30Z	0.2	Viewing second contact sheet :: /tmp/g25/fr/sheet2.png
+53	292	prove	model	model		2026-11-01T15:09:30Z	14.6	
+53	293	prove	tool	cargo test	bash	2026-11-01T15:09:45Z	7.1	Throwaway: first frames of a popover :: cd ~/bevy_gooey_loop && cat > tests/zz_first.rs <<'E' use bevy::prelude::*; use bevy::render::RenderPlugin; use bevy::render::settings::WgpuSettings; use bevy::
+53	294	prove	model	model		2026-11-01T15:09:52Z	31.4	
+53	295	prove	tool	shell	bash	2026-11-01T15:10:23Z	0.0	Removing scratch test; locating armed :: cd ~/bevy_gooey_loop && rm tests/zz_first.rs && grep -n "armed" src/popover.rs
+53	296	prove	model	model		2026-11-01T15:10:23Z	1.8	
+53	297	prove	tool	read files	read	2026-11-01T15:10:25Z	0.0	Reading struct fields :: src/popover.rs:50-56
+53	298	prove	tool	read files	read	2026-11-01T15:10:25Z	0.0	Reading constructor :: src/popover.rs:100-110
+53	299	prove	tool	read files	read	2026-11-01T15:10:25Z	0.0	Reading drop_pointer_anchors :: src/popover.rs:236-250
+53	300	prove	model	model		2026-11-01T15:10:25Z	3.8	
+53	301	prove	tool	edit files	edit	2026-11-01T15:10:29Z	0.0	Adding reveal system to popover.rs :: [src/popover.rs#C6C3] PUT 53.=54: + /// False until the first frame it has been alive: the press that opened it is never "outside". + armed: bool, + /// False u
+53	302	prove	model	model		2026-11-01T15:10:29Z	5.3	
+53	303	prove	tool	shell	bash	2026-11-01T15:10:34Z	0.0	Locating insert points :: cd ~/bevy_gooey_loop && grep -n "Role::Popover," src/widgets.rs; grep -n "anchor_pointer_popovers" src/lib.rs
+53	304	prove	model	model		2026-11-01T15:10:34Z	1.8	
+53	305	prove	tool	read files	read	2026-11-01T15:10:36Z	0.0	Reading popover_panel head :: src/widgets.rs:1296-1310
+53	306	prove	tool	read files	read	2026-11-01T15:10:36Z	0.0	Reading export lines :: src/lib.rs:161-166
+53	307	prove	tool	read files	read	2026-11-01T15:10:36Z	0.0	Reading chain lines :: src/lib.rs:316-320
+53	308	prove	model	model		2026-11-01T15:10:36Z	2.4	
+53	309	prove	tool	edit files	edit	2026-11-01T15:10:39Z	0.0	Wiring reveal_popovers :: [src/widgets.rs#9B67] PUT 1298.=1299: +/// What [`popover`] and [`popover_modal`] share. Born `Display::None` and hidden: [`crate::apply_skin`] +/// shows it, s
+53	310	prove	model	model		2026-11-01T15:10:39Z	6.7	
+53	311	prove	tool	cargo test	bash	2026-11-01T15:10:45Z	29.3	Testing the first-frame guard :: cd ~/bevy_gooey_loop && cat >> tests/popover.rs <<'E' #[test] fn a_popover_is_drawn_only_once_it_stands_at_its_final_size_and_place() { // Bevy lays a new node'
+53	312	prove	model	model		2026-11-01T15:11:15Z	3.1	
+53	313	prove	tool	cargo test	bash	2026-11-01T15:11:18Z	8.7	Mutation: drop Visibility::Hidden :: cd ~/bevy_gooey_loop && cp src/widgets.rs /tmp/g25/widgets.rs.orig2 && python3 - <<'E' p='src/widgets.rs' t=open(p).read() t=t.replace(" Visibility::Hidden,\n R
+53	314	prove	model	model		2026-11-01T15:11:26Z	5.1	
+53	315	prove	tool	cargo build	bash	2026-11-01T15:11:31Z	33.8	Rebuilding and re-recording the GIF :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -1 && cp $CARGO_TARGET_DIR/release/examples/popover ~/g25_bin/popover &&
+53	316	prove	model	model		2026-11-01T15:12:05Z	1.5	
+53	317	prove	tool	read files	read	2026-11-01T15:12:07Z	0.1	Viewing second sheet after fix :: /tmp/g25/fr/sheet2.png
+53	318	prove	model	model		2026-11-01T15:12:07Z	10.0	
+53	319	prove	tool	clip record/render	bash	2026-11-01T15:12:17Z	0.1	Checking the GIF's last frames :: cd /tmp/g25/fr && ffmpeg -loglevel error -sseof -0.3 -i /tmp/g25/popover.gif -frames:v 1 last.png 2>&1; ffmpeg -loglevel error -ss 4.1 -i /tmp/g25/popover.gif -
+53	320	prove	model	model		2026-11-01T15:12:17Z	1.5	
+53	321	prove	tool	read files	read	2026-11-01T15:12:19Z	0.1	Viewing end frames :: /tmp/g25/fr/sheet3.png
+53	322	prove	model	model		2026-11-01T15:12:19Z	5.9	
+53	323	prove	tool	cargo build	bash	2026-11-01T15:12:25Z	0.0	Adding GIF to media list :: cd ~/bevy_gooey_loop && cp /tmp/g25/popover.gif docs/media/popover.gif && ls -la docs/media/popover.gif && python3 - <<'E' p='docs/media/README.md' t=open(p).re
+53	324	prove	model	model		2026-11-01T15:12:25Z	3.4	
+53	325	prove	tool	shell	bash	2026-11-01T15:12:28Z	0.0	Locating README insert point :: cd ~/bevy_gooey_loop && grep -n "^\*Tokens:" README.md | cut -c1-40; wc -l README.md
+53	326	prove	model	model		2026-11-01T15:12:28Z	1.0	
+53	327	prove	tool	read files	read	2026-11-01T15:12:29Z	0.0	Reading README insert anchor :: README.md:172-174
+53	328	prove	model	model		2026-11-01T15:12:29Z	2.8	
+53	329	prove	tool	edit files	edit	2026-11-01T15:12:32Z	0.0	README popover GIF and caption :: [README.md#A564] PUT >173: +![The popover example: a menu bar with File, View and Edit over a canvas; Enter opens File's menu under it with the ring on New, Dow
+53	330	prove	model	model		2026-11-01T15:12:32Z	5.1	
+53	331	prove	tool	git	bash	2026-11-01T15:12:37Z	0.1	Committing implementation and docs :: cd ~/bevy_gooey_loop && git add src tests examples && git commit -qm "Anchored popover: popover() and popover_modal() place a panel beside a widget or at the po
+53	332	prove	model	model		2026-11-01T15:12:37Z	10.2	
+53	333	prove	tool	shell	bash	2026-11-01T15:12:47Z	0.0	Writing findings and critique files :: cat > /tmp/g25/findings.md <<'E' # Iteration 25 findings (popover) - Gallery stills (6: dark/parchment/dark 1.5x x 1280x720, 2560x1440): `compare -metric AE` 0 
+53	334	prove	model	model		2026-11-01T15:12:47Z	2.6	
+53	335	prove	tool	shell	bash	2026-11-01T15:12:50Z	0.0	Preparing log entry :: cd ~/bevy_gooey_loop && wc -l docs/loop-log.md; git log -1 --format=%h dbda02e
+53	336	prove	tool	read files	read	2026-11-01T15:12:50Z	0.1	Reading log tail for tag :: docs/loop-log.md:-2
+53	337	prove	model	model		2026-11-01T15:12:50Z	26.5	
+53	338	prove	tool	edit files	edit	2026-11-01T15:13:16Z	0.1	Appending iteration 25 log :: [docs/loop-log.md#0B01] PUT >994: + +## Iteration 25 — 2026-11-01 — Anchored popover (G-04, #8) + +**Triage.** `gh issue list`: 25 open, all `grimoire-ui` (G-04
+53	339	prove	model	model		2026-11-01T15:13:17Z	4.6	
+53	340	prove	tool	shell	bash	2026-11-01T15:13:21Z	0.0	Finding inaccurate phrase :: cd ~/bevy_gooey_loop && grep -n "flush with the window" docs/media/README.md docs/loop-log.md | cut -c1-60
+53	341	prove	model	model		2026-11-01T15:13:21Z	2.1	
+53	342	prove	tool	shell	bash	2026-11-01T15:13:23Z	0.0	Fixing phrase and committing log :: cd ~/bevy_gooey_loop && python3 - <<'E' for p in ['docs/media/README.md','docs/loop-log.md']: t=open(p).read() t=t.replace("ending at the button's right edge, f
+53	343	prove	model	model		2026-11-01T15:13:23Z	3.0	
+53	344	gate	tool	phase mark	bash	2026-11-01T15:13:26Z	3.1	Pushing branch and merging into main :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; git fetch -q origin && git push -q -u origin loop/iter-25 2>&1 | tail -2; git checkout
+53	345	gate	model	model		2026-11-01T15:13:29Z	2.8	
+53	346	gate	tool	cargo test	bash	2026-11-01T15:13:32Z	0.0	[launched bg_6] Running the full gate on the merged tree :: cat > /tmp/g25/gate.sh <<'E' #!/bin/bash cd ~/bevy_gooey_loop export CARGO_BUILD_JOBS=2 step() { echo "=== $1"; shift; "$@" 2>&1 | tail -${TAILN:-15}; echo "exi
+53	347	gate	model	model		2026-11-01T15:13:32Z	1.1	
+53	348	gate	tool	wait: gate	wait	2026-11-01T15:13:33Z	172.9	Waiting for gate
+53	349	gate	model	model		2026-11-01T15:16:26Z	9.9	
+53	350	gate	tool	shell	bash	2026-11-01T15:16:36Z	0.0	Finding unresolved doc links :: cd ~/bevy_gooey_loop && grep -n "\[\`PopoverClosed\`\]\|\[\`PopoverPanel\`\]\|\[\`Placement\`\]\|\[\`Tooltip\`\]" src/widgets.rs
+53	351	gate	model	model		2026-11-01T15:16:36Z	1.0	
+53	352	gate	tool	read files	read	2026-11-01T15:16:37Z	0.0	Reading doc lines to fix :: src/widgets.rs:1259-1266
+53	353	gate	model	model		2026-11-01T15:16:37Z	2.8	
+53	354	gate	tool	edit files	edit	2026-11-01T15:16:40Z	0.0	Fixing intra-doc links :: [src/widgets.rs#E427] PUT 1261.=1261: +/// anywhere that is not the panel or the anchor closes it, each sending one +/// [`PopoverClosed`](crate::PopoverClosed)
+53	355	gate	model	model		2026-11-01T15:16:40Z	2.1	
+53	356	gate	tool	cargo test	bash	2026-11-01T15:16:42Z	60.0	[launched bg_7] Re-running doc, fmt, clippy, tests :: cd ~/bevy_gooey_loop && RUSTDOCFLAGS="-D warnings" CARGO_BUILD_JOBS=2 cargo doc --no-deps 2>&1 | tail -8; cargo fmt --check && echo fmt ok; CARGO_BUILD_JOBS=2 c
+53	357	gate	model	model		2026-11-01T15:17:42Z	3.1	
+53	358	gate	tool	wait: tests	wait	2026-11-01T15:17:45Z	90.7	Waiting for full test run
+53	359	gate	model	model		2026-11-01T15:19:16Z	2.7	
+53	360	release	tool	phase mark	bash	2026-11-01T15:19:19Z	10.1	Pushing main and running semver-checks :: cd ~/bevy_gooey_loop && git add src/widgets.rs && git commit -qm "Docs: popover() links resolve under cargo doc -D warnings" && git push -q origin main 2>&1 | t
+53	361	release	model	model		2026-11-01T15:19:29Z	3.6	
+53	362	release	tool	shell	bash	2026-11-01T15:19:32Z	0.0	Locating version strings :: cd ~/bevy_gooey_loop && grep -n '^version' Cargo.toml; grep -n "0.1 – 0.11" README.md; grep -rn "0\.11\.0\|0\.11\b" Cargo.toml README.md docs/guide/*.md 2>/dev/
+53	363	release	model	model		2026-11-01T15:19:32Z	2.1	
+53	364	release	tool	shell	bash	2026-11-01T15:19:34Z	0.8	Bumping version to 0.12.0 :: cd ~/bevy_gooey_loop && sed -i '3s/0.11.0/0.12.0/' Cargo.toml && sed -i '204s/0.1 – 0.11/0.1 – 0.12/' README.md && sed -i '3s/^## \[Unreleased\]$/## [Unreleased
+53	365	release	model	model		2026-11-01T15:19:35Z	1.5	
+53	366	release	tool	cargo publish	bash	2026-11-01T15:19:37Z	16.9	Publish dry run :: cd ~/bevy_gooey_loop && git add Cargo.toml CHANGELOG.md README.md && git commit -qm "release: v0.12.0" && CARGO_BUILD_JOBS=2 cargo publish --dry-run 2>&1 | tail
+53	367	release	model	model		2026-11-01T15:19:54Z	3.4	
+53	368	release	tool	push gate	bash	2026-11-01T15:19:57Z	15.0	Publishing v0.12.0, tagging, pushing :: cd ~/bevy_gooey_loop && cargo package --list --allow-dirty 2>/dev/null | grep -i popover; CARGO_BUILD_JOBS=2 cargo publish 2>&1 | tail -4; git tag -a v0.12.0 -m
+53	369	release	model	model		2026-11-01T15:20:12Z	6.7	
+53	370	release	tool	github	bash	2026-11-01T15:20:19Z	6.7	Commenting and closing issue #8, finding grimoire issues :: cd ~/bevy_gooey_loop && SHA=$(git rev-parse --short 44b999f); gh label create assumed-decision --color FBCA04 2>/dev/null; gh issue edit 8 --repo bevy-coven/bev
+53	371	release	model	model		2026-11-01T15:20:26Z	5.8	
+53	372	release	tool	github	bash	2026-11-01T15:20:31Z	1.0	Checking Needs lines in grimoire issues :: gh issue view 129 --repo bevy-coven/bevy_grimoire --json body --jq .body | grep -n -i "G-04\|needs" | head -5; gh issue view 208 --repo bevy-coven/bevy_grimoire
+53	373	release	model	model		2026-11-01T15:20:32Z	5.3	
+53	374	log	tool	phase mark	bash	2026-11-01T15:20:38Z	1.3	Cleaning up my scratch and listing leftovers :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; df -h /home | tail -1; git worktree list; rm -rf ~/g25_bin /tmp/g25; ls /tmp | grep -i 
+53	375	log	model	model		2026-11-01T15:20:39Z	1.6	
+53	376	log	tool	shell	bash	2026-11-01T15:20:41Z	0.1	Inspecting leftover worktrees :: cd ~/bevy_gooey_loop && for w in ~/g17_base ~/g17_parked ~/g17s_base; do echo "$w: $(git -C $w status --short | wc -l) changed, $(du -sh $w | cut -f1)"; done; l
+53	377	log	model	model		2026-11-01T15:20:41Z	1.4	
+53	378	log	tool	shell	bash	2026-11-01T15:20:42Z	0.0	Finding log tail position :: cd ~/bevy_gooey_loop && tail -c 300 docs/loop-log.md; grep -n "^5. A clamp for a panel" docs/loop-log.md
+53	379	log	model	model		2026-11-01T15:20:42Z	1.1	
+53	380	log	tool	read files	read	2026-11-01T15:20:43Z	0.0	Reading final log line for tag :: docs/loop-log.md:1030-1030
+53	381	log	model	model		2026-11-01T15:20:43Z	6.0	
+53	382	log	tool	edit files	edit	2026-11-01T15:20:49Z	0.0	Appending gate, release and cleanup to log :: [docs/loop-log.md#C3E5] PUT >1030: + +**Gate.** One script, `CARGO_BUILD_JOBS=2`, on the merged tree: `cargo fmt --check`, clippy `--all-targets --all-features 
+53	383	log	model	model		2026-11-01T15:20:49Z	1.5	
+53	384	log	tool	push gate	bash	2026-11-01T15:20:51Z	2.3	Committing and pushing final log :: cd ~/bevy_gooey_loop && git add docs/loop-log.md && git commit -qm "Loop log: iteration 25, release v0.12.0 and cleanup" && git push -q origin main 2>&1 | tail 
+53	385	log	model	model		2026-11-01T15:20:53Z	8.7	
