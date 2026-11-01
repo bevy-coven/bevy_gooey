@@ -130,6 +130,7 @@ mod menu;
 mod meter;
 mod nav;
 mod options;
+mod palette;
 mod popover;
 mod prompt;
 mod scale;
@@ -162,7 +163,7 @@ pub use model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
     NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH,
     TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
-    contrast_ratio, is_modifier_key, key_name, list_height, meter_fraction, mouse_name,
+    contrast_ratio, fuzzy_score, is_modifier_key, key_name, list_height, meter_fraction, mouse_name,
     nearest_step, pad_name, page_target, relative_luminance, repeat_steps, scroll_to_reveal,
     shortcut_conflicts, shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row,
     tab_step, toast_alpha, toast_grow, toast_hold, toast_life, window_ui_scale,
@@ -171,6 +172,10 @@ pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
 };
 pub use options::{OptionRow, update_option_rows};
+pub use palette::{
+    CommandList, CommandPalette, PALETTE_ROWS, PaletteCommand, PaletteCount, PaletteHistory,
+    PaletteInput, PaletteNote, PaletteRow, RunCommand, palette_by_input, update_palette,
+};
 pub use popover::{
     CloseReason, Placement, PopoverClosed, PopoverPanel, PopoverPoint, anchor_pointer_popovers,
     close_popovers_on_press, drop_pointer_anchors, reveal_popovers,
@@ -189,7 +194,8 @@ pub use text::{
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    binding, button, check_item, choice, context_menu, dialog, heading, interface_size, label,
+    binding, button, check_item, choice, command_palette, context_menu, dialog, heading,
+    interface_size, label,
     list, menu, menu_bar, menu_item, menu_title, meter, pad_style, panel, popover, popover_modal,
     prompt, prompts, radio_item, screen, separator, skin_preset, slider, submenu, surface,
     tab_page, tabs, text_input, text_size, toast, toast_alert, toggle,
@@ -234,6 +240,8 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<InputDevice>()
             .init_resource::<GooeyFonts>()
             .init_resource::<ToastSettings>()
+            .init_resource::<CommandList>()
+            .init_resource::<PaletteHistory>()
             .init_resource::<BindingSettings>()
             .init_resource::<InputFocus>()
             .init_resource::<InputFocusVisible>()
@@ -275,6 +283,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ToastSettings>()
             .register_type::<ToastAnchor>()
             .register_type::<ToastKind>()
+            .register_type::<PaletteHistory>()
             .register_type::<UiFeedbackKind>()
             .add_observer(feedback::feedback_on_activate)
             .add_observer(feedback::feedback_on_toggle)
@@ -289,6 +298,7 @@ impl Plugin for GooeyStylePlugin {
                     update_bindings,
                     update_prompts,
                     update_text_inputs,
+                    update_palette,
                     update_option_rows,
                     update_choices,
                     update_tabs,
@@ -326,6 +336,8 @@ impl Plugin for GooeyNavPlugin {
         app.init_resource::<InputFocus>()
             .init_resource::<InputDevice>()
             .init_resource::<BindingSettings>()
+            .init_resource::<CommandList>()
+            .init_resource::<PaletteHistory>()
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<Dialog>()
@@ -358,7 +370,7 @@ impl Plugin for GooeyNavPlugin {
                     gamepad_adjust.run_if(not_capturing),
                     gamepad_select.run_if(not_capturing),
                     cancel_by_input.run_if(not_capturing),
-                    page_lists.run_if(not_capturing),
+                    (page_lists.run_if(not_capturing), palette_by_input).chain(),
                     bind_by_input,
                     catch_pointer,
                     scroll_to_focus,

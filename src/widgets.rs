@@ -33,6 +33,11 @@ use crate::meter::Meter;
 use crate::model::{PadStyle, meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
 use crate::options::{OptionRow, option_on_change};
+use crate::palette::{
+    CommandPalette, NO_MATCH, PALETTE_HINT, PALETTE_ROWS, PaletteCount, PaletteInput, PaletteNote,
+    PaletteRow, palette_on_acquire, palette_on_activate, palette_on_cancel, palette_on_click,
+    palette_on_move,
+};
 use crate::popover::{
     Placement, PopoverPanel, placement_of, popover_on_cancel, stop_acquire, stop_click, stop_press,
     stop_release,
@@ -41,7 +46,7 @@ use crate::prompt::Prompt;
 use crate::skin::Role;
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::text::{
-    TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
+    TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
 };
 use crate::toast::{Toast, ToastKind};
 
@@ -790,63 +795,87 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
 /// # }
 /// ```
 pub fn text_input(label: impl Into<String>, value: impl Into<String>) -> impl Bundle {
-    let label = label.into();
-    let value = value.into();
+    text_row(Some(label.into()), value.into(), Some(TEXT_INPUT_CHARS))
+}
+
+/// The row under [`text_input`]: a label if it has one and the field, which is `chars` character
+/// advances wide, or fills the room its parent leaves when `chars` is `None` (a command palette's
+/// field has no label and the card's whole width).
+pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>) -> impl Bundle {
+    let fills = chars.is_none();
     (
         Node {
             justify_content: JustifyContent::SpaceBetween,
             align_items: AlignItems::Center,
+            width: if fills {
+                Val::Percent(100.0)
+            } else {
+                Val::Auto
+            },
             ..default()
         },
-        Role::TextInput,
+        if fills {
+            Role::PaletteField
+        } else {
+            Role::TextInput
+        },
         TextInputValue(value.clone()),
         observe(text_self_update),
         observe(text_row_on_acquire),
         Children::spawn(SpawnWith(move |row: &mut RelatedSpawner<ChildOf>| {
             let root = row.target_entity();
+            if let Some(label) = label {
+                row.spawn((
+                    Text::new(label),
+                    ONE_LINE,
+                    Role::ControlText,
+                    Pickable::IGNORE,
+                ));
+            }
             row.spawn((
-                Text::new(label),
-                ONE_LINE,
-                Role::ControlText,
-                Pickable::IGNORE,
-            ));
-            row.spawn((Node::default(), Role::TextCell))
-                .with_children(|cell| {
-                    cell.spawn((
-                        Node {
-                            flex_shrink: 0.0,
-                            overflow: Overflow::clip(),
-                            ..default()
-                        },
-                        TextInput,
-                        EditableText {
-                            visible_width: Some(TEXT_INPUT_CHARS),
-                            cursor_width: TEXT_CARET_WIDTH,
-                            ..EditableText::new(&value)
-                        },
-                        TextLayout::no_wrap(),
-                        TextCursorStyle::default(),
-                        Role::TextField,
-                        TextInputOf(root),
-                        Hovered::default(),
-                        TabIndex(0),
-                        AutoDirectionalNavigation::default(),
-                        observe(text_on_key_input),
-                    ));
-                    cell.spawn((
-                        Node {
-                            position_type: PositionType::Absolute,
-                            display: Display::None,
-                            overflow: Overflow::clip(),
-                            ..default()
-                        },
-                        Text::new(String::new()),
-                        TextLayout::no_wrap(),
-                        Role::TextHint,
-                        TextInputOf(root),
-                        Pickable::IGNORE,
-                    ));
-                });
+                Node {
+                    flex_grow: if fills { 1.0 } else { 0.0 },
+                    ..default()
+                },
+                Role::TextCell,
+            ))
+            .with_children(|cell| {
+                cell.spawn((
+                    Node {
+                        flex_shrink: 0.0,
+                        flex_grow: if fills { 1.0 } else { 0.0 },
+                        overflow: Overflow::clip(),
+                        ..default()
+                    },
+                    TextInput,
+                    EditableText {
+                        visible_width: chars,
+                        cursor_width: TEXT_CARET_WIDTH,
+                        ..EditableText::new(&value)
+                    },
+                    TextLayout::no_wrap(),
+                    TextCursorStyle::default(),
+                    Role::TextField,
+                    TextInputOf(root),
+                    Hovered::default(),
+                    TabIndex(0),
+                    AutoDirectionalNavigation::default(),
+                    observe(text_on_key_input),
+                ));
+                cell.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        display: Display::None,
+                        overflow: Overflow::clip(),
+                        ..default()
+                    },
+                    Text::new(String::new()),
+                    TextLayout::no_wrap(),
+                    Role::TextHint,
+                    TextInputOf(root),
+                    Pickable::IGNORE,
+                ));
+            });
         })),
     )
 }
@@ -1232,6 +1261,140 @@ pub fn dialog() -> impl Bundle {
             order: 0,
             modal: true,
         },
+    )
+}
+
+/// A command palette: a modal field over a searchable list of the game's [`CommandList`], each
+/// command with its chord and, when it is off, why. Spawn it when the player presses the game's
+/// own chord (Ctrl+Shift+P, say); it takes focus, and everything else is the palette's.
+///
+/// The player types a few letters of a command ("opn prj" finds "File: Open Project"; recently run
+/// commands come first), Up and Down move the lit row while focus stays in the field, Enter or a
+/// click runs it, Escape or a click outside closes it. Running sends one [`RunCommand`] with the
+/// command's id and despawns the palette, focus back where it was; a command that is off shows its
+/// reason where its chord would be and runs nothing. See [`PaletteCommand`] for the list's items.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn setup(mut commands: Commands) {
+///     commands.insert_resource(CommandList(vec![
+///         PaletteCommand::new("project.open", "Open Project")
+///             .category("File")
+///             .shortcut(Shortcut::primary(KeyCode::KeyO)),
+///         PaletteCommand::new("project.save", "Save").disabled("No project is open"),
+///     ]));
+/// }
+///
+/// fn open_palette(keys: Res<ButtonInput<KeyCode>>, mut commands: Commands) {
+///     if Shortcut::new(Modifiers::PRIMARY | Modifiers::SHIFT, KeyCode::KeyP).just_pressed(&keys) {
+///         commands.spawn(command_palette());
+///     }
+/// }
+///
+/// fn plug(app: &mut App) {
+///     app.add_systems(Startup, setup)
+///         .add_systems(Update, open_palette.run_if(not(is_text_editing)))
+///         .add_observer(|run: On<RunCommand>| info!("run {}", run.id));
+/// }
+/// ```
+///
+/// Eight rows show at once and scroll under the lit one. The field's hint ("Type a command") and
+/// the line for no match ("No command matches") are English, as a menu's "Nothing here" is.
+pub fn command_palette() -> impl Bundle {
+    (
+        Node {
+            position_type: PositionType::Absolute,
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            align_items: AlignItems::FlexStart,
+            justify_content: JustifyContent::Center,
+            ..default()
+        },
+        Role::Scrim,
+        Dialog::default(),
+        GlobalZIndex(100),
+        TabGroup {
+            order: 0,
+            modal: true,
+        },
+        CommandPalette::default(),
+        observe(palette_on_cancel),
+        observe(palette_on_acquire),
+        observe(palette_on_click),
+        Children::spawn(SpawnWith(|scrim: &mut RelatedSpawner<ChildOf>| {
+            let palette = scrim.target_entity();
+            scrim
+                .spawn((Node::default(), Role::Palette))
+                .with_children(|card| {
+                    card.spawn((
+                        text_row(None, String::new(), None),
+                        PaletteInput(palette),
+                        TextHint(PALETTE_HINT.into()),
+                    ));
+                    card.spawn(Node {
+                        flex_direction: FlexDirection::Column,
+                        ..default()
+                    })
+                    .with_children(|rows| {
+                        for slot in 0..PALETTE_ROWS {
+                            rows.spawn(palette_row(palette, slot));
+                        }
+                        rows.spawn((
+                            Node {
+                                display: Display::None,
+                                ..default()
+                            },
+                            Text::new(NO_MATCH),
+                            Role::MenuNote,
+                            ONE_LINE,
+                            PaletteNote(palette),
+                            Pickable::IGNORE,
+                        ));
+                    });
+                    card.spawn((
+                        Node {
+                            display: Display::None,
+                            ..default()
+                        },
+                        Text::new(String::new()),
+                        Role::PaletteCount,
+                        ONE_LINE,
+                        PaletteCount(palette),
+                        Pickable::IGNORE,
+                    ));
+                });
+        })),
+    )
+}
+
+/// One of a palette's reused rows: a command's words and its chord or reason, hidden until
+/// [`update_palette`] gives it a command.
+fn palette_row(palette: Entity, slot: usize) -> impl Bundle {
+    (
+        Node {
+            display: Display::None,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::PaletteRow,
+        PaletteRow { palette, slot },
+        observe(palette_on_activate),
+        observe(palette_on_move),
+        children![
+            (
+                Text::new(String::new()),
+                Role::MenuText,
+                ONE_LINE,
+                Pickable::IGNORE
+            ),
+            (
+                Text::new(String::new()),
+                Role::MenuShortcut,
+                ONE_LINE,
+                Pickable::IGNORE
+            ),
+        ],
     )
 }
 

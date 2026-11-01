@@ -139,7 +139,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
   disabled items that say why: [menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/menus.md);
   and `ContextMenu(menu)` on any entity, a sprite in the world or a row of a list, opens a `context_menu(..)`
   at a right-click or below the focus on Shift+F10:
-  [context menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/context-menus.md).
+  [context menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/context-menus.md);
+  and `commands.spawn(command_palette())` is one searchable list of every command in a `CommandList`, each
+  with its chord and why it is off, "opn prj" finds "File: Open Project", Enter sends one `RunCommand`:
+  [the command palette](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/command-palette.md).
 - **Keep the interface's share of the screen at every resolution** — the skin's sizes scale with the
   window, and every border stays a whole number of device pixels:
   [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).
@@ -193,6 +196,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 ![The context example: a right-click on a crate opens its menu at the pointer, with Locked ticked and the chord I beside Inspect; a right-click on the crate in the bottom-right corner opens the whole menu above and to the left of the pointer; Down and Shift+F10 open an inventory row's menu below the row, Right on Move to opens its submenu, and Enter on Chest 2 says at the bottom which row was moved](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/context-menu.gif)
 
 *Context menus: `ContextMenu(menu)` on a crate, a row or any entity; a right-click opens the menu at the pointer (flipping at the window's edge), Shift+F10 or the Menu key below the focused widget, and `ContextTarget` says which thing a command was for.*
+
+![The palette example: Ctrl+Shift+P opens a field over a small editor's commands, "opn prj" lights File: Open Project with its chord Ctrl+O at the row's end, Down and Enter run it and the line behind reads "Last command: File: Open Project"; opened again it lists that command first, "sav" shows File: Save and File: Save As... dimmed with "No project is open" where their chords would be, Down puts the ring on the second and Escape closes the palette](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/command-palette.gif)
+
+*The command palette: `CommandList` holds the commands, `command_palette()` is the modal, "opn prj" is a fuzzy match, Up and Down move the lit row while focus stays in the field, and Enter or a click sends one `RunCommand`; a command that is off shows why and runs nothing.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 

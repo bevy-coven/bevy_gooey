@@ -32,6 +32,9 @@ per subject. The README links each bullet to its page.
   the pad.
 - [Context menus](context-menus.md) — `context_menu(items)` and `ContextMenu(menu)` on any entity: a menu at a
   right-click or below the focus on Shift+F10, one menu for many things, `ContextTarget` says which.
+- [The command palette](command-palette.md) — `command_palette()` over a `CommandList`: a field and a fuzzy-ranked
+  list of every command with its chord and why it is off, recents first, Up and Down while focus stays in the
+  field, one `RunCommand` on Enter or a click.
 - [Toasts](toasts.md) — one spawn, the reading-time maths, `ToastSettings`, and the cap on the stack.
 - [Skins](skins.md) — `GooeySkin`, its fields, the two presets, and every rule `problems()` checks.
 - [Screen size](scale.md) — `GooeyScalePlugin`, `UiScaleSettings`, and whole-device-pixel lines.
