@@ -13,6 +13,7 @@ use bevy::ui_widgets::{Activate, ValueChange};
 use crate::feedback::{UiFeedback, UiFeedbackKind};
 use crate::model::{PadStyle, key_name, mouse_name, pad_name};
 use crate::nav::show_focus;
+use crate::prompt::InputDevice;
 use crate::skin::Role;
 
 /// The `GlobalZIndex` of the catcher a capturing row puts over the interface: above a dialog (100),
@@ -57,6 +58,16 @@ impl Binding {
             Self::Pad(button) => pad_name(&format!("{button:?}"), style),
         }
     }
+
+    /// The device this input is pressed on: the keyboard for a key or a mouse button, a pad for a
+    /// pad button. What a [`crate::binding`] row listens to, and which of a [`crate::Prompt`]'s
+    /// inputs is the player's now.
+    pub fn device(&self) -> InputDevice {
+        match self {
+            Self::Key(_) | Self::Mouse(_) => InputDevice::Keyboard,
+            Self::Pad(_) => InputDevice::Pad,
+        }
+    }
 }
 
 /// What a [`crate::binding`] row has bound: the widget's state. Read it to know the control, or set
@@ -90,23 +101,6 @@ pub struct Capturing;
 /// Removed by [`bind_by_input`] on its first run.
 #[derive(Component)]
 pub struct Armed;
-
-/// Which device a row listens to, from the binding it was spawned with: a keyboard row takes a key
-/// or a mouse button, a pad row a pad button. A press on the other device exits.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum BindingDevice {
-    Keyboard,
-    Pad,
-}
-
-impl From<Binding> for BindingDevice {
-    fn from(value: Binding) -> Self {
-        match value {
-            Binding::Key(_) | Binding::Mouse(_) => Self::Keyboard,
-            Binding::Pad(_) => Self::Pad,
-        }
-    }
-}
 
 /// The transparent node over the whole window while a row waits: the pointer lands on it, so a
 /// click binds the mouse button and cannot press the button under it.
@@ -174,10 +168,10 @@ impl BindingSettings {
         self.pad_prompt.replace("{exit}", &exit)
     }
 
-    fn prompt(&self, device: BindingDevice) -> String {
+    fn prompt(&self, device: InputDevice) -> String {
         match device {
-            BindingDevice::Keyboard => self.key_prompt(),
-            BindingDevice::Pad => self.pad_prompt(),
+            InputDevice::Keyboard => self.key_prompt(),
+            InputDevice::Pad => self.pad_prompt(),
         }
     }
 }
@@ -315,18 +309,18 @@ pub fn bind_by_input(
     gamepads: Query<&Gamepad>,
     mut focus: ResMut<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
-    rows: Query<(Entity, &BindingValue, &BindingDevice, Has<Armed>), With<Capturing>>,
+    rows: Query<(Entity, &BindingValue, Has<Armed>), With<Capturing>>,
     mut out: MessageWriter<UiFeedback>,
     mut commands: Commands,
 ) {
-    for (row, held, device, armed) in &rows {
+    for (row, held, armed) in &rows {
         if armed {
             commands.entity(row).remove::<Armed>();
             continue;
         }
-        let heard = match device {
-            BindingDevice::Keyboard => heard_by_keyboard_row(&settings, &keys, &mouse, &gamepads),
-            BindingDevice::Pad => heard_by_pad_row(&settings, &keys, &mouse, &gamepads),
+        let heard = match held.0.device() {
+            InputDevice::Keyboard => heard_by_keyboard_row(&settings, &keys, &mouse, &gamepads),
+            InputDevice::Pad => heard_by_pad_row(&settings, &keys, &mouse, &gamepads),
         };
         match heard {
             Heard::Nothing => {
@@ -409,7 +403,7 @@ type Written = Or<(Changed<BindingValue>, Added<Capturing>)>;
 /// the same frame a value changes, a capture begins or ends, or [`BindingSettings`] does.
 pub fn update_bindings(
     settings: Res<BindingSettings>,
-    rows: Query<(Entity, &BindingValue, &BindingDevice, Has<Capturing>)>,
+    rows: Query<(Entity, &BindingValue, Has<Capturing>)>,
     changed: Query<Entity, (With<BindingValue>, Written)>,
     mut ended: RemovedComponents<Capturing>,
     children: Query<&Children>,
@@ -424,11 +418,11 @@ pub fn update_bindings(
     dirty.sort_unstable();
     dirty.dedup();
     for row in dirty {
-        let Ok((_, value, device, waiting)) = rows.get(row) else {
+        let Ok((_, value, waiting)) = rows.get(row) else {
             continue;
         };
         let name = value.0.label(settings.pad_style);
-        let prompt = settings.prompt(*device);
+        let prompt = settings.prompt(value.0.device());
         for part in children.iter_descendants(row) {
             let Ok((role, mut text, mut visibility)) = parts.get_mut(part) else {
                 continue;

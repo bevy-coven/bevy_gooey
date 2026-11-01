@@ -144,6 +144,12 @@ pub const PAD_REPEAT_DELAY: f32 = 0.4;
 /// two seconds.
 pub const PAD_REPEAT_RATE: f32 = 12.0;
 
+/// How far a stick must be pushed, as a share of its travel (after the pad's own dead zone), to
+/// count as the player using a pad: [`crate::track_input_device`] switches
+/// [`crate::InputDevice`] to the pad on a push this far. Half its travel is a deliberate push, and
+/// leaves a drifting or brushed stick alone. A design default.
+pub const STICK_PUSH: f32 = 0.5;
+
 /// How far along its range a slider's thumb is, from 0 to 1. Never NaN: a value outside the range
 /// is clamped to an end, and a range that is not finite or has no length reads as the start.
 ///
