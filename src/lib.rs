@@ -13,10 +13,9 @@
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
 //!   (a HUD bar driven by [`Meter`]), [`toggle`], [`slider`] and [`choice`] (an options screen's
 //!   switch, scrubber and stepper, reporting through [`ValueChange`]), [`binding`] (a controls
-//!   screen's row: the player's next key, mouse button or pad button is the new [`Binding`]), [`tabs`]
-//!   (its pages, each a
-//!   [`tab_page`], turned by a click, the arrows and the pad's bumpers), [`list`] (rows that scroll,
-//!   following focus), [`toast`] and
+//!   screen's row: the player's next key, mouse button or pad button is the new [`Binding`]),
+//!   [`tabs`] (its pages, each a [`tab_page`], turned by a click, the arrows and the pad's
+//!   bumpers), [`list`] (rows that scroll, following focus), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
 //!   timed by [`ToastSettings`]),
 //!   [`Tooltip`] and the modal [`dialog`]. Each is a free function returning a bundle, so they
