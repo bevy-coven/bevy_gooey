@@ -9,6 +9,7 @@ use bevy::ui::{ComputedUiRenderTargetInfo, OverrideClip, UiGlobalTransform};
 use bevy::ui_widgets::popover::Popover;
 
 use crate::skin::Role;
+use crate::text::TextInputOf;
 
 /// Shows its text in a box beside this entity while the pointer is over it, or while it has focus
 /// and focus is visible (a keyboard or pad player has moved it), so every input reaches it.
@@ -124,27 +125,32 @@ pub fn update_tooltip_text(
     }
 }
 
-/// Shows each [`Tooltip`] box while its widget is hovered or has visible focus, and hides it
-/// otherwise; records whether the widget sits in a row and how much room the window leaves beside
-/// it, for [`crate::apply_skin`] to place and fit the box. Writes only what changed. Runs in
+/// Shows each [`Tooltip`] box while its widget is hovered or has visible focus (a
+/// [`crate::text_input`] row has it while its field does), and hides it otherwise; records whether
+/// the widget sits in a row and how much room the window leaves beside it, for
+/// [`crate::apply_skin`] to place and fit the box. Writes only what changed. Runs in
 /// [`crate::GooeySystems::Style`], before [`crate::apply_skin`].
 pub fn show_tooltips(
     focus: Option<Res<InputFocus>>,
     visible: Option<Res<InputFocusVisible>>,
     widgets: Query<Described, Without<TooltipBox>>,
     flows: Query<&Node, Without<TooltipBox>>,
+    fields: Query<&TextInputOf>,
     mut boxes: Query<(&ChildOf, &mut Node, &mut TooltipBox)>,
 ) {
     let focused = visible
         .is_some_and(|v| v.0)
         .then(|| focus.and_then(|f| f.get()))
         .flatten();
+    let focused_row = focused.and_then(|f| fields.get(f).ok()).map(|of| of.0);
     for (owner, mut node, mut tip) in &mut boxes {
         let widget = owner.parent();
         let Ok((hovered, parent, placed)) = widgets.get(widget) else {
             continue;
         };
-        let shown = hovered.is_some_and(|h| h.get()) || focused == Some(widget);
+        let shown = hovered.is_some_and(|h| h.get())
+            || focused == Some(widget)
+            || focused_row == Some(widget);
         let display = if shown { Display::Flex } else { Display::None };
         if node.display != display {
             node.display = display;

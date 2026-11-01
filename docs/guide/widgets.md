@@ -21,6 +21,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `toast`, `toast_alert` | a line of news at the edge of the screen — see [toasts](toasts.md) |
 | `binding` | a row that rebinds a key, a mouse button or a pad button on the player's next press — see [rebinding](bindings.md) |
 | `prompt`, `prompts` | the "Esc Back" hints in the corner, in the words of the last device the player used — see [prompts](prompts.md) |
+| `text_input` | a row with a field the player types in — a caret, a selection, paste and IME on Bevy's own `TextInput`, a hint, and focus it never traps — see [text input](text-input.md) |
 
 ## A meter
 
