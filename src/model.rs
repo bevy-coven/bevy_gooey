@@ -1381,6 +1381,134 @@ pub fn column_resize(start: f32, by: f32, least: f32) -> f32 {
     }
 }
 
+/// How long a pause ends a typed prefix, in seconds: characters typed within this long of each
+/// other make one prefix (the APG's "rapid succession"), a longer pause starts it over.
+pub const TYPE_AHEAD_SECS: f32 = 1.0;
+
+/// The indent of one tree level, and the width of a node's disclosure chevron, in logical pixels
+/// for body text `text_px` high: a text size and a half, never under [`MIN_TARGET_PX`] (WCAG 2.5.8).
+///
+/// ```
+/// assert_eq!(bevy_gooey::tree_indent(16.0), 24.0);
+/// assert_eq!(bevy_gooey::tree_indent(32.0), 48.0);
+/// assert_eq!(bevy_gooey::tree_indent(10.0), 24.0);
+/// ```
+pub fn tree_indent(text_px: f32) -> f32 {
+    (text_px * 1.5).max(MIN_TARGET_PX)
+}
+
+/// For nodes in depth-first order with the given `depths` (the first is 0 and no depth is more
+/// than one past the one before it), where each node's subtree ends: the index of the first node
+/// after it that is not its descendant (`depths.len()` for the last subtree). A node with no
+/// children ends at the next index.
+///
+/// ```
+/// // a ( b ( c ) d ) e
+/// assert_eq!(bevy_gooey::tree_ends(&[0, 1, 2, 1, 0]), vec![4, 3, 3, 4, 5]);
+/// ```
+pub fn tree_ends(depths: &[u32]) -> Vec<usize> {
+    let mut ends = vec![depths.len(); depths.len()];
+    let mut open: Vec<usize> = Vec::new();
+    for (i, &depth) in depths.iter().enumerate() {
+        while let Some(&top) = open.last() {
+            if depths[top] < depth {
+                break;
+            }
+            ends[top] = i;
+            open.pop();
+        }
+        open.push(i);
+    }
+    ends
+}
+
+/// The nodes a tree shows, in order: every node whose ancestors are all open. `ends` is
+/// [`tree_ends`] and `open` each node's own state; a closed node's descendants are skipped
+/// whatever their own state, so closing a node loses nothing below it.
+///
+/// ```
+/// let ends = bevy_gooey::tree_ends(&[0, 1, 2, 1, 0]);
+/// // a is open, b is closed (c is open but hidden), e is closed.
+/// let open = [true, false, true, false, false];
+/// assert_eq!(bevy_gooey::tree_visible(&ends, &open), vec![0, 1, 3, 4]);
+/// ```
+pub fn tree_visible(ends: &[usize], open: &[bool]) -> Vec<usize> {
+    let mut shown = Vec::new();
+    let mut i = 0;
+    while i < ends.len() {
+        shown.push(i);
+        i = if open.get(i).copied().unwrap_or(false) {
+            i + 1
+        } else {
+            ends[i]
+        };
+    }
+    shown
+}
+
+/// The parent of node `index`: the nearest node before it that is shallower. `None` for a root.
+///
+/// ```
+/// let depths = [0, 1, 2, 1, 0];
+/// assert_eq!(bevy_gooey::tree_parent(&depths, 2), Some(1));
+/// assert_eq!(bevy_gooey::tree_parent(&depths, 3), Some(0));
+/// assert_eq!(bevy_gooey::tree_parent(&depths, 4), None);
+/// ```
+pub fn tree_parent(depths: &[u32], index: usize) -> Option<usize> {
+    let depth = *depths.get(index)?;
+    (0..index).rev().find(|&j| depths[j] < depth)
+}
+
+/// Who takes the place of node `index` when its subtree is removed: its next sibling, else its
+/// previous sibling, else its parent. `None` for the only node there is.
+///
+/// ```
+/// // a ( b c ) d ( e )
+/// let depths = [0, 1, 1, 0, 1];
+/// let ends = bevy_gooey::tree_ends(&depths);
+/// assert_eq!(bevy_gooey::tree_heir(&depths, &ends, 1), Some(2)); // next sibling
+/// assert_eq!(bevy_gooey::tree_heir(&depths, &ends, 2), Some(1)); // the one before
+/// assert_eq!(bevy_gooey::tree_heir(&depths, &ends, 4), Some(3)); // an only child: the parent
+/// assert_eq!(bevy_gooey::tree_heir(&depths, &ends, 0), Some(3)); // a root: the next root
+/// assert_eq!(bevy_gooey::tree_heir(&[0], &[1], 0), None);
+/// ```
+pub fn tree_heir(depths: &[u32], ends: &[usize], index: usize) -> Option<usize> {
+    let depth = *depths.get(index)?;
+    let next = *ends.get(index)?;
+    if depths.get(next) == Some(&depth) {
+        return Some(next);
+    }
+    (0..index).rev().find(|&j| depths[j] <= depth)
+}
+
+/// Where type-ahead takes the cursor: in `len` rows with the cursor on `from`, the first row that
+/// `hit` accepts, looking forward and wrapping. A one-character prefix starts after the cursor row
+/// (typing "c" again goes on to the next row starting with "c"); a longer one starts on it (typing
+/// "ca" while on "Camera" stays). `None` when no row matches.
+///
+/// ```
+/// let rows = ["Camera", "Cube", "Light", "Cube2"];
+/// let hit = |prefix: &'static str| move |i: usize| rows[i].to_lowercase().starts_with(prefix);
+/// assert_eq!(bevy_gooey::type_ahead(4, None, 1, hit("c")), Some(0));
+/// assert_eq!(bevy_gooey::type_ahead(4, Some(0), 1, hit("c")), Some(1));
+/// assert_eq!(bevy_gooey::type_ahead(4, Some(3), 1, hit("c")), Some(0));
+/// assert_eq!(bevy_gooey::type_ahead(4, Some(1), 2, hit("cu")), Some(1));
+/// assert_eq!(bevy_gooey::type_ahead(4, Some(1), 1, hit("z")), None);
+/// ```
+pub fn type_ahead(
+    len: usize,
+    from: Option<usize>,
+    prefix_len: usize,
+    hit: impl Fn(usize) -> bool,
+) -> Option<usize> {
+    let start = match from {
+        None => 0,
+        Some(f) if prefix_len <= 1 => f + 1,
+        Some(f) => f,
+    };
+    (0..len).map(|k| (start + k) % len.max(1)).find(|&i| hit(i))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

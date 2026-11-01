@@ -17,6 +17,7 @@ use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
     TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height, snap_line_width,
+    tree_indent,
 };
 use crate::popover::{PopoverPanel, placement_of};
 use crate::table::TableRow;
@@ -1109,6 +1110,13 @@ pub enum Role {
     TableCell,
     /// A cell's text: [`GooeySkin::text`], or [`GooeySkin::accent_text`] on a selected row.
     TableCellText,
+    /// A [`crate::tree`] row's indent and click target, a row high and [`crate::tree_indent`]
+    /// wide; not drawn.
+    TreeTwisty,
+    /// The chevron of a closed node, pointing right, in the row's ink.
+    TreeClosed,
+    /// The chevron of an open node, pointing down, in the row's ink.
+    TreeOpen,
     /// A [`crate::split`]'s root: a row or a column of two panes and the divider between them; not
     /// drawn.
     Split,
@@ -1842,6 +1850,9 @@ fn restyle(
         | Role::TableRows
         | Role::TableCell
         | Role::TableCellText
+        | Role::TreeTwisty
+        | Role::TreeClosed
+        | Role::TreeOpen
         | Role::Split
         | Role::SplitPane
         | Role::Dock
@@ -1913,6 +1924,12 @@ fn restyle(
             Color::NONE
         })),
         Role::TableSortUp | Role::TableSortDown => Some(BorderColor::all(menu_ink(owner, skin))),
+        // A node's chevron is drawn in its borders, in the row's ink: inverted on the accent.
+        Role::TreeClosed | Role::TreeOpen => Some(BorderColor::all(if owner.selected {
+            skin.accent_text
+        } else {
+            skin.text
+        })),
         // A row has no fill of its own, so its border speaks: the ring when focused, the outline
         // under the pointer, nothing at rest.
         Role::Toggle | Role::Slider | Role::Choice | Role::Binding => {
@@ -2328,6 +2345,34 @@ fn restyle(
                     UiRect {
                         top: line,
                         left: line,
+                        ..UiRect::ZERO
+                    }
+                } else {
+                    UiRect {
+                        bottom: line,
+                        right: line,
+                        ..UiRect::ZERO
+                    }
+                };
+            }
+            // The box a chevron sits in: as wide as one level of indent, the row's height (the
+            // widget stretches it), its click target. The widget sets how far in it stands.
+            Role::TreeTwisty => {
+                next.width = Val::Px(tree_indent(text_px));
+                next.flex_shrink = 0.0;
+            }
+            // The same turned square as a header's sort mark: closed keeps its top and right (it
+            // points right), open its bottom and right (it points down).
+            Role::TreeClosed | Role::TreeOpen => {
+                let size = chevron * TABLE_SORT_MARK_SCALE;
+                next.width = Val::Px(size);
+                next.height = Val::Px(size);
+                next.flex_shrink = 0.0;
+                let line = Val::Px(line);
+                next.border = if *role == Role::TreeClosed {
+                    UiRect {
+                        top: line,
+                        right: line,
                         ..UiRect::ZERO
                     }
                 } else {
