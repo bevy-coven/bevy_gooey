@@ -245,6 +245,192 @@ pub fn tab_step(selected: usize, len: usize, delta: i32) -> usize {
     (from + i64::from(delta)).rem_euclid(len as i64) as usize
 }
 
+/// The family of controller whose button names a [`crate::binding`] row shows: the same physical
+/// button is "A" on an Xbox pad, "Cross" on a PlayStation one and "B" on a Nintendo Switch one.
+/// The crate does not detect a pad's make; the host sets it in [`crate::BindingSettings`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum PadStyle {
+    /// A, B, X, Y, LB, RB, LT, RT, View, Menu.
+    #[default]
+    Xbox,
+    /// Cross, Circle, Square, Triangle, L1, R1, L2, R2, Create, Options.
+    PlayStation,
+    /// B, A, Y, X, L, R, ZL, ZR, -, +: the face buttons by position, so South is "B".
+    Switch,
+}
+
+/// The words printed on a key's cap, from the name of its Bevy `KeyCode` variant (`format!("{:?}",
+/// key)`): the key's *location* named as a US keyboard prints it, so `KeyW` is "W" on every
+/// layout (a stored key is a place, not a letter; see `docs/research/binding.md`).
+/// Modifiers lead with their side ("Left Shift"), the arrows end in "Arrow", punctuation is the
+/// mark itself, and any other name is cut into words ("PageUp" is "Page Up").
+///
+/// ```
+/// assert_eq!(bevy_gooey::key_name("KeyW"), "W");
+/// assert_eq!(bevy_gooey::key_name("Digit1"), "1");
+/// assert_eq!(bevy_gooey::key_name("ShiftLeft"), "Left Shift");
+/// assert_eq!(bevy_gooey::key_name("ArrowUp"), "Up Arrow");
+/// assert_eq!(bevy_gooey::key_name("Escape"), "Esc");
+/// assert_eq!(bevy_gooey::key_name("PageDown"), "Page Down");
+/// ```
+pub fn key_name(code: &str) -> String {
+    let fixed = match code {
+        "Escape" => "Esc",
+        "Delete" => "Del",
+        "Insert" => "Ins",
+        "ContextMenu" => "Menu",
+        "Backquote" => "`",
+        "Backslash" | "IntlBackslash" => "\\",
+        "BracketLeft" => "[",
+        "BracketRight" => "]",
+        "Comma" => ",",
+        "Equal" => "=",
+        "Minus" => "-",
+        "Period" => ".",
+        "Quote" => "'",
+        "Semicolon" => ";",
+        "Slash" => "/",
+        "NumpadAdd" => "Num +",
+        "NumpadSubtract" => "Num -",
+        "NumpadMultiply" => "Num *",
+        "NumpadDivide" => "Num /",
+        "NumpadDecimal" => "Num .",
+        "NumpadComma" => "Num ,",
+        "NumpadEqual" => "Num =",
+        "NumpadEnter" => "Num Enter",
+        _ => "",
+    };
+    if !fixed.is_empty() {
+        return fixed.to_owned();
+    }
+    if code.starts_with("Unidentified") {
+        return "Unknown key".to_owned();
+    }
+    for side in ["Left", "Right"] {
+        if let Some(modifier) = code.strip_suffix(side) {
+            let name = match modifier {
+                "Shift" => "Shift",
+                "Control" => "Ctrl",
+                "Alt" => "Alt",
+                "Super" => "Super",
+                "Meta" => "Meta",
+                "Hyper" => "Hyper",
+                _ => continue,
+            };
+            return format!("{side} {name}");
+        }
+    }
+    if let Some(direction) = code.strip_prefix("Arrow") {
+        return format!("{direction} Arrow");
+    }
+    for prefix in ["Key", "Digit"] {
+        if let Some(rest) = code.strip_prefix(prefix)
+            && rest.chars().count() == 1
+        {
+            return rest.to_owned();
+        }
+    }
+    if let Some(rest) = code.strip_prefix("Numpad")
+        && rest.chars().all(|c| c.is_ascii_digit())
+        && !rest.is_empty()
+    {
+        return format!("Num {rest}");
+    }
+    words(code)
+}
+
+/// The words of a mouse button, from the name of its Bevy `MouseButton` variant: "Left Click",
+/// "Right Click", "Middle Click", the side buttons as "Mouse 4" and "Mouse 5" and any other by its
+/// number ("Mouse 6").
+///
+/// ```
+/// assert_eq!(bevy_gooey::mouse_name("Left"), "Left Click");
+/// assert_eq!(bevy_gooey::mouse_name("Back"), "Mouse 4");
+/// assert_eq!(bevy_gooey::mouse_name("Other(6)"), "Mouse 6");
+/// ```
+pub fn mouse_name(button: &str) -> String {
+    match button {
+        "Left" => "Left Click".to_owned(),
+        "Right" => "Right Click".to_owned(),
+        "Middle" => "Middle Click".to_owned(),
+        "Back" => "Mouse 4".to_owned(),
+        "Forward" => "Mouse 5".to_owned(),
+        other => match numbered(other) {
+            Some(n) => format!("Mouse {n}"),
+            None => words(other),
+        },
+    }
+}
+
+/// The words of a gamepad button, from the name of its Bevy `GamepadButton` variant, in the
+/// vocabulary of `style`: `South` is "A", "Cross" or "B"; the shoulders "LB", "L1" or "L"; the D-pad
+/// "D-pad Up" on all three. A button with no name of its own is "Button n".
+///
+/// ```
+/// use bevy_gooey::model::PadStyle;
+/// assert_eq!(bevy_gooey::pad_name("South", PadStyle::Xbox), "A");
+/// assert_eq!(bevy_gooey::pad_name("South", PadStyle::PlayStation), "Cross");
+/// assert_eq!(bevy_gooey::pad_name("RightTrigger2", PadStyle::Switch), "ZR");
+/// assert_eq!(bevy_gooey::pad_name("DPadUp", PadStyle::Xbox), "D-pad Up");
+/// ```
+pub fn pad_name(button: &str, style: PadStyle) -> String {
+    // Xbox, PlayStation, Switch.
+    let (xbox, playstation, switch) = match button {
+        "South" => ("A", "Cross", "B"),
+        "East" => ("B", "Circle", "A"),
+        "North" => ("Y", "Triangle", "X"),
+        "West" => ("X", "Square", "Y"),
+        "C" => ("C", "C", "C"),
+        "Z" => ("Z", "Z", "Z"),
+        "LeftTrigger" => ("LB", "L1", "L"),
+        "LeftTrigger2" => ("LT", "L2", "ZL"),
+        "RightTrigger" => ("RB", "R1", "R"),
+        "RightTrigger2" => ("RT", "R2", "ZR"),
+        "Select" => ("View", "Create", "-"),
+        "Start" => ("Menu", "Options", "+"),
+        "Mode" => ("Guide", "PS", "Home"),
+        "LeftThumb" => ("LS", "L3", "L3"),
+        "RightThumb" => ("RS", "R3", "R3"),
+        "DPadUp" => ("D-pad Up", "D-pad Up", "D-pad Up"),
+        "DPadDown" => ("D-pad Down", "D-pad Down", "D-pad Down"),
+        "DPadLeft" => ("D-pad Left", "D-pad Left", "D-pad Left"),
+        "DPadRight" => ("D-pad Right", "D-pad Right", "D-pad Right"),
+        other => {
+            return match numbered(other) {
+                Some(n) => format!("Button {n}"),
+                None => words(other),
+            };
+        }
+    };
+    match style {
+        PadStyle::Xbox => xbox,
+        PadStyle::PlayStation => playstation,
+        PadStyle::Switch => switch,
+    }
+    .to_owned()
+}
+
+/// `n` of a variant printed as `Other(n)`.
+fn numbered(name: &str) -> Option<&str> {
+    name.strip_prefix("Other(")?.strip_suffix(')')
+}
+
+/// A variant name cut into words at each capital that follows a lower-case letter or a digit:
+/// "CapsLock" is "Caps Lock".
+fn words(name: &str) -> String {
+    let mut out = String::with_capacity(name.len() + 2);
+    let mut before: Option<char> = None;
+    for c in name.chars() {
+        if c.is_uppercase() && before.is_some_and(|b| b.is_lowercase() || b.is_ascii_digit()) {
+            out.push(' ');
+        }
+        out.push(c);
+        before = Some(c);
+    }
+    out
+}
+
 /// How many repeats a held button has made between two moments, `held_before` and `held_now`
 /// seconds after it went down: none until `delay`, then `per_second` a second, the first at
 /// `delay` itself. The press itself is not a repeat. Zero for a delay or rate that is not usable.
@@ -988,5 +1174,78 @@ mod tests {
         assert_eq!(snap_to_row(60.0, 0.0, &[]), None);
         assert_eq!(snap_to_row(f32::NAN, 0.0, &tops), None);
         assert_eq!(snap_to_row(60.0, 0.0, &[f32::NAN, 114.0]), Some(114.0));
+    }
+    #[test]
+    fn a_key_is_named_as_its_cap_is_printed() {
+        // Letters and digits are the mark, whatever the layout: a stored key is a place.
+        assert_eq!(key_name("KeyQ"), "Q");
+        assert_eq!(key_name("Digit0"), "0");
+        assert_eq!(key_name("F5"), "F5");
+        assert_eq!(key_name("F13"), "F13");
+        // Modifiers lead with their side, so Left Shift and Right Shift are two caps.
+        assert_eq!(key_name("ShiftLeft"), "Left Shift");
+        assert_eq!(key_name("ControlRight"), "Right Ctrl");
+        assert_eq!(key_name("AltLeft"), "Left Alt");
+        assert_eq!(key_name("SuperRight"), "Right Super");
+        // The arrows are not the "Left" and "Right" of a side.
+        assert_eq!(key_name("ArrowLeft"), "Left Arrow");
+        assert_eq!(key_name("ArrowDown"), "Down Arrow");
+        // The numpad is told from the row of digits.
+        assert_eq!(key_name("Numpad7"), "Num 7");
+        assert_eq!(key_name("NumpadAdd"), "Num +");
+        assert_eq!(key_name("NumpadEnter"), "Num Enter");
+        // Punctuation is the mark, and a few long names are the short form on the cap.
+        assert_eq!(key_name("Semicolon"), ";");
+        assert_eq!(key_name("Backquote"), "`");
+        assert_eq!(key_name("Escape"), "Esc");
+        assert_eq!(key_name("Delete"), "Del");
+        assert_eq!(key_name("Space"), "Space");
+        assert_eq!(key_name("Enter"), "Enter");
+        assert_eq!(key_name("Tab"), "Tab");
+        // Any other name is cut into words.
+        assert_eq!(key_name("PageUp"), "Page Up");
+        assert_eq!(key_name("CapsLock"), "Caps Lock");
+        assert_eq!(key_name("PrintScreen"), "Print Screen");
+        assert_eq!(key_name("MediaPlayPause"), "Media Play Pause");
+        assert_eq!(key_name("Unidentified(Windows(255))"), "Unknown key");
+    }
+
+    #[test]
+    fn a_mouse_button_is_named_by_what_a_player_calls_it() {
+        assert_eq!(mouse_name("Left"), "Left Click");
+        assert_eq!(mouse_name("Right"), "Right Click");
+        assert_eq!(mouse_name("Middle"), "Middle Click");
+        assert_eq!(mouse_name("Back"), "Mouse 4");
+        assert_eq!(mouse_name("Forward"), "Mouse 5");
+        assert_eq!(mouse_name("Other(9)"), "Mouse 9");
+    }
+
+    #[test]
+    fn a_pad_button_is_named_in_the_vocabulary_of_its_make() {
+        // One place, three names: the face buttons by position.
+        for (button, xbox, playstation, switch) in [
+            ("South", "A", "Cross", "B"),
+            ("East", "B", "Circle", "A"),
+            ("North", "Y", "Triangle", "X"),
+            ("West", "X", "Square", "Y"),
+            ("LeftTrigger", "LB", "L1", "L"),
+            ("RightTrigger2", "RT", "R2", "ZR"),
+            ("Select", "View", "Create", "-"),
+            ("Start", "Menu", "Options", "+"),
+        ] {
+            assert_eq!(pad_name(button, PadStyle::Xbox), xbox, "{button}");
+            assert_eq!(
+                pad_name(button, PadStyle::PlayStation),
+                playstation,
+                "{button}"
+            );
+            assert_eq!(pad_name(button, PadStyle::Switch), switch, "{button}");
+        }
+        // The D-pad reads the same on every pad, and an unnamed button has a number.
+        for style in [PadStyle::Xbox, PadStyle::PlayStation, PadStyle::Switch] {
+            assert_eq!(pad_name("DPadLeft", style), "D-pad Left");
+            assert_eq!(pad_name("Other(14)", style), "Button 14");
+        }
+        assert_eq!(PadStyle::default(), PadStyle::Xbox);
     }
 }

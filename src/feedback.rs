@@ -97,7 +97,12 @@ pub fn feedback_on_focus(
     if let Some(entity) = focus.get()
         && matches!(
             roles.get(entity),
-            Ok(Role::Button | Role::Toggle | Role::Slider | Role::Choice | Role::Tab)
+            Ok(Role::Button
+                | Role::Toggle
+                | Role::Slider
+                | Role::Choice
+                | Role::Binding
+                | Role::Tab)
         )
     {
         out.write(UiFeedback {
