@@ -1,6 +1,7 @@
 //! The options screen's rows for the settings this crate itself reads: [`crate::text_size`],
-//! [`crate::interface_size`] and [`crate::pad_style`]. Each is a [`crate::choice`] that edits one
-//! field of a resource and shows it, so the setting lives once, in the resource.
+//! [`crate::interface_size`], [`crate::pad_style`] and [`crate::skin_preset`]. Each is a
+//! [`crate::choice`] that edits one field of a resource and shows it, so the setting lives once,
+//! in the resource.
 
 use bevy::prelude::*;
 use bevy::ui_widgets::ValueChange;
@@ -9,11 +10,12 @@ use crate::binding::BindingSettings;
 use crate::choice::ChoiceValue;
 use crate::model::{INTERFACE_SIZE_STEPS, PAD_STYLES, TEXT_SIZE_STEPS, nearest_step};
 use crate::scale::UiScaleSettings;
-use crate::skin::GooeySkin;
+use crate::skin::{GooeySkin, SkinPreset};
 
 /// Which of the crate's own settings a [`crate::choice`] row edits. Part of what
-/// [`crate::text_size`], [`crate::interface_size`] and [`crate::pad_style`] spawn, for
-/// [`update_option_rows`] to find them by; a game never builds one.
+/// [`crate::text_size`], [`crate::interface_size`], [`crate::pad_style`] and
+/// [`crate::skin_preset`] spawn, for [`update_option_rows`] to find them by; a game never builds
+/// one.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum OptionRow {
@@ -23,11 +25,15 @@ pub enum OptionRow {
     InterfaceSize,
     /// [`BindingSettings::pad_style`], in [`PAD_STYLES`].
     PadStyle,
+    /// [`GooeySkin`]'s colours, in [`SkinPreset::ALL`].
+    SkinPreset,
 }
 
 impl OptionRow {
     /// The options the row offers, as the player reads them: a percentage for a size, the maker's
-    /// name for a controller. Numerals and proper nouns, so the host localises nothing here.
+    /// name for a controller. Numerals and proper nouns, so the host localises nothing there; the
+    /// theme row's names are English words ([`SkinPreset::name`]), and a host that localises writes
+    /// its own [`crate::choice`] over [`SkinPreset::ALL`].
     pub(crate) fn options(self) -> Vec<String> {
         match self {
             Self::TextSize => TEXT_SIZE_STEPS.iter().map(|&step| percent(step)).collect(),
@@ -39,6 +45,10 @@ impl OptionRow {
                 .iter()
                 .map(|style| style.name().to_owned())
                 .collect(),
+            Self::SkinPreset => SkinPreset::ALL
+                .iter()
+                .map(|preset| preset.name().to_owned())
+                .collect(),
         }
     }
 }
@@ -48,8 +58,9 @@ fn percent(step: f32) -> String {
     format!("{:.0}%", step * 100.0)
 }
 
-/// A player's step on an option row is one field of the resource it edits, and no other: a game's
-/// own skin, the scale's reference and the binding prompts stay as they were. The row's own
+/// A player's step on an option row is one field of the resource it edits, and no other (a theme
+/// row's step is the skin's colours, and no size): a game's own skin sizes, the scale's reference
+/// and the binding prompts stay as they were. The row's own
 /// observer, like [`crate::choice`]'s `choice_self_update`, so it hears only its own row's change;
 /// a resource a host left out is not written (the plugin that owns it is not added).
 pub(crate) fn option_on_change(
@@ -79,6 +90,12 @@ pub(crate) fn option_on_change(
                 binding.pad_style = style;
             }
         }
+        OptionRow::SkinPreset => {
+            if let (Some(mut skin), Some(preset)) = (skin, SkinPreset::ALL.get(change.value)) {
+                let next = skin.clone().with_colours_of(&preset.skin());
+                skin.set_if_neq(next);
+            }
+        }
     }
 }
 
@@ -95,27 +112,29 @@ pub fn update_option_rows(
     mut rows: Query<(Ref<OptionRow>, &mut ChoiceValue)>,
 ) {
     for (row, mut value) in &mut rows {
-        let (changed, index) = match *row {
-            OptionRow::TextSize => (
-                skin.is_changed(),
-                nearest_step(&TEXT_SIZE_STEPS, skin.text_scale),
-            ),
-            OptionRow::InterfaceSize => match &scale {
-                Some(scale) => (
-                    scale.is_changed(),
-                    nearest_step(&INTERFACE_SIZE_STEPS, scale.scale),
-                ),
-                None => continue,
-            },
-            OptionRow::PadStyle => (
-                binding.is_changed(),
+        // The index is looked for only when the setting changed or the row is new.
+        let index = match *row {
+            OptionRow::TextSize => (skin.is_changed() || row.is_added())
+                .then(|| nearest_step(&TEXT_SIZE_STEPS, skin.text_scale)),
+            OptionRow::SkinPreset => (skin.is_changed() || row.is_added()).then(|| {
+                let preset = SkinPreset::of(&skin);
+                SkinPreset::ALL
+                    .iter()
+                    .position(|&candidate| candidate == preset)
+                    .unwrap_or(0)
+            }),
+            OptionRow::InterfaceSize => scale
+                .as_ref()
+                .filter(|scale| scale.is_changed() || row.is_added())
+                .map(|scale| nearest_step(&INTERFACE_SIZE_STEPS, scale.scale)),
+            OptionRow::PadStyle => (binding.is_changed() || row.is_added()).then(|| {
                 PAD_STYLES
                     .iter()
                     .position(|&style| style == binding.pad_style)
-                    .unwrap_or(0),
-            ),
+                    .unwrap_or(0)
+            }),
         };
-        if changed || row.is_added() {
+        if let Some(index) = index {
             value.set_if_neq(ChoiceValue(index));
         }
     }

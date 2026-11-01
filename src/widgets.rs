@@ -572,6 +572,33 @@ pub fn pad_style(label: impl Into<String>) -> impl Bundle {
     option_row(OptionRow::PadStyle, label)
 }
 
+/// The player's **theme**: a [`choice`] row over Dark, Parchment and High contrast
+/// ([`SkinPreset::ALL`](crate::SkinPreset::ALL)) that sets the colours of
+/// [`GooeySkin`](crate::GooeySkin), so the whole interface changes look in the frame the player
+/// steps it, and the high-contrast one holds every colour to 7:1 ([`GooeySkin::high_contrast`](crate::GooeySkin::high_contrast);
+/// Xbox Accessibility Guideline 102 asks a game for such a mode). `label` is the row's name, in the
+/// host's language; the options are English words ([`SkinPreset::name`](crate::SkinPreset::name)),
+/// and a host that localises writes a `choice` over its own strings with
+/// [`SkinPreset::ALL`](crate::SkinPreset::ALL) and
+/// [`GooeySkin::with_colours_of`](crate::GooeySkin::with_colours_of).
+///
+/// It behaves as [`text_size`] does: the skin is the one place the setting lives, the row follows it
+/// with no event (the preset whose colours are nearest, so a skin the game tuned shows the nearest
+/// and is left alone until the player steps), and a step writes the colours and no other field: the
+/// player's text size, and a game's own gap and padding, stay as they were. A game that starts in
+/// high contrast because the platform asks inserts `GooeySkin::high_contrast()` and the row shows it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((panel(), children![heading("Display"), skin_preset("Theme")]));
+/// # }
+/// ```
+pub fn skin_preset(label: impl Into<String>) -> impl Bundle {
+    option_row(OptionRow::SkinPreset, label)
+}
+
 /// One of a choice's two arrows: a target as wide as a button, with the chevron drawn in it. The
 /// chevron is a square with two borders turned an eighth of a turn, so it is a line of the skin's
 /// weight and not a glyph the host's font may lack; it is moved by the share of its own width that

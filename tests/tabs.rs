@@ -553,8 +553,12 @@ fn tabs_are_equal_targets_a_thumb_can_hit() {
 }
 
 #[test]
-fn the_selected_tab_is_lit_and_the_others_stay_readable_in_both_skins() {
-    for skin in [GooeySkin::dark(), GooeySkin::parchment()] {
+fn the_selected_tab_is_lit_and_the_others_stay_readable_in_every_preset() {
+    for skin in [
+        GooeySkin::dark(),
+        GooeySkin::parchment(),
+        GooeySkin::high_contrast(),
+    ] {
         assert!(skin.problems().is_empty(), "the preset holds its own rules");
         let mut app = app();
         app.insert_resource(skin.clone());

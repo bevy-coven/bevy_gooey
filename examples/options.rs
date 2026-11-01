@@ -1,9 +1,10 @@
-//! An options screen with no wiring: the three settings the crate itself reads, as one line each.
+//! An options screen with no wiring: the four settings the crate itself reads, as one line each.
 //!
 //! - **Text size** (100%, 125%, 150%, 200%) sets `GooeySkin::text_scale`, **Interface size** (75%,
-//!   100%, 125%, 150%) sets `UiScaleSettings::scale`, and **Controller** (Xbox, PlayStation, Switch)
-//!   sets `BindingSettings::pad_style`. Left and Right (or the D-pad) step the row focused, and the
-//!   whole screen answers the same frame: the panel, its rows and the legend in the corner.
+//!   100%, 125%, 150%) sets `UiScaleSettings::scale`, **Controller** (Xbox, PlayStation, Switch)
+//!   sets `BindingSettings::pad_style` and **Theme** (Dark, Parchment, High contrast) sets the
+//!   skin's colours. Left and Right (or the D-pad) step the row focused, and the whole screen answers
+//!   the same frame: the panel, its rows and the legend in the corner.
 //! - There is no observer in this file: each row edits its resource and follows it, so a game that
 //!   loads its saved `GooeySkin`, `UiScaleSettings` and `BindingSettings` (the `serde` feature) shows
 //!   them on the rows with nothing more.
@@ -67,6 +68,7 @@ fn env<T: std::str::FromStr>(name: &str) -> Option<T> {
 fn main() {
     let mut skin = match std::env::var("GOOEY_SKIN").as_deref() {
         Ok("parchment") => GooeySkin::parchment(),
+        Ok("high_contrast") => GooeySkin::high_contrast(),
         _ => GooeySkin::dark(),
     };
     if let Some(scale) = env("GOOEY_TEXT_SCALE") {
@@ -158,6 +160,7 @@ fn setup(mut commands: Commands) {
                         (text_size("Text size"), AutoFocus),
                         interface_size("Interface size"),
                         pad_style("Controller"),
+                        skin_preset("Theme"),
                     ]
                 )],
             ),

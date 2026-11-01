@@ -525,10 +525,11 @@ fn a_single_character_is_a_square_or_a_circle_and_a_name_is_wider() {
 }
 
 #[test]
-fn the_hints_read_in_both_presets() {
+fn the_hints_read_in_every_preset() {
     for (name, skin) in [
         ("dark", GooeySkin::dark()),
         ("parchment", GooeySkin::parchment()),
+        ("high contrast", GooeySkin::high_contrast()),
     ] {
         let mut app = app();
         app.insert_resource(skin.clone());

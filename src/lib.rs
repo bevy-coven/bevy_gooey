@@ -7,8 +7,9 @@
 //!
 //! - [`GooeySkin`] — the look, as plain data: colours, sizes and a player's [`GooeySkin::text_scale`].
 //!   [`GooeyStylePlugin`] restyles everything on screen the frame it changes, and
-//!   [`GooeySkin::problems`] checks it against the WCAG 2.2 contrast and target-size rules. Two
-//!   presets, [`GooeySkin::dark`] and [`GooeySkin::parchment`]. Fonts are the host's, in
+//!   [`GooeySkin::problems`] checks it against the WCAG 2.2 contrast and target-size rules. Three
+//!   presets, [`GooeySkin::dark`], [`GooeySkin::parchment`] and [`GooeySkin::high_contrast`] (every
+//!   pair at 7:1, checked by [`GooeySkin::high_contrast_problems`]). Fonts are the host's, in
 //!   [`GooeyFonts`].
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
 //!   (a HUD bar driven by [`Meter`]), [`toggle`], [`slider`] and [`choice`] (an options screen's
@@ -16,10 +17,10 @@
 //!   screen's row: the player's next key, mouse button or pad button is the new [`Binding`]),
 //!   [`text_input`] (a row with a field the player types in, kept in [`TextInputValue`]; the
 //!   field never traps focus, and [`TextEditing`] and [`is_text_editing`] tell a game when it
-//!   has the player's keys), [`text_size`], [`interface_size`] and [`pad_style`] (the player's
-//!   own text size, interface size and controller: a line each, editing
-//!   [`GooeySkin::text_scale`], [`UiScaleSettings::scale`] and
-//!   [`BindingSettings::pad_style`] and following them),
+//!   has the player's keys), [`text_size`], [`interface_size`], [`pad_style`] and [`skin_preset`]
+//!   (the player's own text size, interface size, controller and theme: a line each, editing
+//!   [`GooeySkin::text_scale`], [`UiScaleSettings::scale`],
+//!   [`BindingSettings::pad_style`] and the skin's colours and following them),
 //!   [`tabs`] (its pages, each a [`tab_page`], turned by a click, the arrows and the pad's
 //!   bumpers), [`list`] (rows that scroll, following focus), [`prompts`] and [`prompt`] (the "Esc
 //!   Back" hints in the corner, in the words of the device the player used last, which
@@ -144,12 +145,12 @@ pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY,
-    PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH, TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next,
-    choice_step, composite, contrast_ratio, key_name, list_height, meter_fraction, mouse_name,
-    nearest_step, pad_name, page_target, relative_luminance, repeat_steps, scroll_to_reveal,
-    slider_fraction, slider_text, snap_line_width, snap_to_row, tab_step, toast_alpha, toast_grow,
-    toast_hold, toast_life, window_ui_scale,
+    COMFORT_TARGET_PX, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST,
+    PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH, TEXT_CONTRAST,
+    TEXT_SIZE_STEPS, choice_next, choice_step, composite, contrast_ratio, key_name, list_height,
+    meter_fraction, mouse_name, nearest_step, pad_name, page_target, relative_luminance,
+    repeat_steps, scroll_to_reveal, slider_fraction, slider_text, snap_line_width, snap_to_row,
+    tab_step, toast_alpha, toast_grow, toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -157,7 +158,7 @@ pub use nav::{
 pub use options::{OptionRow, update_option_rows};
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
-pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
+pub use skin::{GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, apply_skin};
 pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
 pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
@@ -167,8 +168,8 @@ pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
     binding, button, choice, dialog, heading, interface_size, label, list, menu, meter, pad_style,
-    panel, prompt, prompts, screen, slider, tab_page, tabs, text_input, text_size, toast,
-    toast_alert, toggle,
+    panel, prompt, prompts, screen, skin_preset, slider, tab_page, tabs, text_input, text_size,
+    toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;

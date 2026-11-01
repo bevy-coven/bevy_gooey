@@ -863,8 +863,12 @@ fn a_dialog_that_holds_a_field_opens_on_it_and_escape_is_back_with_one_cancel() 
 }
 
 #[test]
-fn text_hint_frame_ring_and_selection_are_held_to_contrast_in_both_presets() {
-    for preset in [GooeySkin::dark(), GooeySkin::parchment()] {
+fn text_hint_frame_ring_and_selection_are_held_to_contrast_in_every_preset() {
+    for preset in [
+        GooeySkin::dark(),
+        GooeySkin::parchment(),
+        GooeySkin::high_contrast(),
+    ] {
         let mut app = app();
         app.insert_resource(preset.clone());
         let s = settings(&mut app);
