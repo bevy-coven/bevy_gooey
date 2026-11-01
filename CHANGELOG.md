@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-01
+
 ### Added
 
 - Number fields (G-13 slice one, #17): `number_field(label, value, step, range)` is a text row whose number the player scrubs (press on the label or the row's padding and drag: 50 px at a step of 0.1 is 5.0, Shift a tenth of that rate, Ctrl ten times it), types (Enter or leaving applies it, held to the range; Escape puts the old number back; anything else, an expression such as `1.5*2` included, is refused with its reason as a `NumberRefused`) and steps (Up and Down, Shift ten steps; the D-pad's Left and Right), with the number selected when the field gets focus. `vec_field(label, [x, y, z], step, range)` is a row of them with X, Y, Z and W as scrub handles. State is `NumberValue`, `NumberStep`, `NumberRange`, `VecValue`; events are `ValueChange<f32>` (`is_final` false while a drag rolls) and `VecChange { index, value, values, is_final }`; `MixedValue` and `VecMixed` show `MIXED_HINT` (`--`) for a multi-selection that differs, and any change the player makes is the one value. A scrub takes focus off the field, so there is no caret while the number rolls. `color_field` and its picker are the next slice.
