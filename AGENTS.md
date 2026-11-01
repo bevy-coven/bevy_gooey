@@ -87,6 +87,8 @@ The gate, every item green before a push, run in this order and stopped at the f
 4. `cargo check --lib` and `cargo check --lib --target wasm32-unknown-unknown`
 5. `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps`
 
+**There is one integration-test executable, `all` (`autotests = false`, `tests/all.rs`).** Every other file in `tests/` is a `mod <stem>;` of it, so Bevy is linked once (34 separate binaries were 650 to 790 MB each, 24 GB per relink). A new test file is declared in `tests/all.rs` (`every_test_file_is_a_module` fails otherwise: an undeclared file never compiles); a test is `all::<file>::<name>`, so while iterating run `cargo test --all-features --test all <file>::`; a file's inner `#![cfg(..)]` stays at the top of its file; a shared helper module is declared once in `all.rs` and imported with `use crate::<helper>;`. A test that mutates process-global state (an env var) shares a process with every other test now.
+
 `cargo check --lib` takes no dev-dependencies, so it compiles exactly the trimmed Bevy features a consumer gets; the full `bevy` dev-dependency would hide a hole in that list. The release build and the examples are built by the capture step, and `clippy --all-targets` type-checks the examples. CI (`.github/workflows/ci.yml`, on big's self-hosted runner) keeps the longer list as the backstop, but the local gate is the gate: never wait on CI.
 
 ## The non-negotiables

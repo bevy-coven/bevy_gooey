@@ -11,6 +11,13 @@ categories = ["game-development", "gui"]
 # `docs/` holds the gallery still and the research notes, so it is out of the package; the README is
 # anchored so the `README.md` of `docs/guide/` and `docs/media/` (relative links, for GitHub) stay out too.
 include = ["src/**", "Cargo.toml", "/README.md", "LICENSE-*"]
+# Every file in `tests/` is a module of `tests/all.rs`: one test executable, so Bevy is linked once
+# (34 separate ones were 650 to 790 MB each). `every_test_file_is_a_module` fails on an undeclared file.
+autotests = false
+
+[[test]]
+name = "all"
+path = "tests/all.rs"
 
 [features]
 default = []
