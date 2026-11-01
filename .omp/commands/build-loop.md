@@ -151,6 +151,19 @@ region, not an impression:
 6. **Protected checks change only additively.** An assumed decision may add to a protected test or check (a new row or entry, a new field's empty default in a literal, a count or version raised by exactly what the change adds), with the commit message `assumed owner exception: <what>`. It never removes, loosens, skips or re-pins an existing assertion, golden, eval answer or threshold; that is the one block left, so say so on the issue and go on.
 7. **Never, whatever you assume.** These need the owner's word in a conversation, and no prompt can give it: yanking a release or changing crate ownership; force-pushing, rewriting history or deleting branches; deleting files or work this pass did not create; editing this command file; spending money or sharing credentials.
 
+## One test binary, not 34 (owner, 2026-11-01: disk)
+
+Measured 2026-11-01 on big: every file in `tests/` links its own copy of Bevy into a debug executable of 650 to 790 MB, so one full relink writes about 24 GB, the loop wrote about 48 GB an hour, and big's disk fell under this loop's 150 GB floor. bevy_grimoire hit the same wall with 150 test binaries and fixed it with one (`autotests = false`, one `[[test]]`, one `tests/all.rs`): build 276 s plus run 539 s became 108 s plus 24 s.
+
+**First job of the next pass, ahead of the `G-NN` item:** do the same here.
+
+- In `Cargo.toml` set `autotests = false` under `[package]` and declare `[[test]] name = "all"`, `path = "tests/all.rs"`. `tests/all.rs` declares every other file in `tests/` as `mod <stem>;` (a crate-root `mod x;` in `tests/all.rs` resolves to `tests/x.rs`). A file's inner `#![cfg(...)]` and `#![allow(...)]` attributes stay at the top of its file, which is valid for a module file; a shared helper module is declared once and imported with `use crate::<helper>;`, never redeclared inside a module file.
+- A guard test, `every_test_file_is_a_module`, fails when a `tests/*.rs` file is not declared in `all.rs`, because an undeclared file is never compiled and its tests never run. Put the same check in the gate's list in `AGENTS.md` if the gate is a script.
+- Protected checks: moving a test file into the one binary is the owner's exception. Not one assertion, golden or threshold changes; the commit message says so. Run `cargo test --all-features -- --list` before and after and compare the sorted test names: the lists must be identical except for the module prefix, so a test that quietly stopped running is caught.
+- Keep the doctests and the README test (`tests/readme.rs`) running: `cargo test --all-features --doc` is its own step in the gate.
+- Also set `CARGO_PROFILE_DEV_DEBUG=0` for the gate's builds only if `target` is still over 100 GB after this, and say so in the log.
+- **Done when:** `ls target/debug/deps` holds one `all-*` test executable, the full gate is green, and the log line quotes the sorted test count before and after.
+
 ## Grimoire's UI requests come first (owner, 2026-11-01)
 
 While any issue labelled `grimoire-ui` is open, **the pass's item is the lowest-numbered `G-NN` among them whose Depends on line is all closed**, ahead of everything below except a broken gate and a `bug` issue. bevy_grimoire is rebuilding its whole interface on this crate (tracking issue linked in each request), so each request is a feature the editor is waiting on.
