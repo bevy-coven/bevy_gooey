@@ -3918,3 +3918,224 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 22	226	orient	model	model		2026-10-31T21:16:08Z	3.8	
 22	227	orient	tool	shell	bash	2026-10-31T21:16:11Z	0.3	Measuring ring thickness with Pillow via uv :: cd /tmp/g15/after && cat > /tmp/g15/ring.py <<'EOF' from PIL import Image import sys im=Image.open(sys.argv[1]).convert('RGB') ring=(115,199,255) def near(p,c,t
 22	228	orient	model	model		2026-10-31T21:16:12Z	3.3	
+39	1	orient	model	model		2026-11-01T02:49:10Z	3.7	
+39	2	orient	tool	git	bash	2026-11-01T02:49:14Z	0.7	Orienting: git state, audit, parked work :: cd /home/ladvien/bevy_gooey_loop && git status --short | head -20; git branch --show-current; git log --oneline -8; git branch -a --list '*iter*' '*parked*'; gi
+39	3	orient	tool	github	bash	2026-11-01T02:49:14Z	0.7	Listing open issues :: cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+39	4	orient	model	model		2026-11-01T02:49:14Z	2.5	
+39	5	orient	tool	shell	bash	2026-11-01T02:49:17Z	0.0	Reading loop log headings and tags :: cd /home/ladvien/bevy_gooey_loop && wc -l docs/loop-log.md && grep -n '^## ' docs/loop-log.md | tail -8; git log --oneline main -25; git tag | tail -5; git log 
+39	6	orient	model	model		2026-11-01T02:49:17Z	5.8	
+39	7	orient	tool	read files	read	2026-11-01T02:49:22Z	0.0	Reading iteration 16 log and backlog :: docs/loop-log.md:637-680
+39	8	orient	tool	shell	bash	2026-11-01T02:49:22Z	0.0	Checking release state and parked branches :: cd /home/ladvien/bevy_gooey_loop && date; cargo info bevy_gooey@0.4.1 2>&1 | head -5; echo ---; for b in loop/iter-17 loop/iter-17-adopt loop/iter-17-binding lo
+39	9	orient	model	model		2026-11-01T02:49:22Z	5.1	
+39	10	orient	tool	shell	bash	2026-11-01T02:49:28Z	0.9	Check crates.io published versions :: cd /home/ladvien/bevy_gooey_loop && curl -s -A 'bevy_gooey_loop (ladvien)' https://crates.io/api/v1/crates/bevy_gooey | python3 -c "import sys,json; d=json.load
+39	11	orient	model	model		2026-11-01T02:49:29Z	6.6	
+39	12	orient	tool	shell	bash	2026-11-01T02:49:35Z	0.0	Compare binding branches :: cd /home/ladvien/bevy_gooey_loop && for b in loop/iter-17 loop/iter-17-adopt loop/iter-17-binding loop/iter-17-gate loop/iter-17-ship; do echo "== $b"; git log 
+39	13	orient	model	model		2026-11-01T02:49:35Z	4.6	
+39	14	orient	tool	git	bash	2026-11-01T02:49:40Z	0.0	Check running processes and timing :: cd /home/ladvien/bevy_gooey_loop && git log -3 --format='%h %ci %s' main; ps -eo pid,etimes,user,args --sort=start_time | grep -Ei 'omp|cargo|rustc|wiggum|galle
+39	15	orient	model	model		2026-11-01T02:49:40Z	1.6	
+39	16	orient	tool	shell	bash	2026-11-01T02:49:41Z	0.0	List running loop processes :: ps -eo pid,etimes,args | grep -Ei 'omp |wiggum|cargo (build|test)|gallery|bevy_gooey' | grep -v grep | cut -c1-220 | head -20; ls ~/.local/state/wiggum/bevy_goo
+39	17	orient	model	model		2026-11-01T02:49:41Z	4.1	
+39	18	orient	tool	shell	bash	2026-11-01T02:49:45Z	0.0	Read driver log tail :: tail -40 ~/.local/state/wiggum/bevy_gooey_loop/driver.log | cut -c1-260; cat ~/.local/state/wiggum/bevy_gooey_loop/consecutive-failures; tail -5 ~/.local/state/
+39	19	orient	model	model		2026-11-01T02:49:45Z	6.1	
+39	20	orient	tool	git	bash	2026-11-01T02:49:52Z	0.6	Diff binding branch variants :: cd /home/ladvien/bevy_gooey_loop && git diff --stat loop/iter-17-ship loop/iter-17-gate | tail -5; echo ---; git diff --stat loop/iter-17-adopt loop/iter-17-gat
+39	21	orient	model	model		2026-11-01T02:49:52Z	6.3	
+39	22	orient	tool	shell	bash	2026-11-01T02:49:59Z	0.0	Why is the driver restarting :: systemctl --user list-units --all 'wiggum*' 2>&1 | head -20; journalctl --user -n 30 --no-pager 2>&1 | grep -i -E 'wiggum|gooey|oom|kill' | tail -15 | cut -c1-2
+39	23	orient	model	model		2026-11-01T02:49:59Z	3.8	
+39	24	orient	tool	shell	bash	2026-11-01T02:50:02Z	0.1	Inspect wiggum unit and process tree :: systemctl --user status wiggum@gooey.service 2>&1 | head -15 | cut -c1-200; journalctl --user -u 'wiggum@gooey.service' -n 15 --no-pager 2>&1 | cut -c1-220; ps 
+39	25	orient	model	model		2026-11-01T02:50:02Z	4.3	
+39	26	orient	tool	shell	bash	2026-11-01T02:50:07Z	0.0	Inspect unit memory limits and kill cause :: cd ~/.config/systemd/user; cat wiggum@gooey.service.d/memory.conf wiggum@.service.d/*.conf; journalctl --user -u 'wiggum@gooey.service' --since '21:40' --no-pag
+39	27	orient	model	model		2026-11-01T02:50:07Z	15.4	
+39	28	orient	tool	shell	bash	2026-11-01T02:50:22Z	0.0	Inspect cgroup memory limits and oomd settings :: ls -l --time-style=full-iso ~/.config/systemd/user/wiggum@gooey.service.d/ ~/.config/systemd/user/wiggum@.service.d/; CG=$(cat /proc/self/cgroup | cut -d: -f3);
+39	29	orient	model	model		2026-11-01T02:50:22Z	11.3	
+39	30	orient	tool	shell	bash	2026-11-01T02:50:33Z	0.7	Check cargo config, target dir, env :: cd /home/ladvien/bevy_gooey_loop && cat .cargo/config.toml 2>/dev/null; cat ~/.cargo/config.toml 2>/dev/null | head -30; env | grep -E 'CARGO|RUST|DISPLAY|WIGGU
+39	31	orient	model	model		2026-11-01T02:50:34Z	16.5	
+39	32	orient	tool	todo	todo	2026-11-01T02:50:51Z	0.0	Planning the pass
+39	33	orient	tool	git	bash	2026-11-01T02:50:51Z	0.0	Create branch and cherry-pick binding build :: cd /home/ladvien/bevy_gooey_loop && git checkout -q -b loop/iter-17-pass39 main && git cherry-pick a7f9864 3610192 2>&1 | tail -3; git log --oneline -4; git sta
+39	34	orient	model	model		2026-11-01T02:50:51Z	7.1	
+39	35	orient	tool	cargo test	bash	2026-11-01T02:50:58Z	0.0	Write memory-lean gate script :: mkdir -p ~/g17p39 && cat > ~/g17p39/gate.sh <<'EOF' #!/bin/bash # the AGENTS.md gate, one cargo at a time (the unit's cgroup is MemoryHigh=3G; oomd kills the un
+39	36	orient	tool	shell	bash	2026-11-01T02:50:58Z	0.0	[launched bg_2] Run gate in foreground-async :: cd /home/ladvien/bevy_gooey_loop && ~/g17p39/gate.sh > ~/g17p39/gate.log 2>&1
+39	37	orient	model	model		2026-11-01T02:50:58Z	3.9	
+39	38	orient	tool	read files	read	2026-11-01T02:51:02Z	0.0	Reviewing binding module :: src/binding.rs
+39	39	orient	model	model		2026-11-01T02:51:02Z	4.7	
+39	40	orient	tool	shell	bash	2026-11-01T02:51:06Z	13.1	Home-still preflight :: timeout 60 hs status 2>&1 | head -30 | cut -c1-200
+39	41	orient	tool	read files	read	2026-11-01T02:51:07Z	13.0	Read catalog_recent schema :: xd://mcp__home_still_catalog_recent
+39	42	orient	model	model		2026-11-01T02:51:20Z	1.3	
+39	43	orient	tool	edit files	write	2026-11-01T02:51:21Z	8.2	Scan corpus for new game-UI sources :: xd://mcp__home_still_catalog_recent
+39	44	orient	model	model		2026-11-01T02:51:29Z	3.8	
+39	45	orient	tool	search	grep	2026-11-01T02:51:33Z	0.1	Scan catalog output for game UI sources :: artifact://20
+39	46	orient	tool	shell	bash	2026-11-01T02:51:33Z	0.1	Check gate progress and memory :: tail -12 ~/g17p39/gate.log; CG=/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup); echo mem $(( $(cat $CG/memory.current)/1048576 )) MB; uptime
+39	47	orient	model	model		2026-11-01T02:51:33Z	8.7	
+39	48	orient	tool	git	bash	2026-11-01T02:51:42Z	0.1	Read README/changelog/media diff :: cd /home/ladvien/bevy_gooey_loop && git diff main -- README.md CHANGELOG.md docs/media/README.md docs/guide/README.md | cut -c1-400
+39	49	orient	model	model		2026-11-01T02:51:42Z	10.0	
+39	50	orient	tool	git	bash	2026-11-01T02:51:52Z	0.1	Review lib.rs and feedback.rs diff :: cd /home/ladvien/bevy_gooey_loop && git diff main -- src/lib.rs src/feedback.rs | cut -c1-220
+39	51	orient	model	model		2026-11-01T02:51:52Z	5.9	
+39	52	orient	tool	git	bash	2026-11-01T02:51:58Z	0.1	Review widgets.rs diff :: cd /home/ladvien/bevy_gooey_loop && git diff main -- src/widgets.rs | cut -c1-200; tail -5 ~/g17p39/gate.log
+39	53	orient	model	model		2026-11-01T02:51:58Z	2.9	
+39	54	orient	tool	shell	bash	2026-11-01T02:52:01Z	0.1	Check gate alive and memory :: date +%T; CG=/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup); echo mem $(( $(cat $CG/memory.current)/1048576 )) MB; cat $CG/memory.pressure | head -1; cat $CG/me
+39	55	orient	model	model		2026-11-01T02:52:01Z	7.0	
+39	56	orient	tool	shell	bash	2026-11-01T02:52:08Z	1.3	List cgroup processes by memory :: CG=/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup); for p in $(cat $CG/cgroup.procs); do ps -o pid=,rss=,etimes=,args= -p $p 2>/dev/null | cut -c1-170; done | so
+39	57	orient	model	model		2026-11-01T02:52:09Z	6.4	
+39	58	orient	tool	remote wait	bash	2026-11-01T02:52:16Z	20.3	Check what the gate is compiling :: sleep 20; date +%T; ps -eo pid,ppid,rss,etimes,args | grep -E 'gooey-loop|bevy_gooey_loop' | grep -v grep | cut -c1-230 | head; tail -3 ~/g17p39/gate.log
+39	59	orient	model	model		2026-11-01T02:52:36Z	4.2	
+39	60	orient	tool	todo	todo	2026-11-01T02:52:40Z	0.0	Adoption done, reviewing continues in background
+39	61	orient	tool	git	bash	2026-11-01T02:52:40Z	0.1	Review skin.rs diff :: cd /home/ladvien/bevy_gooey_loop && git diff main -- src/skin.rs | cut -c1-200
+39	62	orient	model	model		2026-11-01T02:52:40Z	6.5	
+39	63	orient	tool	clip record/render	bash	2026-11-01T02:52:47Z	3.2	Extract binding.gif frames into a montage :: mkdir -p /tmp/g17p39/gif && cd /tmp/g17p39/gif && magick identify /home/ladvien/bevy_gooey_loop/docs/media/binding.gif | head -3; magick identify /home/ladvien/
+39	64	orient	model	model		2026-11-01T02:52:50Z	2.0	
+39	65	orient	tool	clip record/render	bash	2026-11-01T02:52:52Z	0.7	Extract gif frames montage (fixed flags) :: cd /tmp/g17p39/gif && ffmpeg -loglevel error -y -i /home/ladvien/bevy_gooey_loop/docs/media/binding.gif -vf "select='not(mod(n,9))'" -fps_mode vfr f%02d.png && 
+39	66	orient	model	model		2026-11-01T02:52:53Z	1.1	
+39	67	orient	tool	read files	read	2026-11-01T02:52:54Z	0.3	View existing binding.gif frames :: /tmp/g17p39/montage.png
+39	68	orient	model	model		2026-11-01T02:52:54Z	6.7	
+39	69	orient	tool	git	bash	2026-11-01T02:53:01Z	0.2	Read gallery diff and binding.gif recipe :: cd /home/ladvien/bevy_gooey_loop && git diff main -- examples/gallery.rs | cut -c1-200; sed -n 1,60p docs/media/README.md | grep -n 'binding.gif' | cut -c1-1500
+39	70	orient	model	model		2026-11-01T02:53:01Z	6.9	
+39	71	orient	tool	wait: gate	wait	2026-11-01T02:53:08Z	442.9	Waiting for gate to finish
+39	72	orient	model	model		2026-11-01T03:00:31Z	1.9	
+39	73	orient	tool	shell	bash	2026-11-01T03:00:33Z	0.0	Read gate failure :: grep -n -E '^(===|---|GATE)|test result|FAILED|failed|panicked|error' ~/g17p39/gate.log | tail -40 | cut -c1-220
+39	74	orient	model	model		2026-11-01T03:00:33Z	3.4	
+39	75	orient	tool	shell	bash	2026-11-01T03:00:36Z	0.0	Read clippy error detail :: sed -n 2514,2535p ~/g17p39/gate.log | cut -c1-200; grep -c 'test result: ok' ~/g17p39/gate.log; grep -n 'Running tests/binding' ~/g17p39/gate.log | head -3
+39	76	orient	model	model		2026-11-01T03:00:36Z	3.1	
+39	77	orient	tool	read files	read	2026-11-01T03:00:39Z	0.0	Read update_bindings to alias the query filter :: src/binding.rs:400-454
+39	78	orient	model	model		2026-11-01T03:00:39Z	4.3	
+39	79	orient	tool	edit files	edit	2026-11-01T03:00:44Z	0.0	Factor the complex query filter into a type alias :: [src/binding.rs#0418] PUT 410.=416: + changed: Query<Entity, (With<BindingValue>, Written)>, PUT <403: +/// A row whose keycap needs writing: its value changed 
+39	80	orient	model	model		2026-11-01T03:00:44Z	7.2	
+39	81	orient	tool	cargo clippy	bash	2026-11-01T03:00:51Z	26.6	Run fmt, clippy, doc, wasm steps :: cat > ~/g17p39/gate2.sh <<'EOF' #!/bin/bash export CARGO_BUILD_JOBS=1 cd /home/ladvien/bevy_gooey_loop CG=/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup) step() 
+39	82	orient	model	model		2026-11-01T03:01:18Z	4.1	
+39	83	orient	tool	read files	read	2026-11-01T03:01:22Z	0.0	Read ESC doc line :: src/binding.rs:140-150
+39	84	orient	tool	read files	read	2026-11-01T03:01:22Z	0.0	Read ValueChange doc line :: src/widgets.rs:502-508
+39	85	orient	model	model		2026-11-01T03:01:22Z	3.2	
+39	86	orient	tool	edit files	edit	2026-11-01T03:01:25Z	0.0	Fix two rustdoc link errors :: [src/binding.rs#FF75] PUT 145.=145: + /// \[ESC\] to exit remapping mode". A game that must make Escape bindable (XAG 107 asks that [src/widgets.rs#65D0] PUT 50
+39	87	orient	tool	shell	bash	2026-11-01T03:01:25Z	14.6	Rerun fmt, clippy, doc, wasm :: cd /home/ladvien/bevy_gooey_loop && ~/g17p39/gate2.sh > ~/g17p39/gate2.log 2>&1; grep -E '^(===|---|GATE|error|warning)' ~/g17p39/gate2.log | cut -c1-200
+39	88	orient	model	model		2026-11-01T03:01:40Z	4.4	
+39	89	orient	tool	push gate	bash	2026-11-01T03:01:44Z	1.8	Commit gate fixes and push branch :: cd /home/ladvien/bevy_gooey_loop && git add src/binding.rs src/widgets.rs && git commit -q -m "Binding: the keycap query's change filter is a type alias (clippy
+39	90	orient	tool	todo	todo	2026-11-01T03:01:46Z	0.0	First gate pass ran; fixes committed
+39	91	orient	model	model		2026-11-01T03:01:46Z	4.7	
+39	92	orient	tool	cargo build	bash	2026-11-01T03:01:50Z	60.0	[launched bg_3] Build before and after release galleries :: cd /home/ladvien/bevy_gooey_loop && export CARGO_BUILD_JOBS=1 && mkdir -p ~/g39_bin /tmp/g39/before /tmp/g39/after && git worktree add --detach ~/g39_base 44973
+39	93	orient	model	model		2026-11-01T03:02:50Z	12.3	
+39	94	orient	tool	shell	bash	2026-11-01T03:03:03Z	0.0	Write capture script :: cat > ~/g17p39/cap.sh <<'EOF' #!/bin/bash # usage: cap.sh <binary> <outdir> G=$1; O=$2; mkdir -p $O export GOOEY_HEALTH=60 run() { name=$1; shift; env "$@" GOOE
+39	95	orient	tool	wait: build	wait	2026-11-01T03:03:03Z	0.0	Waiting for release gallery builds
+39	96	orient	model	model		2026-11-01T03:03:03Z	4.8	
+39	97	orient	tool	shell	bash	2026-11-01T03:03:08Z	0.0	[launched bg_4] Capture before and after stills :: cd /tmp/g39 && ~/g17p39/cap.sh ~/g39_bin/gallery_before /tmp/g39/before > /tmp/g39/before.log 2>&1; ~/g17p39/cap.sh ~/g39_bin/gallery_after /tmp/g39/after > /tm
+39	98	orient	model	model		2026-11-01T03:03:08Z	1.2	
+39	99	orient	tool	read files	read	2026-11-01T03:03:09Z	0.0	Read binding research note for validation targets :: docs/research/binding.md
+39	100	orient	model	model		2026-11-01T03:03:09Z	5.1	
+39	101	orient	tool	wait: clip	wait	2026-11-01T03:03:14Z	198.4	Waiting for captures
+39	102	orient	model	model		2026-11-01T03:06:32Z	4.9	
+39	103	orient	tool	read files	read	2026-11-01T03:06:37Z	0.0	View after: Controls tab capturing at full frame :: /tmp/g39/after/ctl-wait-1280x720.png
+39	104	orient	tool	read files	read	2026-11-01T03:06:37Z	0.0	View before: Controls tab (old buttons) :: /tmp/g39/before/ctl-dark-1280x720.png
+39	105	orient	model	model		2026-11-01T03:06:37Z	7.0	
+39	106	orient	tool	read files	read	2026-11-01T03:06:44Z	0.0	View parchment capturing at full frame :: /tmp/g39/after/ctl-wait-parchment.png
+39	107	orient	tool	read files	read	2026-11-01T03:06:44Z	0.0	View 1.5x text capturing at full frame :: /tmp/g39/after/ctl-wait-large.png
+39	108	orient	model	model		2026-11-01T03:06:44Z	6.3	
+39	109	orient	tool	read files	read	2026-11-01T03:06:50Z	0.2	View 1440p capturing at full frame :: /tmp/g39/after/ctl-wait-2560x1440.png
+39	110	orient	tool	read files	read	2026-11-01T03:06:50Z	0.2	View pad row waiting after key bound :: /tmp/g39/after/ctl-pad-wait.png
+39	111	orient	model	model		2026-11-01T03:06:51Z	8.8	
+39	112	orient	tool	shell	bash	2026-11-01T03:06:59Z	0.1	Measure keycap contrast from captures :: cat > /tmp/g39/measure.py <<'EOF' import sys from PIL import Image def lum(c): def f(v): v/=255 return v/12.92 if v<=0.04045 else ((v+0.055)/1.055)**2.4 r,g,b=c
+39	113	orient	model	model		2026-11-01T03:07:00Z	1.6	
+39	114	orient	tool	shell	bash	2026-11-01T03:07:01Z	0.2	Run measurement via uv with pillow :: cd /tmp/g39 && uv run --no-project --with pillow python measure.py 2>&1 | tail -8
+39	115	orient	model	model		2026-11-01T03:07:01Z	7.4	
+39	116	orient	tool	shell	bash	2026-11-01T03:07:09Z	0.2	Measure focus ring thickness :: cat > /tmp/g39/ring.py <<'EOF' from PIL import Image def scan(path,y,x0,x1): im=Image.open(path).convert('RGB') out=[] for x in range(x0,x1): out.append(im.getp
+39	117	orient	model	model		2026-11-01T03:07:09Z	4.5	
+39	118	orient	tool	shell	bash	2026-11-01T03:07:14Z	1.4	Compare rest vs waiting and before vs after stills :: cd /tmp/g39 && for s in 1280x720 2560x1440; do echo -n "$s rest vs waiting diff bbox: "; magick compare -metric AE after/ctl-dark-$s.png after/ctl-wait-$s.png -
+39	119	orient	model	model		2026-11-01T03:07:15Z	5.4	
+39	120	orient	tool	shell	bash	2026-11-01T03:07:20Z	0.2	Compare 1.5x text before and after :: cd /tmp/g39 && magick before/large-1280x720.png after/large-1280x720.png +append -resize 1600x /tmp/g39/large-cmp.png && magick before/large-1280x720.png after/
+39	121	orient	model	model		2026-11-01T03:07:21Z	1.2	
+39	122	orient	tool	read files	read	2026-11-01T03:07:22Z	0.1	View 1.5x before/after side by side :: /tmp/g39/large-cmp.png
+39	123	orient	model	model		2026-11-01T03:07:22Z	9.7	
+39	124	orient	tool	shell	bash	2026-11-01T03:07:32Z	0.2	Measure panel width at 1.5x text before/after :: cat > /tmp/g39/w.py <<'EOF' from PIL import Image for tag in ('before','after'): I=Image.open(f'/tmp/g39/{tag}/large-1280x720.png').convert('RGB') bg=I.getpixel
+39	125	orient	model	model		2026-11-01T03:07:32Z	6.0	
+39	126	orient	tool	shell	bash	2026-11-01T03:07:38Z	0.2	Crop and zoom keycap rows :: cd /tmp/g39 && magick after/ctl-bound-parchment.png -crop 480x150+240+440 +repage -filter point -resize 200% z-bound-parchment.png && magick after/ctl-wait-2560
+39	127	orient	model	model		2026-11-01T03:07:38Z	1.3	
+39	128	orient	tool	read files	read	2026-11-01T03:07:39Z	0.0	View zoomed keycap rows :: /tmp/g39/zoom.png
+39	129	orient	model	model		2026-11-01T03:07:39Z	10.3	
+39	130	orient	tool	shell	bash	2026-11-01T03:07:50Z	0.0	[launched bg_5] Run 12 alternating paired benchmark runs :: cat > ~/g17p39/bench.sh <<'EOF' #!/bin/bash export GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SIZE=1280x720 out=/tmp/g39/bench.tsv; : > $out for i i
+39	131	orient	model	model		2026-11-01T03:07:50Z	10.8	
+39	132	orient	tool	edit files	write	2026-11-01T03:08:00Z	0.0	Write findings checklist :: /tmp/g39/findings.md
+39	133	orient	model	model		2026-11-01T03:08:00Z	13.7	
+39	134	orient	tool	edit files	write	2026-11-01T03:08:14Z	0.0	Write critique before verdict :: /tmp/g39/critique.md
+39	135	orient	tool	wait: other	wait	2026-11-01T03:08:14Z	143.4	Waiting for benchmark pairs
+39	136	orient	model	model		2026-11-01T03:10:38Z	3.2	
+39	137	orient	tool	shell	bash	2026-11-01T03:10:41Z	0.0	Summarize benchmark pairs :: cat /tmp/g39/bench.tsv | tr '\n' ' ' | cut -c1-700; echo; awk -F'\t' '$2=="before"{b[$1]=$3} $2=="after"{a[$1]=$3} END{n=0; for(i=1;i<=12;i++){d[i]=a[i]-b[i]; s
+39	138	orient	model	model		2026-11-01T03:10:41Z	10.4	
+39	139	orient	tool	read files	read	2026-11-01T03:10:51Z	0.0	Read crate doc wrap to tidy :: src/lib.rs:10-24
+39	140	orient	model	model		2026-11-01T03:10:51Z	2.0	
+39	141	orient	tool	edit files	edit	2026-11-01T03:10:53Z	0.0	Rewrap the crate doc's widget list :: [src/lib.rs#E418] PUT 15.=19: +//! switch, scrubber and stepper, reporting through [`ValueChange`]), [`binding`] (a controls +//! screen's row: the player's nex
+39	142	orient	model	model		2026-11-01T03:10:53Z	3.7	
+39	143	orient	tool	shell	bash	2026-11-01T03:10:57Z	0.0	[launched bg_6] Run the final full gate :: cd /home/ladvien/bevy_gooey_loop && ~/g17p39/gate.sh > ~/g17p39/gate-final.log 2>&1
+39	144	orient	tool	shell	bash	2026-11-01T03:10:57Z	0.7	Check README length, remote main, guide :: cd /home/ladvien/bevy_gooey_loop && wc -l README.md && grep -n 'raw.githubusercontent' README.md | grep -c binding.gif; git fetch -q origin && git log --oneline
+39	145	orient	model	model		2026-11-01T03:10:58Z	7.5	
+39	146	orient	tool	clip record/render	bash	2026-11-01T03:11:05Z	0.5	Sample tabs.gif frames :: mkdir -p /tmp/g39/tabs && cd /tmp/g39/tabs && magick identify /home/ladvien/bevy_gooey_loop/docs/media/tabs.gif | wc -l && ffmpeg -loglevel error -y -i /home/la
+39	147	orient	model	model		2026-11-01T03:11:06Z	1.3	
+39	148	orient	tool	read files	read	2026-11-01T03:11:07Z	0.1	View tabs.gif frame montage :: /tmp/g39/tabs-montage.png
+39	149	orient	model	model		2026-11-01T03:11:07Z	13.1	
+39	150	orient	tool	git	bash	2026-11-01T03:11:20Z	0.0	Read AGENTS diff and changelog entries :: cd /home/ladvien/bevy_gooey_loop && git diff main -- AGENTS.md | grep '^+' | cut -c1-900; sed -n 5,12p CHANGELOG.md | cut -c1-1200
+39	151	orient	model	model		2026-11-01T03:11:20Z	5.3	
+39	152	orient	tool	read files	read	2026-11-01T03:11:26Z	0.1	Get loop-log tail and tag :: docs/loop-log.md:-3
+39	153	orient	tool	shell	bash	2026-11-01T03:11:26Z	0.1	Check final gate progress :: tail -3 ~/g17p39/gate-final.log | cut -c1-160; CG=/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup); cat $CG/memory.peak 2>/dev/null; cat $CG/memory.events | tr '\
+39	154	orient	model	model		2026-11-01T03:11:26Z	32.6	
+39	155	orient	tool	edit files	edit	2026-11-01T03:11:58Z	0.1	Append iteration 17 log entry :: [docs/loop-log.md#95B4] PUT >680: + +## Iteration 17 — 2026-10-31 — binding: a row that rebinds a key, mouse button or pad button (adopting the killed passes' b
+39	156	orient	model	model		2026-11-01T03:11:58Z	4.2	
+39	157	orient	tool	search	grep	2026-11-01T03:12:03Z	0.0	List binding test names :: tests/binding.rs
+39	158	orient	model	model		2026-11-01T03:12:03Z	3.1	
+39	159	orient	tool	search	grep	2026-11-01T03:12:06Z	0.0	Find process notes line :: docs/loop-log.md
+39	160	orient	model	model		2026-11-01T03:12:06Z	2.6	
+39	161	orient	tool	edit files	edit	2026-11-01T03:12:08Z	0.0	Tighten the process-notes line :: [docs/loop-log.md#21AD] PUT 707.=707: +**Process notes.** One baseline worktree (`~/g39_base`, detached at `4497376`) built into the loop's shared `CARGO_TARGET
+39	162	orient	tool	shell	bash	2026-11-01T03:12:08Z	0.0	Check final gate progress :: tail -4 ~/g17p39/gate-final.log | cut -c1-140; grep -c 'test result: ok' ~/g17p39/gate-final.log
+39	163	orient	model	model		2026-11-01T03:12:08Z	3.8	
+39	164	orient	tool	push gate	bash	2026-11-01T03:12:12Z	1.8	Commit doc tidy and log, push branch :: cd /home/ladvien/bevy_gooey_loop && git add src/lib.rs && git commit -q -m "Docs: the crate doc's widget list rewrapped round binding" && git add docs/loop-log.
+39	165	orient	tool	todo	todo	2026-11-01T03:12:14Z	0.0	Visual verification and critique done
+39	166	orient	model	model		2026-11-01T03:12:14Z	4.8	
+39	167	orient	tool	todo	todo	2026-11-01T03:12:19Z	0.0	Benchmark recorded in log
+39	168	orient	tool	shell	bash	2026-11-01T03:12:19Z	0.1	Check semver-checks availability and Role exhaustiveness :: cargo semver-checks --version 2>&1 | head -2; cd /home/ladvien/bevy_gooey_loop; grep -n 'non_exhaustive' src/skin.rs | head -3; sed -n 1,12p Cargo.toml
+39	169	orient	model	model		2026-11-01T03:12:19Z	4.7	
+39	170	orient	tool	wait: gate	wait	2026-11-01T03:12:24Z	958.8	Waiting for the final gate
+39	171	orient	model	model		2026-11-01T03:28:22Z	2.2	
+39	172	orient	tool	shell	bash	2026-11-01T03:28:25Z	0.1	Read final gate result :: grep -E '^(===|---|GATE)' ~/g17p39/gate-final.log | cut -c1-150; grep -c 'test result: ok' ~/g17p39/gate-final.log; grep -E 'FAILED|failed;' ~/g17p39/gate-final
+39	173	orient	model	model		2026-11-01T03:28:25Z	9.7	
+39	174	orient	tool	push gate	bash	2026-11-01T03:28:35Z	3.2	Merge branch to main and push :: cd /home/ladvien/bevy_gooey_loop && git fetch -q origin && git log --oneline main..origin/main | head -3; git checkout -q main && git merge --no-ff loop/iter-17
+39	175	orient	model	model		2026-11-01T03:28:38Z	3.7	
+39	176	orient	tool	push gate	bash	2026-11-01T03:28:41Z	1.5	Merge origin/main and push :: cd /home/ladvien/bevy_gooey_loop && git show --stat --format='%h %s' 9c6dbef | head -6; git merge --no-edit origin/main 2>&1 | tail -2; git push -q origin main 
+39	177	orient	model	model		2026-11-01T03:28:43Z	4.2	
+39	178	orient	tool	git	bash	2026-11-01T03:28:47Z	0.0	Read the new command-file lines :: cd /home/ladvien/bevy_gooey_loop && git show 9c6dbef -- .omp/commands/build-loop.md | grep '^[+-]' | cut -c1-600
+39	179	orient	model	model		2026-11-01T03:28:47Z	3.9	
+39	180	release	tool	phase mark	bash	2026-11-01T03:28:51Z	0.0	[launched bg_7] Run cargo semver-checks to pick the version :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release 2>&1 | tail -1; export CARGO_BUILD_JOBS=1; cargo semver-checks check-rel
+39	181	release	model	model		2026-11-01T03:28:51Z	1.0	
+39	182	release	tool	wait: other	wait	2026-11-01T03:28:52Z	26.6	Waiting for semver-checks
+39	183	release	model	model		2026-11-01T03:29:19Z	5.6	
+39	184	release	tool	shell	bash	2026-11-01T03:29:24Z	0.0	Inspect changelog headings and lock version :: cd /home/ladvien/bevy_gooey_loop && grep -n '^## \|^\[' CHANGELOG.md | head -12; sed -n 12,16p CHANGELOG.md | cut -c1-700; grep -n 'version' Cargo.toml | head -
+39	185	release	model	model		2026-11-01T03:29:24Z	5.2	
+39	186	release	tool	read files	read	2026-11-01T03:29:30Z	0.0	Read changelog head for editing :: CHANGELOG.md:1-17
+39	187	release	model	model		2026-11-01T03:29:30Z	4.7	
+39	188	release	tool	edit files	edit	2026-11-01T03:29:34Z	0.0	Move Unreleased into 0.5.0 and note apply_skin arity :: [CHANGELOG.md#89DF] PUT >3: + +## [0.5.0] - 2026-10-31 PUT >15: +- `apply_skin` takes one more system parameter (`RemovedComponents<Capturing>`): a host that ad
+39	189	release	model	model		2026-11-01T03:29:34Z	3.2	
+39	190	release	tool	shell	bash	2026-11-01T03:29:38Z	0.1	Find version references needing a bump :: cd /home/ladvien/bevy_gooey_loop && grep -rn '0\.4\.[01]\|"0\.4"' --include=*.md --include=*.rs --include=*.toml . 2>/dev/null | grep -v '^./target\|CHANGELOG\|
+39	191	release	tool	read files	read	2026-11-01T03:29:38Z	0.1	Read Cargo.toml version line :: Cargo.toml:1-4
+39	192	release	model	model		2026-11-01T03:29:38Z	3.7	
+39	193	release	tool	shell	bash	2026-11-01T03:29:41Z	0.0	Check media list version column :: cd /home/ladvien/bevy_gooey_loop && sed -n 12,13p docs/media/README.md | cut -c1-200; for n in 14 15 16 17 18 19; do sed -n ${n}p docs/media/README.md | grep -o
+39	194	release	model	model		2026-11-01T03:29:41Z	1.8	
+39	195	release	tool	shell	bash	2026-11-01T03:29:43Z	0.0	Read captured/shows columns :: cd /home/ladvien/bevy_gooey_loop && for n in 14 15 16 17 18 19; do sed -n ${n}p docs/media/README.md | awk -F'|' '{print $2 "->" $(NF-2) "|" $(NF-1)}'; done
+39	196	release	model	model		2026-11-01T03:29:43Z	10.1	
+39	197	release	tool	edit files	edit	2026-11-01T03:29:53Z	0.0	Bump crate version to 0.5.0 :: [Cargo.toml#7FEB] PUT 3.=3: +version = "0.5.0"
+39	198	release	tool	git	bash	2026-11-01T03:29:53Z	0.9	Update lockfile for new version :: cd /home/ladvien/bevy_gooey_loop && git ls-files Cargo.lock | head -1; git check-ignore -v Cargo.lock | head -1; export CARGO_BUILD_JOBS=1; cargo update -p bevy
+39	199	release	model	model		2026-11-01T03:29:54Z	4.9	
+39	200	release	tool	cargo publish	bash	2026-11-01T03:29:59Z	0.0	[launched bg_8] Commit release and dry-run publish :: cd /home/ladvien/bevy_gooey_loop && git add CHANGELOG.md Cargo.toml && git commit -q -m "release: v0.5.0 (binding, a row that rebinds a key, mouse button or pad
+39	201	release	model	model		2026-11-01T03:29:59Z	1.1	
+39	202	release	tool	wait: release	wait	2026-11-01T03:30:00Z	15.3	Waiting for publish dry-run
+39	203	release	model	model		2026-11-01T03:30:16Z	1.8	
+39	204	release	tool	push gate	bash	2026-11-01T03:30:18Z	10.0	Push release commit and publish to crates.io :: cd /home/ladvien/bevy_gooey_loop && git push -q origin main 2>&1 | tail -1; export CARGO_BUILD_JOBS=1; cargo publish 2>&1 | tail -5 | cut -c1-200
+39	205	release	model	model		2026-11-01T03:30:28Z	2.6	
+39	206	log	tool	phase mark	bash	2026-11-01T03:30:30Z	4.5	Tag, push, verify crates.io :: cd /home/ladvien/bevy_gooey_loop && git tag -a v0.5.0 -m v0.5.0 && git push -q origin main v0.5.0 2>&1 | tail -1; curl -s -A 'bevy_gooey_loop (ladvien)' https:/
+39	207	log	model	model		2026-11-01T03:30:35Z	7.0	
+39	208	log	tool	git	bash	2026-11-01T03:30:43Z	1.4	Collect leftovers and disk usage :: cd /home/ladvien/bevy_gooey_loop && git log --oneline -5; df -h /home /tmp | cat; for w in ~/g17_base ~/g17_parked ~/g17s_base; do echo "== $w"; du -sh $w 2>/de
+39	209	log	model	model		2026-11-01T03:30:44Z	3.3	
+39	210	log	tool	shell	bash	2026-11-01T03:30:48Z	0.2	Size leftovers and my own scratch :: cd ~ && du -sh g14_bin g17_bin g17b_bin g17s_bin g14_gate.sh g14_gate2.sh g17_build.sh g17_gate.sh g17s_build.sh g17s_gate.sh 2>/dev/null | tr '\n' ';'; echo; l
+39	211	log	model	model		2026-11-01T03:30:48Z	7.6	
+39	212	log	tool	git	bash	2026-11-01T03:30:55Z	1.9	Remove this pass's worktree and scratch :: cd /home/ladvien/bevy_gooey_loop && git worktree remove ~/g39_base && rm -rf ~/g39_bin /tmp/g39 /tmp/g17p39 && rm -rf ~/g17p39 && git worktree list && df -h /ho
+39	213	log	model	model		2026-11-01T03:30:57Z	4.1	
+39	214	log	tool	read files	read	2026-11-01T03:31:01Z	0.0	Read log anchor lines :: docs/loop-log.md:705-710
+39	215	log	model	model		2026-11-01T03:31:01Z	11.0	
+39	216	log	tool	edit files	edit	2026-11-01T03:31:12Z	0.0	Add merge, release and cleanup paragraphs to the log :: [docs/loop-log.md#249D] PUT >707: + +**Merge.** `loop/iter-17-pass39` pushed and merged into `main` with `--no-ff` (`0e1dc70`); `origin/main` had gained one com
+39	217	log	model	model		2026-11-01T03:31:12Z	4.8	
+39	218	log	tool	push gate	bash	2026-11-01T03:31:17Z	2.3	Commit and push the final log :: cd /home/ladvien/bevy_gooey_loop && git add docs/loop-log.md && git commit -q -m "Loop log: iteration 17, merge, release v0.5.0 and cleanup" && git push -q orig
+39	219	log	model	model		2026-11-01T03:31:19Z	7.1	
+39	220	log	tool	learn	learn	2026-11-01T03:31:27Z	0.0	Recording the oomd/memory finding
+39	221	log	model	model		2026-11-01T03:31:27Z	9.2	
