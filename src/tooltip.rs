@@ -8,6 +8,7 @@ use bevy::prelude::*;
 use bevy::ui::{ComputedUiRenderTargetInfo, OverrideClip, UiGlobalTransform};
 use bevy::ui_widgets::popover::Popover;
 
+use crate::shortcut::Shortcut;
 use crate::skin::Role;
 use crate::text::TextInputOf;
 
@@ -29,13 +30,51 @@ use crate::text::TextInputOf;
 /// # use bevy::prelude::*;
 /// # use bevy_gooey::*;
 /// # fn ui(mut commands: Commands) {
-/// commands.spawn((button("Options"), Tooltip("Sound, controls and display".into())));
+/// commands.spawn((button("Options"), Tooltip::new("Sound, controls and display")));
 /// # }
 /// ```
-#[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component, Debug, Clone)]
+///
+/// A command that has a keyboard shortcut shows it on a keycap beside the line, in the same words
+/// and on the same cap as a [`prompt`](crate::prompt) and a [`binding`](crate::binding) row
+/// ([`Shortcut::label`]: "Ctrl+S", or "⌘S" on a mac), so the player learns the chord where they
+/// click. The cap exists exactly while the `shortcut` does; editing the tooltip in place
+/// updates it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     button("Save"),
+///     Tooltip::new("Write the world to disk").with_shortcut(Shortcut::primary(KeyCode::KeyS)),
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[reflect(Component, Debug, PartialEq, Clone)]
 #[component(on_insert = queue_box_sync, on_remove = queue_box_sync)]
-pub struct Tooltip(pub String);
+pub struct Tooltip {
+    /// The line the box shows.
+    pub text: String,
+    /// The chord shown on a keycap beside the line, if the command has one.
+    pub shortcut: Option<Shortcut>,
+}
+
+impl Tooltip {
+    /// A tooltip of one line, with no shortcut.
+    pub fn new(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            shortcut: None,
+        }
+    }
+
+    /// The same tooltip with `shortcut` shown on a keycap beside the line.
+    pub fn with_shortcut(mut self, shortcut: Shortcut) -> Self {
+        self.shortcut = Some(shortcut);
+        self
+    }
+}
 
 /// The box a [`Tooltip`] spawned, a child of the widget it describes: query it to find the box
 /// (its [`Text`] is its child).
@@ -47,6 +86,9 @@ pub struct TooltipBox {
     /// The widest gap between the widget and the window's left or right edge, logical px:
     /// [`crate::apply_skin`] wraps the box to fit in it.
     pub(crate) room: f32,
+    /// The keycap's width, logical px, as last laid out (0 while the tooltip has no shortcut or has
+    /// never been shown): the box is never narrower than the cap and a few words beside it.
+    pub(crate) cap: f32,
 }
 
 /// Both hooks queue [`sync_box`] rather than act on what they saw: a flush that removes a
@@ -64,35 +106,40 @@ fn sync_box(world: &mut World, entity: Entity) {
     let Ok(owner) = world.get_entity(entity) else {
         return;
     };
-    let text = owner.get::<Tooltip>().map(|tip| tip.0.clone());
+    let tip = owner.get::<Tooltip>().cloned();
     let boxes: Vec<Entity> = owner
         .get::<Children>()
         .into_iter()
         .flat_map(|children| children.iter())
         .filter(|child| world.get::<TooltipBox>(*child).is_some())
         .collect();
-    match (text, boxes.is_empty()) {
-        (Some(text), true) => {
+    match (tip, boxes.is_empty()) {
+        (Some(tip), true) => {
             // Hover is read from `Hovered`, which `button()` already carries; any other widget
             // gets one.
             world.entity_mut(entity).insert_if_new(Hovered::default());
-            world.spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    display: Display::None,
-                    ..default()
-                },
-                Role::Tooltip,
-                Popover::default(),
-                // A tooltip beside a row of a scrolling list stands outside the list, so the
-                // list's clip must not reach it.
-                OverrideClip,
-                BoxShadow::default(),
-                GlobalZIndex(200),
-                TooltipBox::default(),
-                ChildOf(entity),
-                children![(Text::new(text), Role::Label)],
-            ));
+            let tip_box = world
+                .spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        display: Display::None,
+                        ..default()
+                    },
+                    Role::Tooltip,
+                    Popover::default(),
+                    // A tooltip beside a row of a scrolling list stands outside the list, so the
+                    // list's clip must not reach it.
+                    OverrideClip,
+                    BoxShadow::default(),
+                    GlobalZIndex(200),
+                    TooltipBox::default(),
+                    ChildOf(entity),
+                    children![(Text::new(tip.text), Role::Label)],
+                ))
+                .id();
+            if let Some(shortcut) = tip.shortcut {
+                world.spawn((keycap(shortcut), ChildOf(tip_box)));
+            }
         }
         (None, false) => {
             for tip in boxes {
@@ -103,23 +150,56 @@ fn sync_box(world: &mut World, entity: Entity) {
     }
 }
 
-/// Copies each [`Tooltip`]'s text into its box when the `Tooltip` changed: a new `Tooltip`
-/// inserted over the old one, or an edit in place (a reflection-driven inspector makes one, and
-/// no component hook runs for it). Writes only when the line differs. Runs in
+/// The keycap a tooltip's shortcut is drawn on: the prompts' cap, one line.
+fn keycap(shortcut: Shortcut) -> impl Bundle {
+    (
+        Text::new(shortcut.label()),
+        TextLayout::new(Justify::Center, LineBreak::NoWrap),
+        Role::PromptKey,
+    )
+}
+
+/// Copies each [`Tooltip`]'s text and shortcut into its box when the `Tooltip` changed: a new
+/// `Tooltip` inserted over the old one, or an edit in place (a reflection-driven inspector makes
+/// one, and no component hook runs for it). The keycap is spawned when a shortcut appears and
+/// despawned when it goes. Writes only when the line differs. Runs in
 /// [`crate::GooeySystems::Style`], before [`show_tooltips`].
 pub fn update_tooltip_text(
     tooltips: Query<(&Tooltip, &Children), Changed<Tooltip>>,
     boxes: Query<&Children, With<TooltipBox>>,
-    mut texts: Query<&mut Text>,
+    mut texts: Query<(&Role, &mut Text)>,
+    mut commands: Commands,
 ) {
     for (tooltip, children) in &tooltips {
-        for lines in children.iter().filter_map(|child| boxes.get(child).ok()) {
+        for (tip_box, lines) in children
+            .iter()
+            .filter_map(|child| Some((child, boxes.get(child).ok()?)))
+        {
+            let mut cap = None;
             for line in lines {
-                if let Ok(mut text) = texts.get_mut(*line)
-                    && text.0 != tooltip.0
-                {
-                    text.0.clone_from(&tooltip.0);
+                let Ok((role, mut text)) = texts.get_mut(*line) else {
+                    continue;
+                };
+                match *role {
+                    Role::PromptKey => {
+                        cap = Some(*line);
+                        if let Some(shortcut) = tooltip.shortcut {
+                            let label = shortcut.label();
+                            if text.0 != label {
+                                text.0 = label;
+                            }
+                        }
+                    }
+                    _ if text.0 != tooltip.text => text.0.clone_from(&tooltip.text),
+                    _ => {}
                 }
+            }
+            match (tooltip.shortcut, cap) {
+                (Some(shortcut), None) => {
+                    commands.spawn((keycap(shortcut), ChildOf(tip_box)));
+                }
+                (None, Some(cap)) => commands.entity(cap).despawn(),
+                _ => {}
             }
         }
     }
@@ -136,14 +216,15 @@ pub fn show_tooltips(
     widgets: Query<Described, Without<TooltipBox>>,
     flows: Query<&Node, Without<TooltipBox>>,
     fields: Query<&TextInputOf>,
-    mut boxes: Query<(&ChildOf, &mut Node, &mut TooltipBox)>,
+    caps: Query<(&Role, &ComputedNode)>,
+    mut boxes: Query<(&ChildOf, &mut Node, &mut TooltipBox, &Children)>,
 ) {
     let focused = visible
         .is_some_and(|v| v.0)
         .then(|| focus.and_then(|f| f.get()))
         .flatten();
     let focused_row = focused.and_then(|f| fields.get(f).ok()).map(|of| of.0);
-    for (owner, mut node, mut tip) in &mut boxes {
+    for (owner, mut node, mut tip, lines) in &mut boxes {
         let widget = owner.parent();
         let Ok((hovered, parent, placed)) = widgets.get(widget) else {
             continue;
@@ -170,7 +251,16 @@ pub fn show_tooltips(
             // Whole pixels, so sub-pixel layout noise never restyles the box.
             (window.x - rect.max.x).max(rect.min.x).floor()
         });
-        tip.set_if_neq(TooltipBox { in_row, room });
+        // A hidden box lays nothing out: the cap's width stays what it was when last seen.
+        let cap = lines
+            .iter()
+            .filter_map(|line| caps.get(line).ok())
+            .find(|(role, _)| **role == Role::PromptKey)
+            .map_or(0.0, |(_, computed)| {
+                let seen = (computed.size().x * computed.inverse_scale_factor).ceil();
+                if seen > 0.0 { seen } else { tip.cap }
+            });
+        tip.set_if_neq(TooltipBox { in_row, room, cap });
     }
 }
 

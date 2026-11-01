@@ -986,7 +986,7 @@ fn a_tooltip_on_the_row_opens_while_its_field_has_visible_focus() {
     let s = settings(&mut app);
     app.world_mut()
         .entity_mut(s.seed)
-        .insert(Tooltip("A number, or leave it blank".into()));
+        .insert(Tooltip::new("A number, or leave it blank"));
     settle(&mut app);
     let seed = s.seed;
     let open = |app: &mut App| {

@@ -105,7 +105,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
   and says each change once in `ValueChange`, `binding("Jump", Binding::Key(KeyCode::Space))` rebinds a
-  key, a mouse button or a pad button on the player's next press, `text_input("Name", "")` is a field the
+  key, a mouse button, a pad button or a chord ("Ctrl+Shift+K") on the player's next press, `text_input("Name", "")` is a field the
   player types in (a caret, a selection, paste and IME on Bevy's own `TextInput`, and focus it never
   traps), `tabs` puts them on pages a click, the arrows or LB and RB turn, and `text_size("Text size")`,
   `interface_size("Interface size")`, `pad_style("Controller")` and `skin_preset("Theme")` are the
@@ -114,6 +114,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md),
   [player options](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/options.md),
   [rebinding](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/bindings.md),
+  [shortcuts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/shortcuts.md),
   [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
 - **Scroll a list that follows the focus** — `list(4.5, children![..])` cuts the fifth row so the player
@@ -146,6 +147,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 ![The gallery's settings panel after the Controls tab is clicked: the ring goes down to Jump, whose keycap says Space; Enter lights the keycap amber with "Press a key, Esc exits", Q turns it to Q, and Down to Use (A), whose keycap lights with "Press a button, Menu exits" until Escape puts it back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/binding.gif)
 
 *Rebinding: `binding("Jump", Binding::Key(KeyCode::Space))` waits for the next press and says it once as a `ValueChange<Binding>`. The panel never moves, and nothing else hears the key.*
+
+![The shortcuts example: a Keymap panel with three rows, Save, Save all and Palette, each showing a chord on a keycap (Ctrl+S, Ctrl+Shift+S, Ctrl+P), a conflict line, a line naming the command that ran and a Save button; Enter on Save lights its keycap amber with "Press a shortcut, Esc exits" and Ctrl+Shift+K turns the keycap from Ctrl+S to Ctrl+Shift+K; the same chord on Save all makes the line read "Conflict: Save and Save all" and Ctrl+Alt+J clears it; Ctrl+Shift+K runs Save, and the ring on the Save button opens its tooltip, "Write to disk" with Ctrl+Shift+K on a keycap](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcuts.gif)
+
+*Shortcuts: a `binding` row whose value is a `Binding::Chord` captures a key chord; `model::shortcut_conflicts` finds two commands on one chord; `Shortcut::just_pressed` runs the command; `Tooltip::new("Write to disk").with_shortcut(chord)` shows it on a keycap.*
 
 ![The gallery's Load game list with the Save as field under it: the field rests as a quiet outline over the muted hint "Name this save", its frame turns blue with a caret while "Aria" is typed, Enter shows the toast "Saved as Aria" at the window's corner, and Up moves the ring onto the save slot Cellar, 01:48 with the field back to its quiet outline and its text kept](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/text-input.gif)
 

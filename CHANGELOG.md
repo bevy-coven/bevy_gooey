@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- Shortcuts (G-08, #12): `Shortcut { modifiers, key }`, `Modifiers { ctrl, shift, alt, meta }` (the physical modifiers, either side; combine with `|`; `Modifiers::PRIMARY` and `Shortcut::primary(key)` are Command on a mac and Ctrl elsewhere) and `Platform` (`current()`, `Mac`, `Other`). `Shortcut::label()` is the platform's spelling, "Ctrl+Shift+P" in Microsoft's order or "⌃⇧P" in Apple's with glyphs for Return, Delete, Escape, Tab and the arrows (`label_on(Platform)` for another platform); `Shortcut::just_pressed(&ButtonInput<KeyCode>)` is the one rule for a chord that went down this frame with exactly its modifiers; `Shortcut::is_valid()` says the key is not a modifier. `Eq + Hash`, reflected, serde under the `serde` feature.
+- `model::shortcut_conflicts(&[(&str, S)])`, generic over any `PartialEq` chord: every pair of commands on one chord, in list order. `model::shortcut_label` and `model::is_modifier_key`, engine-free, re-exported at the crate root.
+- `Binding::Chord(Shortcut)`: a `binding` row spawned with a chord captures one. It waits through a bare modifier press, binds the first non-modifier key with the modifiers held at that moment (a bare key is a chord with none), and sends one `ValueChange<Binding>`; Escape exits and is never bound; a mouse button or a pad button exits. A key row is unchanged: a modifier alone still binds there. `BindingSettings::chord_prompt` ("Press a shortcut, {exit} exits") is what a waiting chord row says; a `Prompt` names a chord on its keycap too.
+- `Tooltip::new(text)` and `.with_shortcut(Shortcut)`: the chord is drawn on the prompts' keycap to the right of the line, spawned and removed as `Tooltip::shortcut` changes. The box is never narrower than the cap and six text sizes of words beside it, so at 200% text a long chord makes the tooltip take another side of its widget before it leaves the window.
+- `examples/shortcuts` (a keymap screen: three chord rows, a conflict line, commands that run on their chords, a Save button whose tooltip follows its row), `docs/research/shortcut.md`, `docs/guide/shortcuts.md`, `docs/media/shortcuts.gif` and `tests/shortcut.rs` (19 tests).
+
+### Changed
+
+- `Tooltip(String)` is now `Tooltip { text, shortcut }`: build one with `Tooltip::new("…")` (a clean cutover; `Tooltip.0` is `Tooltip.text`).
+- `Binding` has one more variant, `Chord`, and `BindingSettings` one more field, `chord_prompt` (a skin or settings file without it reads the default), so a `match` on `Binding` and a struct literal of `BindingSettings` that names every field need the new arm and field.
+
 ## [0.12.0] - 2026-11-01
 
 ### Added
