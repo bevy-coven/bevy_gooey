@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-01
+
 ### Added
 
 - `GooeySkin::high_contrast()`, a third preset for the player who needs more contrast than WCAG's minimum: opaque black surfaces, white text and white outlines, an amber accent, a cyan focus ring and a light red for danger (WCAG advises against red on black, for protanopia), on the sizes of the other presets so a layout never moves. Every pair `problems()` checks is at least 7:1 (`ENHANCED_CONTRAST`, WCAG 2.2 SC 1.4.6 and Xbox Accessibility Guideline 102's "7:1 for all UI elements"), and `GooeySkin::high_contrast_problems()` is that check for any skin, so a game that writes its own high-contrast mode has the test in one call (empty for `high_contrast()`, and not for `dark()` or `parchment()`, which meet the minimums and no more).
