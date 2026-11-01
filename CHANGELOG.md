@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-31
+
 ### Added
 
 - `prompts()` and `prompt(label, keys)`: the hints that say which input does what ("Esc Back"), for Xbox Accessibility Guideline 112's "interaction prompts to select or go back are consistently placed on the bottom-left corner of the screen". A prompt is a keycap and the game's words; the keycap names the input of the device the player used last, in the words of a `binding` row ("Enter", "Esc", "A" or "Cross", by `BindingSettings::pad_style`), and a pad button is fully round where a key is a rounded rectangle. `prompts()` is a slim bar on the skin's panel colour, absolute in its parent's bottom-left corner 5% in from the edges (so adding it moves nothing), no wider than 90% of its parent; one in a `dialog()` stands at the same corner over the scrim. Every part is `Pickable::IGNORE` and none is a tab stop.
