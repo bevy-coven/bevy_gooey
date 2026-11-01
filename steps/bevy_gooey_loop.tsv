@@ -10635,3 +10635,301 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 63	483	release	model	model		2026-11-01T23:05:46Z	3.8	
 63	484	release	tool	git	bash	2026-11-01T23:05:50Z	2.2	cd /home/ladvien/bevy_gooey_loop && git fetch -q origin && git status -sb | head -3; git rev-parse HEAD origin/main; git ls-remote --tags origin v0.21.0 | head 
 63	485	release	model	model		2026-11-01T23:05:52Z	11.4	
+64	1	orient	model	model		2026-11-01T23:06:26Z	3.9	
+64	2	orient	tool	phase mark	bash	2026-11-01T23:06:30Z	0.8	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git branch --show-current; git fetch -q origi
+64	3	orient	model	model		2026-11-01T23:06:31Z	2.8	
+64	4	bugs	tool	phase mark	bash	2026-11-01T23:06:33Z	0.5	cd /home/ladvien/bevy_gooey_loop && git log --oneline | head -5; git branch --list 'wiggum/parked-*'; gh issue list --repo bevy-coven/bevy_gooey --state open --
+64	5	bugs	model	model		2026-11-01T23:06:34Z	3.6	
+64	6	choose	tool	phase mark	bash	2026-11-01T23:06:38Z	1.2	cd /home/ladvien/bevy_gooey_loop && gh issue view 17 --repo bevy-coven/bevy_gooey --comments | cut -c1-1500; python3 ~/.local/share/wiggum/steps.py mark choose
+64	7	choose	model	model		2026-11-01T23:06:39Z	1.9	
+64	8	choose	tool	github	bash	2026-11-01T23:06:41Z	0.4	cd /home/ladvien/bevy_gooey_loop && gh issue view 17 --repo bevy-coven/bevy_gooey --json body --jq .body; cat docs/research/number-field.md | head -60 | cut -c1
+64	9	choose	model	model		2026-11-01T23:06:41Z	3.8	
+64	10	choose	tool	shell	bash	2026-11-01T23:06:45Z	10.0	cd /home/ladvien/bevy_gooey_loop && wc -l src/*.rs tests/number.rs examples/numbers.rs docs/guide/numbers.md; (timeout 20 hs status 2>&1 | head -15); cat docs/g
+64	11	choose	model	model		2026-11-01T23:06:55Z	9.7	
+64	12	choose	tool	shell	bash	2026-11-01T23:07:05Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,80p Cargo.toml; B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0); echo $B; ls $B/src; grep
+64	13	choose	model	model		2026-11-01T23:07:05Z	5.6	
+64	14	choose	tool	shell	bash	2026-11-01T23:07:10Z	0.0	B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); ls $B/src; grep -n "pub struct\|pub enum" $B/src/gradients.rs | head -30; grep -n "bevy_ui_re
+64	15	choose	model	model		2026-11-01T23:07:10Z	2.1	
+64	16	choose	tool	shell	bash	2026-11-01T23:07:12Z	0.0	B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); sed -n 225,300p $B/src/gradients.rs; sed -n 660,700p $B/src/gradients.rs; sed -n 535,560p $B/
+64	17	choose	model	model		2026-11-01T23:07:12Z	11.8	
+64	18	choose	tool	shell	bash	2026-11-01T23:07:24Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^pub fn\|^fn \|^pub(crate) fn\|^const\|^pub const" src/widgets.rs | cut -c1-150
+64	19	choose	model	model		2026-11-01T23:07:24Z	1.4	
+64	20	choose	tool	shell	bash	2026-11-01T23:07:25Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 330,480p src/widgets.rs; sed -n 1985,2104p src/widgets.rs
+64	21	choose	model	model		2026-11-01T23:07:25Z	65.7	
+64	22	choose	tool	shell	bash	2026-11-01T23:08:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Role::NumberPart\|Role::SliderThumb\|Role::SliderRail\|Role::TextCell\|Role::Popover\b" src/skin.rs | head -30; gre
+64	23	choose	model	model		2026-11-01T23:08:31Z	3.6	
+64	24	choose	tool	git	bash	2026-11-01T23:08:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && git show --stat 009e162 | cat; git show 009e162 -- src/skin.rs | head -200
+64	25	choose	model	model		2026-11-01T23:08:35Z	4.2	
+64	26	choose	tool	shell	bash	2026-11-01T23:08:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,140p src/number.rs
+64	27	choose	model	model		2026-11-01T23:08:39Z	1.2	
+64	28	choose	tool	shell	bash	2026-11-01T23:08:40Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 140,420p src/number.rs
+64	29	choose	model	model		2026-11-01T23:08:40Z	3.7	
+64	30	choose	tool	shell	bash	2026-11-01T23:08:44Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 826,1035p src/widgets.rs
+64	31	choose	model	model		2026-11-01T23:08:44Z	19.8	
+64	32	choose	tool	shell	bash	2026-11-01T23:09:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn\|pub(crate) fn\|^fn " src/popover.rs; sed -n 1,60p src/text.rs | head -5; grep -n "fn text_row_on_acquire" -
+64	33	choose	model	model		2026-11-01T23:09:04Z	6.3	
+64	34	choose	tool	shell	bash	2026-11-01T23:09:10Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 60,126p src/popover.rs; sed -n 155,200p src/popover.rs; sed -n 276,341p src/popover.rs
+64	35	choose	model	model		2026-11-01T23:09:10Z	6.8	
+64	36	choose	tool	shell	bash	2026-11-01T23:09:17Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2085,2135p src/skin.rs; sed -n 2150,2200p src/skin.rs; cat src/controls.rs | sed -n 1,51p
+64	37	choose	model	model		2026-11-01T23:09:17Z	16.5	
+64	38	choose	tool	shell	bash	2026-11-01T23:09:33Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1655,1700p src/skin.rs; grep -n "Role::MeterFill\|Role::SliderFill" src/skin.rs | head; grep -n "fn restyle" -A60 src
+64	39	choose	model	model		2026-11-01T23:09:33Z	3.0	
+64	40	choose	tool	shell	bash	2026-11-01T23:09:36Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "fill\b" src/skin.rs | sed -n 1,60p | grep -v "^.*///" | head -40; sed -n 1868,1895p src/skin.rs
+64	41	choose	model	model		2026-11-01T23:09:36Z	33.0	
+64	42	choose	tool	shell	bash	2026-11-01T23:10:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "numbers\|NumberInput\|KeepsSideways\|dividers\|fn gamepad_adjust" src/*.rs | grep -v "^src/number.rs\|^src/model.rs
+64	43	choose	model	model		2026-11-01T23:10:09Z	1.7	
+64	44	choose	tool	shell	bash	2026-11-01T23:10:11Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 30,150p src/nav.rs; sed -n 405,470p src/nav.rs; sed -n 630,703p src/nav.rs
+64	45	choose	model	model		2026-11-01T23:10:11Z	8.7	
+64	46	choose	tool	shell	bash	2026-11-01T23:10:20Z	0.0	B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0); grep -n "fn slider_on_pointer_down" -A55 $B/src/slider.rs; grep -n "fn slider_on_drag
+64	47	choose	model	model		2026-11-01T23:10:20Z	2.1	
+64	48	choose	tool	shell	bash	2026-11-01T23:10:22Z	0.0	B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0); sed -n 320,402p $B/src/slider.rs; grep -n "pub struct PointerPress" -B3 -A22 $(ls -d 
+64	49	choose	model	model		2026-11-01T23:10:22Z	45.0	
+64	50	choose	tool	shell	bash	2026-11-01T23:11:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Role::TextCell\|Role::TextField\|Role::TextInput\b" src/skin.rs | head -20; grep -n "Role::TextField =>" -B2 -A25 s
+64	51	choose	model	model		2026-11-01T23:11:07Z	38.4	
+64	52	choose	tool	read files	read	2026-11-01T23:11:45Z	0.1	Reading Blender colour picker manual :: https://docs.blender.org/manual/en/latest/interface/controls/templates/color_picker.html
+64	53	choose	tool	read files	read	2026-11-01T23:11:45Z	0.2	Reading WCAG non-text contrast :: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
+64	54	choose	model	model		2026-11-01T23:11:46Z	4.9	
+64	55	choose	tool	web	web_search	2026-11-01T23:11:51Z	7.7	Finding a color picker manual quote :: Blender manual Color Picker widget hue saturation value hex alpha "color picker" interface controls
+64	56	choose	tool	shell	bash	2026-11-01T23:11:51Z	7.7	cd /home/ladvien/bevy_gooey_loop && B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_feathers-0.20.1); ls $B/src/controls | head -30; grep -n "ColorPlane"
+64	57	choose	model	model		2026-11-01T23:11:58Z	4.9	
+64	58	choose	tool	read files	read	2026-11-01T23:12:03Z	0.0	Reading catalog_recent schema :: xd://mcp__home_still_catalog_recent
+64	59	choose	model	model		2026-11-01T23:12:03Z	1.5	
+64	60	choose	tool	edit files	write	2026-11-01T23:12:05Z	7.1	Scanning recent corpus additions :: xd://mcp__home_still_catalog_recent
+64	61	choose	model	model		2026-11-01T23:12:12Z	36.9	
+64	62	research	tool	phase mark	bash	2026-11-01T23:12:49Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research && git checkout -q -b loop/iter-36 && cat > docs/research/color-field.m
+64	63	research	model	model		2026-11-01T23:12:49Z	3.6	
+64	64	build	tool	phase mark	bash	2026-11-01T23:12:52Z	0.0	python3 ~/.local/share/wiggum/steps.py mark build; cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn composite\|pub fn parse_number\|pub enum NumberError" -B3
+64	65	build	model	model		2026-11-01T23:12:52Z	3.9	
+64	66	build	tool	shell	bash	2026-11-01T23:12:56Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1640,1700p src/model.rs; sed -n 150,260p src/lib.rs
+64	67	build	model	model		2026-11-01T23:12:56Z	11.6	
+64	68	build	tool	shell	bash	2026-11-01T23:13:08Z	0.0	cd /home/ladvien/bevy_gooey_loop && tail -20 src/model.rs
+64	69	build	model	model		2026-11-01T23:13:08Z	38.6	
+64	70	build	tool	shell	bash	2026-11-01T23:13:47Z	0.1	cd /home/ladvien/bevy_gooey_loop && cat > /tmp/g36_model.rs <<'EOF' /// Why a [`crate::color_field`] would not take what the player typed; it reads as words ///
+64	71	build	model	model		2026-11-01T23:13:47Z	11.0	
+64	72	build	tool	shell	bash	2026-11-01T23:13:58Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 420,537p src/number.rs; sed -n 1,80p src/text.rs | grep -n "TextHint\|pub struct"
+64	73	build	model	model		2026-11-01T23:13:58Z	5.5	
+64	74	build	tool	shell	bash	2026-11-01T23:14:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 300,420p src/lib.rs
+64	75	build	model	model		2026-11-01T23:14:03Z	78.9	
+64	76	build	tool	shell	bash	2026-11-01T23:15:22Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "fn slider_self_update" -B2 -A12 src/*.rs; grep -n "SLIDER_MIN_TEXT_SIZES\|const THUMB" src/skin.rs | head -5; sed -
+64	77	build	model	model		2026-11-01T23:15:22Z	4.6	
+64	78	build	tool	shell	bash	2026-11-01T23:15:27Z	0.0	P=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_picking-0.20.0); grep -n "pub struct Pointer\b" -B3 -A12 $P/src/events.rs | head -40; grep -n "pub struct
+64	79	build	model	model		2026-11-01T23:15:27Z	10.4	
+64	80	build	tool	shell	bash	2026-11-01T23:15:37Z	0.0	B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); sed -n 10,75p $B/src/gradients.rs; sed -n 455,535p $B/src/gradients.rs; grep -n "gradients::\
+64	81	build	model	model		2026-11-01T23:15:37Z	153.0	
+64	82	build	tool	edit files	write	2026-11-01T23:18:10Z	0.0	/home/ladvien/bevy_gooey_loop/src/color.rs
+64	83	build	model	model		2026-11-01T23:18:10Z	4.3	
+64	84	build	tool	shell	bash	2026-11-01T23:18:14Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/color.rs' s=open(p).read() s=s.replace(''' /// Focus is on the colour row's field or swatch: a pres
+64	85	build	model	model		2026-11-01T23:18:14Z	4.4	
+64	86	build	tool	shell	bash	2026-11-01T23:18:19Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "text_row_as" src/*.rs; sed -n 1036,1125p src/widgets.rs
+64	87	build	model	model		2026-11-01T23:18:19Z	12.2	
+64	88	build	tool	shell	bash	2026-11-01T23:18:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() # imports s=s.replace("""use crate::choice::{""","""use crate::color::
+64	89	build	model	model		2026-11-01T23:18:31Z	14.5	
+64	90	build	tool	shell	bash	2026-11-01T23:18:46Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() s=s.replace(""" Some(NUMBER_FIELD_CHARS), true, ),""",""" Some(NUMBER_
+64	91	build	model	model		2026-11-01T23:18:46Z	9.4	
+64	92	build	tool	shell	bash	2026-11-01T23:18:55Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/lib.rs' s=open(p).read() s=s.replace("mod choice;\nmod context;","mod choice;\nmod color;\nmod cont
+64	93	build	model	model		2026-11-01T23:18:55Z	6.2	
+64	94	build	tool	cargo build	bash	2026-11-01T23:19:01Z	4.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace(""" /// The row of a [`crate::vec_field`]'s components, a gap
+64	95	build	model	model		2026-11-01T23:19:06Z	11.6	
+64	96	build	tool	cargo build	bash	2026-11-01T23:19:18Z	4.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/color.rs' s=open(p).read() s=s.replace(""" let border = node.border(); let offset = (normalized + V
+64	97	build	model	model		2026-11-01T23:19:22Z	3.8	
+64	98	build	tool	shell	bash	2026-11-01T23:19:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1905,2010p src/skin.rs
+64	99	build	model	model		2026-11-01T23:19:26Z	9.7	
+64	100	build	tool	shell	bash	2026-11-01T23:19:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() # fill s=s.replace(" Role::Meter | Role::SliderRail => Some(skin.surface_
+64	101	build	model	model		2026-11-01T23:19:35Z	13.5	
+64	102	build	tool	cargo build	bash	2026-11-01T23:19:49Z	3.7	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace(" Role::SliderRail => {\n"," Role::SliderRail | Role::ColorRa
+64	103	build	model	model		2026-11-01T23:19:52Z	10.0	
+64	104	build	tool	cargo build	bash	2026-11-01T23:20:02Z	2.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/nav.rs' s=open(p).read() s=s.replace("use crate::number::{NumberInput, NumberStepBy};","use crate::
+64	105	build	model	model		2026-11-01T23:20:05Z	4.0	
+64	106	build	tool	shell	bash	2026-11-01T23:20:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,260p tests/number.rs
+64	107	build	model	model		2026-11-01T23:20:09Z	1.9	
+64	108	build	tool	shell	bash	2026-11-01T23:20:11Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 260,520p tests/number.rs
+64	109	build	model	model		2026-11-01T23:20:11Z	14.8	
+64	110	build	tool	shell	bash	2026-11-01T23:20:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 520,560p tests/number.rs; grep -n "pub fn\|fn " tests/all.rs | head; cat tests/all.rs | head -60; grep -n "fn pad_dpa
+64	111	build	model	model		2026-11-01T23:20:26Z	9.8	
+64	112	build	tool	shell	bash	2026-11-01T23:20:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' src=open('tests/number.rs').read() # take harness part: from 'use bevy::camera' through 'fn press(' end (b
+64	113	build	model	model		2026-11-01T23:20:36Z	96.2	
+64	114	build	tool	cargo test	bash	2026-11-01T23:22:12Z	16.7	cd /home/ladvien/bevy_gooey_loop && cat > /tmp/g36_tests.rs <<'EOF' // -----------------------------------------------------------------------------------------
+64	115	build	model	model		2026-11-01T23:22:28Z	4.8	
+64	116	build	tool	cargo test	bash	2026-11-01T23:22:33Z	23.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='tests/color.rs' s=open(p).read() a=s.index("fn half(app: &App") b=s.index("// --- the typed c
+64	117	build	model	model		2026-11-01T23:22:57Z	12.0	
+64	118	build	tool	shell	bash	2026-11-01T23:23:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "focus-restyle\|focus restyle\|fn restyles_on_focus\|focus_changed\|focus.is_changed\|visible.is_changed" src/skin.r
+64	119	build	model	model		2026-11-01T23:23:09Z	13.3	
+64	120	build	tool	cargo test	bash	2026-11-01T23:23:22Z	17.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace(" | Role::SplitDivider\n )\n })\n .map(|item| item.0),"," | R
+64	121	build	model	model		2026-11-01T23:23:39Z	4.8	
+64	122	build	tool	shell	bash	2026-11-01T23:23:44Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 970,982p tests/color.rs
+64	123	build	model	model		2026-11-01T23:23:44Z	5.4	
+64	124	build	tool	cargo test	bash	2026-11-01T23:23:49Z	14.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/color.rs' s=open(p).read() old=''' let row = rect(&app, ui.tint); assert!( row.height() >= 44.0 -
+64	125	build	model	model		2026-11-01T23:24:03Z	1.5	
+64	126	build	tool	shell	bash	2026-11-01T23:24:05Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 694,702p tests/color.rs
+64	127	build	model	model		2026-11-01T23:24:05Z	4.4	
+64	128	build	tool	cargo test	bash	2026-11-01T23:24:09Z	14.3	cd /home/ladvien/bevy_gooey_loop && sed -i '700s/hex("#ff0000")/Srgba::new(0.0, 0.5, 1.0, 1.0)/' tests/color.rs && cargo fmt && (CARGO_BUILD_JOBS=4 cargo test -
+64	129	build	model	model		2026-11-01T23:24:23Z	5.8	
+64	130	prove	tool	phase mark	bash	2026-11-01T23:24:29Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; sed -n 1,200p examples/numbers.rs
+64	131	prove	model	model		2026-11-01T23:24:29Z	1.4	
+64	132	prove	tool	shell	bash	2026-11-01T23:24:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 200,479p examples/numbers.rs
+64	133	prove	model	model		2026-11-01T23:24:31Z	50.8	
+64	134	prove	tool	cargo build	bash	2026-11-01T23:25:22Z	33.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' n=open('examples/numbers.rs').read() # pieces to reuse verbatim capture_fn=n[n.index("fn capture(\n"):n.in
+64	135	prove	model	model		2026-11-01T23:25:55Z	4.1	
+64	136	prove	tool	shell	bash	2026-11-01T23:25:59Z	3.1	cd /home/ladvien/bevy_gooey_loop && echo "DISPLAY=$DISPLAY TARGET=$CARGO_TARGET_DIR"; mkdir -p /tmp/g36/after && G="${CARGO_TARGET_DIR:-target}/release/examples
+64	137	prove	model	model		2026-11-01T23:26:02Z	1.5	
+64	138	prove	tool	read files	read	2026-11-01T23:26:04Z	0.0	Viewing picker open :: /tmp/g36/after/open.png
+64	139	prove	model	model		2026-11-01T23:26:04Z	16.0	
+64	140	prove	tool	shell	bash	2026-11-01T23:26:20Z	0.1	cd /tmp/g36/after && magick open.png -crop 120x60+740+140 +repage -filter point -resize 600% marker.png && magick open.png -crop 330x50+470+90 +repage -filter p
+64	141	prove	tool	read files	read	2026-11-01T23:26:20Z	0.1	Zoom on the marker :: /tmp/g36/after/marker.png
+64	142	prove	model	model		2026-11-01T23:26:20Z	1.8	
+64	143	prove	tool	shell	bash	2026-11-01T23:26:21Z	0.1	cd /tmp/g36/after && ls; magick open.png -crop 120x60+740+140 +repage -filter point -resize 600% /tmp/g36/after/marker.png; ls
+64	144	prove	model	model		2026-11-01T23:26:22Z	1.4	
+64	145	prove	tool	read files	read	2026-11-01T23:26:23Z	0.0	Zoom on the marker :: /tmp/g36/after/marker.png
+64	146	prove	model	model		2026-11-01T23:26:23Z	7.7	
+64	147	prove	tool	cargo build	bash	2026-11-01T23:26:31Z	35.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace(" /// A colour strip's rail,"," /// The label over a picker's
+64	148	prove	model	model		2026-11-01T23:27:06Z	1.5	
+64	149	prove	tool	read files	read	2026-11-01T23:27:08Z	0.0	Viewing picker after pointer picks :: /tmp/g36/after/open2.png
+64	150	prove	model	model		2026-11-01T23:27:08Z	26.1	
+64	151	prove	tool	cargo build	bash	2026-11-01T23:27:34Z	4.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace(" /// The label over a picker's strip: a [`Role::SliderHeader
+64	152	prove	model	model		2026-11-01T23:27:38Z	5.7	
+64	153	prove	tool	cargo build	bash	2026-11-01T23:27:44Z	34.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/color.rs' s=open(p).read() old=''' ( Node { align_items: AlignItems::Center, ..default() }, Slider 
+64	154	prove	model	model		2026-11-01T23:28:18Z	1.4	
+64	155	prove	tool	read files	read	2026-11-01T23:28:20Z	0.0	Viewing restructured strips :: /tmp/g36/after/open3.png
+64	156	prove	model	model		2026-11-01T23:28:20Z	13.3	
+64	157	prove	tool	shell	bash	2026-11-01T23:28:33Z	23.8	cd /tmp/g36/after && G=/home/ladvien/target/gooey-loop/release/examples/colors; for skin in parchment high_contrast tool; do GOOEY_SKIN=$skin GOOEY_FRAMES=130 G
+64	158	prove	model	model		2026-11-01T23:28:57Z	1.8	
+64	159	prove	tool	read files	read	2026-11-01T23:28:59Z	0.1	Viewing three looks :: /tmp/g36/after/montage.png
+64	160	prove	model	model		2026-11-01T23:28:59Z	5.0	
+64	161	prove	tool	read files	read	2026-11-01T23:29:04Z	0.0	Viewing 200% text :: /tmp/g36/after/200.png
+64	162	prove	model	model		2026-11-01T23:29:04Z	22.9	
+64	163	prove	tool	cargo build	bash	2026-11-01T23:29:27Z	27.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace("/// How high the picker's colour area is, in body text sizes
+64	164	prove	tool	read files	read	2026-11-01T23:29:27Z	27.9	Viewing 200% text again :: /tmp/g36/after/200.png
+64	165	prove	model	model		2026-11-01T23:29:55Z	11.8	
+64	166	prove	tool	cargo build	bash	2026-11-01T23:30:06Z	45.7	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() a=s.index("/// How high the picker's colour area is:") b=s.index("const C
+64	167	prove	tool	read files	read	2026-11-01T23:30:06Z	45.7	Viewing 200% text again :: /tmp/g36/after/200.png
+64	168	prove	model	model		2026-11-01T23:30:52Z	7.3	
+64	169	prove	tool	cargo test	bash	2026-11-01T23:30:59Z	60.1	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && cat > /tmp/g36/gate.sh <<'EOF' #!/bin/bash cd /home/ladvien/bevy_gooey_loop export CARGO_BUILD_JOBS=4 run() { echo "== $*"; 
+64	170	prove	model	model		2026-11-01T23:31:59Z	4.1	
+64	171	prove	tool	shell	bash	2026-11-01T23:32:04Z	0.1	cd /home/ladvien/bevy_gooey_loop && wc -l README.md; grep -n "number" README.md | cut -c1-220; grep -n "numbers" docs/media/README.md docs/guide/README.md | cut
+64	172	prove	model	model		2026-11-01T23:32:04Z	3.7	
+64	173	prove	tool	shell	bash	2026-11-01T23:32:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 39p docs/media/README.md; sed -n 1,20p docs/media/README.md | cut -c1-300; sed -n 166,172p README.md | cut -c1-900
+64	174	prove	model	model		2026-11-01T23:32:07Z	11.2	
+64	175	prove	tool	shell	bash	2026-11-01T23:32:19Z	0.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' l=open('docs/media/README.md').read().split('\n')[38] cols=l.split(' | ') print(len(cols)); print(cols[2][
+64	176	prove	model	model		2026-11-01T23:32:19Z	9.0	
+64	177	prove	tool	shell	bash	2026-11-01T23:32:28Z	32.8	mkdir -p /tmp/g36/frames && rm -f /tmp/g36/frames/* && cd /home/ladvien/bevy_gooey_loop && G=/home/ladvien/target/gooey-loop/release/examples/colors; GOOEY_FRAM
+64	178	prove	model	model		2026-11-01T23:33:01Z	3.3	
+64	179	prove	tool	shell	bash	2026-11-01T23:33:04Z	1.6	cd /tmp/g36/frames && ls | head -3; ls | tail -3; magick montage $(ls f_*.png | awk 'NR%11==1') -crop 460x620+420+8 +repage -tile 8x2 -geometry 230x310+2+2 /tmp
+64	180	prove	model	model		2026-11-01T23:33:06Z	3.1	
+64	181	prove	tool	shell	bash	2026-11-01T23:33:09Z	1.2	cd /tmp/g36/frames && for f in $(ls f_*.png | awk 'NR%11==1'); do magick $f -crop 460x620+420+8 +repage -resize 50% /tmp/g36/s_$f; done; magick montage /tmp/g36
+64	182	prove	tool	read files	read	2026-11-01T23:33:09Z	1.2	Viewing GIF contact sheet :: /tmp/g36/sheet.png
+64	183	prove	model	model		2026-11-01T23:33:10Z	8.5	
+64	184	prove	tool	shell	bash	2026-11-01T23:33:19Z	15.3	mkdir -p /home/ladvien/g36_tmp/frames && cd /home/ladvien/bevy_gooey_loop && G=/home/ladvien/target/gooey-loop/release/examples/colors; rm -f /home/ladvien/g36_
+64	185	prove	tool	read files	read	2026-11-01T23:33:19Z	15.3	Viewing GIF contact sheet :: /home/ladvien/g36_tmp/sheet.png
+64	186	prove	model	model		2026-11-01T23:33:34Z	4.1	
+64	187	prove	tool	wait: gate	wait	2026-11-01T23:33:38Z	147.0	Waiting for the gate job
+64	188	prove	model	model		2026-11-01T23:36:05Z	3.6	
+64	189	prove	tool	shell	bash	2026-11-01T23:36:09Z	0.0	ls /tmp/g36/ /home/ladvien/g36_tmp/ 2>&1 | head; grep -E "test result|FAILED|failed" /tmp/g36/gate.log | head
+64	190	prove	model	model		2026-11-01T23:36:09Z	2.8	
+64	191	prove	tool	read files	read	2026-11-01T23:36:11Z	0.1	Viewing GIF contact sheet :: /home/ladvien/g36_tmp/sheet.png
+64	192	prove	model	model		2026-11-01T23:36:12Z	7.1	
+64	193	prove	tool	clip record/render	bash	2026-11-01T23:36:19Z	0.8	cd /home/ladvien/bevy_gooey_loop && ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/home/ladvien/g36_tmp/frames/f_*.png' -vf "crop=420:640:440:1
+64	194	prove	model	model		2026-11-01T23:36:19Z	4.1	
+64	195	prove	tool	shell	bash	2026-11-01T23:36:24Z	0.2	cd /home/ladvien/g36_tmp && magick 'compose:/home/ladvien/bevy_gooey_loop/docs/media/colors.gif[40]' f40.png 2>/dev/null || magick '/home/ladvien/bevy_gooey_loo
+64	196	prove	tool	read files	read	2026-11-01T23:36:24Z	0.2	Checking GIF frames :: /home/ladvien/g36_tmp/pair.png
+64	197	prove	model	model		2026-11-01T23:36:24Z	3.0	
+64	198	prove	tool	read files	read	2026-11-01T23:36:27Z	0.0	Checking GIF frames :: /home/ladvien/g36_tmp/pair.png
+64	199	prove	model	model		2026-11-01T23:36:27Z	3.5	
+64	200	prove	tool	shell	bash	2026-11-01T23:36:30Z	1.2	cd /home/ladvien/g36_tmp && magick /home/ladvien/bevy_gooey_loop/docs/media/colors.gif -coalesce -delete 0-39,41--1 f40.png; magick /home/ladvien/bevy_gooey_loo
+64	201	prove	model	model		2026-11-01T23:36:31Z	1.4	
+64	202	prove	tool	read files	read	2026-11-01T23:36:33Z	0.0	Checking coalesced GIF frames :: /home/ladvien/g36_tmp/pair.png
+64	203	prove	model	model		2026-11-01T23:36:33Z	9.4	
+64	204	prove	tool	shell	bash	2026-11-01T23:36:42Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "viewport.offset" tests/*.rs | head -3; sed -i 's/const COLOR_FIELD_CHARS: f32 = 9.0;/const COLOR_FIELD_CHARS: f32 =
+64	205	prove	model	model		2026-11-01T23:36:42Z	5.1	
+64	206	prove	tool	cargo test	bash	2026-11-01T23:36:47Z	21.4	cd /home/ladvien/bevy_gooey_loop && grep -n "viewport" tests/text.rs | head -5; python3 - <<'EOF' p='tests/color.rs' s=open(p).read() marker="#[test]\nfn escape
+64	207	prove	model	model		2026-11-01T23:37:09Z	3.3	
+64	208	prove	tool	cargo test	bash	2026-11-01T23:37:12Z	12.0	cd /home/ladvien/bevy_gooey_loop && cp src/widgets.rs /tmp/g36_widgets.bak && sed -i 's/const COLOR_FIELD_CHARS: f32 = 10.0;/const COLOR_FIELD_CHARS: f32 = 9.0;
+64	209	prove	model	model		2026-11-01T23:37:24Z	2.8	
+64	210	prove	tool	cargo clippy	bash	2026-11-01T23:37:27Z	5.7	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(error|warning)" -A8 | head -50
+64	211	prove	model	model		2026-11-01T23:37:33Z	5.6	
+64	212	prove	tool	cargo clippy	bash	2026-11-01T23:37:38Z	10.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/nav.rs' s=open(p).read() s=s.replace(""" numbers: Query< 'w, 's, (), ( Or<(With<NumberInput>, With<
+64	213	prove	model	model		2026-11-01T23:37:48Z	6.1	
+64	214	prove	tool	cargo clippy	bash	2026-11-01T23:37:55Z	4.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='tests/color.rs' s=open(p).read() a=s.index("/// Drags from the middle of `from`") b=s.index("
+64	215	prove	model	model		2026-11-01T23:37:59Z	4.9	
+64	216	prove	tool	cargo clippy	bash	2026-11-01T23:38:04Z	4.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/color.rs' s=open(p).read() s=s.replace(" other: Entity,\n button: Entity,\n"," other: Entity,\n",
+64	217	prove	model	model		2026-11-01T23:38:09Z	4.8	
+64	218	prove	tool	cargo build	bash	2026-11-01T23:38:14Z	21.6	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example colors 2>&1 | grep -E "^(error|warning)" -A8 | head; G=/home/ladvien/targ
+64	219	prove	model	model		2026-11-01T23:38:35Z	5.7	
+64	220	prove	tool	clip record/render	bash	2026-11-01T23:38:41Z	2.0	cd /home/ladvien/bevy_gooey_loop && ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/home/ladvien/g36_tmp/frames/f_*.png' -vf "crop=440:640:430:1
+64	221	prove	tool	read files	read	2026-11-01T23:38:41Z	2.0	Checking GIF quality :: /home/ladvien/g36_tmp/f100z.png
+64	222	prove	model	model		2026-11-01T23:38:43Z	1.5	
+64	223	prove	tool	read files	read	2026-11-01T23:38:45Z	0.0	Checking GIF quality :: /home/ladvien/g36_tmp/f100z.png
+64	224	prove	model	model		2026-11-01T23:38:45Z	7.8	
+64	225	prove	tool	shell	bash	2026-11-01T23:38:52Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 104,122p README.md | cut -c1-2500
+64	226	prove	model	model		2026-11-01T23:38:52Z	7.7	
+64	227	prove	tool	shell	bash	2026-11-01T23:39:00Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='README.md' s=open(p).read() old="(`vec_field` for a position), `tabs` puts them" new="(`vec_field` for 
+64	228	prove	model	model		2026-11-01T23:39:00Z	20.5	
+64	229	prove	tool	shell	bash	2026-11-01T23:39:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l README.md; cat > docs/guide/colors.md <<'EOF' # Colours `color_field(label, colour)` is a row for a colour the player 
+64	230	prove	model	model		2026-11-01T23:39:21Z	19.6	
+64	231	prove	tool	cargo build	bash	2026-11-01T23:39:40Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='docs/guide/README.md' s=open(p).read() i=s.index("- [Numbers](numbers.md)") j=s.index("\n- ",i+3) add="
+64	232	prove	model	model		2026-11-01T23:39:40Z	7.4	
+64	233	prove	tool	shell	bash	2026-11-01T23:39:48Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^- \`src/tree.rs\`\|^- \`tests/number.rs\`\|^- \`tests/options.rs\`" AGENTS.md | cut -c1-60
+64	234	prove	model	model		2026-11-01T23:39:48Z	1.5	
+64	235	prove	tool	read files	read	2026-11-01T23:39:49Z	0.0	Getting AGENTS tag for insertion :: AGENTS.md:41-42:raw
+64	236	prove	model	model		2026-11-01T23:39:49Z	3.1	
+64	237	prove	tool	read files	read	2026-11-01T23:39:52Z	0.0	Getting AGENTS tag :: AGENTS.md:70-71
+64	238	prove	model	model		2026-11-01T23:39:52Z	17.5	
+64	239	prove	tool	edit files	edit	2026-11-01T23:40:10Z	0.0	Adding colour field notes to AGENTS.md :: [AGENTS.md#6C91] PUT >74: +- `tests/color.rs` — the colour field, in the same headless window, driven by real pointer, keyboard and gamepad input: the issue's a
+64	240	prove	model	model		2026-11-01T23:40:10Z	20.9	
+64	241	prove	tool	git	bash	2026-11-01T23:40:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && cat > /tmp/g36_src_bullet.txt <<'EOF' - `src/color.rs` — the colour field (`color_field(label, Srgba)` in `src/widgets.rs`):
+64	242	prove	model	model		2026-11-01T23:40:31Z	8.8	
+64	243	prove	tool	cargo test	bash	2026-11-01T23:40:40Z	60.0	[launched bg_2] cd /home/ladvien/bevy_gooey_loop && cp src/color.rs /tmp/g36_color.bak && run() { (CARGO_BUILD_JOBS=4 cargo test --all-features --test all color:: 2>&1 | grep -
+64	244	prove	model	model		2026-11-01T23:41:40Z	7.0	
+64	245	prove	tool	wait: other	wait	2026-11-01T23:41:47Z	0.0	Waiting for the mutation runs
+64	246	prove	model	model		2026-11-01T23:41:47Z	2.8	
+64	247	prove	tool	cargo test	bash	2026-11-01T23:41:50Z	11.5	cd /home/ladvien/bevy_gooey_loop && (CARGO_BUILD_JOBS=4 cargo test --all-features --test all color::the_swatch_is 2>&1 | grep -E "panicked|^test result|Rect|ass
+64	248	prove	model	model		2026-11-01T23:42:01Z	4.8	
+64	249	prove	tool	cargo test	bash	2026-11-01T23:42:06Z	15.1	cd /home/ladvien/bevy_gooey_loop && grep -n "rect(&app, number).height()).abs() < 1.0" tests/color.rs && sed -i 's/rect(&app, number).height()).abs() < 1.0/rect
+64	250	prove	model	model		2026-11-01T23:42:21Z	2.5	
+64	251	prove	tool	shell	bash	2026-11-01T23:42:23Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "number_field\|vec_field\|fn \|text_input" tests/large_text.rs | head -40
+64	252	prove	model	model		2026-11-01T23:42:23Z	1.6	
+64	253	prove	tool	shell	bash	2026-11-01T23:42:25Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 74,122p tests/large_text.rs; sed -n 251,330p tests/large_text.rs
+64	254	prove	model	model		2026-11-01T23:42:25Z	5.3	
+64	255	prove	tool	cargo test	bash	2026-11-01T23:42:30Z	22.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/large_text.rs' s=open(p).read() s=s.replace(''' text_input("Save as", "Aria of the Long Name"), t
+64	256	prove	model	model		2026-11-01T23:42:53Z	6.7	
+64	257	gate	tool	phase mark	bash	2026-11-01T23:43:00Z	50.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate >/dev/null; git worktree add -q --detach ~/g36_base a211f20 && cd ~/g36_bas
+64	258	gate	model	model		2026-11-01T23:43:50Z	4.7	
+64	259	gate	tool	shell	bash	2026-11-01T23:43:55Z	60.0	[launched bg_3] cd ~/g36_tmp && for i in $(seq 1 12); do for b in before after; do GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SHOT=/home/ladvien/g36_tmp/p.png timeo
+64	260	gate	model	model		2026-11-01T23:44:55Z	3.9	
+64	261	gate	tool	wait: other	wait	2026-11-01T23:44:58Z	95.4	Waiting for the perf pairs
+64	262	gate	model	model		2026-11-01T23:46:34Z	14.2	
+64	263	gate	tool	edit files	write	2026-11-01T23:46:48Z	0.0	Writing critique before verdict :: /home/ladvien/g36_tmp/critique.md
+64	264	gate	model	model		2026-11-01T23:46:48Z	13.1	
+64	265	gate	tool	git	bash	2026-11-01T23:47:01Z	0.1	cd /home/ladvien/bevy_gooey_loop && git add src tests examples && git commit -qm "Colour fields: color_field with a swatch, a hex field and a picker popover (#1
+64	266	gate	model	model		2026-11-01T23:47:01Z	6.4	
+64	267	ship	tool	phase mark	bash	2026-11-01T23:47:08Z	2.5	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship >/dev/null; git push -q -u origin loop/iter-36 2>&1 | tail -2; git checkout
+64	268	ship	model	model		2026-11-01T23:47:10Z	4.3	
+64	269	ship	tool	cargo test	bash	2026-11-01T23:47:14Z	60.0	[launched bg_4] cat > /home/ladvien/g36_tmp/gate.sh <<'EOF' #!/bin/bash cd /home/ladvien/bevy_gooey_loop export CARGO_BUILD_JOBS=4 step() { name=$1; shift; echo "== $name"; "$@
+64	270	ship	model	model		2026-11-01T23:48:14Z	32.0	
+64	271	ship	tool	edit files	write	2026-11-01T23:48:47Z	0.0	Drafting the loop log entry :: /home/ladvien/g36_tmp/log.md
+64	272	ship	model	model		2026-11-01T23:48:47Z	1.5	
+64	273	ship	tool	wait: gate	wait	2026-11-01T23:48:48Z	140.1	Waiting for the gate
+64	274	ship	model	model		2026-11-01T23:51:08Z	4.3	
+64	275	release	tool	phase mark	bash	2026-11-01T23:51:12Z	12.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release >/dev/null; git push -q origin main 2>&1 | tail -1; (cargo semver-checks
+64	276	release	model	model		2026-11-01T23:51:25Z	1.8	
+64	277	release	tool	shell	bash	2026-11-01T23:51:27Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "0.21" README.md | head -5; grep -n "^version" Cargo.toml
+64	278	release	model	model		2026-11-01T23:51:27Z	3.9	
+64	279	release	tool	cargo test	bash	2026-11-01T23:51:31Z	33.6	cd /home/ladvien/bevy_gooey_loop && sed -i 's/^version = "0.21.0"/version = "0.22.0"/' Cargo.toml && sed -i '231s/0.1 – 0.21/0.1 – 0.22/' README.md && python3 -
+64	280	release	model	model		2026-11-01T23:52:04Z	2.1	
+64	281	release	tool	cargo publish	bash	2026-11-01T23:52:06Z	14.2	cd /home/ladvien/bevy_gooey_loop && git add Cargo.toml README.md CHANGELOG.md && git commit -qm "release: v0.22.0" && cargo publish --dry-run 2>&1 | tail -3 && 
+64	282	release	model	model		2026-11-01T23:52:20Z	8.0	
+64	283	release	tool	push gate	bash	2026-11-01T23:52:28Z	2.5	cd /home/ladvien/bevy_gooey_loop && git push -q origin main 2>&1 | tail -1; gh issue view 17 --repo bevy-coven/bevy_gooey --json state,labels --jq '"\(.state) \
+64	284	release	model	model		2026-11-01T23:52:31Z	2.2	
+64	285	release	tool	github	bash	2026-11-01T23:52:33Z	0.7	cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_grimoire --state open --limit 100 --json number,title,body --jq '.[] | select(.body|tes
+64	286	release	model	model		2026-11-01T23:52:34Z	2.2	
+64	287	release	tool	github	bash	2026-11-01T23:52:36Z	0.8	cd /home/ladvien/bevy_gooey_loop && for n in 236 242; do gh issue view $n --repo bevy-coven/bevy_grimoire --json body --jq .body | grep -i -E "needs|G-13|gooey#
+64	288	release	model	model		2026-11-01T23:52:37Z	13.8	
+64	289	release	tool	github	bash	2026-11-01T23:52:51Z	4.1	cd /home/ladvien/bevy_gooey_loop && for n in 236 242; do gh issue comment $n --repo bevy-coven/bevy_grimoire --body "bevy-coven/bevy_gooey#17 is fixed in 2d1418
+64	290	release	model	model		2026-11-01T23:52:55Z	4.4	
+64	291	release	tool	git	bash	2026-11-01T23:52:59Z	0.1	cd /home/ladvien/bevy_gooey_loop && git worktree remove ~/g36_base && git worktree list && df -h /home | tail -1; git worktree list --porcelain | awk '/^worktre
+64	292	release	model	model		2026-11-01T23:52:59Z	2.7	
+64	293	release	tool	shell	bash	2026-11-01T23:53:02Z	3.7	cd /home/ladvien/bevy_gooey_loop && for w in g17_base g17_parked g17s_base; do echo "$w $(du -sh ~/$w 2>/dev/null | cut -f1) status:[$(git -C ~/$w status --shor
+64	294	release	model	model		2026-11-01T23:53:06Z	9.2	
+64	295	release	tool	push gate	bash	2026-11-01T23:53:15Z	1.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' s=open('/home/ladvien/g36_tmp/log.md').read() s=s.replace("GATE_RESULT.","fmt, clippy `-D warnings`, `carg
+64	296	release	model	model		2026-11-01T23:53:16Z	2.0	
+64	297	release	tool	shell	bash	2026-11-01T23:53:18Z	0.0	rm -rf /home/ladvien/g36_tmp /tmp/g36 /tmp/g36_* 2>&1 | head -2; cd /home/ladvien/bevy_gooey_loop && git status --short | wc -l; git branch --show-current; git 
+64	298	release	model	model		2026-11-01T23:53:18Z	9.0	
