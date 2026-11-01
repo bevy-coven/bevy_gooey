@@ -11,15 +11,16 @@ navigation, on Bevy's own headless widgets.
 [![Bevy](https://img.shields.io/badge/bevy-0.20-blue.svg)](https://bevyengine.org)
 [![licence](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue.svg)](#who-and-licence)
 
-![A menu panel with a tab strip and a Load game list: the focus ring walks down the save slots from Autosave to Mill, 03:02, Page Down moves it to Chapel, 00:12, the health meter drains, and a "Game saved" toast appears at the bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
+![A menu panel with a tab strip and a Load game list: the focus ring walks down the save slots from Autosave to Mill, 03:02, Page Down moves it to Chapel, 00:12, the health meter drains, and a "Game saved" toast appears at the bottom right; the legend "Enter Select, Esc Back" stands in the bottom-left corner throughout](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
 
 *`examples/gallery`: two panels, a meter draining, settings in tabs (a slider and a switch on the first), a list
-that scrolls to follow focus, and toasts.*
+that scrolls to follow focus, toasts, and the Select and Back legend in the corner.*
 
 ![The same gallery at rest: the left panel with Play, Options and Quit, the meter, the Audio, Display
 and Controls tabs with Audio lit over the Volume slider and the Subtitles switch; the right a Load game
-list four and a half rows tall with a rail and its thumb, the ring on Chapel, 00:12; one toast at the
-bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
+list four and a half rows tall with a rail and its thumb, the ring on Chapel, 00:12; the legend "Enter
+Select, Esc Back" at the bottom left and one toast at the bottom
+right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
 
 *The still: the dark skin, 1280 × 720.*
 
