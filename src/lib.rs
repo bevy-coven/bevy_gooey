@@ -16,7 +16,10 @@
 //!   screen's row: the player's next key, mouse button or pad button is the new [`Binding`]),
 //!   [`text_input`] (a row with a field the player types in, kept in [`TextInputValue`]; the
 //!   field never traps focus, and [`TextEditing`] and [`is_text_editing`] tell a game when it
-//!   has the player's keys),
+//!   has the player's keys), [`text_size`], [`interface_size`] and [`pad_style`] (the player's
+//!   own text size, interface size and controller: a line each, editing
+//!   [`GooeySkin::text_scale`], [`UiScaleSettings::scale`] and
+//!   [`BindingSettings::pad_style`] and following them),
 //!   [`tabs`] (its pages, each a [`tab_page`], turned by a click, the arrows and the pad's
 //!   bumpers), [`list`] (rows that scroll, following focus), [`prompts`] and [`prompt`] (the "Esc
 //!   Back" hints in the corner, in the words of the device the player used last, which
@@ -118,6 +121,7 @@ mod feedback;
 mod list;
 mod meter;
 mod nav;
+mod options;
 mod prompt;
 mod scale;
 mod skin;
@@ -140,15 +144,17 @@ pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
-    PadStyle, STICK_PUSH, TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio,
-    key_name, list_height, meter_fraction, mouse_name, pad_name, page_target, relative_luminance,
-    repeat_steps, scroll_to_reveal, slider_fraction, slider_text, snap_line_width, snap_to_row,
-    tab_step, toast_alpha, toast_grow, toast_hold, toast_life, window_ui_scale,
+    COMFORT_TARGET_PX, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY,
+    PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH, TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next,
+    choice_step, composite, contrast_ratio, key_name, list_height, meter_fraction, mouse_name,
+    nearest_step, pad_name, page_target, relative_luminance, repeat_steps, scroll_to_reveal,
+    slider_fraction, slider_text, snap_line_width, snap_to_row, tab_step, toast_alpha, toast_grow,
+    toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
 };
+pub use options::{OptionRow, update_option_rows};
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
@@ -160,8 +166,9 @@ pub use text::{
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    binding, button, choice, dialog, heading, label, list, menu, meter, panel, prompt, prompts,
-    screen, slider, tab_page, tabs, text_input, toast, toast_alert, toggle,
+    binding, button, choice, dialog, heading, interface_size, label, list, menu, meter, pad_style,
+    panel, prompt, prompts, screen, slider, tab_page, tabs, text_input, text_size, toast,
+    toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -244,6 +251,7 @@ impl Plugin for GooeyStylePlugin {
                     update_bindings,
                     update_prompts,
                     update_text_inputs,
+                    update_option_rows,
                     update_choices,
                     update_tabs,
                     apply_skin,
