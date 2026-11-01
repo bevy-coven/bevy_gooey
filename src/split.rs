@@ -1,0 +1,548 @@
+//! The split: what keeps a [`crate::split`]'s two panes in proportion, and what moves its divider
+//! by pointer, key and pad. Its look is [`crate::apply_skin`]'s, like every widget's.
+
+use bevy::input::ButtonState;
+use bevy::input::gamepad::{Gamepad, GamepadButton};
+use bevy::input::keyboard::{KeyCode, KeyboardInput};
+use bevy::input_focus::{FocusedInput, InputFocus, InputFocusVisible};
+use bevy::picking::events::{
+    PointerCancel, PointerClick, PointerDrag, PointerDragEnd, PointerDragStart, PointerPress,
+    PointerRelease,
+};
+use bevy::picking::pointer::PointerButton;
+use bevy::prelude::*;
+use bevy::ui::{InteractionDisabled, Pressed};
+use bevy::ui_widgets::ValueChange;
+
+use crate::model::{
+    PAD_REPEAT_DELAY, PAD_REPEAT_RATE, SPLIT_KEY_STEP_PX, repeat_steps, split_clamp, split_drag,
+    split_mins,
+};
+use crate::nav::show_focus;
+use crate::skin::Role;
+
+/// How a [`crate::split`] lays its two panes out.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Default, Debug, PartialEq, Hash, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum SplitAxis {
+    /// Side by side: the first pane on the left, the second on the right, a vertical divider
+    /// between them that Left and Right move.
+    #[default]
+    Horizontal,
+    /// One above the other: the first pane on top, a horizontal divider that Up and Down move.
+    Vertical,
+}
+
+/// A [`crate::split`]'s root: which way it lays its panes out. Part of what `split()` spawns; it
+/// requires [`SplitFraction`] and [`SplitMin`], so a game sets either in the same tuple as the
+/// split and its own value wins.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, PartialEq, Clone)]
+#[require(SplitFraction, SplitMin)]
+pub struct Split {
+    axis: SplitAxis,
+}
+
+impl Split {
+    pub(crate) fn new(axis: SplitAxis) -> Self {
+        Self { axis }
+    }
+
+    /// The way the panes are laid out.
+    pub fn axis(&self) -> SplitAxis {
+        self.axis
+    }
+}
+
+/// How much of a [`crate::split`] the first pane has, from 0 to 1: its share of the split's length
+/// on its axis less the divider's. It is the widget's state: read it to know the layout, set it to
+/// move the divider from code (the panes follow in the same frame, and no [`ValueChange`] is sent
+/// for a change the game made itself) or save it, as plain data, with the player's other settings.
+///
+/// It is a preference: the player's drag and the keys keep it inside the panes' [`SplitMin`], and a
+/// window too small for them lays the panes out as small as they must be and leaves this alone.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn remember(splits: Query<&SplitFraction, Changed<SplitFraction>>) {
+///     for fraction in &splits {
+///         info!("the sidebar takes {:.0}%", fraction.0 * 100.0);
+///     }
+/// }
+/// ```
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Component, Default, Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SplitFraction(pub f32);
+
+impl Default for SplitFraction {
+    fn default() -> Self {
+        Self(0.5)
+    }
+}
+
+/// The smallest each pane of a [`crate::split`] may be, in logical pixels: the divider never takes
+/// either below it, and a window too small for both shrinks the second pane first. Zero (the
+/// default) lets a pane collapse to nothing.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     split(SplitAxis::Horizontal, panel(), panel()),
+///     SplitFraction(0.3),
+///     SplitMin::new(180.0, 320.0),
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Default, Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SplitMin {
+    /// The first pane's least size along the axis.
+    pub first: f32,
+    /// The second pane's least size along the axis.
+    pub second: f32,
+}
+
+impl SplitMin {
+    /// Minimums of `first` and `second` logical pixels.
+    pub fn new(first: f32, second: f32) -> Self {
+        Self { first, second }
+    }
+}
+
+/// A [`crate::split`]'s divider, the part a pointer grabs and focus rests on. Part of what
+/// `split()` spawns. Give it `InteractionDisabled` to fix the layout: it still takes focus, and
+/// moves nothing.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, PartialEq, Clone)]
+pub struct SplitDivider {
+    pub(crate) axis: SplitAxis,
+}
+
+impl SplitDivider {
+    pub(crate) fn new(axis: SplitAxis) -> Self {
+        Self { axis }
+    }
+
+    /// The axis of the split this divider is in.
+    pub fn axis(&self) -> SplitAxis {
+        self.axis
+    }
+}
+
+/// Where a divider was when a drag began; its presence says a drag is going.
+#[derive(Component, Clone, Copy, Debug)]
+pub(crate) struct SplitGrab(f32);
+
+/// Where a split was before its first pane was collapsed, so the next collapse gives it back.
+#[derive(Component, Clone, Copy, Debug)]
+pub(crate) struct SplitSaved(f32);
+
+/// A request to collapse a split's first pane to its minimum, or restore it, from its divider:
+/// Enter, the pad's South button and a double click.
+#[derive(EntityEvent, Clone, Copy, Debug)]
+pub(crate) struct ToggleSplit {
+    #[event_target]
+    pub(crate) entity: Entity,
+}
+
+/// What a divider's handlers need to know about its split.
+struct Reading {
+    root: Entity,
+    axis: SplitAxis,
+    fraction: f32,
+    min: SplitMin,
+    /// The room the panes share, in logical pixels: the split's length on its axis, less the
+    /// divider's.
+    extent: f32,
+    disabled: bool,
+}
+
+impl Reading {
+    /// The fraction `delta` logical pixels from here, held to the minimums.
+    fn moved(&self, delta: f32) -> f32 {
+        split_drag(
+            self.fraction,
+            delta,
+            self.extent,
+            self.min.first,
+            self.min.second,
+        )
+    }
+
+    /// The fraction with the first pane as small, or as large, as it may be.
+    fn end(&self, large: bool) -> f32 {
+        let to = if large { 1.0 } else { 0.0 };
+        split_clamp(to, self.extent, self.min.first, self.min.second)
+    }
+}
+
+type Dividers = (
+    &'static ChildOf,
+    &'static SplitDivider,
+    &'static ComputedNode,
+    Has<InteractionDisabled>,
+);
+type Roots = (
+    &'static SplitFraction,
+    &'static SplitMin,
+    &'static ComputedNode,
+);
+
+/// A system parameter that reads a divider's split (its fraction, minimums and room); it is in the
+/// signature of [`split_by_pad`], so it is public. Nothing outside the crate has a use for it.
+#[derive(bevy::ecs::system::SystemParam)]
+pub struct SplitGeometry<'w, 's> {
+    dividers: Query<'w, 's, Dividers>,
+    roots: Query<'w, 's, Roots>,
+}
+
+impl SplitGeometry<'_, '_> {
+    fn read(&self, divider: Entity) -> Option<Reading> {
+        let (parent, divider_axis, node, disabled) = self.dividers.get(divider).ok()?;
+        let (fraction, min, root_node) = self.roots.get(parent.parent()).ok()?;
+        let along = |size: Vec2, axis: SplitAxis| match axis {
+            SplitAxis::Horizontal => size.x,
+            SplitAxis::Vertical => size.y,
+        };
+        let axis = divider_axis.axis;
+        let whole = along(root_node.size(), axis) * root_node.inverse_scale_factor();
+        let bar = along(node.size(), axis) * node.inverse_scale_factor();
+        Some(Reading {
+            root: parent.parent(),
+            axis,
+            fraction: fraction.0,
+            min: *min,
+            extent: (whole - bar).max(0.0),
+            disabled,
+        })
+    }
+}
+
+/// Reports a move of a split's divider: one [`ValueChange<f32>`] on the split, unless it is no
+/// change and not the last of its interaction.
+fn report(commands: &mut Commands, reading: &Reading, to: f32, is_final: bool) {
+    if to != reading.fraction || is_final {
+        commands.trigger(ValueChange {
+            source: reading.root,
+            value: to,
+            is_final,
+        });
+    }
+}
+
+/// Keeps the state: a [`ValueChange<f32>`] on a split becomes its [`SplitFraction`]. The split's
+/// own observer.
+pub(crate) fn split_self_update(
+    change: On<ValueChange<f32>>,
+    mut splits: Query<&mut SplitFraction, With<Split>>,
+) {
+    if let Ok(mut fraction) = splits.get_mut(change.source) {
+        fraction.set_if_neq(SplitFraction(change.value));
+    }
+}
+
+/// A press on the divider is its own: it stops here, and marks it pressed.
+pub(crate) fn divider_on_press(
+    mut press: On<PointerPress>,
+    dividers: Query<(Has<InteractionDisabled>, Has<Pressed>), With<SplitDivider>>,
+    mut commands: Commands,
+) {
+    press.propagate(false);
+    if press.button == PointerButton::Primary
+        && dividers
+            .get(press.entity)
+            .is_ok_and(|(disabled, pressed)| !disabled && !pressed)
+    {
+        commands.entity(press.entity).insert(Pressed);
+    }
+}
+
+/// Releasing the pointer on the divider lets it go.
+pub(crate) fn divider_on_release(mut release: On<PointerRelease>, mut commands: Commands) {
+    release.propagate(false);
+    commands.entity(release.entity).remove::<Pressed>();
+}
+
+/// A drag begins: the divider remembers where it started.
+pub(crate) fn divider_on_drag_start(
+    mut start: On<PointerDragStart>,
+    geometry: SplitGeometry,
+    mut commands: Commands,
+) {
+    start.propagate(false);
+    if start.button != PointerButton::Primary {
+        return;
+    }
+    if let Some(reading) = geometry.read(start.entity)
+        && !reading.disabled
+    {
+        commands
+            .entity(start.entity)
+            .insert((Pressed, SplitGrab(reading.fraction)));
+    }
+}
+
+/// The divider follows the pointer: the fraction is where the drag began plus the distance along the
+/// axis over the room, so `d` pixels of drag change it by `d` over the room, held to the minimums.
+pub(crate) fn divider_on_drag(
+    mut drag: On<PointerDrag>,
+    ui_scale: Res<UiScale>,
+    grabs: Query<&SplitGrab>,
+    geometry: SplitGeometry,
+    mut commands: Commands,
+) {
+    drag.propagate(false);
+    let Ok(grab) = grabs.get(drag.entity) else {
+        return;
+    };
+    let Some(reading) = geometry.read(drag.entity) else {
+        return;
+    };
+    let along = match reading.axis {
+        SplitAxis::Horizontal => drag.distance.x,
+        SplitAxis::Vertical => drag.distance.y,
+    } / ui_scale.0;
+    let to = split_drag(
+        grab.0,
+        along,
+        reading.extent,
+        reading.min.first,
+        reading.min.second,
+    );
+    report(&mut commands, &reading, to, false);
+}
+
+/// The drag ends: the last value is final.
+pub(crate) fn divider_on_drag_end(
+    mut end: On<PointerDragEnd>,
+    grabs: Query<(), With<SplitGrab>>,
+    geometry: SplitGeometry,
+    mut commands: Commands,
+) {
+    end.propagate(false);
+    commands.entity(end.entity).remove::<(Pressed, SplitGrab)>();
+    if grabs.contains(end.entity)
+        && let Some(reading) = geometry.read(end.entity)
+    {
+        report(&mut commands, &reading, reading.fraction, true);
+    }
+}
+
+/// A cancelled pointer lets the divider go where it is.
+pub(crate) fn divider_on_cancel(mut cancel: On<PointerCancel>, mut commands: Commands) {
+    cancel.propagate(false);
+    commands
+        .entity(cancel.entity)
+        .remove::<(Pressed, SplitGrab)>();
+}
+
+/// A double click collapses the first pane to its minimum, or restores it: the pointer's way to
+/// size a split without a drag (WCAG 2.5.7). A click that ends a press, as Bevy's `Button` reads
+/// one, never one that ended a drag.
+pub(crate) fn divider_on_click(
+    mut click: On<PointerClick>,
+    dividers: Query<(Has<InteractionDisabled>, Has<Pressed>), With<SplitDivider>>,
+    mut commands: Commands,
+) {
+    click.propagate(false);
+    if click.button == PointerButton::Primary
+        && click.count >= 2
+        && dividers
+            .get(click.entity)
+            .is_ok_and(|(disabled, pressed)| !disabled && pressed)
+    {
+        commands.trigger(ToggleSplit {
+            entity: click.entity,
+        });
+    }
+}
+
+/// The arrows along the axis step a focused divider, held ones repeating; Home and End take the
+/// first pane to its smallest and largest; Enter collapses it or restores it. The other arrows
+/// are not handled here: they move focus on.
+pub(crate) fn divider_on_key_input(
+    mut input: On<FocusedInput<KeyboardInput>>,
+    geometry: SplitGeometry,
+    mut commands: Commands,
+) {
+    if input.input.state != ButtonState::Pressed {
+        return;
+    }
+    let Some(reading) = geometry.read(input.focused_entity) else {
+        return;
+    };
+    let step = |sign: f32| reading.moved(sign * SPLIT_KEY_STEP_PX);
+    let key = input.input.key_code;
+    let to = match (reading.axis, key) {
+        (SplitAxis::Horizontal, KeyCode::ArrowLeft) | (SplitAxis::Vertical, KeyCode::ArrowUp) => {
+            step(-1.0)
+        }
+        (SplitAxis::Horizontal, KeyCode::ArrowRight)
+        | (SplitAxis::Vertical, KeyCode::ArrowDown) => step(1.0),
+        (_, KeyCode::Home) => reading.end(false),
+        (_, KeyCode::End) => reading.end(true),
+        (_, KeyCode::Enter) => {
+            input.propagate(false);
+            if !reading.disabled && !input.input.repeat {
+                commands.trigger(ToggleSplit {
+                    entity: input.focused_entity,
+                });
+            }
+            return;
+        }
+        _ => return,
+    };
+    input.propagate(false);
+    if !reading.disabled {
+        report(&mut commands, &reading, to, true);
+    }
+}
+
+/// Collapses a split's first pane to its minimum, remembering where it was, or gives that back.
+pub(crate) fn toggle_split(
+    event: On<ToggleSplit>,
+    geometry: SplitGeometry,
+    saved: Query<&SplitSaved>,
+    mut commands: Commands,
+) {
+    let Some(reading) = geometry.read(event.entity) else {
+        return;
+    };
+    if reading.disabled || reading.extent <= 0.0 {
+        return;
+    }
+    let smallest = reading.end(false);
+    let at_smallest = (reading.fraction - smallest) * reading.extent < 0.5;
+    let to = if at_smallest {
+        let back = saved.get(reading.root).map_or(0.5, |s| s.0);
+        commands.entity(reading.root).remove::<SplitSaved>();
+        split_clamp(back, reading.extent, reading.min.first, reading.min.second)
+    } else {
+        commands
+            .entity(reading.root)
+            .insert(SplitSaved(reading.fraction));
+        smallest
+    };
+    report(&mut commands, &reading, to, true);
+}
+
+/// The D-pad steps a focused divider along its axis, held to repeat like a slider's, and the pad's
+/// South button collapses or restores its first pane. Shows focus. Runs in
+/// [`crate::GooeySystems::Navigate`]. The keys are the divider's own observer's.
+pub fn split_by_pad(
+    time: Res<Time<Real>>,
+    focus: Res<InputFocus>,
+    mut shown: ResMut<InputFocusVisible>,
+    gamepads: Query<&Gamepad>,
+    dividers: Query<&SplitDivider, Without<InteractionDisabled>>,
+    geometry: SplitGeometry,
+    mut held: Local<(i8, f32)>,
+    mut commands: Commands,
+) {
+    let down = |button| gamepads.iter().any(|g| g.pressed(button));
+    let Some((divider, axis)) = focus
+        .get()
+        .and_then(|f| dividers.get(f).ok().map(|d| (f, d.axis)))
+    else {
+        *held = (0, 0.0);
+        return;
+    };
+    if gamepads
+        .iter()
+        .any(|g| g.just_pressed(GamepadButton::South))
+    {
+        show_focus(&mut shown);
+        commands.trigger(ToggleSplit { entity: divider });
+    }
+    let (plus, minus, across) = match axis {
+        SplitAxis::Horizontal => (
+            GamepadButton::DPadRight,
+            GamepadButton::DPadLeft,
+            [GamepadButton::DPadUp, GamepadButton::DPadDown],
+        ),
+        SplitAxis::Vertical => (
+            GamepadButton::DPadDown,
+            GamepadButton::DPadUp,
+            [GamepadButton::DPadLeft, GamepadButton::DPadRight],
+        ),
+    };
+    let direction = down(plus) as i8 - down(minus) as i8;
+    if direction == 0 || across.into_iter().any(down) {
+        *held = (0, 0.0);
+        return;
+    }
+    let steps = if held.0 == direction {
+        let before = held.1;
+        held.1 += time.delta_secs();
+        repeat_steps(before, held.1, PAD_REPEAT_DELAY, PAD_REPEAT_RATE)
+    } else {
+        *held = (direction, 0.0);
+        1
+    };
+    if steps == 0 {
+        return;
+    }
+    show_focus(&mut shown);
+    if let Some(reading) = geometry.read(divider) {
+        let to = reading.moved(f32::from(direction) * steps as f32 * SPLIT_KEY_STEP_PX);
+        report(&mut commands, &reading, to, true);
+    }
+}
+
+/// Lays each split's panes out from its [`SplitFraction`] and [`SplitMin`]: the first pane grows by
+/// the fraction (held to the minimums) and the second by what is left, from a basis of nothing, so
+/// they share the room the divider leaves in exactly that ratio, and each pane's own minimum is
+/// the one [`split_mins`] leaves for the room it has now. A window that shrinks is laid out by
+/// flexbox the frame it does and the minimums follow the next. Runs in
+/// [`crate::GooeySystems::Style`], before [`crate::apply_skin`]; a split that did not change costs
+/// a comparison and writes nothing.
+pub fn update_splits(
+    splits: Query<(&Split, &SplitFraction, &SplitMin, &ComputedNode, &Children)>,
+    dividers: Query<&ComputedNode, With<SplitDivider>>,
+    mut parts: Query<(&Role, &mut Node)>,
+) {
+    for (split, fraction, min, node, children) in &splits {
+        let along = |size: Vec2| match split.axis {
+            SplitAxis::Horizontal => size.x,
+            SplitAxis::Vertical => size.y,
+        };
+        let bar = children
+            .iter()
+            .find_map(|c| dividers.get(c).ok())
+            .map_or(0.0, |d| along(d.size()) * d.inverse_scale_factor());
+        let extent = (along(node.size()) * node.inverse_scale_factor() - bar).max(0.0);
+        let first = split_clamp(fraction.0, extent, min.first, min.second);
+        let (min_first, min_second) = split_mins(extent, min.first, min.second);
+        let panes: Vec<Entity> = children
+            .iter()
+            .filter(|&c| parts.get(c).is_ok_and(|(role, _)| *role == Role::SplitPane))
+            .collect();
+        for (pane, (grow, least)) in panes
+            .into_iter()
+            .zip([(first, min_first), (1.0 - first, min_second)])
+        {
+            let Ok((_, mut node)) = parts.get_mut(pane) else {
+                continue;
+            };
+            let least = Val::Px(least);
+            let (min_width, min_height) = match split.axis {
+                SplitAxis::Horizontal => (least, Val::Px(0.0)),
+                SplitAxis::Vertical => (Val::Px(0.0), least),
+            };
+            if node.flex_grow != grow
+                || node.min_width != min_width
+                || node.min_height != min_height
+            {
+                node.flex_grow = grow;
+                node.min_width = min_width;
+                node.min_height = min_height;
+            }
+        }
+    }
+}

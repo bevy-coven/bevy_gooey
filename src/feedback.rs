@@ -108,7 +108,8 @@ pub fn feedback_on_focus(
                 | Role::Tab
                 | Role::TextField
                 | Role::MenuTitle
-                | Role::MenuItem)
+                | Role::MenuItem
+                | Role::SplitDivider)
         )
     {
         out.write(UiFeedback {
