@@ -52,6 +52,30 @@ pub fn contrast_ratio(a: [f32; 3], b: [f32; 3]) -> f32 {
     (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
 }
 
+/// The least CIE L\* two adjacent surfaces of a skin's ladder may differ by: a just-noticeable
+/// difference of a large flat field is about 2, and a comfortable one about 4. See
+/// [`crate::GooeySkin::surfaces`].
+pub const ELEVATION_STEP: f32 = 2.0;
+
+/// The CIE 1976 lightness L\* of an sRGB colour, from 0 (black) to 100 (white): a perceptually
+/// near-uniform scale, so equal differences look like equal steps (WCAG's contrast ratio, with its
+/// flare term, is the wrong instrument between two near-blacks).
+///
+/// ```
+/// assert_eq!(bevy_gooey::cie_lightness([0.0, 0.0, 0.0]), 0.0);
+/// assert!((bevy_gooey::cie_lightness([1.0, 1.0, 1.0]) - 100.0).abs() < 0.01);
+/// ```
+pub fn cie_lightness(srgb: [f32; 3]) -> f32 {
+    const EPSILON: f32 = 216.0 / 24389.0;
+    const KAPPA: f32 = 24389.0 / 27.0;
+    let y = relative_luminance(srgb);
+    if y <= EPSILON {
+        KAPPA * y
+    } else {
+        116.0 * y.cbrt() - 16.0
+    }
+}
+
 /// `fg` at `alpha` laid over an opaque `bg`, per channel: what the eye sees of a translucent panel.
 /// `alpha` is clamped to `0..=1`.
 ///

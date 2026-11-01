@@ -8,6 +8,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 |---|---|
 | `screen()` | the layout root: full window, its empty part `Pickable::IGNORE` so a HUD lets the pointer through |
 | `panel()` | a raised box a screen's content stands on |
+| `surface(level)` | a column filled with one step of the skin's surface ladder (see [skins](skins.md#design-tokens-and-the-surface-ladder)) |
 | `menu()` | the column a set of buttons stack in |
 | `heading(text)` | a title in the skin's heading size |
 | `label(text)` | body text |

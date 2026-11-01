@@ -124,3 +124,22 @@ fn binding_settings_are_data_and_a_partial_file_keeps_the_rest()
     );
     Ok(())
 }
+
+#[test]
+fn the_ladder_and_the_scales_are_data_and_a_file_without_them_reads_as_the_default()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mine = GooeySkin {
+        spacing: [1.0, 2.0, 3.0, 5.0, 8.0, 13.0],
+        radii: [0.0, 3.0, 9.0],
+        type_scale: [12.0, 14.0, 18.0, 24.0, 30.0],
+        surfaces: GooeySkin::tool().surfaces,
+        ..GooeySkin::parchment()
+    };
+    let back = ron::from_str::<GooeySkin>(&ron::to_string(&mine)?)?;
+    assert_eq!(back, mine);
+    // A skin saved before the tokens existed fills them from the default skin.
+    let old = ron::from_str::<GooeySkin>("(text_scale: 1.5)")?;
+    assert_eq!(old.surfaces, GooeySkin::default().surfaces);
+    assert_eq!(old.spacing, GooeySkin::default().spacing);
+    Ok(())
+}
