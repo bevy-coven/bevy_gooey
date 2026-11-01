@@ -21,6 +21,7 @@ mod list;
 mod menu;
 mod meter;
 mod nav;
+mod number;
 mod options;
 mod palette;
 mod pointer;
