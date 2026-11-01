@@ -6073,3 +6073,286 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 50	198	release	model	model		2026-11-01T13:39:50Z	6.2	
 50	199	release	tool	push gate	bash	2026-11-01T13:39:57Z	1.7	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='docs/loop-log.md' t=open(p).read() t=t.replace("**Gate and ship:** see the lines appended below after the merge.\n"
 50	200	release	model	model		2026-11-01T13:39:58Z	21.3	
+51	1	orient	model	model		2026-11-01T13:40:41Z	4.4	
+51	2	orient	tool	phase mark	bash	2026-11-01T13:40:46Z	2.1	python3 ~/.local/share/wiggum/steps.py mark orient; cd ~/bevy_gooey_loop && git status --short | head; git branch --show-current; git fetch -q origin; git fetch
+51	3	orient	tool	git	bash	2026-11-01T13:40:46Z	2.1	cd ~/bevy_gooey_loop && git log --oneline -8 && git branch --list 'wiggum/parked-*' && git log --all --oneline -n 5 --grep='parked'; tail -60 docs/loop-log.md
+51	4	orient	model	model		2026-11-01T13:40:48Z	2.3	
+51	5	orient	tool	github	bash	2026-11-01T13:40:50Z	1.6	cd ~/bevy_gooey_loop && gh issue view 6 --repo bevy-coven/bevy_gooey --comments; gh issue view 7 --repo bevy-coven/bevy_gooey | head -60
+51	6	orient	model	model		2026-11-01T13:40:52Z	1.8	
+51	7	orient	tool	github	bash	2026-11-01T13:40:53Z	0.5	cd ~/bevy_gooey_loop && gh issue view 6 --repo bevy-coven/bevy_gooey --json title,body,comments --jq '.title,.body,.comments'; git branch -a --list '*iter*' | t
+51	8	orient	model	model		2026-11-01T13:40:54Z	2.2	
+51	9	choose	tool	phase mark	bash	2026-11-01T13:40:56Z	0.2	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; wc -l src/*.rs; grep -n "min_target\|pad_x\|pad_y\|padding\|gap\b\|pub gap\|pub pad"
+51	10	choose	model	model		2026-11-01T13:40:56Z	1.9	
+51	11	choose	tool	shell	bash	2026-11-01T13:40:58Z	0.0	cd ~/bevy_gooey_loop && sed -n 20,70p src/skin.rs; sed -n 95,300p src/skin.rs
+51	12	choose	model	model		2026-11-01T13:40:58Z	22.3	
+51	13	choose	tool	shell	bash	2026-11-01T13:41:21Z	0.0	cd ~/bevy_gooey_loop && sed -n 380,575p src/skin.rs
+51	14	choose	model	model		2026-11-01T13:41:21Z	8.6	
+51	15	choose	tool	shell	bash	2026-11-01T13:41:29Z	0.0	cd ~/bevy_gooey_loop && grep -n "fn look_of\|fn apply_skin\|skin: &GooeySkin\|let skin\|fn style_node\|struct State\|MIN_TARGET_PX\|COMFORT_TARGET_PX" src/*.rs 
+51	16	choose	model	model		2026-11-01T13:41:29Z	1.8	
+51	17	choose	tool	shell	bash	2026-11-01T13:41:31Z	0.0	cd ~/bevy_gooey_loop && sed -n 820,860p src/skin.rs; sed -n 975,1060p src/skin.rs; sed -n 1180,1215p src/skin.rs
+51	18	choose	model	model		2026-11-01T13:41:31Z	16.2	
+51	19	choose	tool	shell	bash	2026-11-01T13:41:47Z	0.1	cd ~/bevy_gooey_loop && grep -n "SkinPreset::ALL\|SkinPreset::" tests/*.rs src/*.rs examples/*.rs | grep -v "^src/skin.rs" | head -40; grep -n "high_contrast()"
+51	20	choose	model	model		2026-11-01T13:41:47Z	1.8	
+51	21	choose	tool	shell	bash	2026-11-01T13:41:49Z	0.0	cd ~/bevy_gooey_loop && grep -n "theme\|Theme\|HighContrast\|options()" tests/options.rs | head -40; sed -n 25,60p tests/serde.rs; ls tests docs/guide docs/rese
+51	22	choose	model	model		2026-11-01T13:41:49Z	1.8	
+51	23	choose	tool	shell	bash	2026-11-01T13:41:51Z	0.0	cd ~/bevy_gooey_loop && sed -n 430,490p tests/options.rs; grep -n "fn \|presets\|\[GooeySkin" tests/skin.rs | head -80; sed -n 1,60p tests/scope.rs
+51	24	choose	model	model		2026-11-01T13:41:51Z	12.0	
+51	25	choose	tool	shell	bash	2026-11-01T13:42:03Z	0.1	cd ~/bevy_gooey_loop && grep -rn "text_scale: 1.0,\|meter_height:" --include=*.rs --include=*.md . 2>/dev/null | grep -v "^./target" | head; sed -n 120,130p tes
+51	26	choose	model	model		2026-11-01T13:42:03Z	4.7	
+51	27	research	tool	phase mark	bash	2026-11-01T13:42:08Z	4.0	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; for q in "target size minimum pointing touch button size error rate" "interface de
+51	28	research	model	model		2026-11-01T13:42:12Z	5.5	
+51	29	research	tool	homestill	bash	2026-11-01T13:42:17Z	0.4	cd ~/bevy_gooey_loop && timeout 60 hs distill search "interfaces designed for experts high performance dense versus novices" --output json 2>&1 | python3 -c " i
+51	30	research	tool	read files	read	2026-11-01T13:42:17Z	0.4	Quoting WCAG 2.5.8 :: https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+51	31	research	tool	read files	read	2026-11-01T13:42:17Z	1.1	Material density guidance :: https://m2.material.io/design/layout/density.html
+51	32	research	model	model		2026-11-01T13:42:19Z	6.2	
+51	33	research	tool	shell	bash	2026-11-01T13:42:25Z	0.0	cd ~/bevy_gooey_loop && sed -n 1,200p docs/research/corpus.md | grep -n "XAG\|101\|Xbox" | head; grep -rn "1080p\|26 px\|26px\|minimum text" docs/research/*.md 
+51	34	research	model	model		2026-11-01T13:42:25Z	28.0	
+51	35	research	tool	edit files	write	2026-11-01T13:42:53Z	0.0	/home/ladvien/bevy_gooey_loop/docs/research/density.md
+51	36	research	model	model		2026-11-01T13:42:53Z	3.6	
+51	37	research	tool	git	bash	2026-11-01T13:42:56Z	0.1	cd ~/bevy_gooey_loop && python3 - <<'E' p='docs/research/density.md' s=open(p).read() s=s.replace("below the console's 26 px at 1080p (39 px at 1.5x... ) but ab
+51	38	research	model	model		2026-11-01T13:42:56Z	3.8	
+51	39	build	tool	phase mark	bash	2026-11-01T13:43:00Z	0.0	[launched bg_1] cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; echo $CARGO_TARGET_DIR $DISPLAY; ls ~ | grep -i "^g2"; mkdir -p /tmp/g23m/before ~/g2
+51	40	build	model	model		2026-11-01T13:43:00Z	3.4	
+51	41	build	tool	wait: other	wait	2026-11-01T13:43:04Z	48.8	{}
+51	42	build	model	model		2026-11-01T13:43:52Z	3.4	
+51	43	build	tool	shell	bash	2026-11-01T13:43:56Z	21.1	cd ~/bevy_gooey_loop && cp ~/target/gooey-loop/release/examples/gallery ~/g23_bin/gallery_before && cd /tmp/g23m/before && G=~/g23_bin/gallery_before; for sk in
+51	44	build	model	model		2026-11-01T13:44:17Z	6.6	
+51	45	build	tool	shell	bash	2026-11-01T13:44:24Z	0.2	cd ~/bevy_gooey_loop && sed -n 1,19p src/skin.rs; sed -n 84,97p src/skin.rs; sed -n 140,150p src/lib.rs; grep -n "skin::\|SkinPreset" src/lib.rs
+51	46	build	model	model		2026-11-01T13:44:24Z	8.2	
+51	47	build	tool	read files	read	2026-11-01T13:44:33Z	0.1	Tag for skin.rs :: src/skin.rs:84-92
+51	48	build	model	model		2026-11-01T13:44:33Z	4.8	
+51	49	build	tool	read files	read	2026-11-01T13:44:38Z	0.0	Exact lines to edit :: src/skin.rs:164-172,255-262,392-400,430-436
+51	50	build	model	model		2026-11-01T13:44:38Z	4.5	
+51	51	build	tool	read files	read	2026-11-01T13:44:42Z	1.1	More lines :: src/skin.rs:228-236,500-512
+51	52	build	model	model		2026-11-01T13:44:43Z	1.8	
+51	53	build	tool	read files	read	2026-11-01T13:44:47Z	0.0	SkinPreset impl lines :: src/skin.rs:513-560
+51	54	build	model	model		2026-11-01T13:44:47Z	18.5	
+51	55	build	tool	edit files	edit	2026-11-01T13:45:06Z	0.1	Add Density, tool preset, density-aware checks :: [src/skin.rs#4DBD] PUT <91: +/// How much room a skin gives each widget: a game menu's comfortable one, or a desktop tool's +/// compact one ([`GooeySkin::densi
+51	56	build	model	model		2026-11-01T13:45:06Z	5.6	
+51	57	build	tool	shell	bash	2026-11-01T13:45:11Z	0.2	cd ~/bevy_gooey_loop && grep -n "skin\.padding\|skin\.min_target\|\.padding \*\|self\.padding\|self\.min_target" src/*.rs | awk -F: '$2<700' ; sed -i -E 's/\bsk
+51	58	build	model	model		2026-11-01T13:45:12Z	3.4	
+51	59	build	tool	cargo build	bash	2026-11-01T13:45:15Z	20.6	cd ~/bevy_gooey_loop && sed -i 's/^pub use skin::{GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin};/pub use skin::{\n Density, Gooey
+51	60	build	model	model		2026-11-01T13:45:36Z	5.1	
+51	61	build	tool	shell	bash	2026-11-01T13:45:41Z	0.1	cd ~/bevy_gooey_loop && sed -n 1,110p tests/choice.rs
+51	62	build	model	model		2026-11-01T13:45:41Z	8.6	
+51	63	build	tool	shell	bash	2026-11-01T13:45:50Z	0.1	cd ~/bevy_gooey_loop && sed -n 1,140p tests/large_text.rs
+51	64	build	model	model		2026-11-01T13:45:50Z	4.1	
+51	65	build	tool	shell	bash	2026-11-01T13:45:54Z	0.0	cd ~/bevy_gooey_loop && sed -n 140,215p tests/large_text.rs
+51	66	build	model	model		2026-11-01T13:45:54Z	7.3	
+51	67	build	tool	shell	bash	2026-11-01T13:46:01Z	0.1	cd ~/bevy_gooey_loop && sed -n 700,880p src/skin.rs | grep -n "^ [A-Z][A-Za-z]*,\|^pub enum"
+51	68	build	model	model		2026-11-01T13:46:01Z	35.1	
+51	69	build	tool	edit files	write	2026-11-01T13:46:36Z	0.0	/home/ladvien/bevy_gooey_loop/tests/density.rs
+51	70	build	model	model		2026-11-01T13:46:36Z	6.3	
+51	71	prove	tool	phase mark	bash	2026-11-01T13:46:43Z	0.2	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; grep -n "three looks\|the three\|Parchment\", \"High\|High contrast" tests/options.rs
+51	72	prove	model	model		2026-11-01T13:46:43Z	2.0	
+51	73	prove	tool	read files	read	2026-11-01T13:46:45Z	0.0	Tag + line numbers :: tests/options.rs:434-440
+51	74	prove	tool	read files	read	2026-11-01T13:46:45Z	0.0	Lines to edit :: tests/options.rs:461-486
+51	75	prove	model	model		2026-11-01T13:46:45Z	5.3	
+51	76	prove	tool	edit files	edit	2026-11-01T13:46:50Z	0.0	Theme row test: add Tool as the fourth look :: [tests/options.rs#3583] PUT 437: +fn the_theme_row_offers_the_four_looks_and_a_step_writes_the_colours_and_no_size() { PUT >474: + + // The fourth look is the t
+51	77	prove	model	model		2026-11-01T13:46:50Z	4.1	
+51	78	prove	tool	shell	bash	2026-11-01T13:46:54Z	0.0	cd ~/bevy_gooey_loop && sed -n 1,25p tests/serde.rs
+51	79	prove	model	model		2026-11-01T13:46:54Z	1.4	
+51	80	prove	tool	edit files	edit	2026-11-01T13:46:56Z	0.0	Serde test for density :: [tests/serde.rs#TAG]
+51	81	prove	model	model		2026-11-01T13:46:56Z	13.2	
+51	82	prove	model	model		2026-11-01T13:47:09Z	7.3	
+51	83	prove	tool	edit files	edit	2026-11-01T13:47:16Z	0.0	Serde test for density :: [tests/serde.rs#5952] PUT 6.=9: +use bevy_gooey::{ + Binding, BindingSettings, Density, GooeySkin, PadStyle, SkinPreset, ToastAnchor, ToastSettings, + UiScaleSe
+51	84	prove	model	model		2026-11-01T13:47:16Z	2.0	
+51	85	prove	tool	cargo test	bash	2026-11-01T13:47:18Z	0.0	[launched bg_2] cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo test --all-features --test density 2>&1 | tail -40
+51	86	prove	model	model		2026-11-01T13:47:18Z	3.8	
+51	87	prove	tool	shell	bash	2026-11-01T13:47:22Z	0.0	cd ~/bevy_gooey_loop && grep -n "^#" docs/guide/skins.md; wc -l README.md; grep -n "scope\|theme\|Theme\|skin" README.md | head -20; sed -n 1,30p CHANGELOG.md; 
+51	88	prove	model	model		2026-11-01T13:47:22Z	4.9	
+51	89	prove	tool	shell	bash	2026-11-01T13:47:27Z	0.0	cd ~/bevy_gooey_loop && wc -l examples/scope.rs && cat examples/scope.rs
+51	90	prove	model	model		2026-11-01T13:47:27Z	1.5	
+51	91	prove	tool	read files	read	2026-11-01T13:47:29Z	0.0	Read scope example to adapt :: examples/scope.rs:1-170
+51	92	prove	model	model		2026-11-01T13:47:29Z	6.4	
+51	93	prove	tool	read files	read	2026-11-01T13:47:35Z	0.0	Rest of setup and unscope :: examples/scope.rs:170-235
+51	94	prove	bg	cargo test	bash	2026-11-01T13:47:19Z	15.4	bg_2 completed: cargo fmt && CARGO_BUILD_JOBS=2 cargo test --all-features --test density 2>&1 | tail -40
+51	95	prove	model	model		2026-11-01T13:47:35Z	10.5	
+51	96	prove	tool	shell	bash	2026-11-01T13:47:45Z	0.0	cd ~/bevy_gooey_loop && grep -n "let arrow\|CHEVRON_INK_SHIFT\|Role::ChoiceArrow" src/skin.rs | head;
+51	97	prove	model	model		2026-11-01T13:47:45Z	1.6	
+51	98	prove	tool	shell	bash	2026-11-01T13:47:47Z	0.0	cd ~/bevy_gooey_loop && sed -n 1640,1700p src/skin.rs; grep -n "CHEVRON_INK_SHIFT" src/*.rs
+51	99	prove	model	model		2026-11-01T13:47:47Z	11.0	
+51	100	prove	tool	shell	bash	2026-11-01T13:47:58Z	0.0	cd ~/bevy_gooey_loop && grep -n "let chevron" src/skin.rs
+51	101	prove	model	model		2026-11-01T13:47:58Z	2.7	
+51	102	prove	tool	read files	read	2026-11-01T13:48:01Z	0.0	Tag and lines :: src/skin.rs:1287-1291
+51	103	prove	tool	read files	read	2026-11-01T13:48:01Z	0.0	Choice lines :: src/skin.rs:1652-1656,1668-1674
+51	104	prove	tool	read files	read	2026-11-01T13:48:01Z	0.0	Chevron const :: src/skin.rs:69-72
+51	105	prove	model	model		2026-11-01T13:48:01Z	4.4	
+51	106	prove	tool	edit files	edit	2026-11-01T13:48:05Z	0.0	Arrow wide enough for its turned chevron :: [src/skin.rs#6371] PUT <69: +/// A choice's arrow is at least this many chevrons wide: the turned square's half plus the shift +/// that centres its ink (`1 / √
+51	107	prove	model	model		2026-11-01T13:48:05Z	3.6	
+51	108	prove	tool	edit files	edit	2026-11-01T13:48:09Z	0.0	Remove redundant rebinding :: [src/skin.rs#D34E] CUT 1661
+51	109	prove	model	model		2026-11-01T13:48:09Z	2.5	
+51	110	prove	tool	cargo test	bash	2026-11-01T13:48:11Z	0.0	[launched bg_3] cd ~/bevy_gooey_loop && (CARGO_BUILD_JOBS=2 cargo test --all-features --test density --test options --test choice --test serde --test skin --test scope 2>&1 | g
+51	111	prove	model	model		2026-11-01T13:48:11Z	3.2	
+51	112	prove	tool	wait: other	wait	2026-11-01T13:48:14Z	20.8	{}
+51	113	prove	model	model		2026-11-01T13:48:35Z	11.8	
+51	114	prove	tool	shell	bash	2026-11-01T13:48:47Z	0.0	cd ~/bevy_gooey_loop && cp examples/scope.rs examples/density.rs && grep -n "\[\[example\]\]" -A3 Cargo.toml | head -20; sed -n 235,314p examples/density.rs | h
+51	115	prove	model	model		2026-11-01T13:48:47Z	1.6	
+51	116	prove	tool	read files	read	2026-11-01T13:48:49Z	0.0	Tag for density example :: examples/density.rs:1-24
+51	117	prove	model	model		2026-11-01T13:48:49Z	7.6	
+51	118	prove	tool	edit files	edit	2026-11-01T13:48:56Z	0.0	Adapt example to density :: [examples/density.rs#9292] PUT 1.=14: +//! Density: the same panel comfortable and compact. The first row is a switch that sets +//! `GooeySkin::density`; flip 
+51	119	prove	model	model		2026-11-01T13:48:56Z	4.6	
+51	120	prove	tool	read files	read	2026-11-01T13:49:01Z	0.0	Display setup region :: examples/density.rs:143-206
+51	121	prove	model	model		2026-11-01T13:49:01Z	9.3	
+51	122	prove	tool	edit files	edit	2026-11-01T13:49:10Z	0.0	Adapt example to density :: [examples/density.rs#9292] PUT 1.=14: +//! Density: the same panel comfortable and compact. The first row is a switch that sets +//! `GooeySkin::density`; flip 
+51	123	prove	model	model		2026-11-01T13:49:10Z	4.8	
+51	124	prove	tool	read files	read	2026-11-01T13:49:15Z	0.0	main lines :: examples/density.rs:67-74
+51	125	prove	tool	read files	read	2026-11-01T13:49:15Z	0.0	setup lines :: examples/density.rs:142-144
+51	126	prove	tool	read files	read	2026-11-01T13:49:15Z	0.0	toggle lines :: examples/density.rs:155-160
+51	127	prove	model	model		2026-11-01T13:49:15Z	2.5	
+51	128	prove	tool	edit files	edit	2026-11-01T13:49:17Z	0.0	Start state follows skin; tool preset env :: [examples/density.rs#AC38] PUT 70.=70: + Ok("high_contrast") => GooeySkin::high_contrast(), + Ok("tool") => GooeySkin::tool(), PUT 142.=142: +fn setup(mut comma
+51	129	prove	model	model		2026-11-01T13:49:17Z	4.0	
+51	130	prove	tool	shell	bash	2026-11-01T13:49:21Z	0.0	cd ~/bevy_gooey_loop && sed -i 's/title: "bevy_gooey options".into()/title: "bevy_gooey density".into()/' examples/density.rs && grep -n '"high_contrast" =>' ex
+51	131	prove	model	model		2026-11-01T13:49:21Z	1.6	
+51	132	prove	tool	shell	bash	2026-11-01T13:49:23Z	0.0	cd ~/bevy_gooey_loop && grep -n 'high_contrast' examples/*.rs | head; grep -n "GOOEY_SKIN" examples/*.rs | head
+51	133	prove	model	model		2026-11-01T13:49:23Z	3.9	
+51	134	prove	tool	cargo build	bash	2026-11-01T13:49:27Z	38.8	cd ~/bevy_gooey_loop && sed -i 's|^ Ok("high_contrast") => GooeySkin::high_contrast(),|&\n Ok("tool") => GooeySkin::tool(),|' examples/gallery.rs examples/optio
+51	135	prove	model	model		2026-11-01T13:50:06Z	4.8	
+51	136	prove	tool	shell	bash	2026-11-01T13:50:10Z	13.5	mkdir -p /tmp/g23m/after /tmp/g23m/frames && cd /tmp/g23m/after && cp ~/target/gooey-loop/release/examples/gallery ~/g23_bin/gallery_after && cp ~/target/gooey-
+51	137	prove	model	model		2026-11-01T13:50:24Z	2.6	
+51	138	prove	tool	read files	read	2026-11-01T13:50:27Z	0.0	View Tool gallery :: /tmp/g23m/after/tool.png
+51	139	prove	tool	read files	read	2026-11-01T13:50:27Z	0.0	View dark gallery for comparison :: /tmp/g23m/after/dark.png
+51	140	prove	model	model		2026-11-01T13:50:27Z	5.5	
+51	141	prove	tool	shell	bash	2026-11-01T13:50:32Z	0.1	cd /tmp/g23m/after && magick tool.png -crop 340x300+345+212 +repage -filter point -resize 300% tool-zoom.png
+51	142	prove	tool	read files	read	2026-11-01T13:50:32Z	0.1	Zoom Tool panel :: /tmp/g23m/after/tool-zoom.png
+51	143	prove	model	model		2026-11-01T13:50:32Z	2.1	
+51	144	prove	tool	shell	bash	2026-11-01T13:50:34Z	0.1	cd /tmp/g23m/after && ls; magick tool.png -crop 340x300+345+212 +repage -filter point -resize 300% /tmp/g23m/tool-zoom.png; ls /tmp/g23m
+51	145	prove	model	model		2026-11-01T13:50:34Z	2.9	
+51	146	prove	tool	read files	read	2026-11-01T13:50:37Z	0.0	Zoom Tool panel :: /tmp/g23m/after/tool-zoom.png
+51	147	prove	model	model		2026-11-01T13:50:37Z	5.6	
+51	148	prove	tool	shell	bash	2026-11-01T13:50:43Z	5.7	cd /tmp/g23m && rm -rf frames && mkdir frames && GOOEY_FRAMES=215 GOOEY_KEY_EVERY=14 GOOEY_KEYS=enter,down,right,right,right,up,enter,enter GOOEY_SIZE=1280x720 
+51	149	prove	model	model		2026-11-01T13:50:48Z	3.0	
+51	150	prove	tool	shell	bash	2026-11-01T13:50:51Z	0.0	cd /tmp/g23m/frames && ls | head -3; ls | wc -l; python3 - <<'E' import hashlib,glob fs=sorted(glob.glob('/tmp/g23m/frames/f_*.png')) prev=None for i,f in enume
+51	151	prove	model	model		2026-11-01T13:50:52Z	2.7	
+51	152	prove	tool	shell	bash	2026-11-01T13:50:54Z	0.3	cd /tmp/g23m/frames && ls | tail -4; magick montage f_0001.png f_0011.png f_0025.png f_0039.png f_0046.png f_0053.png -tile 3x2 -geometry 640x360+4+4 -backgroun
+51	153	prove	tool	read files	read	2026-11-01T13:50:54Z	0.3	Inspect density GIF frames :: /tmp/g23m/montage.png
+51	154	prove	model	model		2026-11-01T13:50:54Z	2.9	
+51	155	prove	tool	shell	bash	2026-11-01T13:50:57Z	0.3	cd /tmp/g23m/frames && magick montage f_0001.png f_0011.png f_0025.png f_0039.png f_0046.png f_0053.png -tile 3x2 -geometry 640x360+4+4 -background '#333' /tmp/
+51	156	prove	model	model		2026-11-01T13:50:58Z	4.6	
+51	157	prove	tool	read files	read	2026-11-01T13:51:02Z	0.1	Inspect density GIF frames :: /tmp/g23m/montage.png
+51	158	prove	model	model		2026-11-01T13:51:02Z	8.7	
+51	159	prove	tool	clip record/render	bash	2026-11-01T13:51:11Z	0.3	cd /tmp/g23m && ls frames | sed -n 55,60p; ffmpeg -v error -y -framerate 14 -start_number 1 -pattern_type glob -i 'frames/f_00[0-5]*.png' -vf "crop=480:480+0:0,
+51	160	prove	model	model		2026-11-01T13:51:11Z	4.8	
+51	161	prove	tool	shell	bash	2026-11-01T13:51:16Z	0.0	cd ~/bevy_gooey_loop && sed -n 26,28p docs/media/README.md | cut -c1-2200; sed -n 1,25p docs/media/README.md | cut -c1-400
+51	162	prove	model	model		2026-11-01T13:51:16Z	2.9	
+51	163	prove	tool	shell	bash	2026-11-01T13:51:19Z	0.0	cd ~/bevy_gooey_loop && sed -n 26p docs/media/README.md | cut -c760-1800
+51	164	prove	model	model		2026-11-01T13:51:19Z	9.2	
+51	165	prove	tool	clip record/render	bash	2026-11-01T13:51:28Z	5.1	cd /tmp/g23m && rm -rf frames && mkdir frames && GOOEY_FRAMES=190 GOOEY_KEY_EVERY=14 GOOEY_KEYS=enter,down,right,right,right,up,enter,enter GOOEY_SIZE=1280x720 
+51	166	prove	tool	read files	read	2026-11-01T13:51:28Z	5.1	Check GIF frames :: /tmp/g23m/gifcheck.png
+51	167	prove	model	model		2026-11-01T13:51:33Z	2.6	
+51	168	prove	tool	clip record/render	bash	2026-11-01T13:51:36Z	0.1	ls -la /tmp/g23m/gifcheck.png; cd /tmp/g23m && ffmpeg -v error -y -i density.gif -vf "select='eq(n,0)+eq(n,8)+eq(n,30)+eq(n,48)',scale=560:-1,tile=4x1" -frames:
+51	169	prove	model	model		2026-11-01T13:51:36Z	1.3	
+51	170	prove	tool	read files	read	2026-11-01T13:51:37Z	0.1	Check GIF frames :: /tmp/g23m/gifcheck.png
+51	171	prove	model	model		2026-11-01T13:51:38Z	6.1	
+51	172	prove	tool	clip record/render	bash	2026-11-01T13:51:44Z	0.3	cd /tmp/g23m && ffmpeg -v error -y -framerate 15 -pattern_type glob -i '/tmp/g23m/frames/f_*.png' -vf "crop=560:560:360:10,fps=15,split[a][b];[a]palettegen=stat
+51	173	prove	tool	read files	read	2026-11-01T13:51:44Z	0.3	Check crop :: /tmp/g23m/gifcheck.png
+51	174	prove	model	model		2026-11-01T13:51:44Z	3.5	
+51	175	prove	tool	clip record/render	bash	2026-11-01T13:51:47Z	0.1	cd /tmp/g23m && ffmpeg -v error -y -i density.gif -vf "select='eq(n,0)+eq(n,30)',tile=2x1" -frames:v 1 -update 1 gifcheck2.png; ffprobe -v error -show_entries s
+51	176	prove	tool	read files	read	2026-11-01T13:51:47Z	0.1	Check crop :: /tmp/g23m/gifcheck2.png
+51	177	prove	model	model		2026-11-01T13:51:47Z	3.1	
+51	178	prove	tool	shell	bash	2026-11-01T13:51:51Z	0.0	cp /tmp/g23m/gifcheck2.png ~/g23_bin/gifcheck2.png; ls ~/g23_bin
+51	179	prove	tool	read files	read	2026-11-01T13:51:51Z	0.0	Check crop :: /home/ladvien/g23_bin/gifcheck2.png
+51	180	prove	model	model		2026-11-01T13:51:51Z	3.4	
+51	181	prove	tool	read files	read	2026-11-01T13:51:54Z	0.0	Check crop :: /tmp/g23m/gifcheck2.png
+51	182	prove	model	model		2026-11-01T13:51:54Z	5.2	
+51	183	prove	tool	shell	bash	2026-11-01T13:51:59Z	0.0	cd ~/bevy_gooey_loop && cp /tmp/g23m/density.gif docs/media/density.gif && sed -n 94,112p README.md | cut -c1-600; sed -n 15,45p docs/guide/skins.md; sed -n 18,
+51	184	prove	model	model		2026-11-01T13:51:59Z	5.6	
+51	185	prove	tool	read files	read	2026-11-01T13:52:05Z	0.0	README bullet :: README.md:96-102
+51	186	prove	tool	read files	read	2026-11-01T13:52:05Z	0.0	README after scope caption :: README.md:157-160:raw
+51	187	prove	model	model		2026-11-01T13:52:05Z	7.3	
+51	188	prove	tool	edit files	edit	2026-11-01T13:52:12Z	0.0	README: density bullet, demo, caption :: [README.md#A113] PUT 97.=101: +- **Skin the whole interface from one value** — `GooeySkin` is plain data with four presets (dark, + parchment, a high-contrast o
+51	189	prove	model	model		2026-11-01T13:52:12Z	6.5	
+51	190	prove	tool	shell	bash	2026-11-01T13:52:19Z	0.2	cd /tmp/g23m/frames && uv run --no-project --with pillow python - <<'E' from PIL import Image import glob fs=sorted(glob.glob('f_*.png')) def panel(f): im=Image
+51	191	prove	model	model		2026-11-01T13:52:19Z	12.6	
+51	192	prove	tool	shell	bash	2026-11-01T13:52:31Z	0.1	cd /tmp/g23m/after && uv run --no-project --with pillow python - <<'E' from PIL import Image for f in ('dark.png','tool.png'): im=Image.open(f).convert('RGB'); 
+51	193	prove	model	model		2026-11-01T13:52:32Z	5.9	
+51	194	prove	tool	edit files	edit	2026-11-01T13:52:37Z	0.0	Fix README alt and caption numbers :: [README.md#3D7A] PUT 161.=161: +![The density example: an Inspector panel with a Compact switch, Theme, Visible, Space, Opacity and two buttons in the dark skin
+51	195	prove	model	model		2026-11-01T13:52:37Z	4.7	
+51	196	prove	tool	read files	read	2026-11-01T13:52:42Z	0.0	skins.md edit region :: docs/guide/skins.md:21-34
+51	197	prove	model	model		2026-11-01T13:52:42Z	1.8	
+51	198	prove	tool	read files	read	2026-11-01T13:52:44Z	0.0	Lines around scope section :: docs/guide/skins.md:40-46
+51	199	prove	model	model		2026-11-01T13:52:44Z	9.5	
+51	200	prove	tool	edit files	edit	2026-11-01T13:52:53Z	0.0	skins.md: density section and field list :: [docs/guide/skins.md#B06E] PUT 25.=25: +`heading_size`, `gap`, `padding`, `radius`, `border`, `meter_height`, `min_target` and `density`; `text_scale` is PUT 32
+51	201	prove	model	model		2026-11-01T13:52:53Z	5.5	
+51	202	prove	tool	edit files	edit	2026-11-01T13:52:59Z	0.0	Fix blank lines in skins.md :: [docs/guide/skins.md#298C] CUT 44 PUT >58: +
+51	203	prove	model	model		2026-11-01T13:52:59Z	3.9	
+51	204	prove	tool	shell	bash	2026-11-01T13:53:03Z	0.0	cd ~/bevy_gooey_loop && grep -rn "three looks\|three presets\|three preset\|dark, parchment\|Dark, Parchment" README.md docs/guide/*.md src/*.rs AGENTS.md | cut
+51	205	prove	model	model		2026-11-01T13:53:03Z	3.6	
+51	206	prove	tool	shell	bash	2026-11-01T13:53:06Z	0.0	cd ~/bevy_gooey_loop && sed -i '28s/Dark, Parchment, High contrast (`SkinPreset::ALL`)/Dark, Parchment, High contrast, Tool (`SkinPreset::ALL`; Tool is the comp
+51	207	prove	model	model		2026-11-01T13:53:06Z	4.0	
+51	208	prove	tool	shell	bash	2026-11-01T13:53:10Z	0.0	cd ~/bevy_gooey_loop && sed -i '110s/theme (dark, parchment and a$/theme (dark, parchment, a/; 111s/high-contrast look that holds 7:1 everywhere)/high-contrast 
+51	209	prove	model	model		2026-11-01T13:53:10Z	2.8	
+51	210	prove	tool	shell	bash	2026-11-01T13:53:13Z	0.0	cd ~/bevy_gooey_loop && sed -n 5,9p docs/media/README.md | cut -c1-200; grep -n "^| \`scope.gif\`" docs/media/README.md | cut -c1-20; python3 - <<'E' import re 
+51	211	prove	model	model		2026-11-01T13:53:13Z	4.7	
+51	212	prove	tool	read files	read	2026-11-01T13:53:18Z	0.0	media README lines :: docs/media/README.md:7-8
+51	213	prove	tool	read files	read	2026-11-01T13:53:18Z	0.0	scope row neighbours :: docs/media/README.md:26-27
+51	214	prove	model	model		2026-11-01T13:53:18Z	10.8	
+51	215	prove	tool	shell	bash	2026-11-01T13:53:29Z	0.0	cd ~/bevy_gooey_loop && magick /tmp/g23m/after/tool.png -crop 600x304+340+208 +repage docs/media/tool.png && identify docs/media/tool.png && ls -la docs/media/d
+51	216	prove	tool	edit files	edit	2026-11-01T13:53:29Z	0.0	Media list rows :: [docs/media/README.md#889A] PUT 7.=8: +Every picture comes from `examples/gallery` (`options.gif` from `examples/options`, `scope.gif` from +`examples/scope` an
+51	217	prove	model	model		2026-11-01T13:53:29Z	3.6	
+51	218	prove	tool	read files	read	2026-11-01T13:53:33Z	0.0	raw row 26 :: docs/media/README.md:26:raw
+51	219	prove	model	model		2026-11-01T13:53:33Z	7.6	
+51	220	prove	tool	edit files	edit	2026-11-01T13:53:41Z	0.0	Media list rows :: [docs/media/README.md#889A] PUT 7.=8: +Every picture comes from `examples/gallery` (`options.gif` from `examples/options`, `scope.gif` from +`examples/scope` an
+51	221	prove	model	model		2026-11-01T13:53:41Z	5.7	
+51	222	prove	tool	edit files	edit	2026-11-01T13:53:46Z	0.0	Add tool.png to skins guide :: [docs/guide/skins.md#B7FE] PUT >57: + +![The gallery in the Tool look: the settings panel (Play, Options, Quit, a health meter, the Audio, Display and Controls 
+51	223	prove	tool	shell	bash	2026-11-01T13:53:46Z	0.0	cd ~/bevy_gooey_loop && sed -n 26p AGENTS.md | cut -c1-200; sed -n 44p AGENTS.md; grep -n "src/skin.rs" AGENTS.md | cut -c1-120; grep -n "tests/scope.rs" AGENTS
+51	224	prove	model	model		2026-11-01T13:53:46Z	5.3	
+51	225	prove	tool	read files	read	2026-11-01T13:53:52Z	0.0	Tag for AGENTS :: AGENTS.md:27-27
+51	226	prove	model	model		2026-11-01T13:53:52Z	5.6	
+51	227	prove	tool	edit files	edit	2026-11-01T13:53:57Z	0.0	AGENTS: density notes :: [AGENTS.md#2A1A] PUT >26: +- `Density` (`Comfortable` default, `Compact`; `GooeySkin::density`, serde `default`) and `GooeySkin::tool()` / `SkinPreset::Tool` (a
+51	228	prove	model	model		2026-11-01T13:53:57Z	3.4	
+51	229	prove	tool	read files	read	2026-11-01T13:54:01Z	0.0	Raw line 26 :: AGENTS.md:26:raw
+51	230	prove	model	model		2026-11-01T13:54:01Z	4.3	
+51	231	prove	tool	edit files	edit	2026-11-01T13:54:05Z	0.0	AGENTS: density notes :: [AGENTS.md#2A1A] PUT >26: +- `Density` (`Comfortable` default, `Compact`; `GooeySkin::density`, serde `default`) and `GooeySkin::tool()` / `SkinPreset::Tool` (a
+51	232	prove	model	model		2026-11-01T13:54:05Z	4.9	
+51	233	prove	tool	shell	bash	2026-11-01T13:54:10Z	0.0	cd ~/bevy_gooey_loop && grep -c "the three looks in order" AGENTS.md && sed -i 's/the three looks in order/the four looks in order (Tool last, colours only)/' A
+51	234	prove	model	model		2026-11-01T13:54:10Z	1.4	
+51	235	prove	tool	read files	read	2026-11-01T13:54:11Z	0.0	host-api row :: docs/guide/host-api.md:11-11
+51	236	prove	model	model		2026-11-01T13:54:11Z	3.1	
+51	237	prove	tool	edit files	edit	2026-11-01T13:54:14Z	0.0	host-api: density :: [docs/guide/host-api.md#695E] PUT 11.=11: +| `GooeySkin` | every colour and size, `density` (`Density::Compact` for a tool: half the padding, a 24 px least targ
+51	238	prove	tool	read files	read	2026-11-01T13:54:14Z	0.0	changelog top :: CHANGELOG.md:1-5
+51	239	prove	model	model		2026-11-01T13:54:14Z	9.0	
+51	240	prove	tool	edit files	edit	2026-11-01T13:54:24Z	0.0	Changelog entry :: [CHANGELOG.md#1FD9] PUT >3: + +### Added + +- `Density` (`Comfortable`, the default, and `Compact`) and `GooeySkin::density`: a compact skin draws half the padd
+51	241	prove	model	model		2026-11-01T13:54:24Z	6.1	
+51	242	gate	tool	phase mark	bash	2026-11-01T13:54:30Z	8.9	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; cp src/skin.rs /tmp/g23m/skin.rs.bak && sed -i 's/^const COMPACT_PADDING: f32 = 0.5;/c
+51	243	gate	model	model		2026-11-01T13:54:39Z	4.2	
+51	244	gate	tool	git	bash	2026-11-01T13:54:43Z	0.0	cd ~/bevy_gooey_loop && git diff -- src/ | grep '^-' | grep -v '^---' | grep -v "skin.padding\|skin.min_target" ; git status --short
+51	245	gate	model	model		2026-11-01T13:54:43Z	3.3	
+51	246	gate	tool	shell	bash	2026-11-01T13:54:46Z	0.0	cd ~/bevy_gooey_loop && grep -n "TargetTooSmall" -B3 src/skin.rs | sed -n 1,30p; grep -n "min_target is {px}" src/skin.rs
+51	247	gate	model	model		2026-11-01T13:54:46Z	3.6	
+51	248	gate	tool	read files	read	2026-11-01T13:54:50Z	0.0	variant doc :: src/skin.rs:669-672
+51	249	gate	model	model		2026-11-01T13:54:50Z	2.1	
+51	250	gate	tool	edit files	edit	2026-11-01T13:54:52Z	0.0	Variant doc :: [src/skin.rs#4275] PUT 670.=670: + /// [`GooeySkin::target`] (the [`GooeySkin::min_target`] a compact skin caps at + /// [`MIN_TARGET_PX`]) is below [`MIN_TARGE
+51	251	gate	model	model		2026-11-01T13:54:52Z	6.5	
+51	252	gate	tool	cargo test	bash	2026-11-01T13:54:58Z	0.0	[launched bg_4] cd ~/bevy_gooey_loop && git add src tests examples && git commit -qm "Add Density and the Tool look: a compact skin (half padding, 24 px least target, floor sti
+51	253	gate	model	model		2026-11-01T13:54:58Z	5.8	
+51	254	gate	tool	wait: other	wait	2026-11-01T13:55:04Z	129.3	{}
+51	255	gate	model	model		2026-11-01T13:57:13Z	33.0	
+51	256	prove	tool	phase mark	bash	2026-11-01T13:57:46Z	60.0	[launched bg_5] cd /tmp/g23m && python3 ~/.local/share/wiggum/steps.py mark prove >/dev/null; cp ~/target/gooey-loop/release/examples/gallery ~/g23_bin/gallery_after 2>/dev/nul
+51	257	prove	model	model		2026-11-01T13:58:46Z	3.3	
+51	258	prove	tool	wait: other	wait	2026-11-01T13:58:50Z	125.3	{}
+51	259	prove	model	model		2026-11-01T14:00:55Z	7.7	
+51	260	prove	tool	shell	bash	2026-11-01T14:01:03Z	0.0	python3 - <<'E' def lin(c): return c/12.92 if c<=0.04045 else ((c+0.055)/1.055)**2.4 def L(r,g,b): return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b) def cr(a,b):
+51	261	prove	model	model		2026-11-01T14:01:03Z	31.3	
+51	262	log	tool	phase mark	bash	2026-11-01T14:01:34Z	0.2	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log && cat >> docs/loop-log.md <<'E' ## Iteration 23 — 2026-11-01 — Compact density and the 
+51	263	log	model	model		2026-11-01T14:01:34Z	3.6	
+51	264	ship	tool	phase mark	bash	2026-11-01T14:01:38Z	4.7	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && git push -q -u origin loop/iter-23 2>&1 | tail -2; git fetch -q origin && git log --
+51	265	ship	model	model		2026-11-01T14:01:43Z	2.8	
+51	266	release	tool	phase mark	bash	2026-11-01T14:01:45Z	0.0	[launched bg_6] cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release && (CARGO_BUILD_JOBS=2 cargo semver-checks check-release 2>&1 | tail -25)
+51	267	release	model	model		2026-11-01T14:01:45Z	1.1	
+51	268	release	tool	wait: other	wait	2026-11-01T14:01:47Z	9.6	{}
+51	269	release	model	model		2026-11-01T14:01:56Z	3.2	
+51	270	release	tool	shell	bash	2026-11-01T14:01:59Z	0.1	cd ~/bevy_gooey_loop && grep -n "0\.9\.0\|0\.9" README.md Cargo.toml docs/guide/*.md | head; grep -n "^version" Cargo.toml
+51	271	release	model	model		2026-11-01T14:01:59Z	3.3	
+51	272	release	tool	cargo publish	bash	2026-11-01T14:02:03Z	15.8	cd ~/bevy_gooey_loop && sed -i '191s/0.1 – 0.9/0.1 – 0.10/' README.md && sed -i '3s/0.9.0/0.10.0/' Cargo.toml && sed -i '0,/^## \[Unreleased\]/s//## [Unreleased
+51	273	release	model	model		2026-11-01T14:02:18Z	3.5	
+51	274	release	tool	push gate	bash	2026-11-01T14:02:22Z	14.0	cd ~/bevy_gooey_loop && git add CHANGELOG.md Cargo.toml README.md && git commit -qm "release: v0.10.0" && git push -q origin main 2>&1 | tail -1; cargo publish 
+51	275	release	model	model		2026-11-01T14:02:36Z	8.4	
+51	276	release	tool	github	bash	2026-11-01T14:02:44Z	5.8	cd ~/bevy_gooey_loop && SHA=$(git rev-parse --short 7a741ef); MERGE=$(git rev-parse --short e6f9e59); gh label create assumed-decision --color FBCA04 2>/dev/nul
+51	277	release	model	model		2026-11-01T14:02:50Z	2.1	
+51	278	release	tool	github	bash	2026-11-01T14:02:52Z	0.7	cd ~/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_grimoire --state open --limit 100 --json number,title,body --jq '.[] | select(.body|test("G-02")) |
+51	279	release	model	model		2026-11-01T14:02:53Z	3.7	
+51	280	release	tool	github	bash	2026-11-01T14:02:57Z	1.0	gh issue view 208 --repo bevy-coven/bevy_grimoire --json body --jq .body | grep -n "G-02" | cut -c1-200; gh issue list --repo bevy-coven/bevy_grimoire --state o
+51	281	release	model	model		2026-11-01T14:02:58Z	7.5	
+51	282	release	tool	push gate	bash	2026-11-01T14:03:05Z	1.5	cd ~/bevy_gooey_loop && df -h /home | tail -1; rm -rf ~/g23_bin /tmp/g23m; df -h /home | tail -1; git worktree list | tail -n +2; cat >> docs/loop-log.md <<'E' 
+51	283	release	model	model		2026-11-01T14:03:07Z	8.1	
