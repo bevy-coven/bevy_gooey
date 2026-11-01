@@ -17,6 +17,7 @@ use crate::model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
     TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height, snap_line_width,
 };
+use crate::popover::{PopoverPanel, placement_of};
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
 
@@ -945,6 +946,9 @@ pub enum Role {
     MeterFill,
     /// A tooltip's box.
     Tooltip,
+    /// A [`crate::popover`]'s panel: a card floating beside its anchor, opaque and framed in
+    /// [`GooeySkin::outline`] like a dialog's, padded like a panel.
+    Popover,
     /// The veil behind a modal dialog.
     Scrim,
     /// A [`crate::toggle`]'s row: a label and a switch, on no fill, its border the focus ring.
@@ -1068,9 +1072,10 @@ type Styled = (
     Option<&'static mut TextColor>,
     Option<&'static mut TextFont>,
     Option<(
-        &'static TooltipBox,
         &'static mut Popover,
         &'static mut BoxShadow,
+        Option<&'static TooltipBox>,
+        Option<&'static PopoverPanel>,
     )>,
     Option<&'static ComputedUiRenderTargetInfo>,
     Option<&'static mut TextCursorStyle>,
@@ -1437,7 +1442,7 @@ fn restyle(
         border,
         text_color,
         text_font,
-        tooltip,
+        floating,
         target,
         cursor,
     ): bevy::ecs::query::QueryItem<'_, '_, Styled>,
@@ -1448,7 +1453,7 @@ fn restyle(
 ) {
     let skin = look.skin;
     let scaled = |size: f32| FontSize::Px(size * skin.text_scale);
-    let tip = tooltip.as_ref().map(|(tip, ..)| **tip);
+    let tip = floating.as_ref().and_then(|(_, _, tip, _)| tip.copied());
     // Every line weight (borders, the focus ring, the meter's frame and gap) on whole device
     // pixels at the node's scale, so it is one weight on every side wherever the node lands.
     let line = snap_line_width(skin.border, target.map_or(1.0, |t| t.scale_factor()));
@@ -1487,7 +1492,7 @@ fn restyle(
             skin.surface_raised
         }),
         Role::Meter | Role::SliderRail => Some(skin.surface_raised),
-        Role::Tooltip => Some(skin.solid_surface()),
+        Role::Tooltip | Role::Popover => Some(skin.solid_surface()),
         Role::ToastBody => Some(faded(skin.solid_surface(), owner.alpha)),
         Role::ToastMark => Some(faded(
             if owner.alert {
@@ -1598,6 +1603,8 @@ fn restyle(
 
     let edge = match role {
         Role::Panel if in_dialog => Some(BorderColor::all(skin.outline)),
+        // A popover floats over whatever is behind it, so its edge is the dialog's: the outline.
+        Role::Popover => Some(BorderColor::all(skin.outline)),
         Role::Panel | Role::Tooltip | Role::Prompts => Some(BorderColor::all(
             skin.surface_edge.unwrap_or(skin.surface_raised),
         )),
@@ -1755,6 +1762,16 @@ fn restyle(
             Role::ToastText => {
                 next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.5));
                 next.flex_shrink = 1.0;
+            }
+            Role::Popover => {
+                // Shown here, styled: it is born `Display::None`, so it is never drawn bare.
+                next.display = Display::Flex;
+                next.flex_direction = FlexDirection::Column;
+                next.align_items = AlignItems::Stretch;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad()));
+                next.row_gap = Val::Px(skin.gap);
             }
             Role::Tooltip => {
                 next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.5));
@@ -2052,16 +2069,23 @@ fn restyle(
         });
     }
 
-    if let Some((tip, mut popover, mut shadow)) = tooltip {
-        // One spacing step outside the panel a widget usually sits in (its padding and border), so
-        // the tooltip never straddles that panel's edge. `Popover` measures from inside the
-        // widget's border, so that border is added once more.
-        let gap = skin.gap + skin.pad() + line * 2.0;
-        let next = tooltip_placement(gap, skin.gap, tip.in_row);
+    if let Some((mut popover, mut shadow, tip, panel)) = floating {
+        let next = if let Some(tip) = tip {
+            // One spacing step outside the panel a widget usually sits in (its padding and border),
+            // so the tooltip never straddles that panel's edge. `Popover` measures from inside the
+            // widget's border, so that border is added once more.
+            let gap = skin.gap + skin.pad() + line * 2.0;
+            tooltip_placement(gap, skin.gap, tip.in_row)
+        } else if let Some(panel) = panel {
+            // Half a gap off its anchor, and a gap from the window's edge.
+            placement_of(panel.placement, skin.gap * 0.5 + line, skin.gap)
+        } else {
+            return;
+        };
         if *popover != next {
             *popover = next;
         }
-        // A soft drop shadow in the background colour lifts the tooltip above the screen.
+        // A soft drop shadow in the background colour lifts the box above the screen.
         shadow.set_if_neq(BoxShadow::new(
             skin.background.with_alpha(0.7),
             Val::Px(0.0),
