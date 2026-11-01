@@ -43,6 +43,14 @@ const SWITCH_TEXT_SIZES: f32 = 1.5;
 /// A slider's thumb is this many body text sizes wide, and this many rails high.
 const THUMB_TEXT_SIZES: f32 = 1.0;
 
+/// How high the picker's colour area is, in logical px; it is as wide as the picker. A pointer needs
+/// a plane to aim at, not one that grows with the text, so 200% text does not push the strips off
+/// a 720p window.
+const COLOR_AREA_HEIGHT_PX: f32 = 136.0;
+
+/// How wide the ring on the colour area is, in body text sizes.
+const COLOR_MARKER_TEXT_SIZES: f32 = 1.3;
+
 /// A list's row is a button: at least `min_target` high, or its text's line (this many text sizes),
 /// its vertical padding (this many paddings, `0.6` each side) and its frame, whichever is more.
 const LIST_LINE_TEXT_SIZES: f32 = 1.2;
@@ -1204,6 +1212,24 @@ pub enum Role {
     NumberPart,
     /// The row of a [`crate::vec_field`]'s components, a gap apart; not drawn.
     NumberParts,
+    /// The button of a [`crate::color_field`] that opens its picker: a target square in the
+    /// outline's frame, the ring when focused.
+    ColorSwatch,
+    /// One half of a colour swatch, filled with the colour itself (data, not a skin colour).
+    ColorSwatchHalf,
+    /// The picker's saturation and value area: a frame, a focus ring, and inside it the colour's
+    /// own hue and its gradients (data, not a skin colour).
+    ColorArea,
+    /// The ring on the picker's area, outside: the panel's colour, so the ring shows on any fill.
+    ColorAreaMarker,
+    /// The ring on the picker's area, inside: the text colour.
+    ColorAreaMarkerInner,
+    /// A picker's strip and the label over it: a column, the label outside the slider so the
+    /// slider's focus ring never touches the text and the label starts where the area does.
+    ColorStripBox,
+    /// A colour strip's rail, like a slider's rail but with a gradient of the colour's own for its
+    /// fill.
+    ColorRail,
 }
 
 type Styled = (
@@ -1595,6 +1621,8 @@ pub fn apply_skin(
                             | Role::TableRow
                             | Role::TableHeaderCell
                             | Role::SplitDivider
+                            | Role::ColorSwatch
+                            | Role::ColorArea
                     )
                 })
                 .map(|item| item.0),
@@ -1690,6 +1718,8 @@ fn restyle(
             skin.surface_raised
         }),
         Role::Meter | Role::SliderRail => Some(skin.surface_raised),
+        // A swatch's frame shows through its halves while the colour is mixed.
+        Role::ColorSwatch => Some(skin.surface_raised),
         Role::Tooltip | Role::Popover | Role::MenuPanel | Role::MenuBar | Role::Palette => {
             Some(skin.solid_surface())
         }
@@ -1873,6 +1903,13 @@ fn restyle(
         | Role::PaletteField
         | Role::NumberPart
         | Role::NumberParts
+        // The colour parts are filled by the colour itself, a value, never by the skin.
+        | Role::ColorSwatchHalf
+        | Role::ColorStripBox
+        | Role::ColorArea
+        | Role::ColorAreaMarker
+        | Role::ColorAreaMarkerInner
+        | Role::ColorRail
         | Role::TextCell
         | Role::TextHint
         | Role::MenuMark
@@ -1919,6 +1956,7 @@ fn restyle(
         Role::Meter
         | Role::ToggleTrack
         | Role::SliderRail
+        | Role::ColorRail
         | Role::BindingCap
         | Role::PromptKey
         | Role::PromptButton => Some(BorderColor::all(skin.outline)),
@@ -1982,6 +2020,18 @@ fn restyle(
             skin.outline
         })),
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
+        // The swatch and the area are framed in the outline and wear the ring when focused: what
+        // they hold is any colour, so the frame is what a panel's 3:1 is measured on.
+        Role::ColorSwatch | Role::ColorArea => {
+            Some(BorderColor::all(if look.focused == Some(entity) {
+                skin.focus_ring
+            } else {
+                skin.outline
+            }))
+        }
+        // A ring of two tones, so it shows on any colour under it.
+        Role::ColorAreaMarker => Some(BorderColor::all(skin.solid_surface())),
+        Role::ColorAreaMarkerInner => Some(BorderColor::all(skin.text)),
         Role::SplitDivider => Some(BorderColor::all(if look.focused == Some(entity) {
             skin.focus_ring
         } else {
@@ -2157,7 +2207,7 @@ fn restyle(
             // From the thumb's centre at the start to its centre at the end, so the thumb
             // overhangs the rail by half its width at each end and the focus ring has air round
             // the rail. The fill ends under the thumb.
-            Role::SliderRail => {
+            Role::SliderRail | Role::ColorRail => {
                 next.left = Val::Px(thumb.x / 2.0);
                 next.right = Val::Px(thumb.x / 2.0);
                 next.top = Val::Px((thumb.y - rail) / 2.0);
@@ -2280,6 +2330,37 @@ fn restyle(
                 next.column_gap = Val::Px(skin.gap * 0.5);
             }
             Role::NumberParts => next.column_gap = Val::Px(skin.gap),
+            // A target square in the outline's frame, holding the colour in two halves.
+            Role::ColorStripBox => next.row_gap = Val::Px(skin.gap * 0.5),
+            Role::ColorSwatch => {
+                next.width = Val::Px(skin.target());
+                next.height = Val::Px(skin.target());
+                next.flex_shrink = 0.0;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.overflow = Overflow::clip();
+            }
+            // The plane fills the picker's width; the frame is the one line the pointer's position
+            // is measured inside of.
+            Role::ColorArea => {
+                next.min_height = Val::Px(COLOR_AREA_HEIGHT_PX);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+            }
+            // Two rings, the panel's colour outside the text colour, so the pair shows on any fill.
+            Role::ColorAreaMarker => {
+                let size = Val::Px(text_px * COLOR_MARKER_TEXT_SIZES);
+                next.width = size;
+                next.height = size;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = BorderRadius::MAX;
+            }
+            Role::ColorAreaMarkerInner => {
+                next.width = Val::Percent(100.0);
+                next.height = Val::Percent(100.0);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = BorderRadius::MAX;
+            }
             // One line of text in a frame, as high as the target: the text sits at the top of its
             // box, so the padding is what makes the height (the line, the padding twice and the
             // frame twice come to `min_target`) and what centres the line. A `min_height` here is

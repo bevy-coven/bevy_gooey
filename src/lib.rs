@@ -128,6 +128,7 @@ pub mod model;
 mod binding;
 mod cancel;
 mod choice;
+mod color;
 mod context;
 mod controls;
 mod dock;
@@ -162,6 +163,10 @@ pub use binding::{
 };
 pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
+pub use color::{
+    AreaMarker, ColorArea, ColorPicker, ColorRail, ColorRefused, ColorStrip, ColorSwatch,
+    ColorValue, SwatchHalf, update_colors,
+};
 pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use controls::update_sliders;
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
@@ -175,18 +180,19 @@ pub use menu::{
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
-    ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST,
-    NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, SPLIT_KEY_STEP_PX,
-    STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep,
-    choice_next, choice_step, cie_lightness, column_resize, composite, contrast_ratio,
-    dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, format_number,
-    fuzzy_score, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, natural_cmp,
-    nearest_step, number_decimals, pad_name, page_target, parse_number, relative_luminance,
-    repeat_steps, scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label,
-    slider_fraction, slider_text, snap_line_width, snap_to_row, split_clamp, split_drag,
-    split_mins, step_value, tab_step, table_anchor, table_step, table_window, toast_alpha,
-    toast_grow, toast_hold, toast_life, tree_ends, tree_heir, tree_indent, tree_parent,
-    tree_visible, type_ahead, window_ui_scale,
+    ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
+    NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle,
+    SPLIT_KEY_STEP_PX, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS,
+    TYPE_AHEAD_SECS, TableStep, area_values, choice_next, choice_step, cie_lightness,
+    column_resize, composite, contrast_ratio, dock_drop_rect, dock_edge_zone, dock_neighbour,
+    dock_tab_slot, dock_zone, format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key,
+    key_name, list_height, meter_fraction, mouse_name, natural_cmp, nearest_step, number_decimals,
+    pad_name, page_target, parse_hex, parse_number, relative_luminance, repeat_steps, rgb_to_hsv,
+    scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label, slider_fraction,
+    slider_text, snap_line_width, snap_to_row, split_clamp, split_drag, split_mins, step_value,
+    tab_step, table_anchor, table_step, table_window, toast_alpha, toast_grow, toast_hold,
+    toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible, type_ahead,
+    window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -227,11 +233,11 @@ pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use widgets::{
-    binding, button, check_item, choice, command_palette, context_menu, dialog, dock, heading,
-    interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter, number_field,
-    pad_style, panel, popover, popover_modal, prompt, prompts, radio_item, screen, separator,
-    skin_preset, slider, split, submenu, surface, tab_page, table, tabs, text_input, text_size,
-    toast, toast_alert, toggle, tree, vec_field,
+    binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
+    heading, interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter,
+    number_field, pad_style, panel, popover, popover_modal, prompt, prompts, radio_item, screen,
+    separator, skin_preset, slider, split, submenu, surface, tab_page, table, tabs, text_input,
+    text_size, toast, toast_alert, toggle, tree, vec_field,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -300,6 +306,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<NumberStep>()
             .register_type::<NumberRange>()
             .register_type::<MixedValue>()
+            .register_type::<ColorValue>()
             .register_type::<VecValue>()
             .register_type::<VecMixed>()
             .register_type::<ChoiceValue>()
@@ -347,7 +354,7 @@ impl Plugin for GooeyStylePlugin {
                     show_tooltips,
                     update_bindings,
                     update_prompts,
-                    (update_vecs, update_numbers).chain(),
+                    (update_vecs, update_numbers, update_colors).chain(),
                     update_text_inputs,
                     update_palette,
                     update_option_rows,

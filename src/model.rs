@@ -1670,6 +1670,182 @@ pub(crate) fn hold(value: f32, min: f32, max: f32) -> f32 {
     value.clamp(min.min(max), max.max(min))
 }
 
+/// Why a [`crate::color_field`] would not take what the player typed; it reads as words
+/// ([`std::fmt::Display`]) and is sent with [`crate::ColorRefused`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum HexError {
+    /// Nothing was typed.
+    Empty,
+    /// Not 3, 4, 6 or 8 digits.
+    Length,
+    /// A character that is not a hex digit.
+    NotHex,
+}
+
+impl std::fmt::Display for HexError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Empty => "type a colour, like #ff8800",
+            Self::Length => "a colour is 3, 4, 6 or 8 hex digits",
+            Self::NotHex => "that is not a hex colour",
+        })
+    }
+}
+
+/// The colour a player typed as hex: `#RGB`, `#RGBA`, `#RRGGBB` or `#RRGGBBAA`, the `#` optional,
+/// either case, spaces round it ignored. Returns sRGB red, green, blue and alpha, each a byte over
+/// 255 (`#f80` is `#ff8800`, as in CSS and as Blender takes shorthand).
+///
+/// ```
+/// use bevy_gooey::{HexError, parse_hex};
+/// assert_eq!(parse_hex("#ff8800"), Ok([1.0, 136.0 / 255.0, 0.0, 1.0]));
+/// assert_eq!(parse_hex("f80"), parse_hex("#FF8800"));
+/// assert_eq!(parse_hex("#f80"), parse_hex("#ff8800ff"));
+/// assert_eq!(parse_hex("#ff880"), Err(HexError::Length));
+/// assert_eq!(parse_hex("orange"), Err(HexError::NotHex));
+/// assert_eq!(parse_hex(" "), Err(HexError::Empty));
+/// ```
+pub fn parse_hex(text: &str) -> Result<[f32; 4], HexError> {
+    let text = text.trim();
+    let digits = text.strip_prefix('#').unwrap_or(text).trim();
+    if digits.is_empty() {
+        return Err(HexError::Empty);
+    }
+    if !digits.is_ascii() {
+        return Err(HexError::NotHex);
+    }
+    if !matches!(digits.len(), 3 | 4 | 6 | 8) {
+        return if digits.bytes().all(|b| b.is_ascii_hexdigit()) {
+            Err(HexError::Length)
+        } else {
+            Err(HexError::NotHex)
+        };
+    }
+    let mut bytes = [255u8; 4];
+    let short = digits.len() <= 4;
+    for (i, slot) in bytes
+        .iter_mut()
+        .take(digits.len() / if short { 1 } else { 2 })
+        .enumerate()
+    {
+        let part = if short {
+            &digits[i..=i]
+        } else {
+            &digits[2 * i..2 * i + 2]
+        };
+        let n = u8::from_str_radix(part, 16).map_err(|_| HexError::NotHex)?;
+        *slot = if short { n * 17 } else { n };
+    }
+    Ok(bytes.map(|b| f32::from(b) / 255.0))
+}
+
+/// A colour as the hex a field shows: `#RRGGBB` in capitals, with `AA` after it only when the alpha
+/// is not full, so the text says no more than the colour. `rgba` is sRGB, each channel 0 to 1.
+///
+/// ```
+/// assert_eq!(bevy_gooey::hex_text([1.0, 136.0 / 255.0, 0.0, 1.0]), "#FF8800");
+/// assert_eq!(bevy_gooey::hex_text([0.0, 0.0, 0.0, 0.5]), "#00000080");
+/// ```
+pub fn hex_text(rgba: [f32; 4]) -> String {
+    let byte = |c: f32| (c.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let [r, g, b, a] = rgba.map(byte);
+    if a == 255 {
+        format!("#{r:02X}{g:02X}{b:02X}")
+    } else {
+        format!("#{r:02X}{g:02X}{b:02X}{a:02X}")
+    }
+}
+
+/// A hue in degrees (any number: 360 is 0), a saturation and a value (each held to 0 to 1) as sRGB
+/// red, green and blue.
+///
+/// ```
+/// assert_eq!(bevy_gooey::hsv_to_rgb(0.0, 1.0, 1.0), [1.0, 0.0, 0.0]);
+/// assert_eq!(bevy_gooey::hsv_to_rgb(360.0, 1.0, 1.0), [1.0, 0.0, 0.0]);
+/// assert_eq!(bevy_gooey::hsv_to_rgb(120.0, 0.0, 0.5), [0.5, 0.5, 0.5]);
+/// ```
+pub fn hsv_to_rgb(hue: f32, saturation: f32, value: f32) -> [f32; 3] {
+    let h = if hue.is_finite() {
+        hue.rem_euclid(360.0) / 60.0
+    } else {
+        0.0
+    };
+    let s = saturation.clamp(0.0, 1.0);
+    let v = value.clamp(0.0, 1.0);
+    let chroma = v * s;
+    let x = chroma * (1.0 - (h % 2.0 - 1.0).abs());
+    let m = v - chroma;
+    let (r, g, b) = match h as u8 {
+        0 => (chroma, x, 0.0),
+        1 => (x, chroma, 0.0),
+        2 => (0.0, chroma, x),
+        3 => (0.0, x, chroma),
+        4 => (x, 0.0, chroma),
+        _ => (chroma, 0.0, x),
+    };
+    [r + m, g + m, b + m]
+}
+
+/// The hue (degrees, 0 up to 360), saturation and value of an sRGB colour. A grey has no hue and a
+/// black has no saturation either, so those come back as they were in `previous`
+/// (`[hue, saturation, value]`): dragging a picker to black and back, or typing a grey, does not
+/// forget the hue the player was on.
+///
+/// ```
+/// use bevy_gooey::rgb_to_hsv;
+/// assert_eq!(rgb_to_hsv([0.0, 1.0, 0.0], [0.0; 3]), [120.0, 1.0, 1.0]);
+/// // A grey keeps the hue it was given.
+/// assert_eq!(rgb_to_hsv([0.5, 0.5, 0.5], [200.0, 0.4, 0.9]), [200.0, 0.0, 0.5]);
+/// // Black keeps the hue and the saturation.
+/// assert_eq!(rgb_to_hsv([0.0, 0.0, 0.0], [200.0, 0.4, 0.9]), [200.0, 0.4, 0.0]);
+/// ```
+pub fn rgb_to_hsv(rgb: [f32; 3], previous: [f32; 3]) -> [f32; 3] {
+    const EPSILON: f32 = 1e-6;
+    let [r, g, b] = rgb;
+    let max = r.max(g).max(b);
+    let delta = max - r.min(g).min(b);
+    if max <= EPSILON {
+        return [previous[0], previous[1], 0.0];
+    }
+    if delta <= EPSILON {
+        return [previous[0], 0.0, max];
+    }
+    let hue = if max == r {
+        ((g - b) / delta).rem_euclid(6.0)
+    } else if max == g {
+        (b - r) / delta + 2.0
+    } else {
+        (r - g) / delta + 4.0
+    };
+    [hue * 60.0, delta / max, max]
+}
+
+/// The saturation and value a pointer at `offset` (px from the area's top-left corner) means in a
+/// colour area whose frame leaves the inside `inner_size` at `inner_origin`: saturation grows to
+/// the right, value upwards, both held to 0 to 1 so a drag that leaves the area holds at its edge.
+/// A frame with no inside reads as the middle.
+///
+/// ```
+/// use bevy_gooey::area_values;
+/// assert_eq!(area_values([100.0, 0.0], [0.0, 0.0], [100.0, 50.0]), [1.0, 1.0]);
+/// assert_eq!(area_values([0.0, 50.0], [0.0, 0.0], [100.0, 50.0]), [0.0, 0.0]);
+/// assert_eq!(area_values([-30.0, 25.0], [0.0, 0.0], [100.0, 50.0]), [0.0, 0.5]);
+/// ```
+pub fn area_values(offset: [f32; 2], inner_origin: [f32; 2], inner_size: [f32; 2]) -> [f32; 2] {
+    let along = |p: f32, origin: f32, size: f32| {
+        if size > 0.0 && p.is_finite() {
+            ((p - origin) / size).clamp(0.0, 1.0)
+        } else {
+            0.5
+        }
+    };
+    [
+        along(offset[0], inner_origin[0], inner_size[0]),
+        1.0 - along(offset[1], inner_origin[1], inner_size[1]),
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2399,5 +2575,62 @@ mod tests {
         assert_eq!(scrub_value(1.0, f32::NAN, 0.1, 0.0, 9.0, false, false), 1.0);
         assert_eq!(step_value(0.1, 2.0, 0.1, 0.0, 1.0), 0.3);
         assert_eq!(step_value(0.1, -5.0, 0.1, 0.0, 1.0), 0.0);
+    }
+
+    #[test]
+    fn hex_is_read_in_every_form_and_shown_the_shortest_true_way() {
+        let orange = [1.0, 136.0 / 255.0, 0.0, 1.0];
+        assert_eq!(parse_hex("#ff8800"), Ok(orange));
+        assert_eq!(parse_hex("  FF8800 "), Ok(orange));
+        assert_eq!(parse_hex("#f80"), Ok([1.0, 136.0 / 255.0, 0.0, 1.0]));
+        assert_eq!(parse_hex("#f80c").map(|c| c[3]), Ok(204.0 / 255.0));
+        assert_eq!(parse_hex("#ff880080").map(|c| c[3]), Ok(128.0 / 255.0));
+        assert_eq!(parse_hex(""), Err(HexError::Empty));
+        assert_eq!(parse_hex("#"), Err(HexError::Empty));
+        assert_eq!(parse_hex("#ff88"), Ok(parse_hex("#ffff8888").unwrap()));
+        assert_eq!(parse_hex("#ff880"), Err(HexError::Length));
+        assert_eq!(parse_hex("#ff88000"), Err(HexError::Length));
+        assert_eq!(parse_hex("#gg8800"), Err(HexError::NotHex));
+        assert_eq!(parse_hex("#ff\u{e9}800"), Err(HexError::NotHex));
+        assert_eq!(hex_text(orange), "#FF8800");
+        assert_eq!(hex_text([1.0, 1.0, 1.0, 0.0]), "#FFFFFF00");
+        // Whatever it shows, it reads back as the same bytes.
+        for text in ["#000000", "#FFFFFF", "#12AB9C", "#12AB9C7F"] {
+            assert_eq!(hex_text(parse_hex(text).unwrap()), text);
+        }
+    }
+
+    #[test]
+    fn hsv_round_trips_and_a_grey_or_a_black_keeps_what_it_cannot_say() {
+        for (h, s, v) in [
+            (0.0, 1.0, 1.0),
+            (45.0, 0.5, 0.75),
+            (200.0, 0.3, 0.2),
+            (300.0, 1.0, 0.5),
+        ] {
+            let back = rgb_to_hsv(hsv_to_rgb(h, s, v), [0.0; 3]);
+            assert!((back[0] - h).abs() < 1e-3, "{h} came back {}", back[0]);
+            assert!((back[1] - s).abs() < 1e-5 && (back[2] - v).abs() < 1e-5);
+        }
+        assert_eq!(hsv_to_rgb(-60.0, 1.0, 1.0), hsv_to_rgb(300.0, 1.0, 1.0));
+        assert_eq!(hsv_to_rgb(f32::NAN, 1.0, 1.0), [1.0, 0.0, 0.0]);
+        assert_eq!(
+            rgb_to_hsv([1.0, 1.0, 1.0], [10.0, 0.7, 0.3]),
+            [10.0, 0.0, 1.0]
+        );
+        assert_eq!(
+            rgb_to_hsv([0.0, 0.0, 0.0], [10.0, 0.7, 0.3]),
+            [10.0, 0.7, 0.0]
+        );
+    }
+
+    #[test]
+    fn a_pointer_in_the_area_is_saturation_across_and_value_up_held_at_the_edge() {
+        let at = |x, y| area_values([x, y], [2.0, 2.0], [96.0, 46.0]);
+        assert_eq!(at(2.0, 48.0), [0.0, 0.0]);
+        assert_eq!(at(98.0, 2.0), [1.0, 1.0]);
+        assert_eq!(at(50.0, 25.0), [0.5, 0.5]);
+        assert_eq!(at(-500.0, 900.0), [0.0, 0.0]);
+        assert_eq!(area_values([5.0, 5.0], [0.0, 0.0], [0.0, 0.0]), [0.5, 0.5]);
     }
 }
