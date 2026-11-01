@@ -12,9 +12,10 @@ crate root.
 | `GooeyFonts` | the handles of the host's body and heading fonts | a resource |
 | `UiScaleSettings` | `reference_short_side` and the player's `scale` | a resource, read by `scale_with_window` |
 | `ToastSettings` | `anchor`, `max_visible`, `base_seconds`, `chars_per_second`, `duration_scale`, `fade_seconds` | a resource, read by `update_toasts` |
+| `BindingSettings` | `key_prompt`, `pad_prompt`, `pad_style`, `cancel_key`, `cancel_button` | a resource, read by `update_bindings` and `bind_by_input` |
 | `Meter` | `value` and `max` | a component on a `meter()` |
 
-All four are serde data under the `serde` feature except `GooeyFonts`, which holds asset handles.
+All five are serde data under the `serde` feature except `GooeyFonts`, which holds asset handles.
 
 ## Components a game spawns or marks
 
@@ -24,6 +25,10 @@ All four are serde data under the `serde` feature except `GooeyFonts`, which hol
 - `ChoiceValue(usize)` and `ChoiceCount(usize)` — a `choice`'s selected index and its number of options.
   Write a `ChoiceValue` to move the choice from code (no `ValueChange` comes back for that); read it to
   know where the choice stands.
+- `BindingValue(Binding)` — a `binding`'s input: a key, a mouse button or a pad button. Write one to change
+  the row from code (no `ValueChange` comes back for that); read it to know what the player chose.
+  `Capturing` is on the row while it waits for the player's next press, for a game that gates raw key
+  readers of its own on it. See [rebinding](bindings.md).
 - `TabsValue(usize)` and `TabsCount(usize)` — a `tabs`' selected index and its number of labels. Write a
   `TabsValue` to turn the page from code (no `ValueChange` comes back for that); read it to know the page.
 - `Tooltip(String)` — the hint on any widget. Insert, remove or edit it and the open box follows.
@@ -61,8 +66,11 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `scroll_to_focus` | Navigate | a list follows the focus on one of its rows |
 | `page_lists` | Navigate | PageUp, PageDown and the pad's triggers move focus a viewport |
 | `step_tabs` | Navigate | LB, RB, Ctrl+PageUp and Ctrl+PageDown turn a tabs widget's page, and the D-pad steps a focused tab |
+| `bind_by_input` | Navigate | a waiting `binding` row takes the player's next press, last in the set |
+| `catch_pointer` | Navigate | a transparent node takes the pointer while a `binding` row waits |
 | `land_tab_focus` | Navigate | focus never rests on a page that is not shown: it moves to the page's first widget |
 | `show_tooltips` | Style | a hovered or visibly focused widget's tooltip opens |
+| `update_bindings` | Style | a `binding` row's keycap: the input's name, or the prompt while it waits |
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
@@ -76,7 +84,10 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 The tooltip's and the toast's component hooks are registered by the components themselves, so they come
 with the spawn. The resources and the `UiFeedback` message are `GooeyNavPlugin`'s
 (`init_resource::<InputFocus>()`, `init_resource::<InputFocusVisible>()`,
-`add_message::<UiFeedback>()`); a host that registers the systems by hand adds those three itself.
+`add_message::<UiFeedback>()`) and `BindingSettings`'s; a host that registers the systems by hand adds
+those four itself, and puts `not_capturing` as a run condition on `navigate_by_input`, `gamepad_select`,
+`gamepad_adjust`, `cancel_by_input`, `page_lists` and `step_tabs`, so a waiting binding row hears the
+press and they do not.
 
 ## The engine-free maths
 
@@ -84,5 +95,6 @@ with the spawn. The resources and the `UiFeedback` message are `GooeyNavPlugin`'
 use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `meter_fraction`,
 `slider_fraction`, `slider_text`, `list_height`, `scroll_to_reveal`, `snap_to_row`, `page_target`,
 `snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
-`repeat_steps`, `choice_step`, `choice_next`, `tab_step`, and the constants `TEXT_CONTRAST`,
-`NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY` and `PAD_REPEAT_RATE`.
+`repeat_steps`, `choice_step`, `choice_next`, `tab_step`, `key_name`, `mouse_name`, `pad_name` and
+`PadStyle`, and the constants `TEXT_CONTRAST`, `NON_TEXT_CONTRAST`, `MIN_TARGET_PX`,
+`COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY` and `PAD_REPEAT_RATE`.
