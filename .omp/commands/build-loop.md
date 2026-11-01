@@ -151,6 +151,16 @@ region, not an impression:
 6. **Protected checks change only additively.** An assumed decision may add to a protected test or check (a new row or entry, a new field's empty default in a literal, a count or version raised by exactly what the change adds), with the commit message `assumed owner exception: <what>`. It never removes, loosens, skips or re-pins an existing assertion, golden, eval answer or threshold; that is the one block left, so say so on the issue and go on.
 7. **Never, whatever you assume.** These need the owner's word in a conversation, and no prompt can give it: yanking a release or changing crate ownership; force-pushing, rewriting history or deleting branches; deleting files or work this pass did not create; editing this command file; spending money or sharing credentials.
 
+## Grimoire's UI requests come first (owner, 2026-11-01)
+
+While any issue labelled `grimoire-ui` is open, **the pass's item is the lowest-numbered `G-NN` among them whose Depends on line is all closed**, ahead of everything below except a broken gate and a `bug` issue. bevy_grimoire is rebuilding its whole interface on this crate (tracking issue linked in each request), so each request is a feature the editor is waiting on.
+
+- Build the general form: any game or tool could use it, the editor is the example, and the editor's name never appears in the API.
+- One verified slice per pass with its failing-first test; close with `Fixes #N` in the commit that meets the last acceptance item, then release in the same pass ("Every pass ships").
+- When it closes, comment on each bevy_grimoire issue whose **Needs** line names it: "Fixed in <sha>, released as v<version>; move the pin to <sha>."
+- A request that would break the crate's rules (WCAG checks, the scope in docs/guide/scope.md) is answered on the issue with what it needs and why, labelled `blocked`, and skipped.
+- This loop runs only while such issues are open: a timer on big (`gooey-grimoire-watch`) stops it at a pass boundary when none is left, and starts it again when bevy_grimoire files a new one.
+
 ## Filed issues come before new features
 
 **A filed issue is a consumer telling you what broke, which outranks anything this pass invented.**
@@ -307,13 +317,7 @@ proud of.
   hypothesis, and revert to the last GREAT state.
 - **Performance gate**, equal in weight: `mean_ms` from the gallery capture before and after, same
   machine and load. No regression over 0.5 ms without a logged trade.
-- Run the full gate (the `AGENTS.md` set):
-  1. `cargo build && cargo build --release && cargo test && cargo test --features serde && cargo test --features readme-example --test readme`
-  2. `cargo build --examples`
-  3. `cargo clippy --all-targets --all-features -- -D warnings`
-  4. `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps`
-  5. `cargo fmt --check`
-  6. `cargo build --lib --target wasm32-unknown-unknown`
+- While iterating, run only `cargo test --all-features --test <each test file you touched>` and `cargo clippy --all-targets --all-features -- -D warnings`. **The full gate (the `AGENTS.md` set) runs once, in section 8 step 6, on the merged tree.** Measured 2026-11-01: passes ran it about 2.25 times each at 13 minutes a run, 34% of pass time.
 
 ## 8. Ship
 

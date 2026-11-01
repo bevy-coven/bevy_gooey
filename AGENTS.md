@@ -58,16 +58,15 @@ This repository, [`bevy-coven/bevy_gooey`](https://github.com/bevy-coven/bevy_go
 
 ## Build and test
 
-The gate, every item green before a push:
+The gate, every item green before a push, run in this order and stopped at the first failure:
 
-1. `cargo build && cargo build --release && cargo test && cargo test --features serde && cargo test --features readme-example --test readme`
-2. `cargo build --examples`
-3. `cargo clippy --all-targets --all-features -- -D warnings`
-4. `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps`
-5. `cargo fmt --check`
-6. `cargo build --lib --target wasm32-unknown-unknown`
+1. `cargo fmt --check`
+2. `cargo clippy --all-targets --all-features -- -D warnings`
+3. `cargo test --all-features` (every test, the README test and the doctests)
+4. `cargo check --lib` and `cargo check --lib --target wasm32-unknown-unknown`
+5. `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps`
 
-`cargo build` takes no dev-dependencies, so it compiles exactly the trimmed Bevy features a consumer gets; the full `bevy` dev-dependency would hide a hole in that list. CI (`.github/workflows/ci.yml`, on big's self-hosted runner) runs the same, but the local gate is the gate: never wait on CI.
+`cargo check --lib` takes no dev-dependencies, so it compiles exactly the trimmed Bevy features a consumer gets; the full `bevy` dev-dependency would hide a hole in that list. The release build and the examples are built by the capture step, and `clippy --all-targets` type-checks the examples. CI (`.github/workflows/ci.yml`, on big's self-hosted runner) keeps the longer list as the backstop, but the local gate is the gate: never wait on CI.
 
 ## The non-negotiables
 
