@@ -2364,7 +2364,7 @@ fn restyle(
             // The same turned square as a header's sort mark: closed keeps its top and right (it
             // points right), open its bottom and right (it points down).
             Role::TreeClosed | Role::TreeOpen => {
-                let size = chevron * TABLE_SORT_MARK_SCALE;
+                let size = chevron;
                 next.width = Val::Px(size);
                 next.height = Val::Px(size);
                 next.flex_shrink = 0.0;

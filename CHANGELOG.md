@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- Trees (G-11, #15): `tree(nodes)` is nodes that open and close, virtualized like the table it is built on (10,110 nodes spawn at most visible + 2 row entities). A `TreeNode::new(key, label)` has `.expanded()`, `.child(..)` and `.children(..)`; its `key` is its identity, so the selection, the cursor and the player's place stay with a node as others come and go. The rows are the nodes shown (every parent open), each indented a level (`model::tree_indent`: a text size and a half, never under 24 px) with a chevron in front of a node that has children. `Tree` is the table's `RowSource`: each node keeps its own open state, so closing a node loses nothing below it, and a game changes it through `table.source_mut::<Tree>()` (`insert`, `remove`, `set_nodes`, `set_open`, `is_open`, `open_keys`). The player opens and closes with a click on the chevron, Right and Left (the D-pad too) and `*` (every sibling), and the game hears `TreeToggled { entity, key, open }`; Right on an open node goes to its first child, Left on a closed node or an end node to its parent; typing goes to the next shown node starting with it (`model::type_ahead`, a one second window, the same letter again goes on). A removed node's selected state and cursor move to its heir, the next sibling, else the one before, else the parent (`update_trees`). Selection, cursor, `RowActivated` and `TableRows` are the table's.
+- `model::{tree_indent, tree_ends, tree_visible, tree_parent, tree_heir, type_ahead, TYPE_AHEAD_SECS}`: the engine-free maths, doctested.
+- `examples/tree`, `docs/research/tree.md`, `docs/guide/trees.md`, `docs/media/tree.gif` and `tests/tree.rs` (25 tests).
+
+### Changed
+
+- `Role` gains three variants (`TreeTwisty`, `TreeClosed`, `TreeOpen`): a `match` on it that has no wildcard needs them. `navigate_by_input` leaves Left and Right to a focused tree. `update_tables` keeps a tree's selected nodes that are hidden by a closed parent (a table's selected row that is gone still leaves the selection).
+
 ## [0.19.0] - 2026-11-01
 
 ### Added
