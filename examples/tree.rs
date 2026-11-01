@@ -244,22 +244,16 @@ fn follow_background(skin: Res<GooeySkin>, mut clear: ResMut<ClearColor>) {
     }
 }
 
-fn readout(
-    trees: Query<(&Table, &TableSelection, &TableCursor)>,
-    mut texts: Query<&mut Text, With<Readout>>,
-) {
-    let Ok((table, selection, cursor)) = trees.single() else {
+fn readout(trees: Query<(&Table, &TableSelection)>, mut texts: Query<&mut Text, With<Readout>>) {
+    let Ok((table, selection)) = trees.single() else {
         return;
     };
     let Some(tree) = table.source::<Tree>() else {
         return;
     };
-    let at = cursor
-        .0
-        .and_then(|key| tree.label(key))
-        .map_or(String::new(), |name| format!(", at {name}"));
+    // A fixed width, so the panel does not breathe as the count changes.
     let line = format!(
-        "{} of {} nodes shown, {} selected{at}",
+        "{:>5} of {} shown, {:>2} selected",
         table.len(),
         tree.node_count(),
         selection.len(),
@@ -386,14 +380,13 @@ fn stage(
             }
         }
         Step::Type(typed) => {
-            // A character every four frames: a press and, two frames later, its release.
-            let at = (phase / 4) as usize;
+            // A character every two frames: a press and, a frame later, its release.
+            let at = (phase / 2) as usize;
             if let Some(ch) = typed.chars().nth(at) {
                 let s = ch.to_string();
-                let state = match phase % 4 {
+                let state = match phase % 2 {
                     0 => ButtonState::Pressed,
-                    2 => ButtonState::Released,
-                    _ => return,
+                    _ => ButtonState::Released,
                 };
                 key(
                     KeyCode::KeyA,
