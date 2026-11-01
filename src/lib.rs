@@ -29,7 +29,9 @@
 //!   timed by [`ToastSettings`]),
 //!   [`Tooltip`] (with a command's [`Shortcut`] on a keycap: "Ctrl+S", or "⌘S" on a mac), the
 //!   modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
-//!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed). Each is a free function returning a bundle, so they
+//!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed), and the
+//!   [`menu_bar`] of [`menu_title`]s with [`menu_item`], [`check_item`], [`radio_item`],
+//!   [`submenu`] and [`separator`] rows (chords right-aligned, [`Disabled`] items that say why). Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
 //!   to the game under a HUD, while every widget on it takes the pointer. A toast takes no input
@@ -149,8 +151,8 @@ pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use menu::{
-    Disabled, MenuBar, MenuItem, MenuOpen, MenuPanel, MenuTitle, fit_menus, focus_menu_bar,
-    menu_by_input, scroll_menus_to_focus, switch_menus_on_hover,
+    Disabled, MenuBar, MenuItem, MenuMarked, MenuOpen, MenuPanel, MenuTitle, fit_menus,
+    focus_menu_bar, menu_by_input, scroll_menus_to_focus, switch_menus_on_hover,
 };
 pub use meter::{Meter, update_meters};
 pub use model::{

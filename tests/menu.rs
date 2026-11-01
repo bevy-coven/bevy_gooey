@@ -1003,3 +1003,23 @@ fn nothing_leaves_its_parent_at_every_text_size() {
         }
     }
 }
+
+#[test]
+fn only_a_menu_with_a_check_or_a_dot_keeps_the_slot_for_it() {
+    let mut app = app();
+    spawn_bar(&mut app);
+    tap(&mut app, KeyCode::F10);
+    taps(&mut app, &[KeyCode::ArrowDown, KeyCode::ArrowDown, KeyCode::ArrowDown, KeyCode::ArrowRight]);
+    // File holds Autosave, a check: its rows keep the slot. Recent's rows are plain: they do not.
+    let indent = |app: &mut App, label: &str| {
+        let text = text_with(app, Role::MenuText, label);
+        let row = item(app, label);
+        rect(app, text).min.x - rect(app, row).min.x
+    };
+    let with_slot = indent(&mut app, "New");
+    let without = indent(&mut app, "level-1.ron");
+    assert!(
+        with_slot - without >= 15.0,
+        "{with_slot} px in a menu with a check, {without} px in one without"
+    );
+}

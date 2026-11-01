@@ -61,6 +61,11 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   closing sends first (`CloseReason::Outside` or `Cancel`); `Placement` says where one opens. See
   [popovers](popovers.md).
 
+- `MenuBar`, `MenuTitle`, `MenuPanel`, `MenuItem`, `MenuOpen` — what `menu_bar()`, `menu_title()`, the item
+  constructors and `submenu()` return or add; a menu's panel is open exactly while it has a `PopoverPanel`,
+  and `MenuOpen` is on its title or submenu item meanwhile. `Disabled(reason)` makes an item unavailable with a
+  tooltip. See [menus](menus.md).
+
 Bevy's own types come through the crate so a host never adds a second copy: `Checked`, `SliderValue`,
 `SliderRange`, `SliderStep`, `ValueChange`, `Activate` and `observe`.
 
@@ -89,6 +94,9 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `focus_opened_dialogs` | Navigate | an open dialog takes focus and gives it back on closing |
 | `close_popovers_on_press` | Navigate | a pointer press outside a popover closes it with one `PopoverClosed` |
 | `anchor_pointer_popovers`, `drop_pointer_anchors` | Navigate | a `Placement::AtPointer` popover gets a zero-size node at the pointer to hang from, removed with it |
+| `focus_menu_bar` | Navigate | F10, or Alt pressed and let go alone, focuses the first menu title; again, gives focus back |
+| `menu_by_input` | Navigate | Left, Right, Down, Home and End (and the D-pad) on a menu title or item open, walk and close menus |
+| `switch_menus_on_hover`, `fit_menus`, `scroll_menus_to_focus` | Navigate | the pointer on another title switches menus; an open menu is capped to the window's room and follows focus |
 | `feedback_on_focus` | Navigate | writes `UiFeedback::Focus` when focus moves onto a widget |
 | `scroll_to_focus` | Navigate | a list follows the focus on one of its rows |
 | `page_lists` | Navigate | PageUp, PageDown and the pad's triggers move focus a viewport |

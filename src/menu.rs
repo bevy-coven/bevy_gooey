@@ -67,6 +67,13 @@ pub struct MenuPanel;
 #[reflect(Component, Default, Debug, Clone)]
 pub struct MenuOpen;
 
+/// On every item of an open menu that has a check or a radio item in it: they keep the slot at
+/// the start of the row that holds the tick, so labels share one edge. A menu with none leaves
+/// labels at the row's own padding.
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component, Default, Debug, Clone)]
+pub struct MenuMarked;
+
 /// A line of a menu that is not a command: the "Nothing here" of an empty menu.
 #[derive(Component, Clone, Copy, Debug)]
 struct MenuNothing;
@@ -100,7 +107,7 @@ enum Kind {
 ///     "File",
 ///     children![
 ///         (
-///             menu_item("Open…").with_shortcut(Shortcut::primary(KeyCode::KeyO)),
+///             menu_item("Open...").with_shortcut(Shortcut::primary(KeyCode::KeyO)),
 ///             observe(|_: On<Activate>| info!("open")),
 ///         ),
 ///         separator(),
@@ -321,6 +328,7 @@ pub(crate) fn open_menu(world: &mut World, panel: Entity) {
         }
     }
     sync_nothing(world, panel);
+    sync_marks(world, panel);
     let placement = if world.get::<MenuTitle>(anchor).is_some() {
         Placement::Below
     } else {
@@ -364,6 +372,28 @@ pub(crate) fn close_menu(world: &mut World, panel: Entity) {
         && let Ok(mut entity) = world.get_entity_mut(anchor)
     {
         entity.remove::<MenuOpen>();
+    }
+}
+
+/// Marks every item of `panel` when any of them is a check or a radio item, and none otherwise.
+fn sync_marks(world: &mut World, panel: Entity) {
+    let items: Vec<(Entity, Kind)> = world
+        .get::<Children>(panel)
+        .map(|kids| {
+            kids.iter()
+                .filter_map(|k| world.get::<MenuItem>(k).map(|i| (k, i.kind)))
+                .collect()
+        })
+        .unwrap_or_default();
+    let marked = items
+        .iter()
+        .any(|&(_, kind)| matches!(kind, Kind::Check | Kind::Radio));
+    for (item, _) in items {
+        if marked {
+            world.entity_mut(item).insert(MenuMarked);
+        } else {
+            world.entity_mut(item).remove::<MenuMarked>();
+        }
     }
 }
 

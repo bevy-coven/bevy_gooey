@@ -155,7 +155,7 @@ fn setup(mut commands: Commands) {
                             command("New")
                         ),
                         (
-                            menu_item("Open…").with_shortcut(Shortcut::primary(KeyCode::KeyO)),
+                            menu_item("Open...").with_shortcut(Shortcut::primary(KeyCode::KeyO)),
                             command("Open")
                         ),
                         (
@@ -237,10 +237,11 @@ fn setup(mut commands: Commands) {
             ]),
             (
                 Node {
-                    padding: UiRect::all(Val::Px(24.0)),
+                    margin: UiRect::all(Val::Px(24.0)),
+                    align_self: AlignSelf::FlexStart,
                     ..default()
                 },
-                children![(label("Last command: none"), Last)],
+                children![(panel(), children![(label("Last command: none"), Last)])],
             ),
         ],
     ));

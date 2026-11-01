@@ -1346,7 +1346,7 @@ fn popover_panel(anchor: Entity, placement: Placement, modal: bool) -> impl Bund
 ///         "File",
 ///         children![
 ///             (
-///                 menu_item("Open…").with_shortcut(Shortcut::primary(KeyCode::KeyO)),
+///                 menu_item("Open...").with_shortcut(Shortcut::primary(KeyCode::KeyO)),
 ///                 observe(|_: On<Activate>| info!("open")),
 ///             ),
 ///             separator(),

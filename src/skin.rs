@@ -13,7 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::list::ListView;
-use crate::menu::MenuOpen;
+use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
     TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height, snap_line_width,
@@ -61,6 +61,10 @@ const BINDING_CAP_TEXT_SIZES: f32 = 17.0;
 /// A menu's card is at least this many body text sizes wide (10 × 20 px = 200 px at the default
 /// size): a short menu is still a card, and a title's menu is never narrower than its words.
 const MENU_MIN_TEXT_SIZES: f32 = 10.0;
+
+/// The air between a menu item's label and its chord, beside the row's gap, in body text sizes:
+/// at 200% text it grows with the words (a gap alone left "Open..." nearly touching "Ctrl+O").
+const MENU_CHORD_TEXT_SIZES: f32 = 0.5;
 
 /// The slot a menu item keeps for its check or dot, in body text sizes, in every item so labels
 /// share one edge whether or not a menu has a check in it.
@@ -1184,6 +1188,8 @@ struct State {
     focused: bool,
     /// A menu title or submenu item whose menu is open.
     open: bool,
+    /// A menu item whose menu has a check or a radio item in it, so it keeps the mark slot.
+    marked: bool,
 }
 
 impl Default for State {
@@ -1205,6 +1211,7 @@ impl Default for State {
             capturing: false,
             focused: false,
             open: false,
+            marked: false,
         }
     }
 }
@@ -1223,6 +1230,7 @@ type StateQuery = (
     Option<&'static ListView>,
     Has<Capturing>,
     Has<MenuOpen>,
+    Has<MenuMarked>,
     Option<&'static Role>,
 );
 
@@ -1244,7 +1252,7 @@ type Restyle = (
         Changed<ChoiceValue>,
         Changed<ComputedUiRenderTargetInfo>,
         Added<Capturing>,
-        Or<(Added<MenuOpen>, Added<PopoverPanel>)>,
+        Or<(Added<MenuOpen>, Added<PopoverPanel>, Added<MenuMarked>)>,
     )>,
 );
 
@@ -1256,6 +1264,7 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, Selected>,
     RemovedComponents<'w, 's, Capturing>,
     RemovedComponents<'w, 's, MenuOpen>,
+    RemovedComponents<'w, 's, MenuMarked>,
     RemovedComponents<'w, 's, SkinScope>,
     RemovedComponents<'w, 's, ChildOf>,
 );
@@ -1314,7 +1323,7 @@ pub fn apply_skin(
             warn!("bevy_gooey: scoped skin: {problem}");
         }
     }
-    let (unpressed, enabled, unchecked, unselected, stopped, closed, unscoped, orphaned) =
+    let (unpressed, enabled, unchecked, unselected, stopped, closed, unmarked, unscoped, orphaned) =
         &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -1340,6 +1349,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
+                    marked,
                     role,
                 )| {
                     State {
@@ -1364,6 +1374,7 @@ pub fn apply_skin(
                         capturing,
                         focused: look.focused == Some(entity),
                         open,
+                        marked,
                     }
                 },
             )
@@ -1400,6 +1411,7 @@ pub fn apply_skin(
         unselected.clear();
         stopped.clear();
         closed.clear();
+        unmarked.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -1436,6 +1448,7 @@ pub fn apply_skin(
     }
     dirty.extend(stopped.read());
     dirty.extend(closed.read());
+    dirty.extend(unmarked.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -2117,6 +2130,11 @@ fn restyle(
                 next.align_items = AlignItems::Center;
             }
             Role::MenuMark => {
+                next.display = if owner.marked {
+                    Display::Flex
+                } else {
+                    Display::None
+                };
                 next.width = Val::Px(text_px * MENU_MARK_TEXT_SIZES);
                 next.height = Val::Px(text_px * MENU_MARK_TEXT_SIZES);
                 next.flex_shrink = 0.0;
@@ -2152,7 +2170,7 @@ fn restyle(
             Role::MenuText => next.flex_grow = 1.0,
             // Two gaps from the label at the least, never squeezed.
             Role::MenuShortcut => {
-                next.margin = UiRect::left(Val::Px(skin.gap));
+                next.margin = UiRect::left(Val::Px(skin.gap + text_px * MENU_CHORD_TEXT_SIZES));
                 next.flex_shrink = 0.0;
             }
             Role::MenuChevron => {

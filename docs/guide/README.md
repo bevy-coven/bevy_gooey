@@ -27,6 +27,9 @@ per subject. The README links each bullet to its page.
   PageDown, and what a list cannot do yet.
 - [Popovers](popovers.md) — `popover(anchor, Placement::Below)`: a menu or a context menu beside a widget or at
   the pointer, flipped to stay in the window, closed by Escape or a press elsewhere, modal or not.
+- [Menus](menus.md) — `menu_bar(children![menu_title(..)])`: a bar of titles with menus of commands, checks, radio
+  runs, separators, submenus, right-aligned chords and disabled items that say why; F10, the arrows, Escape and
+  the pad.
 - [Toasts](toasts.md) — one spawn, the reading-time maths, `ToastSettings`, and the cap on the stack.
 - [Skins](skins.md) — `GooeySkin`, its fields, the two presets, and every rule `problems()` checks.
 - [Screen size](scale.md) — `GooeyScalePlugin`, `UiScaleSettings`, and whole-device-pixel lines.

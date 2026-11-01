@@ -133,7 +133,11 @@ grow everything to 200%, and Controller renames the pad's buttons.
   opens a panel beside any widget or at the pointer, kept inside the window and closed by Escape or a
   press elsewhere:
   [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md),
-  [popovers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/popovers.md).
+  [popovers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/popovers.md); and
+  `menu_bar(children![menu_title("File", children![menu_item("Open...").with_shortcut(..), separator(), ..])])`
+  is a desktop menu bar for a tool, F10 and the arrows to walk it, with checks, radio runs, submenus and
+  disabled items that say why:
+  [menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/menus.md).
 - **Keep the interface's share of the screen at every resolution** — the skin's sizes scale with the
   window, and every border stays a whole number of device pixels:
   [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).
