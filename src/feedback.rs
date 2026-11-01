@@ -102,7 +102,8 @@ pub fn feedback_on_focus(
                 | Role::Slider
                 | Role::Choice
                 | Role::Binding
-                | Role::Tab)
+                | Role::Tab
+                | Role::TextField)
         )
     {
         out.write(UiFeedback {
