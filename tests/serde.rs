@@ -2,7 +2,10 @@
 //! fills the rest from the default.
 #![cfg(feature = "serde")]
 
-use bevy_gooey::{GooeySkin, ToastAnchor, ToastSettings, UiScaleSettings};
+use bevy::prelude::{GamepadButton, KeyCode, MouseButton};
+use bevy_gooey::{
+    Binding, BindingSettings, GooeySkin, PadStyle, ToastAnchor, ToastSettings, UiScaleSettings,
+};
 
 #[test]
 fn a_skin_round_trips_through_ron() -> Result<(), Box<dyn std::error::Error>> {
@@ -40,6 +43,39 @@ fn toast_settings_are_data_a_player_saves_and_a_partial_file_keeps_the_rest()
     assert_eq!(settings.chars_per_second, default.chars_per_second);
     assert_eq!(
         ron::from_str::<ToastSettings>(&ron::to_string(&settings)?)?,
+        settings
+    );
+    Ok(())
+}
+
+#[test]
+fn a_games_bindings_are_data_it_saves_and_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let saved = vec![
+        Binding::Key(KeyCode::Space),
+        Binding::Mouse(MouseButton::Right),
+        Binding::Pad(GamepadButton::South),
+    ];
+    let text = ron::to_string(&saved)?;
+    assert_eq!(ron::from_str::<Vec<Binding>>(&text)?, saved);
+    Ok(())
+}
+
+#[test]
+fn binding_settings_are_data_and_a_partial_file_keeps_the_rest()
+-> Result<(), Box<dyn std::error::Error>> {
+    let settings = ron::from_str::<BindingSettings>(
+        r#"(pad_style: PlayStation, key_prompt: "Appuyez sur une touche, {exit} pour quitter")"#,
+    )?;
+    assert_eq!(settings.pad_style, PadStyle::PlayStation);
+    assert_eq!(settings.cancel_key, KeyCode::Escape);
+    assert_eq!(settings.cancel_button, GamepadButton::Start);
+    assert_eq!(
+        settings.key_prompt(),
+        "Appuyez sur une touche, Esc pour quitter"
+    );
+    assert_eq!(settings.pad_prompt, BindingSettings::default().pad_prompt);
+    assert_eq!(
+        ron::from_str::<BindingSettings>(&ron::to_string(&settings)?)?,
         settings
     );
     Ok(())

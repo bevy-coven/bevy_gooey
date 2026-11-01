@@ -19,13 +19,17 @@ use bevy::ui_widgets::{
     checkbox_self_update, observe, slider_self_update,
 };
 
+use crate::binding::{
+    Binding, BindingDevice, BindingValue, binding_on_activate, binding_on_key_input,
+    binding_self_update,
+};
 use crate::choice::{
     ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
     choice_on_key_input, choice_on_move, choice_self_update,
 };
 use crate::list::ListView;
 use crate::meter::Meter;
-use crate::model::{meter_fraction, slider_fraction, slider_text};
+use crate::model::{PadStyle, meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
 use crate::skin::Role;
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
@@ -484,6 +488,88 @@ fn choice_arrow(step: i32) -> impl Bundle {
             mark,
             Pickable::IGNORE,
         )],
+    )
+}
+
+/// A row that rebinds one action: the action's name on the left and a keycap on the right showing
+/// the key, mouse button or pad button it is bound to ("Space", "Right Click", "A"). It is Bevy's
+/// headless [`bevy::ui_widgets::Button`], so Tab, the arrows and the D-pad reach it, and Enter,
+/// Space, the pad's South button or a click start a capture: the keycap lights and says what it
+/// waits for, and the player's next press is the new binding. A key row hears any key or mouse
+/// button (the primary one too: the pointer cannot press anything while a row waits), and a pad row
+/// any pad button; Escape (and, on a pad row, Start) exits without binding, and cannot be bound
+/// (see [`crate::BindingSettings`]). While a row waits nothing else hears the player: arrows,
+/// Tab, the D-pad and Back move and close nothing.
+///
+/// The row keeps its state in [`BindingValue`] and sends `ValueChange<Binding>` once for each
+/// change; observe that to store the player's choice. Pressing the input the row already holds ends
+/// the capture with no change. Which action an input belongs to, and what to do when two actions
+/// share one, is the game's: [`Binding`] is `Eq + Hash`, and setting another row's [`BindingValue`]
+/// swaps. The row never changes size, waiting or not.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     binding("Jump", Binding::Key(KeyCode::Space)),
+///     observe(|change: On<ValueChange<Binding>>| info!("jump is now {:?}", change.value)),
+/// ));
+/// # }
+/// ```
+pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
+    let part = |text: String, role: Role, visibility: Visibility| {
+        (
+            Node {
+                grid_row: GridPlacement::start(1),
+                grid_column: GridPlacement::start(1),
+                justify_self: JustifySelf::Center,
+                ..default()
+            },
+            Text::new(text),
+            role,
+            visibility,
+            Pickable::IGNORE,
+        )
+    };
+    (
+        Node {
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        BindingValue(value),
+        BindingDevice::from(value),
+        Role::Binding,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        observe(binding_self_update),
+        observe(binding_on_activate),
+        observe(binding_on_key_input),
+        children![
+            (Text::new(label), Role::ControlText, Pickable::IGNORE),
+            (
+                Node {
+                    display: Display::Grid,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                Role::BindingCap,
+                Pickable::IGNORE,
+                // Both texts stand in the one cell, the name and the prompt, so the keycap is as
+                // wide as the wider; `update_bindings` fills them and shows one.
+                children![
+                    part(
+                        value.label(PadStyle::default()),
+                        Role::BindingText,
+                        Visibility::Inherited
+                    ),
+                    part(String::new(), Role::BindingPrompt, Visibility::Hidden),
+                ],
+            ),
+        ],
     )
 }
 
