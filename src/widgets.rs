@@ -1457,9 +1457,9 @@ pub fn dialog() -> impl Bundle {
 }
 
 /// A workbench of panels the player arranges: a tree of splits and tab groups built from a
-/// [`DockLayout`], which is plain data (serde with the `serde` feature), so it can be saved,
+/// [`DockLayout`](crate::DockLayout), which is plain data (serde with the `serde` feature), so it can be saved,
 /// loaded and reset. What a panel shows is spawned once by the function registered under its id in
-/// the [`PanelRegistry`]; the dock builds the tree, and a panel's page is moved, never rebuilt,
+/// the [`PanelRegistry`](crate::PanelRegistry); the dock builds the tree, and a panel's page is moved, never rebuilt,
 /// when the layout changes.
 ///
 /// ```
