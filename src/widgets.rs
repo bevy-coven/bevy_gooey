@@ -818,6 +818,24 @@ pub fn text_input(label: impl Into<String>, value: impl Into<String>) -> impl Bu
 /// advances wide, or fills the room its parent leaves when `chars` is `None` (a command palette's
 /// field has no label and the card's whole width).
 pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>) -> impl Bundle {
+    let role = if chars.is_none() {
+        Role::PaletteField
+    } else {
+        Role::TextInput
+    };
+    text_row_as(role, label, value, chars, false)
+}
+
+/// [`text_row`] with its row's `role`, and, when `number` is set, the field of a [`number_field`]:
+/// Up and Down step it and the text cursor is over it, so the row's own resize cursor (the
+/// scrub's) is on its label and padding only.
+fn text_row_as(
+    role: Role,
+    label: Option<String>,
+    value: String,
+    chars: Option<f32>,
+    number: bool,
+) -> impl Bundle {
     let fills = chars.is_none();
     (
         Node {
@@ -830,11 +848,7 @@ pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>)
             },
             ..default()
         },
-        if fills {
-            Role::PaletteField
-        } else {
-            Role::TextInput
-        },
+        role,
         TextInputValue(value.clone()),
         observe(text_self_update),
         observe(text_row_on_acquire),
@@ -856,7 +870,7 @@ pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>)
                 Role::TextCell,
             ))
             .with_children(|cell| {
-                cell.spawn((
+                let mut field = cell.spawn((
                     Node {
                         flex_shrink: 0.0,
                         flex_grow: if fills { 1.0 } else { 0.0 },
@@ -878,6 +892,14 @@ pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>)
                     AutoDirectionalNavigation::default(),
                     observe(text_on_key_input),
                 ));
+                if number {
+                    field.insert((
+                        NumberInput,
+                        EntityCursor::System(SystemCursorIcon::Text),
+                        observe(number_on_key_input),
+                        observe(number_on_step),
+                    ));
+                }
                 cell.spawn((
                     Node {
                         position_type: PositionType::Absolute,
@@ -894,6 +916,163 @@ pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>)
             });
         })),
     )
+}
+
+/// What a number row adds to its text row: the number and how it moves, the hint that shows a
+/// mixed value, the scrub (a drag that begins on the row's label or padding) and the observers that
+/// turn typing, steps and drags into one [`ValueChange<f32>`].
+fn number_parts(value: f32, step: f32, range: RangeInclusive<f32>) -> impl Bundle {
+    (
+        NumberValue(value),
+        NumberStep(step),
+        NumberRange {
+            min: *range.start(),
+            max: *range.end(),
+        },
+        TextHint(String::new()),
+        EntityCursor::System(SystemCursorIcon::ColResize),
+        (
+            observe(number_self_update),
+            observe(number_on_text),
+            observe(number_on_drag_start),
+            observe(number_on_drag),
+            observe(number_on_drag_end),
+            observe(number_on_cancel),
+        ),
+    )
+}
+
+/// A row with a number: a label and a framed field the player types a number in, scrubs with a
+/// drag and steps with a key or the D-pad. `step` is how far one pixel of drag, one Up or Down
+/// press or one D-pad press moves it (and the digits the field shows: 0.1 shows one), and `range`
+/// is the least and greatest the player can make it.
+///
+/// Press on the label (or the row's padding) and drag left or right to scrub: 50 px at a step of
+/// 0.1 is 5.0, Shift takes a tenth of that rate and Ctrl ten times it. Click the field and type;
+/// Enter, or leaving the field, applies it (a number outside the range is held to its end;
+/// anything that is not a number, an expression such as `1.5*2` included, is refused with its
+/// reason as a [`NumberRefused`](crate::NumberRefused)); Escape puts the old number back. Up and
+/// Down on the focused field step it (Shift ten steps) and Left, Right, Home and End are the
+/// caret's; the D-pad's Left and Right step it and its Up and Down move focus; Tab leaves. A
+/// drag is never the only way (WCAG 2.5.7): the typed field is the other.
+///
+/// The row keeps its number in [`NumberValue`] and sends `ValueChange<f32>` for each change the
+/// player makes: `is_final` is false while a drag is scrubbing and true when it ends, on Enter,
+/// when focus leaves after an edit and for a step. Put [`MixedValue`](crate::MixedValue) on the row
+/// for a multi-selection whose members differ: the field is empty and shows a muted "—".
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     number_field("Health", 100.0, 0.5, 0.0..=250.0),
+///     observe(|change: On<ValueChange<f32>>| {
+///         if change.is_final {
+///             info!("health is {}", change.value);
+///         }
+///     }),
+/// ));
+/// # }
+/// ```
+pub fn number_field(
+    label: impl Into<String>,
+    value: f32,
+    step: f32,
+    range: RangeInclusive<f32>,
+) -> impl Bundle {
+    (
+        text_row_as(
+            Role::TextInput,
+            Some(label.into()),
+            format_number(value, step),
+            Some(NUMBER_FIELD_CHARS),
+            true,
+        ),
+        number_parts(value, step, range),
+    )
+}
+
+/// A row with a label and one [`number_field`] for each of `N` numbers (X, Y, Z and W, then 5, 6 …),
+/// as a position or a scale: each component's letter is its scrub handle, and each has the
+/// typing, steps, range and refusals of a number field. `step` and `range` are every component's.
+///
+/// The row keeps its numbers in [`VecValue`](crate::VecValue), and a change the player makes is a
+/// [`VecChange`](crate::VecChange) on the row: the component, its new value and the whole vector.
+/// For a multi-selection whose members differ in some components, put
+/// [`VecMixed`](crate::VecMixed) on the row: those components are empty with a muted "—", and a
+/// change to one is for that component only.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     vec_field("Position", [0.0, 1.5, -2.0], 0.1, -1000.0..=1000.0),
+///     observe(|change: On<VecChange>| {
+///         if change.is_final {
+///             info!("position is {:?}", change.values);
+///         }
+///     }),
+/// ));
+/// # }
+/// ```
+pub fn vec_field<const N: usize>(
+    label: impl Into<String>,
+    values: [f32; N],
+    step: f32,
+    range: RangeInclusive<f32>,
+) -> impl Bundle {
+    let label = label.into();
+    let (min, max) = (*range.start(), *range.end());
+    (
+        Node {
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Role::TextInput,
+        VecValue(values.to_vec()),
+        NumberStep(step),
+        NumberRange { min, max },
+        Children::spawn(SpawnWith(move |row: &mut RelatedSpawner<ChildOf>| {
+            let root = row.target_entity();
+            row.spawn((
+                Text::new(label),
+                ONE_LINE,
+                Role::ControlText,
+                Pickable::IGNORE,
+            ));
+            row.spawn((Node::default(), Role::NumberParts))
+                .with_children(|parts| {
+                    for (index, value) in values.into_iter().enumerate() {
+                        parts.spawn((
+                            text_row_as(
+                                Role::NumberPart,
+                                Some(axis_name(index)),
+                                format_number(value, step),
+                                Some(VEC_FIELD_CHARS),
+                                true,
+                            ),
+                            number_parts(value, step, min..=max),
+                            VecPart { root, index },
+                            observe(vec_part_on_change),
+                        ));
+                    }
+                });
+        })),
+    )
+}
+
+/// The letter of a vec field's `index`th component: X, Y, Z, W, and then its number from 5.
+fn axis_name(index: usize) -> String {
+    match index {
+        0 => "X".into(),
+        1 => "Y".into(),
+        2 => "Z".into(),
+        3 => "W".into(),
+        n => (n + 1).to_string(),
+    }
 }
 
 /// One hint of what an input does: a keycap and the words for it ("Esc  Back"). The keycap shows
