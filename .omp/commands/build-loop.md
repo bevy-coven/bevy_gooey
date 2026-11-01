@@ -18,6 +18,16 @@ They override the choice of item in section 4, not the gates.
 State lives in `docs/loop-log.md`; rules and traps live in `AGENTS.md`. Follow them; do not
 re-derive them.
 
+## Every pass ships: commit, push, publish, docs, demos (owner, 2026-10-31)
+
+The owner's rule for every pass of this loop. It is checked: after each pass the driver audits it from git (`tools/loop/steps.py audit` in bevy_grimoire) and records commits on `main`, commits left unpushed, package files changed, release tags, doc and demo files, and what was **missing**, on this repo's `loop-stats` branch.
+
+1. **Commit and push.** Everything the pass made is committed and pushed to `main` (through the gate) before the pass ends. Nothing stays only in the clone.
+2. **Publish.** A pass that changed what the package ships releases it in the same pass (the "Release" block in section 8). There is no time limit between releases. A publish crates.io refuses with `429` is logged once and not retried in this pass; the next pass releases, and its audit says so.
+3. **Docs.** A change to behaviour or API updates its documentation in the same pass: the README line, the `docs/guide/` section, rustdoc and the CHANGELOG, following https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md. Images and links in a README are absolute URLs.
+4. **Demos.** A change anyone can see ships its demo in the same pass: a GIF or still recorded from `examples/gallery`'s capture knobs, shown in the README or `docs/guide/`, and listed in `docs/media/README.md`. A media file a published README names is never moved.
+5. **Read the last audit first.** In Orient, run `git fetch -q origin loop-stats && git show origin/loop-stats:steps/bevy_gooey_loop-audit.tsv | tail -3`. Anything the previous pass left in `missing` (`push`, `release`, `docs`, `demo?`) is this pass's first job, ahead of its item, because it finishes work already done; only a broken gate comes before it. `demo?` is met by a demo, or by one line in the log saying why the change is not visible.
+
 ## Your work is saved even if you are killed — read this before you start
 
 **The driver saves whatever you leave uncommitted, without touching your branch.** Every ten minutes
@@ -335,7 +345,7 @@ Start only after section 7 passes. Then release (the "Release" block at the end 
 3. `git tag -a v<version> -m v<version>`, then push the commit and the tag (merge, never force, on a refused push).
 4. `cargo info <crate>@<version>` resolves; put the crates.io URL in the log entry.
 
-**At most one release every 6 hours** (owner, 2026-10-30: bevy_lights published v0.2.1 through v0.2.20 in one day, and then crates.io answered 429 for three passes in a row, each of which did nothing but retry). Release only when the last tag is more than 6 hours old (`git log -1 --format=%ct <last tag>`); until then the changes ride in the next release. A publish refused with 429 is not retried in this pass or the next: log it once and build, and the next release carries it. A pass that only retries a release is an idle pass. Any other failed publish is logged with its error and retried at the next release. Never yank, never reuse a version; fix a bad release forward.
+**Every pass that changed the package releases it** (owner, 2026-10-31, replacing the six-hour limit of 2026-10-30). Release in the same pass as the change, after the push. A publish refused with `429` is not retried in this pass: log it once and go on; the next pass releases, and the audit on `loop-stats` shows it as `missing: release` until then. Any other failed publish is logged with its error and retried by the next pass.
 
 **bevy_gooey has never been published.** The first pass with a green gate publishes `0.1.0` as it stands; a first publish of this crate name is allowed (owner, 2026-10-30).
 
