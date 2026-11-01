@@ -28,6 +28,7 @@ use crate::choice::{
     choice_on_key_input, choice_on_move, choice_self_update,
 };
 use crate::list::ListView;
+use crate::menu::{MenuBar, MenuItem, MenuTitle, bar_on_cancel, menu_panel};
 use crate::meter::Meter;
 use crate::model::{PadStyle, meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
@@ -47,7 +48,7 @@ use crate::toast::{Toast, ToastKind};
 /// A control's label is one line: the row is as wide as its label and its control need, so a label
 /// that wraps was wrapped by a rounding error in the row's width (a label 210 px wide in a row that
 /// came out a hair under 210 stood on two lines at 125% text, and the row was twice as tall).
-const ONE_LINE: TextLayout = TextLayout::new(Justify::Left, LineBreak::NoWrap);
+pub(crate) const ONE_LINE: TextLayout = TextLayout::new(Justify::Left, LineBreak::NoWrap);
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
 const SLIDER_STEPS: f32 = 20.0;
@@ -71,7 +72,7 @@ const TEXT_CARET_WIDTH: f32 = 0.1;
 /// its own width. A square turned an eighth of a turn has its two drawn sides on one side of its
 /// centre: they run from the centre line out to the corner, which is half a diagonal away, so
 /// the ink's middle is a quarter of the diagonal, `1 / (2 √2)` of the side, off the centre.
-const CHEVRON_INK_SHIFT: f32 = 50.0 * std::f32::consts::FRAC_1_SQRT_2;
+pub(crate) const CHEVRON_INK_SHIFT: f32 = 50.0 * std::f32::consts::FRAC_1_SQRT_2;
 
 /// A toggle's state at spawn. A bundle cannot carry [`Checked`] only when the toggle starts on
 /// (`Option<Checked>` is not a bundle), so this puts it on the entity as it is added and goes.
@@ -1326,6 +1327,175 @@ fn popover_panel(anchor: Entity, placement: Placement, modal: bool) -> impl Bund
             observe(stop_acquire),
         ),
     )
+}
+
+/// A menu bar: a row of [`menu_title`]s across the top of its parent, each opening a menu of
+/// commands. F10, or Alt pressed and let go on its own, puts focus on the first title; Left and
+/// Right walk the titles (wrapping), Down, Enter, Space or a click opens one with focus on its
+/// first item, a pointer moving onto another title switches menus while one is open, and Escape
+/// (or the pad's B) closes the menu and then gives focus back to where F10 took it from. Inside a
+/// menu Right opens a [`submenu`] or moves on to the next title's menu, Left closes a submenu or
+/// moves to the previous title's, and Up, Down, Home and End walk the items.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(menu_bar(children![
+///     menu_title(
+///         "File",
+///         children![
+///             (
+///                 menu_item("Open…").with_shortcut(Shortcut::primary(KeyCode::KeyO)),
+///                 observe(|_: On<Activate>| info!("open")),
+///             ),
+///             separator(),
+///             submenu("Recent", children![menu_item("level-1.ron")]),
+///         ]
+///     ),
+///     menu_title(
+///         "View",
+///         children![
+///             check_item("Grid", true),
+///             separator(),
+///             radio_item("Small", false),
+///             radio_item("Large", true),
+///         ]
+///     ),
+/// ]));
+/// # }
+/// ```
+///
+/// The bar is the panel's colour with one line under it and blocks the pointer. It is a row of
+/// whatever you pass, so it takes any widget beside the titles (a [`label`] pushed right, say).
+pub fn menu_bar(titles: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(100.0),
+            ..default()
+        },
+        Role::MenuBar,
+        MenuBar::default(),
+        observe(bar_on_cancel),
+        titles,
+    )
+}
+
+/// A title of a [`menu_bar`]: a button with the menu `items` (a `children![]` of [`menu_item`],
+/// [`check_item`], [`radio_item`], [`separator`] and [`submenu`]) that opens under it. The menu is
+/// spawned once with the title and shown by opening it, so an `observe(..)` on an item stays
+/// where you wrote it. Its title stays lit while its menu is open.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(menu_bar(children![menu_title(
+///     "Edit",
+///     children![menu_item("Undo"), menu_item("Redo")]
+/// )]));
+/// # }
+/// ```
+pub fn menu_title(label: impl Into<String>, items: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::MenuTitle,
+        MenuTitle,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        children![(Text::new(label), Role::ButtonText), menu_panel(items)],
+    )
+}
+
+/// A command in a menu: a row with `label` that sends [`Activate`] when chosen by Enter, Space, the
+/// pad's South button or a click, and closes the menu. Chain [`MenuItem::with_shortcut`] to show
+/// its chord at the end of the row, and add [`Disabled`](crate::Disabled) to make it unavailable
+/// with a reason.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     menu_item("Save").with_shortcut(Shortcut::primary(KeyCode::KeyS)),
+///     observe(|_: On<Activate>| info!("save")),
+/// ));
+/// # }
+/// ```
+pub fn menu_item(label: impl Into<String>) -> MenuItem {
+    MenuItem::command(label)
+}
+
+/// A menu item that is on or off: it keeps its state in Bevy's [`Checked`] (a tick in the mark
+/// slot while on) and flips it on every choice, sending a [`ValueChange<bool>`] with the new value.
+/// The menu closes, like any command.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     check_item("Show grid", true),
+///     observe(|change: On<ValueChange<bool>>| info!("grid: {}", change.value)),
+/// ));
+/// # }
+/// ```
+pub fn check_item(label: impl Into<String>, checked: bool) -> MenuItem {
+    MenuItem::check(label, checked)
+}
+
+/// One of a run of choices in a menu, exactly one of which is on: choosing it sets its own
+/// [`Checked`] (a dot in the mark slot) and clears the [`radio_item`]s next to it, up to the
+/// nearest [`separator`] or other kind of row either way, and sends a [`ValueChange<bool>`] with
+/// `true` for it. Choosing the one that is on changes nothing and sends nothing.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((Node::default(), children![
+///     radio_item("Small", false),
+///     radio_item("Large", true),
+/// ]));
+/// # }
+/// ```
+pub fn radio_item(label: impl Into<String>, checked: bool) -> MenuItem {
+    MenuItem::radio(label, checked)
+}
+
+/// A menu item that opens another menu `items` to its right (Right, Enter, Space or a click opens
+/// it; Left or Escape closes it and puts focus back on the item). A submenu with nothing in it
+/// says "Nothing here". Add [`Disabled`](crate::Disabled) to the item to make it unavailable.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(submenu("Recent", children![menu_item("level-1.ron"), menu_item("level-2.ron")]));
+/// # }
+/// ```
+pub fn submenu(label: impl Into<String>, items: impl Bundle) -> impl Bundle {
+    (MenuItem::submenu(label), children![menu_panel(items)])
+}
+
+/// A line between two groups of a menu. It is not focusable and the pointer goes through it to
+/// the card, and it ends a run of [`radio_item`]s.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((Node::default(), children![menu_item("Open"), separator(), menu_item("Quit")]));
+/// # }
+/// ```
+pub fn separator() -> impl Bundle {
+    (Node::default(), Role::MenuSeparator, Pickable::IGNORE)
 }
 
 /// A line of news at the edge of the screen: "Game saved", "Quest updated". Spawn it from any

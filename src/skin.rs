@@ -13,6 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::list::ListView;
+use crate::menu::MenuOpen;
 use crate::model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
     TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height, snap_line_width,
@@ -56,6 +57,14 @@ const THUMB_RAIL_RATIO: f32 = 1.25;
 /// prompt that replaces the name ("Press a button, Menu exits", about 26 characters) fits without
 /// the row ever changing size. It is also as wide as a toggle's row leaves a four-letter label.
 const BINDING_CAP_TEXT_SIZES: f32 = 17.0;
+
+/// A menu's card is at least this many body text sizes wide (10 × 20 px = 200 px at the default
+/// size): a short menu is still a card, and a title's menu is never narrower than its words.
+const MENU_MIN_TEXT_SIZES: f32 = 10.0;
+
+/// The slot a menu item keeps for its check or dot, in body text sizes, in every item so labels
+/// share one edge whether or not a menu has a check in it.
+const MENU_MARK_TEXT_SIZES: f32 = 1.1;
 
 /// A toast's longest line, in body text sizes: the tooltip's measure, about 40 characters.
 const TOAST_MEASURE_TEXT_SIZES: f32 = 24.0;
@@ -1061,6 +1070,33 @@ pub enum Role {
     TextField,
     /// A text input's hint: [`GooeySkin::text_muted`] words over the field while it is empty.
     TextHint,
+    /// A [`crate::menu_bar`]: a row of titles on the panel's colour, framed below.
+    MenuBar,
+    /// A [`crate::menu_title`]: a button's size with no frame at rest, the hovered fill under the
+    /// pointer or while its menu is open, and the focus ring while it has focus.
+    MenuTitle,
+    /// The card a title or a [`crate::submenu`] opens: a [`Role::Popover`]'s look, shown while open.
+    MenuPanel,
+    /// One command of a menu: a mark, a label, a shortcut and a chevron on a row that lights as a
+    /// whole under the pointer, with focus, or while its submenu is open.
+    MenuItem,
+    /// The slot at the start of a menu item that holds a check or a dot, so labels share one edge.
+    MenuMark,
+    /// A check item's tick, drawn in two borders while the item is on.
+    MenuCheck,
+    /// A radio item's dot, drawn while the item is on.
+    MenuDot,
+    /// A menu item's label.
+    MenuText,
+    /// A menu item's shortcut: [`GooeySkin::text_muted`] at rest and right-aligned, the label's
+    /// colour while the row is lit.
+    MenuShortcut,
+    /// A submenu item's chevron, the choice's, pointing right.
+    MenuChevron,
+    /// The line between two groups of a menu: one frame weight of [`GooeySkin::outline`].
+    MenuSeparator,
+    /// A line in a menu that is not a command ("Nothing here"): [`GooeySkin::text_muted`].
+    MenuNote,
 }
 
 type Styled = (
@@ -1144,6 +1180,10 @@ struct State {
     rows: f32,
     /// A binding row that waits for the player's next press.
     capturing: bool,
+    /// The widget holds visible focus.
+    focused: bool,
+    /// A menu title or submenu item whose menu is open.
+    open: bool,
 }
 
 impl Default for State {
@@ -1163,6 +1203,8 @@ impl Default for State {
             at_end: false,
             rows: 0.0,
             capturing: false,
+            focused: false,
+            open: false,
         }
     }
 }
@@ -1180,6 +1222,7 @@ type StateQuery = (
     Option<&'static ScrollbarDragState>,
     Option<&'static ListView>,
     Has<Capturing>,
+    Has<MenuOpen>,
     Option<&'static Role>,
 );
 
@@ -1201,6 +1244,7 @@ type Restyle = (
         Changed<ChoiceValue>,
         Changed<ComputedUiRenderTargetInfo>,
         Added<Capturing>,
+        Or<(Added<MenuOpen>, Added<PopoverPanel>)>,
     )>,
 );
 
@@ -1211,6 +1255,7 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, Checked>,
     RemovedComponents<'w, 's, Selected>,
     RemovedComponents<'w, 's, Capturing>,
+    RemovedComponents<'w, 's, MenuOpen>,
     RemovedComponents<'w, 's, SkinScope>,
     RemovedComponents<'w, 's, ChildOf>,
 );
@@ -1227,6 +1272,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
                 | Role::Binding
                 | Role::Toast
                 | Role::TextInput
+                | Role::MenuItem
         )
     )
 }
@@ -1268,7 +1314,8 @@ pub fn apply_skin(
             warn!("bevy_gooey: scoped skin: {problem}");
         }
     }
-    let (unpressed, enabled, unchecked, unselected, stopped, unscoped, orphaned) = &mut removed;
+    let (unpressed, enabled, unchecked, unselected, stopped, closed, unscoped, orphaned) =
+        &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
         skin: &skin,
@@ -1292,6 +1339,7 @@ pub fn apply_skin(
                     bar,
                     list,
                     capturing,
+                    open,
                     role,
                 )| {
                     State {
@@ -1314,6 +1362,8 @@ pub fn apply_skin(
                         at_end: choice.is_some_and(|(value, count)| value.0 + 1 >= count.0),
                         rows: list.map_or(0.0, |list| list.rows),
                         capturing,
+                        focused: look.focused == Some(entity),
+                        open,
                     }
                 },
             )
@@ -1334,6 +1384,7 @@ pub fn apply_skin(
                                 | Role::Binding
                                 | Role::TextInput
                                 | Role::Toast
+                                | Role::MenuItem
                         )
                     )
                 })
@@ -1348,6 +1399,7 @@ pub fn apply_skin(
         unchecked.clear();
         unselected.clear();
         stopped.clear();
+        closed.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -1383,6 +1435,7 @@ pub fn apply_skin(
         dirty.extend(children.iter_descendants(region));
     }
     dirty.extend(stopped.read());
+    dirty.extend(closed.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -1397,6 +1450,8 @@ pub fn apply_skin(
                             | Role::Binding
                             | Role::Tab
                             | Role::TextField
+                            | Role::MenuItem
+                            | Role::MenuTitle
                     )
                 })
                 .map(|item| item.0),
@@ -1492,7 +1547,23 @@ fn restyle(
             skin.surface_raised
         }),
         Role::Meter | Role::SliderRail => Some(skin.surface_raised),
-        Role::Tooltip | Role::Popover => Some(skin.solid_surface()),
+        Role::Tooltip | Role::Popover | Role::MenuPanel | Role::MenuBar => {
+            Some(skin.solid_surface())
+        }
+        // A menu's rows have no fill at rest, so a card shows its own colour; one lights as a
+        // whole under the pointer, with focus, or while its submenu is open, in a button's
+        // hovered fill, and the accent while pressed. A title the same on the bar.
+        Role::MenuTitle | Role::MenuItem => Some(if state.disabled {
+            Color::NONE
+        } else if state.pressed {
+            skin.accent
+        } else if state.hovered || state.focused || state.open {
+            skin.hovered()
+        } else {
+            Color::NONE
+        }),
+        Role::MenuSeparator => Some(skin.outline),
+        Role::MenuDot => Some(menu_ink(owner, skin)),
         Role::ToastBody => Some(faded(skin.solid_surface(), owner.alpha)),
         Role::ToastMark => Some(faded(
             if owner.alert {
@@ -1595,7 +1666,13 @@ fn restyle(
         | Role::TabPage
         | Role::TextInput
         | Role::TextCell
-        | Role::TextHint => None,
+        | Role::TextHint
+        | Role::MenuMark
+        | Role::MenuCheck
+        | Role::MenuText
+        | Role::MenuShortcut
+        | Role::MenuChevron
+        | Role::MenuNote => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(fill));
@@ -1604,7 +1681,17 @@ fn restyle(
     let edge = match role {
         Role::Panel if in_dialog => Some(BorderColor::all(skin.outline)),
         // A popover floats over whatever is behind it, so its edge is the dialog's: the outline.
-        Role::Popover => Some(BorderColor::all(skin.outline)),
+        Role::Popover | Role::MenuPanel => Some(BorderColor::all(skin.outline)),
+        // The bar's one frame is the line under it, the panel's own quiet edge.
+        Role::MenuBar => Some(BorderColor::all(
+            skin.surface_edge.unwrap_or(skin.surface_raised),
+        )),
+        Role::MenuTitle | Role::MenuItem if state.focused => {
+            Some(BorderColor::all(skin.focus_ring))
+        }
+        Role::MenuTitle | Role::MenuItem => Some(BorderColor::all(Color::NONE)),
+        // The tick and the arrow are drawn in borders, in the row's ink.
+        Role::MenuCheck | Role::MenuChevron => Some(BorderColor::all(menu_ink(owner, skin))),
         Role::Panel | Role::Tooltip | Role::Prompts => Some(BorderColor::all(
             skin.surface_edge.unwrap_or(skin.surface_raised),
         )),
@@ -1992,6 +2079,98 @@ fn restyle(
                 next.width = Val::Px(width);
                 next.border_radius = BorderRadius::all(Val::Px(width / 2.0));
             }
+            // A row of titles, a frame only under it.
+            Role::MenuBar => {
+                next.border = UiRect::bottom(Val::Px(line));
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 0.5), Val::Px(skin.pad() * 0.3));
+                next.column_gap = Val::Px(skin.gap * 0.5);
+                next.align_items = AlignItems::Center;
+            }
+            // A button's size, frameless until the focus ring.
+            Role::MenuTitle => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.2), Val::Px(skin.pad() * 0.6));
+                next.min_height = Val::Px(skin.target());
+            }
+            // A popover's card with a menu's room: rows touch, each carrying its own padding, so
+            // the card's is half a popover's. Display is the menu's own (open or closed).
+            Role::MenuPanel => {
+                next.flex_direction = FlexDirection::Column;
+                next.align_items = AlignItems::Stretch;
+                if let Some(window) = target {
+                    next.max_width = Val::Px((window.logical_size().x - 2.0 * skin.gap).max(0.0));
+                }
+                next.min_width = Val::Px(text_px * MENU_MIN_TEXT_SIZES);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad() * 0.5));
+                next.row_gap = Val::Px(skin.gap * 0.25);
+            }
+            // A button's padding and height, the label growing so shortcuts stand at the end.
+            Role::MenuItem | Role::MenuNote => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.4));
+                next.min_height = Val::Px(skin.target());
+                next.column_gap = Val::Px(skin.gap);
+                next.align_items = AlignItems::Center;
+            }
+            Role::MenuMark => {
+                next.width = Val::Px(text_px * MENU_MARK_TEXT_SIZES);
+                next.height = Val::Px(text_px * MENU_MARK_TEXT_SIZES);
+                next.flex_shrink = 0.0;
+                next.justify_content = JustifyContent::Center;
+                next.align_items = AlignItems::Center;
+            }
+            Role::MenuCheck => {
+                next.display = if owner.checked {
+                    Display::Flex
+                } else {
+                    Display::None
+                };
+                next.width = Val::Px(text_px * 0.4);
+                next.height = Val::Px(text_px * 0.7);
+                next.border = UiRect {
+                    right: Val::Px(line),
+                    bottom: Val::Px(line),
+                    ..UiRect::ZERO
+                };
+                next.flex_shrink = 0.0;
+            }
+            Role::MenuDot => {
+                next.display = if owner.checked {
+                    Display::Flex
+                } else {
+                    Display::None
+                };
+                next.width = Val::Px(text_px * 0.5);
+                next.height = Val::Px(text_px * 0.5);
+                next.border_radius = BorderRadius::MAX;
+                next.flex_shrink = 0.0;
+            }
+            Role::MenuText => next.flex_grow = 1.0,
+            // Two gaps from the label at the least, never squeezed.
+            Role::MenuShortcut => {
+                next.margin = UiRect::left(Val::Px(skin.gap));
+                next.flex_shrink = 0.0;
+            }
+            Role::MenuChevron => {
+                next.width = Val::Px(chevron);
+                next.height = Val::Px(chevron);
+                next.border = UiRect {
+                    top: Val::Px(line),
+                    right: Val::Px(line),
+                    ..UiRect::ZERO
+                };
+                next.flex_shrink = 0.0;
+            }
+            // A line the card's width, a little in from its rows and a gap apart from them.
+            Role::MenuSeparator => {
+                next.height = Val::Px(line);
+                next.margin = UiRect::axes(Val::Px(skin.pad() * 0.5), Val::Px(skin.gap * 0.5));
+                next.flex_shrink = 0.0;
+            }
             // The safe area: a long body wraps at the dialog's maximum width or squeezes it in,
             // and nothing of it ever reaches the bezel.
             Role::Scrim => next.padding = UiRect::all(Val::Percent(SAFE_EDGE_PERCENT)),
@@ -2045,6 +2224,22 @@ fn restyle(
             Some((color, &look.fonts.body, skin.text_size))
         }
         Role::TextHint => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
+        Role::MenuText => Some((menu_ink(owner, skin), &look.fonts.body, skin.text_size)),
+        // Muted at rest; the label's ink once the row is lit (muted is not held against the
+        // hovered fill), so a chord is always as readable as the label beside it.
+        Role::MenuShortcut => {
+            let color = if owner.disabled {
+                skin.text_muted
+            } else if owner.pressed {
+                skin.accent_text
+            } else if owner.hovered || owner.focused || owner.open {
+                skin.text
+            } else {
+                skin.text_muted
+            };
+            Some((color, &look.fonts.body, skin.text_size))
+        }
+        Role::MenuNote => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
         Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
         Role::PromptKey | Role::PromptButton => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::ToastText => Some((
@@ -2101,6 +2296,18 @@ fn restyle(
             Val::Px(0.0),
             Val::Px(skin.pad()),
         ));
+    }
+}
+
+/// The ink of a menu row's label, tick and arrow: the text colour, the accent's text while the row
+/// is pressed, muted while it is disabled.
+fn menu_ink(row: State, skin: &GooeySkin) -> Color {
+    if row.disabled {
+        skin.text_muted
+    } else if row.pressed {
+        skin.accent_text
+    } else {
+        skin.text
     }
 }
 

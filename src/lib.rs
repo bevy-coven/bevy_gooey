@@ -122,6 +122,7 @@ mod choice;
 mod controls;
 mod feedback;
 mod list;
+mod menu;
 mod meter;
 mod nav;
 mod options;
@@ -147,6 +148,10 @@ pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
+pub use menu::{
+    Disabled, MenuBar, MenuItem, MenuOpen, MenuPanel, MenuTitle, fit_menus, focus_menu_bar,
+    menu_by_input, scroll_menus_to_focus, switch_menus_on_hover,
+};
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
@@ -179,9 +184,10 @@ pub use text::{
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    binding, button, choice, dialog, heading, interface_size, label, list, menu, meter, pad_style,
-    panel, popover, popover_modal, prompt, prompts, screen, skin_preset, slider, surface, tab_page,
-    tabs, text_input, text_size, toast, toast_alert, toggle,
+    binding, button, check_item, choice, dialog, heading, interface_size, label, list, menu,
+    menu_bar, menu_item, menu_title, meter, pad_style, panel, popover, popover_modal, prompt,
+    prompts, radio_item, screen, separator, skin_preset, slider, submenu, surface, tab_page, tabs,
+    text_input, text_size, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -251,6 +257,10 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Tooltip>()
             .register_type::<Placement>()
             .register_type::<PopoverPanel>()
+            .register_type::<MenuBar>()
+            .register_type::<MenuTitle>()
+            .register_type::<MenuPanel>()
+            .register_type::<MenuOpen>()
             .register_type::<CloseReason>()
             .register_type::<PopoverClosed>()
             .register_type::<Toast>()
@@ -313,6 +323,7 @@ impl Plugin for GooeyNavPlugin {
             .add_message::<UiFeedback>()
             .register_type::<Dialog>()
             .register_type::<Cancel>()
+            .add_observer(menu::menu_on_activate)
             .add_observer(nav::remember_opener)
             .add_observer(nav::return_focus)
             .add_systems(
@@ -327,6 +338,13 @@ impl Plugin for GooeyNavPlugin {
                     focus_opened_dialogs,
                     land_tab_focus,
                     step_tabs.run_if(not_capturing),
+                    (
+                        focus_menu_bar.run_if(not_capturing),
+                        menu_by_input.run_if(not_capturing),
+                        switch_menus_on_hover,
+                        fit_menus,
+                    )
+                        .chain(),
                     navigate_by_input.run_if(not_capturing),
                     gamepad_adjust.run_if(not_capturing),
                     gamepad_select.run_if(not_capturing),
@@ -335,6 +353,7 @@ impl Plugin for GooeyNavPlugin {
                     bind_by_input,
                     catch_pointer,
                     scroll_to_focus,
+                    scroll_menus_to_focus,
                     feedback_on_focus,
                 )
                     .chain()
