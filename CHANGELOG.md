@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-01
+
 ### Added
 
 - Shortcuts (G-08, #12): `Shortcut { modifiers, key }`, `Modifiers { ctrl, shift, alt, meta }` (the physical modifiers, either side; combine with `|`; `Modifiers::PRIMARY` and `Shortcut::primary(key)` are Command on a mac and Ctrl elsewhere) and `Platform` (`current()`, `Mac`, `Other`). `Shortcut::label()` is the platform's spelling, "Ctrl+Shift+P" in Microsoft's order or "⌃⇧P" in Apple's with glyphs for Return, Delete, Escape, Tab and the arrows (`label_on(Platform)` for another platform); `Shortcut::just_pressed(&ButtonInput<KeyCode>)` is the one rule for a chord that went down this frame with exactly its modifiers; `Shortcut::is_valid()` says the key is not a modifier. `Eq + Hash`, reflected, serde under the `serde` feature.
@@ -13,6 +15,7 @@
 ### Changed
 
 - `Tooltip(String)` is now `Tooltip { text, shortcut }`: build one with `Tooltip::new("…")` (a clean cutover; `Tooltip.0` is `Tooltip.text`).
+- `show_tooltips` and `update_tooltip_text` take one more system parameter each (the keycap lookup; `Commands`), so a host that registers them by hand adds nothing but may need its own query types to match; the crate's `GooeyStylePlugin` is unchanged.
 - `Binding` has one more variant, `Chord`, and `BindingSettings` one more field, `chord_prompt` (a skin or settings file without it reads the default), so a `match` on `Binding` and a struct literal of `BindingSettings` that names every field need the new arm and field.
 
 ## [0.12.0] - 2026-11-01
