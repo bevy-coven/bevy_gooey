@@ -184,6 +184,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *Popovers: `popover_modal(file_button, Placement::Below)` opens a menu under its anchor that holds focus and gives it back; at the window's edge it slides or flips and never leaves the window, and Escape or a press anywhere else closes it with one `PopoverClosed`.*
 
+![The menus example: a bar with File, Edit, View and Help; F10 puts the ring on File, Down opens its menu with Ctrl+N, Ctrl+O and Ctrl+S in a column at the right edge, Down reaches Recent and Right opens its submenu of three levels, Left closes it, Escape closes File, Right then Down opens Edit where the disabled Redo shows "Nothing to redo" in a tooltip beside the menu, and Escape closes it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/menus.gif)
+
+*Menus: `menu_bar(children![menu_title("File", children![menu_item("Open...").with_shortcut(..), ..])])`, F10 and the arrows to walk it, Right into a submenu, Escape one level at a time; a disabled item says why.*
+
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 
 *Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
