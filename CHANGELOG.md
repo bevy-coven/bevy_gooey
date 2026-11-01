@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-01
+
 ### Added
 
 - `popover(anchor, placement)` and `popover_modal(anchor, placement)` (G-04, #8): a panel that opens beside a widget or at the pointer and is kept inside the window. `Placement { Below, Above, Right, Left, AtPointer }` sets the preferred side; Bevy's own `Popover` takes the candidates (the side aligned to the anchor's start, its end and centred, then the opposite side the same three ways) and every frame picks the first that fits, so a panel flips and slides at the window's edge and is placed again when the window is resized. It is a child of its anchor (despawning the anchor closes it), laid out on the window (`FixedNode`), at most the window's width less two gaps wide, and drawn as `Role::Popover`: an opaque `solid_surface` card framed in `outline`, padded like a panel, with a shadow, above a `dialog` and under a `Tooltip`.
