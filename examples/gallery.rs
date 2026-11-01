@@ -51,6 +51,9 @@
 //! in the Quit dialog: the keycaps are the keyboard's ("Enter", "Esc") until a pad button is
 //! pressed, then the pad's, round ("A", "B"), until the next key. `GOOEY_KEYS` tokens `plug`
 //! (connect a gamepad) and `pad` (press its X button, which nothing acts on) stage that.
+//! The **Save as** field above the list is a [`text_input`]: click it or Tab to it and type, Enter
+//! saves (a toast), and Down leaves it. `GOOEY_KEYS` tokens `name` (focus it) and `type=Aria`
+//! (type those characters, one every beat) stage that.
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::ecs::spawn::SpawnIter;
@@ -169,6 +172,10 @@ enum Staged {
     /// Press and release the plugged-in gamepad's West button (X on an Xbox pad), which no widget
     /// acts on: the player has picked up the pad.
     Pad,
+    /// Focus the Save-as field, showing focus.
+    Name,
+    /// One character typed, as the platform's keyboard reports it.
+    Char(char),
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -260,43 +267,51 @@ fn main() {
             keys: std::env::var("GOOEY_KEYS")
                 .unwrap_or_default()
                 .split(',')
-                .filter_map(|k| match k.trim() {
-                    "up" => Some(Staged::Key(KeyCode::ArrowUp)),
-                    "down" => Some(Staged::Key(KeyCode::ArrowDown)),
-                    "left" => Some(Staged::Key(KeyCode::ArrowLeft)),
-                    "right" => Some(Staged::Key(KeyCode::ArrowRight)),
-                    "enter" => Some(Staged::Key(KeyCode::Enter)),
-                    "escape" => Some(Staged::Key(KeyCode::Escape)),
-                    "tab" => Some(Staged::Key(KeyCode::Tab)),
-                    "space" => Some(Staged::Key(KeyCode::Space)),
-                    "q" => Some(Staged::Key(KeyCode::KeyQ)),
-                    "f" => Some(Staged::Key(KeyCode::KeyF)),
-                    "home" => Some(Staged::Key(KeyCode::Home)),
-                    "end" => Some(Staged::Key(KeyCode::End)),
-                    "pagedown" => Some(Staged::Key(KeyCode::PageDown)),
-                    "pageup" => Some(Staged::Key(KeyCode::PageUp)),
-                    "slots" => Some(Staged::Slots),
-                    "wheel" => Some(Staged::Wheel),
-                    "nexttab" => Some(Staged::NextTab),
-                    "prevtab" => Some(Staged::PrevTab),
-                    "tab1" => Some(Staged::Tab(0)),
-                    "tab2" => Some(Staged::Tab(1)),
-                    "tab3" => Some(Staged::Tab(2)),
-                    "back" => Some(Staged::Back),
-                    "forward" => Some(Staged::Forward),
-                    "click" => Some(Staged::Click),
-                    "untip" => Some(Staged::Untip),
-                    "retip" => Some(Staged::Retip),
-                    "hover" => Some(Staged::Hover),
-                    "grab" => Some(Staged::Grab),
-                    "drag" => Some(Staged::Drag),
-                    "drop" => Some(Staged::Drop),
-                    "toast" => Some(Staged::Toast),
-                    "alert" => Some(Staged::Alert),
-                    "long" => Some(Staged::Long),
-                    "plug" => Some(Staged::Plug),
-                    "pad" => Some(Staged::Pad),
-                    _ => None,
+                .flat_map(|k| -> Vec<Staged> {
+                    let k = k.trim();
+                    if let Some(word) = k.strip_prefix("type=") {
+                        return word.chars().map(Staged::Char).collect();
+                    }
+                    let staged = match k {
+                        "up" => Some(Staged::Key(KeyCode::ArrowUp)),
+                        "down" => Some(Staged::Key(KeyCode::ArrowDown)),
+                        "left" => Some(Staged::Key(KeyCode::ArrowLeft)),
+                        "right" => Some(Staged::Key(KeyCode::ArrowRight)),
+                        "enter" => Some(Staged::Key(KeyCode::Enter)),
+                        "escape" => Some(Staged::Key(KeyCode::Escape)),
+                        "tab" => Some(Staged::Key(KeyCode::Tab)),
+                        "space" => Some(Staged::Key(KeyCode::Space)),
+                        "q" => Some(Staged::Key(KeyCode::KeyQ)),
+                        "f" => Some(Staged::Key(KeyCode::KeyF)),
+                        "home" => Some(Staged::Key(KeyCode::Home)),
+                        "end" => Some(Staged::Key(KeyCode::End)),
+                        "pagedown" => Some(Staged::Key(KeyCode::PageDown)),
+                        "pageup" => Some(Staged::Key(KeyCode::PageUp)),
+                        "slots" => Some(Staged::Slots),
+                        "wheel" => Some(Staged::Wheel),
+                        "nexttab" => Some(Staged::NextTab),
+                        "prevtab" => Some(Staged::PrevTab),
+                        "tab1" => Some(Staged::Tab(0)),
+                        "tab2" => Some(Staged::Tab(1)),
+                        "tab3" => Some(Staged::Tab(2)),
+                        "back" => Some(Staged::Back),
+                        "forward" => Some(Staged::Forward),
+                        "click" => Some(Staged::Click),
+                        "untip" => Some(Staged::Untip),
+                        "retip" => Some(Staged::Retip),
+                        "hover" => Some(Staged::Hover),
+                        "grab" => Some(Staged::Grab),
+                        "drag" => Some(Staged::Drag),
+                        "drop" => Some(Staged::Drop),
+                        "toast" => Some(Staged::Toast),
+                        "alert" => Some(Staged::Alert),
+                        "long" => Some(Staged::Long),
+                        "plug" => Some(Staged::Plug),
+                        "name" => Some(Staged::Name),
+                        "pad" => Some(Staged::Pad),
+                        _ => None,
+                    };
+                    staged.into_iter().collect()
                 })
                 .collect(),
         });
@@ -444,6 +459,17 @@ fn setup(mut commands: Commands) {
                 (
                     panel(),
                     children![
+                        (
+                            text_input("Save as", ""),
+                            TextHint("Name this save".into()),
+                            TextLimit(16),
+                            observe(|change: On<ValueChange<String>>, mut commands: Commands| {
+                                if change.is_final && !change.value.is_empty() {
+                                    info!("gooey: save as {}", change.value);
+                                    commands.spawn(toast(format!("Saved as {}", change.value)));
+                                }
+                            }),
+                        ),
                         label("Load game"),
                         list(
                             4.5,
@@ -644,6 +670,7 @@ fn stage_keys(
     window: Query<Entity, With<PrimaryWindow>>,
     tipped: Query<Entity, With<Tooltip>>,
     thumbs: Query<(&Role, &UiGlobalTransform)>,
+    inputs: Query<Entity, With<bevy::ui_widgets::TextInput>>,
     slots: Query<(Entity, &UiGlobalTransform), With<SaveSlot>>,
     mut focus: ResMut<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
@@ -771,6 +798,23 @@ fn stage_keys(
             for &action in actions {
                 pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
             }
+        }
+        Some(Staged::Name) if state == ButtonState::Pressed => {
+            if let Some(field) = inputs.iter().next() {
+                focus.set(field, FocusCause::Navigated);
+                shown.0 = true;
+            }
+        }
+        Some(&Staged::Char(c)) => {
+            let text = c.to_string();
+            keys.write(KeyboardInput {
+                key_code: KeyCode::Unidentified(bevy::input::keyboard::NativeKeyCode::Unidentified),
+                logical_key: Key::Character(text.as_str().into()),
+                state,
+                text: (state == ButtonState::Pressed).then(|| text.as_str().into()),
+                repeat: false,
+                window,
+            });
         }
         Some(Staged::Slots) if state == ButtonState::Pressed => {
             let first = slots
