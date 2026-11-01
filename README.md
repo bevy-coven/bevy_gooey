@@ -97,8 +97,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 - **Skin the whole interface from one value** — `GooeySkin` is plain data with four presets (dark,
   parchment, a high-contrast one held to 7:1 and a compact `Tool` one), a `problems()` check against the
   WCAG 2.2 contrast and target-size rules, `density: Density::Compact` for a desktop tool's rows (half
-  the padding, a 24 px least target), and a `SkinScope(skin)` on any node restyles just that subtree (a
-  preview of a theme, an editor's own chrome next to a game's skin):
+  the padding, a 24 px least target), design tokens (`spacing`, `radii`, `type_scale` and a `surfaces`
+  ladder of five fills whose every step `problems()` holds to at least ΔL\* 2, drawn by `surface(n)`),
+  and a `SkinScope(skin)` on any node restyles just that subtree (a preview of a theme, an editor's own
+  chrome next to a game's skin):
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
@@ -161,6 +163,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 ![The density example: an Inspector panel with a Compact switch, Theme, Visible, Space, Opacity and two buttons in the dark skin; Enter turns Compact on and the panel gets shorter in the same frame, Down and Right step Theme to Parchment, High contrast (white frames, amber fills) and Tool (blue fills), Up and Enter turn Compact off, where the rows spread out again, and on](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/density.gif)
 
 *Density: `skin.density = Density::Compact` is one field; every row halves its padding and stands at least 24 px high (WCAG 2.2 SC 2.5.8's floor, still checked), and the colours, the ring and the keys do not change: here the panel goes from 528 px to 456 px at the same 20 px text. `SkinPreset::Tool` is a blue-on-grey look with 14 px text and tighter sizes: the gallery's settings panel is 294 px tall in it against 520 px in dark.*
+
+![The ladder example: a card "Surface ladder" in dark whose four nested cards, Surface 1 to Surface 4, each step lighter than the one it sits in and each labelled with its CIE L* and the step it makes (12.9, 18.3, 23.6, 31.6), the Theme row in the innermost; Right steps Theme to Parchment (cream cards on tan), High contrast (grey steps on black) and Tool (tighter cards in blue-grey), and Left steps it back to Dark](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/ladder.gif)
+
+*Tokens: `surface(n)` is step `n` of `skin.surfaces`, and `problems()` reports an `ElevationStep` when two neighbours are closer than ΔL\* 2 (the eye's threshold for a flat field); the four presets sit at 5 or more. The cards' padding and corners are `skin.space(3)` and `skin.corner(1)`.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 

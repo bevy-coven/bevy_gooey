@@ -24,7 +24,8 @@ The colours are `background`, `surface`, `surface_raised`, `text`, `text_muted`,
 `accent_text`, `danger`, `focus_ring`, `outline`, `scrim` and `surface_edge` (`None` is `surface_raised`); the sizes are `text_size`,
 `heading_size`, `gap`, `padding`, `radius`, `border`, `meter_height`, `min_target` and `density`; `text_scale` is
 the player's option and multiplies text alone. A name ends up in exactly one place: a heading's text
-colour is `text` there and nowhere else, because `apply_skin` styles every widget by its `Role`.
+colour is `text` there and nowhere else, because `apply_skin` styles every widget by its `Role`. The
+design tokens, `spacing`, `radii`, `type_scale` and `surfaces`, are the [next sections](#design-tokens-and-the-surface-ladder).
 
 `SkinProblem` is the type `problems()` returns; the plugin warns once per problem on a change and never
 refuses a skin, so an editor can show a half-finished one.
@@ -59,6 +60,58 @@ assert_eq!(tool.pad(), GooeySkin::dark().padding / 2.0);
 ![The gallery in the Tool look: the settings panel (Play, Options, Quit, a health meter, the Audio, Display and Controls tabs with Audio lit blue, the Volume slider and Subtitles switch) and the top of the Load game list, all in grey and blue at 14 px text](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tool.png)
 
 *`GooeySkin::tool()`: buttons 24 px high, 2 px frames, the same ring and keys as every look.*
+
+## Design tokens and the surface ladder
+
+A tool's chrome stands on a ladder of surfaces (the window's ground, a panel, a row, a field, a card),
+and a host that hard-codes each fill finds out late that two of them are one colour. The skin carries
+the ladder and checks it, and three scales for the numbers a host's own nodes are built from:
+
+| field | what it is | read with |
+|---|---|---|
+| `surfaces: Vec<Color>` | flat fills, lowest first (five in every preset) | `skin.surface_at(n)`, `surface(n)`, `Role::Surface(n)` |
+| `spacing: [f32; 6]` | gaps and paddings, logical px, smallest first | `skin.space(step)` |
+| `radii: [f32; 3]` | corner radii | `skin.corner(step)` |
+| `type_scale: [f32; 5]` | text sizes before `text_scale` | `skin.type_size(step)`, which multiplies by `text_scale` |
+
+A step past the end is the last. Each preset's own `gap`, `padding`, `radius`, `text_size` and
+`heading_size` are entries of its scales (a test holds it), so what a host builds from the tokens and
+what the widgets draw share one rhythm; `GooeySkin::tool()` has tighter scales than the other three.
+
+```rust,ignore
+// Nested cards, each a step above the one it stands in, on the skin's own tokens.
+commands.spawn((
+    Role::Surface(1),
+    Node {
+        padding: UiRect::all(Val::Px(skin.space(3))),
+        border_radius: BorderRadius::all(Val::Px(skin.corner(1))),
+        ..default()
+    },
+    children![(Role::Surface(2), Node::default(), children![label("A row")])],
+));
+```
+
+`surface(n)` is the same node with a column and nothing else, for a surface that needs no padding of its
+own (a bundle cannot carry two `Node`s, so a padded one names `Role::Surface` and its own `Node`, as
+above). A surface draws its fill and nothing else: no padding, no frame, no corner.
+
+**The ladder is measured.** `problems()` reports `SkinProblem::ElevationStep { lower, upper, delta_l }`
+for two adjacent surfaces that differ by less than `ELEVATION_STEP`, ΔL\* 2.0 in CIE L\* (`cie_lightness`
+is the maths, in `model`): about the smallest lightness difference the eye can tell apart on a large flat
+field, and a comfortable step is about 4. WCAG's contrast ratio is the wrong instrument down in the
+blacks (its `+0.05` flare term makes two clearly different dark greys and two identical ones both score
+about 1.0), which is why this is its own check. Direction does not matter, so a recessed well below its
+neighbour is a valid step; a single surface is a valid ladder; an empty one, a spacing or corner scale
+with a negative, non-finite or falling step and a type scale with a non-positive one report
+`SkinProblem::BadScale { field }`. The four presets' steps are at least ΔL\* 5 apart; the alpha of a
+surface is ignored. The check is about fills telling apart, not about text: the crate checks `text` against
+`surface` and `surface_raised`, not against every step (parchment's step 0 is the dark window behind its
+cream panels, and a host that puts text on a step checks that pair itself, at 7:1 in a high-contrast skin).
+A theme step (`with_colours_of`) brings the ladder with the colours and keeps the player's scales.
+
+![The ladder example: four nested cards, Surface 1 to Surface 4, each lighter than the one it sits in and labelled with its CIE L*, in dark, then the Theme row steps through Parchment, High contrast and Tool and back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/ladder.gif)
+
+*`examples/ladder`: the steps in dark are L\* 12.9, 18.3, 23.6 and 31.6 over a ground of 6.5; the labels are the ladder read back through `cie_lightness`.*
 
 ## A skin for one subtree
 
