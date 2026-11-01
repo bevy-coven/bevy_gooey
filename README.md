@@ -87,8 +87,8 @@ cargo run --example gallery
 Every widget on a screen, what the pictures above show: arrows or the D-pad move focus, Enter, Space and
 South activate, Shift+T doubles the text, Options swaps the skin, Quit opens a dialog, Right on a focused
 tab or Ctrl+PageDown turns the settings page (Display holds the choices, Controls two rebinding rows: Enter
-on Jump, then a key), and the save-slot list scrolls with the wheel, a drag on its thumb or PageUp and
-PageDown.
+on Jump, then a key), the Save as field takes a name (click it or Tab to it, type, Enter saves and Down
+leaves), and the save-slot list scrolls with the wheel, a drag on its thumb or PageUp and PageDown.
 
 ## What you can do
 
@@ -98,10 +98,12 @@ PageDown.
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
   and says each change once in `ValueChange`, `binding("Jump", Binding::Key(KeyCode::Space))` rebinds a
-  key, a mouse button or a pad button on the player's next press, and `tabs` puts them on pages a click,
-  the arrows or LB and RB turn:
+  key, a mouse button or a pad button on the player's next press, `text_input("Name", "")` is a field the
+  player types in (a caret, a selection, paste and IME on Bevy's own `TextInput`, and focus it never
+  traps), and `tabs` puts them on pages a click, the arrows or LB and RB turn:
   [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md),
   [rebinding](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/bindings.md),
+  [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
 - **Scroll a list that follows the focus** — `list(4.5, children![..])` cuts the fifth row so the player
   sees there is more, and keeps the next row in sight as the arrows walk down it:

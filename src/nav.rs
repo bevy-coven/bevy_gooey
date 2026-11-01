@@ -19,7 +19,7 @@ use bevy::ui::{
     UiGlobalTransform,
 };
 use bevy::ui_widgets::{
-    Activate, Checkbox, SetSliderValue, Slider, SliderValueChange, Tab, ToggleChecked,
+    Activate, Checkbox, SetSliderValue, Slider, SliderValueChange, Tab, TextInput, ToggleChecked,
 };
 
 use crate::choice::{ChoiceCount, Move, MoveChoice};
@@ -40,6 +40,10 @@ type KeepsSideways = (
     Or<(With<Slider>, With<ChoiceCount>, With<Tab>)>,
     Without<InteractionDisabled>,
 );
+
+/// The text fields that take Left and Right as the caret's: an enabled one. Only the keys are the
+/// caret's (a pad cannot move one), so the D-pad still moves focus off it.
+type TypesText = (With<TextInput>, Without<InteractionDisabled>);
 
 /// The tabs widgets focus can be turned from: every enabled one.
 type TurnableTabs = (With<TabsValue>, Without<InteractionDisabled>);
@@ -97,6 +101,8 @@ pub struct FocusScopes<'w, 's> {
     stops: Query<'w, 's, Option<&'static InheritedVisibility>, With<TabIndex>>,
     /// The sliders, choices and tabs that take Left and Right themselves.
     sideways: Query<'w, 's, (), KeepsSideways>,
+    /// The text fields, which take the keys Left and Right themselves.
+    typing: Query<'w, 's, (), TypesText>,
     /// The lists, to tell a widget one has clipped away from one in view.
     lists: Query<'w, 's, (&'static ComputedNode, &'static UiGlobalTransform), With<ListView>>,
     /// A tab strip's tabs, and the tab widgets that hold them.
@@ -129,6 +135,12 @@ impl FocusScopes<'_, '_> {
     /// adjust it and never move focus off it. A disabled one takes nothing.
     fn keeps_sideways(&self, entity: Entity) -> bool {
         self.sideways.contains(entity)
+    }
+
+    /// Whether `entity` is a text field whose caret takes the Left and Right keys. A disabled
+    /// one takes nothing.
+    fn types_text(&self, entity: Entity) -> bool {
+        self.typing.contains(entity)
     }
 
     /// Whether `entity` is one of a tab strip's tabs.
@@ -310,6 +322,7 @@ pub fn navigate_by_input(
     let pressed = |key: KeyCode, pad: GamepadButton| {
         keys.just_pressed(key) || gamepads.iter().any(|g| g.just_pressed(pad))
     };
+    let pad = |button: GamepadButton| gamepads.iter().any(|g| g.just_pressed(button));
     let axis = |plus: bool, minus: bool| plus as i8 as f32 - minus as i8 as f32;
     let net_x = axis(
         pressed(KeyCode::ArrowRight, GamepadButton::DPadRight),
@@ -328,6 +341,8 @@ pub fn navigate_by_input(
     // D-pad through `gamepad_adjust`): they never also move focus off it. Up and Down still do.
     let net_x = if from.is_some_and(|f| scopes.keeps_sideways(f)) {
         0.0
+    } else if from.is_some_and(|f| scopes.types_text(f)) {
+        axis(pad(GamepadButton::DPadRight), pad(GamepadButton::DPadLeft))
     } else {
         net_x
     };

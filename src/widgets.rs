@@ -11,13 +11,13 @@ use bevy::ecs::world::DeferredWorld;
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
-use bevy::text::{Justify, LineBreak};
+use bevy::text::{EditableText, Justify, LineBreak, TextCursorStyle};
 use bevy::ui::Checked;
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui_widgets::{
     Checkbox, ControlOrientation, ScrollArea, Scrollbar, ScrollbarThumb, Slider, SliderOrientation,
-    SliderRange, SliderStep, SliderThumb, SliderValue, TabActivation, TabList, TrackClick,
-    checkbox_self_update, observe, slider_self_update,
+    SliderRange, SliderStep, SliderThumb, SliderValue, TabActivation, TabList, TextInput,
+    TrackClick, checkbox_self_update, observe, slider_self_update,
 };
 
 use crate::binding::{
@@ -34,6 +34,9 @@ use crate::nav::Dialog;
 use crate::prompt::Prompt;
 use crate::skin::Role;
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
+use crate::text::{
+    TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
+};
 use crate::toast::{Toast, ToastKind};
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
@@ -42,6 +45,17 @@ const SLIDER_STEPS: f32 = 20.0;
 /// The least length of a list's thumb, in logical px (about half a comfortable target), so a long
 /// list leaves something to grab.
 const LIST_MIN_THUMB: f32 = 24.0;
+
+/// How many characters of the body text a [`text_input`]'s field shows at once ("0"'s width each):
+/// 16 and one more, because Bevy keeps one character of room after the caret for the next one to be
+/// typed, so a name that fills a [`TextLimit`](crate::TextLimit) of 16 shows whole with its caret
+/// instead of scrolling its first letter away. Longer text scrolls in it, so the row never changes
+/// size.
+const TEXT_INPUT_CHARS: f32 = 16.0;
+
+/// A text field's caret, as a share of the font size: 2 px at the body size, a hair thinner than
+/// Bevy's 0.2 so it does not cover a letter's stem.
+const TEXT_CARET_WIDTH: f32 = 0.1;
 
 /// How far a choice's chevron is moved to put its ink in the middle of its arrow, in percent of
 /// its own width. A square turned an eighth of a turn has its two drawn sides on one side of its
@@ -570,6 +584,99 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
                 ],
             ),
         ],
+    )
+}
+
+/// A row for a line of text the player types (a name, a seed, a server address): the label on the
+/// left, outside the field and always visible, and a framed field on the right that holds 16
+/// characters, and the caret's room, at the body size and scrolls past that, so the row never
+/// changes size while the player types. The field is Bevy's headless `TextInput`, so it has a
+/// caret, selection, copy and paste and the platform's input methods; a click on the field, the
+/// label or the row's padding focuses it, and a focused field takes the keys at once, with no step
+/// to begin typing.
+///
+/// Left, Right, Home and End are the caret's; Up, Down and Tab leave the field, and so does the
+/// D-pad (a pad cannot type: the platform's keyboard types through the same key events, and a
+/// host opens it when [`TextEditing`](crate::TextEditing) is added to the row). Escape ends the
+/// edit and, inside a [`dialog`], is Back as everywhere ([`Cancel`](crate::Cancel)). A field's
+/// frame stays lit while it holds focus, even after a pointer press hid every other ring.
+///
+/// The row keeps its state in [`TextInputValue`] and sends `ValueChange<String>` for each edit
+/// that changes the text (`is_final` is false), and once more with `is_final` when the edit ends:
+/// Enter (a submit, even with nothing changed) or focus leaving the field after a change. Add
+/// [`TextHint`](crate::TextHint) for muted words while the field is empty and
+/// [`TextLimit`](crate::TextLimit) for a most characters, on the row:
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     text_input("Name", ""),
+///     TextHint("Enter a name".into()),
+///     TextLimit(16),
+///     observe(|change: On<ValueChange<String>>| {
+///         if change.is_final {
+///             info!("the player is called {}", change.value);
+///         }
+///     }),
+/// ));
+/// # }
+/// ```
+pub fn text_input(label: impl Into<String>, value: impl Into<String>) -> impl Bundle {
+    let label = label.into();
+    let value = value.into();
+    (
+        Node {
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Role::TextInput,
+        TextInputValue(value.clone()),
+        observe(text_self_update),
+        observe(text_row_on_acquire),
+        Children::spawn(SpawnWith(move |row: &mut RelatedSpawner<ChildOf>| {
+            let root = row.target_entity();
+            row.spawn((Text::new(label), Role::ControlText, Pickable::IGNORE));
+            row.spawn((Node::default(), Role::TextCell))
+                .with_children(|cell| {
+                    cell.spawn((
+                        Node {
+                            flex_shrink: 0.0,
+                            overflow: Overflow::clip(),
+                            ..default()
+                        },
+                        TextInput,
+                        EditableText {
+                            visible_width: Some(TEXT_INPUT_CHARS),
+                            cursor_width: TEXT_CARET_WIDTH,
+                            ..EditableText::new(&value)
+                        },
+                        TextLayout::no_wrap(),
+                        TextCursorStyle::default(),
+                        Role::TextField,
+                        TextInputOf(root),
+                        Hovered::default(),
+                        TabIndex(0),
+                        AutoDirectionalNavigation::default(),
+                        observe(text_on_key_input),
+                    ));
+                    cell.spawn((
+                        Node {
+                            position_type: PositionType::Absolute,
+                            display: Display::None,
+                            overflow: Overflow::clip(),
+                            ..default()
+                        },
+                        Text::new(String::new()),
+                        TextLayout::no_wrap(),
+                        Role::TextHint,
+                        TextInputOf(root),
+                        Pickable::IGNORE,
+                    ));
+                });
+        })),
     )
 }
 
