@@ -47,10 +47,17 @@
 //! `pagedown`, `pageup` and `wheel` (one notch over the list) stage it. `nexttab` and `prevtab`
 //! press Ctrl+PageDown and Ctrl+PageUp, and `tab1`, `tab2` and `tab3` click that tab. `q` and `f` press
 //! those keys, to bind one to Jump (`GOOEY_KEYS=tab3,down,enter,q`).
+//! The bottom-left corner holds the legend, **Select** and **Back** ([`prompts`]), which also stands
+//! in the Quit dialog: the keycaps are the keyboard's ("Enter", "Esc") until a pad button is
+//! pressed, then the pad's, round ("A", "B"), until the next key. `GOOEY_KEYS` tokens `plug`
+//! (connect a gamepad) and `pad` (press its X button, which nothing acts on) stage that.
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::ecs::spawn::SpawnIter;
 use bevy::input::ButtonState;
+use bevy::input::gamepad::{
+    GamepadConnection, GamepadConnectionEvent, RawGamepadButtonChangedEvent, RawGamepadEvent,
+};
 use bevy::input::keyboard::{Key, KeyboardInput};
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::touch::TouchPhase;
@@ -157,6 +164,11 @@ enum Staged {
     PrevTab,
     /// A primary click on the tab at this place in the strip, from the left.
     Tab(usize),
+    /// Plug in a gamepad.
+    Plug,
+    /// Press and release the plugged-in gamepad's West button (X on an Xbox pad), which no widget
+    /// acts on: the player has picked up the pad.
+    Pad,
 }
 
 /// The frame `GOOEY_KEYS` starts pressing at, after the layout and autofocus have settled.
@@ -282,6 +294,8 @@ fn main() {
                     "toast" => Some(Staged::Toast),
                     "alert" => Some(Staged::Alert),
                     "long" => Some(Staged::Long),
+                    "plug" => Some(Staged::Plug),
+                    "pad" => Some(Staged::Pad),
                     _ => None,
                 })
                 .collect(),
@@ -445,6 +459,10 @@ fn setup(mut commands: Commands) {
                     ]
                 ),
             ]
+        ),
+        (
+            prompts(),
+            children![prompt("Select", Prompt::SELECT), prompt("Back", Prompt::BACK)],
         )],
     ));
 }
@@ -492,25 +510,34 @@ fn open_quit_dialog(_: On<Activate>, open: Query<(), With<QuitDialog>>, mut comm
             info!("cancel: the Quit dialog is closed");
             commands.entity(cancel.entity).despawn();
         }),
-        children![(
-            panel(),
-            children![
-                heading("Leave the game?"),
-                label("Progress since the last autosave is lost."),
-                (
-                    menu(),
-                    children![
-                        (
-                            button("Leave"),
-                            observe(|_: On<Activate>, mut exit: MessageWriter<AppExit>| {
-                                exit.write(AppExit::Success);
-                            }),
-                        ),
-                        (button("Stay"), AutoFocus, observe(close_quit_dialog)),
-                    ]
-                ),
-            ]
-        )],
+        children![
+            (
+                panel(),
+                children![
+                    heading("Leave the game?"),
+                    label("Progress since the last autosave is lost."),
+                    (
+                        menu(),
+                        children![
+                            (
+                                button("Leave"),
+                                observe(|_: On<Activate>, mut exit: MessageWriter<AppExit>| {
+                                    exit.write(AppExit::Success);
+                                }),
+                            ),
+                            (button("Stay"), AutoFocus, observe(close_quit_dialog)),
+                        ]
+                    ),
+                ]
+            ),
+            (
+                prompts(),
+                children![
+                    prompt("Select", Prompt::SELECT),
+                    prompt("Back", Prompt::BACK)
+                ],
+            )
+        ],
     ));
 }
 
@@ -623,6 +650,9 @@ fn stage_keys(
     mut commands: Commands,
     mut keys: MessageWriter<KeyboardInput>,
     mut pointer: MessageWriter<PointerInput>,
+    pads: Query<Entity, With<Gamepad>>,
+    mut connections: MessageWriter<GamepadConnectionEvent>,
+    mut pad_input: MessageWriter<RawGamepadEvent>,
 ) {
     let (Some(c), Ok(window)) = (capture, window.single()) else {
         return;
@@ -821,6 +851,31 @@ fn stage_keys(
             };
             for &action in actions {
                 pointer.write(PointerInput::new(PointerId::Mouse, at.clone(), action));
+            }
+        }
+        Some(Staged::Plug) if state == ButtonState::Pressed => {
+            let pad = commands.spawn_empty().id();
+            connections.write(GamepadConnectionEvent::new(
+                pad,
+                GamepadConnection::Connected {
+                    name: "Gallery pad".into(),
+                    vendor_id: None,
+                    product_id: None,
+                },
+            ));
+        }
+        Some(Staged::Pad) => {
+            if let Some(pad) = pads.iter().next() {
+                let value = if state == ButtonState::Pressed {
+                    1.0
+                } else {
+                    0.0
+                };
+                pad_input.write(RawGamepadEvent::Button(RawGamepadButtonChangedEvent::new(
+                    pad,
+                    GamepadButton::West,
+                    value,
+                )));
             }
         }
         Some(Staged::Toast) if state == ButtonState::Pressed => {

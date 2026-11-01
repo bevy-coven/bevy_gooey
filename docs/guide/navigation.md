@@ -29,4 +29,4 @@ commands.spawn((
 - **A dialog can always be dismissed**: with nothing focused (a click on empty space) or focus left behind it, the open dialog still hears it.
 - **With no dialog open and nothing focused, nothing is sent**: Escape is the game's own, for its pause menu. A pause screen of your own handles `Cancel` on its `screen()` to resume; open it from your own key system only when none is open.
 - **A focused slider, choice, toggle, tab or list is not changed by it**, and a press that finds a target shows the focus ring, as every key does.
-- Draw the pad's prompt yourself ("B Back": the crate has no glyphs). With the prompt on screen a Back button is not also needed; a mouse player still wants one.
+- Say it on screen: a `prompts()` legend with `prompt("Back", Prompt::BACK)` shows "Esc Back", or "B Back" once the player picks up a pad (the crate has no glyph art, so the keycap is the input's name in a key or a round cap; see [prompts](prompts.md)). With the prompt on screen a Back button is not also needed; a mouse player still wants one.
