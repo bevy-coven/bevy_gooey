@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-01
+
 ### Added
 
 - `text_input(label, value)`: a row for a line of text the player types (a name, a seed, a server address, what to call a save), the first widget a game needs that no other could be: the label on the left, outside the field and always visible, and a framed field on the right, Bevy 0.20's own headless `TextInput` and `EditableText` (a caret, a selection, copy and paste, IME), 17 characters wide at the body size (16, and the one character of room Bevy keeps after the caret, so a name that fills a `TextLimit(16)` shows whole) and a button's height at least, so the row never changes size while the player types. A focused field takes the keys at once (no step to begin typing); Left, Right, Home and End are the caret's, and **Up, Down, Tab, the D-pad and Escape leave it**, so a field never traps focus (WCAG 2.1.2); a click on the label, the field or the row's padding focuses it. The row keeps its state in `TextInputValue(String)` (read it, or write it to change the field from code with no event coming back) and sends Bevy's `ValueChange<String>` for each edit that changes the text (`is_final` false) and once when the edit ends (Enter, a submit even with nothing changed, or focus leaving after a change). `TextHint` (muted words while the field is empty; the label is never the hint, NN/g) and `TextLimit` (a most characters; never cuts a value the game set) go on the row.
@@ -13,6 +15,8 @@
 
 - `Role` has four more variants (`TextInput`, `TextCell`, `TextField`, `TextHint`): a `match` over it that is exhaustive needs arms for them. `apply_skin` reads a `TextCursorStyle` more (a field's caret and selection).
 - `navigate_by_input` leaves a focused text field's Left and Right keys to its caret and still lets the D-pad move focus off it; a focused field writes `UiFeedback::Focus` like every other widget.
+- `show_tooltips` reads one more query: a `text_input` row's `Tooltip` opens while its field has focus (the row is the widget, the field is where focus stands), so the system takes six parameters instead of five.
+- The gallery's Load game panel is 402 px wide instead of 302 (the Save as row is label, gap and a 17-character field wide), which moves the settings panel 50 px left; `cancel.gif`, `prompts.gif` and `dialog.png` were regenerated and the crops in `docs/media/README.md` follow.
 
 ## [0.6.0] - 2026-10-31
 
