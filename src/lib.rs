@@ -119,6 +119,7 @@ mod prompt;
 mod scale;
 mod skin;
 mod tabs;
+mod text;
 mod toast;
 mod tooltip;
 mod widgets;
@@ -149,11 +150,15 @@ pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
 pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
+pub use text::{
+    TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
+    track_text_editing, update_text_inputs,
+};
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
     binding, button, choice, dialog, heading, label, list, menu, meter, panel, prompt, prompts,
-    screen, slider, tab_page, tabs, toast, toast_alert, toggle,
+    screen, slider, tab_page, tabs, text_input, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -207,6 +212,10 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Prompt>()
             .register_type::<BindingSettings>()
             .register_type::<Capturing>()
+            .register_type::<TextInputValue>()
+            .register_type::<TextHint>()
+            .register_type::<TextLimit>()
+            .register_type::<TextEditing>()
             .register_type::<ChoiceValue>()
             .register_type::<TabsValue>()
             .register_type::<TabsCount>()
@@ -222,6 +231,7 @@ impl Plugin for GooeyStylePlugin {
             .add_observer(feedback::feedback_on_activate)
             .add_observer(feedback::feedback_on_toggle)
             .add_observer(feedback::feedback_on_choice)
+            .add_observer(text::text_on_edit)
             .add_systems(
                 Update,
                 (
@@ -230,6 +240,7 @@ impl Plugin for GooeyStylePlugin {
                     show_tooltips,
                     update_bindings,
                     update_prompts,
+                    update_text_inputs,
                     update_choices,
                     update_tabs,
                     apply_skin,
@@ -276,6 +287,7 @@ impl Plugin for GooeyNavPlugin {
                 Update,
                 (
                     track_input_device,
+                    track_text_editing,
                     focus_opened_dialogs,
                     land_tab_focus,
                     step_tabs.run_if(not_capturing),

@@ -5,7 +5,7 @@ use std::fmt;
 use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
-use bevy::text::{FontSize, FontSource};
+use bevy::text::{FontSize, FontSource, TextCursorStyle};
 use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed, Selected};
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
@@ -305,6 +305,18 @@ impl GooeySkin {
                 surface,
                 NON_TEXT_CONTRAST,
             ),
+            (
+                "text_muted on surface",
+                rgb(self.text_muted),
+                surface,
+                TEXT_CONTRAST,
+            ),
+            (
+                "focus_ring on surface",
+                rgb(self.focus_ring),
+                surface,
+                NON_TEXT_CONTRAST,
+            ),
         ];
         for (pair, a, b, needed) in pairs {
             let ratio = contrast_ratio(a, b);
@@ -569,6 +581,17 @@ pub enum Role {
     TabPages,
     /// One page, a column of widgets a [`GooeySkin::gap`] apart; hidden unless its tab is selected.
     TabPage,
+    /// A [`crate::text_input`] row: a label and a field on no fill, laid out like a toggle's row.
+    TextInput,
+    /// The cell a text input's field and hint stand in, so the hint can lie over the field; not
+    /// drawn.
+    TextCell,
+    /// A text input's field: an outlined box in the panel's own colour, [`GooeySkin::outline`]
+    /// round it, [`GooeySkin::text_muted`] under the pointer and [`GooeySkin::focus_ring`] while
+    /// it holds focus. Its caret is [`GooeySkin::text`] and its selection [`GooeySkin::accent`].
+    TextField,
+    /// A text input's hint: [`GooeySkin::text_muted`] words over the field while it is empty.
+    TextHint,
 }
 
 type Styled = (
@@ -585,6 +608,7 @@ type Styled = (
         &'static mut BoxShadow,
     )>,
     Option<&'static ComputedUiRenderTargetInfo>,
+    Option<&'static mut TextCursorStyle>,
 );
 
 /// Every input a widget's look depends on, read once per run of [`apply_skin`].
@@ -592,6 +616,9 @@ struct Look<'a> {
     skin: &'a GooeySkin,
     fonts: &'a GooeyFonts,
     focused: Option<Entity>,
+    /// The widget focus is on, whether or not focus is shown: a text field keeps its ring while
+    /// the player types, though a pointer press hid every other one.
+    editing: Option<Entity>,
 }
 
 /// The widget state a look depends on.
@@ -688,7 +715,13 @@ fn owns_parts(role: Option<&Role>) -> bool {
     matches!(
         role,
         Some(
-            Role::Button | Role::Toggle | Role::Slider | Role::Choice | Role::Binding | Role::Toast
+            Role::Button
+                | Role::Toggle
+                | Role::Slider
+                | Role::Choice
+                | Role::Binding
+                | Role::Toast
+                | Role::TextInput
         )
     )
 }
@@ -729,6 +762,7 @@ pub fn apply_skin(
         skin: &skin,
         fonts: &fonts,
         focused: visible.0.then(|| focus.get()).flatten(),
+        editing: focus.get(),
     };
     let state_of = |entity: Entity| {
         states
@@ -786,6 +820,7 @@ pub fn apply_skin(
                                 | Role::Slider
                                 | Role::Choice
                                 | Role::Binding
+                                | Role::TextInput
                                 | Role::Toast
                         )
                     )
@@ -834,6 +869,7 @@ pub fn apply_skin(
                             | Role::Choice
                             | Role::Binding
                             | Role::Tab
+                            | Role::TextField
                     )
                 })
                 .map(|item| item.0),
@@ -881,6 +917,7 @@ fn restyle(
         text_font,
         tooltip,
         target,
+        cursor,
     ): bevy::ecs::query::QueryItem<'_, '_, Styled>,
     look: &Look,
     state: State,
@@ -990,6 +1027,9 @@ fn restyle(
         // world; a keycap is a binding keycap at rest: raised, framed in the outline.
         Role::Prompts => Some(skin.surface),
         Role::PromptKey | Role::PromptButton => Some(skin.surface_raised),
+        // The field is an outlined box in the panel's own colour, so the typed text and the hint
+        // meet on it the contrast they are checked at on the panel.
+        Role::TextField => Some(skin.solid_surface()),
         Role::Screen
         | Role::Menu
         | Role::Heading
@@ -1022,7 +1062,10 @@ fn restyle(
         | Role::TabList
         | Role::TabText
         | Role::TabPages
-        | Role::TabPage => None,
+        | Role::TabPage
+        | Role::TextInput
+        | Role::TextCell
+        | Role::TextHint => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(fill));
@@ -1073,6 +1116,19 @@ fn restyle(
                 skin.text
             }))
         }
+        // The row has no frame of its own: the field speaks. Its edge is the outline at rest, the
+        // muted text colour under the pointer, and the ring while it holds focus, shown or not
+        // (its caret already says who has the keys, and a pointer press hides every other ring).
+        Role::TextInput => Some(BorderColor::all(Color::NONE)),
+        Role::TextField => Some(BorderColor::all(if state.disabled {
+            skin.outline
+        } else if look.editing == Some(entity) {
+            skin.focus_ring
+        } else if state.hovered {
+            skin.text_muted
+        } else {
+            skin.outline
+        })),
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         _ => None,
     };
@@ -1314,6 +1370,33 @@ fn restyle(
                 next.min_width = Val::Px((text_px * BINDING_CAP_TEXT_SIZES).max(skin.min_target));
                 next.flex_shrink = 0.0;
             }
+            // A binding row's frame and padding, so the label stands where every row's does; the
+            // field inside is a button's height at least (the target), and the row, with the little
+            // air the field needs round it, is a toggle's.
+            Role::TextInput => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding =
+                    UiRect::axes(Val::Px(skin.padding * 1.5), Val::Px(skin.padding * 0.1));
+                next.min_height = Val::Px(skin.min_target);
+                next.column_gap = Val::Px(skin.gap);
+            }
+            // One line of text in a frame, centred in the target's height: the text sits at the
+            // top of its box, so the padding is what is left over.
+            Role::TextField => {
+                let (x, y) = text_field_inset(skin, text_px, line);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(x), Val::Px(y));
+                next.min_height = Val::Px(skin.min_target);
+            }
+            // Over the field's first character: the same inset, inside its frame.
+            Role::TextHint => {
+                let (x, y) = text_field_inset(skin, text_px, line);
+                next.left = Val::Px(line + x);
+                next.right = Val::Px(line + x);
+                next.top = Val::Px(line + y);
+            }
             // The legend: a bar in its parent's bottom-left corner, inside the safe area, its
             // prompts a pair of paddings apart. Absolute, so the screen's layout is the same with
             // or without it. A flex-wrap here would break a line a float's width early.
@@ -1403,6 +1486,17 @@ fn restyle(
             };
             Some((color, &look.fonts.body, skin.text_size))
         }
+        // The field's text, and the hint's, are the body's: the typed text at the text colour and
+        // the hint muted; a disabled field is muted whole.
+        Role::TextField => {
+            let color = if state.disabled || owner.disabled {
+                skin.text_muted
+            } else {
+                skin.text
+            };
+            Some((color, &look.fonts.body, skin.text_size))
+        }
+        Role::TextHint => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
         Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
         Role::PromptKey | Role::PromptButton => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::ToastText => Some((
@@ -1422,6 +1516,17 @@ fn restyle(
             next.font_size = scaled(size);
             text_font.set_if_neq(next);
         }
+    }
+    // A text field's caret is the text colour and its selection the lit accent with the accent's
+    // text, the pair every "on" state here is drawn in; an unfocused selection is not drawn.
+    if let (Role::TextField, Some(mut caret)) = (role, cursor) {
+        caret.set_if_neq(TextCursorStyle {
+            color: skin.text,
+            selection_color: skin.accent,
+            unfocused_selection_color: Color::NONE,
+            selected_text_color: Some(skin.accent_text),
+            selection_radius: 0.0,
+        });
     }
 
     if let Some((tip, mut popover, mut shadow)) = tooltip {
@@ -1498,4 +1603,13 @@ fn tooltip_placement(gap: f32, margin: f32, in_row: bool) -> Popover {
             .collect(),
         window_margin: margin,
     }
+}
+
+/// How far a text field's text stands inside its frame, in logical px: the side, and the top, which
+/// is what leaves the line in the middle of the target's height (the text sits at the top of its
+/// box). Never less than the thin air a keycap has above and below.
+fn text_field_inset(skin: &GooeySkin, text_px: f32, line: f32) -> (f32, f32) {
+    let x = skin.padding * 0.6;
+    let centred = (skin.min_target - 2.0 * line - text_px * LIST_LINE_TEXT_SIZES) / 2.0;
+    (x, centred.max(skin.padding * 0.3))
 }
