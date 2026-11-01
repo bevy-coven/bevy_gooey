@@ -31,6 +31,12 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   the row from code (no `ValueChange` comes back for that); read it to know what the player chose.
   `Capturing` is on the row while it waits for the player's next press, for a game that gates raw key
   readers of its own on it. See [rebinding](bindings.md).
+- `TextInputValue(String)` — a `text_input`'s text. Write it to change the field from code (no
+  `ValueChange` comes back for that); read it to know what the player typed. `TextHint(String)` (muted
+  words while the field is empty) and `TextLimit(usize)` (most characters the player may type) go on the
+  row. `TextEditing` is on the row exactly while its field has focus, for a game that gates its own key
+  readers on it (`is_text_editing`, a run condition) or opens the platform's keyboard when it is added;
+  `TextInputOf(row)` is on the field and the hint. See [text input](text-input.md).
 - `Prompt { keyboard, pad }` — a `prompt`'s two inputs, `Prompt::SELECT` and `Prompt::BACK` for the ones
   the crate acts on. Set it on the prompt's entity to keep the hint true after a rebind (the keycap
   follows in the same frame). See [prompts](prompts.md).
@@ -72,12 +78,14 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `page_lists` | Navigate | PageUp, PageDown and the pad's triggers move focus a viewport |
 | `step_tabs` | Navigate | LB, RB, Ctrl+PageUp and Ctrl+PageDown turn a tabs widget's page, and the D-pad steps a focused tab |
 | `track_input_device` | Navigate | a key or a mouse button is `InputDevice::Keyboard`, a pad button or a pushed stick `Pad`; first in the set |
+| `track_text_editing` | Navigate | `TextEditing` on the `text_input` row whose field has focus, a final change when it loses it, and focus on the row goes to its field; second in the set |
 | `bind_by_input` | Navigate | a waiting `binding` row takes the player's next press, last in the set |
 | `catch_pointer` | Navigate | a transparent node takes the pointer while a `binding` row waits |
 | `land_tab_focus` | Navigate | focus never rests on a page that is not shown: it moves to the page's first widget |
 | `show_tooltips` | Style | a hovered or visibly focused widget's tooltip opens |
 | `update_bindings` | Style | a `binding` row's keycap: the input's name, or the prompt while it waits |
 | `update_prompts` | Style | a `prompt`'s keycap: the input's name for the device in use, and its shape |
+| `update_text_inputs` | Style | a `text_input`'s text the game set shown in its field, the hint while it is empty, the limit, a disabled row's field |
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |

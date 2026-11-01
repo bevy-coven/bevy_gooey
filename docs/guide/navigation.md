@@ -9,6 +9,7 @@
 - Put Bevy's `AutoFocus` on the button a screen should start on. With nothing focused (a click on empty space, a button despawned under the player), the first arrow or D-pad press lands there, or on the screen's first button in Tab order, and the next press moves on; with a `dialog` open it lands inside the dialog.
 - A `list` scrolls to follow the focus a key, the D-pad or Tab gives its rows (with the next row kept in sight), PageUp and PageDown (the pad's triggers) move a viewport at a time, and Up and Down stay among a list's rows until they run out; see [lists](lists.md).
 - `tabs` turn their page with a click, Left and Right on a focused tab (they wrap), the D-pad on a tab, and **LB and RB** (or Ctrl+PageUp and Ctrl+PageDown) from anywhere in the widget, so a pad player never goes back up to the strip; focus stays in the page and lands on the new page's first widget, and Up from a page goes to the selected tab. See [tabs](tabs.md).
+- A focused `text_input` field takes the keys a caret and a typist need (characters, Backspace, Left, Right, Home, End, selection, paste), so Left and Right never also move focus off it; **Up, Down, Tab, the D-pad and Escape leave it**, so a field never traps a keyboard or a pad. A click on its label focuses it. See [text input](text-input.md).
 
 ## Back
 
