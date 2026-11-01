@@ -231,6 +231,65 @@ pub fn choice_next(selected: usize, len: usize) -> usize {
     }
 }
 
+/// The text sizes a [`crate::text_size`] row offers, as [`crate::GooeySkin::text_scale`] values:
+/// 100%, 125%, 150% and 200%. The top is the Xbox Accessibility Guideline 101's, and every step is
+/// one `tests/large_text.rs` lays the widgets out at, because WCAG 2.2 SC 1.4.4 asks for "no loss
+/// of content or functionality at these incremental steps". A design default.
+pub const TEXT_SIZE_STEPS: [f32; 4] = [1.0, 1.25, 1.5, 2.0];
+
+/// The interface sizes an [`crate::interface_size`] row offers, as [`crate::UiScaleSettings::scale`]
+/// values: 75%, 100%, 125% and 150%. Smaller than 100% for the player who wants the interface to
+/// "obscure less of the gameplay", and 150% at the top, as EVE Online's UI scaling is (both from the
+/// Game Accessibility Guidelines). A design default.
+pub const INTERFACE_SIZE_STEPS: [f32; 4] = [0.75, 1.0, 1.25, 1.5];
+
+/// The controller families a [`crate::pad_style`] row offers, in [`PadStyle`]'s own order.
+pub const PAD_STYLES: [PadStyle; 3] = [PadStyle::Xbox, PadStyle::PlayStation, PadStyle::Switch];
+
+/// The index of the step in `steps` nearest `value`: what a settings row shows for a value the game
+/// set. A value halfway between two steps takes the lower one (the first, for steps in ascending
+/// order), a value past either end takes that end, and a value that is not a number (or no steps)
+/// gives 0.
+///
+/// ```
+/// use bevy_gooey::{TEXT_SIZE_STEPS, nearest_step};
+/// assert_eq!(nearest_step(&TEXT_SIZE_STEPS, 1.5), 2);
+/// assert_eq!(nearest_step(&TEXT_SIZE_STEPS, 1.1), 0);
+/// assert_eq!(nearest_step(&TEXT_SIZE_STEPS, 9.0), 3);
+/// ```
+pub fn nearest_step(steps: &[f32], value: f32) -> usize {
+    if value.is_nan() || steps.is_empty() {
+        return 0;
+    }
+    // Past either end is that end, however far: a huge value is as far from every step in floats.
+    let mut lowest = 0;
+    let mut highest = 0;
+    for (index, step) in steps.iter().enumerate() {
+        if *step < steps[lowest] {
+            lowest = index;
+        }
+        if *step > steps[highest] {
+            highest = index;
+        }
+    }
+    if value <= steps[lowest] {
+        return lowest;
+    }
+    if value >= steps[highest] {
+        return highest;
+    }
+    let mut nearest = lowest;
+    let mut distance = f32::INFINITY;
+    for (index, step) in steps.iter().enumerate() {
+        let away = (step - value).abs();
+        if away < distance {
+            nearest = index;
+            distance = away;
+        }
+    }
+    nearest
+}
+
 /// Where a [`crate::tabs`] widget lands when it steps `delta` tabs from `selected` among `len`:
 /// round the strip, wrapping from the last to the first and from the first to the last, however
 /// large the step (the bumpers, Ctrl+PageUp and Ctrl+PageDown, the D-pad and the arrows all step
@@ -264,6 +323,18 @@ pub enum PadStyle {
     PlayStation,
     /// B, A, Y, X, L, R, ZL, ZR, -, +: the face buttons by position, so South is "B".
     Switch,
+}
+
+impl PadStyle {
+    /// The family's name as its maker writes it: "Xbox", "PlayStation", "Switch". What a
+    /// [`crate::pad_style`] row shows for it.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Xbox => "Xbox",
+            Self::PlayStation => "PlayStation",
+            Self::Switch => "Switch",
+        }
+    }
 }
 
 /// The words printed on a key's cap, from the name of its Bevy `KeyCode` variant (`format!("{:?}",
@@ -1253,5 +1324,35 @@ mod tests {
             assert_eq!(pad_name("Other(14)", style), "Button 14");
         }
         assert_eq!(PadStyle::default(), PadStyle::Xbox);
+    }
+
+    #[test]
+    fn a_value_shows_the_step_nearest_it() {
+        let steps = TEXT_SIZE_STEPS;
+        for (index, step) in steps.iter().enumerate() {
+            assert_eq!(nearest_step(&steps, *step), index);
+        }
+        assert_eq!(nearest_step(&steps, 1.2), 1);
+        assert_eq!(nearest_step(&steps, 1.7), 2);
+        assert_eq!(nearest_step(&steps, 1.8), 3);
+        // Halfway between two takes the lower, and so does a value in the lower half.
+        assert_eq!(nearest_step(&steps, 1.125), 0);
+        assert_eq!(nearest_step(&steps, 1.75), 2);
+        // Past either end takes that end, whatever the distance.
+        assert_eq!(nearest_step(&steps, 0.0), 0);
+        assert_eq!(nearest_step(&steps, -3.0), 0);
+        assert_eq!(nearest_step(&steps, 40.0), 3);
+        assert_eq!(nearest_step(&steps, f32::INFINITY), 3);
+        assert_eq!(nearest_step(&steps, f32::NEG_INFINITY), 0);
+        // Not a number, or nothing to choose from, is the first.
+        assert_eq!(nearest_step(&steps, f32::NAN), 0);
+        assert_eq!(nearest_step(&[], 1.0), 0);
+        assert_eq!(nearest_step(&INTERFACE_SIZE_STEPS, 0.9), 1);
+    }
+
+    #[test]
+    fn a_pad_family_is_named_as_its_maker_writes_it() {
+        let names: Vec<_> = PAD_STYLES.iter().map(|style| style.name()).collect();
+        assert_eq!(names, ["Xbox", "PlayStation", "Switch"]);
     }
 }
