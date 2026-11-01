@@ -29,12 +29,18 @@ use crate::choice::{
     ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
     choice_on_key_input, choice_on_move, choice_self_update,
 };
+use crate::color::{
+    ColorSwatch, ColorValue, SwatchHalf, color_on_key_input, color_on_text, color_self_update,
+    swatch_on_activate,
+};
 use crate::dock::Dock;
 use crate::dock_layout::DockLayout;
 use crate::list::ListView;
 use crate::menu::{MenuBar, MenuItem, MenuTitle, bar_on_cancel, menu_panel};
 use crate::meter::Meter;
-use crate::model::{PadStyle, format_number, meter_fraction, slider_fraction, slider_text};
+use crate::model::{
+    PadStyle, format_number, hex_text, meter_fraction, slider_fraction, slider_text,
+};
 use crate::nav::Dialog;
 use crate::number::{
     NumberInput, NumberRange, NumberStep, NumberValue, VecPart, VecValue, number_on_cancel,
@@ -101,6 +107,9 @@ const NUMBER_FIELD_CHARS: f32 = 10.0;
 
 /// The same for each component of a [`vec_field`], three of which stand in a row.
 const VEC_FIELD_CHARS: f32 = 8.0;
+
+/// How many characters wide a colour field is: `#RRGGBBAA` and the room Bevy keeps after a caret at its end.
+const COLOR_FIELD_CHARS: f32 = 10.0;
 
 /// How far a choice's chevron is moved to put its ink in the middle of its arrow, in percent of
 /// its own width. A square turned an eighth of a turn has its two drawn sides on one side of its
@@ -836,18 +845,26 @@ pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>)
     } else {
         Role::TextInput
     };
-    text_row_as(role, label, value, chars, false)
+    text_row_as(role, label, value, chars, RowKind::Text)
 }
 
-/// [`text_row`] with its row's `role`, and, when `number` is set, the field of a [`number_field`]:
-/// Up and Down step it and the text cursor is over it, so the row's own resize cursor (the
-/// scrub's) is on its label and padding only.
+/// What a text row is for: text, a number (Up and Down step its field and the text cursor is over
+/// it, so the row's own resize cursor, the scrub's, is on its label and padding only) or a colour
+/// (a swatch between the label and the field, and Escape puts the colour's text back).
+#[derive(Clone, Copy)]
+enum RowKind {
+    Text,
+    Number,
+    Colour(Srgba),
+}
+
+/// [`text_row`] with its row's `role` and what it is `kind` of row.
 fn text_row_as(
     role: Role,
     label: Option<String>,
     value: String,
     chars: Option<f32>,
-    number: bool,
+    kind: RowKind,
 ) -> impl Bundle {
     let fills = chars.is_none();
     (
@@ -874,6 +891,9 @@ fn text_row_as(
                     Role::ControlText,
                     Pickable::IGNORE,
                 ));
+            }
+            if let RowKind::Colour(colour) = kind {
+                row.spawn(color_swatch(root, colour));
             }
             row.spawn((
                 Node {
@@ -905,14 +925,20 @@ fn text_row_as(
                     AutoDirectionalNavigation::default(),
                     observe(text_on_key_input),
                 ));
-                if number {
-                    field.insert((
-                        NumberInput,
-                        SelectAllOnFocus,
-                        EntityCursor::System(SystemCursorIcon::Text),
-                        observe(number_on_key_input),
-                        observe(number_on_step),
-                    ));
+                match kind {
+                    RowKind::Text => {}
+                    RowKind::Number => {
+                        field.insert((
+                            NumberInput,
+                            SelectAllOnFocus,
+                            EntityCursor::System(SystemCursorIcon::Text),
+                            observe(number_on_key_input),
+                            observe(number_on_step),
+                        ));
+                    }
+                    RowKind::Colour(_) => {
+                        field.insert((SelectAllOnFocus, observe(color_on_key_input)));
+                    }
                 }
                 cell.spawn((
                     Node {
@@ -1002,7 +1028,7 @@ pub fn number_field(
             Some(label.into()),
             format_number(value, step),
             Some(NUMBER_FIELD_CHARS),
-            true,
+            RowKind::Number,
         ),
         number_parts(value, step, range),
     )
@@ -1068,7 +1094,7 @@ pub fn vec_field<const N: usize>(
                                 Some(axis_name(index)),
                                 format_number(value, step),
                                 Some(VEC_FIELD_CHARS),
-                                true,
+                                RowKind::Number,
                             ),
                             number_parts(value, step, min..=max),
                             VecPart { root, index },
@@ -1077,6 +1103,97 @@ pub fn vec_field<const N: usize>(
                     }
                 });
         })),
+    )
+}
+
+/// A row with a colour: a label, a swatch and a framed field showing the colour as hex, which the
+/// player types (`#ff8800`, `#f80`, `ff8800`; `#ff880080` with an alpha) or picks. Enter or leaving
+/// the field applies what was typed; anything that is not a hex colour is refused with its reason
+/// as a [`ColorRefused`](crate::ColorRefused) and the field shows the colour again; Escape puts
+/// the old colour back.
+///
+/// The swatch is a button (Tab, Enter, Space, South or a click): it opens a picker below it and a
+/// second press closes it, Escape too. The picker is a saturation and value area (a pointer press
+/// and drag, or the arrows, Shift ten times as far) over three strips for hue, brightness and
+/// alpha, which are sliders (Left, Right, Home, End and the D-pad); a pad sets the saturation with
+/// the D-pad's Left and Right on the area and the rest with the strips. The colour applies as it
+/// is picked and there is nothing to confirm. The swatch is split: the colour opaque on the left
+/// and at its alpha on the right.
+///
+/// The row keeps its colour in [`ColorValue`](crate::ColorValue) and sends `ValueChange<Srgba>`
+/// for each change the player makes: `is_final` is false while a drag is rolling the colour and
+/// true when it ends, on Enter, when focus leaves after an edit and for a key or D-pad step. Put
+/// [`MixedValue`](crate::MixedValue) on the row for a multi-selection whose members differ: the
+/// field is empty and shows a muted [`MIXED_HINT`](crate::MIXED_HINT).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     color_field("Tint", Srgba::hex("#ff8800").unwrap()),
+///     observe(|change: On<ValueChange<Srgba>>| {
+///         if change.is_final {
+///             info!("tint is {}", hex_text(change.value.to_f32_array()));
+///         }
+///     }),
+/// ));
+/// # }
+/// ```
+pub fn color_field(label: impl Into<String>, value: Srgba) -> impl Bundle {
+    (
+        text_row_as(
+            Role::TextInput,
+            Some(label.into()),
+            hex_text(value.to_f32_array()),
+            Some(COLOR_FIELD_CHARS),
+            RowKind::Colour(value),
+        ),
+        ColorValue(value),
+        TextHint(String::new()),
+        observe(color_self_update),
+        observe(color_on_text),
+    )
+}
+
+/// The swatch of a [`color_field`]: a button, a target square, split in two halves (the colour
+/// opaque and at its alpha). Pressing it opens the picker. The auto margin on its left pushes it
+/// and the field to the row's right edge.
+fn color_swatch(row: Entity, value: Srgba) -> impl Bundle {
+    (
+        Node {
+            margin: UiRect::left(Val::Auto),
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::ColorSwatch,
+        ColorSwatch(row),
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        observe(swatch_on_activate),
+        children![
+            (
+                Node {
+                    flex_grow: 1.0,
+                    ..default()
+                },
+                Role::ColorSwatchHalf,
+                SwatchHalf { row, alpha: false },
+                BackgroundColor(Color::Srgba(value.with_alpha(1.0))),
+                Pickable::IGNORE,
+            ),
+            (
+                Node {
+                    flex_grow: 1.0,
+                    ..default()
+                },
+                Role::ColorSwatchHalf,
+                SwatchHalf { row, alpha: true },
+                BackgroundColor(Color::Srgba(value)),
+                Pickable::IGNORE,
+            ),
+        ],
     )
 }
 

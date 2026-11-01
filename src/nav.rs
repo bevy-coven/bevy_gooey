@@ -23,6 +23,7 @@ use bevy::ui_widgets::{
 };
 
 use crate::choice::{ChoiceCount, Move, MoveChoice};
+use crate::color::{AreaStepBy, ColorArea};
 use crate::dock::{DockTab, moves_tabs};
 use crate::list::{ListView, span};
 use crate::menu::{MenuRow, MenuTitle};
@@ -37,7 +38,12 @@ use crate::tree::TreeView;
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
 type TakesSideways = (
-    Or<(With<Slider>, With<ChoiceCount>, With<NumberInput>)>,
+    Or<(
+        With<Slider>,
+        With<ChoiceCount>,
+        With<NumberInput>,
+        With<ColorArea>,
+    )>,
     Without<InteractionDisabled>,
 );
 
@@ -50,9 +56,21 @@ type KeepsSideways = (
         With<Tab>,
         With<TreeView>,
         With<NumberInput>,
+        With<ColorArea>,
     )>,
     Without<InteractionDisabled>,
 );
+
+/// The widgets whose Up and Down keys step a value (a number field's field, the colour picker's area):
+/// every enabled one.
+type Steppable = (
+    Or<(With<NumberInput>, With<ColorArea>)>,
+    Without<InteractionDisabled>,
+);
+
+/// What [`gamepad_adjust`] reads on the control focus is on: whether it is a slider, a number field
+/// or the colour picker's area.
+type Adjustable = (Has<Slider>, Has<NumberInput>, Has<ColorArea>);
 
 /// The text fields that take Left and Right as the caret's: an enabled one. Only the keys are the
 /// caret's (a pad cannot move one), so the D-pad still moves focus off it.
@@ -139,9 +157,10 @@ pub struct FocusScopes<'w, 's> {
     menu_rows: Query<'w, 's, (), MenuRow>,
     /// Menu titles, whose Down opens their menu.
     menu_titles: Query<'w, 's, (), With<MenuTitle>>,
-    /// The number fields' text fields, whose Up and Down keys step the number and whose D-pad
-    /// Left and Right do ([`crate::number_field`]).
-    numbers: Query<'w, 's, (), (With<NumberInput>, Without<InteractionDisabled>)>,
+    /// The number fields' text fields and the colour picker's area, whose Up and Down keys step
+    /// the number (the value) and whose D-pad Left and Right do ([`crate::number_field`],
+    /// [`crate::color_field`]).
+    numbers: Query<'w, 's, (), Steppable>,
     /// The text fields, which take the keys Left and Right themselves.
     typing: Query<'w, 's, (), TypesText>,
     /// The lists, to tell a widget one has clipped away from one in view.
@@ -652,21 +671,21 @@ pub fn gamepad_adjust(
     focus: Res<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     gamepads: Query<&Gamepad>,
-    controls: Query<(Has<Slider>, Has<NumberInput>), TakesSideways>,
+    controls: Query<Adjustable, TakesSideways>,
     mut held: Local<(i8, f32)>,
     mut commands: Commands,
 ) {
     let down = |button| gamepads.iter().any(|g| g.pressed(button));
     let direction = down(GamepadButton::DPadRight) as i8 - down(GamepadButton::DPadLeft) as i8;
     let vertical = down(GamepadButton::DPadUp) || down(GamepadButton::DPadDown);
-    let Some((control, is_slider, is_number)) = focus
+    let Some((control, is_slider, is_number, is_area)) = focus
         .get()
         .filter(|_| direction != 0 && !vertical)
         .and_then(|f| {
             controls
                 .get(f)
                 .ok()
-                .map(|(slider, number)| (f, slider, number))
+                .map(|(slider, number, area)| (f, slider, number, area))
         })
     else {
         *held = (0, 0.0);
@@ -685,6 +704,11 @@ pub fn gamepad_adjust(
         show_focus(&mut shown);
         if is_number {
             commands.trigger(NumberStepBy {
+                entity: control,
+                steps: f32::from(direction) * steps as f32,
+            });
+        } else if is_area {
+            commands.trigger(AreaStepBy {
                 entity: control,
                 steps: f32::from(direction) * steps as f32,
             });

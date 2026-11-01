@@ -8,6 +8,7 @@
 mod binding;
 mod cancel;
 mod choice;
+mod color;
 mod context_menu;
 mod controls;
 mod density;
