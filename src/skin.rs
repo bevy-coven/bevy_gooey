@@ -1783,6 +1783,9 @@ fn restyle(
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.max_width = Val::Px(tooltip_width(skin, tip.unwrap_or_default(), line));
+                // The line and, when the command has one, its shortcut's keycap beside it.
+                next.align_items = AlignItems::Center;
+                next.column_gap = Val::Px(skin.gap);
             }
             // A button's frame and room, a label left and a switch right, the row the target.
             Role::Toggle => {
@@ -2117,19 +2120,29 @@ fn faded(color: Color, opacity: f32) -> Color {
 /// A tooltip's widest box, logical px: a comfortable line of about 40 characters (24 text sizes),
 /// narrowed to the room the window leaves beside a widget in a column so the tooltip wraps there
 /// instead of falling back over the next widget. Below 8 text sizes of room, wrapping would make
-/// a ribbon of single words, so the measure stands and `Popover` takes the next side.
+/// a ribbon of single words, so the measure stands and `Popover` takes the next side. A shortcut's
+/// keycap is never cropped: the box is at least the cap, a gap and six text sizes of words beside
+/// it wide, so a long chord at a large text size makes `Popover` take another side before it makes
+/// the box leave the window.
 fn tooltip_width(skin: &GooeySkin, tip: TooltipBox, line: f32) -> f32 {
     let size = skin.text_size * skin.text_scale;
     let measure = size * 24.0;
-    if tip.in_row {
-        return measure;
-    }
-    // The box's outer edge sits `gap + padding + border` from the widget, and `gap` from the window.
-    let fit = tip.room - (skin.gap + skin.pad() + line) - skin.gap;
-    if fit >= size * 8.0 {
-        measure.min(fit)
-    } else {
+    let width = if tip.in_row {
         measure
+    } else {
+        // The box's outer edge sits `gap + padding + border` from the widget, and `gap` from the
+        // window.
+        let fit = tip.room - (skin.gap + skin.pad() + line) - skin.gap;
+        if fit >= size * 8.0 {
+            measure.min(fit)
+        } else {
+            measure
+        }
+    };
+    if tip.cap > 0.0 {
+        width.max(tip.cap + skin.gap + size * 6.0 + 2.0 * (skin.pad() + line))
+    } else {
+        width
     }
 }
 

@@ -49,7 +49,7 @@ fn gallery(app: &mut App) -> Entity {
     let options = world
         .spawn((
             button("Options"),
-            Tooltip("Sound, controls and display".into()),
+            Tooltip::new("Sound, controls and display"),
             AutoFocus,
         ))
         .id();

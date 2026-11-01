@@ -596,7 +596,7 @@ fn the_stack_stands_above_a_dialog_and_below_a_tooltip() {
     };
     let tooltip_z = {
         app.world_mut()
-            .spawn((button("Help"), Tooltip("Opens the manual".into())));
+            .spawn((button("Help"), Tooltip::new("Opens the manual")));
         frames(&mut app, 2);
         let world = app.world_mut();
         let tip = world
