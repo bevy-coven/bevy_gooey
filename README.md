@@ -11,16 +11,16 @@ navigation, on Bevy's own headless widgets.
 [![Bevy](https://img.shields.io/badge/bevy-0.20-blue.svg)](https://bevyengine.org)
 [![licence](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue.svg)](#who-and-licence)
 
-![A menu panel with a tab strip and a Load game list: the focus ring walks down the save slots from Autosave to Mill, 03:02, Page Down moves it to Chapel, 00:12, the health meter drains, and a "Game saved" toast appears at the bottom right; the legend "Enter Select, Esc Back" stands in the bottom-left corner throughout](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
+![A menu panel with a tab strip and a Load game list with a Save as field under it: the focus ring walks down the save slots from Autosave to Mill, 03:02, Page Down moves it to Chapel, 00:12, the health meter drains, and a "Game saved" toast appears at the bottom right; the legend "Enter Select, Esc Back" stands in the bottom-left corner throughout](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
 
 *`examples/gallery`: two panels, a meter draining, settings in tabs (a slider and a switch on the first), a list
-that scrolls to follow focus, toasts, and the Select and Back legend in the corner.*
+that scrolls to follow focus with a field to name a save under it, toasts, and the Select and Back legend in the corner.*
 
 ![The same gallery at rest: the left panel with Play, Options and Quit, the meter, the Audio, Display
 and Controls tabs with Audio lit over the Volume slider and the Subtitles switch; the right a Load game
-list four and a half rows tall with a rail and its thumb, the ring on Chapel, 00:12; the legend "Enter
-Select, Esc Back" at the bottom left and one toast at the bottom
-right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
+list four and a half rows tall with a rail and its thumb, the ring on Chapel, 00:12, and a Save as field
+under it showing "Name this save"; the legend "Enter Select, Esc Back" at the bottom left and one toast
+at the bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
 
 *The still: the dark skin, 1280 × 720.*
 
@@ -132,6 +132,10 @@ leaves), and the save-slot list scrolls with the wheel, a drag on its thumb or P
 ![The gallery's settings panel after the Controls tab is clicked: the ring goes down to Jump, whose keycap says Space; Enter lights the keycap amber with "Press a key, Esc exits", Q turns it to Q, and Down to Use (A), whose keycap lights with "Press a button, Menu exits" until Escape puts it back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/binding.gif)
 
 *Rebinding: `binding("Jump", Binding::Key(KeyCode::Space))` waits for the next press and says it once as a `ValueChange<Binding>`. The panel never moves, and nothing else hears the key.*
+
+![The gallery's Load game list with the Save as field under it: the field rests as a quiet outline over the muted hint "Name this save", its frame turns blue with a caret while "Aria" is typed, Enter shows the toast "Saved as Aria" at the window's corner, and Up moves the ring onto the save slot Cellar, 01:48 with the field back to its quiet outline and its text kept](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/text-input.gif)
+
+*Text input: `text_input("Save as", "")` takes the keys the moment it has focus, says each edit once as a `ValueChange<String>` and the end of the edit (Enter, or focus leaving) with `is_final`. Up leaves it: a field never traps focus, and the row never moves while the player types.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 

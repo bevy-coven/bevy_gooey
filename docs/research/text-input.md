@@ -53,7 +53,7 @@ A click on a label should focus its field (the HTML `label` behaviour that makes
 |state|`TextInputValue(pub String)`; `TextEditing` on the row while its field has focus; optional `TextHint(pub String)`, `TextLimit(pub usize)` on the row|
 |event|`ValueChange<String>` on the row; `is_final` false per edit, true on Enter and on leaving after an edit|
 |keys|characters, Backspace, Delete, Left, Right, Home, End, selection, copy, cut, paste, IME: Bevy's; Up, Down: focus moves; Tab: Bevy's; Escape: Bevy's blur, then bubbles; Enter: `is_final`|
-|look|row: a toggle's frame (a line, transparent), `padding * 1.5` at the sides, `min_height` `min_target`; field: `min_height` `min_target` (44 px), `0.6 padding` at the sides, a line of frame, `radius`, opaque panel fill; width 16 characters of "0" at the body size (scales with `text_scale`); hint `text_muted`; caret `text`, selection `accent`, selected text `accent_text`, an unfocused selection none|
+|look|row: a toggle's frame (a line, transparent), `padding * 1.5` at the sides, `min_height` `min_target`; field: `min_height` `min_target` (44 px), `0.6 padding` at the sides, a line of frame, `radius`, opaque panel fill; width 17 characters of "0" at the body size (scales with `text_scale`; 16 and the caret's room, see Deviations); hint `text_muted`; caret `text`, selection `accent`, selected text `accent_text`, an unfocused selection none|
 |set|`track_text_editing` in `GooeySystems::Navigate`, first; `update_text_inputs` in `GooeySystems::Style` before `apply_skin`|
 
 ## Validation targets
@@ -79,7 +79,8 @@ A "Name" row in the gallery's Options tab, a field a button's height with a hint
 - **Up and Down leave the field though Bevy's handler also consumes them.** Bevy moves the caret to the line's start for a press the crate's navigation also acts on; on a one-line field that is harmless and the focus move wins. A design default.
 - **A pad has no way to edit and the crate adds none.** No on-screen keyboard (Wobbrock: selection keyboards are slow, and every platform ships its own, Valve requires it); `TextEditing` is the hook. A design default.
 - **The frame stays lit under focus that is not "visible".** Every other ring follows `InputFocusVisible`, which a pointer press clears; a field keeps its ring because its caret already shows the focus (browsers do the same for text fields). A design default.
-- Assumed decisions (owner may override), all above: `ValueChange<String>` on the row with Bevy's `is_final`; Enter always final and not leaving the field; Escape as Bevy has it; `TextEditing` and `is_text_editing` as the host's hook; the hint and limit as components on the row; the field's fill the panel's colour; a 16-character width.
+- **The field is 17 characters wide, not 16 (found by capturing it).** Bevy's scroll rule "keep[s] one `0`-advance of space visible from the caret position onward to leave room for the next typed character" (`bevy_text-0.20.0/src/scroll.rs`), so a 16-wide field holding a full `TextLimit(16)` name scrolled its first letter away by 12 px at the moment the player finished typing (the gallery's own Save as field at the limit showed "ria-of-the-Long"). One more character shows all 16 with the caret. A design default; `a_line_that_fills_a_limit_of_sixteen_shows_whole_with_its_caret` holds it (it fails at 16 wide).
+- Assumed decisions (owner may override), all above: `ValueChange<String>` on the row with Bevy's `is_final`; Enter always final and not leaving the field; Escape as Bevy has it; `TextEditing` and `is_text_editing` as the host's hook; the hint and limit as components on the row; the field's fill the panel's colour; a 17-character width.
 
 ## Pending index
 
