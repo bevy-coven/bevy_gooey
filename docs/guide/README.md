@@ -13,6 +13,9 @@ per subject. The README links each bullet to its page.
   settings the crate itself reads (the theme row is the high-contrast switch), with nothing to wire, and the sizes every widget is checked at.
 - [Rebinding controls](bindings.md) — `binding(label, value)`: a row that waits for the player's next key,
   mouse button or pad button, what it hears and holds back while it waits, and `BindingSettings`.
+- [Shortcuts](shortcuts.md) — `Shortcut`, `Modifiers` and `Platform`: a key chord in the platform's own words
+  ("Ctrl+Shift+P", "⇧⌘P"), `just_pressed`, `model::shortcut_conflicts`, a `binding` row that captures a
+  chord and a tooltip that shows the command's chord on a keycap.
 - [Text input](text-input.md) — `text_input(label, value)`: a row with a field the player types in, the
   edit and its end in `ValueChange<String>`, `TextEditing` for a game's hotkeys and a pad's keyboard, and
   why a field never traps focus.

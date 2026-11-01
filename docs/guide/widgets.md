@@ -14,7 +14,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `label(text)` | body text |
 | `button(text)` | a Bevy `Button`, so it takes `observe`, `Tooltip` and `InteractionDisabled` |
 | `meter(value, max)` | a HUD bar; `Meter { value, max }` on the entity drives it, and `update_meters` draws it |
-| `tooltip` (`Tooltip("…")`) | a component on any widget: its box opens beside the widget under the pointer or on visible focus |
+| `tooltip` (`Tooltip::new("…")`) | a component on any widget: its box opens beside the widget under the pointer or on visible focus, with the command's shortcut on a keycap if it has one — see [shortcuts](shortcuts.md) |
 | `dialog()` | a modal: a scrim, focus taken on opening and held, and given back to the opener on closing |
 | `popover(anchor, placement)`, `popover_modal(..)` | a panel beside a widget or at the pointer, kept inside the window and closed by Escape or a press elsewhere; the modal one holds focus like a menu does — see [popovers](popovers.md) |
 | `toggle`, `choice`, `slider` | the options-screen controls, on Bevy's own `Checkbox`, `Button` and `Slider` — see [controls](controls.md) |
@@ -22,7 +22,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |
 | `list` | rows that scroll and follow focus — see [lists](lists.md) |
 | `toast`, `toast_alert` | a line of news at the edge of the screen — see [toasts](toasts.md) |
-| `binding` | a row that rebinds a key, a mouse button or a pad button on the player's next press — see [rebinding](bindings.md) |
+| `binding` | a row that rebinds a key, a mouse button, a pad button or a key chord on the player's next press — see [rebinding](bindings.md) and [shortcuts](shortcuts.md) |
 | `prompt`, `prompts` | the "Esc Back" hints in the corner, in the words of the last device the player used — see [prompts](prompts.md) |
 | `text_input` | a row with a field the player types in — a caret, a selection, paste and IME on Bevy's own `TextInput`, a hint, and focus it never traps — see [text input](text-input.md) |
 
@@ -46,12 +46,14 @@ its slot at every scale.
 
 ## A tooltip
 
-`Tooltip` is a component whose text is the hint. It opens beside its widget — to the right in a column,
-below in a row, flipped at the window's edge — one step outside its panel, so it never covers the next
-button. It is a view of its component: `commands.entity(button).remove::<Tooltip>()` takes the hint off
-(a "Locked: reach level 5" line once the player unlocks it), and inserting a new `Tooltip` or editing
-`Tooltip.0` changes the line the open box shows. A tooltip on a widget inside a clipped container (a
-row of a `list`) draws over the clip rather than being cut by it.
+`Tooltip` is a component whose text is the hint, built `Tooltip::new("Sound, controls and display")`. It
+opens beside its widget — to the right in a column, below in a row, flipped at the window's edge — one
+step outside its panel, so it never covers the next button. It is a view of its component:
+`commands.entity(button).remove::<Tooltip>()` takes the hint off (a "Locked: reach level 5" line once the
+player unlocks it), and inserting a new `Tooltip` or editing `Tooltip.text` changes the line the open box
+shows. `.with_shortcut(Shortcut::primary(KeyCode::KeyS))` puts the command's chord on a keycap to the
+right of the line, the same cap a `prompt` and a `binding` row draw ([shortcuts](shortcuts.md)). A tooltip on a
+widget inside a clipped container (a row of a `list`) draws over the clip rather than being cut by it.
 
 ## A dialog
 
