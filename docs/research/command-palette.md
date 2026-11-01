@@ -39,7 +39,7 @@ Bevy 0.20 supplies the field (`bevy_ui_widgets::TextInput`, wrapped by `text_inp
 | rows shown | 8 (`PALETTE_ROWS`), reused |
 | history | 10 ids (`PaletteHistory::LIMIT`) |
 | card width | 40 text sizes, at most the scrim's inside (window less 5% a side) |
-| card top | 10% of the window's height from its top, so the field never moves while the list grows or shrinks |
+| card top | 5% of the window's height below the scrim's safe edge (5% of its width), about a seventh of the way down at 16:9, so the field never moves while the list grows or shrinks |
 | scrim | the dialog's, z 100, closes on a click outside the card |
 | key repeat | the keyboard's own (held Down repeats), the D-pad's `repeat_steps` rate |
 
@@ -62,6 +62,7 @@ VS Code's and Godot's: a card near the top of a dimmed screen, the field framed 
 - The issue's `PaletteCommand.enabled` is kept (`Result<(), String>`); the `category` is `Option<String>` (a command with none shows its title alone).
 - Recent commands come first among the matches of a query (the issue's order), though a much better score could argue for the other way; `PaletteHistory` is the game's to clear.
 - The palette matches the row's text, "Category: Title", not the id.
+- The field's frame is as wide as the rows' lit bars (a `Role::PaletteField` row has no side padding or frame), so its text stands about 5 px left of the rows' text at 100%; an inset field aligned to the row text was the alternative (assumed design default).
 - No highlight of the matched letters and no mouse-wheel scroll of the eight rows in this iteration (listed in the log).
 
 ## Pending index

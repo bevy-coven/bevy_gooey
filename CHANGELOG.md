@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Command palette (G-07, #11): `command_palette()` spawns a modal field over the game's `CommandList(Vec<PaletteCommand>)` (`id`, `title`, `category`, `shortcut`, `enabled: Result<(), String>`; build one with `PaletteCommand::new(..).category(..).shortcut(..).disabled(reason)`). The player types ("opn prj" finds "File: Open Project"), Up, Down, PageUp, PageDown and the D-pad move the lit row while focus stays in the field, Enter, South or a click on an enabled row despawns the palette and sends one `RunCommand { id }`, Escape or a click outside closes it with focus given back. Recently run commands (`PaletteHistory`, the last ten ids, serde data) come first, then by score; a disabled command shows its reason where its chord would be and runs nothing; eight reused rows scroll under the lit one, "n of m" says where, "No command matches" says there is none. New: `model::fuzzy_score(query, text) -> Option<u32>` (engine-free: every whitespace-separated term a case-insensitive subsequence, word starts and runs score, gaps and length cost), `CommandPalette` (`results()`, `selected()`, `selected_command(..)`), `palette_by_input` (Navigate) and `update_palette` (Style, before `apply_skin`), the `Role`s `Palette`, `PaletteRow`, `PaletteCount` and `PaletteField`, and `PALETTE_ROWS`. Every colour and size is an existing token (the menu rows'), so `problems()` is unchanged.
+- `examples/palette`, `docs/research/command-palette.md`, `docs/guide/command-palette.md`, `docs/media/command-palette.gif` and `tests/palette.rs` (18 tests).
+
+### Changed
+
+- `Role` gains four variants (`Palette`, `PaletteRow`, `PaletteCount`, `PaletteField`): a `match` on it that has no wildcard needs them. `text_input` is built by one private row builder, unchanged for its callers.
+
 ## [0.15.0] - 2026-11-01
 
 ### Added
