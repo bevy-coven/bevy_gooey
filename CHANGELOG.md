@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-01
+
 ### Added
 
 - Trees (G-11, #15): `tree(nodes)` is nodes that open and close, virtualized like the table it is built on (10,110 nodes spawn at most visible + 2 row entities). A `TreeNode::new(key, label)` has `.expanded()`, `.child(..)` and `.children(..)`; its `key` is its identity, so the selection, the cursor and the player's place stay with a node as others come and go. The rows are the nodes shown (every parent open), each indented a level (`model::tree_indent`: a text size and a half, never under 24 px) with a chevron in front of a node that has children. `Tree` is the table's `RowSource`: each node keeps its own open state, so closing a node loses nothing below it, and a game changes it through `table.source_mut::<Tree>()` (`insert`, `remove`, `set_nodes`, `set_open`, `is_open`, `open_keys`). The player opens and closes with a click on the chevron, Right and Left (the D-pad too) and `*` (every sibling), and the game hears `TreeToggled { entity, key, open }`; Right on an open node goes to its first child, Left on a closed node or an end node to its parent; typing goes to the next shown node starting with it (`model::type_ahead`, a one second window, the same letter again goes on). A removed node's selected state and cursor move to its heir, the next sibling, else the one before, else the parent (`update_trees`). Selection, cursor, `RowActivated` and `TableRows` are the table's.
