@@ -69,6 +69,7 @@ fn main() {
     let mut skin = match std::env::var("GOOEY_SKIN").as_deref() {
         Ok("parchment") => GooeySkin::parchment(),
         Ok("high_contrast") => GooeySkin::high_contrast(),
+        Ok("tool") => GooeySkin::tool(),
         _ => GooeySkin::dark(),
     };
     if let Some(scale) = env("GOOEY_TEXT_SCALE") {
