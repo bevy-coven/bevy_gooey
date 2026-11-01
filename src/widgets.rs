@@ -1484,6 +1484,33 @@ pub fn submenu(label: impl Into<String>, items: impl Bundle) -> impl Bundle {
     (MenuItem::submenu(label), children![menu_panel(items)])
 }
 
+/// A menu that belongs to a thing: spawn it once, anywhere, and name it with
+/// [`ContextMenu`](crate::ContextMenu) on whatever should open it. A secondary click on the thing
+/// opens it at the pointer (flipping at the window's edge), and Shift+F10 or the Menu key with
+/// focus on the thing, or a widget under it, opens it below that widget. `items` are the rows of a
+/// menu ([`menu_item`], [`check_item`], [`radio_item`], [`submenu`], [`separator`]), live
+/// entities, so a game's `observe(..)` sits on the item; [`ContextTarget`](crate::ContextTarget)
+/// says which thing it was opened for. Closed, it is drawn nowhere and in no focus scope; open, it
+/// is a modal popover, so Escape, B or a press outside close it and give focus back.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn setup(mut commands: Commands) {
+/// let menu = commands
+///     .spawn(context_menu(children![
+///         menu_item("Rename").with_shortcut(Shortcut::new(Modifiers::NONE, KeyCode::F2)),
+///         separator(),
+///         menu_item("Delete"),
+///     ]))
+///     .id();
+/// commands.spawn((button("Row"), ContextMenu(menu)));
+/// # }
+/// ```
+pub fn context_menu(items: impl Bundle) -> impl Bundle {
+    menu_panel(items)
+}
+
 /// A line between two groups of a menu. It is not focusable and the pointer goes through it to
 /// the card, and it ends a run of [`radio_item`]s.
 ///

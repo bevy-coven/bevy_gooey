@@ -20,11 +20,12 @@ use bevy::ui::{
 use bevy::ui_widgets::{Activate, ScrollArea, ValueChange};
 
 use crate::cancel::Cancel;
+use crate::context::ContextTarget;
 use crate::list::span;
 use crate::model::scroll_to_reveal;
 use crate::nav::{Dialog, show_focus};
 use crate::popover::{Placement, PopoverPanel};
-use crate::shortcut::Shortcut;
+use crate::shortcut::{Modifiers, Shortcut};
 use crate::skin::{GooeySkin, Role};
 use crate::tooltip::Tooltip;
 use crate::widgets::{CHEVRON_INK_SHIFT, ONE_LINE};
@@ -327,13 +328,21 @@ pub(crate) fn open_menu(world: &mut World, panel: Entity) {
             close_menu(world, other);
         }
     }
-    sync_nothing(world, panel);
-    sync_marks(world, panel);
     let placement = if world.get::<MenuTitle>(anchor).is_some() {
         Placement::Below
     } else {
         Placement::Right
     };
+    show_menu(world, panel, anchor, placement);
+    world.entity_mut(anchor).insert(MenuOpen);
+}
+
+/// Makes `panel` an open modal popover on `anchor`: the one place a menu panel becomes a
+/// [`PopoverPanel`], so the placement, the scope and the focus rules are the popover's for a menu
+/// of a bar, a submenu and a context menu alike.
+pub(crate) fn show_menu(world: &mut World, panel: Entity, anchor: Entity, placement: Placement) {
+    sync_nothing(world, panel);
+    sync_marks(world, panel);
     let mut entity = world.entity_mut(panel);
     entity.insert((
         PopoverPanel::menu(anchor, placement),
@@ -347,7 +356,6 @@ pub(crate) fn open_menu(world: &mut World, panel: Entity) {
     if let Some(mut node) = entity.get_mut::<Node>() {
         node.display = Display::Flex;
     }
-    world.entity_mut(anchor).insert(MenuOpen);
 }
 
 /// Closes `panel` and every menu open under it, deepest first, giving focus back to whoever opened
@@ -366,6 +374,10 @@ pub(crate) fn close_menu(world: &mut World, panel: Entity) {
         entity.insert(Visibility::Hidden);
         if let Some(mut node) = entity.get_mut::<Node>() {
             node.display = Display::None;
+        }
+        // A context menu stands apart from what it was opened beside, so it is a root again.
+        if entity.contains::<ContextTarget>() {
+            entity.remove::<(ContextTarget, ChildOf)>();
         }
     }
     if let Some(anchor) = anchor
@@ -784,7 +796,9 @@ pub fn focus_menu_bar(
     if tapped {
         *alone = false;
     }
-    if !(tapped || keys.just_pressed(KeyCode::F10)) {
+    // Shift+F10 is the context menu's ([`crate::context_by_key`]).
+    let f10 = keys.just_pressed(KeyCode::F10) && !Modifiers::held(&keys).shift;
+    if !(tapped || f10) {
         return;
     }
     let current = focus.get();
@@ -883,8 +897,15 @@ pub fn fit_menus(
         let (top, height) = span(computed, transform);
         let window = target.logical_size().y;
         let line = skin.border;
+        // A menu opens on the side of its anchor with the room (the popover's flip), so it is
+        // capped at the larger side, not at the one it prefers.
         let room = match panel.placement {
-            Placement::Below => window - (top + height) - skin.gap * 1.5 - 2.0 * line,
+            Placement::Below | Placement::Above => {
+                let below = window - (top + height) - skin.gap * 1.5 - 2.0 * line;
+                let above = top - skin.gap * 1.5 - 2.0 * line;
+                below.max(above)
+            }
+            Placement::AtPointer => (window - top).max(top) - skin.gap,
             _ => window - top - skin.gap,
         };
         let least = skin.target() * 3.0;
