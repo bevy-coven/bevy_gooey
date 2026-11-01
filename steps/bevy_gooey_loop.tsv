@@ -10082,3 +10082,71 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 61	357	log	tool	edit files	edit	2026-11-01T21:46:40Z	0.1	Write the cleanup line :: [docs/loop-log.md#34E5] PUT 1338.=1338: +**Cleanup.** Removed this pass's `~/g33_bin` (the before and after galleries and the tree example), the baseline worktr
 61	358	log	tool	push gate	bash	2026-11-01T21:46:40Z	4.1	cd /home/ladvien/bevy_gooey_loop; git checkout -q -b loop/iter-33-log && git add docs/loop-log.md && git commit -qm "Loop log: iteration 33, trees, release v0.2
 61	359	log	model	model		2026-11-01T21:46:44Z	10.8	
+62	1	orient	model	model		2026-11-01T21:47:30Z	6.6	
+62	2	orient	tool	phase mark	bash	2026-11-01T21:47:37Z	1.5	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; git status --short | head; git branch --list 'wiggum/parked-*'; git log 
+62	3	orient	model	model		2026-11-01T21:47:38Z	3.3	
+62	4	orient	tool	git	bash	2026-11-01T21:47:41Z	0.0	cd /home/ladvien/bevy_gooey_loop && git show origin/loop-stats:steps/bevy_gooey_loop-audit.tsv | head -1; grep -n 'autotests\|\[\[test\]\]' Cargo.toml; ls tests
+62	5	orient	model	model		2026-11-01T21:47:41Z	12.0	
+62	6	orient	tool	phase mark	bash	2026-11-01T21:47:53Z	0.4	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient >/dev/null; cat Cargo.toml; head -5 tests/readme.rs tests/leaf.rs; grep -
+62	7	orient	model	model		2026-11-01T21:47:54Z	3.5	
+62	8	orient	tool	read files	read	2026-11-01T21:47:57Z	0.0	Cargo.toml
+62	9	orient	tool	shell	bash	2026-11-01T21:47:57Z	3.4	cd /home/ladvien/bevy_gooey_loop && head -12 tests/serde.rs; cargo package --list --allow-dirty 2>&1 | grep -c '^tests/'; ls ~/target/gooey-loop/debug/deps/ | g
+62	10	orient	model	model		2026-11-01T21:48:01Z	11.8	
+62	11	build	tool	phase mark	bash	2026-11-01T21:48:12Z	0.0	[launched bg_1] ls /tmp/g34 /tmp/g34m 2>&1 | head -3; mkdir -p /tmp/g34m; cd /home/ladvien/bevy_gooey_loop && git checkout -q -b loop/iter-34 && python3 ~/.local/share/wiggum/s
+62	12	build	model	model		2026-11-01T21:48:12Z	5.4	
+62	13	build	tool	read files	read	2026-11-01T21:48:18Z	0.0	xd://mcp__home_still_catalog_recent
+62	14	build	model	model		2026-11-01T21:48:18Z	1.4	
+62	15	build	tool	edit files	write	2026-11-01T21:48:19Z	6.6	xd://mcp__home_still_catalog_recent
+62	16	build	model	model		2026-11-01T21:48:26Z	3.0	
+62	17	build	tool	wait: other	wait	2026-11-01T21:48:29Z	282.3	{}
+62	18	build	model	model		2026-11-01T21:53:11Z	1.8	
+62	19	build	tool	shell	bash	2026-11-01T21:53:13Z	0.0	cd /tmp/g34m && tail -3 before.err; grep -c ': test' before.raw; grep -E '^\s+Running|Doc-tests' before.err | head -50 | cut -c1-100
+62	20	build	model	model		2026-11-01T21:53:13Z	20.0	
+62	21	build	tool	shell	bash	2026-11-01T21:53:33Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re,os mods=sorted(f[:-3] for f in os.listdir('tests') if f.endswith('.rs')) print(len(mods)) body='''
+62	22	build	model	model		2026-11-01T21:53:33Z	3.0	
+62	23	build	tool	edit files	edit	2026-11-01T21:53:36Z	0.0	One test binary in Cargo.toml :: [Cargo.toml#56D1] PUT >13: +# Every file in `tests/` is a module of `tests/all.rs`: one test executable, so Bevy is linked once +# (34 separate ones were 650 to
+62	24	build	model	model		2026-11-01T21:53:36Z	2.6	
+62	25	build	tool	cargo test	bash	2026-11-01T21:53:39Z	22.5	cd /home/ladvien/bevy_gooey_loop && (time CARGO_BUILD_JOBS=4 cargo test --all-features --no-run 2>&1 | tail -30)
+62	26	build	model	model		2026-11-01T21:54:01Z	4.7	
+62	27	build	tool	cargo test	bash	2026-11-01T21:54:06Z	7.1	cd /home/ladvien/bevy_gooey_loop && ls -la ~/target/gooey-loop/debug/deps/all-* | grep -v '\.d'; cargo test --all-features -- --list 2>/dev/null > /tmp/g34m/aft
+62	28	build	model	model		2026-11-01T21:54:13Z	4.3	
+62	29	build	tool	shell	bash	2026-11-01T21:54:17Z	0.5	cd /home/ladvien/bevy_gooey_loop && grep -rn -- '--test \|--test=' --include='*' . 2>/dev/null --exclude-dir=target --exclude-dir=.git | grep -v '^./docs/loop-l
+62	30	build	model	model		2026-11-01T21:54:18Z	4.2	
+62	31	build	tool	cargo test	bash	2026-11-01T21:54:22Z	46.2	cd /home/ladvien/bevy_gooey_loop && sed -n 20,60p .github/workflows/ci.yml; cargo test --features readme-example --test all readme:: 2>&1 | tail -5
+62	32	build	model	model		2026-11-01T21:55:08Z	2.9	
+62	33	build	tool	shell	bash	2026-11-01T21:55:11Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'tests/\*\|one test\|--test\|Includes tests/leaf' AGENTS.md README.md docs/guide/*.md CHANGELOG.md 2>/dev/null | cut
+62	34	build	tool	read files	read	2026-11-01T21:55:11Z	0.0	tests/readme.rs:1-3
+62	35	build	model	model		2026-11-01T21:55:11Z	4.7	
+62	36	build	tool	edit files	edit	2026-11-01T21:55:16Z	0.0	Fix comment and CI line :: [tests/readme.rs#67FC] PUT 2.=2: +//! compiles. Run with `cargo test --features readme-example --test all readme::`. [.github/workflows/ci.yml]
+62	37	build	tool	cargo test	bash	2026-11-01T21:55:16Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -i 's|run: cargo test --features readme-example --test readme|run: cargo test --features readme-example --test all readm
+62	38	build	model	model		2026-11-01T21:55:16Z	1.4	
+62	39	build	tool	read files	read	2026-11-01T21:55:17Z	0.0	AGENTS.md:80-92
+62	40	build	model	model		2026-11-01T21:55:17Z	3.8	
+62	41	build	tool	edit files	edit	2026-11-01T21:55:21Z	0.0	Document single test binary in AGENTS.md :: [AGENTS.md#16A1] PUT 86.=86: +3. `cargo test --all-features` (every test, the README test and the doctests) PUT >88: + +**There is one integration-test executab
+62	42	build	model	model		2026-11-01T21:55:21Z	3.4	
+62	43	build	tool	cargo test	bash	2026-11-01T21:55:24Z	10.1	cd /home/ladvien/bevy_gooey_loop && echo '#[test] fn x(){}' > tests/zz_scratch.rs && cargo test --all-features --test all every_test_file 2>&1 | grep -E 'not de
+62	44	build	model	model		2026-11-01T21:55:35Z	3.7	
+62	45	build	tool	edit files	edit	2026-11-01T21:55:38Z	0.0	Changelog entry :: [CHANGELOG.md] PUT >3: + +### Changed + +- The integration tests are one executable, `all` (`autotests = false`, `tests/all.rs`; every other file in `tests/` is
+62	46	build	model	model		2026-11-01T21:55:38Z	2.3	
+62	47	build	tool	edit files	edit	2026-11-01T21:55:41Z	0.0	Changelog entry :: [CHANGELOG.md#22AA] PUT >3: + +### Changed + +- The integration tests are one executable, `all` (`autotests = false`, `tests/all.rs`; every other file in `tests
+62	48	build	model	model		2026-11-01T21:55:41Z	7.4	
+62	49	gate	tool	phase mark	bash	2026-11-01T21:55:48Z	60.0	[launched bg_2] cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate >/dev/null; git add Cargo.toml tests/all.rs tests/readme.rs .github/workflo
+62	50	gate	model	model		2026-11-01T21:56:48Z	3.1	
+62	51	gate	tool	wait: other	wait	2026-11-01T21:56:51Z	82.9	{}
+62	52	gate	model	model		2026-11-01T21:58:14Z	1.6	
+62	53	gate	tool	shell	bash	2026-11-01T21:58:16Z	0.0	grep -E '^(===|---)|test result|warning: unused' /tmp/g34m/gate.log | head -30
+62	54	gate	model	model		2026-11-01T21:58:16Z	12.1	
+62	55	ship	tool	phase mark	bash	2026-11-01T21:58:28Z	14.9	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship >/dev/null; git push -q -u origin loop/iter-34 2>&1 | tail -2; git checkout
+62	56	ship	model	model		2026-11-01T21:58:43Z	3.2	
+62	57	ship	tool	edit files	edit	2026-11-01T21:58:46Z	0.0	Bump version :: [Cargo.toml#B0C2] PUT 3.=3: +version = "0.20.1" [CHANGELOG.md#3E43] PUT 3.=3: +## [Unreleased] + +## [0.20.1] - 2026-11-01
+62	58	ship	model	model		2026-11-01T21:58:46Z	1.9	
+62	59	ship	tool	edit files	edit	2026-11-01T21:58:48Z	0.0	Bump version :: [Cargo.toml#721C] PUT 3.=3: +version = "0.20.1" [CHANGELOG.md#3E43] PUT 3.=3: +## [Unreleased] + +## [0.20.1] - 2026-11-01
+62	60	ship	model	model		2026-11-01T21:58:48Z	1.9	
+62	61	ship	tool	cargo publish	bash	2026-11-01T21:58:50Z	11.0	cd /home/ladvien/bevy_gooey_loop && cargo update -p bevy_gooey --offline 2>&1 | tail -1; git add Cargo.toml CHANGELOG.md && git commit -q -m "release: v0.20.1" 
+62	62	ship	model	model		2026-11-01T21:59:01Z	2.2	
+62	63	ship	tool	push gate	bash	2026-11-01T21:59:03Z	12.5	cd /home/ladvien/bevy_gooey_loop && cargo publish 2>&1 | tail -4 && git tag -a v0.20.1 -m v0.20.1 && git push -q origin main 2>&1 | tail -2; git push -q origin 
+62	64	ship	model	model		2026-11-01T21:59:15Z	4.0	
+62	65	log	tool	phase mark	bash	2026-11-01T21:59:19Z	0.7	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log >/dev/null; D=~/target/gooey-loop/debug/deps; du -ch $(ls -d $D/* | grep -vE
+62	66	log	model	model		2026-11-01T21:59:20Z	16.7	
+62	67	log	tool	push gate	bash	2026-11-01T21:59:37Z	1.5	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'E' ## Iteration 34 — 2026-11-01 — One test binary (owner's disk job) **Triage.** `gh issue list`:
+62	68	log	model	model		2026-11-01T21:59:38Z	7.4	
