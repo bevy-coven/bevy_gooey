@@ -606,6 +606,91 @@ pub fn shortcut_conflicts<S: PartialEq>(keymap: &[(&str, S)]) -> Vec<(String, St
     clashes
 }
 
+/// A fuzzy match of `query` against `text`, higher is better, `None` when it does not match: how a
+/// [`command palette`](crate::command_palette) ranks what the player typed ("opn prj") against
+/// what a row says ("File: Open Project").
+///
+/// The query is split on whitespace and every term must occur in `text` as a subsequence, ignoring
+/// case; the terms may match in any order. A term is aligned where it scores best: a point per
+/// character, more for a character that starts a word (after a space or punctuation, or a capital
+/// after a small letter) or follows the one before it, less for each character skipped between
+/// two. The terms' scores add, and at the same alignment a shorter text outranks a longer. A query
+/// with no terms matches everything, and only the length orders them.
+///
+/// ```
+/// use bevy_gooey::model::fuzzy_score;
+/// let open = fuzzy_score("opn prj", "Open Project").unwrap();
+/// assert!(open > fuzzy_score("opn prj", "Reopen Project").unwrap());
+/// assert!(fuzzy_score("opn prj", "Open Project Settings").unwrap() < open);
+/// assert_eq!(fuzzy_score("xyz", "Open Project"), None);
+/// ```
+pub fn fuzzy_score(query: &str, text: &str) -> Option<u32> {
+    const MATCH: i32 = 16;
+    const WORD_START: i32 = 12;
+    const CONSECUTIVE: i32 = 10;
+    const GAP: i32 = 2;
+    const LEAD_CAP: i32 = 4;
+    const NO_MATCH: i32 = i32::MIN / 2;
+
+    let chars: Vec<char> = text.chars().collect();
+    let lower: Vec<char> = chars
+        .iter()
+        .map(|c| c.to_lowercase().next().unwrap_or(*c))
+        .collect();
+    let starts: Vec<bool> = chars
+        .iter()
+        .enumerate()
+        .map(|(i, c)| {
+            i == 0
+                || !chars[i - 1].is_alphanumeric()
+                || (c.is_uppercase() && chars[i - 1].is_lowercase())
+        })
+        .collect();
+
+    let mut total: i32 = 0;
+    for term in query.split_whitespace() {
+        let term: Vec<char> = term
+            .chars()
+            .map(|c| c.to_lowercase().next().unwrap_or(c))
+            .collect();
+        // `prev[j]`: the best score of the term's characters so far with the last one at `j`.
+        let mut prev = vec![NO_MATCH; chars.len()];
+        for (i, wanted) in term.iter().enumerate() {
+            let mut cur = vec![NO_MATCH; chars.len()];
+            // The best way to have matched the characters before this one at least a gap away,
+            // less the gap's cost, as the scan moves right.
+            let mut gapped = NO_MATCH;
+            for j in 0..chars.len() {
+                if j >= 2 {
+                    gapped = (gapped - GAP).max(prev[j - 2].saturating_sub(GAP));
+                }
+                if lower[j] != *wanted {
+                    continue;
+                }
+                let here = MATCH + if starts[j] { WORD_START } else { 0 };
+                let before = if i == 0 {
+                    -(j as i32).min(LEAD_CAP)
+                } else {
+                    let next_to = if j >= 1 && prev[j - 1] > NO_MATCH {
+                        prev[j - 1] + CONSECUTIVE
+                    } else {
+                        NO_MATCH
+                    };
+                    next_to.max(gapped)
+                };
+                if before > NO_MATCH {
+                    cur[j] = here + before;
+                }
+            }
+            prev = cur;
+        }
+        let best = prev.into_iter().max().filter(|&score| score > NO_MATCH)?;
+        total += best.max(1);
+    }
+    let short = 255 - chars.len().min(255) as i32;
+    Some(total.max(0) as u32 * 256 + short as u32)
+}
+
 /// `n` of a variant printed as `Other(n)`.
 fn numbered(name: &str) -> Option<&str> {
     name.strip_prefix("Other(")?.strip_suffix(')')
@@ -1472,5 +1557,30 @@ mod tests {
     fn a_pad_family_is_named_as_its_maker_writes_it() {
         let names: Vec<_> = PAD_STYLES.iter().map(|style| style.name()).collect();
         assert_eq!(names, ["Xbox", "PlayStation", "Switch"]);
+    }
+    #[test]
+    fn a_fuzzy_query_is_a_subsequence_of_every_term_in_any_order() {
+        assert!(fuzzy_score("opn prj", "File: Open Project").is_some());
+        assert!(fuzzy_score("prj opn", "File: Open Project").is_some());
+        assert!(fuzzy_score("OPEN", "open project").is_some());
+        // A character the text lacks, or too few of one, is no match.
+        assert_eq!(fuzzy_score("opz", "Open Project"), None);
+        assert_eq!(fuzzy_score("ooo", "Open"), None);
+        assert_eq!(fuzzy_score("a", ""), None);
+        // A query with no terms matches all, shorter first.
+        assert!(fuzzy_score("  ", "Save").unwrap() > fuzzy_score("", "Save As").unwrap());
+    }
+
+    #[test]
+    fn a_word_start_and_a_run_beat_letters_picked_from_the_middle() {
+        let score = |text| fuzzy_score("opn prj", text).unwrap();
+        let open = score("Open Project");
+        assert!(open > score("Reopen Project"));
+        assert!(open > score("Open Prefabs, then Jump"));
+        assert!(open > score("Open Project Settings"));
+        // A capital after a small letter starts a word as a space does.
+        assert!(fuzzy_score("op", "OpenProject").unwrap() > fuzzy_score("op", "stopper").unwrap());
+        // Skipping characters costs: the same letters further apart score less.
+        assert!(fuzzy_score("ab", "a b").unwrap() > fuzzy_score("ab", "a xxxx b").unwrap());
     }
 }

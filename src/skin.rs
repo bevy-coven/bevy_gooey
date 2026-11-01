@@ -58,6 +58,15 @@ const THUMB_RAIL_RATIO: f32 = 1.25;
 /// the row ever changing size. It is also as wide as a toggle's row leaves a four-letter label.
 const BINDING_CAP_TEXT_SIZES: f32 = 17.0;
 
+/// A command palette's card is this many body text sizes wide (800 px at the default size), or the
+/// scrim's inside when the window is narrower.
+const PALETTE_TEXT_SIZES: f32 = 40.0;
+
+/// How far below the scrim's safe edge a palette's card starts, as a share of the window's
+/// height: high enough to be where the player's eyes are on a command line, low enough to clear a
+/// menu bar (with the 5% the scrim pads, the card's top is about a seventh of the way down).
+const PALETTE_TOP_VH: f32 = 5.0;
+
 /// A menu's card is at least this many body text sizes wide (10 × 20 px = 200 px at the default
 /// size): a short menu is still a card, and a title's menu is never narrower than its words.
 const MENU_MIN_TEXT_SIZES: f32 = 10.0;
@@ -1101,6 +1110,14 @@ pub enum Role {
     MenuSeparator,
     /// A line in a menu that is not a command ("Nothing here"): [`GooeySkin::text_muted`].
     MenuNote,
+    /// A [`crate::command_palette`]'s card: an opaque column on [`GooeySkin::outline`]'s frame, a
+    /// field and its rows, a popover's look at the top of the window.
+    Palette,
+    /// One row of a palette: a menu row's look and size, lit as a whole, with the focus ring, while
+    /// it is the one Enter runs (Bevy's `Selected`), though focus stays in the field.
+    PaletteRow,
+    /// The line under a palette's rows that says which of how many is lit: muted, at the end.
+    PaletteCount,
 }
 
 type Styled = (
@@ -1282,6 +1299,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
                 | Role::Toast
                 | Role::TextInput
                 | Role::MenuItem
+                | Role::PaletteRow
         )
     )
 }
@@ -1396,6 +1414,7 @@ pub fn apply_skin(
                                 | Role::TextInput
                                 | Role::Toast
                                 | Role::MenuItem
+                                | Role::PaletteRow
                         )
                     )
                 })
@@ -1560,7 +1579,7 @@ fn restyle(
             skin.surface_raised
         }),
         Role::Meter | Role::SliderRail => Some(skin.surface_raised),
-        Role::Tooltip | Role::Popover | Role::MenuPanel | Role::MenuBar => {
+        Role::Tooltip | Role::Popover | Role::MenuPanel | Role::MenuBar | Role::Palette => {
             Some(skin.solid_surface())
         }
         // A menu's rows have no fill at rest, so a card shows its own colour; one lights as a
@@ -1571,6 +1590,17 @@ fn restyle(
         } else if state.pressed {
             skin.accent
         } else if state.hovered || state.focused || state.open {
+            skin.hovered()
+        } else {
+            Color::NONE
+        }),
+        // A palette's row is lit only while it is the active one, never for the pointer resting on
+        // it: the pointer moving over a row makes it the active one, so two rows never light.
+        Role::PaletteRow => Some(if state.disabled {
+            Color::NONE
+        } else if state.pressed {
+            skin.accent
+        } else if state.selected {
             skin.hovered()
         } else {
             Color::NONE
@@ -1685,7 +1715,8 @@ fn restyle(
         | Role::MenuText
         | Role::MenuShortcut
         | Role::MenuChevron
-        | Role::MenuNote => None,
+        | Role::MenuNote
+        | Role::PaletteCount => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(fill));
@@ -1694,7 +1725,7 @@ fn restyle(
     let edge = match role {
         Role::Panel if in_dialog => Some(BorderColor::all(skin.outline)),
         // A popover floats over whatever is behind it, so its edge is the dialog's: the outline.
-        Role::Popover | Role::MenuPanel => Some(BorderColor::all(skin.outline)),
+        Role::Popover | Role::MenuPanel | Role::Palette => Some(BorderColor::all(skin.outline)),
         // The bar's one frame is the line under it, the panel's own quiet edge.
         Role::MenuBar => Some(BorderColor::all(
             skin.surface_edge.unwrap_or(skin.surface_raised),
@@ -1703,6 +1734,12 @@ fn restyle(
             Some(BorderColor::all(skin.focus_ring))
         }
         Role::MenuTitle | Role::MenuItem => Some(BorderColor::all(Color::NONE)),
+        // Focus stays in the palette's field, so the row Enter runs carries the ring itself.
+        Role::PaletteRow => Some(BorderColor::all(if state.selected {
+            skin.focus_ring
+        } else {
+            Color::NONE
+        })),
         // The tick and the arrow are drawn in borders, in the row's ink.
         Role::MenuCheck | Role::MenuChevron => Some(BorderColor::all(menu_ink(owner, skin))),
         Role::Panel | Role::Tooltip | Role::Prompts => Some(BorderColor::all(
@@ -2120,8 +2157,28 @@ fn restyle(
                 next.padding = UiRect::all(Val::Px(skin.pad() * 0.5));
                 next.row_gap = Val::Px(skin.gap * 0.25);
             }
+            // A popover's card, wide enough for a line of a command and its chord at the top of
+            // the window, as wide as the scrim's inside at the most, its rows touching (each row
+            // carries its own padding like a menu's). Where it stands never changes while the rows
+            // below the field come and go.
+            Role::Palette => {
+                next.flex_direction = FlexDirection::Column;
+                next.align_items = AlignItems::Stretch;
+                next.flex_shrink = 0.0;
+                next.width = Val::Px(text_px * PALETTE_TEXT_SIZES);
+                next.max_width = Val::Percent(100.0);
+                next.margin = UiRect::top(Val::Vh(PALETTE_TOP_VH));
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad() * 0.5));
+                next.row_gap = Val::Px(skin.gap * 0.5);
+            }
+            Role::PaletteCount => {
+                next.align_self = AlignSelf::FlexEnd;
+                next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.2));
+            }
             // A button's padding and height, the label growing so shortcuts stand at the end.
-            Role::MenuItem | Role::MenuNote => {
+            Role::MenuItem | Role::MenuNote | Role::PaletteRow => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.4));
@@ -2250,14 +2307,16 @@ fn restyle(
                 skin.text_muted
             } else if owner.pressed {
                 skin.accent_text
-            } else if owner.hovered || owner.focused || owner.open {
+            } else if owner.hovered || owner.focused || owner.open || owner.selected {
                 skin.text
             } else {
                 skin.text_muted
             };
             Some((color, &look.fonts.body, skin.text_size))
         }
-        Role::MenuNote => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
+        Role::MenuNote | Role::PaletteCount => {
+            Some((skin.text_muted, &look.fonts.body, skin.text_size))
+        }
         Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
         Role::PromptKey | Role::PromptButton => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::ToastText => Some((

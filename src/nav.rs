@@ -26,6 +26,7 @@ use crate::choice::{ChoiceCount, Move, MoveChoice};
 use crate::list::{ListView, span};
 use crate::menu::{MenuRow, MenuTitle};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
+use crate::palette::CommandPalette;
 use crate::popover::PopoverPanel;
 use crate::skin::Role;
 use crate::tabs::{TabsCount, TabsValue};
@@ -120,6 +121,8 @@ pub struct FocusScopes<'w, 's> {
     menu_titles: Query<'w, 's, (), With<MenuTitle>>,
     /// The text fields, which take the keys Left and Right themselves.
     typing: Query<'w, 's, (), TypesText>,
+    /// The command palettes, whose field's Up and Down move the lit row ([`crate::palette_by_input`]).
+    palettes: Query<'w, 's, (), With<CommandPalette>>,
     /// The lists, to tell a widget one has clipped away from one in view.
     lists: Query<'w, 's, (&'static ComputedNode, &'static UiGlobalTransform), With<ListView>>,
     /// A tab strip's tabs, and the tab widgets that hold them.
@@ -162,6 +165,16 @@ impl FocusScopes<'_, '_> {
     /// one takes nothing.
     fn types_text(&self, entity: Entity) -> bool {
         self.typing.contains(entity)
+    }
+
+    /// Whether `entity` is the field of an open command palette: its Up and Down (and the D-pad's)
+    /// move the lit row and never focus.
+    fn moves_rows(&self, entity: Entity) -> bool {
+        self.types_text(entity)
+            && self
+                .parents
+                .iter_ancestors(entity)
+                .any(|ancestor| self.palettes.contains(ancestor))
     }
 
     /// Whether `entity` is one of a tab strip's tabs.
@@ -388,7 +401,8 @@ pub fn navigate_by_input(
     } else {
         net_x
     };
-    // Down on a menu title opens its menu (`menu_by_input`), and moves nothing.
+    // Down on a menu title opens its menu (`menu_by_input`), and in a palette's field Up and Down
+    // move its lit row (`palette_by_input`): they move nothing here.
     let net_y = if from.is_some_and(|f| scopes.menu_titles.contains(f)) {
         0.0
     } else {
