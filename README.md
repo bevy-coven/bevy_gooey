@@ -193,9 +193,9 @@ and what it only sees, and the boundary with the game.
 ## Part of the Coven
 
 `bevy_gooey` is one of the [Bevy Coven](https://github.com/bevy-coven) crates: the family table there
-says which crate owns what, so two of them never both own the interface. Grimoire, the Coven's level
+says which crate owns what, so two of them never both own the interface. The Cauldron, the Coven's level
 editor, takes it as an optional feature and edits a project's skin as the crate's own `GooeySkin` —
-see [use it in Grimoire](https://bevy-coven.github.io/crates/bevy_gooey.html#use-it-in-grimoire).
+see [use it in the Cauldron](https://bevy-coven.github.io/crates/bevy_gooey.html#use-it-in-the-cauldron).
 
 ## Bevy compatibility
 
