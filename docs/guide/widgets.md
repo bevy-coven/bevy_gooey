@@ -24,6 +24,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `text_size`, `interface_size`, `pad_style`, `skin_preset` | the player's text size, interface size, controller and theme (Dark, Parchment, High contrast, Tool), as `choice` rows that edit the crate's own settings and follow them, with nothing to wire — see [player options](options.md) |
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |
 | `list` | rows that scroll and follow focus — see [lists](lists.md) |
+| `tree(nodes)` | nodes that open and close, ten thousand in a dozen entities: the table's rows in one column, indented, with a chevron, Right and Left, type-ahead and a selection by key — see [trees](trees.md) |
 | `split(axis, first, second)` | two panes with a divider a drag, the arrows, the D-pad or a double click moves; `SplitFraction` is the state and `SplitMin` each pane's least size — see [split panes](splits.md) |
 | `dock(layout)` | a workbench of tab groups and splits kept as a `DockLayout`, whose panels come from the `PanelRegistry` and which the player rearranges by dragging a tab or with Ctrl+Shift and an arrow — see [docks](docks.md) |
 | `toast`, `toast_alert` | a line of news at the edge of the screen — see [toasts](toasts.md) |

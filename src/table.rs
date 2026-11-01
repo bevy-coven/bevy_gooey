@@ -36,10 +36,11 @@ use crate::list::ListView;
 use crate::model::{
     MIN_TARGET_PX, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, SPLIT_KEY_STEP_PX, TABLE_LEAST_COLUMN,
     TableStep, column_resize, natural_cmp, repeat_steps, scroll_to_reveal, table_anchor,
-    table_step, table_window,
+    table_step, table_window, tree_indent,
 };
 use crate::nav::show_focus;
 use crate::skin::{GooeySkin, Role, SkinScope};
+use crate::tree::{Lead, Tree, bind_lead, spawn_lead};
 use crate::widgets::{ONE_LINE, list_rail};
 
 /// How many rows tall a table stands unless it carries its own [`TableRows`].
@@ -428,6 +429,8 @@ struct PoolRow {
     row: Entity,
     /// Each column's cell box and the text in it.
     cells: Vec<(Entity, Entity)>,
+    /// A tree's chevron and indent, in the first cell.
+    lead: Option<Lead>,
 }
 
 /// What a table has worked out: the display order, the pool of row entities, the scroll it last
@@ -438,12 +441,12 @@ pub struct TableCache {
     /// Display row to source row.
     order: Vec<usize>,
     /// Display row to key.
-    keys: Vec<u64>,
+    pub(crate) keys: Vec<u64>,
     pool: Vec<PoolRow>,
     /// The display row at the top of the pool.
     first: usize,
     /// Where a range selection from the keyboard or Shift began.
-    anchor: Option<u64>,
+    pub(crate) anchor: Option<u64>,
     /// The cursor moved by a key: scroll it into view.
     follow: bool,
     /// The body text size the widths were laid out at.
@@ -452,7 +455,7 @@ pub struct TableCache {
 }
 
 impl TableCache {
-    fn index_of(&self, key: Option<u64>) -> Option<usize> {
+    pub(crate) fn index_of(&self, key: Option<u64>) -> Option<usize> {
         let key = key?;
         self.keys.iter().position(|&k| k == key)
     }
@@ -472,7 +475,7 @@ impl TableCache {
 
 /// How a pick moves the selection.
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Pick {
+pub(crate) enum Pick {
     /// The cursor only.
     Move,
     /// This row alone.
@@ -483,7 +486,7 @@ enum Pick {
     Range,
 }
 
-type Chosen<'a, 'w> = (
+pub(crate) type Chosen<'a, 'w> = (
     &'a SelectMode,
     &'a mut Mut<'w, TableSelection>,
     &'a mut Mut<'w, TableCursor>,
@@ -492,7 +495,7 @@ type Chosen<'a, 'w> = (
 
 /// Puts the cursor on display row `index` and the selection where `how` says; sends the one
 /// `ValueChange` when the selection is different.
-fn pick(
+pub(crate) fn pick(
     entity: Entity,
     index: usize,
     how: Pick,
@@ -763,10 +766,12 @@ pub(crate) fn edge_on_cancel(mut cancel: On<PointerCancel>, mut commands: Comman
         .remove::<(Pressed, EdgeGrab)>();
 }
 
-/// The bundle [`crate::table`] returns.
+/// The bundle [`crate::table`] returns; `outlined` is a [`crate::tree`]'s: no header, the rows'
+/// first column indented and led by a disclosure chevron.
 pub(crate) fn table_bundle(
     columns: impl IntoIterator<Item = Column>,
     rows: impl RowSource,
+    outlined: bool,
 ) -> impl Bundle {
     let table = Table::new(columns, rows);
     let titles: Vec<(String, bool)> = table
@@ -786,18 +791,23 @@ pub(crate) fn table_bundle(
         AutoDirectionalNavigation::default(),
         Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
             let root = parent.target_entity();
-            let strip = parent
-                .spawn((
-                    Node {
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    Role::TableHeader,
-                ))
-                .id();
+            let strip = (!outlined).then(|| {
+                parent
+                    .spawn((
+                        Node {
+                            flex_shrink: 0.0,
+                            ..default()
+                        },
+                        Role::TableHeader,
+                    ))
+                    .id()
+            });
             let last = titles.len().saturating_sub(1);
             let mut headers = Vec::new();
             for (column, (title, _)) in titles.iter().enumerate() {
+                let Some(strip) = strip else {
+                    break;
+                };
                 let (cell, up, down) = {
                     let world = parent.world_mut();
                     let cell = world
@@ -1022,6 +1032,8 @@ pub fn update_tables(
         let pitch = skin.table_pitch();
         let len = table.source.len();
         let columns = table.columns.len();
+        let tree = table.source::<Tree>();
+        let indent = tree_indent(text_px);
         let cache = &mut *cache;
         let fresh = !cache.built;
         let rebuilt = fresh || table.is_changed() || sort.is_changed();
@@ -1055,12 +1067,17 @@ pub fn update_tables(
                     // Rows came or went: the row at the top stays at the top.
                     let now = cache.index_of(old_first_key);
                     y = table_anchor(y, pitch, old_first, now, max);
-                    // A selected row that is gone is no longer selected; a cursor row that is gone
-                    // moves to where it stood.
+                    // A selected row that is gone is no longer selected (a tree's node under a
+                    // closed parent is not gone); a cursor row that is gone moves to where it
+                    // stood, and a tree's to the nearest node of its own that is shown.
                     if !selection.0.is_empty() {
                         let live: BTreeSet<u64> = cache.keys.iter().copied().collect();
-                        let kept: BTreeSet<u64> =
-                            selection.0.intersection(&live).copied().collect();
+                        let kept: BTreeSet<u64> = selection
+                            .0
+                            .iter()
+                            .copied()
+                            .filter(|k| live.contains(k) || tree.is_some_and(|t| t.contains(*k)))
+                            .collect();
                         if kept != selection.0 {
                             selection.0 = kept;
                         }
@@ -1068,8 +1085,10 @@ pub fn update_tables(
                     if let Some(key) = cursor.0
                         && !cache.keys.contains(&key)
                     {
-                        cursor.0 = old_cursor
-                            .and_then(|i| cache.keys.get(i.min(len.saturating_sub(1))).copied());
+                        cursor.0 = tree.and_then(|t| t.shown_ancestor(key)).or_else(|| {
+                            old_cursor
+                                .and_then(|i| cache.keys.get(i.min(len.saturating_sub(1))).copied())
+                        });
                     }
                     if cache.anchor.is_some_and(|k| !cache.keys.contains(&k)) {
                         cache.anchor = None;
@@ -1147,6 +1166,11 @@ pub fn update_tables(
                     }
                 }
             }
+            if (moved || resized)
+                && let (Some(tree), Some(lead)) = (tree, &slot_row.lead)
+            {
+                bind_lead(lead, tree.outline(source), indent, &mut nodes);
+            }
         }
         while cache.pool.len() < pool {
             let index = first + cache.pool.len();
@@ -1176,16 +1200,27 @@ pub fn update_tables(
             if selection.contains(key) {
                 commands.entity(row).insert(Selected);
             }
+            let mut lead = None;
             let cells = (0..columns)
                 .map(|c| {
+                    let mut node = cell_node(width_px(c), c == last);
+                    // A tree's chevron is a row high, so a click anywhere beside the label opens.
+                    node.align_self = if tree.is_some() && c == 0 {
+                        AlignSelf::Stretch
+                    } else {
+                        AlignSelf::Auto
+                    };
                     let cell = commands
-                        .spawn((
-                            cell_node(width_px(c), c == last),
-                            Role::TableCell,
-                            Pickable::IGNORE,
-                            ChildOf(row),
-                        ))
+                        .spawn((node, Role::TableCell, Pickable::IGNORE, ChildOf(row)))
                         .id();
+                    if let (Some(tree), 0) = (tree, c) {
+                        lead = Some(spawn_lead(
+                            &mut commands,
+                            cell,
+                            tree.outline(source),
+                            indent,
+                        ));
+                    }
                     let text = commands
                         .spawn((
                             Text::new(table.source.cell(source, c).into_owned()),
@@ -1198,7 +1233,7 @@ pub fn update_tables(
                     (cell, text)
                 })
                 .collect();
-            cache.pool.push(PoolRow { row, cells });
+            cache.pool.push(PoolRow { row, cells, lead });
         }
 
         // The room the rows not drawn would take, above and below the pool.

@@ -32,6 +32,7 @@ use crate::skin::Role;
 use crate::split::{SplitAxis, SplitDivider};
 use crate::table::{TableCache, TableCursor, TableHeaderCell};
 use crate::tabs::{TabsCount, TabsValue};
+use crate::tree::TreeView;
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
 type TakesSideways = (
@@ -39,10 +40,10 @@ type TakesSideways = (
     Without<InteractionDisabled>,
 );
 
-/// The widgets whose Left and Right never also move focus: [`TakesSideways`] and a tab, whose keys
-/// are Bevy's and whose D-pad is [`crate::step_tabs`]'.
+/// The widgets whose Left and Right never also move focus: [`TakesSideways`], a tab, whose keys
+/// are Bevy's and whose D-pad is [`crate::step_tabs`]', and a tree, whose are [`crate::tree_by_input`]'s.
 type KeepsSideways = (
-    Or<(With<Slider>, With<ChoiceCount>, With<Tab>)>,
+    Or<(With<Slider>, With<ChoiceCount>, With<Tab>, With<TreeView>)>,
     Without<InteractionDisabled>,
 );
 
