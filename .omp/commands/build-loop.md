@@ -18,6 +18,8 @@ They override the choice of item in section 4, not the gates.
 State lives in `docs/loop-log.md`; rules and traps live in `AGENTS.md`. Follow them; do not
 re-derive them.
 
+The driver times every step of a pass from the omp session afterwards (`~/.local/share/wiggum/steps.py`, rows on the `loop-stats` branch as `steps/<clone>.tsv` and `.md`), so the owner can see which steps take longest and cut them. The phase a step belongs to comes from you: **run `python3 ~/.local/share/wiggum/steps.py mark <phase>` as you enter each phase**, with one of `orient`, `bugs`, `choose`, `research`, `build`, `prove`, `gate`, `ship`, `release`, `log`. It prints one line and costs nothing. Without the marks every step lands in `orient`.
+
 ## Every pass ships: commit, push, publish, docs, demos (owner, 2026-10-31)
 
 The owner's rule for every pass of this loop. It is checked: after each pass the driver audits it from git (`tools/loop/steps.py audit` in bevy_grimoire) and records commits on `main`, commits left unpushed, package files changed, release tags, doc and demo files, and what was **missing**, on this repo's `loop-stats` branch.
