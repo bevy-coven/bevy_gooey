@@ -1,0 +1,94 @@
+# Binding: a row that rebinds an action's key or button
+
+Researched 2026-11-01 (iteration 17). home-still's corpus has nothing on control remapping (`hs distill search`, three queries: "keyboard remapping rebinding controls accessibility games", "game controller button mapping customization players with motor impairments", "key binding interface usability": a multi-cloud architecture paper, an educational-game accessibility paper, a game-AI chapter, Nielsen and the corpus's own *Supporting Novice to Expert Transitions*; `catalog_recent` limit 200 held only psychology, biomedical and SIGGRAPH embeds), so the three kinds of source below are web copies, Bevy's and the W3C's own text, and the owner's projects. Every quotation was fetched on 2026-11-01 and matches; the gap is under `## Pending index`.
+
+## Sources
+
+1. Game Accessibility Guidelines, *Allow controls to be remapped / reconfigured* (Motor, Basic) — https://gameaccessibilityguidelines.com/allow-controls-to-be-remapped-reconfigured/ (craft: why every game with a controls screen needs this, and what the screen must let a player do).
+2. Microsoft, *Xbox Accessibility Guideline 107: Input* — https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/107 (Grounded's and Gears 5's remapping screens), and *Xbox Accessibility Guideline 112: UI navigation* — `/112` (the "PuzzleBlaster" remapping screen that says "Press any key or mouse button to remap" and "Press [ESC] to exit remapping mode"); Game Accessibility Guidelines, *Overwatch remapping* — https://gameaccessibilityguidelines.com/overwatch-remapping/ (shipping games: what a remapping screen does and says).
+3. W3C, *UI Events KeyboardEvent code Values* — https://www.w3.org/TR/uievents-code/, and Bevy 0.20.0's source: `bevy_input-0.20.0/src/keyboard.rs` (`KeyCode` and `Key`), `bevy_ui_widgets-0.20.0/src/button.rs` (which keys press a `Button`), `bevy_input_focus-0.20.0/src/tab_navigation.rs` (`handle_tab_navigation`, an observer on the window) and `lib.rs` (`FocusedInput<KeyboardInput>` bubbling) (technical: which input to store, which to label by, and which handlers also see the press that is meant to be a binding).
+4. The owner's `sanctuary` (`src/ui/mod.rs`: `UiHolds`, `mask_input`, `UiKeys::consume`) and `bevy_emerge` (`crates/bevy_emerge_mapper`) — a search for `rebind`, `remap`, `keybind` and "press a key" found no rebinding screen in either; Sanctuary's hand-written mask (a dialog hides every key from the game, and a slider "takes a key press so later readers this frame do not see it") is the same trap one level down.
+
+## Craft principle
+
+Game Accessibility Guidelines: "Standard for mouse & keyboard and increasingly common for controllers, remappable controls are one of the best value accessibility features. Many people with motor impairments, whether permanent (eg. stroke), temporary (eg. broken arm) or situational (talking on a phone while playing) benefit greatly from being able to move essential controls into positions that they are able to reach more easily, for example with a single hand, or resting on a table-top using only the top buttons." And: "It also benefits the significant numbers of people who simply have different preferences to those of the designer, or those with different hardware layouts such as an AZERTY keyboard or Japanese PlayStation controller."
+
+The same page on where it lives: "System level remap is provided as a safety net, not as a substitute for providing remap in-game" (Bryce Johnson, Xbox), because in-game remapping allows "in-game prompts to reflect the current mapping" and puts the settings "where players expect to find them".
+
+XAG 107 states the scope: "Players should be given the option to remap all of the controls within the game itself, regardless of platform-level remapping support that might be present. This includes remapping analog and digital controls, inverting both the x-axis and y-axis individually for each individual control stick, and the Esc key on PC games." And: "This should ideally allow the player to assign an action to all potential game inputs, as opposed to simply swapping button assignments." And the consequence for everything else on screen: "When a player remaps a control within the game, the labelling of the new mapping is represented correctly across any hints, tips, tutorials, or controller map schemes."
+
+## How shipping games do it
+
+XAG 107, Grounded on PC: "all keyboard inputs and mouse clicks can be remapped to other buttons or mouse clicks of the player's choice", and "the player replaces mouse inputs, like right and left mouse clicks, with keys on the keyboard" (XAG 112 repeats it with the screen). Gears 5 "also provides game-specific remapping screens for each control". The Game Accessibility Guidelines' Overwatch page: "Ability to remap controls individually for each different character class."
+
+XAG 112 spells out the capture state, the one that a game gets wrong most easily: a remapping screen whose text reads "Press any key or mouse button to remap," and "Press [ESC] to exit remapping mode." — "Although the mouse was the input that was used to move focus to the item, when in remap mode, the player can no longer use their mouse to change focus. Any mouse input will be applied as the new control for "Boost Blast." Given the change in input to move focus away from an element, the game clearly prompts players that they must use the Esc key on the keyboard to exit remapping mode." The rule beneath it: "If focus can be moved to a UI element of an interface, focus can be moved away from that element by using the same input (keyboard or mouse) method. If doing so requires any means of navigation that's inconsistent with how the rest of the interface is navigated, the UI should provide clear interaction prompts to indicate how focus can be moved away."
+
+The owner's projects have no such screen to copy: neither `sanctuary` nor `bevy_emerge` has one (the search above). What they do show is what a hand-rolled mode costs: Sanctuary needs a per-frame snapshot, a mask over `ButtonInput<KeyCode>` and `ButtonInput<MouseButton>`, and a `consume` so that "a slider takes Left and Right, which would otherwise move the focus too".
+
+## Technical
+
+W3C, on `KeyboardEvent.code`: "Unlike the key values described in [UIEvents-key], the code values are based only on the key's physical location on the keyboard and do not vary based on the user's current locale." Its stated need: "a platform-independent way of identifying which physical key (by location) has been pressed (for example, WASD keys in games)". Bevy's `KeyCode` is that value and its `Key` the other: "This contains the actual value that is produced by pressing the key. This is useful when you need the actual letters ... In many cases you want the key location instead, for example when implementing WASD controls so the keys are located the same place on QWERTY and other layouts. In that case use `KeyCode` instead." A binding is therefore a `KeyCode`, and a game's input code reads `ButtonInput<KeyCode>`.
+
+Which handlers see the press that is meant to be a binding (Bevy 0.20.0):
+
+- `button_on_key_event` (a global observer of `FocusedInput<KeyboardInput>`): on the focused `Button`, Enter or Space, not a repeat, `ButtonState::Pressed` → `event.propagate(false)` and `Activate`. So the key that starts a capture arrives as a key press, and Enter or Space pressed *during* it arrives as another `Activate` on the row.
+- `handle_tab_navigation` is observed on the **window** entity, the end of `FocusedInput`'s bubble (`WindowTraversal`): Tab with `ButtonState::Pressed` and `!repeat` moves focus. An observer on the row (or any ancestor) that calls `event.propagate(false)` stops the key before the window, so Tab is bindable.
+- The crate's own readers (`navigate_by_input`, `gamepad_select`, `gamepad_adjust`, `cancel_by_input`, `page_lists`, `step_tabs`) read `ButtonInput<KeyCode>` and every `Gamepad`'s `just_pressed`, in `Update`; a row that captures the next press must hold them back or the arrow that is the new binding also moves focus.
+- A click on another widget during a capture is a `PointerClick` there. Picking is by node, not by input mode: only a node above them blocks them (`screen()` is `Pickable::IGNORE` for the reverse reason).
+
+## Model adopted
+
+- **B1. One value, `Binding`**, a `Copy` enum of what a player can press: `Key(KeyCode)` (a physical location, W3C's `code`), `Mouse(MouseButton)` and `Pad(GamepadButton)`. `Eq + Hash`, so a game can see a conflict and keep a map; serde under the `serde` feature (Bevy's `serialize` is already on there), so a game saves its bindings as data.
+- **B2. `binding(label, value)` is a row like a toggle's.** The label on the left and a keycap on the right, a button's height, framed, in Bevy's own `Button` (a tab stop, Enter, Space, the pad's South and a click start a capture, exactly as they cycle a `choice`). It keeps its state in `BindingValue(Binding)` on the entity (read it, or set it from code: no event comes back for that), and says each change once as Bevy's `ValueChange<Binding>`, like every other control here.
+- **B3. A row captures one device family.** A row spawned with `Key` or `Mouse` waits for a key or a mouse button; one spawned with `Pad` waits for a pad button. A mouse press (any button, the primary one too, XAG 112) or a key on a pad row cancels it, and so does a pad button on a keyboard row, because the player left the device. A capture ends on the first press: the binding is that input and `ValueChange<Binding>` is sent; pressing the input the row already holds ends it with no event.
+- **B4. Escape and a pad's Start cancel and cannot be bound** (XAG 112's "Press [ESC] to exit remapping mode"). They are the settings `BindingSettings::cancel_key` and `cancel_button`, so a game that must make Escape bindable (XAG 107 names "the Esc key on PC games") moves the exit to another key.
+- **B5. While a row waits, nothing else hears the player.** The crate's input systems skip (`not_capturing`), Tab is stopped on the way to the window, no `Cancel` is sent for the Escape that exits, and a transparent catcher above every widget takes the pointer so a click binds the primary button and cannot press a button behind it (XAG 112: "Any mouse input will be applied as the new control"). The catcher exists exactly while a row waits.
+- **B6. The press that starts a capture is never its binding.** The capture arms on the activation and listens from the next frame, so Enter, Space or South that opened it cannot also be bound.
+- **B7. The row shows what it waits for, and never changes size.** The keycap holds the key's name and a prompt ("Press a key, Esc exits") in one grid cell; one is hidden, so the cell is as wide as the wider and capturing moves nothing, as a choice's options and a tab's pages do. While it waits the keycap is lit, accent with the accent's text, the language of every "on" state in the crate (a switch, a selected tab).
+- **B8. Names are the crate's, and public.** `Binding::label(PadStyle)` returns the keycap's text (`"W"`, `"Left Shift"`, `"Right Click"`, `"A"` or `"Cross"`), so a game's hints and tutorials show the same words the row does (XAG 107's "labelling of the new mapping is represented correctly across any hints"). The arithmetic is in `model` (`key_name`, `mouse_name`, `pad_name`), engine-free, over the variants' `Debug` names. `PadStyle` (Xbox, PlayStation, Switch) is a setting in `BindingSettings`; the default is Xbox.
+- **B9. The prompts are data** (`BindingSettings::key_prompt`, `pad_prompt`), because the crate has no strings of its own to localise: every other widget takes the text it shows, and a row that has to say "Press a key" takes it from a resource the host fills.
+- **B10. Nothing runs at rest.** The capture system queries `With<Capturing>` and returns; the run condition is one empty-query check; `update_bindings` is `Changed<BindingValue>` and `Added<Capturing>`.
+
+## Parameters
+
+|part|value|
+|---|---|
+|widget|`binding(label, value: Binding) -> impl Bundle`, a `Role::Binding` row, Bevy's `Button`, `TabIndex(0)`, `AutoDirectionalNavigation`|
+|state|`BindingValue(Binding)`; `Capturing` on the row while it waits (public, so a game can hold its own input)|
+|event|`ValueChange<Binding>` on the row, `is_final: true`, once per change|
+|keys|a keyboard row binds any `KeyCode` but `cancel_key` (default `Escape`) and any `MouseButton`; a pad row any `GamepadButton` but `cancel_button` (default `Start`) on any gamepad|
+|settings|`BindingSettings { key_prompt, pad_prompt, pad_style, cancel_key, cancel_button }`, `Resource + Default + Clone + Debug + Reflect`|
+|look|keycap: `surface_raised` fill, `outline` frame (1 line), `padding * 0.6` by `padding * 1.5`, the row `min_target` high; capturing: `accent` fill, `accent_text`; disabled: `surface`, `text_muted`|
+|catcher|`Pickable::default()`, `GlobalZIndex(1000)`, transparent, a full-window absolute node, spawned and despawned with the capture|
+|set|`bind_by_input` in `GooeySystems::Navigate`, last; `update_bindings` in `GooeySystems::Style` before `apply_skin`|
+
+## Validation targets
+
+- Enter, Space, South and a click on the row each start a capture (`Capturing`, the keycap lit, the prompt shown); the press that started it is not the binding (a held Enter or South is not one).
+- A key binds: one `ValueChange<Binding>` with that `Key`, `BindingValue` follows, the capture ends, the keycap shows the new name. Escape exits with no event and no `Cancel`; the same key again ends with no event; Tab, an arrow and Enter are bound like any key and move nothing (focus stays on the row, the neighbouring widgets are not activated).
+- A mouse button binds, the primary one too, and a click while a row waits does not press the button under it; the catcher is gone when the capture ends. A pad row binds a pad button (the D-pad, a trigger, South) and Start exits; a key or a mouse press on it exits; a pad button on a keyboard row exits.
+- While a row waits: the D-pad, an arrow, PageDown and a bumper move nothing and scroll nothing; after it ends they work again.
+- The row's size, and its panel's, are the same at rest, waiting and after a bind (0 px), at 1x and 2x and at 1.5x text; the keycap is at least `min_target` high.
+- Contrast: the name on the keycap at 4.5:1, the prompt on the lit keycap at 4.5:1, the lit keycap against the panel at 3:1, in both presets; a ring of 3 px on the focused row.
+- A binding set from code shows at once with no event; a row spawned with a pad button shows `"A"` by default and `"Cross"` under `PadStyle::PlayStation`.
+- `model::key_name` and friends: `KeyW` → `W`, `Digit1` → `1`, `ArrowUp` → `Up`, `ShiftLeft` → `Left Shift`, `Numpad7` → `Num 7`, `Space`, `Escape` → `Esc`, `Semicolon` → `;`, `F5`; `Left` → `Left Click`, `Other(7)` → `Mouse 8`; `South` → `A`, `Cross`, `B`.
+- Thirty idle frames write nothing. Frame time of the gallery within 0.5 ms of before.
+
+## What great looks like
+
+The gallery's Controls tab holds a short column of rows ("Jump ... [ Space ]", "Fire ... [ Left Click ]", "Use ... [ E ]"). The player tabs to Jump and presses Enter: the keycap turns the accent and reads "Press a key, Esc exits", the panel does not move by a pixel, and the player presses Q: the cap says Q, the ring is still on the row, and the game saw one change. The same on a pad, "A" turning to "X", and a mouse player's click reads "Right Click". The game wrote one observer for all of them and one line per action.
+
+## Deviations
+
+- **Mouse buttons are inputs, not the menu's.** The crate's pointer model makes the primary button the player's way to press things; during a capture it is an input, as XAG 112's example does, and the catcher keeps it from also pressing. A design default taken from the example.
+- **Keys are stored by location, labelled by name from `KeyCode`.** The label is the QWERTY name of the physical key, so an AZERTY player who binds the key printed "Z" sees "W" (GAG names AZERTY as a reason for remapping at all). Bevy gives the printed character only on a key event (`KeyboardInput::logical_key`), never for a stored `KeyCode`, so a name that is right after a reload needs a layout map the engine does not have; a game with one writes the names itself from `Binding::label` as the default. Pending.
+- **No conflict policy.** XAG 107 wants an action assignable to any input "as opposed to simply swapping"; the row binds what it hears, and the game, which owns the action map, sees the clash with `Binding: Eq + Hash`, and decides to allow, swap (set the other row's `BindingValue`) or refuse (set this one's back). A design default; no `SkinProblem`.
+- **No chords and no analog.** A binding is one key, one button; XAG 107's modifiers, axes and inversion are the game's own settings (a `choice`, a `toggle`), not a row.
+- **One device family per row; no "unbound".** A row cannot be cleared; a game with optional actions binds them to a key it does not use. A design default, small to add later (an `Option`).
+- **Text, not glyphs.** The crate draws "A", "Cross" and "Left Shift" as words in the host's font; icons for them are the host's (no glyph vocabulary in the crate, as `docs/research/cancel.md` records).
+- **Start is not bindable on a pad row, and Escape is not on a keyboard row**, by default. The exits are settings.
+- Assumed decisions (owner may override), all above: the name and the three-variant `Binding`; the row built on `Button` with `ValueChange<Binding>`; Escape and Start as the exits and settings; the primary mouse button as an input with a pointer catcher; a pad's `PadStyle` as a setting and not detected; prompts as data; one device family per row; no conflict policy.
+
+## Pending index
+
+- Nothing relevant in home-still (three queries on 2026-11-01 and `catalog_recent` limit 200). Index the Game Accessibility Guidelines page above and its "Counterstrike: Global Offensive control options" and "Street Fighter IV remapping" examples, Xbox Accessibility Guidelines 107 and 112, and W3C's *UI Events KeyboardEvent code Values*. Search later for: "control remapping accessibility motor impairment game", "keyboard layout AZERTY game controls", "input prompts glyphs by device". No studio write-up of a game's own remapping screen was found; the shipping-game evidence is Microsoft's and the GAG's examples (Grounded, Gears 5, Overwatch). A layout-aware key name (the web's `KeyboardLayoutMap`) is the open technical gap.
