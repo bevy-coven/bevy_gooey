@@ -23,6 +23,7 @@ use bevy::ui_widgets::{
 };
 
 use crate::choice::{ChoiceCount, Move, MoveChoice};
+use crate::dock::{DockTab, moves_tabs};
 use crate::list::{ListView, span};
 use crate::menu::{MenuRow, MenuTitle};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
@@ -117,6 +118,9 @@ pub struct FocusScopes<'w, 's> {
     sideways: Query<'w, 's, (), KeepsSideways>,
     /// The dividers of splits, which take the arrows along their axis themselves.
     dividers: Query<'w, 's, &'static SplitDivider, Without<InteractionDisabled>>,
+    /// The tabs of a dock, whose arrows with Ctrl and Shift held move their panel
+    /// ([`crate::Dock`]).
+    dock_tabs: Query<'w, 's, (), With<DockTab>>,
     /// Menu titles and items, whose Left, Right, Home and End are [`crate::menu_by_input`]'s.
     menu_rows: Query<'w, 's, (), MenuRow>,
     /// Menu titles, whose Down opens their menu.
@@ -382,6 +386,10 @@ pub fn navigate_by_input(
     }
     show_focus(&mut shown);
     let from = nav.focus.get().filter(|&f| scopes.holds(f));
+    // Ctrl+Shift and an arrow on a dock's tab moves its panel (its own observer), not focus.
+    if from.is_some_and(|f| scopes.dock_tabs.contains(f)) && moves_tabs(&keys) {
+        return;
+    }
     // Left and Right on a slider or a choice are its own (the keys through its observers, the
     // D-pad through `gamepad_adjust`): they never also move focus off it. Up and Down still do.
     let net_x = if from.is_some_and(|f| scopes.keeps_sideways(f)) {

@@ -78,6 +78,12 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   second)` returned: the first pane's share (the state, serde data), each pane's least size in logical px, the
   axis, and the divider part. A player's change is one `ValueChange<f32>` on the split. See [split panes](splits.md).
 
+- `Dock(DockLayout)`, `PanelRegistry`, `DockPanel(id)`, `DockLayoutChanged { entity, layout }`, `DockPanelSkipped
+  { entity, id, reason }` — the state on the entity `dock(layout)` returned (write a layout to load or reset it),
+  the panels a game registers (`register(id, title, spawn)`), the marker on a panel's page, the event for each
+  change the player makes and the one for a panel left out. `DockLayout`, `DockSkip` and `DropTarget` are plain
+  data (serde with the `serde` feature). See [docks](docks.md).
+
 Bevy's own types come through the crate so a host never adds a second copy: `Checked`, `SliderValue`,
 `SliderRange`, `SliderStep`, `ValueChange`, `Activate` and `observe`.
 
@@ -155,7 +161,7 @@ use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `met
 `snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
 `repeat_steps`, `choice_step`, `choice_next`, `nearest_step`, `tab_step`, `key_name`, `mouse_name`,
 `shortcut_label`, `shortcut_conflicts`, `is_modifier_key`, `fuzzy_score`, `split_mins`, `split_clamp`,
-`split_drag`,
+`split_drag`, `dock_zone`, `dock_edge_zone`, `dock_drop_rect`, `dock_tab_slot`, `dock_neighbour`,
 `pad_name` and `PadStyle` (with `PadStyle::name`), and the constants `TEXT_CONTRAST`,
 `NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`,
 `STICK_PUSH`, `SPLIT_KEY_STEP_PX`, and the steps the option rows offer: `TEXT_SIZE_STEPS`, `INTERFACE_SIZE_STEPS` and
