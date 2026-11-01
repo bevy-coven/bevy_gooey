@@ -16,6 +16,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `tooltip` (`Tooltip("…")`) | a component on any widget: its box opens beside the widget under the pointer or on visible focus |
 | `dialog()` | a modal: a scrim, focus taken on opening and held, and given back to the opener on closing |
 | `toggle`, `choice`, `slider` | the options-screen controls, on Bevy's own `Checkbox`, `Button` and `Slider` — see [controls](controls.md) |
+| `text_size`, `interface_size`, `pad_style` | the player's text size, interface size and controller, as `choice` rows that edit the crate's own settings and follow them, with nothing to wire — see [player options](options.md) |
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |
 | `list` | rows that scroll and follow focus — see [lists](lists.md) |
 | `toast`, `toast_alert` | a line of news at the edge of the screen — see [toasts](toasts.md) |

@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- `text_size(label)`, `interface_size(label)` and `pad_style(label)`: the options-screen rows for the three settings this crate itself reads, one line each and nothing to wire. Each is a `choice` (Bevy's `Button`, one tab stop, Left, Right, the D-pad and a click step it, `Tooltip`, `InteractionDisabled` and a game's own `ValueChange<usize>` observer work as on any choice) over a step table: the text size 100%, 125%, 150% and 200% (`GooeySkin::text_scale`; WCAG 2.2 SC 1.4.4 and Xbox Accessibility Guideline 101 ask for 200% and for it to reach the dialog, the toast and the legend, which `text_scale` does), the interface size 75%, 100%, 125% and 150% (`UiScaleSettings::scale`; below 100% for the player who wants less of the game covered, 150% as EVE Online's UI scaling) and the controller Xbox, PlayStation and Switch (`BindingSettings::pad_style`). The setting lives once, in its resource: a player's step writes that one field and no other (a game's own skin, the scale's `reference_short_side` and the binding prompts survive), and the row follows the resource with no `ValueChange`, on the frame it is spawned and whenever the resource changes, so a loaded save shows on it, a second row follows the first, and a value between two steps shows the nearest and is left alone. Labels are the host's; the options are percentages and the makers' names.
+- `TEXT_SIZE_STEPS`, `INTERFACE_SIZE_STEPS`, `PAD_STYLES`, `nearest_step` and `PadStyle::name` in `model`; `OptionRow` (a `#[non_exhaustive]` component marking the row) and `update_option_rows` (in `GooeySystems::Style`, before `update_choices`) for a host that registers the systems itself.
+- `examples/options`, the three rows and the legend on a screen of their own, with the gallery's capture knobs and `padup`, `paddown`, `padleft` and `padright` for a pad's D-pad; `docs/research/options.md`, `docs/guide/options.md` and `docs/media/options.gif`.
+- `tests/options.rs` (the rows: a first frame over a loaded setting, one write a step and no other field, no event for a game's write, the controller renaming a binding's keycap, a plugin left out, nothing written idle) and `tests/large_text.rs` (every widget, a dialog, a toast and the legend inside their boxes at each text size the row offers, and every control's text on one line at every 5% from 100% to 200%).
+
+### Changed
+
+- A choice's value cell is never narrower than 8 body text sizes (160 px at the default size), so choices stacked in a panel have their arrows and values in one column each instead of each at its own widest option's width: the gallery's Display page (Quality, Window) lines up and `tabs.gif` is regenerated.
+
+### Fixed
+
+- A control's label could wrap onto two lines when its row decided its panel's width and layout left the row a hair narrower than the label: at exactly 125% text a slider's label stood on two lines and its row was twice as tall. The label of a toggle, slider, choice, binding or text input, a choice's options, a slider's readout and a binding's keycap parts are one line now (`LineBreak::NoWrap`).
+
 ## [0.7.0] - 2026-11-01
 
 ### Added

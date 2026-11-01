@@ -8,11 +8,11 @@ crate root.
 
 | type | what it holds | where it lives |
 |---|---|---|
-| `GooeySkin` | every colour and size, and the player's `text_scale` | a resource, read by `apply_skin` |
+| `GooeySkin` | every colour and size, and the player's `text_scale` (the `text_size` row edits it) | a resource, read by `apply_skin` |
 | `GooeyFonts` | the handles of the host's body and heading fonts | a resource |
-| `UiScaleSettings` | `reference_short_side` and the player's `scale` | a resource, read by `scale_with_window` |
+| `UiScaleSettings` | `reference_short_side` and the player's `scale` (the `interface_size` row edits it) | a resource, read by `scale_with_window` |
 | `ToastSettings` | `anchor`, `max_visible`, `base_seconds`, `chars_per_second`, `duration_scale`, `fade_seconds` | a resource, read by `update_toasts` |
-| `BindingSettings` | `key_prompt`, `pad_prompt`, `pad_style`, `cancel_key`, `cancel_button` | a resource, read by `update_bindings` and `bind_by_input` |
+| `BindingSettings` | `key_prompt`, `pad_prompt`, `pad_style` (the `pad_style` row edits it), `cancel_key`, `cancel_button` | a resource, read by `update_bindings` and `bind_by_input` |
 | `InputDevice` | `Keyboard` or `Pad`: the device the player used last, what a `prompt` shows | a resource, kept by `track_input_device`; write it to start on the pad |
 | `Meter` | `value` and `max` | a component on a `meter()` |
 
@@ -27,6 +27,9 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
 - `ChoiceValue(usize)` and `ChoiceCount(usize)` — a `choice`'s selected index and its number of options.
   Write a `ChoiceValue` to move the choice from code (no `ValueChange` comes back for that); read it to
   know where the choice stands.
+- `OptionRow` — on a `text_size`, `interface_size` or `pad_style` row: which of the crate's own settings it
+  edits. A host that registers `update_option_rows` itself needs nothing else; a game never builds one.
+  See [player options](options.md).
 - `BindingValue(Binding)` — a `binding`'s input: a key, a mouse button or a pad button. Write one to change
   the row from code (no `ValueChange` comes back for that); read it to know what the player chose.
   `Capturing` is on the row while it waits for the player's next press, for a game that gates raw key
@@ -89,6 +92,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
+| `update_option_rows` | Style | a `text_size`, `interface_size` or `pad_style` row follows its setting with no event, and on the frame it is spawned; before `update_choices` |
 | `update_tabs` | Style | a tabs widget's selected page shown and no other, its tab lit, a value past the end pulled back |
 | `update_meters` | Style | a meter's fill and frame from its `Meter` |
 | `update_lists` | Style | a list's rail, only on a change |
@@ -111,6 +115,8 @@ press and they do not.
 use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `meter_fraction`,
 `slider_fraction`, `slider_text`, `list_height`, `scroll_to_reveal`, `snap_to_row`, `page_target`,
 `snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
-`repeat_steps`, `choice_step`, `choice_next`, `tab_step`, `key_name`, `mouse_name`, `pad_name` and
-`PadStyle`, and the constants `TEXT_CONTRAST`, `NON_TEXT_CONTRAST`, `MIN_TARGET_PX`,
-`COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE` and `STICK_PUSH`.
+`repeat_steps`, `choice_step`, `choice_next`, `nearest_step`, `tab_step`, `key_name`, `mouse_name`,
+`pad_name` and `PadStyle` (with `PadStyle::name`), and the constants `TEXT_CONTRAST`,
+`NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`,
+`STICK_PUSH`, and the steps the option rows offer: `TEXT_SIZE_STEPS`, `INTERFACE_SIZE_STEPS` and
+`PAD_STYLES`.
