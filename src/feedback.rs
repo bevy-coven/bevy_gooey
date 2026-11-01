@@ -48,7 +48,7 @@ pub(crate) fn feedback_on_activate(
 ) {
     if matches!(
         roles.get(event.entity),
-        Ok(Role::Button | Role::MenuTitle | Role::MenuItem)
+        Ok(Role::Button | Role::MenuTitle | Role::MenuItem | Role::PaletteRow)
     ) {
         out.write(UiFeedback {
             entity: event.entity,
