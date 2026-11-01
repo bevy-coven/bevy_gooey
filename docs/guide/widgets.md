@@ -14,15 +14,20 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `label(text)` | body text |
 | `button(text)` | a Bevy `Button`, so it takes `observe`, `Tooltip` and `InteractionDisabled` |
 | `meter(value, max)` | a HUD bar; `Meter { value, max }` on the entity drives it, and `update_meters` draws it |
-| `tooltip` (`Tooltip("…")`) | a component on any widget: its box opens beside the widget under the pointer or on visible focus |
+| `tooltip` (`Tooltip::new("…")`) | a component on any widget: its box opens beside the widget under the pointer or on visible focus, with the command's shortcut on a keycap if it has one — see [shortcuts](shortcuts.md) |
 | `dialog()` | a modal: a scrim, focus taken on opening and held, and given back to the opener on closing |
 | `popover(anchor, placement)`, `popover_modal(..)` | a panel beside a widget or at the pointer, kept inside the window and closed by Escape or a press elsewhere; the modal one holds focus like a menu does — see [popovers](popovers.md) |
+| `menu_bar`, `menu_title`, `menu_item`, `check_item`, `radio_item`, `submenu`, `separator` | a bar of titles and the menus they open, with chords, checks, radio runs, submenus and `Disabled` items that say why; walked by F10, the arrows and the pad — see [menus](menus.md) |
+| `context_menu(items)` | a menu that belongs to things: name it with `ContextMenu(menu)` on any entity and a right-click or Shift+F10 opens it — see [context menus](context-menus.md) |
+| `command_palette()` | a modal field over every command in `CommandList`, fuzzy-ranked, with chords and reasons; Enter or a click sends one `RunCommand` — see [the command palette](command-palette.md) |
 | `toggle`, `choice`, `slider` | the options-screen controls, on Bevy's own `Checkbox`, `Button` and `Slider` — see [controls](controls.md) |
 | `text_size`, `interface_size`, `pad_style`, `skin_preset` | the player's text size, interface size, controller and theme (Dark, Parchment, High contrast, Tool), as `choice` rows that edit the crate's own settings and follow them, with nothing to wire — see [player options](options.md) |
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |
 | `list` | rows that scroll and follow focus — see [lists](lists.md) |
+| `split(axis, first, second)` | two panes with a divider a drag, the arrows, the D-pad or a double click moves; `SplitFraction` is the state and `SplitMin` each pane's least size — see [split panes](splits.md) |
+| `dock(layout)` | a workbench of tab groups and splits kept as a `DockLayout`, whose panels come from the `PanelRegistry` and which the player rearranges by dragging a tab or with Ctrl+Shift and an arrow — see [docks](docks.md) |
 | `toast`, `toast_alert` | a line of news at the edge of the screen — see [toasts](toasts.md) |
-| `binding` | a row that rebinds a key, a mouse button or a pad button on the player's next press — see [rebinding](bindings.md) |
+| `binding` | a row that rebinds a key, a mouse button, a pad button or a key chord on the player's next press — see [rebinding](bindings.md) and [shortcuts](shortcuts.md) |
 | `prompt`, `prompts` | the "Esc Back" hints in the corner, in the words of the last device the player used — see [prompts](prompts.md) |
 | `text_input` | a row with a field the player types in — a caret, a selection, paste and IME on Bevy's own `TextInput`, a hint, and focus it never traps — see [text input](text-input.md) |
 
@@ -46,12 +51,14 @@ its slot at every scale.
 
 ## A tooltip
 
-`Tooltip` is a component whose text is the hint. It opens beside its widget — to the right in a column,
-below in a row, flipped at the window's edge — one step outside its panel, so it never covers the next
-button. It is a view of its component: `commands.entity(button).remove::<Tooltip>()` takes the hint off
-(a "Locked: reach level 5" line once the player unlocks it), and inserting a new `Tooltip` or editing
-`Tooltip.0` changes the line the open box shows. A tooltip on a widget inside a clipped container (a
-row of a `list`) draws over the clip rather than being cut by it.
+`Tooltip` is a component whose text is the hint, built `Tooltip::new("Sound, controls and display")`. It
+opens beside its widget — to the right in a column, below in a row, flipped at the window's edge — one
+step outside its panel, so it never covers the next button. It is a view of its component:
+`commands.entity(button).remove::<Tooltip>()` takes the hint off (a "Locked: reach level 5" line once the
+player unlocks it), and inserting a new `Tooltip` or editing `Tooltip.text` changes the line the open box
+shows. `.with_shortcut(Shortcut::primary(KeyCode::KeyS))` puts the command's chord on a keycap to the
+right of the line, the same cap a `prompt` and a `binding` row draw ([shortcuts](shortcuts.md)). A tooltip on a
+widget inside a clipped container (a row of a `list`) draws over the clip rather than being cut by it.
 
 ## A dialog
 

@@ -2,6 +2,91 @@
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-01
+
+### Added
+
+- Docks (G-10, #14): `dock(DockLayout)` is a workbench of tab groups and splits kept as data. `DockLayout` is `Split { axis, fraction, first, second }` or `Group { panels, selected }` (panel ids as `String`s; serde with the `serde` feature, RON round-trips, a file may name only `panels`), with plain-data edits (`panels`, `contains`, `prune`, `moved`). `PanelRegistry` (a resource) maps an id to a title and a function that fills the panel's page, spawned once and then moved, never rebuilt, when the layout changes; `Dock(DockLayout)` on the dock is the state (write one to load or reset it). An unknown or repeated id is left out, a group left empty collapses, and one `DockPanelSkipped` is sent for each. The player picks a tab up (a card with its title follows the pointer and the part of the dock the panel will take is lit before it is let go) and drops it on a group's tab strip (at that place), its middle (as a tab), an outer quarter (a group of its own on that side) or within 24 px of the dock's edge (a quarter of the whole dock); Escape puts it back. Ctrl+Shift and an arrow on a focused tab moves its panel to the nearest group that way or to the dock's edge (WCAG 2.5.7), focus following. Every change is one `DockLayoutChanged { entity, layout }`: a drop, a picked tab, a divider let go. Panes are at least `DOCK_PANE_MIN_PX` (96 px).
+- `model::{DockZone, dock_zone, dock_edge_zone, dock_drop_rect, dock_tab_slot, dock_neighbour}` and the constants `DOCK_PANE_MIN_PX`, `DOCK_EDGE_FRACTION`, `DOCK_EDGE_SHARE`: the drop's engine-free maths.
+- `examples/dock`, `docs/research/dock.md`, `docs/guide/docks.md`, `docs/media/dock.gif`, `tests/dock.rs` (19 tests), `tests/serde.rs` (a layout in RON) and unit tests in `src/dock_layout.rs` and `model`.
+
+### Changed
+
+- `Role` gains four variants (`Dock`, `DockBody`, `DockDrop`, `DockGhost`): a `match` on it that has no wildcard needs them. `navigate_by_input` leaves a focused dock tab's arrows to the dock while Ctrl and Shift are held. `model::dock_tab_slot` takes each tab's centre and top and bottom, so a strip of several rows has a place for every tab.
+- A `Role::TabList`'s `row_gap` is the skin's gap like its `column_gap` (it only shows when a strip wraps, as a dock's does).
+
+### Fixed
+
+- The command palette's count of rows that fit a short window no longer flips by one as the lit row walks down the list: a row's height is the mean of the rows shown (layout rounds each to whole pixels by where it stands, so the first row alone read 19 where the mean read 18.4) and the last answer is kept while the room is within 1.5 px of changing it. Found when an unrelated resource shifted the timing of `tests/palette.rs`'s 300 px window, which then showed six rows where five were counted.
+
+## [0.17.0] - 2026-11-01
+
+### Added
+
+- Split panes (G-09, #13): `split(SplitAxis, first, second)` is two panes with a divider between them, a flex row or column; the panes' content is any bundle each and a `panel()` fills its pane on both axes. `SplitFraction(f32)` (serde, reflected, 0.5 by default, the first pane's share of the room the divider leaves) is the state and `SplitMin { first, second }` (logical px) each pane's least size; both are required components of `Split`, so a game puts its own in the same tuple. A drag of `d` px changes the fraction by `d` over the room at any UI scale, and neither a drag, a key nor a window too small for both minimums takes a pane below its own (the second pane gives way first, then the first); the stored fraction is not rewritten by a small window. A player's change is one `ValueChange<f32>` on the split (`is_final` false while dragging), a value the game sets sends nothing. The divider is a focusable channel `MIN_TARGET_PX` wide on the list rail's colour with a grip (`text_muted`, 3:1 on the rail in every preset; `text` under the pointer or with focus, `accent` while held) and the focus ring, with a resize cursor; the arrows along its axis step it `SPLIT_KEY_STEP_PX` (16 px, held keys repeat), Home and End take the first pane to its smallest and largest, Enter, South and a double click collapse it to its minimum and restore it (WCAG 2.5.7's way that is not a drag), the D-pad steps it (`split_by_pad`, repeating like a slider's), and `InteractionDisabled` fixes the layout. `model::split_mins`, `split_clamp` and `split_drag` are the engine-free maths.
+- `examples/split`, `docs/research/split.md`, `docs/guide/splits.md`, `docs/media/split.gif` and `tests/split.rs` (29 tests).
+
+### Changed
+
+- `Role` gains four variants (`Split`, `SplitPane`, `SplitDivider`, `SplitGrip`): a `match` on it that has no wildcard needs them. `navigate_by_input` leaves a focused divider the arrows along its axis, like a slider's Left and Right.
+
+## [0.16.0] - 2026-11-01
+
+### Added
+
+- Command palette (G-07, #11): `command_palette()` spawns a modal field over the game's `CommandList(Vec<PaletteCommand>)` (`id`, `title`, `category`, `shortcut`, `enabled: Result<(), String>`; build one with `PaletteCommand::new(..).category(..).shortcut(..).disabled(reason)`). The player types ("opn prj" finds "File: Open Project"), Up, Down, PageUp, PageDown and the D-pad move the lit row while focus stays in the field, Enter, South or a click on an enabled row despawns the palette and sends one `RunCommand { id }`, Escape or a click outside closes it with focus given back. Recently run commands (`PaletteHistory`, the last ten ids, serde data) come first, then by score; a disabled command shows its reason where its chord would be and runs nothing; up to eight reused rows scroll under the lit one (fewer at 200% text or in a short window, so the card never leaves it: `CommandPalette::visible_rows()`), "n of m" says where, "No command matches" says there is none. New: `model::fuzzy_score(query, text) -> Option<u32>` (engine-free: every whitespace-separated term a case-insensitive subsequence, word starts and runs score, gaps and length cost), `CommandPalette` (`results()`, `selected()`, `selected_command(..)`, `visible_rows()`), `palette_by_input` (Navigate) and `update_palette` (Style, before `apply_skin`), the `Role`s `Palette`, `PaletteRow`, `PaletteCount` and `PaletteField`, and `PALETTE_ROWS`. Every colour and size is an existing token (the menu rows'), so `problems()` is unchanged.
+- `examples/palette`, `docs/research/command-palette.md`, `docs/guide/command-palette.md`, `docs/media/command-palette.gif` and `tests/palette.rs` (19 tests).
+
+### Changed
+
+- `Role` gains four variants (`Palette`, `PaletteRow`, `PaletteCount`, `PaletteField`): a `match` on it that has no wildcard needs them. `text_input` is built by one private row builder, unchanged for its callers.
+
+## [0.15.0] - 2026-11-01
+
+### Added
+
+- Context menus (G-06, #10): `context_menu(items)` spawns a menu of `menu_item`, `check_item`, `radio_item`, `submenu` and `separator` rows that belongs to things, and `ContextMenu(menu)` on any entity (a UI node, a sprite or a mesh with `Pickable`) names it. A secondary click that reaches the entity opens the menu at the pointer (flipping at the window's edge); Shift+F10 or the Menu key with focus on the entity or a widget under it opens the nearest `ContextMenu` below the focused widget (`context_by_key`, in `GooeySystems::Navigate`). A second click moves it; one context menu is open at a time; Escape, B or a press outside close it and focus goes back. While it is open the panel carries `ContextTarget(thing)` (an `On<Add<ContextTarget>>` observer runs before it is first drawn; `ContextTarget::of(item, &parents, &targets)` finds it from an item's `Activate`). One menu may serve many things.
+- `examples/context`, `docs/research/context-menu.md`, `docs/guide/context-menus.md`, `docs/media/context-menu.gif` and `tests/context_menu.rs` (13 tests).
+
+### Changed
+
+- `anchor_pointer_popovers` gives a `Placement::AtPointer` popover over an anchor that is not a UI node (a picked sprite or mesh) a pointer point of its own at the root: Bevy never lays out a UI node under a world entity. A UI anchor is unchanged.
+
+### Fixed
+
+- `fit_menus` capped a menu at the room on the side it prefers, so a menu opened near the bottom of the window was cut to three rows and scrolled though it flips above its anchor with room to spare; it is capped at the larger side now.
+- Shift+F10 no longer focuses the menu bar (`focus_menu_bar` is F10 with no Shift).
+
+## [0.14.0] - 2026-11-01
+
+### Added
+
+- Menus (G-05, #9): `menu_bar(children![menu_title("File", children![..])])` and the rows `menu_item(label)` (`.with_shortcut(Shortcut)` draws the chord right-aligned in muted text), `check_item(label, checked)`, `radio_item(label, checked)`, `submenu(label, items)` and `separator()`. A menu is spawned once with its title and shown by opening it, as a modal popover under the title (right of the item, for a submenu), so the popover's placement, outside-press close, `Cancel` and focus in and back all apply; the items are live entities, so `observe(|_: On<Activate>| ..)` sits where it is written. F10, or Alt pressed and let go alone, puts focus on the bar; Left and Right walk the titles (wrapping) and, in a menu, open a submenu or move to the next or previous title's menu; Down, Enter, Space, South or a click open a menu with focus on its first item; Home and End go to the first and last item; Escape or B closes one level and gives focus to what opened it, then (from the bar) back to where F10 found it; a pointer on another title switches menus. A check item flips its own `Checked` and a radio item sets its own and clears the run of radio items beside it (to the nearest separator), each sending one `ValueChange<bool>`. `Disabled::new(reason)` makes an item unavailable (`InteractionDisabled`) with a tooltip of the reason; it stays focusable. An empty submenu says "Nothing here"; a menu taller than the window leaves room for is capped and scrolls, following focus.
+- `MenuBar`, `MenuTitle`, `MenuPanel`, `MenuItem`, `MenuOpen`, `Disabled`, and the systems `focus_menu_bar`, `menu_by_input`, `switch_menus_on_hover`, `fit_menus` and `scroll_menus_to_focus` (all in `GooeySystems::Navigate`); `Role::{MenuBar, MenuTitle, MenuPanel, MenuItem, MenuMark, MenuCheck, MenuDot, MenuText, MenuShortcut, MenuChevron, MenuSeparator, MenuNote}`.
+- `examples/menus`, `docs/research/menu.md`, `docs/guide/menus.md`, `docs/media/menus.gif` and `tests/menu.rs` (16 tests, every preset's contrast and 1x to 2x text included).
+
+### Changed
+
+- `Role` has twelve more variants, so a `match` on it needs arms.
+- `navigate_by_input` leaves Left and Right of a menu title or item, and Down of a title, to `menu_by_input`; `FocusScopes` has two more fields.
+- `popover::close` hides a menu's panel (a `MenuPanel`) instead of despawning it; every other popover is despawned as before.
+
+## [0.13.0] - 2026-11-01
+
+### Added
+
+- Shortcuts (G-08, #12): `Shortcut { modifiers, key }`, `Modifiers { ctrl, shift, alt, meta }` (the physical modifiers, either side; combine with `|`; `Modifiers::PRIMARY` and `Shortcut::primary(key)` are Command on a mac and Ctrl elsewhere) and `Platform` (`current()`, `Mac`, `Other`). `Shortcut::label()` is the platform's spelling, "Ctrl+Shift+P" in Microsoft's order or "⌃⇧P" in Apple's with glyphs for Return, Delete, Escape, Tab and the arrows (`label_on(Platform)` for another platform); `Shortcut::just_pressed(&ButtonInput<KeyCode>)` is the one rule for a chord that went down this frame with exactly its modifiers; `Shortcut::is_valid()` says the key is not a modifier. `Eq + Hash`, reflected, serde under the `serde` feature.
+- `model::shortcut_conflicts(&[(&str, S)])`, generic over any `PartialEq` chord: every pair of commands on one chord, in list order. `model::shortcut_label` and `model::is_modifier_key`, engine-free, re-exported at the crate root.
+- `Binding::Chord(Shortcut)`: a `binding` row spawned with a chord captures one. It waits through a bare modifier press, binds the first non-modifier key with the modifiers held at that moment (a bare key is a chord with none), and sends one `ValueChange<Binding>`; Escape exits and is never bound; a mouse button or a pad button exits. A key row is unchanged: a modifier alone still binds there. `BindingSettings::chord_prompt` ("Press a shortcut, {exit} exits") is what a waiting chord row says; a `Prompt` names a chord on its keycap too.
+- `Tooltip::new(text)` and `.with_shortcut(Shortcut)`: the chord is drawn on the prompts' keycap to the right of the line, spawned and removed as `Tooltip::shortcut` changes. The box is never narrower than the cap and six text sizes of words beside it, so at 200% text a long chord makes the tooltip take another side of its widget before it leaves the window.
+- `examples/shortcuts` (a keymap screen: three chord rows, a conflict line, commands that run on their chords, a Save button whose tooltip follows its row), `docs/research/shortcut.md`, `docs/guide/shortcuts.md`, `docs/media/shortcuts.gif` and `tests/shortcut.rs` (19 tests).
+
+### Changed
+
+- `Tooltip(String)` is now `Tooltip { text, shortcut }`: build one with `Tooltip::new("…")` (a clean cutover; `Tooltip.0` is `Tooltip.text`).
+- `show_tooltips` and `update_tooltip_text` take one more system parameter each (the keycap lookup; `Commands`), so a host that registers them by hand adds nothing but may need its own query types to match; the crate's `GooeyStylePlugin` is unchanged.
+- `Binding` has one more variant, `Chord`, and `BindingSettings` one more field, `chord_prompt` (a skin or settings file without it reads the default), so a `match` on `Binding` and a struct literal of `BindingSettings` that names every field need the new arm and field.
+
 ## [0.12.0] - 2026-11-01
 
 ### Added

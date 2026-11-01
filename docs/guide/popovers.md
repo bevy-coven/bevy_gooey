@@ -41,9 +41,11 @@ The panel is a child of the anchor, so despawning the anchor despawns it. It is 
 window and not inside the anchor (Bevy's `FixedNode`): the anchor's width never wraps its lines and no
 scroll clip reaches it. It stands over a `dialog` it was opened from and under a `Tooltip`.
 
-`AtPointer` needs a pointer: the anchor is the widget or panel the pointer was over, and the crate puts
-a zero-size `PopoverPoint` node at the pointer's position for the panel to hang from; it goes with the
-panel.
+`AtPointer` needs a pointer: the anchor is the widget, panel or world entity (a sprite or mesh) the pointer
+was over, and the crate puts a zero-size `PopoverPoint` node at the pointer's position for the panel to
+hang from; it goes with the panel. (A world entity cannot be a UI node's parent, so its point is a root of
+its own.) For a menu of commands that belongs to a thing, [context menus](context-menus.md) do this opening
+for you, with Shift+F10 as well.
 
 ```rust
 # use bevy::prelude::*;

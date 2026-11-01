@@ -11,9 +11,10 @@ use bevy::ui::InteractionDisabled;
 use bevy::ui_widgets::{Activate, ValueChange};
 
 use crate::feedback::{UiFeedback, UiFeedbackKind};
-use crate::model::{PadStyle, key_name, mouse_name, pad_name};
+use crate::model::{PadStyle, is_modifier_key, key_name, mouse_name, pad_name};
 use crate::nav::show_focus;
 use crate::prompt::InputDevice;
+use crate::shortcut::{Modifiers, Shortcut};
 use crate::skin::Role;
 
 /// The `GlobalZIndex` of the catcher a capturing row puts over the interface: above a dialog (100),
@@ -35,6 +36,9 @@ const CATCHER_Z: i32 = 1000;
 /// assert_eq!(jump.label(PadStyle::Xbox), "Space");
 /// assert_eq!(Binding::Pad(GamepadButton::South).label(PadStyle::PlayStation), "Cross");
 /// ```
+/// A `Chord` is a keyboard key with modifiers held ("Ctrl+Shift+K"), what a [`crate::binding`]
+/// row whose value is a `Chord` captures: pass one as the row's first value and the row waits for
+/// a chord, as a `Pad` value makes it wait for a pad button.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect)]
 #[reflect(Debug, PartialEq, Hash, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -45,6 +49,9 @@ pub enum Binding {
     Mouse(MouseButton),
     /// A gamepad button, by its place on the pad (`South` is the bottom button).
     Pad(GamepadButton),
+    /// A key with modifiers held, by their places on the keyboard. A chord with no modifier is
+    /// a plain key, which a chord row can bind too ("F5").
+    Chord(Shortcut),
 }
 
 impl Binding {
@@ -56,15 +63,16 @@ impl Binding {
             Self::Key(code) => key_name(&format!("{code:?}")),
             Self::Mouse(button) => mouse_name(&format!("{button:?}")),
             Self::Pad(button) => pad_name(&format!("{button:?}"), style),
+            Self::Chord(chord) => chord.label(),
         }
     }
 
-    /// The device this input is pressed on: the keyboard for a key or a mouse button, a pad for a
-    /// pad button. What a [`crate::binding`] row listens to, and which of a [`crate::Prompt`]'s
-    /// inputs is the player's now.
+    /// The device this input is pressed on: the keyboard for a key, a chord or a mouse button, a
+    /// pad for a pad button. What a [`crate::binding`] row listens to, and which of a
+    /// [`crate::Prompt`]'s inputs is the player's now.
     pub fn device(&self) -> InputDevice {
         match self {
-            Self::Key(_) | Self::Mouse(_) => InputDevice::Keyboard,
+            Self::Key(_) | Self::Mouse(_) | Self::Chord(_) => InputDevice::Keyboard,
             Self::Pad(_) => InputDevice::Pad,
         }
     }
@@ -132,6 +140,8 @@ pub struct BindingSettings {
     pub key_prompt: String,
     /// What a pad row's keycap says while it waits. Default: "Press a button, {exit} exits".
     pub pad_prompt: String,
+    /// What a chord row's keycap says while it waits. Default: "Press a shortcut, {exit} exits".
+    pub chord_prompt: String,
     /// Whose names a pad button gets, "A" or "Cross" or "B". Default: Xbox.
     #[reflect(ignore)]
     pub pad_style: PadStyle,
@@ -148,6 +158,7 @@ impl Default for BindingSettings {
         Self {
             key_prompt: "Press a key, {exit} exits".to_owned(),
             pad_prompt: "Press a button, {exit} exits".to_owned(),
+            chord_prompt: "Press a shortcut, {exit} exits".to_owned(),
             pad_style: PadStyle::default(),
             cancel_key: KeyCode::Escape,
             cancel_button: GamepadButton::Start,
@@ -168,10 +179,19 @@ impl BindingSettings {
         self.pad_prompt.replace("{exit}", &exit)
     }
 
-    fn prompt(&self, device: InputDevice) -> String {
-        match device {
-            InputDevice::Keyboard => self.key_prompt(),
-            InputDevice::Pad => self.pad_prompt(),
+    /// What a chord row says while it waits, with `{exit}` filled in.
+    pub fn chord_prompt(&self) -> String {
+        let exit = Binding::Key(self.cancel_key).label(self.pad_style);
+        self.chord_prompt.replace("{exit}", &exit)
+    }
+
+    fn prompt(&self, binding: &Binding) -> String {
+        match binding {
+            Binding::Chord(_) => self.chord_prompt(),
+            other => match other.device() {
+                InputDevice::Keyboard => self.key_prompt(),
+                InputDevice::Pad => self.pad_prompt(),
+            },
         }
     }
 }
@@ -265,6 +285,36 @@ fn heard_by_keyboard_row(
     Heard::Nothing
 }
 
+/// A row that waits for a chord: the exit key leaves, the first key that is not a modifier binds
+/// with the modifiers held at that moment (a modifier pressed alone is not a shortcut, so the row
+/// keeps waiting through it), and a mouse button or a pad button means the input is not a
+/// shortcut, so it leaves.
+fn heard_by_chord_row(
+    settings: &BindingSettings,
+    keys: &ButtonInput<KeyCode>,
+    mouse: &ButtonInput<MouseButton>,
+    gamepads: &Query<&Gamepad>,
+) -> Heard {
+    if keys.just_pressed(settings.cancel_key) {
+        return Heard::Exit;
+    }
+    let chord = keys
+        .get_just_pressed()
+        .filter(|key| !is_modifier_key(&format!("{key:?}")))
+        .min();
+    if let Some(&key) = chord {
+        return Heard::Bind(Binding::Chord(Shortcut::new(Modifiers::held(keys), key)));
+    }
+    if mouse.get_just_pressed().next().is_some()
+        || gamepads
+            .iter()
+            .any(|pad| pad.get_just_pressed().next().is_some())
+    {
+        return Heard::Exit;
+    }
+    Heard::Nothing
+}
+
 /// A row that waits for a pad button: the exit button leaves, any other binds, and a key or a
 /// mouse press leaves (the player is at the keyboard, not the pad).
 fn heard_by_pad_row(
@@ -318,9 +368,12 @@ pub fn bind_by_input(
             commands.entity(row).remove::<Armed>();
             continue;
         }
-        let heard = match held.0.device() {
-            InputDevice::Keyboard => heard_by_keyboard_row(&settings, &keys, &mouse, &gamepads),
-            InputDevice::Pad => heard_by_pad_row(&settings, &keys, &mouse, &gamepads),
+        let heard = match held.0 {
+            Binding::Chord(_) => heard_by_chord_row(&settings, &keys, &mouse, &gamepads),
+            other => match other.device() {
+                InputDevice::Keyboard => heard_by_keyboard_row(&settings, &keys, &mouse, &gamepads),
+                InputDevice::Pad => heard_by_pad_row(&settings, &keys, &mouse, &gamepads),
+            },
         };
         match heard {
             Heard::Nothing => {
@@ -422,7 +475,7 @@ pub fn update_bindings(
             continue;
         };
         let name = value.0.label(settings.pad_style);
-        let prompt = settings.prompt(value.0.device());
+        let prompt = settings.prompt(&value.0);
         for part in children.iter_descendants(row) {
             let Ok((role, mut text, mut visibility)) = parts.get_mut(part) else {
                 continue;

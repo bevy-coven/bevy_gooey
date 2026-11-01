@@ -141,7 +141,7 @@ fn column_menu(app: &mut App) -> [Entity; 3] {
     let options = world
         .spawn((
             button("Options"),
-            Tooltip("Sound, controls and display".into()),
+            Tooltip::new("Sound, controls and display"),
         ))
         .id();
     let quit = world.spawn(button("Quit")).id();
@@ -228,7 +228,7 @@ fn a_tooltip_at_the_window_edge_opens_on_the_other_side() {
     let widget = world
         .spawn((
             button("Map"),
-            Tooltip("The world and your quests".into()),
+            Tooltip::new("The world and your quests"),
             AutoFocus,
         ))
         .id();
@@ -267,7 +267,7 @@ fn in_a_row_a_tooltip_opens_below_clear_of_its_neighbours() {
     let middle = world
         .spawn((
             button("Shield"),
-            Tooltip("Blocks the next hit".into()),
+            Tooltip::new("Blocks the next hit"),
             AutoFocus,
         ))
         .id();
@@ -429,7 +429,7 @@ fn a_removed_tooltip_stays_shut_and_a_new_one_replaces_it() {
 
     app.world_mut()
         .entity_mut(options)
-        .insert(Tooltip("Audio only".into()));
+        .insert(Tooltip::new("Audio only"));
     settle(&mut app);
     let found = boxes(&mut app);
     assert_eq!(found.len(), 1, "one Tooltip, one box");
@@ -453,7 +453,7 @@ fn a_tooltip_removed_and_added_in_one_command_buffer_leaves_one_box() {
     commands
         .entity(options)
         .remove::<Tooltip>()
-        .insert(Tooltip("Unlocked".into()));
+        .insert(Tooltip::new("Unlocked"));
     settle(&mut app);
     let found = boxes(&mut app);
     assert_eq!(
@@ -479,7 +479,7 @@ fn a_tooltip_replaced_or_edited_changes_the_open_box_in_place() {
     // on the very next frame, so a tooltip that changes under the player does not blink.
     app.world_mut()
         .entity_mut(options)
-        .insert(Tooltip("Audio only".into()));
+        .insert(Tooltip::new("Audio only"));
     app.update();
     assert_eq!(boxes(&mut app), vec![(tip, true, "Audio only".to_string())]);
 
@@ -487,7 +487,7 @@ fn a_tooltip_replaced_or_edited_changes_the_open_box_in_place() {
     app.world_mut()
         .get_mut::<Tooltip>(options)
         .expect("Options keeps its Tooltip")
-        .0 = "Video only".into();
+        .text = "Video only".into();
     app.update();
     assert_eq!(boxes(&mut app), vec![(tip, true, "Video only".to_string())]);
 }
@@ -509,9 +509,7 @@ fn removing_a_tooltip_closes_the_open_box_and_a_despawned_widget_takes_its_box()
     );
 
     let world = app.world_mut();
-    let tipped = world
-        .spawn((button("Map"), Tooltip("The world".into())))
-        .id();
+    let tipped = world.spawn((button("Map"), Tooltip::new("The world"))).id();
     app.update();
     assert_eq!(boxes(&mut app).len(), 1);
     app.world_mut().entity_mut(tipped).despawn();

@@ -211,7 +211,7 @@ fn a_tooltip_starts_hidden() {
     let mut app = app();
     let help = app
         .world_mut()
-        .spawn((button("Help"), Tooltip("Opens the manual".into())))
+        .spawn((button("Help"), Tooltip::new("Opens the manual")))
         .id();
     app.update();
     let tips: Vec<Entity> = app
@@ -380,7 +380,7 @@ fn a_tooltip_and_a_panel_have_a_white_edge_in_high_contrast_and_the_quiet_one_ot
         let card = app.world_mut().spawn(panel()).id();
         let help = app
             .world_mut()
-            .spawn((button("Help"), Tooltip("Opens the manual".into())))
+            .spawn((button("Help"), Tooltip::new("Opens the manual")))
             .id();
         let legend = app.world_mut().spawn(prompts()).id();
         app.update();

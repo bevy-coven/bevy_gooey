@@ -9,6 +9,7 @@ use bevy::ui::{FixedNode, UiScale};
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 
 use crate::cancel::Cancel;
+use crate::menu::{MenuPanel, close_menu};
 
 /// Where a [`popover`](crate::popover) opens, relative to the widget it is anchored to.
 ///
@@ -110,6 +111,12 @@ impl PopoverPanel {
             shown: false,
         }
     }
+
+    /// The panel of a [`crate::menu_title`] or [`crate::submenu`] while it is open: a modal popover
+    /// that [`close`] hides instead of despawning, so the menu's items outlive their opening.
+    pub(crate) fn menu(anchor: Entity, placement: Placement) -> Self {
+        Self::new(anchor, placement, true)
+    }
 }
 
 /// The candidate positions Bevy's `Popover` chooses from for a placement: the preferred side
@@ -150,14 +157,21 @@ pub(crate) fn placement_of(placement: Placement, gap: f32, margin: f32) -> Popov
     }
 }
 
-/// Triggers [`PopoverClosed`] on `popover` and despawns it. A popover already gone is left alone.
+/// Triggers [`PopoverClosed`] on `popover` and despawns it; a menu's panel is hidden instead, to
+/// open again. A popover already gone is left alone.
 fn close(commands: &mut Commands, popover: Entity, anchor: Entity, reason: CloseReason) {
-    commands.trigger(PopoverClosed {
-        entity: popover,
-        anchor,
-        reason,
+    commands.queue(move |world: &mut World| {
+        world.trigger(PopoverClosed {
+            entity: popover,
+            anchor,
+            reason,
+        });
+        if world.get::<MenuPanel>(popover).is_some() {
+            close_menu(world, popover);
+        } else if let Ok(entity) = world.get_entity_mut(popover) {
+            entity.despawn();
+        }
     });
-    commands.entity(popover).try_despawn();
 }
 
 /// A [`Cancel`] reaching a popover closes it and goes no further: Escape closed the popover, so
@@ -201,14 +215,17 @@ pub(crate) fn stop_acquire(mut acquire: On<bevy::input_focus::AcquireFocus>) {
     acquire.propagate(false);
 }
 
-/// Puts each new [`Placement::AtPointer`] popover at the pointer: a zero-size node, child of the
-/// anchor, laid out on the window and not the anchor (`FixedNode`), left and top at the pointer's
+/// Puts each new [`Placement::AtPointer`] popover at the pointer: a zero-size node at the pointer's
 /// position, with the panel moved under it. Bevy's `Popover` then places the panel against that
-/// point and flips it at the window's edge like any other. Runs in
+/// point and flips it at the window's edge like any other. The point is a child of the anchor,
+/// laid out on the window and not the anchor (`FixedNode`), so it goes with its anchor; an anchor
+/// that is not a UI node (a sprite or a mesh in the world, whose children are never laid out) gets
+/// a point of its own at the root, which the panel's closing removes. Runs in
 /// [`crate::GooeySystems::Navigate`].
 pub fn anchor_pointer_popovers(
     new: Query<(Entity, &PopoverPanel), Added<PopoverPanel>>,
     pointers: Query<&PointerLocation>,
+    anchors: Query<(), With<Node>>,
     ui_scale: Option<Res<UiScale>>,
     mut commands: Commands,
 ) {
@@ -225,21 +242,21 @@ pub fn anchor_pointer_popovers(
         else {
             continue;
         };
-        let point = commands
-            .spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(at.x),
-                    top: Val::Px(at.y),
-                    width: Val::Px(0.0),
-                    height: Val::Px(0.0),
-                    ..default()
-                },
-                FixedNode,
-                PopoverPoint,
-                ChildOf(info.anchor),
-            ))
-            .id();
+        let mut point = commands.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: Val::Px(at.x),
+                top: Val::Px(at.y),
+                width: Val::Px(0.0),
+                height: Val::Px(0.0),
+                ..default()
+            },
+            PopoverPoint,
+        ));
+        if anchors.contains(info.anchor) {
+            point.insert((FixedNode, ChildOf(info.anchor)));
+        }
+        let point = point.id();
         commands.entity(panel).insert(ChildOf(point));
     }
 }

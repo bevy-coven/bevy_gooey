@@ -13,6 +13,9 @@ per subject. The README links each bullet to its page.
   settings the crate itself reads (the theme row is the high-contrast switch), with nothing to wire, and the sizes every widget is checked at.
 - [Rebinding controls](bindings.md) — `binding(label, value)`: a row that waits for the player's next key,
   mouse button or pad button, what it hears and holds back while it waits, and `BindingSettings`.
+- [Shortcuts](shortcuts.md) — `Shortcut`, `Modifiers` and `Platform`: a key chord in the platform's own words
+  ("Ctrl+Shift+P", "⇧⌘P"), `just_pressed`, `model::shortcut_conflicts`, a `binding` row that captures a
+  chord and a tooltip that shows the command's chord on a keycap.
 - [Text input](text-input.md) — `text_input(label, value)`: a row with a field the player types in, the
   edit and its end in `ValueChange<String>`, `TextEditing` for a game's hotkeys and a pad's keyboard, and
   why a field never traps focus.
@@ -22,8 +25,21 @@ per subject. The README links each bullet to its page.
   and RB, and focus that never rests on a page that is not shown.
 - [Lists](lists.md) — `list(rows, children![..])`: the row count, the rail, the follow, PageUp and
   PageDown, and what a list cannot do yet.
+- [Split panes](splits.md) — `split(SplitAxis::Horizontal, first, second)`: two panes and a divider, `SplitFraction`
+  and `SplitMin`, a drag, the arrows, Home, End, Enter, the D-pad and a double click, and what a small window does.
+- [Docks](docks.md) — `dock(DockLayout)` and the `PanelRegistry`: a workbench of tab groups and splits kept as
+  data, rearranged by dragging a tab or Ctrl+Shift and an arrow, `DockLayoutChanged` for saving, and what a layout
+  with an unknown panel does.
 - [Popovers](popovers.md) — `popover(anchor, Placement::Below)`: a menu or a context menu beside a widget or at
   the pointer, flipped to stay in the window, closed by Escape or a press elsewhere, modal or not.
+- [Menus](menus.md) — `menu_bar(children![menu_title(..)])`: a bar of titles with menus of commands, checks, radio
+  runs, separators, submenus, right-aligned chords and disabled items that say why; F10, the arrows, Escape and
+  the pad.
+- [Context menus](context-menus.md) — `context_menu(items)` and `ContextMenu(menu)` on any entity: a menu at a
+  right-click or below the focus on Shift+F10, one menu for many things, `ContextTarget` says which.
+- [The command palette](command-palette.md) — `command_palette()` over a `CommandList`: a field and a fuzzy-ranked
+  list of every command with its chord and why it is off, recents first, Up and Down while focus stays in the
+  field, one `RunCommand` on Enter or a click.
 - [Toasts](toasts.md) — one spawn, the reading-time maths, `ToastSettings`, and the cap on the stack.
 - [Skins](skins.md) — `GooeySkin`, its fields, the two presets, and every rule `problems()` checks.
 - [Screen size](scale.md) — `GooeyScalePlugin`, `UiScaleSettings`, and whole-device-pixel lines.

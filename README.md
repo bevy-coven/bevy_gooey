@@ -105,7 +105,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
   and says each change once in `ValueChange`, `binding("Jump", Binding::Key(KeyCode::Space))` rebinds a
-  key, a mouse button or a pad button on the player's next press, `text_input("Name", "")` is a field the
+  key, a mouse button, a pad button or a chord ("Ctrl+Shift+K") on the player's next press, `text_input("Name", "")` is a field the
   player types in (a caret, a selection, paste and IME on Bevy's own `TextInput`, and focus it never
   traps), `tabs` puts them on pages a click, the arrows or LB and RB turn, and `text_size("Text size")`,
   `interface_size("Interface size")`, `pad_style("Controller")` and `skin_preset("Theme")` are the
@@ -114,11 +114,13 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md),
   [player options](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/options.md),
   [rebinding](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/bindings.md),
+  [shortcuts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/shortcuts.md),
   [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
-- **Scroll a list that follows the focus** — `list(4.5, children![..])` cuts the fifth row so the player
-  sees there is more, and keeps the next row in sight as the arrows walk down it:
-  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md).
+- **Scroll a list, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so the
+  player sees there is more; `split(SplitAxis::Horizontal, a, b)` is two panes and a divider a drag or the keys move;
+  `dock(DockLayout)` is tab groups of your registered panels that the player rearranges by dragging a tab, the layout plain data:
+  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md), [split panes](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/splits.md), [docks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/docks.md).
 - **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the
   nearest widget, an open dialog (a framed panel with a title, a line of body and its choices) holds it,
   the ring appears the moment a key is pressed, Escape or the pad's B is one `Cancel` event that
@@ -132,12 +134,20 @@ grow everything to 200%, and Controller renames the pad's buttons.
   opens a panel beside any widget or at the pointer, kept inside the window and closed by Escape or a
   press elsewhere:
   [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md),
-  [popovers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/popovers.md).
-- **Keep the interface's share of the screen at every resolution** — the skin's sizes scale with the
-  window, and every border stays a whole number of device pixels:
-  [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).
-- **Let the pointer through a HUD** — the empty part of a `screen` is `Pickable::IGNORE`, so a click on
-  the world under it still reaches the world: [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md).
+  [popovers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/popovers.md); and
+  `menu_bar(children![menu_title("File", children![menu_item("Open...").with_shortcut(..), separator(), ..])])`
+  is a desktop menu bar for a tool, F10 and the arrows to walk it, with checks, radio runs, submenus and
+  disabled items that say why: [menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/menus.md);
+  and `ContextMenu(menu)` on any entity, a sprite in the world or a row of a list, opens a `context_menu(..)`
+  at a right-click or below the focus on Shift+F10:
+  [context menus](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/context-menus.md);
+  and `commands.spawn(command_palette())` is one searchable list of every command in a `CommandList`, each
+  with its chord and why it is off, "opn prj" finds "File: Open Project", Enter sends one `RunCommand`:
+  [the command palette](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/command-palette.md).
+- **Keep the interface's share of the screen at every resolution, and let the pointer through a HUD** — the
+  skin's sizes scale with the window, every border stays a whole number of device pixels, and the empty part
+  of a `screen` is `Pickable::IGNORE`: [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md),
+  [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md).
 
 ![The gallery's settings panel: the ring moves from Quit onto the lit Audio tab, Right turns to Display (two choices), Right to Controls (two rebinding rows, Jump and Use) and Right wraps back to Audio, Down enters the page on the Volume slider, and Ctrl+PageDown turns to Display and then Controls with the ring landing on each new page's first widget](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tabs.gif)
 
@@ -146,6 +156,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 ![The gallery's settings panel after the Controls tab is clicked: the ring goes down to Jump, whose keycap says Space; Enter lights the keycap amber with "Press a key, Esc exits", Q turns it to Q, and Down to Use (A), whose keycap lights with "Press a button, Menu exits" until Escape puts it back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/binding.gif)
 
 *Rebinding: `binding("Jump", Binding::Key(KeyCode::Space))` waits for the next press and says it once as a `ValueChange<Binding>`. The panel never moves, and nothing else hears the key.*
+
+![The shortcuts example: a Keymap panel with three rows, Save, Save all and Palette, each showing a chord on a keycap (Ctrl+S, Ctrl+Shift+S, Ctrl+P), a conflict line, a line naming the command that ran and a Save button; Enter on Save lights its keycap amber with "Press a shortcut, Esc exits" and Ctrl+Shift+K turns the keycap from Ctrl+S to Ctrl+Shift+K; the same chord on Save all makes the line read "Conflict: Save and Save all" and Ctrl+Alt+J clears it; Ctrl+Shift+K runs Save, and the ring on the Save button opens its tooltip, "Write to disk" with Ctrl+Shift+K on a keycap](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcuts.gif)
+
+*Shortcuts: a `binding` row whose value is a `Binding::Chord` captures a key chord; `model::shortcut_conflicts` finds two commands on one chord; `Shortcut::just_pressed` runs the command; `Tooltip::new("Write to disk").with_shortcut(chord)` shows it on a keycap.*
 
 ![The gallery's Load game list with the Save as field under it: the field rests as a quiet outline over the muted hint "Name this save", its frame turns blue with a caret while "Aria" is typed, Enter shows the toast "Saved as Aria" at the window's corner, and Up moves the ring onto the save slot Cellar, 01:48 with the field back to its quiet outline and its text kept](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/text-input.gif)
 
@@ -175,6 +189,22 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *Popovers: `popover_modal(file_button, Placement::Below)` opens a menu under its anchor that holds focus and gives it back; at the window's edge it slides or flips and never leaves the window, and Escape or a press anywhere else closes it with one `PopoverClosed`.*
 
+![The menus example: a bar with File, Edit, View and Help; F10 puts the ring on File, Down opens its menu with Ctrl+N, Ctrl+O and Ctrl+S in a column at the right edge, Down reaches Recent and Right opens its submenu of three levels, Left closes it, Escape closes File, Right then Down opens Edit where the disabled Redo shows "Nothing to redo" in a tooltip beside the menu, and Escape closes it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/menus.gif)
+
+*Menus: `menu_bar(children![menu_title("File", children![menu_item("Open...").with_shortcut(..), ..])])`, F10 and the arrows to walk it, Right into a submenu, Escape one level at a time; a disabled item says why.*
+
+![The context example: a right-click on a crate opens its menu at the pointer, with Locked ticked and the chord I beside Inspect; a right-click on the crate in the bottom-right corner opens the whole menu above and to the left of the pointer; Down and Shift+F10 open an inventory row's menu below the row, Right on Move to opens its submenu, and Enter on Chest 2 says at the bottom which row was moved](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/context-menu.gif)
+
+*Context menus: `ContextMenu(menu)` on a crate, a row or any entity; a right-click opens the menu at the pointer (flipping at the window's edge), Shift+F10 or the Menu key below the focused widget, and `ContextTarget` says which thing a command was for.*
+
+![The palette example: Ctrl+Shift+P opens a field over a small editor's commands, "opn prj" lights File: Open Project with its chord Ctrl+O at the row's end, Down and Up move the lit row and Enter runs it, and the line behind reads "Last command: File: Open Project"; opened again it lists that command first, "sav" shows File: Save and File: Save As... dimmed with "No project is open" where their chords would be, Down puts the ring on the second and Escape closes the palette](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/command-palette.gif)
+
+*The command palette: `CommandList` holds the commands, `command_palette()` is the modal, "opn prj" is a fuzzy match, Up and Down move the lit row while focus stays in the field, and Enter or a click sends one `RunCommand`; a command that is off shows why and runs nothing.*
+
+![The dock example: a Scene and Assets group, a Viewport over a Log and Console group and an Inspector; Assets is dragged into the Inspector's group with the landing lit and a card carrying its title, Log is dropped on the Viewport's right edge and gets a group of its own, Ctrl+Shift+Left moves it into the Viewport's group and Ctrl+Shift+Right into the Inspector's, a divider is dragged, and Console is dropped on the dock's bottom edge](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dock.gif)
+
+*Docks: `dock(layout)` builds tab groups and splits from a `DockLayout` (plain data) and the panels you registered; a tab dragged onto a group, its edge or the dock's edge lights where it will land, Ctrl+Shift and an arrow does the same with no pointer, and each change is one `DockLayoutChanged` to save.*
+
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 
 *Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
@@ -187,9 +217,6 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *The dialog in both presets, 540 px wide here, the width of its line of body (a dialog is 420 to 720 px at the default size and grows with the text size); its edge is the skin's `outline` colour.*
 
-The [guide index](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) lists the rest: every widget in one table, what a host touches
-and what it only sees, and the boundary with the game.
-
 ## Part of the Coven
 
 `bevy_gooey` is one of the [Bevy Coven](https://github.com/bevy-coven) crates: the family table there
@@ -201,14 +228,13 @@ see [use it in the Cauldron](https://bevy-coven.github.io/crates/bevy_gooey.html
 
 | `bevy_gooey` | Bevy |
 |---|---|
-| 0.1 – 0.12 | 0.20 |
+| 0.1 – 0.18 | 0.20 |
 
 ## Learn more
 
-- [docs.rs](https://docs.rs/bevy_gooey) — the API reference (`cargo doc --open`).
-- [The book page](https://bevy-coven.github.io/crates/bevy_gooey.html) — the same guide with the pictures.
-- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, lists, toasts, skins, screen
-  size, the pointer, feedback.
+- [docs.rs](https://docs.rs/bevy_gooey) — the API reference (`cargo doc --open`); [the book page](https://bevy-coven.github.io/crates/bevy_gooey.html) — the same guide with the pictures.
+- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, lists, split panes, docks, toasts, skins, screen
+  size, the pointer, feedback, every widget in one table, what a host touches and what it only sees, and the boundary with the game.
 - [`examples/`](https://github.com/bevy-coven/bevy_gooey/tree/main/examples) — `gallery`, every widget on one screen.
 - [`docs/media/README.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/media/README.md) — how every picture here is made.
 - [`CHANGELOG.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/CHANGELOG.md) — what each release changed, and what it broke.

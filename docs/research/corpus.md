@@ -26,6 +26,10 @@ The home-still sources this crate's design rests on. `docs/research/gooey.md` sa
 - *Good Game Feel* — Hicks et al., 2018, DiGRA, doi:10.26503/dl.v2018i1.936
 - *Designing Game Feel: A Survey* — 2021, IEEE Transactions on Games, doi:10.1109/tg.2021.3072241
 
+## Menus
+
+- *Predicting Human Performance in Vertical Menu Selection Using Deep Learning* — Li, Bengio, Bailly, 2018, CHI, arXiv:1803.05073
+
 ## Expertise
 
 - *Supporting Novice to Expert Transitions in User Interfaces* — year not indexed

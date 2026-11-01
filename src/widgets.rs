@@ -9,6 +9,7 @@ use bevy::ecs::relationship::RelatedSpawner;
 use bevy::ecs::spawn::{SpawnIter, SpawnRelatedBundle, SpawnWith, SpawnableList};
 use bevy::ecs::world::DeferredWorld;
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
+use bevy::picking::cursor::EntityCursor;
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{EditableText, Justify, LineBreak, TextCursorStyle};
@@ -19,6 +20,7 @@ use bevy::ui_widgets::{
     SliderRange, SliderStep, SliderThumb, SliderValue, TabActivation, TabList, TextInput,
     TrackClick, checkbox_self_update, observe, slider_self_update,
 };
+use bevy::window::SystemCursorIcon;
 
 use crate::binding::{
     Binding, BindingValue, binding_on_activate, binding_on_key_input, binding_self_update,
@@ -27,27 +29,40 @@ use crate::choice::{
     ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
     choice_on_key_input, choice_on_move, choice_self_update,
 };
+use crate::dock::Dock;
+use crate::dock_layout::DockLayout;
 use crate::list::ListView;
+use crate::menu::{MenuBar, MenuItem, MenuTitle, bar_on_cancel, menu_panel};
 use crate::meter::Meter;
 use crate::model::{PadStyle, meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
 use crate::options::{OptionRow, option_on_change};
+use crate::palette::{
+    CommandPalette, NO_MATCH, PALETTE_HINT, PALETTE_ROWS, PaletteCount, PaletteInput, PaletteNote,
+    PaletteRow, palette_on_acquire, palette_on_activate, palette_on_cancel, palette_on_click,
+    palette_on_move,
+};
 use crate::popover::{
     Placement, PopoverPanel, placement_of, popover_on_cancel, stop_acquire, stop_click, stop_press,
     stop_release,
 };
 use crate::prompt::Prompt;
 use crate::skin::Role;
+use crate::split::{
+    Split, SplitAxis, SplitDivider, divider_on_cancel, divider_on_click, divider_on_drag,
+    divider_on_drag_end, divider_on_drag_start, divider_on_key_input, divider_on_press,
+    divider_on_release, split_self_update, toggle_split,
+};
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::text::{
-    TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
+    TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
 };
 use crate::toast::{Toast, ToastKind};
 
 /// A control's label is one line: the row is as wide as its label and its control need, so a label
 /// that wraps was wrapped by a rounding error in the row's width (a label 210 px wide in a row that
 /// came out a hair under 210 stood on two lines at 125% text, and the row was twice as tall).
-const ONE_LINE: TextLayout = TextLayout::new(Justify::Left, LineBreak::NoWrap);
+pub(crate) const ONE_LINE: TextLayout = TextLayout::new(Justify::Left, LineBreak::NoWrap);
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
 const SLIDER_STEPS: f32 = 20.0;
@@ -55,6 +70,11 @@ const SLIDER_STEPS: f32 = 20.0;
 /// The least length of a list's thumb, in logical px (about half a comfortable target), so a long
 /// list leaves something to grab.
 const LIST_MIN_THUMB: f32 = 24.0;
+
+/// A [`split`] divider's grip, the pill in the middle of its channel: its thickness and its length,
+/// in logical px. A design default: a quiet pill, the length of a thumb's grab.
+const SPLIT_GRIP_THICKNESS: f32 = 4.0;
+const SPLIT_GRIP_LENGTH: f32 = 40.0;
 
 /// How many characters of the body text a [`text_input`]'s field shows at once ("0"'s width each):
 /// 16 and one more, because Bevy keeps one character of room after the caret for the next one to be
@@ -71,7 +91,7 @@ const TEXT_CARET_WIDTH: f32 = 0.1;
 /// its own width. A square turned an eighth of a turn has its two drawn sides on one side of its
 /// centre: they run from the centre line out to the corner, which is half a diagonal away, so
 /// the ink's middle is a quarter of the diagonal, `1 / (2 √2)` of the side, off the centre.
-const CHEVRON_INK_SHIFT: f32 = 50.0 * std::f32::consts::FRAC_1_SQRT_2;
+pub(crate) const CHEVRON_INK_SHIFT: f32 = 50.0 * std::f32::consts::FRAC_1_SQRT_2;
 
 /// A toggle's state at spawn. A bundle cannot carry [`Checked`] only when the toggle starts on
 /// (`Option<Checked>` is not a bundle), so this puts it on the entity as it is added and goes.
@@ -789,63 +809,87 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
 /// # }
 /// ```
 pub fn text_input(label: impl Into<String>, value: impl Into<String>) -> impl Bundle {
-    let label = label.into();
-    let value = value.into();
+    text_row(Some(label.into()), value.into(), Some(TEXT_INPUT_CHARS))
+}
+
+/// The row under [`text_input`]: a label if it has one and the field, which is `chars` character
+/// advances wide, or fills the room its parent leaves when `chars` is `None` (a command palette's
+/// field has no label and the card's whole width).
+pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>) -> impl Bundle {
+    let fills = chars.is_none();
     (
         Node {
             justify_content: JustifyContent::SpaceBetween,
             align_items: AlignItems::Center,
+            width: if fills {
+                Val::Percent(100.0)
+            } else {
+                Val::Auto
+            },
             ..default()
         },
-        Role::TextInput,
+        if fills {
+            Role::PaletteField
+        } else {
+            Role::TextInput
+        },
         TextInputValue(value.clone()),
         observe(text_self_update),
         observe(text_row_on_acquire),
         Children::spawn(SpawnWith(move |row: &mut RelatedSpawner<ChildOf>| {
             let root = row.target_entity();
+            if let Some(label) = label {
+                row.spawn((
+                    Text::new(label),
+                    ONE_LINE,
+                    Role::ControlText,
+                    Pickable::IGNORE,
+                ));
+            }
             row.spawn((
-                Text::new(label),
-                ONE_LINE,
-                Role::ControlText,
-                Pickable::IGNORE,
-            ));
-            row.spawn((Node::default(), Role::TextCell))
-                .with_children(|cell| {
-                    cell.spawn((
-                        Node {
-                            flex_shrink: 0.0,
-                            overflow: Overflow::clip(),
-                            ..default()
-                        },
-                        TextInput,
-                        EditableText {
-                            visible_width: Some(TEXT_INPUT_CHARS),
-                            cursor_width: TEXT_CARET_WIDTH,
-                            ..EditableText::new(&value)
-                        },
-                        TextLayout::no_wrap(),
-                        TextCursorStyle::default(),
-                        Role::TextField,
-                        TextInputOf(root),
-                        Hovered::default(),
-                        TabIndex(0),
-                        AutoDirectionalNavigation::default(),
-                        observe(text_on_key_input),
-                    ));
-                    cell.spawn((
-                        Node {
-                            position_type: PositionType::Absolute,
-                            display: Display::None,
-                            overflow: Overflow::clip(),
-                            ..default()
-                        },
-                        Text::new(String::new()),
-                        TextLayout::no_wrap(),
-                        Role::TextHint,
-                        TextInputOf(root),
-                        Pickable::IGNORE,
-                    ));
-                });
+                Node {
+                    flex_grow: if fills { 1.0 } else { 0.0 },
+                    ..default()
+                },
+                Role::TextCell,
+            ))
+            .with_children(|cell| {
+                cell.spawn((
+                    Node {
+                        flex_shrink: 0.0,
+                        flex_grow: if fills { 1.0 } else { 0.0 },
+                        overflow: Overflow::clip(),
+                        ..default()
+                    },
+                    TextInput,
+                    EditableText {
+                        visible_width: chars,
+                        cursor_width: TEXT_CARET_WIDTH,
+                        ..EditableText::new(&value)
+                    },
+                    TextLayout::no_wrap(),
+                    TextCursorStyle::default(),
+                    Role::TextField,
+                    TextInputOf(root),
+                    Hovered::default(),
+                    TabIndex(0),
+                    AutoDirectionalNavigation::default(),
+                    observe(text_on_key_input),
+                ));
+                cell.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        display: Display::None,
+                        overflow: Overflow::clip(),
+                        ..default()
+                    },
+                    Text::new(String::new()),
+                    TextLayout::no_wrap(),
+                    Role::TextHint,
+                    TextInputOf(root),
+                    Pickable::IGNORE,
+                ));
+            });
         })),
     )
 }
@@ -1086,12 +1130,37 @@ pub fn tabs<S: Into<String>>(
     selected: usize,
     pages: impl Bundle,
 ) -> impl Bundle {
-    let labels: Vec<String> = labels.into_iter().map(Into::into).collect();
+    tabs_in(
+        labels.into_iter().map(|label| (label.into(), ())),
+        selected,
+        pages,
+        false,
+    )
+}
+
+/// [`tabs`] with a bundle on each tab (the dock's marker and drag observers), and, with `fill`, a
+/// widget that takes all the room its parent gives it, its page area included, so a panel in a
+/// dock group can fill the group.
+pub(crate) fn tabs_in<B: Bundle>(
+    labels: impl IntoIterator<Item = (String, B)>,
+    selected: usize,
+    pages: impl Bundle,
+    fill: bool,
+) -> impl Bundle {
+    let labels: Vec<(String, B)> = labels.into_iter().collect();
     let count = labels.len();
     let selected = selected.min(count.saturating_sub(1));
+    let (grow, least) = if fill {
+        (1.0, Val::Px(0.0))
+    } else {
+        (0.0, Val::Auto)
+    };
     (
         Node {
             flex_direction: FlexDirection::Column,
+            flex_grow: grow,
+            min_width: least,
+            min_height: least,
             ..default()
         },
         Role::Tabs,
@@ -1105,13 +1174,24 @@ pub fn tabs<S: Into<String>>(
             // and its padding, and the strip is never narrower than that: the panel it stands in
             // grows to fit its labels and never squeezes one.
             parent.spawn((
-                Node {
-                    display: Display::Grid,
-                    grid_template_columns: vec![RepeatedGridTrack::flex(
-                        u16::try_from(count).unwrap_or(u16::MAX),
-                        1.0,
-                    )],
-                    ..default()
+                if fill {
+                    // A dock's strip keeps its tabs as wide as their labels, left-aligned, and
+                    // wraps to a second line when a narrow group cannot hold them: every tab is
+                    // always there to see and to reach.
+                    Node {
+                        flex_wrap: FlexWrap::Wrap,
+                        align_content: AlignContent::FlexStart,
+                        ..default()
+                    }
+                } else {
+                    Node {
+                        display: Display::Grid,
+                        grid_template_columns: vec![RepeatedGridTrack::flex(
+                            u16::try_from(count).unwrap_or(u16::MAX),
+                            1.0,
+                        )],
+                        ..default()
+                    }
                 },
                 TabList {
                     orientation: ControlOrientation::Horizontal,
@@ -1119,12 +1199,22 @@ pub fn tabs<S: Into<String>>(
                 },
                 Role::TabList,
                 observe(tabs_on_select),
-                Children::spawn(SpawnIter(labels.into_iter().map(tab))),
+                Children::spawn(SpawnIter(
+                    labels.into_iter().map(|(label, extra)| tab(label, extra)),
+                )),
             ));
             // One grid cell for every page, so the widget is as large as the largest.
             parent.spawn((
                 Node {
                     display: Display::Grid,
+                    flex_grow: grow,
+                    min_width: least,
+                    min_height: least,
+                    overflow: if fill {
+                        Overflow::clip()
+                    } else {
+                        Overflow::visible()
+                    },
                     ..default()
                 },
                 Role::TabPages,
@@ -1136,7 +1226,7 @@ pub fn tabs<S: Into<String>>(
 
 /// One tab of a strip: a button-sized target with its label, which Bevy's `TabList` selects on a
 /// click and on Left and Right.
-fn tab(label: String) -> impl Bundle {
+fn tab(label: String, extra: impl Bundle) -> impl Bundle {
     (
         Node {
             justify_content: JustifyContent::Center,
@@ -1147,6 +1237,7 @@ fn tab(label: String) -> impl Bundle {
         Role::Tab,
         Hovered::default(),
         AutoDirectionalNavigation::default(),
+        extra,
         children![(Text::new(label), Role::TabText)],
     )
 }
@@ -1180,6 +1271,137 @@ pub fn tab_page(widgets: impl Bundle) -> impl Bundle {
         Role::TabPage,
         Visibility::Hidden,
         widgets,
+    )
+}
+
+/// Two panes side by side or one above the other, with a divider between them that the player
+/// moves: a docked layout, an inventory beside a map, a log under a viewport. The panes' content is
+/// yours, any bundle each (a [`panel`] fills its pane on both axes); the divider is a channel with a
+/// grip in the middle, a target the pointer lands on without aiming, that takes focus like any
+/// widget.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     split(
+///         SplitAxis::Horizontal,
+///         (panel(), children![heading("Items")]),
+///         (panel(), children![heading("Map")]),
+///     ),
+///     SplitFraction(0.3),
+///     SplitMin::new(200.0, 320.0),
+///     observe(|change: On<ValueChange<f32>>| info!("the split is at {}", change.value)),
+/// ));
+/// # }
+/// ```
+///
+/// The split fills its parent, so stand it in a node of the size you want (a [`screen`] is the
+/// window). It keeps its state in [`SplitFraction`](crate::SplitFraction) (the first pane's share of
+/// the room the divider leaves; 0.5 until you insert another with it, as above) and each pane's
+/// least size in [`SplitMin`](crate::SplitMin) (none until you say). It reports each change a
+/// player makes as a
+/// [`ValueChange<f32>`](crate::ValueChange) on itself, `is_final` false while a drag goes on; a
+/// value the game sets moves the panes with no event.
+///
+/// A drag of `d` pixels changes the fraction by `d` over the room, and never takes a pane below its
+/// minimum; a window too small for both minimums takes the room from the second pane first. With
+/// the divider focused the arrows along the split's axis (Left and Right for
+/// [`SplitAxis::Horizontal`], Up and Down for [`SplitAxis::Vertical`]) and the D-pad move it
+/// ([`SPLIT_KEY_STEP_PX`](crate::SPLIT_KEY_STEP_PX) a press, a held direction repeating), Home and
+/// End take the first pane to its smallest and largest, and Enter, the pad's South button and a
+/// double click collapse the first pane to its minimum or give it back ([`split_by_pad`](crate::split_by_pad)); the other
+/// arrows move focus on. Give the divider `InteractionDisabled` to fix the layout.
+pub fn split(axis: SplitAxis, first: impl Bundle, second: impl Bundle) -> impl Bundle {
+    split_in(axis, children![first], children![second])
+}
+
+/// [`split`] with each pane's children given as a bundle of its own (`children![..]`, or the
+/// dock's adoption of a node it built), instead of one child each.
+pub(crate) fn split_in(axis: SplitAxis, first: impl Bundle, second: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            flex_direction: match axis {
+                SplitAxis::Horizontal => FlexDirection::Row,
+                SplitAxis::Vertical => FlexDirection::Column,
+            },
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+        Split::new(axis),
+        Role::Split,
+        observe(split_self_update),
+        children![split_pane(first), split_divider(axis), split_pane(second)],
+    )
+}
+
+/// One pane of a [`split`]: a clipped cell of one `1fr` track, so content sized to its own content
+/// fills the pane, and one too big for it is cut and never widens it. Its share is
+/// [`update_splits`](crate::update_splits)'. `content` is the pane's children.
+fn split_pane(content: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            display: Display::Grid,
+            grid_template_columns: vec![GridTrack::flex(1.0)],
+            grid_template_rows: vec![GridTrack::flex(1.0)],
+            flex_basis: Val::Px(0.0),
+            flex_grow: 0.5,
+            overflow: Overflow::clip(),
+            ..default()
+        },
+        Role::SplitPane,
+        content,
+    )
+}
+
+/// A [`split`]'s divider: a focusable channel with a grip, whose pointer and key handling is
+/// `split.rs`'s.
+fn split_divider(axis: SplitAxis) -> impl Bundle {
+    let (width, height) = match axis {
+        SplitAxis::Horizontal => (SPLIT_GRIP_THICKNESS, SPLIT_GRIP_LENGTH),
+        SplitAxis::Vertical => (SPLIT_GRIP_LENGTH, SPLIT_GRIP_THICKNESS),
+    };
+    let cursor = match axis {
+        SplitAxis::Horizontal => SystemCursorIcon::ColResize,
+        SplitAxis::Vertical => SystemCursorIcon::RowResize,
+    };
+    (
+        (
+            Node {
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                flex_shrink: 0.0,
+                ..default()
+            },
+            SplitDivider::new(axis),
+            Role::SplitDivider,
+            Hovered::default(),
+            TabIndex(0),
+            AutoDirectionalNavigation::default(),
+            EntityCursor::System(cursor),
+        ),
+        (
+            observe(divider_on_press),
+            observe(divider_on_release),
+            observe(divider_on_drag_start),
+            observe(divider_on_drag),
+            observe(divider_on_drag_end),
+            observe(divider_on_cancel),
+            observe(divider_on_click),
+            observe(divider_on_key_input),
+            observe(toggle_split),
+        ),
+        children![(
+            Node {
+                width: Val::Px(width),
+                height: Val::Px(height),
+                ..default()
+            },
+            Role::SplitGrip,
+            Pickable::IGNORE,
+        )],
     )
 }
 
@@ -1231,6 +1453,231 @@ pub fn dialog() -> impl Bundle {
             order: 0,
             modal: true,
         },
+    )
+}
+
+/// A workbench of panels the player arranges: a tree of splits and tab groups built from a
+/// [`DockLayout`](crate::DockLayout), which is plain data (serde with the `serde` feature), so it can be saved,
+/// loaded and reset. What a panel shows is spawned once by the function registered under its id in
+/// the [`PanelRegistry`](crate::PanelRegistry); the dock builds the tree, and a panel's page is moved, never rebuilt,
+/// when the layout changes.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn ui(mut commands: Commands, mut panels: ResMut<PanelRegistry>) {
+///     panels
+///         .register("scene", "Scene", |page| {
+///             page.with_child(label("Nothing selected"));
+///         })
+///         .register("assets", "Assets", |page| {
+///             page.with_child(button("Import"));
+///         })
+///         .register("log", "Log", |page| {
+///             page.with_child(label("Ready"));
+///         });
+///     commands.spawn((
+///         dock(DockLayout::split(
+///             SplitAxis::Horizontal,
+///             0.3,
+///             DockLayout::group(["scene", "assets"]),
+///             DockLayout::group(["log"]),
+///         )),
+///         observe(|changed: On<DockLayoutChanged>| info!("save {:?}", changed.layout)),
+///     ));
+/// }
+/// ```
+///
+/// The dock fills its parent. Every group is a [`panel`] with a strip of tabs; each divider is a
+/// [`split`]'s, with its keys and its 96 px minimum pane. The player rearranges the layout by
+/// picking a tab up: a card with its title follows the pointer, and the part of the dock the panel
+/// will take is lit before it is let go (on a group's strip, into the group at that place; over
+/// its middle, as a tab; over an edge, in a group of its own on that side; at the dock's own
+/// edge, a quarter of the dock). Escape puts it back. Without a pointer, **Ctrl+Shift and an
+/// arrow** on a focused tab moves its panel to the nearest group that way, or to that edge of the
+/// dock. Each change is one [`DockLayoutChanged`](crate::DockLayoutChanged) with the layout now
+/// shown; write a layout to [`Dock`](crate::Dock) to load or reset it.
+///
+/// A panel id the registry does not know, or one the layout names twice, is left out and reported
+/// once as a [`DockPanelSkipped`](crate::DockPanelSkipped); a group left with no panel collapses.
+pub fn dock(layout: DockLayout) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+        Role::Dock,
+        Dock(layout),
+        children![
+            // One grid cell of `1fr`, so the node the layout is built as fills the dock whatever
+            // it is.
+            (
+                Node {
+                    display: Display::Grid,
+                    grid_template_columns: vec![GridTrack::flex(1.0)],
+                    grid_template_rows: vec![GridTrack::flex(1.0)],
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    ..default()
+                },
+                Role::DockBody,
+            ),
+            (
+                Node {
+                    display: Display::None,
+                    position_type: PositionType::Absolute,
+                    ..default()
+                },
+                Role::DockDrop,
+                Pickable::IGNORE,
+            ),
+            (
+                Node {
+                    display: Display::None,
+                    position_type: PositionType::Absolute,
+                    ..default()
+                },
+                Text::new(""),
+                Role::DockGhost,
+                Pickable::IGNORE,
+            ),
+        ],
+    )
+}
+
+/// A command palette: a modal field over a searchable list of the game's [`crate::CommandList`], each
+/// command with its chord and, when it is off, why. Spawn it when the player presses the game's
+/// own chord (Ctrl+Shift+P, say); it takes focus, and everything else is the palette's.
+///
+/// The player types a few letters of a command ("opn prj" finds "File: Open Project"; recently run
+/// commands come first), Up and Down move the lit row while focus stays in the field, Enter or a
+/// click runs it, Escape or a click outside closes it. Running sends one [`crate::RunCommand`] with the
+/// command's id and despawns the palette, focus back where it was; a command that is off shows its
+/// reason where its chord would be and runs nothing. See [`crate::PaletteCommand`] for the list's items.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn setup(mut commands: Commands) {
+///     commands.insert_resource(CommandList(vec![
+///         PaletteCommand::new("project.open", "Open Project")
+///             .category("File")
+///             .shortcut(Shortcut::primary(KeyCode::KeyO)),
+///         PaletteCommand::new("project.save", "Save").disabled("No project is open"),
+///     ]));
+/// }
+///
+/// fn open_palette(keys: Res<ButtonInput<KeyCode>>, mut commands: Commands) {
+///     if Shortcut::new(Modifiers::PRIMARY | Modifiers::SHIFT, KeyCode::KeyP).just_pressed(&keys) {
+///         commands.spawn(command_palette());
+///     }
+/// }
+///
+/// fn plug(app: &mut App) {
+///     app.add_systems(Startup, setup)
+///         .add_systems(Update, open_palette.run_if(not(is_text_editing)))
+///         .add_observer(|run: On<RunCommand>| info!("run {}", run.id));
+/// }
+/// ```
+///
+/// Up to eight rows show at once and scroll under the lit one (fewer when large text or a short
+/// window leaves no room, so the card never leaves the window). The field's hint ("Type a command")
+/// and the line for no match ("No command matches") are English, as a menu's "Nothing here" is.
+pub fn command_palette() -> impl Bundle {
+    (
+        Node {
+            position_type: PositionType::Absolute,
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            align_items: AlignItems::FlexStart,
+            justify_content: JustifyContent::Center,
+            ..default()
+        },
+        Role::Scrim,
+        Dialog::default(),
+        GlobalZIndex(100),
+        TabGroup {
+            order: 0,
+            modal: true,
+        },
+        CommandPalette::default(),
+        observe(palette_on_cancel),
+        observe(palette_on_acquire),
+        observe(palette_on_click),
+        Children::spawn(SpawnWith(|scrim: &mut RelatedSpawner<ChildOf>| {
+            let palette = scrim.target_entity();
+            scrim
+                .spawn((Node::default(), Role::Palette))
+                .with_children(|card| {
+                    card.spawn((
+                        text_row(None, String::new(), None),
+                        PaletteInput(palette),
+                        TextHint(PALETTE_HINT.into()),
+                    ));
+                    card.spawn(Node {
+                        flex_direction: FlexDirection::Column,
+                        ..default()
+                    })
+                    .with_children(|rows| {
+                        for slot in 0..PALETTE_ROWS {
+                            rows.spawn(palette_row(palette, slot));
+                        }
+                        rows.spawn((
+                            Node {
+                                display: Display::None,
+                                ..default()
+                            },
+                            Text::new(NO_MATCH),
+                            Role::MenuNote,
+                            ONE_LINE,
+                            PaletteNote(palette),
+                            Pickable::IGNORE,
+                        ));
+                    });
+                    card.spawn((
+                        Node {
+                            display: Display::None,
+                            ..default()
+                        },
+                        Text::new(String::new()),
+                        Role::PaletteCount,
+                        ONE_LINE,
+                        PaletteCount(palette),
+                        Pickable::IGNORE,
+                    ));
+                });
+        })),
+    )
+}
+
+/// One of a palette's reused rows: a command's words and its chord or reason, hidden until
+/// [`update_palette`] gives it a command.
+fn palette_row(palette: Entity, slot: usize) -> impl Bundle {
+    (
+        Node {
+            display: Display::None,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::PaletteRow,
+        PaletteRow { palette, slot },
+        observe(palette_on_activate),
+        observe(palette_on_move),
+        children![
+            (
+                Text::new(String::new()),
+                Role::MenuText,
+                ONE_LINE,
+                Pickable::IGNORE
+            ),
+            (
+                Text::new(String::new()),
+                Role::MenuShortcut,
+                ONE_LINE,
+                Pickable::IGNORE
+            ),
+        ],
     )
 }
 
@@ -1326,6 +1773,202 @@ fn popover_panel(anchor: Entity, placement: Placement, modal: bool) -> impl Bund
             observe(stop_acquire),
         ),
     )
+}
+
+/// A menu bar: a row of [`menu_title`]s across the top of its parent, each opening a menu of
+/// commands. F10, or Alt pressed and let go on its own, puts focus on the first title; Left and
+/// Right walk the titles (wrapping), Down, Enter, Space or a click opens one with focus on its
+/// first item, a pointer moving onto another title switches menus while one is open, and Escape
+/// (or the pad's B) closes the menu and then gives focus back to where F10 took it from. Inside a
+/// menu Right opens a [`submenu`] or moves on to the next title's menu, Left closes a submenu or
+/// moves to the previous title's, and Up, Down, Home and End walk the items.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(menu_bar(children![
+///     menu_title(
+///         "File",
+///         children![
+///             (
+///                 menu_item("Open...").with_shortcut(Shortcut::primary(KeyCode::KeyO)),
+///                 observe(|_: On<Activate>| info!("open")),
+///             ),
+///             separator(),
+///             submenu("Recent", children![menu_item("level-1.ron")]),
+///         ]
+///     ),
+///     menu_title(
+///         "View",
+///         children![
+///             check_item("Grid", true),
+///             separator(),
+///             radio_item("Small", false),
+///             radio_item("Large", true),
+///         ]
+///     ),
+/// ]));
+/// # }
+/// ```
+///
+/// The bar is the panel's colour with one line under it and blocks the pointer. It is a row of
+/// whatever you pass, so it takes any widget beside the titles (a [`label`] pushed right, say).
+pub fn menu_bar(titles: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(100.0),
+            ..default()
+        },
+        Role::MenuBar,
+        MenuBar::default(),
+        observe(bar_on_cancel),
+        titles,
+    )
+}
+
+/// A title of a [`menu_bar`]: a button with the menu `items` (a `children![]` of [`menu_item`],
+/// [`check_item`], [`radio_item`], [`separator`] and [`submenu`]) that opens under it. The menu is
+/// spawned once with the title and shown by opening it, so an `observe(..)` on an item stays
+/// where you wrote it. Its title stays lit while its menu is open.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(menu_bar(children![menu_title(
+///     "Edit",
+///     children![menu_item("Undo"), menu_item("Redo")]
+/// )]));
+/// # }
+/// ```
+pub fn menu_title(label: impl Into<String>, items: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::MenuTitle,
+        MenuTitle,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        children![(Text::new(label), Role::ButtonText), menu_panel(items)],
+    )
+}
+
+/// A command in a menu: a row with `label` that sends [`Activate`](crate::Activate) when chosen by Enter, Space, the
+/// pad's South button or a click, and closes the menu. Chain [`MenuItem::with_shortcut`] to show
+/// its chord at the end of the row, and add [`Disabled`](crate::Disabled) to make it unavailable
+/// with a reason.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     menu_item("Save").with_shortcut(Shortcut::primary(KeyCode::KeyS)),
+///     observe(|_: On<Activate>| info!("save")),
+/// ));
+/// # }
+/// ```
+pub fn menu_item(label: impl Into<String>) -> MenuItem {
+    MenuItem::command(label)
+}
+
+/// A menu item that is on or off: it keeps its state in Bevy's [`Checked`] (a tick in the mark
+/// slot while on) and flips it on every choice, sending a [`ValueChange<bool>`](crate::ValueChange) with the new value.
+/// The menu closes, like any command.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     check_item("Show grid", true),
+///     observe(|change: On<ValueChange<bool>>| info!("grid: {}", change.value)),
+/// ));
+/// # }
+/// ```
+pub fn check_item(label: impl Into<String>, checked: bool) -> MenuItem {
+    MenuItem::check(label, checked)
+}
+
+/// One of a run of choices in a menu, exactly one of which is on: choosing it sets its own
+/// [`Checked`] (a dot in the mark slot) and clears the [`radio_item`]s next to it, up to the
+/// nearest [`separator`] or other kind of row either way, and sends a [`ValueChange<bool>`](crate::ValueChange) with
+/// `true` for it. Choosing the one that is on changes nothing and sends nothing.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((Node::default(), children![
+///     radio_item("Small", false),
+///     radio_item("Large", true),
+/// ]));
+/// # }
+/// ```
+pub fn radio_item(label: impl Into<String>, checked: bool) -> MenuItem {
+    MenuItem::radio(label, checked)
+}
+
+/// A menu item that opens another menu `items` to its right (Right, Enter, Space or a click opens
+/// it; Left or Escape closes it and puts focus back on the item). A submenu with nothing in it
+/// says "Nothing here". Add [`Disabled`](crate::Disabled) to the item to make it unavailable.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(submenu("Recent", children![menu_item("level-1.ron"), menu_item("level-2.ron")]));
+/// # }
+/// ```
+pub fn submenu(label: impl Into<String>, items: impl Bundle) -> impl Bundle {
+    (MenuItem::submenu(label), children![menu_panel(items)])
+}
+
+/// A menu that belongs to a thing: spawn it once, anywhere, and name it with
+/// [`ContextMenu`](crate::ContextMenu) on whatever should open it. A secondary click on the thing
+/// opens it at the pointer (flipping at the window's edge), and Shift+F10 or the Menu key with
+/// focus on the thing, or a widget under it, opens it below that widget. `items` are the rows of a
+/// menu ([`menu_item`], [`check_item`], [`radio_item`], [`submenu`], [`separator`]), live
+/// entities, so a game's `observe(..)` sits on the item; [`ContextTarget`](crate::ContextTarget)
+/// says which thing it was opened for. Closed, it is drawn nowhere and in no focus scope; open, it
+/// is a modal popover, so Escape, B or a press outside close it and give focus back.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn setup(mut commands: Commands) {
+/// let menu = commands
+///     .spawn(context_menu(children![
+///         menu_item("Rename").with_shortcut(Shortcut::new(Modifiers::NONE, KeyCode::F2)),
+///         separator(),
+///         menu_item("Delete"),
+///     ]))
+///     .id();
+/// commands.spawn((button("Row"), ContextMenu(menu)));
+/// # }
+/// ```
+pub fn context_menu(items: impl Bundle) -> impl Bundle {
+    menu_panel(items)
+}
+
+/// A line between two groups of a menu. It is not focusable and the pointer goes through it to
+/// the card, and it ends a run of [`radio_item`]s.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((Node::default(), children![menu_item("Open"), separator(), menu_item("Quit")]));
+/// # }
+/// ```
+pub fn separator() -> impl Bundle {
+    (Node::default(), Role::MenuSeparator, Pickable::IGNORE)
 }
 
 /// A line of news at the edge of the screen: "Game saved", "Quest updated". Spawn it from any

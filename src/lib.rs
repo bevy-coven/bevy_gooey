@@ -22,13 +22,20 @@
 //!   [`GooeySkin::text_scale`], [`UiScaleSettings::scale`],
 //!   [`BindingSettings::pad_style`] and the skin's colours and following them),
 //!   [`tabs`] (its pages, each a [`tab_page`], turned by a click, the arrows and the pad's
-//!   bumpers), [`list`] (rows that scroll, following focus), [`prompts`] and [`prompt`] (the "Esc
+//!   bumpers), [`list`] (rows that scroll, following focus), [`split`] (two panes and a divider the
+//!   player drags or steps with the arrows, kept in [`SplitFraction`] and never below
+//!   [`SplitMin`]), [`dock`] (tab groups and splits of the panels in a [`PanelRegistry`], kept as
+//!   a [`DockLayout`] and rearranged by dragging a tab), [`prompts`] and [`prompt`] (the "Esc
 //!   Back" hints in the corner, in the words of the device the player used last, which
 //!   [`InputDevice`] tracks), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
 //!   timed by [`ToastSettings`]),
-//!   [`Tooltip`], the modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
-//!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed). Each is a free function returning a bundle, so they
+//!   [`Tooltip`] (with a command's [`Shortcut`] on a keycap: "Ctrl+S", or "⌘S" on a mac), the
+//!   modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
+//!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed), and the
+//!   [`menu_bar`] of [`menu_title`]s with [`menu_item`], [`check_item`], [`radio_item`],
+//!   [`submenu`] and [`separator`] rows (chords right-aligned, [`Disabled`] items that say why), or a
+//!   [`context_menu`] that any entity opens with [`ContextMenu`] on a right-click or Shift+F10. Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
 //!   to the game under a HUD, while every widget on it takes the pointer. A toast takes no input
@@ -118,16 +125,23 @@ pub mod model;
 mod binding;
 mod cancel;
 mod choice;
+mod context;
 mod controls;
+mod dock;
+mod dock_layout;
 mod feedback;
 mod list;
+mod menu;
 mod meter;
 mod nav;
 mod options;
+mod palette;
 mod popover;
 mod prompt;
 mod scale;
+mod shortcut;
 mod skin;
+mod split;
 mod tabs;
 mod text;
 mod toast;
@@ -142,31 +156,50 @@ pub use binding::{
 };
 pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
+pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use controls::update_sliders;
+pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
+pub use dock_layout::{DockLayout, DockSkip, DropTarget};
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
+pub use menu::{
+    Disabled, MenuBar, MenuItem, MenuMarked, MenuOpen, MenuPanel, MenuTitle, fit_menus,
+    focus_menu_bar, menu_by_input, scroll_menus_to_focus, switch_menus_on_hover,
+};
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
-    NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH,
+    COMFORT_TARGET_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
+    ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST,
+    PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, SPLIT_KEY_STEP_PX, STICK_PUSH,
     TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
-    contrast_ratio, key_name, list_height, meter_fraction, mouse_name, nearest_step, pad_name,
-    page_target, relative_luminance, repeat_steps, scroll_to_reveal, slider_fraction, slider_text,
-    snap_line_width, snap_to_row, tab_step, toast_alpha, toast_grow, toast_hold, toast_life,
+    contrast_ratio, dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone,
+    fuzzy_score, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, nearest_step,
+    pad_name, page_target, relative_luminance, repeat_steps, scroll_to_reveal, shortcut_conflicts,
+    shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row, split_clamp,
+    split_drag, split_mins, tab_step, toast_alpha, toast_grow, toast_hold, toast_life,
     window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
 };
 pub use options::{OptionRow, update_option_rows};
+pub use palette::{
+    CommandList, CommandPalette, PALETTE_ROWS, PaletteCommand, PaletteCount, PaletteHistory,
+    PaletteInput, PaletteNote, PaletteRow, RunCommand, palette_by_input, update_palette,
+};
 pub use popover::{
     CloseReason, Placement, PopoverClosed, PopoverPanel, PopoverPoint, anchor_pointer_popovers,
     close_popovers_on_press, drop_pointer_anchors, reveal_popovers,
 };
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
+pub use shortcut::{Modifiers, Platform, Shortcut};
 pub use skin::{
     Density, GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin,
+};
+pub use split::{
+    Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, split_by_pad,
+    update_splits,
 };
 pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
 pub use text::{
@@ -176,9 +209,10 @@ pub use text::{
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    binding, button, choice, dialog, heading, interface_size, label, list, menu, meter, pad_style,
-    panel, popover, popover_modal, prompt, prompts, screen, skin_preset, slider, surface, tab_page,
-    tabs, text_input, text_size, toast, toast_alert, toggle,
+    binding, button, check_item, choice, command_palette, context_menu, dialog, dock, heading,
+    interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter, pad_style, panel,
+    popover, popover_modal, prompt, prompts, radio_item, screen, separator, skin_preset, slider,
+    split, submenu, surface, tab_page, tabs, text_input, text_size, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -219,7 +253,10 @@ impl Plugin for GooeyStylePlugin {
         app.init_resource::<GooeySkin>()
             .init_resource::<InputDevice>()
             .init_resource::<GooeyFonts>()
+            .init_resource::<PanelRegistry>()
             .init_resource::<ToastSettings>()
+            .init_resource::<CommandList>()
+            .init_resource::<PaletteHistory>()
             .init_resource::<BindingSettings>()
             .init_resource::<InputFocus>()
             .init_resource::<InputFocusVisible>()
@@ -229,6 +266,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Role>()
             .register_type::<Meter>()
             .register_type::<Binding>()
+            .register_type::<Shortcut>()
+            .register_type::<Modifiers>()
+            .register_type::<Platform>()
             .register_type::<InputDevice>()
             .register_type::<Prompt>()
             .register_type::<BindingSettings>()
@@ -242,9 +282,20 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TabsCount>()
             .register_type::<ChoiceCount>()
             .register_type::<ListView>()
+            .register_type::<Split>()
+            .register_type::<SplitAxis>()
+            .register_type::<SplitFraction>()
+            .register_type::<SplitMin>()
+            .register_type::<SplitDivider>()
             .register_type::<Tooltip>()
             .register_type::<Placement>()
             .register_type::<PopoverPanel>()
+            .register_type::<MenuBar>()
+            .register_type::<MenuTitle>()
+            .register_type::<MenuPanel>()
+            .register_type::<MenuOpen>()
+            .register_type::<ContextMenu>()
+            .register_type::<ContextTarget>()
             .register_type::<CloseReason>()
             .register_type::<PopoverClosed>()
             .register_type::<Toast>()
@@ -252,11 +303,14 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ToastSettings>()
             .register_type::<ToastAnchor>()
             .register_type::<ToastKind>()
+            .register_type::<PaletteHistory>()
             .register_type::<UiFeedbackKind>()
             .add_observer(feedback::feedback_on_activate)
             .add_observer(feedback::feedback_on_toggle)
             .add_observer(feedback::feedback_on_choice)
             .add_observer(text::text_on_edit)
+            .add_observer(dock::dock_on_select)
+            .add_observer(dock::dock_on_resize)
             .add_systems(
                 Update,
                 (
@@ -266,9 +320,13 @@ impl Plugin for GooeyStylePlugin {
                     update_bindings,
                     update_prompts,
                     update_text_inputs,
+                    update_palette,
                     update_option_rows,
                     update_choices,
+                    dock::update_docks,
+                    dock::update_dock_drag,
                     update_tabs,
+                    update_splits,
                     apply_skin,
                     update_meters,
                     update_sliders,
@@ -303,10 +361,14 @@ impl Plugin for GooeyNavPlugin {
         app.init_resource::<InputFocus>()
             .init_resource::<InputDevice>()
             .init_resource::<BindingSettings>()
+            .init_resource::<CommandList>()
+            .init_resource::<PaletteHistory>()
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<Dialog>()
             .register_type::<Cancel>()
+            .add_observer(menu::menu_on_activate)
+            .add_observer(context::context_on_click)
             .add_observer(nav::remember_opener)
             .add_observer(nav::return_focus)
             .add_systems(
@@ -319,16 +381,29 @@ impl Plugin for GooeyNavPlugin {
                     drop_pointer_anchors,
                     reveal_popovers,
                     focus_opened_dialogs,
-                    land_tab_focus,
+                    (land_tab_focus, dock::land_dock_focus).chain(),
                     step_tabs.run_if(not_capturing),
+                    (
+                        focus_menu_bar.run_if(not_capturing),
+                        menu_by_input.run_if(not_capturing),
+                        context_by_key.run_if(not_capturing),
+                        switch_menus_on_hover,
+                        fit_menus,
+                    )
+                        .chain(),
                     navigate_by_input.run_if(not_capturing),
-                    gamepad_adjust.run_if(not_capturing),
+                    (
+                        gamepad_adjust.run_if(not_capturing),
+                        split_by_pad.run_if(not_capturing),
+                    )
+                        .chain(),
                     gamepad_select.run_if(not_capturing),
                     cancel_by_input.run_if(not_capturing),
-                    page_lists.run_if(not_capturing),
+                    (page_lists.run_if(not_capturing), palette_by_input).chain(),
                     bind_by_input,
                     catch_pointer,
                     scroll_to_focus,
+                    scroll_menus_to_focus,
                     feedback_on_focus,
                 )
                     .chain()

@@ -23,10 +23,13 @@ use bevy::ui_widgets::{
 };
 
 use crate::choice::{ChoiceCount, Move, MoveChoice};
+use crate::dock::{DockTab, moves_tabs};
 use crate::list::{ListView, span};
+use crate::menu::{MenuRow, MenuTitle};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
 use crate::popover::PopoverPanel;
 use crate::skin::Role;
+use crate::split::{SplitAxis, SplitDivider};
 use crate::tabs::{TabsCount, TabsValue};
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
@@ -113,6 +116,15 @@ pub struct FocusScopes<'w, 's> {
     stops: Query<'w, 's, Option<&'static InheritedVisibility>, With<TabIndex>>,
     /// The sliders, choices and tabs that take Left and Right themselves.
     sideways: Query<'w, 's, (), KeepsSideways>,
+    /// The dividers of splits, which take the arrows along their axis themselves.
+    dividers: Query<'w, 's, &'static SplitDivider, Without<InteractionDisabled>>,
+    /// The tabs of a dock, whose arrows with Ctrl and Shift held move their panel
+    /// ([`crate::Dock`]).
+    dock_tabs: Query<'w, 's, (), With<DockTab>>,
+    /// Menu titles and items, whose Left, Right, Home and End are [`crate::menu_by_input`]'s.
+    menu_rows: Query<'w, 's, (), MenuRow>,
+    /// Menu titles, whose Down opens their menu.
+    menu_titles: Query<'w, 's, (), With<MenuTitle>>,
     /// The text fields, which take the keys Left and Right themselves.
     typing: Query<'w, 's, (), TypesText>,
     /// The lists, to tell a widget one has clipped away from one in view.
@@ -146,6 +158,10 @@ impl FocusScopes<'_, '_> {
     /// Whether `entity` is a slider or a choice that takes Left and Right itself: those presses
     /// adjust it and never move focus off it. A disabled one takes nothing.
     fn keeps_sideways(&self, entity: Entity) -> bool {
+        self.menu_rows.contains(entity) || self.keeps_own_sideways(entity)
+    }
+
+    fn keeps_own_sideways(&self, entity: Entity) -> bool {
         self.sideways.contains(entity)
     }
 
@@ -370,6 +386,10 @@ pub fn navigate_by_input(
     }
     show_focus(&mut shown);
     let from = nav.focus.get().filter(|&f| scopes.holds(f));
+    // Ctrl+Shift and an arrow on a dock's tab moves its panel (its own observer), not focus.
+    if from.is_some_and(|f| scopes.dock_tabs.contains(f)) && moves_tabs(&keys) {
+        return;
+    }
     // Left and Right on a slider or a choice are its own (the keys through its observers, the
     // D-pad through `gamepad_adjust`): they never also move focus off it. Up and Down still do.
     let net_x = if from.is_some_and(|f| scopes.keeps_sideways(f)) {
@@ -378,6 +398,25 @@ pub fn navigate_by_input(
         axis(pad(GamepadButton::DPadRight), pad(GamepadButton::DPadLeft))
     } else {
         net_x
+    };
+    // Down on a menu title opens its menu (`menu_by_input`), and moves nothing.
+    let net_y = if from.is_some_and(|f| scopes.menu_titles.contains(f)) {
+        0.0
+    } else {
+        net_y
+    };
+    // The arrows along a divider's axis are its own (the keys through its observer, the D-pad
+    // through `split_by_pad`): they never also move focus off it. The others still do.
+    let divider = from.and_then(|f| scopes.dividers.get(f).ok().map(SplitDivider::axis));
+    let net_x = if divider == Some(SplitAxis::Horizontal) {
+        0.0
+    } else {
+        net_x
+    };
+    let net_y = if divider == Some(SplitAxis::Vertical) {
+        0.0
+    } else {
+        net_y
     };
     let Some(direction) = Dir2::from_xy(net_x, net_y).ok().map(CompassOctant::from) else {
         return;

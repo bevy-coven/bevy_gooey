@@ -4,8 +4,8 @@
 
 use bevy::prelude::{GamepadButton, KeyCode, MouseButton};
 use bevy_gooey::{
-    Binding, BindingSettings, Density, GooeySkin, PadStyle, SkinPreset, ToastAnchor, ToastSettings,
-    UiScaleSettings,
+    Binding, BindingSettings, Density, DockLayout, DockZone, GooeySkin, PadStyle, SkinPreset,
+    SplitAxis, SplitFraction, SplitMin, ToastAnchor, ToastSettings, UiScaleSettings,
 };
 
 #[test]
@@ -141,5 +141,58 @@ fn the_ladder_and_the_scales_are_data_and_a_file_without_them_reads_as_the_defau
     let old = ron::from_str::<GooeySkin>("(text_scale: 1.5)")?;
     assert_eq!(old.surfaces, GooeySkin::default().surfaces);
     assert_eq!(old.spacing, GooeySkin::default().spacing);
+    Ok(())
+}
+
+#[test]
+fn a_split_keeps_its_fraction_and_minimums_as_data() -> Result<(), Box<dyn std::error::Error>> {
+    let fraction = ron::from_str::<SplitFraction>(&ron::to_string(&SplitFraction(0.3))?)?;
+    assert_eq!(fraction, SplitFraction(0.3));
+    let min = SplitMin::new(180.0, 320.0);
+    assert_eq!(ron::from_str::<SplitMin>(&ron::to_string(&min)?)?, min);
+    assert_eq!(
+        ron::from_str::<SplitAxis>(&ron::to_string(&SplitAxis::Vertical)?)?,
+        SplitAxis::Vertical
+    );
+    Ok(())
+}
+
+#[test]
+fn a_dock_layout_round_trips_through_ron_and_a_short_file_reads()
+-> Result<(), Box<dyn std::error::Error>> {
+    let layout = DockLayout::split(
+        SplitAxis::Horizontal,
+        0.25,
+        DockLayout::Group {
+            panels: vec!["scene".into(), "assets".into()],
+            selected: 1,
+        },
+        DockLayout::split(
+            SplitAxis::Vertical,
+            0.7,
+            DockLayout::group(["viewport"]),
+            DockLayout::group(["log"]),
+        ),
+    );
+    let text = ron::to_string(&layout)?;
+    assert_eq!(ron::from_str::<DockLayout>(&text)?, layout);
+    // A file that names only the panels: the first tab shows and a split divides in half.
+    let short = ron::from_str::<DockLayout>(
+        r#"Split(axis: Vertical, first: Group(panels: ["a", "b"]), second: Group(panels: ["c"]))"#,
+    )?;
+    assert_eq!(
+        short,
+        DockLayout::split(
+            SplitAxis::Vertical,
+            0.5,
+            DockLayout::group(["a", "b"]),
+            DockLayout::group(["c"])
+        )
+    );
+    // The drop's place is data too: a game keeps a layout and a zone to restore a drag.
+    assert_eq!(
+        ron::from_str::<DockZone>(&ron::to_string(&DockZone::Left)?)?,
+        DockZone::Left
+    );
     Ok(())
 }
