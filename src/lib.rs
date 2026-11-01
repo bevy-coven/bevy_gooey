@@ -113,6 +113,7 @@ mod feedback;
 mod list;
 mod meter;
 mod nav;
+mod prompt;
 mod scale;
 mod skin;
 mod tabs;
@@ -134,22 +135,23 @@ pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
-    PadStyle, TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio, key_name,
-    list_height, meter_fraction, mouse_name, pad_name, page_target, relative_luminance,
+    PadStyle, STICK_PUSH, TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio,
+    key_name, list_height, meter_fraction, mouse_name, pad_name, page_target, relative_luminance,
     repeat_steps, scroll_to_reveal, slider_fraction, slider_text, snap_line_width, snap_to_row,
     tab_step, toast_alpha, toast_grow, toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
 };
+pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{GooeyFonts, GooeySkin, Role, SkinProblem, apply_skin};
 pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    binding, button, choice, dialog, heading, label, list, menu, meter, panel, screen, slider,
-    tab_page, tabs, toast, toast_alert, toggle,
+    binding, button, choice, dialog, heading, label, list, menu, meter, panel, prompt, prompts,
+    screen, slider, tab_page, tabs, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -188,6 +190,7 @@ impl Plugin for GooeyStylePlugin {
     fn build(&self, app: &mut App) {
         chain_sets(app);
         app.init_resource::<GooeySkin>()
+            .init_resource::<InputDevice>()
             .init_resource::<GooeyFonts>()
             .init_resource::<ToastSettings>()
             .init_resource::<BindingSettings>()
@@ -198,7 +201,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Role>()
             .register_type::<Meter>()
             .register_type::<Binding>()
-            .register_type::<BindingValue>()
+            .register_type::<InputDevice>()
+            .register_type::<Prompt>()
             .register_type::<BindingSettings>()
             .register_type::<Capturing>()
             .register_type::<ChoiceValue>()
@@ -223,6 +227,7 @@ impl Plugin for GooeyStylePlugin {
                     update_tooltip_text,
                     show_tooltips,
                     update_bindings,
+                    update_prompts,
                     update_choices,
                     update_tabs,
                     apply_skin,
@@ -257,6 +262,7 @@ impl Plugin for GooeyNavPlugin {
             app.add_plugins(DirectionalNavigationPlugin);
         }
         app.init_resource::<InputFocus>()
+            .init_resource::<InputDevice>()
             .init_resource::<BindingSettings>()
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
@@ -267,6 +273,7 @@ impl Plugin for GooeyNavPlugin {
             .add_systems(
                 Update,
                 (
+                    track_input_device,
                     focus_opened_dialogs,
                     land_tab_focus,
                     step_tabs.run_if(not_capturing),
