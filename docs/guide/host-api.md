@@ -70,6 +70,10 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   menu's panel carries `ContextTarget` exactly while it is open, and `ContextTarget::of(item, ..)` finds it from an
   item. See [context menus](context-menus.md).
 
+- `CommandList(Vec<PaletteCommand>)`, `PaletteHistory`, `RunCommand { id }`, `CommandPalette` — the commands a
+  `command_palette()` lists, the ids that ran last, the event a choice sends and what an open palette
+  holds (`results()`, `selected()`). See [the command palette](command-palette.md).
+
 Bevy's own types come through the crate so a host never adds a second copy: `Checked`, `SliderValue`,
 `SliderRange`, `SliderStep`, `ValueChange`, `Activate` and `observe`.
 
@@ -101,6 +105,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `focus_menu_bar` | Navigate | F10, or Alt pressed and let go alone, focuses the first menu title; again, gives focus back |
 | `menu_by_input` | Navigate | Left, Right, Down, Home and End (and the D-pad) on a menu title or item open, walk and close menus |
 | `context_by_key` | Navigate | Shift+F10 or the Menu key opens the context menu of the focused widget's nearest `ContextMenu`, below it |
+| `palette_by_input` | Navigate | with focus in a palette's field: Up, Down, PageUp, PageDown and the D-pad move its lit row, Enter and South run it |
 | `switch_menus_on_hover`, `fit_menus`, `scroll_menus_to_focus` | Navigate | the pointer on another title switches menus; an open menu is capped to the window's room and follows focus |
 | `feedback_on_focus` | Navigate | writes `UiFeedback::Focus` when focus moves onto a widget |
 | `scroll_to_focus` | Navigate | a list follows the focus on one of its rows |
@@ -115,6 +120,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_bindings` | Style | a `binding` row's keycap: the input's name, or the prompt while it waits |
 | `update_prompts` | Style | a `prompt`'s keycap: the input's name for the device in use, and its shape |
 | `update_text_inputs` | Style | a `text_input`'s text the game set shown in its field, the hint while it is empty, the limit, a disabled row's field |
+| `update_palette` | Style | an open palette's matches, lit row, eight rows' words, "No command matches" and the count, only when its field, its lit row, `CommandList` or `PaletteHistory` changed |
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
@@ -142,7 +148,7 @@ use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `met
 `slider_fraction`, `slider_text`, `list_height`, `scroll_to_reveal`, `snap_to_row`, `page_target`,
 `snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
 `repeat_steps`, `choice_step`, `choice_next`, `nearest_step`, `tab_step`, `key_name`, `mouse_name`,
-`shortcut_label`, `shortcut_conflicts`, `is_modifier_key`,
+`shortcut_label`, `shortcut_conflicts`, `is_modifier_key`, `fuzzy_score`,
 `pad_name` and `PadStyle` (with `PadStyle::name`), and the constants `TEXT_CONTRAST`,
 `NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`,
 `STICK_PUSH`, and the steps the option rows offer: `TEXT_SIZE_STEPS`, `INTERFACE_SIZE_STEPS` and
