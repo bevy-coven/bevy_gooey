@@ -501,7 +501,7 @@ fn choice_arrow(step: i32) -> impl Bundle {
 /// (see [`crate::BindingSettings`]). While a row waits nothing else hears the player: arrows,
 /// Tab, the D-pad and Back move and close nothing.
 ///
-/// The row keeps its state in [`BindingValue`] and sends [`ValueChange<Binding>`] once for each
+/// The row keeps its state in [`BindingValue`] and sends `ValueChange<Binding>` once for each
 /// change; observe that to store the player's choice. Pressing the input the row already holds ends
 /// the capture with no change. Which action an input belongs to, and what to do when two actions
 /// share one, is the game's: [`Binding`] is `Eq + Hash`, and setting another row's [`BindingValue`]

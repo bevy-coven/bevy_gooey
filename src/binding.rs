@@ -142,7 +142,7 @@ pub struct BindingSettings {
     #[reflect(ignore)]
     pub pad_style: PadStyle,
     /// The key that exits a capture without binding, so it cannot be bound: XAG 112's "Press
-    /// [ESC] to exit remapping mode". A game that must make Escape bindable (XAG 107 asks that
+    /// \[ESC\] to exit remapping mode". A game that must make Escape bindable (XAG 107 asks that
     /// the Esc key be remappable) moves the exit to another key. Default: Escape.
     pub cancel_key: KeyCode,
     /// The pad button that exits a capture, on any gamepad. Default: Start.
@@ -400,6 +400,9 @@ pub fn catch_pointer(
     }
 }
 
+/// A row whose keycap needs writing: its value changed or a capture began.
+type Written = Or<(Changed<BindingValue>, Added<Capturing>)>;
+
 /// Writes each changed row's keycap: the bound input's name when it rests, the prompt while it
 /// waits (the other is hidden, which keeps its room, so the keycap is as wide as the wider and
 /// waiting moves nothing). Runs in [`crate::GooeySystems::Style`], before [`crate::apply_skin`],
@@ -407,13 +410,7 @@ pub fn catch_pointer(
 pub fn update_bindings(
     settings: Res<BindingSettings>,
     rows: Query<(Entity, &BindingValue, &BindingDevice, Has<Capturing>)>,
-    changed: Query<
-        Entity,
-        (
-            With<BindingValue>,
-            Or<(Changed<BindingValue>, Added<Capturing>)>,
-        ),
-    >,
+    changed: Query<Entity, (With<BindingValue>, Written)>,
     mut ended: RemovedComponents<Capturing>,
     children: Query<&Children>,
     mut parts: Query<(&Role, &mut Text, &mut Visibility)>,
