@@ -27,7 +27,8 @@
 //!   [`InputDevice`] tracks), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
 //!   timed by [`ToastSettings`]),
-//!   [`Tooltip`], the modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
+//!   [`Tooltip`] (with a command's [`Shortcut`] on a keycap: "Ctrl+S", or "⌘S" on a mac), the
+//!   modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
 //!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed). Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
@@ -127,6 +128,7 @@ mod options;
 mod popover;
 mod prompt;
 mod scale;
+mod shortcut;
 mod skin;
 mod tabs;
 mod text;
@@ -150,10 +152,10 @@ pub use model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
     NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH,
     TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
-    contrast_ratio, key_name, list_height, meter_fraction, mouse_name, nearest_step, pad_name,
-    page_target, relative_luminance, repeat_steps, scroll_to_reveal, slider_fraction, slider_text,
-    snap_line_width, snap_to_row, tab_step, toast_alpha, toast_grow, toast_hold, toast_life,
-    window_ui_scale,
+    contrast_ratio, is_modifier_key, key_name, list_height, meter_fraction, mouse_name,
+    nearest_step, pad_name, page_target, relative_luminance, repeat_steps, scroll_to_reveal,
+    shortcut_conflicts, shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row,
+    tab_step, toast_alpha, toast_grow, toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -165,6 +167,7 @@ pub use popover::{
 };
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
+pub use shortcut::{Modifiers, Platform, Shortcut};
 pub use skin::{
     Density, GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin,
 };
@@ -229,6 +232,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Role>()
             .register_type::<Meter>()
             .register_type::<Binding>()
+            .register_type::<Shortcut>()
+            .register_type::<Modifiers>()
+            .register_type::<Platform>()
             .register_type::<InputDevice>()
             .register_type::<Prompt>()
             .register_type::<BindingSettings>()

@@ -517,6 +517,95 @@ pub fn pad_name(button: &str, style: PadStyle) -> String {
     .to_owned()
 }
 
+/// Whether a key's `KeyCode` variant name is a modifier (`ShiftLeft`, `ControlRight`, `AltLeft`,
+/// `SuperLeft`, `MetaRight`, `HyperLeft`, or the bare `Meta`), the keys a chord holds and never one
+/// it is.
+///
+/// ```
+/// assert!(bevy_gooey::model::is_modifier_key("ControlLeft"));
+/// assert!(!bevy_gooey::model::is_modifier_key("KeyK"));
+/// ```
+pub fn is_modifier_key(code: &str) -> bool {
+    ["Shift", "Control", "Alt", "Super", "Meta", "Hyper"]
+        .iter()
+        .any(|name| {
+            code.strip_prefix(name)
+                .is_some_and(|side| matches!(side, "" | "Left" | "Right"))
+        })
+}
+
+/// The words of a key chord as the platform spells them, from a `KeyCode` variant name and the
+/// modifiers held, `[ctrl, shift, alt, meta]`.
+///
+/// Apple's order is Control, Option, Shift, Command, as symbols with nothing between ("⇧⌘P"),
+/// and a few keys wear glyphs (Return, Delete, Escape, Tab, the arrows). Elsewhere it is
+/// Microsoft's order: Windows logo (named "Super"), Ctrl, Alt, Shift, joined by "+"
+/// ("Ctrl+Shift+P"). `meta` is the Command key on a mac and the Windows or Super key elsewhere.
+///
+/// ```
+/// use bevy_gooey::model::shortcut_label;
+/// assert_eq!(shortcut_label("KeyP", [true, true, false, false], false), "Ctrl+Shift+P");
+/// assert_eq!(shortcut_label("KeyP", [false, true, false, true], true), "⇧⌘P");
+/// ```
+pub fn shortcut_label(code: &str, [ctrl, shift, alt, meta]: [bool; 4], mac: bool) -> String {
+    let mut out = String::new();
+    if mac {
+        for (held, glyph) in [(ctrl, '⌃'), (alt, '⌥'), (shift, '⇧'), (meta, '⌘')] {
+            if held {
+                out.push(glyph);
+            }
+        }
+        out.push_str(match code {
+            "Enter" => "↩",
+            "Backspace" => "⌫",
+            "Delete" => "⌦",
+            "Escape" => "⎋",
+            "Tab" => "⇥",
+            "ArrowUp" => "↑",
+            "ArrowDown" => "↓",
+            "ArrowLeft" => "←",
+            "ArrowRight" => "→",
+            other => return out + &key_name(other),
+        });
+        return out;
+    }
+    for (held, name) in [
+        (meta, "Super"),
+        (ctrl, "Ctrl"),
+        (alt, "Alt"),
+        (shift, "Shift"),
+    ] {
+        if held {
+            out.push_str(name);
+            out.push('+');
+        }
+    }
+    out + &key_name(code)
+}
+
+/// Every pair of commands bound to the same shortcut, in the order they are listed: one pair per
+/// two commands that clash, so three on one chord make three pairs, and a command is never paired
+/// with itself. Generic over the shortcut, so any `PartialEq` chord type (the crate's
+/// [`Shortcut`](crate::Shortcut)) works and this module holds no engine type. The check does not
+/// guess contexts: a command that is live in one mode only is the caller's to filter out first.
+///
+/// ```
+/// use bevy_gooey::model::shortcut_conflicts;
+/// let keymap = [("Save", "Ctrl+S"), ("Save all", "Ctrl+Shift+S"), ("Stash", "Ctrl+S")];
+/// assert_eq!(shortcut_conflicts(&keymap), vec![("Save".to_owned(), "Stash".to_owned())]);
+/// ```
+pub fn shortcut_conflicts<S: PartialEq>(keymap: &[(&str, S)]) -> Vec<(String, String)> {
+    let mut clashes = Vec::new();
+    for (index, (first, shortcut)) in keymap.iter().enumerate() {
+        for (second, other) in &keymap[index + 1..] {
+            if shortcut == other {
+                clashes.push(((*first).to_owned(), (*second).to_owned()));
+            }
+        }
+    }
+    clashes
+}
+
 /// `n` of a variant printed as `Other(n)`.
 fn numbered(name: &str) -> Option<&str> {
     name.strip_prefix("Other(")?.strip_suffix(')')

@@ -879,7 +879,7 @@ fn a_tooltip_on_a_row_is_not_clipped_by_its_list() {
             Children::spawn(SpawnIter((0..8).map(|i| {
                 (
                     button(format!("Slot {i:02}")),
-                    Tooltip("The harbour at dusk, 9 h 15 min played".into()),
+                    Tooltip::new("The harbour at dusk, 9 h 15 min played"),
                 )
             }))),
         ))
