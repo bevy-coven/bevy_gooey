@@ -487,7 +487,7 @@ fn move_panel(
 /// laid out.
 #[derive(SystemParam)]
 pub(crate) struct DockGeometry<'w, 's> {
-    ui_scale: Res<'w, UiScale>,
+    ui_scale: Option<Res<'w, UiScale>>,
     groups: Query<
         'w,
         's,
@@ -530,6 +530,11 @@ struct Landing {
 }
 
 impl DockGeometry<'_, '_> {
+    /// The interface's scale: one where nothing sets [`UiScale`].
+    fn scale(&self) -> f32 {
+        self.ui_scale.as_ref().map_or(1.0, |scale| scale.0)
+    }
+
     fn rect(&self, entity: Entity) -> Option<Rect> {
         let (node, at) = self.frames.get(entity).ok()?;
         let scale = node.inverse_scale_factor();
@@ -588,7 +593,7 @@ impl DockGeometry<'_, '_> {
         panel: &str,
         layout: &DockLayout,
     ) -> Option<Landing> {
-        let at = pointer / self.ui_scale.0;
+        let at = pointer / self.scale();
         let whole = self.rect(dock)?;
         if !whole.contains(at) {
             return None;
@@ -874,7 +879,7 @@ pub(crate) fn update_dock_drag(
                 },
                 Role::DockGhost => match &carried {
                     Some(drag) => {
-                        let at = drag.pointer / geometry.ui_scale.0 - origin;
+                        let at = drag.pointer / geometry.scale() - origin;
                         next.display = Display::Flex;
                         next.left = Val::Px(at.x + GHOST_OFFSET_PX);
                         next.top = Val::Px(at.y + GHOST_OFFSET_PX);
