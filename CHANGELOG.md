@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-01
+
 ### Added
 
 - `text_size(label)`, `interface_size(label)` and `pad_style(label)`: the options-screen rows for the three settings this crate itself reads, one line each and nothing to wire. Each is a `choice` (Bevy's `Button`, one tab stop, Left, Right, the D-pad and a click step it, `Tooltip`, `InteractionDisabled` and a game's own `ValueChange<usize>` observer work as on any choice) over a step table: the text size 100%, 125%, 150% and 200% (`GooeySkin::text_scale`; WCAG 2.2 SC 1.4.4 and Xbox Accessibility Guideline 101 ask for 200% and for it to reach the dialog, the toast and the legend, which `text_scale` does), the interface size 75%, 100%, 125% and 150% (`UiScaleSettings::scale`; below 100% for the player who wants less of the game covered, 150% as EVE Online's UI scaling) and the controller Xbox, PlayStation and Switch (`BindingSettings::pad_style`). The setting lives once, in its resource: a player's step writes that one field and no other (a game's own skin, the scale's `reference_short_side` and the binding prompts survive), and the row follows the resource with no `ValueChange`, on the frame it is spawned and whenever the resource changes, so a loaded save shows on it, a second row follows the first, and a value between two steps shows the nearest and is left alone. Labels are the host's; the options are percentages and the makers' names.
