@@ -94,8 +94,9 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 ## What you can do
 
-- **Skin the whole interface from one value** — `GooeySkin` is plain data with two presets and a
-  `problems()` check against the WCAG 2.2 contrast and target-size rules:
+- **Skin the whole interface from one value** — `GooeySkin` is plain data with three presets (dark,
+  parchment and a high-contrast one held to 7:1) and a `problems()` check against the WCAG 2.2 contrast
+  and target-size rules:
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
@@ -103,8 +104,9 @@ grow everything to 200%, and Controller renames the pad's buttons.
   key, a mouse button or a pad button on the player's next press, `text_input("Name", "")` is a field the
   player types in (a caret, a selection, paste and IME on Bevy's own `TextInput`, and focus it never
   traps), `tabs` puts them on pages a click, the arrows or LB and RB turn, and `text_size("Text size")`,
-  `interface_size("Interface size")` and `pad_style("Controller")` are the player's own text size (up to
-  200%), interface size and controller, one line each with nothing to wire:
+  `interface_size("Interface size")`, `pad_style("Controller")` and `skin_preset("Theme")` are the
+  player's own text size (up to 200%), interface size, controller and theme (dark, parchment and a
+  high-contrast look that holds 7:1 everywhere), one line each with nothing to wire:
   [settings controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md),
   [player options](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/options.md),
   [rebinding](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/bindings.md),
@@ -142,9 +144,13 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *Text input: `text_input("Save as", "")` takes the keys the moment it has focus, says each edit once as a `ValueChange<String>` and the end of the edit (Enter, or focus leaving) with `is_final`. Up leaves it: a field never traps focus, and the row never moves while the player types.*
 
-![The options example: a panel with the rows Text size, Interface size and Controller and the legend in the bottom-left corner; the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with each step, then back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to "A Select, B Back" and Controller steps to PlayStation, where it reads "Cross Select, Circle Back", then Switch and back to Xbox](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/options.gif)
+![The options example: a panel with the rows Text size, Interface size, Controller and Theme and the legend in the bottom-left corner; the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with each step, then back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to "A Select, B Back" and Controller steps to PlayStation, where it reads "Cross Select, Circle Back", then Switch and back to Xbox; Theme steps to Parchment and to High contrast, where the screen turns black with white frames, and back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/options.gif)
 
-*Player options: `text_size`, `interface_size` and `pad_style` each edit one field of the crate's own settings and follow it, so a loaded save shows on them and the whole screen answers the frame the player steps one.*
+*Player options: `text_size`, `interface_size`, `pad_style` and `skin_preset` each edit the crate's own settings and follow them, so a loaded save shows on them and the whole screen answers the frame the player steps one.*
+
+![The gallery's settings panel, Load game list and legend: the Audio tab turns to Display and the ring goes down to Quality and Theme; Right steps Theme from Dark to Parchment, where the whole screen turns cream and brown, then to High contrast, where it turns black with white frames, amber fills and a cyan ring, and Left twice steps it back to Parchment and Dark; every widget changes in the same frame and nothing moves](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/theme.gif)
+
+*Theme: `skin_preset("Theme")` is the high-contrast mode Xbox Accessibility Guideline 102 asks of a game, in one line: every colour at 7:1 or more. A step writes the colours and no size, so the player's text size stays.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 
