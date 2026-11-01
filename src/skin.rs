@@ -10,6 +10,7 @@ use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
+use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::list::ListView;
 use crate::model::{
@@ -42,6 +43,12 @@ const RAIL_LINES: f32 = 2.0;
 
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
+
+/// A binding's keycap is at least this many body text sizes wide (18 × 20 px = 360 px at the
+/// default size), so every row of a controls screen has its keycap's edges in one column, and the
+/// prompt that replaces the name ("Press a button, Menu exits", about 26 characters) fits without
+/// the row ever changing size.
+const BINDING_CAP_TEXT_SIZES: f32 = 18.0;
 
 /// A toast's longest line, in body text sizes: the tooltip's measure, about 40 characters.
 const TOAST_MEASURE_TEXT_SIZES: f32 = 24.0;
@@ -492,6 +499,16 @@ pub enum Role {
     ChoiceCell,
     /// One option's text in a choice; only the selected one is shown.
     ChoiceOption,
+    /// A [`crate::binding`] row: a label and a keycap, on no fill, its border the focus ring.
+    Binding,
+    /// A binding's keycap: a button's fill and size, [`GooeySkin::outline`] round it, and lit
+    /// [`GooeySkin::accent`] while the row waits for a press.
+    BindingCap,
+    /// The name of what a binding holds, on its keycap; hidden while the row waits.
+    BindingText,
+    /// What a binding says while it waits, on its keycap: [`GooeySkin::accent_text`]; hidden at
+    /// rest, though it keeps its room, so the keycap never changes size.
+    BindingPrompt,
     /// The one full-window column the toasts stand in; not drawn, it pads the toasts.
     ToastStack,
     /// A [`crate::toast`]'s room: a clipped column whose height opens and closes, so the toasts
@@ -584,6 +601,8 @@ struct State {
     at_end: bool,
     /// How many rows tall a list's viewport stands; none for everything that is not one.
     rows: f32,
+    /// A binding row that waits for the player's next press.
+    capturing: bool,
 }
 
 impl Default for State {
@@ -602,6 +621,7 @@ impl Default for State {
             at_start: false,
             at_end: false,
             rows: 0.0,
+            capturing: false,
         }
     }
 }
@@ -618,6 +638,7 @@ type StateQuery = (
     Option<(&'static ChoiceValue, &'static ChoiceCount)>,
     Option<&'static ScrollbarDragState>,
     Option<&'static ListView>,
+    Has<Capturing>,
     Option<&'static Role>,
 );
 
@@ -638,6 +659,7 @@ type Restyle = (
         Changed<Toast>,
         Changed<ChoiceValue>,
         Changed<ComputedUiRenderTargetInfo>,
+        Added<Capturing>,
     )>,
 );
 
@@ -645,7 +667,9 @@ type Restyle = (
 fn owns_parts(role: Option<&Role>) -> bool {
     matches!(
         role,
-        Some(Role::Button | Role::Toggle | Role::Slider | Role::Choice | Role::Toast)
+        Some(
+            Role::Button | Role::Toggle | Role::Slider | Role::Choice | Role::Binding | Role::Toast
+        )
     )
 }
 
@@ -670,6 +694,7 @@ pub fn apply_skin(
     mut enabled: RemovedComponents<InteractionDisabled>,
     mut unchecked: RemovedComponents<Checked>,
     mut unselected: RemovedComponents<Selected>,
+    mut stopped: RemovedComponents<Capturing>,
     states: Query<StateQuery>,
     parents: Query<&ChildOf>,
     children: Query<&Children>,
@@ -700,6 +725,7 @@ pub fn apply_skin(
                     choice,
                     bar,
                     list,
+                    capturing,
                     role,
                 )| {
                     State {
@@ -721,6 +747,7 @@ pub fn apply_skin(
                         at_start: choice.is_some_and(|(value, _)| value.0 == 0),
                         at_end: choice.is_some_and(|(value, count)| value.0 + 1 >= count.0),
                         rows: list.map_or(0.0, |list| list.rows),
+                        capturing,
                     }
                 },
             )
@@ -734,7 +761,13 @@ pub fn apply_skin(
                 states.get(a).is_ok_and(|(.., role)| {
                     matches!(
                         role,
-                        Some(Role::Toggle | Role::Slider | Role::Choice | Role::Toast)
+                        Some(
+                            Role::Toggle
+                                | Role::Slider
+                                | Role::Choice
+                                | Role::Binding
+                                | Role::Toast
+                        )
                     )
                 })
             })
@@ -747,6 +780,7 @@ pub fn apply_skin(
         enabled.clear();
         unchecked.clear();
         unselected.clear();
+        stopped.clear();
         for item in &mut styled {
             let entity = item.0;
             let parent = parents.get(entity).map(|p| p.parent()).ok();
@@ -766,6 +800,7 @@ pub fn apply_skin(
     dirty.extend(enabled.read());
     dirty.extend(unchecked.read());
     dirty.extend(unselected.read());
+    dirty.extend(stopped.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -773,7 +808,12 @@ pub fn apply_skin(
                 .filter(|item| {
                     matches!(
                         item.1,
-                        Role::Button | Role::Toggle | Role::Slider | Role::Choice | Role::Tab
+                        Role::Button
+                            | Role::Toggle
+                            | Role::Slider
+                            | Role::Choice
+                            | Role::Binding
+                            | Role::Tab
                     )
                 })
                 .map(|item| item.0),
@@ -915,6 +955,17 @@ fn restyle(
         } else {
             skin.text
         }),
+        // The keycap is a button's fill, lit by the accent while the row waits: the language of
+        // every "on" state here (a switch, the selected tab), with the text colour inverted on it.
+        Role::BindingCap => Some(if owner.disabled {
+            skin.surface
+        } else if owner.capturing {
+            skin.accent
+        } else if owner.hovered {
+            skin.hovered()
+        } else {
+            skin.surface_raised
+        }),
         Role::Screen
         | Role::Menu
         | Role::Heading
@@ -928,6 +979,9 @@ fn restyle(
         | Role::ChoiceForward
         | Role::ChoiceCell
         | Role::ChoiceOption
+        | Role::Binding
+        | Role::BindingText
+        | Role::BindingPrompt
         | Role::SliderHeader
         | Role::SliderTrack
         | Role::SliderGap
@@ -955,14 +1009,16 @@ fn restyle(
         // Framed in the outline like the other widgets whose fill is the colour of what is behind
         // them: a toast over a panel keeps its edge at 3:1.
         Role::ToastBody => Some(BorderColor::all(faded(skin.outline, owner.alpha))),
-        Role::Meter | Role::ToggleTrack | Role::SliderRail => Some(BorderColor::all(skin.outline)),
+        Role::Meter | Role::ToggleTrack | Role::SliderRail | Role::BindingCap => {
+            Some(BorderColor::all(skin.outline))
+        }
         Role::Button | Role::Tab if look.focused == Some(entity) => {
             Some(BorderColor::all(skin.focus_ring))
         }
         Role::Button | Role::Tab => Some(BorderColor::all(Color::NONE)),
         // A row has no fill of its own, so its border speaks: the ring when focused, the outline
         // under the pointer, nothing at rest.
-        Role::Toggle | Role::Slider | Role::Choice => {
+        Role::Toggle | Role::Slider | Role::Choice | Role::Binding => {
             Some(BorderColor::all(if look.focused == Some(entity) {
                 skin.focus_ring
             } else if (state.hovered || state.pressed) && !state.disabled {
@@ -1207,6 +1263,24 @@ fn restyle(
                 next.padding = UiRect::horizontal(Val::Px(skin.gap / 2.0));
                 next.flex_shrink = 0.0;
             }
+            // A toggle's frame and height: the keycap in it is a button's, and the row is the
+            // keycap's height and its own frame.
+            Role::Binding => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(skin.padding * 1.5), Val::ZERO);
+                next.min_height = Val::Px(skin.min_target);
+                next.column_gap = Val::Px(skin.gap);
+            }
+            // A button's frame and room, so the keycap is a button's height and the row a toggle's.
+            Role::BindingCap => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.6));
+                next.min_width = Val::Px((text_px * BINDING_CAP_TEXT_SIZES).max(skin.min_target));
+                next.min_height = Val::Px(skin.min_target);
+                next.flex_shrink = 0.0;
+            }
             // The rows stand `rows` of a button's height and a gap apart; to their right a lane the
             // rail's width and a gap of air, always, so rows never change width when others come
             // and go. The padding is inside the clip, so the content stops short of the rail and
@@ -1260,7 +1334,7 @@ fn restyle(
             };
             Some((color, &look.fonts.body, skin.text_size))
         }
-        Role::ControlText | Role::SliderReadout | Role::ChoiceOption => {
+        Role::ControlText | Role::SliderReadout | Role::ChoiceOption | Role::BindingText => {
             let color = if owner.disabled {
                 skin.text_muted
             } else {
@@ -1268,6 +1342,7 @@ fn restyle(
             };
             Some((color, &look.fonts.body, skin.text_size))
         }
+        Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
         Role::ToastText => Some((
             faded(skin.text, owner.alpha),
             &look.fonts.body,
