@@ -66,6 +66,11 @@ const TOAST_MARK_LINES: f32 = 4.0;
 /// A choice's chevron is a square this many body text sizes on a side, turned an eighth of a turn.
 const CHEVRON_TEXT_SIZES: f32 = 0.6;
 
+/// A choice's arrow is at least this many chevrons wide: the turned square's half plus the shift
+/// that centres its ink (`1 / √2` of its size), each side of the arrow's middle. A compact skin's
+/// 24 px arrow holds a 200% chevron only because of this.
+const CHEVRON_ARROW_FIT: f32 = 1.0 + std::f32::consts::FRAC_1_SQRT_2;
+
 /// A dialog's panel is at least this many body text sizes wide (21 × 20 px = 420 px: a platform
 /// dialog's 320 epx at this crate's 4/3) and at most this many (36 × 20 px = 720 px: its 548 epx).
 /// A short title fills the least; a long body wraps at the most.
@@ -87,6 +92,35 @@ const PROMPT_SPACING_PADDINGS: f32 = 2.0;
 /// A prompts legend is no wider than this share of its parent (its 5% margin and the same on the
 /// right): a longer legend squeezes its words, and never leaves the window.
 const PROMPTS_MAX_WIDTH_PERCENT: f32 = 100.0 - 2.0 * SAFE_EDGE_PERCENT;
+
+/// How much room a skin gives each widget: a game menu's comfortable one, or a desktop tool's
+/// compact one ([`GooeySkin::density`]).
+///
+/// Density changes two numbers every widget reads, the padding ([`GooeySkin::pad`]) and the least
+/// target ([`GooeySkin::target`]), and nothing else: colours, the focus ring and the keys are the
+/// same.
+///
+/// ```
+/// use bevy_gooey::{Density, GooeySkin};
+/// let tool = GooeySkin { density: Density::Compact, ..GooeySkin::dark() };
+/// assert_eq!(tool.target(), 24.0);
+/// assert_eq!(tool.pad(), GooeySkin::dark().padding / 2.0);
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Default, Debug, PartialEq, Hash, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
+pub enum Density {
+    /// The skin's own padding and least target: sized for a thumb or a pad at couch distance.
+    #[default]
+    Comfortable,
+    /// Half the padding and a least target of [`MIN_TARGET_PX`] (24 px, WCAG 2.2 SC 2.5.8): rows
+    /// close enough for a mouse at arm's length, a tool's inspector or a long list.
+    Compact,
+}
+
+/// The share of [`GooeySkin::padding`] a [`Density::Compact`] skin draws.
+const COMPACT_PADDING: f32 = 0.5;
 
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
@@ -166,6 +200,10 @@ pub struct GooeySkin {
     pub meter_height: f32,
     /// The least width and height of a button, logical px.
     pub min_target: f32,
+    /// How much room each widget gets: [`Density::Comfortable`] reads [`GooeySkin::padding`] and
+    /// [`GooeySkin::min_target`] as they are, [`Density::Compact`] draws half the padding and
+    /// caps the least target at [`MIN_TARGET_PX`]. See [`GooeySkin::pad`] and [`GooeySkin::target`].
+    pub density: Density,
     /// A player option: every text size is multiplied by it.
     pub text_scale: f32,
 }
@@ -232,6 +270,35 @@ impl GooeySkin {
         }
     }
 
+    /// A skin for a desktop tool, [`SkinPreset::Tool`]: a cool neutral dark with a blue accent,
+    /// [`Density::Compact`] and sizes a mouse at arm's length reads: 14 px text, a 24 px least
+    /// target, half the padding. Passes [`GooeySkin::problems`] (the target floor included).
+    pub fn tool() -> Self {
+        Self {
+            background: Color::srgb(0.07, 0.075, 0.085),
+            surface: Color::srgb(0.11, 0.115, 0.13),
+            surface_raised: Color::srgb(0.19, 0.20, 0.23),
+            text: Color::srgb(0.90, 0.91, 0.93),
+            text_muted: Color::srgb(0.62, 0.64, 0.68),
+            accent: Color::srgb(0.30, 0.60, 0.98),
+            accent_text: Color::srgb(0.04, 0.05, 0.08),
+            danger: Color::srgb(0.93, 0.36, 0.34),
+            focus_ring: Color::srgb(0.55, 0.80, 1.0),
+            outline: Color::srgb(0.45, 0.48, 0.54),
+            scrim: Color::srgba(0.0, 0.0, 0.0, 0.55),
+            text_size: 14.0,
+            heading_size: 20.0,
+            gap: 6.0,
+            padding: 10.0,
+            radius: 4.0,
+            border: 2.0,
+            meter_height: 10.0,
+            min_target: MIN_TARGET_PX,
+            density: Density::Compact,
+            ..Self::sizes()
+        }
+    }
+
     /// The sizes both presets share; the colours are overwritten by each preset.
     fn sizes() -> Self {
         Self {
@@ -255,6 +322,7 @@ impl GooeySkin {
             border: 3.0,
             meter_height: 24.0,
             min_target: COMFORT_TARGET_PX,
+            density: Density::Comfortable,
             text_scale: 1.0,
         }
     }
@@ -281,7 +349,7 @@ impl GooeySkin {
 
     /// Everything about this skin that breaks the contrast, target-size or size rules, in a fixed
     /// order: low contrast pairs, then a too-small target, then a meter too thin for its fill,
-    /// then unusable sizes. Empty for a good skin; all three presets are good.
+    /// then unusable sizes. Empty for a good skin; all four presets are good.
     pub fn problems(&self) -> Vec<SkinProblem> {
         self.check(0.0)
     }
@@ -392,10 +460,9 @@ impl GooeySkin {
                 });
             }
         }
-        if self.min_target < MIN_TARGET_PX {
-            out.push(SkinProblem::TargetTooSmall {
-                px: self.min_target,
-            });
+        let target = self.target();
+        if target < MIN_TARGET_PX {
+            out.push(SkinProblem::TargetTooSmall { px: target });
         }
         let meter = self.meter_height * self.text_scale;
         let frames = 4.0 * self.border;
@@ -429,6 +496,27 @@ impl GooeySkin {
             }
         }
         out
+    }
+
+    /// The padding the widgets draw, logical px: [`GooeySkin::padding`] for
+    /// [`Density::Comfortable`], half of it for [`Density::Compact`]. Buttons, tooltips, rows and
+    /// fields derive theirs from it, so a compact skin keeps one rhythm.
+    pub fn pad(&self) -> f32 {
+        match self.density {
+            Density::Comfortable => self.padding,
+            Density::Compact => self.padding * COMPACT_PADDING,
+        }
+    }
+
+    /// The least width and height of a button the widgets draw, logical px:
+    /// [`GooeySkin::min_target`] for [`Density::Comfortable`], that capped at [`MIN_TARGET_PX`] for
+    /// [`Density::Compact`]. [`GooeySkin::problems`] checks this value, so a compact skin whose
+    /// `min_target` is under 24 px is still refused.
+    pub fn target(&self) -> f32 {
+        match self.density {
+            Density::Comfortable => self.min_target,
+            Density::Compact => self.min_target.min(MIN_TARGET_PX),
+        }
     }
 
     /// This skin with every colour taken from `look` and every size kept, the text scale and a
@@ -516,11 +604,13 @@ pub enum SkinPreset {
     Parchment,
     /// [`GooeySkin::high_contrast`].
     HighContrast,
+    /// [`GooeySkin::tool`]: dark, blue and [`Density::Compact`].
+    Tool,
 }
 
 impl SkinPreset {
     /// Every preset, in the order a [`crate::skin_preset`] row offers them.
-    pub const ALL: [SkinPreset; 3] = [Self::Dark, Self::Parchment, Self::HighContrast];
+    pub const ALL: [SkinPreset; 4] = [Self::Dark, Self::Parchment, Self::HighContrast, Self::Tool];
 
     /// The preset's name in English, as the row shows it; a host that localises writes its own
     /// [`crate::choice`] over [`SkinPreset::ALL`].
@@ -529,15 +619,18 @@ impl SkinPreset {
             Self::Dark => "Dark",
             Self::Parchment => "Parchment",
             Self::HighContrast => "High contrast",
+            Self::Tool => "Tool",
         }
     }
 
-    /// The whole preset: its colours and the sizes every preset shares.
+    /// The whole preset: its colours and its sizes (every preset but [`SkinPreset::Tool`] shares
+    /// the same ones).
     pub fn skin(self) -> GooeySkin {
         match self {
             Self::Dark => GooeySkin::dark(),
             Self::Parchment => GooeySkin::parchment(),
             Self::HighContrast => GooeySkin::high_contrast(),
+            Self::Tool => GooeySkin::tool(),
         }
     }
 
@@ -574,7 +667,8 @@ pub enum SkinProblem {
         /// The contrast they need.
         needed: f32,
     },
-    /// [`GooeySkin::min_target`] is below [`MIN_TARGET_PX`].
+    /// [`GooeySkin::target`] (the [`GooeySkin::min_target`] a compact skin caps at
+    /// [`MIN_TARGET_PX`]) is below [`MIN_TARGET_PX`].
     TargetTooSmall {
         /// The size the skin asks for.
         px: f32,
@@ -1199,6 +1293,8 @@ fn restyle(
     let switch = text_px * SWITCH_TEXT_SIZES;
     let knob = (switch - 4.0 * line).max(0.0);
     let chevron = text_px * CHEVRON_TEXT_SIZES;
+    // A choice's arrow: a button's width, or the chevron's own if the text has outgrown it.
+    let arrow = skin.target().max(chevron * CHEVRON_ARROW_FIT);
     let in_dialog = parent.is_some_and(|p| p.scrim);
     let fill = match role {
         Role::Panel if in_dialog => Some(skin.solid_surface()),
@@ -1410,7 +1506,7 @@ fn restyle(
                 // Over a dialog's scrim a panel is the dialog: a measure, and room between its
                 // title, its body and its choices.
                 let room = if in_dialog { DIALOG_ROOM_FACTOR } else { 1.0 };
-                next.padding = UiRect::all(Val::Px(skin.padding * room));
+                next.padding = UiRect::all(Val::Px(skin.pad() * room));
                 next.row_gap = Val::Px(skin.gap * room);
                 if in_dialog {
                     next.min_width = Val::Px(text_px * DIALOG_MIN_TEXT_SIZES);
@@ -1423,16 +1519,15 @@ fn restyle(
             Role::Button | Role::Tab => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding =
-                    UiRect::axes(Val::Px(skin.padding * 1.5), Val::Px(skin.padding * 0.6));
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
                 // A tab shares its strip equally and never narrower than its own label and
                 // padding (`Val::Auto`), so a long label is not squeezed out of its tab.
                 next.min_width = if *role == Role::Tab {
                     Val::Auto
                 } else {
-                    Val::Px(skin.min_target)
+                    Val::Px(skin.target())
                 };
-                next.min_height = Val::Px(skin.min_target);
+                next.min_height = Val::Px(skin.target());
             }
             // A frame marks the whole length at 3:1 against the panel; the fill sits one line
             // inside it, on the track, because no one colour contrasts with both.
@@ -1454,7 +1549,7 @@ fn restyle(
             // the stack's ends, so the stack pads its ends half a gap less than the screen's edge
             // wants and its sides in full.
             Role::ToastStack => {
-                let edge = skin.padding * 2.0;
+                let edge = skin.pad() * 2.0;
                 next.padding =
                     UiRect::axes(Val::Px(edge), Val::Px((edge - skin.gap / 2.0).max(0.0)));
             }
@@ -1491,11 +1586,11 @@ fn restyle(
                 };
             }
             Role::ToastText => {
-                next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.5));
+                next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.5));
                 next.flex_shrink = 1.0;
             }
             Role::Tooltip => {
-                next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.5));
+                next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.5));
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.max_width = Val::Px(tooltip_width(skin, tip.unwrap_or_default(), line));
@@ -1504,9 +1599,8 @@ fn restyle(
             Role::Toggle => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding =
-                    UiRect::axes(Val::Px(skin.padding * 1.5), Val::Px(skin.padding * 0.6));
-                next.min_height = Val::Px(skin.min_target);
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
+                next.min_height = Val::Px(skin.target());
                 next.column_gap = Val::Px(skin.gap);
             }
             // A framed pill, one line of frame and one of gap round the knob, which sits at the
@@ -1535,12 +1629,12 @@ fn restyle(
             Role::Slider => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding = UiRect::axes(Val::Px(0.0), Val::Px(skin.padding * 0.6));
+                next.padding = UiRect::axes(Val::Px(0.0), Val::Px(skin.pad() * 0.6));
                 next.min_width = Val::Px(text_px * SLIDER_MIN_TEXT_SIZES);
                 next.row_gap = Val::Px(skin.gap * 0.5);
             }
             // The header's text lines up with a toggle's label and a toggle's switch.
-            Role::SliderHeader => next.padding = UiRect::horizontal(Val::Px(skin.padding * 1.5)),
+            Role::SliderHeader => next.padding = UiRect::horizontal(Val::Px(skin.pad() * 1.5)),
             Role::SliderTrack => next.height = Val::Px(thumb.y),
             // From the thumb's centre at the start to its centre at the end, so the thumb
             // overhangs the rail by half its width at each end and the focus ring has air round
@@ -1565,9 +1659,8 @@ fn restyle(
             // own width leaves of a toggle's, so the forward chevron's ink stops where a switch's
             // track does and the two rows share their edges.
             Role::Choice => {
-                let arrow = skin.min_target;
                 let ink = chevron * std::f32::consts::FRAC_1_SQRT_2;
-                let room = skin.padding * 1.5;
+                let room = skin.pad() * 1.5;
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect {
@@ -1576,14 +1669,14 @@ fn restyle(
                     top: Val::ZERO,
                     bottom: Val::ZERO,
                 };
-                next.min_height = Val::Px(skin.min_target);
+                next.min_height = Val::Px(skin.target());
                 next.column_gap = Val::Px(skin.gap);
             }
             // As wide as a button and as high as the toggle's row inside its frame, so the row is
             // the toggle's height and a thumb has the room NN/g asks of a stepper's buttons.
             Role::ChoiceArrow => {
-                next.min_width = Val::Px(skin.min_target);
-                next.min_height = Val::Px((switch + skin.padding * 1.2).max(skin.min_target));
+                next.min_width = Val::Px(arrow);
+                next.min_height = Val::Px((switch + skin.pad() * 1.2).max(skin.target()));
                 next.flex_shrink = 0.0;
             }
             // Two sides of a square, turned by `choice()`: the forward chevron keeps its top and
@@ -1621,9 +1714,8 @@ fn restyle(
             Role::Binding => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding =
-                    UiRect::axes(Val::Px(skin.padding * 1.5), Val::Px(skin.padding * 0.3));
-                next.min_height = Val::Px(skin.min_target);
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.3));
+                next.min_height = Val::Px(skin.target());
                 next.column_gap = Val::Px(skin.gap);
             }
             // A frame and room round one line, as wide as the prompt needs and at least as wide as
@@ -1631,9 +1723,8 @@ fn restyle(
             Role::BindingCap => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding =
-                    UiRect::axes(Val::Px(skin.padding * 0.5), Val::Px(skin.padding * 0.3));
-                next.min_width = Val::Px((text_px * BINDING_CAP_TEXT_SIZES).max(skin.min_target));
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 0.5), Val::Px(skin.pad() * 0.3));
+                next.min_width = Val::Px((text_px * BINDING_CAP_TEXT_SIZES).max(skin.target()));
                 next.flex_shrink = 0.0;
             }
             // A binding row's frame and padding, so the label stands where every row's does; the
@@ -1642,9 +1733,8 @@ fn restyle(
             Role::TextInput => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding =
-                    UiRect::axes(Val::Px(skin.padding * 1.5), Val::Px(skin.padding * 0.1));
-                next.min_height = Val::Px(skin.min_target);
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.1));
+                next.min_height = Val::Px(skin.target());
                 next.column_gap = Val::Px(skin.gap);
             }
             // One line of text in a frame, as high as the target: the text sits at the top of its
@@ -1673,22 +1763,21 @@ fn restyle(
                 next.max_width = Val::Percent(PROMPTS_MAX_WIDTH_PERCENT);
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.3));
-                next.column_gap = Val::Px(skin.padding * PROMPT_SPACING_PADDINGS);
+                next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.3));
+                next.column_gap = Val::Px(skin.pad() * PROMPT_SPACING_PADDINGS);
             }
             Role::Prompt => next.column_gap = Val::Px(skin.gap),
             // A binding keycap's frame and air, at least as wide as it is high, so a single
             // character is a square (a circle for a pad button) and a longer name a wider cap.
             Role::PromptKey | Role::PromptButton => {
-                let cap = text_px * LIST_LINE_TEXT_SIZES + skin.padding * 0.6 + 2.0 * line;
+                let cap = text_px * LIST_LINE_TEXT_SIZES + skin.pad() * 0.6 + 2.0 * line;
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = if *role == Role::PromptButton {
                     BorderRadius::MAX
                 } else {
                     radius
                 };
-                next.padding =
-                    UiRect::axes(Val::Px(skin.padding * 0.5), Val::Px(skin.padding * 0.3));
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 0.5), Val::Px(skin.pad() * 0.3));
                 next.min_width = Val::Px(cap);
                 next.flex_shrink = 0.0;
             }
@@ -1698,9 +1787,9 @@ fn restyle(
             // still counts toward what scrolls.
             Role::ListView => {
                 let row = (text_px * LIST_LINE_TEXT_SIZES
-                    + skin.padding * LIST_PADDING_FACTOR
+                    + skin.pad() * LIST_PADDING_FACTOR
                     + 2.0 * line)
-                    .max(skin.min_target);
+                    .max(skin.target());
                 next.max_height = Val::Px(list_height(state.rows, row, skin.gap));
                 next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
             }
@@ -1800,7 +1889,7 @@ fn restyle(
         // One spacing step outside the panel a widget usually sits in (its padding and border), so
         // the tooltip never straddles that panel's edge. `Popover` measures from inside the
         // widget's border, so that border is added once more.
-        let gap = skin.gap + skin.padding + line * 2.0;
+        let gap = skin.gap + skin.pad() + line * 2.0;
         let next = tooltip_placement(gap, skin.gap, tip.in_row);
         if *popover != next {
             *popover = next;
@@ -1811,7 +1900,7 @@ fn restyle(
             Val::Px(0.0),
             Val::Px(skin.border * 2.0),
             Val::Px(0.0),
-            Val::Px(skin.padding),
+            Val::Px(skin.pad()),
         ));
     }
 }
@@ -1840,7 +1929,7 @@ fn tooltip_width(skin: &GooeySkin, tip: TooltipBox, line: f32) -> f32 {
         return measure;
     }
     // The box's outer edge sits `gap + padding + border` from the widget, and `gap` from the window.
-    let fit = tip.room - (skin.gap + skin.padding + line) - skin.gap;
+    let fit = tip.room - (skin.gap + skin.pad() + line) - skin.gap;
     if fit >= size * 8.0 {
         measure.min(fit)
     } else {
@@ -1876,7 +1965,7 @@ fn tooltip_placement(gap: f32, margin: f32, in_row: bool) -> Popover {
 /// is what leaves the line in the middle of the target's height (the text sits at the top of its
 /// box). Never less than the thin air a keycap has above and below.
 fn text_field_inset(skin: &GooeySkin, text_px: f32, line: f32) -> (f32, f32) {
-    let x = skin.padding * 0.6;
-    let centred = (skin.min_target - 2.0 * line - text_px * LIST_LINE_TEXT_SIZES) / 2.0;
-    (x, centred.max(skin.padding * 0.3))
+    let x = skin.pad() * 0.6;
+    let centred = (skin.target() - 2.0 * line - text_px * LIST_LINE_TEXT_SIZES) / 2.0;
+    (x, centred.max(skin.pad() * 0.3))
 }
