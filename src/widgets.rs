@@ -12,8 +12,8 @@ use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{EditableText, Justify, LineBreak, TextCursorStyle};
-use bevy::ui::Checked;
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
+use bevy::ui::{Checked, FixedNode};
 use bevy::ui_widgets::{
     Checkbox, ControlOrientation, ScrollArea, Scrollbar, ScrollbarThumb, Slider, SliderOrientation,
     SliderRange, SliderStep, SliderThumb, SliderValue, TabActivation, TabList, TextInput,
@@ -32,6 +32,10 @@ use crate::meter::Meter;
 use crate::model::{PadStyle, meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
 use crate::options::{OptionRow, option_on_change};
+use crate::popover::{
+    Placement, PopoverPanel, placement_of, popover_on_cancel, stop_acquire, stop_click, stop_press,
+    stop_release,
+};
 use crate::prompt::Prompt;
 use crate::skin::Role;
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
@@ -1227,6 +1231,97 @@ pub fn dialog() -> impl Bundle {
             order: 0,
             modal: true,
         },
+    )
+}
+
+/// A panel that opens beside `anchor`, stays inside the window, and closes when the player
+/// presses anywhere else or backs out.
+///
+/// Spawn it as a child of nothing: the bundle makes it a child of the anchor, so despawning the
+/// anchor closes it. Put any widgets in `children![…]`: a [`menu`] of buttons, a [`list`], a
+/// [`label`]. It is a card in the skin's look (an opaque fill, a frame in
+/// [`outline`](crate::GooeySkin::outline), a shadow) over everything but a [`dialog`] it was
+/// opened from and a [`Tooltip`](crate::Tooltip), and it is placed by Bevy's `Popover`: on the
+/// [`Placement`] side of the anchor, flipped to the other side or slid along the anchor's edge
+/// when the window leaves no room, and placed again when the window is resized.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, edit_button: Entity) {
+/// commands.spawn((
+///     popover(edit_button, Placement::Below),
+///     children![button("Copy"), button("Paste")],
+/// ));
+/// # }
+/// ```
+///
+/// It does not take focus: it is for a combo box's list, a hover card, a panel the player reads.
+/// Escape (or the pad's B) closes it from the anchor or from inside it, and a pointer press
+/// anywhere that is not the panel or the anchor closes it, each sending one [`PopoverClosed`]
+/// before it is despawned; the press goes on to what it landed on. A press on the anchor does not
+/// close it, so the anchor's own `Activate` can toggle it: despawn the popover there when one is
+/// open (it is the [`PopoverPanel`] whose `anchor` is the button). A press on the panel never
+/// presses the anchor, even though the panel is its child. For a menu that takes focus, use
+/// [`popover_modal`].
+pub fn popover(anchor: Entity, placement: Placement) -> impl Bundle {
+    popover_panel(anchor, placement, false)
+}
+
+/// A [`popover`] that holds focus, as a menu does: focus moves into it when it opens (to its first
+/// widget, or the one carrying Bevy's `AutoFocus`), Tab, the arrows and the D-pad stay inside it,
+/// Escape or the pad's B closes it, and when it closes focus goes back to the widget that was
+/// focused when it opened. It is the same scope as a [`dialog`] without the veil.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, file_button: Entity) {
+/// commands.spawn((
+///     popover_modal(file_button, Placement::Below),
+///     observe(|closed: On<PopoverClosed>| info!("menu closed: {:?}", closed.reason)),
+///     children![button("New"), button("Open"), button("Save")],
+/// ));
+/// # }
+/// ```
+pub fn popover_modal(anchor: Entity, placement: Placement) -> impl Bundle {
+    (
+        popover_panel(anchor, placement, true),
+        Dialog::default(),
+        TabGroup {
+            order: 0,
+            modal: true,
+        },
+    )
+}
+
+/// What [`popover`] and [`popover_modal`] share. Born `Display::None`: [`crate::apply_skin`] shows
+/// it, styled, so it is never drawn bare for a frame.
+fn popover_panel(anchor: Entity, placement: Placement, modal: bool) -> impl Bundle {
+    (
+        Node {
+            position_type: PositionType::Absolute,
+            display: Display::None,
+            ..default()
+        },
+        Role::Popover,
+        placement_of(placement, 0.0, 0.0),
+        // Laid out on the window, not inside its anchor: its width is the room the window leaves
+        // and not the anchor's (a narrow button would wrap every line to a word), and no clip of a
+        // scrolling list or a panel it hangs from reaches it.
+        FixedNode,
+        BoxShadow::default(),
+        // Over a dialog (100), under a tooltip (200).
+        GlobalZIndex(150),
+        PopoverPanel::new(anchor, placement, modal),
+        ChildOf(anchor),
+        observe(popover_on_cancel),
+        (
+            observe(stop_press),
+            observe(stop_release),
+            observe(stop_click),
+            observe(stop_acquire),
+        ),
     )
 }
 
