@@ -1059,6 +1059,17 @@ pub enum Role {
     /// A list's thumb, the share of the rail the viewport is of the content: [`GooeySkin::text_muted`],
     /// [`GooeySkin::text`] under the pointer and [`GooeySkin::accent`] while dragged.
     ListThumb,
+    /// A [`crate::split`]'s root: a row or a column of two panes and the divider between them; not
+    /// drawn.
+    Split,
+    /// One pane of a split: a clipped cell the game's content fills; not drawn.
+    SplitPane,
+    /// A split's divider: a channel [`crate::MIN_TARGET_PX`] wide on [`GooeySkin::surface_raised`],
+    /// lit like a button under the pointer, with the focus ring while it has focus.
+    SplitDivider,
+    /// The grip in the middle of a divider: a pill of [`GooeySkin::text_muted`], [`GooeySkin::text`]
+    /// under the pointer or with focus and [`GooeySkin::accent`] while dragged.
+    SplitGrip,
     /// A [`crate::tabs`] widget's column: the strip, a gap, the pages; not drawn.
     Tabs,
     /// The strip of tabs, in a row a [`GooeySkin::gap`] apart; not drawn.
@@ -1304,6 +1315,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
                 | Role::PaletteField
                 | Role::MenuItem
                 | Role::PaletteRow
+                | Role::SplitDivider
         )
     )
 }
@@ -1420,6 +1432,7 @@ pub fn apply_skin(
                                 | Role::Toast
                                 | Role::MenuItem
                                 | Role::PaletteRow
+                                | Role::SplitDivider
                         )
                     )
                 })
@@ -1489,6 +1502,7 @@ pub fn apply_skin(
                             | Role::TextField
                             | Role::MenuItem
                             | Role::MenuTitle
+                            | Role::SplitDivider
                     )
                 })
                 .map(|item| item.0),
@@ -1623,6 +1637,23 @@ fn restyle(
         )),
         Role::MeterFill => Some(skin.accent),
         Role::ListRail => Some(skin.surface_raised),
+        // The divider is the list rail's colour, lit like a button under the pointer and while held.
+        Role::SplitDivider => Some(if state.hovered || state.pressed {
+            skin.hovered()
+        } else {
+            skin.surface_raised
+        }),
+        // The grip is the thumb's grey (3:1 on the rail), the text colour under the pointer or
+        // with focus, and the accent while the divider is held.
+        Role::SplitGrip => Some(if owner.disabled {
+            skin.text_muted
+        } else if owner.pressed {
+            skin.accent
+        } else if owner.hovered || owner.focused {
+            skin.text
+        } else {
+            skin.text_muted
+        }),
         // The same grey as a switch's off knob on its track, the pair `problems` already holds at
         // 3:1; the pointer brightens it to the text colour and a drag lights it.
         Role::ListThumb => Some(if state.pressed {
@@ -1707,6 +1738,8 @@ fn restyle(
         | Role::List
         | Role::ListView
         | Role::ListRows
+        | Role::Split
+        | Role::SplitPane
         | Role::Tabs
         | Role::TabList
         | Role::TabText
@@ -1807,6 +1840,11 @@ fn restyle(
             skin.outline
         })),
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
+        Role::SplitDivider => Some(BorderColor::all(if look.focused == Some(entity) {
+            skin.focus_ring
+        } else {
+            Color::NONE
+        })),
         _ => None,
     };
     if let (Some(edge), Some(mut border)) = (edge, border) {
@@ -2139,6 +2177,15 @@ fn restyle(
                 next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
             }
             Role::ListRows => next.row_gap = Val::Px(skin.gap),
+            // A channel the target's minimum wide (or high), as long as the split, framed only by
+            // the focus ring; the grip's own size is laid out with it.
+            Role::SplitDivider => {
+                next.min_width = Val::Px(MIN_TARGET_PX);
+                next.min_height = Val::Px(MIN_TARGET_PX);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+            }
+            Role::SplitGrip => next.border_radius = BorderRadius::MAX,
             // Flush with the list's right edge, full height; as wide as the thumb it holds.
             Role::ListRail => {
                 let width = RAIL_LINES * line;
