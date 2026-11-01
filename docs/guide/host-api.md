@@ -22,6 +22,9 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
 ## Components a game spawns or marks
 
 - `Meter { value, max }` — put it on the entity a `meter()` bundle returned to drive that bar.
+- `SkinScope(GooeySkin)` — on any node: that node and everything below it is styled from this skin and
+  not from the `GooeySkin` resource (the nearest scope wins). Insert, change or remove it and `apply_skin`
+  restyles exactly that subtree in the same frame. See [skins](skins.md).
 - `ListView { rows }` — the scrolling viewport of a `list()`, the list's first child. Set its
   `ScrollPosition` to scroll from code, or its `rows` to change how many rows show.
 - `ChoiceValue(usize)` and `ChoiceCount(usize)` — a `choice`'s selected index and its number of options.
