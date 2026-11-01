@@ -11,6 +11,7 @@ use bevy::ecs::world::DeferredWorld;
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
+use bevy::text::{Justify, LineBreak};
 use bevy::ui::Checked;
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui_widgets::{
@@ -20,8 +21,7 @@ use bevy::ui_widgets::{
 };
 
 use crate::binding::{
-    Binding, BindingDevice, BindingValue, binding_on_activate, binding_on_key_input,
-    binding_self_update,
+    Binding, BindingValue, binding_on_activate, binding_on_key_input, binding_self_update,
 };
 use crate::choice::{
     ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
@@ -31,6 +31,7 @@ use crate::list::ListView;
 use crate::meter::Meter;
 use crate::model::{PadStyle, meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
+use crate::prompt::Prompt;
 use crate::skin::Role;
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::toast::{Toast, ToastKind};
@@ -540,7 +541,6 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
         },
         bevy::ui_widgets::Button,
         BindingValue(value),
-        BindingDevice::from(value),
         Role::Binding,
         Hovered::default(),
         TabIndex(0),
@@ -570,6 +570,96 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
                 ],
             ),
         ],
+    )
+}
+
+/// One hint of what an input does: a keycap and the words for it ("Esc  Back"). The keycap shows
+/// the input of the device the player used last, the keyboard's or the pad's from `keys`, in the
+/// words of a [`binding`] row ("Esc", "Enter", "A" or "Cross"), and follows the player the frame
+/// they pick up the other ([`InputDevice`](crate::InputDevice)). A key is a rounded keycap and a
+/// pad button is fully round, in the same colours.
+///
+/// The words are yours (the crate has none to translate). [`Prompt::SELECT`] and [`Prompt::BACK`]
+/// are the two the crate itself acts on: Enter and the pad's South button select, Escape and the
+/// pad's East button send a [`Cancel`](crate::Cancel). For an action of the game's own, build the
+/// pair with [`Prompt::new`]. A prompt is a hint, not a control: the pointer goes through it and it
+/// is never a tab stop. It stands anywhere; put it in a [`prompts`] legend for the corner of the
+/// screen.
+///
+/// A game that lets the player rebind the action keeps the prompt true by setting the [`Prompt`]
+/// component (the keycap follows in the same frame):
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     prompts(),
+///     children![
+///         prompt("Select", Prompt::SELECT),
+///         prompt("Back", Prompt::BACK),
+///         prompt(
+///             "Inventory",
+///             Prompt::new(Binding::Key(KeyCode::KeyI), Binding::Pad(GamepadButton::North)),
+///         ),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn prompt(label: impl Into<String>, keys: Prompt) -> impl Bundle {
+    (
+        Node {
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Role::Prompt,
+        keys,
+        Pickable::IGNORE,
+        children![
+            (
+                // Named for the keyboard's input; `update_prompts` writes the device's.
+                Text::new(keys.keyboard.label(PadStyle::default())),
+                TextLayout::new(Justify::Center, LineBreak::NoWrap),
+                Role::PromptKey,
+                Pickable::IGNORE,
+            ),
+            (Text::new(label), Role::Label, Pickable::IGNORE),
+        ],
+    )
+}
+
+/// The legend of a screen: a slim bar of [`prompt`]s in its parent's bottom-left corner, 5% in from
+/// the edges (the safe area of a television), where Xbox's guideline 112 puts "select" and "back"
+/// on every screen, in the same place and order. It is a bar on the skin's panel colour, so its
+/// words read over any game world. It is laid out apart from its parent's other children (absolute,
+/// so it moves nothing) and is no wider than 90% of its parent: a longer legend squeezes its words
+/// and never leaves the window. The pointer goes through it.
+///
+/// Put it in the full-window node of a screen ([`screen`]) or of a [`dialog`], which stands over the
+/// screen's own and shows the hints that apply in the dialog:
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     screen(),
+///     children![
+///         (panel(), children![heading("Settings"), button("Back")]),
+///         (prompts(), children![prompt("Select", Prompt::SELECT), prompt("Back", Prompt::BACK)]),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn prompts() -> impl Bundle {
+    (
+        Node {
+            position_type: PositionType::Absolute,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Role::Prompts,
+        Pickable::IGNORE,
     )
 }
 

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- `prompts()` and `prompt(label, keys)`: the hints that say which input does what ("Esc Back"), for Xbox Accessibility Guideline 112's "interaction prompts to select or go back are consistently placed on the bottom-left corner of the screen". A prompt is a keycap and the game's words; the keycap names the input of the device the player used last, in the words of a `binding` row ("Enter", "Esc", "A" or "Cross", by `BindingSettings::pad_style`), and a pad button is fully round where a key is a rounded rectangle. `prompts()` is a slim bar on the skin's panel colour, absolute in its parent's bottom-left corner 5% in from the edges (so adding it moves nothing), no wider than 90% of its parent; one in a `dialog()` stands at the same corner over the scrim. Every part is `Pickable::IGNORE` and none is a tab stop.
+- `Prompt { keyboard, pad }` (the prompt's state, a component: set it after a rebind and the keycap follows in the same frame), `Prompt::SELECT` (Enter, South), `Prompt::BACK` (Escape, East) and `Prompt::new`; `InputDevice` (`Keyboard` or `Pad`, a resource both plugins initialise) and `track_input_device`, first in `GooeySystems::Navigate`, which keeps it from the last key or mouse button pressed, pad button pressed or stick pushed past `model::STICK_PUSH` (half its travel); a mouse that only moves changes nothing. `Binding::device()` names the device an input is pressed on. A game reads `InputDevice` to swap glyphs of its own.
+- `update_prompts` (in `GooeySystems::Style`, before `apply_skin`), `Role::{Prompts, Prompt, PromptKey, PromptButton}`, styled in `apply_skin` like every other part; the gallery's legend (Select and Back, bottom left, and again in the Quit dialog) and `GOOEY_KEYS` tokens `plug` and `pad`; `docs/research/prompts.md`, `docs/guide/prompts.md` and `docs/media/prompts.gif`.
+
+### Changed
+
+- `Role` has four more variants (`Prompts`, `Prompt`, `PromptKey`, `PromptButton`): a `match` over it that is exhaustive needs arms for them.
+- A `binding` row's device is now its value's (`Binding::device()`), and the private `BindingDevice` component is gone: a row whose `BindingValue` a game sets to the other device's input listens to that device from then on, where it used to keep the device it was spawned with.
+- `docs/media/gallery.png` and `gallery.gif` are regenerated: the gallery now has the legend in its bottom-left corner.
+
 ## [0.5.0] - 2026-10-31
 
 ### Added

@@ -11,15 +11,16 @@ navigation, on Bevy's own headless widgets.
 [![Bevy](https://img.shields.io/badge/bevy-0.20-blue.svg)](https://bevyengine.org)
 [![licence](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue.svg)](#who-and-licence)
 
-![A menu panel with a tab strip and a Load game list: the focus ring walks down the save slots from Autosave to Mill, 03:02, Page Down moves it to Chapel, 00:12, the health meter drains, and a "Game saved" toast appears at the bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
+![A menu panel with a tab strip and a Load game list: the focus ring walks down the save slots from Autosave to Mill, 03:02, Page Down moves it to Chapel, 00:12, the health meter drains, and a "Game saved" toast appears at the bottom right; the legend "Enter Select, Esc Back" stands in the bottom-left corner throughout](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.gif)
 
 *`examples/gallery`: two panels, a meter draining, settings in tabs (a slider and a switch on the first), a list
-that scrolls to follow focus, and toasts.*
+that scrolls to follow focus, toasts, and the Select and Back legend in the corner.*
 
 ![The same gallery at rest: the left panel with Play, Options and Quit, the meter, the Audio, Display
 and Controls tabs with Audio lit over the Volume slider and the Subtitles switch; the right a Load game
-list four and a half rows tall with a rail and its thumb, the ring on Chapel, 00:12; one toast at the
-bottom right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
+list four and a half rows tall with a rail and its thumb, the ring on Chapel, 00:12; the legend "Enter
+Select, Esc Back" at the bottom left and one toast at the bottom
+right](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/gallery.png)
 
 *The still: the dark skin, 1280 × 720.*
 
@@ -107,9 +108,11 @@ PageDown.
   [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md).
 - **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the
   nearest widget, an open dialog (a framed panel with a title, a line of body and its choices) holds it,
-  the ring appears the moment a key is pressed, and Escape or the pad's B is one `Cancel` event that
-  reaches the dialog or screen you are leaving:
+  the ring appears the moment a key is pressed, Escape or the pad's B is one `Cancel` event that
+  reaches the dialog or screen you are leaving, and `prompts()` says so in the corner, in the words of
+  the device the player used last ("Esc Back", then "B Back" the frame they pick up a pad):
   [navigation](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/navigation.md),
+  [prompts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/prompts.md),
   [the dialog](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/widgets.md#a-dialog).
 - **Say something without building a layout** — `commands.spawn(toast("Game saved"))` stacks, times
   itself to its own length and ages on real time:
@@ -131,6 +134,10 @@ PageDown.
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 
 *Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
+
+![The gallery's settings panel and the Quit dialog over it, with the legend in the bottom-left corner: it reads "Enter Select, Esc Back" in rounded keycaps, "A Select, B Back" in round ones after a pad button is pressed, and back to keys on the next key; the Quit dialog has its own legend above the dimmed screen, which turns to the pad's the same way](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/prompts.gif)
+
+*Prompts: `prompts()` holds `prompt("Select", Prompt::SELECT)` and `prompt("Back", Prompt::BACK)`; the keycaps follow the last device the player used, and the legend moves nothing on the screen.*
 
 ![The Quit dialog in the dark and the parchment preset: the title "Leave the game?", a line of body, and the choices Leave and Stay in a framed panel over the dimmed screen, the ring on Stay](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dialog.png)
 

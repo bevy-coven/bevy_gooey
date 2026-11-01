@@ -70,9 +70,17 @@ const DIALOG_MAX_TEXT_SIZES: f32 = 36.0;
 /// choices are read in order and no word stands nearer an edge than the next line.
 const DIALOG_ROOM_FACTOR: f32 = 1.5;
 
-/// The share of the window, on each side, that a dialog's scrim keeps clear: a TV may not show the
-/// outer 5%, so nothing a player must read or press stands there.
-const DIALOG_SAFE_EDGE_PERCENT: f32 = 5.0;
+/// The share of the window, on each side, that a dialog's scrim and a prompts legend keep clear: a
+/// TV may not show the outer 5%, so nothing a player must read or press stands there.
+const SAFE_EDGE_PERCENT: f32 = 5.0;
+
+/// A prompts legend's prompts stand this many paddings from the next, and a prompt's own cap and
+/// words a gap apart, so each pair reads as one thing.
+const PROMPT_SPACING_PADDINGS: f32 = 2.0;
+
+/// A prompts legend is no wider than this share of its parent (its 5% margin and the same on the
+/// right): a longer legend squeezes its words, and never leaves the window.
+const PROMPTS_MAX_WIDTH_PERCENT: f32 = 100.0 - 2.0 * SAFE_EDGE_PERCENT;
 
 /// The look of every widget: colours and sizes, as plain data a project saves and an editor edits
 /// live.
@@ -509,6 +517,18 @@ pub enum Role {
     /// What a binding says while it waits, on its keycap: [`GooeySkin::accent_text`]; hidden at
     /// rest, though it keeps its room, so the keycap never changes size.
     BindingPrompt,
+    /// A [`crate::prompts`] legend: a slim bar of prompts in the bottom-left corner of its parent,
+    /// [`GooeySkin::surface`] in a [`GooeySkin::surface_raised`] frame, so its words read over any
+    /// world; absolute, so it moves nothing.
+    Prompts,
+    /// One [`crate::prompt`]: a keycap and its words in a row; not drawn.
+    Prompt,
+    /// A prompt's keycap for a key or a mouse button: a rounded rectangle, a binding keycap's fill
+    /// and [`GooeySkin::outline`] frame, with the input's name in [`GooeySkin::text`].
+    PromptKey,
+    /// A prompt's keycap for a pad button: the same fill, frame and text, fully round (a circle
+    /// for "A", a pill for "LB").
+    PromptButton,
     /// The one full-window column the toasts stand in; not drawn, it pads the toasts.
     ToastStack,
     /// A [`crate::toast`]'s room: a clipped column whose height opens and closes, so the toasts
@@ -966,6 +986,10 @@ fn restyle(
         } else {
             skin.surface_raised
         }),
+        // The legend is the panel's colour, so its words are at the contrast a panel's are over any
+        // world; a keycap is a binding keycap at rest: raised, framed in the outline.
+        Role::Prompts => Some(skin.surface),
+        Role::PromptKey | Role::PromptButton => Some(skin.surface_raised),
         Role::Screen
         | Role::Menu
         | Role::Heading
@@ -982,6 +1006,7 @@ fn restyle(
         | Role::Binding
         | Role::BindingText
         | Role::BindingPrompt
+        | Role::Prompt
         | Role::SliderHeader
         | Role::SliderTrack
         | Role::SliderGap
@@ -1005,15 +1030,18 @@ fn restyle(
 
     let edge = match role {
         Role::Panel if in_dialog => Some(BorderColor::all(skin.outline)),
-        Role::Panel | Role::Tooltip => Some(BorderColor::all(skin.surface_raised)),
+        Role::Panel | Role::Tooltip | Role::Prompts => Some(BorderColor::all(skin.surface_raised)),
         // Framed in the outline like the other widgets whose fill is the colour of what is behind
         // them: a toast over a panel keeps its edge at 3:1.
         Role::ToastBody => Some(BorderColor::all(faded(skin.outline, owner.alpha))),
         // The keycap is framed in the outline at rest and lit, as a switch's track is framed
         // whether it is on or off: the accent fills a frame the panel can always see at 3:1.
-        Role::Meter | Role::ToggleTrack | Role::SliderRail | Role::BindingCap => {
-            Some(BorderColor::all(skin.outline))
-        }
+        Role::Meter
+        | Role::ToggleTrack
+        | Role::SliderRail
+        | Role::BindingCap
+        | Role::PromptKey
+        | Role::PromptButton => Some(BorderColor::all(skin.outline)),
         Role::Button | Role::Tab if look.focused == Some(entity) => {
             Some(BorderColor::all(skin.focus_ring))
         }
@@ -1286,6 +1314,34 @@ fn restyle(
                 next.min_width = Val::Px((text_px * BINDING_CAP_TEXT_SIZES).max(skin.min_target));
                 next.flex_shrink = 0.0;
             }
+            // The legend: a bar in its parent's bottom-left corner, inside the safe area, its
+            // prompts a pair of paddings apart. Absolute, so the screen's layout is the same with
+            // or without it. A flex-wrap here would break a line a float's width early.
+            Role::Prompts => {
+                next.left = Val::Percent(SAFE_EDGE_PERCENT);
+                next.bottom = Val::Percent(SAFE_EDGE_PERCENT);
+                next.max_width = Val::Percent(PROMPTS_MAX_WIDTH_PERCENT);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(skin.padding), Val::Px(skin.padding * 0.3));
+                next.column_gap = Val::Px(skin.padding * PROMPT_SPACING_PADDINGS);
+            }
+            Role::Prompt => next.column_gap = Val::Px(skin.gap),
+            // A binding keycap's frame and air, at least as wide as it is high, so a single
+            // character is a square (a circle for a pad button) and a longer name a wider cap.
+            Role::PromptKey | Role::PromptButton => {
+                let cap = text_px * LIST_LINE_TEXT_SIZES + skin.padding * 0.6 + 2.0 * line;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = if *role == Role::PromptButton {
+                    BorderRadius::MAX
+                } else {
+                    radius
+                };
+                next.padding =
+                    UiRect::axes(Val::Px(skin.padding * 0.5), Val::Px(skin.padding * 0.3));
+                next.min_width = Val::Px(cap);
+                next.flex_shrink = 0.0;
+            }
             // The rows stand `rows` of a button's height and a gap apart; to their right a lane the
             // rail's width and a gap of air, always, so rows never change width when others come
             // and go. The padding is inside the clip, so the content stops short of the rail and
@@ -1307,7 +1363,7 @@ fn restyle(
             }
             // The safe area: a long body wraps at the dialog's maximum width or squeezes it in,
             // and nothing of it ever reaches the bezel.
-            Role::Scrim => next.padding = UiRect::all(Val::Percent(DIALOG_SAFE_EDGE_PERCENT)),
+            Role::Scrim => next.padding = UiRect::all(Val::Percent(SAFE_EDGE_PERCENT)),
             _ => {}
         }
         node.set_if_neq(next);
@@ -1348,6 +1404,7 @@ fn restyle(
             Some((color, &look.fonts.body, skin.text_size))
         }
         Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
+        Role::PromptKey | Role::PromptButton => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::ToastText => Some((
             faded(skin.text, owner.alpha),
             &look.fonts.body,
