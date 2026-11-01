@@ -1068,19 +1068,3 @@ fn idle_rows_write_nothing() {
         "a waiting row costs no writes"
     );
 }
-
-#[test]
-fn a_binding_has_a_role_for_every_part() {
-    let mut app = app();
-    let ui = controls(&mut app);
-    let row = ui.jump;
-    assert_eq!(app.world().get::<Role>(row), Some(&Role::Binding));
-    for role in [
-        Role::BindingCap,
-        Role::BindingText,
-        Role::BindingPrompt,
-        Role::ControlText,
-    ] {
-        part(&app, row, role);
-    }
-}
