@@ -4,7 +4,7 @@
 
 use bevy::prelude::{GamepadButton, KeyCode, MouseButton};
 use bevy_gooey::{
-    Binding, BindingSettings, GooeySkin, PadStyle, SkinPreset, ToastAnchor, ToastSettings,
+    Binding, BindingSettings, Density, GooeySkin, PadStyle, SkinPreset, ToastAnchor, ToastSettings,
     UiScaleSettings,
 };
 
@@ -12,6 +12,25 @@ use bevy_gooey::{
 fn a_skin_round_trips_through_ron() -> Result<(), Box<dyn std::error::Error>> {
     let text = ron::to_string(&GooeySkin::parchment())?;
     assert_eq!(ron::from_str::<GooeySkin>(&text)?, GooeySkin::parchment());
+    Ok(())
+}
+
+#[test]
+fn the_tool_look_keeps_its_density_through_ron_and_a_file_without_one_is_comfortable()
+-> Result<(), Box<dyn std::error::Error>> {
+    let text = ron::to_string(&GooeySkin::tool())?;
+    let back = ron::from_str::<GooeySkin>(&text)?;
+    assert_eq!(back, GooeySkin::tool());
+    assert_eq!(back.density, Density::Compact);
+    // A skin saved before the field existed reads as comfortable.
+    assert_eq!(
+        ron::from_str::<GooeySkin>("(text_scale: 1.5)")?.density,
+        Density::Comfortable
+    );
+    assert_eq!(
+        ron::from_str::<GooeySkin>("(density: Compact)")?.target(),
+        24.0
+    );
     Ok(())
 }
 

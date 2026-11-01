@@ -434,7 +434,7 @@ fn a_disabled_row_does_nothing() {
 // ---- the theme row ----
 
 #[test]
-fn the_theme_row_offers_the_three_looks_and_a_step_writes_the_colours_and_no_size() {
+fn the_theme_row_offers_the_four_looks_and_a_step_writes_the_colours_and_no_size() {
     let mut app = app();
     let theirs = GooeySkin {
         text_size: 22.0,
@@ -473,11 +473,22 @@ fn the_theme_row_offers_the_three_looks_and_a_step_writes_the_colours_and_no_siz
     assert_eq!(skin.surface_edge, GooeySkin::high_contrast().surface_edge);
     assert_eq!(skin.high_contrast_problems(), vec![], "and it holds 7:1");
 
+    // The fourth look is the tool's: its colours, and still none of its sizes or its density.
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(shown(&app, row), ["Tool"]);
+    let skin = app.world().resource::<GooeySkin>().clone();
+    assert_eq!(skin, theirs.clone().with_colours_of(&GooeySkin::tool()));
+    assert_eq!(
+        (skin.text_scale, skin.text_size, skin.gap, skin.density),
+        (1.5, 22.0, 14.0, Density::Comfortable)
+    );
+    assert_eq!(skin.problems(), vec![]);
+
     // The end is the end: nothing is written, nothing said.
     forget_writes(&mut app);
     tap(&mut app, KeyCode::ArrowRight);
     assert_eq!(writes(&app), (0, 0, 0, 0, 0));
-    assert_eq!(changes(&app).len(), 2);
+    assert_eq!(changes(&app).len(), 3);
 
     // And back: Home is the first look, whole (the quiet edge too).
     tap(&mut app, KeyCode::Home);

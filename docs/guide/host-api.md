@@ -8,7 +8,7 @@ crate root.
 
 | type | what it holds | where it lives |
 |---|---|---|
-| `GooeySkin` | every colour and size, and the player's `text_scale` (the `text_size` row edits it); `high_contrast()` is a preset, `skin_preset` the row that picks one (`SkinPreset`, `with_colours_of`) | a resource, read by `apply_skin` |
+| `GooeySkin` | every colour and size, `density` (`Density::Compact` for a tool: half the padding, a 24 px least target) and the player's `text_scale` (the `text_size` row edits it); `high_contrast()` and `tool()` are presets, `skin_preset` the row that picks one (`SkinPreset`, `with_colours_of`) | a resource, read by `apply_skin` |
 | `GooeyFonts` | the handles of the host's body and heading fonts | a resource |
 | `UiScaleSettings` | `reference_short_side` and the player's `scale` (the `interface_size` row edits it) | a resource, read by `scale_with_window` |
 | `ToastSettings` | `anchor`, `max_visible`, `base_seconds`, `chars_per_second`, `duration_scale`, `fade_seconds` | a resource, read by `update_toasts` |

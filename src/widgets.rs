@@ -572,7 +572,7 @@ pub fn pad_style(label: impl Into<String>) -> impl Bundle {
     option_row(OptionRow::PadStyle, label)
 }
 
-/// The player's **theme**: a [`choice`] row over Dark, Parchment and High contrast
+/// The player's **theme**: a [`choice`] row over Dark, Parchment, High contrast and Tool
 /// ([`SkinPreset::ALL`](crate::SkinPreset::ALL)) that sets the colours of
 /// [`GooeySkin`](crate::GooeySkin), so the whole interface changes look in the frame the player
 /// steps it, and the high-contrast one holds every colour to 7:1 ([`GooeySkin::high_contrast`](crate::GooeySkin::high_contrast);

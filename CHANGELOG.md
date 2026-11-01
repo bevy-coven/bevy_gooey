@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- `Density` (`Comfortable`, the default, and `Compact`) and `GooeySkin::density`: a compact skin draws half the padding and caps the least target at 24 px (`MIN_TARGET_PX`, WCAG 2.2 SC 2.5.8), so a desktop tool's rows stand close enough for a mouse; `GooeySkin::pad()` and `GooeySkin::target()` are the values the widgets read. `problems()` checks `target()`, so a compact skin whose `min_target` is under 24 px still reports `TargetTooSmall`. A skin file without the field reads as comfortable.
+- `GooeySkin::tool()` and `SkinPreset::Tool`, the fourth look and the fourth row of `skin_preset`: a cool neutral grey with a blue accent, `Density::Compact`, 14 px text, a 6 px gap, a 2 px border and a 4 px radius. A theme-row step onto it writes its colours only (a player's text size and density stay theirs); `problems()` is empty for it. `GOOEY_SKIN=tool` starts the gallery and the options example in it.
+- `examples/density` (an Inspector panel with a Compact switch and the Theme row), `docs/research/density.md`, "Compact density for a tool" in `docs/guide/skins.md`, `docs/media/density.gif` and `tool.png`, and `tests/density.rs` (a compact button at least 24 px and shorter than a comfortable one, the padding halved and live, the floor still refused under 24 px, the Tool look holding every widget inside its box and every control at least 24 px high at 1x to 2x text, the Tool panel well under a game panel's height).
+
+### Changed
+
+- `GooeySkin` has one more public field, `density`: a struct literal that names every field needs `density: Density::Comfortable`, and one that ends in `..GooeySkin::dark()` (or `default()`) is unchanged. `SkinPreset::ALL` has four entries, so the theme row has a fourth option.
+
+### Fixed
+
+- A choice's arrow is at least `1 + 1/√2` chevrons wide, so at 200% text in a skin whose least target is 24 px the turned chevron no longer stands 1.7 px outside its arrow. The default skin is unchanged at every text size the options row offers (its arrow is 44 px).
+
 ## [0.9.0] - 2026-11-01
 
 ### Added
