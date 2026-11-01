@@ -623,6 +623,30 @@ impl fmt::Display for SkinProblem {
     }
 }
 
+/// A skin for one subtree: the node that carries it and everything below it is styled from this
+/// skin and not from the [`GooeySkin`] resource, so a preview of a skin, a tool's own chrome or a
+/// vendor's window can stand next to the rest of the interface in another look.
+///
+/// A widget takes the nearest scope at or above it (its own included); a nested scope shadows the
+/// one above; none is the resource. It is the whole skin, sizes and [`GooeySkin::text_scale`]
+/// included, and [`GooeyFonts`] stays global. [`apply_skin`] restyles exactly the subtree in the
+/// frame a scope is added, changed or removed, or a widget moves under or out of one, and a
+/// changed resource leaves scoped widgets as they are. A scope that fails
+/// [`GooeySkin::problems`] logs a warning per problem and is applied anyway. The toast stack and
+/// the legend are not children of the node that spawned them: put the scope on them if they are
+/// to follow it.
+///
+/// ```
+/// use bevy::prelude::*;
+/// use bevy_gooey::{GooeySkin, SkinScope, button, panel};
+/// fn preview(mut commands: Commands) {
+///     commands.spawn((panel(), SkinScope(GooeySkin::parchment()), children![button("Play")]));
+/// }
+/// ```
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[reflect(Component, Debug, PartialEq, Clone)]
+pub struct SkinScope(pub GooeySkin);
+
 /// The fonts widgets draw with. A separate resource from [`GooeySkin`] because a font is an asset
 /// handle the host loads, not data a project saves.
 ///
@@ -792,7 +816,9 @@ type Styled = (
     Option<&'static mut TextCursorStyle>,
 );
 
-/// Every input a widget's look depends on, read once per run of [`apply_skin`].
+/// Every input a widget's look depends on, read once per run of [`apply_skin`], except the skin,
+/// which is the nearest [`SkinScope`] at or above the widget (see `look_of`).
+#[derive(Clone, Copy)]
 struct Look<'a> {
     skin: &'a GooeySkin,
     fonts: &'a GooeyFonts,
@@ -800,6 +826,28 @@ struct Look<'a> {
     /// The widget focus is on, whether or not focus is shown: a text field keeps its ring while
     /// the player types, though a pointer press hid every other one.
     editing: Option<Entity>,
+}
+
+/// `look` with the skin the entity is styled from: its own [`SkinScope`], else the nearest one above
+/// it, else the resource's. `any_scope` is false when no scope stands anywhere, which skips the
+/// walk up the tree.
+fn look_of<'a>(
+    look: Look<'a>,
+    entity: Entity,
+    any_scope: bool,
+    scopes: &'a Query<&SkinScope>,
+    parents: &Query<&ChildOf>,
+) -> Look<'a> {
+    if !any_scope {
+        return look;
+    }
+    let scope = std::iter::once(entity)
+        .chain(parents.iter_ancestors(entity))
+        .find_map(|e| scopes.get(e).ok());
+    Look {
+        skin: scope.map_or(look.skin, |scope| &scope.0),
+        ..look
+    }
 }
 
 /// The widget state a look depends on.
@@ -891,6 +939,17 @@ type Restyle = (
     )>,
 );
 
+/// The components whose removal restyles a widget.
+type Removals<'w, 's> = (
+    RemovedComponents<'w, 's, Pressed>,
+    RemovedComponents<'w, 's, InteractionDisabled>,
+    RemovedComponents<'w, 's, Checked>,
+    RemovedComponents<'w, 's, Selected>,
+    RemovedComponents<'w, 's, Capturing>,
+    RemovedComponents<'w, 's, SkinScope>,
+    RemovedComponents<'w, 's, ChildOf>,
+);
+
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
 fn owns_parts(role: Option<&Role>) -> bool {
     matches!(
@@ -907,13 +966,14 @@ fn owns_parts(role: Option<&Role>) -> bool {
     )
 }
 
-/// Styles every entity with a [`Role`] from [`GooeySkin`] and [`GooeyFonts`]: the one place
-/// widgets are styled. Runs in [`crate::GooeySystems::Style`].
+/// Styles every entity with a [`Role`] from [`GooeySkin`] (or the [`SkinScope`] it stands in) and
+/// [`GooeyFonts`]: the one place widgets are styled. Runs in [`crate::GooeySystems::Style`].
 ///
 /// A changed skin or font restyles every widget; otherwise only widgets whose role, press, hover,
 /// disabled or on state, or scale changed are restyled (and every button, toggle and slider when
 /// focus moves), in the frame the change happens, with the parts that follow them (a button's text,
-/// a switch's knob, a slider's thumb). Lines are drawn at the scale Bevy last computed for the
+/// a switch's knob, a slider's thumb); a [`SkinScope`] that is added, changed or removed restyles
+/// its subtree. Lines are drawn at the scale Bevy last computed for the
 /// node, so the frame a window is resized draws them at the old scale's snapping and the next frame
 /// at the new one's. A changed skin that fails [`GooeySkin::problems`] logs one warning per problem
 /// and is applied anyway.
@@ -924,11 +984,10 @@ pub fn apply_skin(
     focus: Res<InputFocus>,
     visible: Res<InputFocusVisible>,
     changed: Query<Entity, Restyle>,
-    mut unpressed: RemovedComponents<Pressed>,
-    mut enabled: RemovedComponents<InteractionDisabled>,
-    mut unchecked: RemovedComponents<Checked>,
-    mut unselected: RemovedComponents<Selected>,
-    mut stopped: RemovedComponents<Capturing>,
+    mut removed: Removals<'_, '_>,
+    scopes: Query<&SkinScope>,
+    changed_scopes: Query<(Entity, &SkinScope), Changed<SkinScope>>,
+    moved: Query<Entity, Changed<ChildOf>>,
     states: Query<StateQuery>,
     parents: Query<&ChildOf>,
     children: Query<&Children>,
@@ -939,6 +998,13 @@ pub fn apply_skin(
             warn!("bevy_gooey: {problem}");
         }
     }
+    for (_, scope) in &changed_scopes {
+        for problem in scope.0.problems() {
+            warn!("bevy_gooey: scoped skin: {problem}");
+        }
+    }
+    let (unpressed, enabled, unchecked, unselected, stopped, unscoped, orphaned) = &mut removed;
+    let any_scope = !scopes.is_empty();
     let look = Look {
         skin: &skin,
         fonts: &fonts,
@@ -1017,12 +1083,14 @@ pub fn apply_skin(
         unchecked.clear();
         unselected.clear();
         stopped.clear();
+        unscoped.clear();
+        orphaned.clear();
         for item in &mut styled {
             let entity = item.0;
             let parent = parents.get(entity).map(|p| p.parent()).ok();
             restyle(
                 item,
-                &look,
+                &look_of(look, entity, any_scope, &scopes, &parents),
                 state_of(entity),
                 parent.map(state_of),
                 owner_of(entity),
@@ -1036,6 +1104,19 @@ pub fn apply_skin(
     dirty.extend(enabled.read());
     dirty.extend(unchecked.read());
     dirty.extend(unselected.read());
+    // A scope that changed, went, or has a widget moved under or out of it restyles the whole
+    // subtree: every widget below it may stand in another skin now.
+    let mut regions: Vec<Entity> = changed_scopes.iter().map(|(e, _)| e).collect();
+    regions.extend(unscoped.read());
+    let orphans = orphaned.read();
+    if any_scope {
+        regions.extend(&moved);
+        regions.extend(orphans);
+    }
+    for region in regions {
+        dirty.push(region);
+        dirty.extend(children.iter_descendants(region));
+    }
     dirty.extend(stopped.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
@@ -1079,7 +1160,7 @@ pub fn apply_skin(
         let parent = parents.get(entity).map(|p| p.parent()).ok();
         restyle(
             item,
-            &look,
+            &look_of(look, entity, any_scope, &scopes, &parents),
             state_of(entity),
             parent.map(state_of),
             owner_of(entity),

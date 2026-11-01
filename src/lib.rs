@@ -158,7 +158,7 @@ pub use nav::{
 pub use options::{OptionRow, update_option_rows};
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
-pub use skin::{GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, apply_skin};
+pub use skin::{GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin};
 pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
 pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
@@ -216,6 +216,7 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<GooeySkin>()
+            .register_type::<SkinScope>()
             .register_type::<Role>()
             .register_type::<Meter>()
             .register_type::<Binding>()
