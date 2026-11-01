@@ -145,9 +145,9 @@ pub fn panel() -> impl Bundle {
     )
 }
 
-/// A column filled with one step of the skin's surface ladder, [`GooeySkin::surfaces`], and
+/// A column filled with one step of the skin's surface ladder, [`crate::GooeySkin::surfaces`], and
 /// nothing else: no padding, frame or corner, which a host takes from the skin's tokens
-/// ([`GooeySkin::space`], [`GooeySkin::corner`]). `level` 0 is the lowest step; a level past the top
+/// ([`crate::GooeySkin::space`], [`crate::GooeySkin::corner`]). `level` 0 is the lowest step; a level past the top
 /// is the top.
 ///
 /// A tool nests its grounds: a panel's ground, a row on it, a field in the row, each a step above the
