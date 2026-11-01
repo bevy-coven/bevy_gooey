@@ -495,10 +495,19 @@ type RowParts = (
 /// must not depend on whether it does.
 const COUNT_RESERVE: f32 = 0.75;
 
+/// How far, in physical pixels, layout's rounding can move the measured height of a row.
+const ROUNDING_PX: f32 = 1.5;
+
 /// How many rows fit the window, in the units of one layout (physical px): what is left of the
 /// window under the card's top and above the safe edge, once the card's own room (its padding, the
 /// field and the count) is taken out, divided by a row's height. At least one and at most
 /// [`PALETTE_ROWS`]: a window too small for one row shows one, cut.
+///
+/// Layout rounds a row's height by up to a pixel according to where it stands, and the room is
+/// measured from the rows shown, so in a window where the answer is a whole number of rows to
+/// within that pixel it would change with every row that scrolls in. `held`, the answer last time,
+/// is kept while the room is within `ROUNDING_PX` of what it needs, so the card does not grow and
+/// shrink a row as the lit row walks down the list.
 fn rows_that_fit(
     window: Vec2,
     card_top: f32,
@@ -506,6 +515,7 @@ fn rows_that_fit(
     rows_height: f32,
     count_height: f32,
     row_height: f32,
+    held: usize,
 ) -> usize {
     let chrome = card_height - rows_height - count_height;
     let room = window.y
@@ -513,7 +523,18 @@ fn rows_that_fit(
         - card_top
         - chrome
         - row_height * COUNT_RESERVE;
-    ((room / row_height).floor().max(1.0) as usize).min(PALETTE_ROWS)
+    let exact = room / row_height;
+    let slack = ROUNDING_PX / row_height;
+    let fit = exact.floor().max(1.0);
+    let held_rows = held as f32;
+    let fit = if held_rows > fit && exact + slack >= held_rows
+        || held_rows < fit && exact - slack < held_rows + 1.0
+    {
+        held_rows
+    } else {
+        fit
+    };
+    (fit as usize).clamp(1, PALETTE_ROWS)
 }
 
 /// Ranks the commands against what the field holds and shows them: the lit row (the first match
@@ -586,8 +607,11 @@ pub fn update_palette(
             .filter(|(part, node, ..)| part.0 == entity && node.display != Display::None)
             .map(|(.., computed)| computed.size().y)
             .sum();
-        if let (Some(&row_height), Some(card), Some(window)) = (
-            shown.first().filter(|&&h| h > 0.0),
+        // A row's height is the mean of the rows shown: layout rounds each to whole pixels, by
+        // where it stands, so the first row alone says 19 where the mean says 18.4.
+        let row_height = shown.iter().sum::<f32>() / shown.len().max(1) as f32;
+        if let (true, Some(card), Some(window)) = (
+            row_height > 0.0,
             card_of(input).and_then(|card| layouts.get(card).ok()),
             layouts.get(entity).ok(),
         ) && window.0.size().min_element() > 0.0
@@ -601,6 +625,7 @@ pub fn update_palette(
                 shown.iter().sum(),
                 count_height,
                 row_height,
+                state.cap,
             );
         }
 

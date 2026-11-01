@@ -13,6 +13,10 @@
 - `Role` gains four variants (`Dock`, `DockBody`, `DockDrop`, `DockGhost`): a `match` on it that has no wildcard needs them. `navigate_by_input` leaves a focused dock tab's arrows to the dock while Ctrl and Shift are held. `model::dock_tab_slot` takes each tab's centre and top and bottom, so a strip of several rows has a place for every tab.
 - A `Role::TabList`'s `row_gap` is the skin's gap like its `column_gap` (it only shows when a strip wraps, as a dock's does).
 
+### Fixed
+
+- The command palette's count of rows that fit a short window no longer flips by one as the lit row walks down the list: a row's height is the mean of the rows shown (layout rounds each to whole pixels by where it stands, so the first row alone read 19 where the mean read 18.4) and the last answer is kept while the room is within 1.5 px of changing it. Found when an unrelated resource shifted the timing of `tests/palette.rs`'s 300 px window, which then showed six rows where five were counted.
+
 ## [0.17.0] - 2026-11-01
 
 ### Added
