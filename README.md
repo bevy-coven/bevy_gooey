@@ -127,9 +127,12 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [navigation](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/navigation.md),
   [prompts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/prompts.md),
   [the dialog](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/widgets.md#a-dialog).
-- **Say something without building a layout** — `commands.spawn(toast("Game saved"))` stacks, times
-  itself to its own length and ages on real time:
-  [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md).
+- **Say something, or open a menu, without building a layout** — `commands.spawn(toast("Game saved"))`
+  stacks, times itself to its own length and ages on real time, and `popover(anchor, Placement::Below)`
+  opens a panel beside any widget or at the pointer, kept inside the window and closed by Escape or a
+  press elsewhere:
+  [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md),
+  [popovers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/popovers.md).
 - **Keep the interface's share of the screen at every resolution** — the skin's sizes scale with the
   window, and every border stays a whole number of device pixels:
   [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md).

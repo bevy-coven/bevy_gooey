@@ -52,6 +52,10 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
 - `Toast { .. }` — the component `toast()` and `toast_alert()` return; despawn the entity to take one
   back sooner.
 - `Dialog` — the component `dialog()` returns, for a game that wants to find the open one.
+- `PopoverPanel { anchor, placement, modal }` — the component `popover()` and `popover_modal()` return: query it
+  for the popover open on an anchor. `PopoverClosed { entity, anchor, reason }` is the event the player's
+  closing sends first (`CloseReason::Outside` or `Cancel`); `Placement` says where one opens. See
+  [popovers](popovers.md).
 
 Bevy's own types come through the crate so a host never adds a second copy: `Checked`, `SliderValue`,
 `SliderRange`, `SliderStep`, `ValueChange`, `Activate` and `observe`.
@@ -79,6 +83,8 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `cancel_by_input` | Navigate | Escape and a pad's East button send one `Cancel` to the focused widget or the open dialog |
 | `gamepad_adjust` | Navigate | the D-pad steps a focused slider or choice, repeating on real time |
 | `focus_opened_dialogs` | Navigate | an open dialog takes focus and gives it back on closing |
+| `close_popovers_on_press` | Navigate | a pointer press outside a popover closes it with one `PopoverClosed` |
+| `anchor_pointer_popovers`, `drop_pointer_anchors` | Navigate | a `Placement::AtPointer` popover gets a zero-size node at the pointer to hang from, removed with it |
 | `feedback_on_focus` | Navigate | writes `UiFeedback::Focus` when focus moves onto a widget |
 | `scroll_to_focus` | Navigate | a list follows the focus on one of its rows |
 | `page_lists` | Navigate | PageUp, PageDown and the pad's triggers move focus a viewport |

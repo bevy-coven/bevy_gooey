@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- `popover(anchor, placement)` and `popover_modal(anchor, placement)` (G-04, #8): a panel that opens beside a widget or at the pointer and is kept inside the window. `Placement { Below, Above, Right, Left, AtPointer }` sets the preferred side; Bevy's own `Popover` takes the candidates (the side aligned to the anchor's start, its end and centred, then the opposite side the same three ways) and every frame picks the first that fits, so a panel flips and slides at the window's edge and is placed again when the window is resized. It is a child of its anchor (despawning the anchor closes it), laid out on the window (`FixedNode`), at most the window's width less two gaps wide, and drawn as `Role::Popover`: an opaque `solid_surface` card framed in `outline`, padded like a panel, with a shadow, above a `dialog` and under a `Tooltip`.
+- `PopoverClosed { entity, anchor, reason }` and `CloseReason::{Outside, Cancel}`: a pointer press outside the panel (a press on the anchor of a side placement is not outside, so the anchor's own `Activate` can toggle it; the press that opened it never is), or Escape and the pad's B (one `Cancel`, stopped at the popover), send one event and the crate despawns the popover. A press on the panel never presses or activates its anchor. `popover_modal` is a `Dialog` and a modal `TabGroup` without the scrim: focus moves in, Tab and the arrows stay inside, and focus goes back to the anchor on closing; `popover` leaves focus where it is and Escape from its anchor closes it.
+- `PopoverPanel { anchor, placement, modal }` (query it for the popover open on an anchor), `PopoverPoint` (the zero-size node an `AtPointer` popover hangs from) and the systems `close_popovers_on_press`, `anchor_pointer_popovers` and `drop_pointer_anchors`, in `GooeySystems::Navigate`.
+- `examples/popover` (a menu bar, an Edit menu at the window's edge, a context menu at the pointer), `docs/research/popover.md`, `docs/guide/popovers.md`, `docs/media/popover.gif` and `tests/popover.rs` (19 tests).
+
+### Changed
+
+- `Role` has one more variant, `Popover`, so a `match` on it needs an arm.
+
 ## [0.11.0] - 2026-11-01
 
 ### Added

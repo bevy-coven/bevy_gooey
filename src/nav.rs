@@ -25,6 +25,7 @@ use bevy::ui_widgets::{
 use crate::choice::{ChoiceCount, Move, MoveChoice};
 use crate::list::{ListView, span};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
+use crate::popover::PopoverPanel;
 use crate::skin::Role;
 use crate::tabs::{TabsCount, TabsValue};
 
@@ -91,6 +92,17 @@ pub struct FocusScopes<'w, 's> {
         (
             Entity,
             &'static TabGroup,
+            &'static InheritedVisibility,
+            &'static ComputedStackIndex,
+        ),
+    >,
+    /// The popovers open: a `Cancel` from the widget one is anchored to reaches the popover.
+    popovers: Query<
+        'w,
+        's,
+        (
+            Entity,
+            &'static PopoverPanel,
             &'static InheritedVisibility,
             &'static ComputedStackIndex,
         ),
@@ -262,7 +274,28 @@ impl FocusScopes<'_, '_> {
         let dialog = self.active();
         focus
             .filter(|&f| self.holds(f) && self.of(f) == dialog)
+            .map(|f| self.popover_of(f).unwrap_or(f))
             .or(dialog)
+    }
+
+    /// The topmost open, non-modal popover a `Cancel` from focus on `focus` should close: the one
+    /// anchored to `focus` or to a widget it is inside, when `focus` is not already inside it (a
+    /// press from inside reaches the panel by itself, and a modal one is its own scope).
+    fn popover_of(&self, focus: Entity) -> Option<Entity> {
+        self.popovers
+            .iter()
+            .filter(|(entity, panel, visible, _)| {
+                !panel.modal
+                    && visible.get()
+                    && !self.parents.iter_ancestors(focus).any(|a| a == *entity)
+                    && (focus == panel.anchor
+                        || self
+                            .parents
+                            .iter_ancestors(focus)
+                            .any(|a| a == panel.anchor))
+            })
+            .max_by_key(|(.., stack)| stack.0)
+            .map(|(entity, ..)| entity)
     }
 
     /// Where focus starts in `scope`: its topmost visible `AutoFocus` widget, or else its first
