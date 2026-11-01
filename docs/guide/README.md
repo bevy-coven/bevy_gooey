@@ -9,6 +9,8 @@ per subject. The README links each bullet to its page.
 - [Navigation](navigation.md) — what moves focus, what shows the ring, and what an open dialog holds.
 - [Settings controls](controls.md) — `toggle`, `choice` and `slider`: one bundle each, Bevy's own widget
   at the root, and `ValueChange` once per change.
+- [Rebinding controls](bindings.md) — `binding(label, value)`: a row that waits for the player's next key,
+  mouse button or pad button, what it hears and holds back while it waits, and `BindingSettings`.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB
   and RB, and focus that never rests on a page that is not shown.
 - [Lists](lists.md) — `list(rows, children![..])`: the row count, the rail, the follow, PageUp and

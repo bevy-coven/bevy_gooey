@@ -58,7 +58,7 @@ Which handlers see the press that is meant to be a binding (Bevy 0.20.0):
 |event|`ValueChange<Binding>` on the row, `is_final: true`, once per change|
 |keys|a keyboard row binds any `KeyCode` but `cancel_key` (default `Escape`) and any `MouseButton`; a pad row any `GamepadButton` but `cancel_button` (default `Start`) on any gamepad|
 |settings|`BindingSettings { key_prompt, pad_prompt, pad_style, cancel_key, cancel_button }`, `Resource + Default + Clone + Debug + Reflect`|
-|look|keycap: `surface_raised` fill, `outline` frame (1 line), `padding * 0.6` by `padding * 1.5`, the row `min_target` high; capturing: `accent` fill, `accent_text`; disabled: `surface`, `text_muted`|
+|look|row: a toggle's frame and height (a line of frame, `padding * 1.5` at the sides, `min_target` high); keycap: `surface_raised` fill (`hovered()` under the pointer), `outline` frame (1 line), `padding` by `padding * 0.6` of room, `min_target` high and at least 18 body text sizes wide; waiting: `accent` fill, `accent_text`; disabled: `surface`, `text_muted`|
 |catcher|`Pickable::default()`, `GlobalZIndex(1000)`, transparent, a full-window absolute node, spawned and despawned with the capture|
 |set|`bind_by_input` in `GooeySystems::Navigate`, last; `update_bindings` in `GooeySystems::Style` before `apply_skin`|
 
@@ -71,7 +71,7 @@ Which handlers see the press that is meant to be a binding (Bevy 0.20.0):
 - The row's size, and its panel's, are the same at rest, waiting and after a bind (0 px), at 1x and 2x and at 1.5x text; the keycap is at least `min_target` high.
 - Contrast: the name on the keycap at 4.5:1, the prompt on the lit keycap at 4.5:1, the lit keycap against the panel at 3:1, in both presets; a ring of 3 px on the focused row.
 - A binding set from code shows at once with no event; a row spawned with a pad button shows `"A"` by default and `"Cross"` under `PadStyle::PlayStation`.
-- `model::key_name` and friends: `KeyW` → `W`, `Digit1` → `1`, `ArrowUp` → `Up`, `ShiftLeft` → `Left Shift`, `Numpad7` → `Num 7`, `Space`, `Escape` → `Esc`, `Semicolon` → `;`, `F5`; `Left` → `Left Click`, `Other(7)` → `Mouse 8`; `South` → `A`, `Cross`, `B`.
+- `model::key_name` and friends: `KeyW` → `W`, `Digit1` → `1`, `ArrowUp` → `Up Arrow`, `ShiftLeft` → `Left Shift`, `Numpad7` → `Num 7`, `Space`, `Escape` → `Esc`, `Semicolon` → `;`, `F5`; `Left` → `Left Click`, `Other(7)` → `Mouse 7`; `South` → `A`, `Cross`, `B`.
 - Thirty idle frames write nothing. Frame time of the gallery within 0.5 ms of before.
 
 ## What great looks like
@@ -87,6 +87,9 @@ The gallery's Controls tab holds a short column of rows ("Jump ... [ Space ]", "
 - **One device family per row; no "unbound".** A row cannot be cleared; a game with optional actions binds them to a key it does not use. A design default, small to add later (an `Option`).
 - **Text, not glyphs.** The crate draws "A", "Cross" and "Left Shift" as words in the host's font; icons for them are the host's (no glyph vocabulary in the crate, as `docs/research/cancel.md` records).
 - **Start is not bindable on a pad row, and Escape is not on a keyboard row**, by default. The exits are settings.
+- **The keycap is at least 18 body text sizes wide, and the prompt with the exit named is that long.** A wider default was weighed against a keycap that grows while it waits (shorter at rest, but the panel would jump wider at larger text where label and prompt together outgrow the row) and against a short prompt with no exit named (XAG 112 asks that the exit be "clearly" prompted). The fixed keycap costs width at rest and moves nothing, ever. A design default; `BindingSettings` takes shorter prompts.
+- **`PadStyle` is a plain enum in `model`**, not a reflected one (`model` has no `bevy` in it), so `BindingSettings::pad_style` is skipped by reflection: an editor does not see it. A design default.
+- **Focus is put back only after a pointer press.** A key or a pad button that moved focus anywhere would be a leak of the held-back systems, not something to repair, and a first version that restored focus after every bind hid exactly that leak from its own tests.
 - Assumed decisions (owner may override), all above: the name and the three-variant `Binding`; the row built on `Button` with `ValueChange<Binding>`; Escape and Start as the exits and settings; the primary mouse button as an input with a pointer catcher; a pad's `PadStyle` as a setting and not detected; prompts as data; one device family per row; no conflict policy.
 
 ## Pending index
