@@ -30,6 +30,8 @@ per subject. The README links each bullet to its page.
 - [Menus](menus.md) — `menu_bar(children![menu_title(..)])`: a bar of titles with menus of commands, checks, radio
   runs, separators, submenus, right-aligned chords and disabled items that say why; F10, the arrows, Escape and
   the pad.
+- [Context menus](context-menus.md) — `context_menu(items)` and `ContextMenu(menu)` on any entity: a menu at a
+  right-click or below the focus on Shift+F10, one menu for many things, `ContextTarget` says which.
 - [Toasts](toasts.md) — one spawn, the reading-time maths, `ToastSettings`, and the cap on the stack.
 - [Skins](skins.md) — `GooeySkin`, its fields, the two presets, and every rule `problems()` checks.
 - [Screen size](scale.md) — `GooeyScalePlugin`, `UiScaleSettings`, and whole-device-pixel lines.

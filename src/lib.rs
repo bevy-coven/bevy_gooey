@@ -31,7 +31,8 @@
 //!   modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
 //!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed), and the
 //!   [`menu_bar`] of [`menu_title`]s with [`menu_item`], [`check_item`], [`radio_item`],
-//!   [`submenu`] and [`separator`] rows (chords right-aligned, [`Disabled`] items that say why). Each is a free function returning a bundle, so they
+//!   [`submenu`] and [`separator`] rows (chords right-aligned, [`Disabled`] items that say why), or a
+//!   [`context_menu`] that any entity opens with [`ContextMenu`] on a right-click or Shift+F10. Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
 //!   to the game under a HUD, while every widget on it takes the pointer. A toast takes no input
@@ -121,6 +122,7 @@ pub mod model;
 mod binding;
 mod cancel;
 mod choice;
+mod context;
 mod controls;
 mod feedback;
 mod list;
@@ -147,6 +149,7 @@ pub use binding::{
 };
 pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
+pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use controls::update_sliders;
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
@@ -186,10 +189,10 @@ pub use text::{
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    binding, button, check_item, choice, dialog, heading, interface_size, label, list, menu,
-    menu_bar, menu_item, menu_title, meter, pad_style, panel, popover, popover_modal, prompt,
-    prompts, radio_item, screen, separator, skin_preset, slider, submenu, surface, tab_page, tabs,
-    text_input, text_size, toast, toast_alert, toggle,
+    binding, button, check_item, choice, context_menu, dialog, heading, interface_size, label,
+    list, menu, menu_bar, menu_item, menu_title, meter, pad_style, panel, popover, popover_modal,
+    prompt, prompts, radio_item, screen, separator, skin_preset, slider, submenu, surface,
+    tab_page, tabs, text_input, text_size, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -263,6 +266,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<MenuTitle>()
             .register_type::<MenuPanel>()
             .register_type::<MenuOpen>()
+            .register_type::<ContextMenu>()
+            .register_type::<ContextTarget>()
             .register_type::<CloseReason>()
             .register_type::<PopoverClosed>()
             .register_type::<Toast>()
@@ -326,6 +331,7 @@ impl Plugin for GooeyNavPlugin {
             .register_type::<Dialog>()
             .register_type::<Cancel>()
             .add_observer(menu::menu_on_activate)
+            .add_observer(context::context_on_click)
             .add_observer(nav::remember_opener)
             .add_observer(nav::return_focus)
             .add_systems(
@@ -343,6 +349,7 @@ impl Plugin for GooeyNavPlugin {
                     (
                         focus_menu_bar.run_if(not_capturing),
                         menu_by_input.run_if(not_capturing),
+                        context_by_key.run_if(not_capturing),
                         switch_menus_on_hover,
                         fit_menus,
                     )

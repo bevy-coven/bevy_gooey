@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- Context menus (G-06, #10): `context_menu(items)` spawns a menu of `menu_item`, `check_item`, `radio_item`, `submenu` and `separator` rows that belongs to things, and `ContextMenu(menu)` on any entity (a UI node, a sprite or a mesh with `Pickable`) names it. A secondary click that reaches the entity opens the menu at the pointer (flipping at the window's edge); Shift+F10 or the Menu key with focus on the entity or a widget under it opens the nearest `ContextMenu` below the focused widget (`context_by_key`, in `GooeySystems::Navigate`). A second click moves it; one context menu is open at a time; Escape, B or a press outside close it and focus goes back. While it is open the panel carries `ContextTarget(thing)` (an `On<Add<ContextTarget>>` observer runs before it is first drawn; `ContextTarget::of(item, &parents, &targets)` finds it from an item's `Activate`). One menu may serve many things.
+- `examples/context`, `docs/research/context-menu.md`, `docs/guide/context-menus.md`, `docs/media/context-menu.gif` and `tests/context_menu.rs` (13 tests).
+
+### Changed
+
+- `anchor_pointer_popovers` gives a `Placement::AtPointer` popover over an anchor that is not a UI node (a picked sprite or mesh) a pointer point of its own at the root: Bevy never lays out a UI node under a world entity. A UI anchor is unchanged.
+
+### Fixed
+
+- `fit_menus` capped a menu at the room on the side it prefers, so a menu opened near the bottom of the window was cut to three rows and scrolled though it flips above its anchor with room to spare; it is capped at the larger side now.
+- Shift+F10 no longer focuses the menu bar (`focus_menu_bar` is F10 with no Shift).
+
 ## [0.14.0] - 2026-11-01
 
 ### Added
