@@ -35,6 +35,6 @@ The maths is in `model`, engine-free: `parse_number`, `format_number`, `number_d
 
 ## What the crate does not do
 
-- **No color field yet.** `color_field` and its picker are the next slice of the same request.
+- **No colour here.** [`color_field`](colors.md) is the same row with a swatch and a picker.
 - **No unit suffix, wrap or log scale.** A label that says "m/s" is the game's.
 - **No expression evaluation** (`1.5*2`): refused, with the reason, as Unity's `FloatField` does unless asked.

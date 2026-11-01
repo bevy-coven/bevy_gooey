@@ -92,6 +92,7 @@ fn everything(app: &mut App) -> Entity {
                 binding("Jump", Binding::Key(KeyCode::Space)),
                 binding("Use", Binding::Pad(GamepadButton::South)),
                 text_input("Save as", "Aria of the Long Name"),
+                color_field("Tint", Srgba::new(1.0, 0.53, 0.0, 0.5)),
                 tabs(
                     ["Audio", "Display", "Controls"],
                     0,
@@ -283,6 +284,9 @@ fn a_controls_text_is_one_line_at_every_text_size_from_100_to_200_percent() {
                     .spawn(binding("Jump", Binding::Key(KeyCode::Space)))
                     .id(),
                 world.spawn(text_input("Save as", "Aria")).id(),
+                world
+                    .spawn(color_field("Tint", Srgba::new(1.0, 0.53, 0.0, 0.5)))
+                    .id(),
                 world.spawn(button("Resume the last game")).id(),
                 world.spawn(heading("Options and settings")).id(),
                 world.spawn(label("A line of body text")).id(),

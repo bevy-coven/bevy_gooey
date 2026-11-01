@@ -107,7 +107,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   and says each change once in `ValueChange`, `binding("Jump", Binding::Key(KeyCode::Space))` rebinds a
   key, a mouse button, a pad button or a chord ("Ctrl+Shift+K") on the player's next press, `text_input("Name", "")` is a field the
   player types in (a caret, a selection, paste and IME on Bevy's own `TextInput`, and focus it never
-  traps), `number_field("Health", 100.0, 0.5, 0.0..=250.0)` is a number the player scrubs with a drag, types or steps with the keys and the D-pad (`vec_field` for a position), `tabs` puts them on pages a click, the arrows or LB and RB turn, and `text_size("Text size")`,
+  traps), `number_field("Health", 100.0, 0.5, 0.0..=250.0)` is a number the player scrubs with a drag, types or steps with the keys and the D-pad (`vec_field` for a position), `color_field("Tint", color)` is a swatch and a hex field (`#ff8800`) that open a picker, `tabs` puts them on pages a click, the arrows or LB and RB turn, and `text_size("Text size")`,
   `interface_size("Interface size")`, `pad_style("Controller")` and `skin_preset("Theme")` are the
   player's own text size (up to 200%), interface size, controller and theme (dark, parchment, a
   high-contrast look that holds 7:1 everywhere and a tool's blue), one line each with nothing to wire:
@@ -115,7 +115,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [player options](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/options.md),
   [rebinding](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/bindings.md),
   [shortcuts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/shortcuts.md),
-  [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md), [numbers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/numbers.md),
+  [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md), [numbers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/numbers.md), [colours](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/colors.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
 - **Scroll a list, show a table or a tree, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so the
   player sees there is more; `table(columns, rows)` is ten thousand sortable rows and `tree(nodes)` ten thousand nodes that open and close, each in a dozen entities; `split(SplitAxis::Horizontal, a, b)` is two panes
@@ -165,9 +165,9 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *Text input: `text_input("Save as", "")` takes the keys the moment it has focus, says each edit once as a `ValueChange<String>` and the end of the edit (Enter, or focus leaving) with `is_final`. Up leaves it: a field never traps focus, and the row never moves while the player types.*
 
-![The numbers example: an Inspector panel with a Position row of three fields (X, Y, Z), a Scale row whose Y is a muted "--", and Health, Speed and Mass fields; a drag on the Health label rolls it to 52.6, a drag on the Position Y letter to 6.3, a click on Speed selects its number and typing 7.5 replaces it, typing 1.5*2 in Health is refused ("Refused: type a number, not an expression") and the field keeps 52.6, Mass takes 2 and Up and Shift+Up step it to 2.25 and 4.75](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/numbers.gif)
+![The colors example: a Material panel with an Albedo row (a swatch and the hex #FF8800), an Emission row whose field is a muted "--" and a Tint row; a press on the Albedo swatch opens a picker with a square of saturation and value, and strips for hue, brightness and alpha, a drag in the square and a press on the hue strip roll the swatch and the hex to a blue, Escape closes it, typing #ff8800 with Enter brings back the orange, Emission takes a green from its own picker, and typing "orange" in Tint is refused with "that is not a hex colour"](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/colors.gif)
 
-*Numbers: `number_field("Health", 72.5, 0.5, 0.0..=100.0)` is scrubbed by its label (50 px at a step of 0.1 is 5.0), typed, or stepped with Up and Down and the D-pad; `vec_field` is X, Y and Z; a typed expression is refused with its reason, and `MixedValue` shows "--" for a multi-selection.*
+*Colours: `color_field("Albedo", Srgba::hex("#ff8800").unwrap())` is a swatch and a hex field; the swatch opens a picker (a saturation and value area, hue, brightness and alpha strips) that applies as it is picked, a typed colour that is not hex is refused with its reason, and `MixedValue` shows "--" for a multi-selection.*
 
 ![The options example: a panel with the rows Text size, Interface size, Controller and Theme and the legend in the bottom-left corner; the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with each step, then back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to "A Select, B Back" and Controller steps to PlayStation, where it reads "Cross Select, Circle Back", then Switch and back to Xbox; Theme steps to Parchment and to High contrast, where the screen turns black with white frames, and back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/options.gif)
 
