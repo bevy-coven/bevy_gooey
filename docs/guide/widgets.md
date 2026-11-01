@@ -19,6 +19,8 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |
 | `list` | rows that scroll and follow focus — see [lists](lists.md) |
 | `toast`, `toast_alert` | a line of news at the edge of the screen — see [toasts](toasts.md) |
+| `binding` | a row that rebinds a key, a mouse button or a pad button on the player's next press — see [rebinding](bindings.md) |
+| `prompt`, `prompts` | the "Esc Back" hints in the corner, in the words of the last device the player used — see [prompts](prompts.md) |
 
 ## A meter
 

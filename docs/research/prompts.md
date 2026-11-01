@@ -49,7 +49,7 @@ What the crate acts on, so what a prompt must say: Enter and Space (Bevy's `Butt
 |device|`InputDevice { Keyboard, Pad }`, `Resource + Default + Clone + Copy + Debug + Reflect`, default `Keyboard`; `Binding::device() -> InputDevice`|
 |set|`track_input_device` first in `GooeySystems::Navigate`; `update_prompts` in `GooeySystems::Style` before `apply_skin`|
 |stick|`model::STICK_PUSH` = 0.5 (of the stick's travel, after the pad's own dead zone)|
-|legend|`position_type: Absolute`, `left` 5%, `bottom` 5%; row, centred, wrapping, `max_width` 90%; `surface` fill, `surface_raised` frame (one line), the skin's radius; padding `padding` by `0.5 padding`; `column_gap` `2 padding`, `row_gap` `gap`|
+|legend|`position_type: Absolute`, `left` 5%, `bottom` 5%; a row, centred, not wrapping (taffy broke a line a float's width early when an auto-width wrapping row was measured on narrower names: the pad's), `max_width` 90%; `surface` fill, `surface_raised` frame (one line), the skin's radius; padding `padding` by `0.3 padding`; `column_gap` `2 padding`|
 |prompt|row, centred, `column_gap` `gap`|
 |keycap|a keycap's fill, frame and padding (`0.5 padding` by `0.3 padding`); `min_width` its own height (the line, that padding twice and the frame twice) so a single character is a square or a circle; text centred; rectangle radius `radius`, pad button radius full|
 
@@ -57,7 +57,7 @@ What the crate acts on, so what a prompt must say: Enter and Space (Bevy's `Butt
 
 - A fresh app shows the keyboard's words: `Prompt::SELECT` "Enter", `Prompt::BACK` "Esc". A pad button pressed (a gamepad plugged in with `GamepadConnectionEvent`, pressed with `RawGamepadEvent`) turns every prompt to "A" and "B" in the frame it is pressed; a key or a mouse button pressed turns them back. `PadStyle::PlayStation` in `BindingSettings` makes them "Cross" and "Circle". A stick pushed past `STICK_PUSH` switches; one inside the dead zone or a small push does not; a mouse that moves does not.
 - A game that sets `InputDevice` shows that device's words at once; a game that sets `Prompt` on a prompt (a rebind) shows the new input's words in the frame, in the same keycap, with no new entity.
-- The legend stands 5% from the window's left and bottom at 720p, 1080p and 1440p (and at 1.5x text), inside the window, wrapping instead of leaving it; the keycap is a square (circle) for a single character and wider for "Left Shift"/"Cross"; adding the legend moves no other widget by a pixel.
+- The legend stands 5% from the window's left and bottom at 720p, 1080p and 1440p, inside the window, and squeezes its words rather than pass 90% of the window; the keycap is a square (circle) for a single character and wider for "Left Shift"/"Cross"; adding the legend moves no other widget by a pixel.
 - Contrast, both presets: a keycap's words on its fill 4.5:1; the legend's words on its bar 4.5:1; the keycap's frame against the bar 3:1.
 - The pointer goes through the legend (hover map: the node under it is hit); no prompt is a tab stop, so Tab and the arrows land where they did; a click on a prompt activates nothing.
 - A legend in a dialog's scrim (XAG 112: "When dialog boxes appear, interaction prompts also appear on the bottom of the window") stands at the window's bottom-left, above the scrim.

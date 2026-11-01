@@ -11,6 +11,8 @@ per subject. The README links each bullet to its page.
   at the root, and `ValueChange` once per change.
 - [Rebinding controls](bindings.md) — `binding(label, value)`: a row that waits for the player's next key,
   mouse button or pad button, what it hears and holds back while it waits, and `BindingSettings`.
+- [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
+  bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB
   and RB, and focus that never rests on a page that is not shown.
 - [Lists](lists.md) — `list(rows, children![..])`: the row count, the rail, the follow, PageUp and
