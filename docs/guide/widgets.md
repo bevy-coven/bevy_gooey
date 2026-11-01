@@ -25,6 +25,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |
 | `list` | rows that scroll and follow focus — see [lists](lists.md) |
 | `split(axis, first, second)` | two panes with a divider a drag, the arrows, the D-pad or a double click moves; `SplitFraction` is the state and `SplitMin` each pane's least size — see [split panes](splits.md) |
+| `dock(layout)` | a workbench of tab groups and splits kept as a `DockLayout`, whose panels come from the `PanelRegistry` and which the player rearranges by dragging a tab or with Ctrl+Shift and an arrow — see [docks](docks.md) |
 | `toast`, `toast_alert` | a line of news at the edge of the screen — see [toasts](toasts.md) |
 | `binding` | a row that rebinds a key, a mouse button, a pad button or a key chord on the player's next press — see [rebinding](bindings.md) and [shortcuts](shortcuts.md) |
 | `prompt`, `prompts` | the "Esc Back" hints in the corner, in the words of the last device the player used — see [prompts](prompts.md) |

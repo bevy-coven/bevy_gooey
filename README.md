@@ -117,10 +117,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [shortcuts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/shortcuts.md),
   [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
-- **Scroll a list that follows the focus, and split the screen into panes** — `list(4.5, children![..])`
-  cuts the fifth row so the player sees there is more; `split(SplitAxis::Horizontal, a, b)` is two panes and
-  a divider that a drag, the arrows, the D-pad or a double click moves, never past a `SplitMin`:
-  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md), [split panes](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/splits.md).
+- **Scroll a list, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so the
+  player sees there is more; `split(SplitAxis::Horizontal, a, b)` is two panes and a divider a drag or the keys move;
+  `dock(DockLayout)` is tab groups of your registered panels that the player rearranges by dragging a tab, the layout plain data:
+  [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md), [split panes](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/splits.md), [docks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/docks.md).
 - **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the
   nearest widget, an open dialog (a framed panel with a title, a line of body and its choices) holds it,
   the ring appears the moment a key is pressed, Escape or the pad's B is one `Cancel` event that
@@ -201,9 +201,9 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *The command palette: `CommandList` holds the commands, `command_palette()` is the modal, "opn prj" is a fuzzy match, Up and Down move the lit row while focus stays in the field, and Enter or a click sends one `RunCommand`; a command that is off shows why and runs nothing.*
 
-![The split example: a Library sidebar beside a Viewport panel over a Log panel; the sidebar's divider is dragged right and back left until the sidebar stops at 240 px, the divider between Viewport and Log is dragged up and down, Up with the ring on it moves it 16 px a press, Home takes the Viewport to its smallest (140 px) and End to its largest (the Log keeps 100 px), and Enter collapses it and gives it back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/split.gif)
+![The dock example: a Scene and Assets group, a Viewport over a Log and Console group and an Inspector; Assets is dragged into the Inspector's group with the landing lit and a card carrying its title, Log is dropped on the Viewport's right edge and gets a group of its own, Ctrl+Shift+Left moves it into the Viewport's group and Ctrl+Shift+Right into the Inspector's, a divider is dragged, and Console is dropped on the dock's bottom edge](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dock.gif)
 
-*Split panes: `split(axis, first, second)` is two panes and a divider; `SplitFraction` is the first pane's share (plain data) and `SplitMin` each pane's least size, which a drag, a key or a small window never goes below; the arrows along the axis, the D-pad, Home, End and Enter or South work on the focused divider.*
+*Docks: `dock(layout)` builds tab groups and splits from a `DockLayout` (plain data) and the panels you registered; a tab dragged onto a group, its edge or the dock's edge lights where it will land, Ctrl+Shift and an arrow does the same with no pointer, and each change is one `DockLayoutChanged` to save.*
 
 ![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
 
@@ -233,7 +233,7 @@ see [use it in Grimoire](https://bevy-coven.github.io/crates/bevy_gooey.html#use
 ## Learn more
 
 - [docs.rs](https://docs.rs/bevy_gooey) — the API reference (`cargo doc --open`); [the book page](https://bevy-coven.github.io/crates/bevy_gooey.html) — the same guide with the pictures.
-- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, lists, split panes, toasts, skins, screen
+- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, lists, split panes, docks, toasts, skins, screen
   size, the pointer, feedback, every widget in one table, what a host touches and what it only sees, and the boundary with the game.
 - [`examples/`](https://github.com/bevy-coven/bevy_gooey/tree/main/examples) — `gallery`, every widget on one screen.
 - [`docs/media/README.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/media/README.md) — how every picture here is made.

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- Docks (G-10, #14): `dock(DockLayout)` is a workbench of tab groups and splits kept as data. `DockLayout` is `Split { axis, fraction, first, second }` or `Group { panels, selected }` (panel ids as `String`s; serde with the `serde` feature, RON round-trips, a file may name only `panels`), with plain-data edits (`panels`, `contains`, `prune`, `moved`). `PanelRegistry` (a resource) maps an id to a title and a function that fills the panel's page, spawned once and then moved, never rebuilt, when the layout changes; `Dock(DockLayout)` on the dock is the state (write one to load or reset it). An unknown or repeated id is left out, a group left empty collapses, and one `DockPanelSkipped` is sent for each. The player picks a tab up (a card with its title follows the pointer and the part of the dock the panel will take is lit before it is let go) and drops it on a group's tab strip (at that place), its middle (as a tab), an outer quarter (a group of its own on that side) or within 24 px of the dock's edge (a quarter of the whole dock); Escape puts it back. Ctrl+Shift and an arrow on a focused tab moves its panel to the nearest group that way or to the dock's edge (WCAG 2.5.7), focus following. Every change is one `DockLayoutChanged { entity, layout }`: a drop, a picked tab, a divider let go. Panes are at least `DOCK_PANE_MIN_PX` (96 px).
+- `model::{DockZone, dock_zone, dock_edge_zone, dock_drop_rect, dock_tab_slot, dock_neighbour}` and the constants `DOCK_PANE_MIN_PX`, `DOCK_EDGE_FRACTION`, `DOCK_EDGE_SHARE`: the drop's engine-free maths.
+- `examples/dock`, `docs/research/dock.md`, `docs/guide/docks.md`, `docs/media/dock.gif`, `tests/dock.rs` (19 tests), `tests/serde.rs` (a layout in RON) and unit tests in `src/dock_layout.rs` and `model`.
+
+### Changed
+
+- `Role` gains four variants (`Dock`, `DockBody`, `DockDrop`, `DockGhost`): a `match` on it that has no wildcard needs them. `navigate_by_input` leaves a focused dock tab's arrows to the dock while Ctrl and Shift are held. `model::dock_tab_slot` takes each tab's centre and top and bottom, so a strip of several rows has a place for every tab.
+- A `Role::TabList`'s `row_gap` is the skin's gap like its `column_gap` (it only shows when a strip wraps, as a dock's does).
+
 ## [0.17.0] - 2026-11-01
 
 ### Added

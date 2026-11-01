@@ -27,6 +27,9 @@ per subject. The README links each bullet to its page.
   PageDown, and what a list cannot do yet.
 - [Split panes](splits.md) — `split(SplitAxis::Horizontal, first, second)`: two panes and a divider, `SplitFraction`
   and `SplitMin`, a drag, the arrows, Home, End, Enter, the D-pad and a double click, and what a small window does.
+- [Docks](docks.md) — `dock(DockLayout)` and the `PanelRegistry`: a workbench of tab groups and splits kept as
+  data, rearranged by dragging a tab or Ctrl+Shift and an arrow, `DockLayoutChanged` for saving, and what a layout
+  with an unknown panel does.
 - [Popovers](popovers.md) — `popover(anchor, Placement::Below)`: a menu or a context menu beside a widget or at
   the pointer, flipped to stay in the window, closed by Escape or a press elsewhere, modal or not.
 - [Menus](menus.md) — `menu_bar(children![menu_title(..)])`: a bar of titles with menus of commands, checks, radio
