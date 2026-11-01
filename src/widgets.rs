@@ -9,6 +9,7 @@ use bevy::ecs::relationship::RelatedSpawner;
 use bevy::ecs::spawn::{SpawnIter, SpawnRelatedBundle, SpawnWith, SpawnableList};
 use bevy::ecs::world::DeferredWorld;
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
+use bevy::picking::cursor::EntityCursor;
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::text::{EditableText, Justify, LineBreak, TextCursorStyle};
@@ -19,6 +20,7 @@ use bevy::ui_widgets::{
     SliderRange, SliderStep, SliderThumb, SliderValue, TabActivation, TabList, TextInput,
     TrackClick, checkbox_self_update, observe, slider_self_update,
 };
+use bevy::window::SystemCursorIcon;
 
 use crate::binding::{
     Binding, BindingValue, binding_on_activate, binding_on_key_input, binding_self_update,
@@ -44,6 +46,11 @@ use crate::popover::{
 };
 use crate::prompt::Prompt;
 use crate::skin::Role;
+use crate::split::{
+    Split, SplitAxis, SplitDivider, divider_on_cancel, divider_on_click, divider_on_drag,
+    divider_on_drag_end, divider_on_drag_start, divider_on_key_input, divider_on_press,
+    divider_on_release, split_self_update, toggle_split,
+};
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::text::{
     TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
@@ -61,6 +68,11 @@ const SLIDER_STEPS: f32 = 20.0;
 /// The least length of a list's thumb, in logical px (about half a comfortable target), so a long
 /// list leaves something to grab.
 const LIST_MIN_THUMB: f32 = 24.0;
+
+/// A [`split`] divider's grip, the pill in the middle of its channel: its thickness and its length,
+/// in logical px. A design default: a quiet pill, the length of a thumb's grab.
+const SPLIT_GRIP_THICKNESS: f32 = 4.0;
+const SPLIT_GRIP_LENGTH: f32 = 40.0;
 
 /// How many characters of the body text a [`text_input`]'s field shows at once ("0"'s width each):
 /// 16 and one more, because Bevy keeps one character of room after the caret for the next one to be
@@ -1210,6 +1222,131 @@ pub fn tab_page(widgets: impl Bundle) -> impl Bundle {
         Role::TabPage,
         Visibility::Hidden,
         widgets,
+    )
+}
+
+/// Two panes side by side or one above the other, with a divider between them that the player
+/// moves: a docked layout, an inventory beside a map, a log under a viewport. The panes' content is
+/// yours, any bundle each (a [`panel`] fills its pane on both axes); the divider is a channel with a
+/// grip in the middle, a target the pointer lands on without aiming, that takes focus like any
+/// widget.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     split(
+///         SplitAxis::Horizontal,
+///         (panel(), children![heading("Items")]),
+///         (panel(), children![heading("Map")]),
+///     ),
+///     SplitFraction(0.3),
+///     SplitMin::new(200.0, 320.0),
+///     observe(|change: On<ValueChange<f32>>| info!("the split is at {}", change.value)),
+/// ));
+/// # }
+/// ```
+///
+/// The split fills its parent, so stand it in a node of the size you want (a [`screen`] is the
+/// window). It keeps its state in [`SplitFraction`](crate::SplitFraction) (the first pane's share of
+/// the room the divider leaves; 0.5 until you insert another with it, as above) and each pane's
+/// least size in [`SplitMin`](crate::SplitMin) (none until you say). It reports each change a
+/// player makes as a
+/// [`ValueChange<f32>`](crate::ValueChange) on itself, `is_final` false while a drag goes on; a
+/// value the game sets moves the panes with no event.
+///
+/// A drag of `d` pixels changes the fraction by `d` over the room, and never takes a pane below its
+/// minimum; a window too small for both minimums takes the room from the second pane first. With
+/// the divider focused the arrows along the split's axis (Left and Right for
+/// [`SplitAxis::Horizontal`], Up and Down for [`SplitAxis::Vertical`]) and the D-pad move it
+/// ([`SPLIT_KEY_STEP_PX`](crate::SPLIT_KEY_STEP_PX) a press, a held direction repeating), Home and
+/// End take the first pane to its smallest and largest, and Enter, the pad's South button and a
+/// double click collapse the first pane to its minimum or give it back ([`split_by_pad`](crate::split_by_pad)); the other
+/// arrows move focus on. Give the divider `InteractionDisabled` to fix the layout.
+pub fn split(axis: SplitAxis, first: impl Bundle, second: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            flex_direction: match axis {
+                SplitAxis::Horizontal => FlexDirection::Row,
+                SplitAxis::Vertical => FlexDirection::Column,
+            },
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+        Split::new(axis),
+        Role::Split,
+        observe(split_self_update),
+        children![split_pane(first), split_divider(axis), split_pane(second)],
+    )
+}
+
+/// One pane of a [`split`]: a clipped cell of one `1fr` track, so content sized to its own content
+/// fills the pane, and one too big for it is cut and never widens it. Its share is
+/// [`update_splits`](crate::update_splits)'.
+fn split_pane(content: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            display: Display::Grid,
+            grid_template_columns: vec![GridTrack::flex(1.0)],
+            grid_template_rows: vec![GridTrack::flex(1.0)],
+            flex_basis: Val::Px(0.0),
+            flex_grow: 0.5,
+            overflow: Overflow::clip(),
+            ..default()
+        },
+        Role::SplitPane,
+        children![content],
+    )
+}
+
+/// A [`split`]'s divider: a focusable channel with a grip, whose pointer and key handling is
+/// `split.rs`'s.
+fn split_divider(axis: SplitAxis) -> impl Bundle {
+    let (width, height) = match axis {
+        SplitAxis::Horizontal => (SPLIT_GRIP_THICKNESS, SPLIT_GRIP_LENGTH),
+        SplitAxis::Vertical => (SPLIT_GRIP_LENGTH, SPLIT_GRIP_THICKNESS),
+    };
+    let cursor = match axis {
+        SplitAxis::Horizontal => SystemCursorIcon::ColResize,
+        SplitAxis::Vertical => SystemCursorIcon::RowResize,
+    };
+    (
+        (
+            Node {
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                flex_shrink: 0.0,
+                ..default()
+            },
+            SplitDivider::new(axis),
+            Role::SplitDivider,
+            Hovered::default(),
+            TabIndex(0),
+            AutoDirectionalNavigation::default(),
+            EntityCursor::System(cursor),
+        ),
+        (
+            observe(divider_on_press),
+            observe(divider_on_release),
+            observe(divider_on_drag_start),
+            observe(divider_on_drag),
+            observe(divider_on_drag_end),
+            observe(divider_on_cancel),
+            observe(divider_on_click),
+            observe(divider_on_key_input),
+            observe(toggle_split),
+        ),
+        children![(
+            Node {
+                width: Val::Px(width),
+                height: Val::Px(height),
+                ..default()
+            },
+            Role::SplitGrip,
+            Pickable::IGNORE,
+        )],
     )
 }
 

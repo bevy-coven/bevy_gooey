@@ -992,6 +992,72 @@ pub fn page_target(from: f32, centres: &[f32], page: f32) -> Option<usize> {
     farthest.or(nearest).map(|(i, _)| i)
 }
 
+/// How far a key moves a [`crate::split`]'s divider, in logical pixels: an arrow press steps by this,
+/// and a held key repeats. A design default: a pane's edge is a pixel thing, and a step the size of
+/// a gap is visible and reaches any size in a few presses.
+pub const SPLIT_KEY_STEP_PX: f32 = 16.0;
+
+/// The smallest sizes, in logical pixels, a [`crate::split`]'s two panes may have in `extent`
+/// pixels (the split's length less its divider), as `(first, second)`. The minimums asked for
+/// when they fit; when `extent` is smaller than the two together, the second pane gives way first
+/// down to nothing and the first keeps its own minimum while it can. Negative and non-finite
+/// inputs count as zero.
+///
+/// ```
+/// assert_eq!(bevy_gooey::split_mins(500.0, 100.0, 80.0), (100.0, 80.0));
+/// // 150 px cannot hold both: the second side collapses first.
+/// assert_eq!(bevy_gooey::split_mins(150.0, 100.0, 80.0), (100.0, 50.0));
+/// assert_eq!(bevy_gooey::split_mins(60.0, 100.0, 80.0), (60.0, 0.0));
+/// ```
+pub fn split_mins(extent: f32, min_first: f32, min_second: f32) -> (f32, f32) {
+    let usable = |x: f32| if x.is_finite() { x.max(0.0) } else { 0.0 };
+    let extent = usable(extent);
+    let first = usable(min_first).min(extent);
+    let second = usable(min_second).min(extent - first);
+    (first, second)
+}
+
+/// A [`crate::split`]'s fraction held to its panes' minimums: `fraction` (the first pane's share
+/// of `extent`) clamped to the range [`split_mins`] leaves, and to 0 to 1. Never NaN; with no room
+/// (`extent` zero or less) only the 0 to 1 clamp applies.
+///
+/// ```
+/// // 400 px of room, minimums 100 and 80: the first pane's share stays within 0.25 and 0.8.
+/// assert_eq!(bevy_gooey::split_clamp(0.1, 400.0, 100.0, 80.0), 0.25);
+/// assert_eq!(bevy_gooey::split_clamp(0.9, 400.0, 100.0, 80.0), 0.8);
+/// assert_eq!(bevy_gooey::split_clamp(0.5, 400.0, 100.0, 80.0), 0.5);
+/// ```
+pub fn split_clamp(fraction: f32, extent: f32, min_first: f32, min_second: f32) -> f32 {
+    let fraction = if fraction.is_finite() {
+        fraction.clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    if !(extent.is_finite() && extent > 0.0) {
+        return fraction;
+    }
+    let (first, second) = split_mins(extent, min_first, min_second);
+    fraction.clamp(first / extent, 1.0 - second / extent)
+}
+
+/// Where a [`crate::split`]'s fraction lands when a divider that started at `start` is moved
+/// `distance` logical pixels along the split's axis: `start + distance / extent`, held to the
+/// minimums ([`split_clamp`]). A drag of 100 px changes the fraction by `100 / extent`.
+///
+/// ```
+/// let moved = bevy_gooey::split_drag(0.5, 100.0, 800.0, 0.0, 0.0);
+/// assert!((moved - 0.625).abs() < 1e-6);
+/// // Dragged a long way past the end it stops at the second pane's minimum.
+/// assert_eq!(bevy_gooey::split_drag(0.5, 5000.0, 800.0, 0.0, 200.0), 0.75);
+/// ```
+pub fn split_drag(start: f32, distance: f32, extent: f32, min_first: f32, min_second: f32) -> f32 {
+    if extent.is_finite() && extent > 0.0 && distance.is_finite() {
+        split_clamp(start + distance / extent, extent, min_first, min_second)
+    } else {
+        split_clamp(start, extent, min_first, min_second)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1582,5 +1648,28 @@ mod tests {
         assert!(fuzzy_score("op", "OpenProject").unwrap() > fuzzy_score("op", "stopper").unwrap());
         // Skipping characters costs: the same letters further apart score less.
         assert!(fuzzy_score("ab", "a b").unwrap() > fuzzy_score("ab", "a xxxx b").unwrap());
+    }
+    #[test]
+    fn a_split_is_never_nan_and_holds_its_minimums_in_every_room() {
+        for fraction in [-1.0, 0.0, 0.3, 1.0, 7.0, f32::NAN, f32::INFINITY] {
+            for extent in [-5.0, 0.0, 40.0, 500.0, f32::NAN] {
+                let held = split_clamp(fraction, extent, 100.0, 80.0);
+                assert!(
+                    (0.0..=1.0).contains(&held),
+                    "{fraction} in {extent}: {held}"
+                );
+            }
+        }
+        // In a room that fits both, the panes keep their minimums at every fraction.
+        for fraction in [0.0, 0.1, 0.5, 0.9, 1.0] {
+            let held = split_clamp(fraction, 500.0, 100.0, 80.0);
+            assert!(held * 500.0 >= 100.0 - 1e-3 && (1.0 - held) * 500.0 >= 80.0 - 1e-3);
+        }
+        // In a room that fits neither the second pane has nothing and the first all of it.
+        assert_eq!(split_mins(30.0, 100.0, 80.0), (30.0, 0.0));
+        assert_eq!(split_mins(-3.0, 100.0, 80.0), (0.0, 0.0));
+        // A drag by nothing, or by NaN, stays where it is.
+        assert_eq!(split_drag(0.4, 0.0, 500.0, 0.0, 0.0), 0.4);
+        assert_eq!(split_drag(0.4, f32::NAN, 500.0, 0.0, 0.0), 0.4);
     }
 }

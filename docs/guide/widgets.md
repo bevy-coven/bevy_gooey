@@ -24,6 +24,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `text_size`, `interface_size`, `pad_style`, `skin_preset` | the player's text size, interface size, controller and theme (Dark, Parchment, High contrast, Tool), as `choice` rows that edit the crate's own settings and follow them, with nothing to wire — see [player options](options.md) |
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |
 | `list` | rows that scroll and follow focus — see [lists](lists.md) |
+| `split(axis, first, second)` | two panes with a divider a drag, the arrows, the D-pad or a double click moves; `SplitFraction` is the state and `SplitMin` each pane's least size — see [split panes](splits.md) |
 | `toast`, `toast_alert` | a line of news at the edge of the screen — see [toasts](toasts.md) |
 | `binding` | a row that rebinds a key, a mouse button, a pad button or a key chord on the player's next press — see [rebinding](bindings.md) and [shortcuts](shortcuts.md) |
 | `prompt`, `prompts` | the "Esc Back" hints in the corner, in the words of the last device the player used — see [prompts](prompts.md) |

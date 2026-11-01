@@ -22,7 +22,9 @@
 //!   [`GooeySkin::text_scale`], [`UiScaleSettings::scale`],
 //!   [`BindingSettings::pad_style`] and the skin's colours and following them),
 //!   [`tabs`] (its pages, each a [`tab_page`], turned by a click, the arrows and the pad's
-//!   bumpers), [`list`] (rows that scroll, following focus), [`prompts`] and [`prompt`] (the "Esc
+//!   bumpers), [`list`] (rows that scroll, following focus), [`split`] (two panes and a divider the
+//!   player drags or steps with the arrows, kept in [`SplitFraction`] and never below
+//!   [`SplitMin`]), [`prompts`] and [`prompt`] (the "Esc
 //!   Back" hints in the corner, in the words of the device the player used last, which
 //!   [`InputDevice`] tracks), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
@@ -136,6 +138,7 @@ mod prompt;
 mod scale;
 mod shortcut;
 mod skin;
+mod split;
 mod tabs;
 mod text;
 mod toast;
@@ -161,13 +164,13 @@ pub use menu::{
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
-    NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH,
-    TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
+    NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, SPLIT_KEY_STEP_PX,
+    STICK_PUSH, TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
     contrast_ratio, fuzzy_score, is_modifier_key, key_name, list_height, meter_fraction,
     mouse_name, nearest_step, pad_name, page_target, relative_luminance, repeat_steps,
     scroll_to_reveal, shortcut_conflicts, shortcut_label, slider_fraction, slider_text,
-    snap_line_width, snap_to_row, tab_step, toast_alpha, toast_grow, toast_hold, toast_life,
-    window_ui_scale,
+    snap_line_width, snap_to_row, split_clamp, split_drag, split_mins, tab_step, toast_alpha,
+    toast_grow, toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -187,6 +190,10 @@ pub use shortcut::{Modifiers, Platform, Shortcut};
 pub use skin::{
     Density, GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin,
 };
+pub use split::{
+    Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, split_by_pad,
+    update_splits,
+};
 pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
 pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
@@ -198,7 +205,7 @@ pub use widgets::{
     binding, button, check_item, choice, command_palette, context_menu, dialog, heading,
     interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter, pad_style, panel,
     popover, popover_modal, prompt, prompts, radio_item, screen, separator, skin_preset, slider,
-    submenu, surface, tab_page, tabs, text_input, text_size, toast, toast_alert, toggle,
+    split, submenu, surface, tab_page, tabs, text_input, text_size, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -267,6 +274,11 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TabsCount>()
             .register_type::<ChoiceCount>()
             .register_type::<ListView>()
+            .register_type::<Split>()
+            .register_type::<SplitAxis>()
+            .register_type::<SplitFraction>()
+            .register_type::<SplitMin>()
+            .register_type::<SplitDivider>()
             .register_type::<Tooltip>()
             .register_type::<Placement>()
             .register_type::<PopoverPanel>()
@@ -302,6 +314,7 @@ impl Plugin for GooeyStylePlugin {
                     update_option_rows,
                     update_choices,
                     update_tabs,
+                    update_splits,
                     apply_skin,
                     update_meters,
                     update_sliders,
@@ -367,7 +380,11 @@ impl Plugin for GooeyNavPlugin {
                     )
                         .chain(),
                     navigate_by_input.run_if(not_capturing),
-                    gamepad_adjust.run_if(not_capturing),
+                    (
+                        gamepad_adjust.run_if(not_capturing),
+                        split_by_pad.run_if(not_capturing),
+                    )
+                        .chain(),
                     gamepad_select.run_if(not_capturing),
                     cancel_by_input.run_if(not_capturing),
                     (page_lists.run_if(not_capturing), palette_by_input).chain(),
