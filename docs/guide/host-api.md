@@ -82,6 +82,9 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   rows tall, and the state the player changes (the sort, the selection by key, the cursor, the column widths in
   text sizes). The player's choices are `SortBy`, `ValueChange<TableSelection>` and `RowActivated`; `TableRow` on a
   pool row says which row of the data it shows now. See [tables](tables.md).
+- `Tree`, `TreeNode`, `TreeToggled { entity, key, open }` — the rows of the entity `tree(nodes)` returned (a `Table` whose
+  source is a `Tree`: change it through `table.source_mut::<Tree>()` with `insert`, `remove` and `set_open`) and the
+  event for a node the player opened or closed. Selection, cursor and `RowActivated` are the table's. See [trees](trees.md).
 
 - `Dock(DockLayout)`, `PanelRegistry`, `DockPanel(id)`, `DockLayoutChanged { entity, layout }`, `DockPanelSkipped
   { entity, id, reason }` — the state on the entity `dock(layout)` returned (write a layout to load or reset it),
@@ -128,6 +131,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `step_tabs` | Navigate | LB, RB, Ctrl+PageUp and Ctrl+PageDown turn a tabs widget's page, and the D-pad steps a focused tab |
 | `split_by_pad` | Navigate | the D-pad steps a focused split divider along its axis (repeating), South collapses or restores its first pane |
 | `table_by_input` | Navigate | a focused table's cursor and selection from Up, Down, the Page keys, Home, End, Space, Enter, Ctrl+A, the D-pad (repeating), the triggers and South; after `navigate_by_input`, which leaves Up and Down to a table with a row that way |
+| `tree_by_input` | Navigate | a focused tree's Right, Left (and the D-pad's), `*` and type-ahead; after `table_by_input`, and `navigate_by_input` leaves Left and Right to a tree |
 | `track_input_device` | Navigate | a key or a mouse button is `InputDevice::Keyboard`, a pad button or a pushed stick `Pad`; first in the set |
 | `track_text_editing` | Navigate | `TextEditing` on the `text_input` row whose field has focus, a final change when it loses it, and focus on the row goes to its field; second in the set |
 | `bind_by_input` | Navigate | a waiting `binding` row takes the player's next press, last in the set |
@@ -144,6 +148,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_option_rows` | Style | a `text_size`, `interface_size`, `pad_style` or `skin_preset` row follows its setting with no event, and on the frame it is spawned; before `update_choices` |
 | `update_tabs` | Style | a tabs widget's selected page shown and no other, its tab lit, a value past the end pulled back |
 | `update_splits` | Style | a split's two panes' `flex_grow` and least sizes from `SplitFraction` and `SplitMin`, before `apply_skin`; writes only when they differ |
+| `update_trees` | Style | a removed node's selection and cursor move to its heir (next sibling, else the one before, else the parent), before `update_tables` |
 | `update_tables` | Style | each table's order, its pool of row entities bound to the rows in view, the room above and below them, the columns' widths, the sort mark and the scroll (the anchor row kept when rows change); before `apply_skin`, writes only when something differs |
 | `update_meters` | Style | a meter's fill and frame from its `Meter` |
 | `update_lists` | Style | a list's rail, only on a change |
@@ -168,7 +173,7 @@ use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `met
 `snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
 `repeat_steps`, `choice_step`, `choice_next`, `nearest_step`, `tab_step`, `key_name`, `mouse_name`,
 `shortcut_label`, `shortcut_conflicts`, `is_modifier_key`, `fuzzy_score`, `split_mins`, `split_clamp`,
-`split_drag`, `natural_cmp`, `table_window`, `table_step`, `table_anchor`, `column_resize`, `dock_zone`, `dock_edge_zone`, `dock_drop_rect`, `dock_tab_slot`, `dock_neighbour`,
+`split_drag`, `natural_cmp`, `table_window`, `table_step`, `table_anchor`, `column_resize`, `tree_indent`, `tree_ends`, `tree_visible`, `tree_parent`, `tree_heir`, `type_ahead`, `dock_zone`, `dock_edge_zone`, `dock_drop_rect`, `dock_tab_slot`, `dock_neighbour`,
 `pad_name` and `PadStyle` (with `PadStyle::name`), and the constants `TEXT_CONTRAST`,
 `NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`,
 `STICK_PUSH`, `SPLIT_KEY_STEP_PX`, and the steps the option rows offer: `TEXT_SIZE_STEPS`, `INTERFACE_SIZE_STEPS` and
