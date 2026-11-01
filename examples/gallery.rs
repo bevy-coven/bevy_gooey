@@ -254,6 +254,8 @@ fn main() {
                     "escape" => Some(Staged::Key(KeyCode::Escape)),
                     "tab" => Some(Staged::Key(KeyCode::Tab)),
                     "space" => Some(Staged::Key(KeyCode::Space)),
+                    "q" => Some(Staged::Key(KeyCode::KeyQ)),
+                    "f" => Some(Staged::Key(KeyCode::KeyF)),
                     "home" => Some(Staged::Key(KeyCode::Home)),
                     "end" => Some(Staged::Key(KeyCode::End)),
                     "pagedown" => Some(Staged::Key(KeyCode::PageDown)),
@@ -401,8 +403,18 @@ fn setup(mut commands: Commands) {
                                         choice("Window", ["Windowed", "Borderless", "Fullscreen"], 0),
                                     ]),
                                     tab_page(children![
-                                        button("Rebind keys"),
-                                        button("Gamepad layout"),
+                                        (
+                                            binding("Jump", Binding::Key(KeyCode::Space)),
+                                            observe(
+                                                |change: On<ValueChange<Binding>>,
+                                                 mut commands: Commands| {
+                                                    let name = change.value.label(PadStyle::Xbox);
+                                                    info!("gooey: jump is {name}");
+                                                    commands.spawn(toast(format!("Jump is {name}")));
+                                                }
+                                            ),
+                                        ),
+                                        binding("Use", Binding::Pad(GamepadButton::South)),
                                     ]),
                                 ]
                             ),
