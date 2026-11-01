@@ -1249,9 +1249,10 @@ pub fn tab_page(widgets: impl Bundle) -> impl Bundle {
 /// ```
 ///
 /// The split fills its parent, so stand it in a node of the size you want (a [`screen`] is the
-/// window). It keeps its state in [`SplitFraction`] (the first pane's share of the room the divider
-/// leaves; 0.5 until you insert another with it, as above) and each pane's least size in
-/// [`SplitMin`] (none until you say). It reports each change a player makes as a
+/// window). It keeps its state in [`SplitFraction`](crate::SplitFraction) (the first pane's share of
+/// the room the divider leaves; 0.5 until you insert another with it, as above) and each pane's
+/// least size in [`SplitMin`](crate::SplitMin) (none until you say). It reports each change a
+/// player makes as a
 /// [`ValueChange<f32>`](crate::ValueChange) on itself, `is_final` false while a drag goes on; a
 /// value the game sets moves the panes with no event.
 ///
@@ -1261,7 +1262,7 @@ pub fn tab_page(widgets: impl Bundle) -> impl Bundle {
 /// [`SplitAxis::Horizontal`], Up and Down for [`SplitAxis::Vertical`]) and the D-pad move it
 /// ([`SPLIT_KEY_STEP_PX`](crate::SPLIT_KEY_STEP_PX) a press, a held direction repeating), Home and
 /// End take the first pane to its smallest and largest, and Enter, the pad's South button and a
-/// double click collapse the first pane to its minimum or give it back ([`split_by_pad`]); the other
+/// double click collapse the first pane to its minimum or give it back ([`split_by_pad`](crate::split_by_pad)); the other
 /// arrows move focus on. Give the divider `InteractionDisabled` to fix the layout.
 pub fn split(axis: SplitAxis, first: impl Bundle, second: impl Bundle) -> impl Bundle {
     (
