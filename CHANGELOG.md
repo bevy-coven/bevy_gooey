@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-01
+
 ### Added
 
 - Context menus (G-06, #10): `context_menu(items)` spawns a menu of `menu_item`, `check_item`, `radio_item`, `submenu` and `separator` rows that belongs to things, and `ContextMenu(menu)` on any entity (a UI node, a sprite or a mesh with `Pickable`) names it. A secondary click that reaches the entity opens the menu at the pointer (flipping at the window's edge); Shift+F10 or the Menu key with focus on the entity or a widget under it opens the nearest `ContextMenu` below the focused widget (`context_by_key`, in `GooeySystems::Navigate`). A second click moves it; one context menu is open at a time; Escape, B or a press outside close it and focus goes back. While it is open the panel carries `ContextTarget(thing)` (an `On<Add<ContextTarget>>` observer runs before it is first drawn; `ContextTarget::of(item, &parents, &targets)` finds it from an item's `Activate`). One menu may serve many things.
