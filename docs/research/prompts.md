@@ -1,0 +1,81 @@
+# Prompts: the Select and Back hints, in the words of the player's last device
+
+Researched 2026-11-01 (iteration 18). home-still's corpus has nothing on button prompts or input glyphs (`hs distill search`, three queries on 2026-11-01: "button prompts controller glyphs game user interface input device switching", "contextual help on-screen controls hints games usability", "keyboard and gamepad icon legend for menus in games": a visualization survey, *Usability Testing of Video Game Controllers*, a tutorial-generation paper and onboarding papers; `catalog_recent` limit 200 held only psychology and social-science embeds). The craft source is the corpus's own expert-transition work; the shipping-game and technical sources are web copies and Bevy's source, quoted below.
+
+## Sources
+
+1. Cockburn, A., Gutwin, C., Scarr, J., Malacria, S., *Supporting Novice to Expert Transitions in User Interfaces*, ACM Computing Surveys, 2014 (home-still stem `10.1145_2659796`), and Malacria, S., Bailly, G., Harrison, J., Cockburn, A., Gutwin, C., *Promoting Hotkey use through rehearsal with ExposeHK*, CHI 2013 (`10.1145_2470654.2470735`) (craft: a faster way that is never shown is never used, so the hint is the design).
+2. Microsoft, *Xbox Accessibility Guideline 112: UI navigation* — https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/112 (shipping: Sea of Thieves' "select" and "back" prompts in the bottom-left corner, in the same place and order on every screen); the Game Accessibility Guidelines' *Allow controls to be remapped / reconfigured*, quoted in `docs/research/binding.md` ("in-game prompts to reflect the current mapping"); and Epic Games, *Common UI Quickstart Guide for Unreal Engine* — https://dev.epicgames.com/documentation/en-us/unreal-engine/common-ui-quickstart-guide-for-unreal-engine (the engine plugin Lyra's menus use: one named action, its key for the keyboard and its button for the pad, the glyph swapped by the input last used).
+3. Bevy 0.20.1's `bevy_input` (`src/gamepad.rs`: `GamepadButtonStateChangedEvent`, `GamepadAxisChangedEvent`; `src/lib.rs`: which of them are registered messages; `keyboard.rs`, `mouse.rs`: `KeyboardInput`, `MouseButtonInput`) and this crate's own `gamepad_select`, `cancel_by_input` and `Binding::label` (technical: which input means Select and Back here, what a frame in which nothing was pressed costs, and the one source of names a prompt and a binding row share).
+
+## Craft principle
+
+Cockburn et al., abstract: "research shows that many expert interface components are seldom used and that there is a tendency for users to persistently fail to adopt faster methods for completing their work." Malacria et al., on what changes that: "The studies show that when participants are aware of EHK they use it to their advantage and are enthusiastic about it." A player who does not know that B or Esc goes back reaches for a Back button the screen may not have, or for the Quit at the bottom of the list; the prompt is what makes the way out known (Nielsen's "Show a clear way to exit the current interaction", quoted in `docs/research/cancel.md`). So the crate's Back, which it already sends to the game (`Cancel`), is half a feature until the screen says so.
+
+XAG 112, on why the hint must not change from screen to screen: "If interaction methods were to change from screen to screen, this would be very disorienting and confusing for a player." One legend, in one place, in one order, is the crate's job; what it says on each screen is the game's.
+
+## How shipping games do it
+
+XAG 112, on Sea of Thieves: "the interaction prompts to “select” or go “back” are consistently placed on the bottom-left corner of the screen when applicable. When dialog boxes appear, interaction prompts also appear on the bottom of the window. Although the number of buttons that appear on the bottom-left corner change, depending on the context of the specific UI screen, these elements still appear in the same location and relative order throughout the navigation experience. Any additional interaction prompts (For example, “RT” or “LT” ) are always labeled accordingly." And on Back: "regardless of where the player is in the UI navigation sequence, they're always provided the ability (and the important visual interaction prompt on the bottom-left corner of the screen) to press “B” to go back to the previous menu screen."
+
+Epic's Common UI keeps each prompt as one named action with a row per device. Its input action table: "Display Name — Name of input action. Displayed in Nav-bar if present"; "Nav Bar Priority — Priority used when sorting actions in Nav-bar from left to right"; "Keyboard Input Type Info — Key used for this action when using Mouse & Keyboard, if any"; "Default Gamepad Input Type Info — Key used for this action when using Gamepad, if any"; "Gamepad Input Overrides — Key used for this action on a *specific* gamepad. Useful for platform-specific button overrides, such as swapping the back and forward buttons for the gamepad on the Nintendo Switch." And which one is drawn: "CommonUI uses this information to automatically use the correct platform-specific UI elements based on the current platform and input type. Optionally, for platforms that support multiple input types or unique gamepads, it can also use the user's input to find the correct gamepad and swap its UI elements at runtime." That is the model here: an action with a keyboard input and a pad input, and the one shown follows what the player last touched.
+
+The Game Accessibility Guidelines' remapping page, which `binding` rests on, says why a prompt is data a game keeps in step with the binding: in-game remapping allows "in-game prompts to reflect the current mapping".
+
+## Technical
+
+Bevy 0.20.1 delivers input as messages (`MessageReader<T>`): `KeyboardInput`, `MouseButtonInput`, and for a pad `GamepadButtonStateChangedEvent { entity, button, state }` ("The pressed state of the button") and `GamepadAxisChangedEvent { entity, axis, value }` ("The value of this axis (rescaled to account for axis settings)", already past the pad's own dead zone). A system that only reads them costs nothing in a frame with no input. The crate's own readers (`navigate_by_input`, `gamepad_select`, `cancel_by_input`) read `ButtonInput<KeyCode>` and each `Gamepad`'s `just_pressed`; none reads a stick, so a pad "press" for this purpose is a button, and a stick is a push past a threshold of this crate's own.
+
+What the crate acts on, so what a prompt must say: Enter and Space (Bevy's `Button`) and the pad's `South` select; Escape and the pad's `East` are `Cancel`. Both read a position, not a name (`South` is "A" on an Xbox pad, "Cross" on a PlayStation one and "B" on a Switch one: `pad_name`), and `Binding::label` already makes the words, for the key (`Esc`, `Enter`, `Space`), the mouse button and the pad.
+
+## Model adopted
+
+- **P1. Two widgets.** `prompt(label, keys)` is one hint, a keycap and its words ("Esc Back"). `prompts(children![…])` is the legend that holds them, in the bottom-left corner of its parent (XAG 112). A game may put a lone `prompt` anywhere (a tooltip-like hint in a panel); the legend is the XAG layout, not a requirement.
+- **P2. A prompt is an action with two inputs.** `Prompt { keyboard: Binding, pad: Binding }` is the widget's state, a `Component` on the prompt (Common UI's "Keyboard Input Type Info" and "Default Gamepad Input Type Info"). `Prompt::SELECT` is Enter and South and `Prompt::BACK` is Escape and East: what this crate acts on. A game's own action is `Prompt::new(Binding::Key(KeyCode::KeyI), Binding::Pad(GamepadButton::North))`. The words are `Binding::label`, so a prompt and a `binding` row name an input the same (XAG 107: "labelling of the new mapping is represented correctly across any hints"); a pad button takes `BindingSettings::pad_style`, the one setting that already says "A" or "Cross".
+- **P3. `InputDevice` is the resource that says which.** `Keyboard` (the keyboard and the mouse) or `Pad`. `track_input_device`, in `GooeySystems::Navigate` before anything that reads input, sets it from what the player did last: a key or a mouse button pressed is `Keyboard`; a pad button pressed, or a stick pushed past half its travel (`STICK_PUSH`), is `Pad`. A mouse that only moves does not switch (a bump of the mouse must not swap a pad player's glyphs; a click does). It starts as `Keyboard`; a game that knows better (a console, a Steam Deck) writes it. A game reads it too, to swap its own HUD glyphs: the crate has no glyph vocabulary, but it has the one fact every game needs and every game hand-rolls.
+- **P4. The keycap says the device in its shape as well as its words.** A keyboard or mouse input is a rounded rectangle, the keycap of a `binding` row at rest (`surface_raised` fill, `outline` frame, text colour); a pad button is fully rounded, a circle for "A" and a pill for "LB", in the same colours. The words are the same size and weight on both, so the legend never changes size class when the player changes device, and the shape is a second cue for a player who cannot read "A" from a keyboard's "A".
+- **P5. The legend is a bar on the skin's surface.** `surface` fill and a `surface_raised` frame, the panel's own language, so the words are at the contrast `problems()` already proves for text on a panel, over any game world, bright or dark; a bare label over a sprite has no known background. Its corner is 5% from the left and 5% from the bottom (the TV safe area, the same 5% the dialog's scrim uses), absolutely positioned, so adding or removing it moves nothing else on the screen. A prompt's cap and words sit one gap apart; the prompts of a legend two paddings apart, so each pair reads as one thing (proximity), in the order the game spawned them (XAG 112's "relative order").
+- **P6. Not interactive, no focus.** Every part is `Pickable::IGNORE` and nothing has a `TabIndex`: the pointer goes through to the game, Tab never stops on a hint. A Back button is still the mouse player's way (`docs/research/cancel.md`).
+- **P7. The words are the game's.** `prompt(label, …)` takes the label, like every widget; the crate has no strings to translate. The device's words are generated and are English-keyboard names (`binding.md` B8).
+- **P8. A game keeps a prompt true.** `Prompt` is a component: setting it (a `ValueChange<Binding>` from a `binding` row, a loaded save) rewrites the cap in the same frame, and so does a change of `InputDevice` or `BindingSettings`.
+- **P9. Nothing runs at rest.** `track_input_device` reads four message queues, all empty in an idle frame, and writes the resource only when it changes; `update_prompts` runs on `Changed<Prompt>` or a changed resource and walks the changed prompts' children.
+
+## Parameters
+
+|part|value|
+|---|---|
+|widgets|`prompt(label: impl Into<String>, keys: Prompt) -> impl Bundle` (`Role::Prompt`), `prompts(items) -> impl Bundle` (`Role::Prompts`)|
+|state|`Prompt { keyboard: Binding, pad: Binding }` (`Component`, `Copy`); `Prompt::SELECT`, `Prompt::BACK`, `Prompt::new`|
+|device|`InputDevice { Keyboard, Pad }`, `Resource + Default + Clone + Copy + Debug + Reflect`, default `Keyboard`; `Binding::device() -> InputDevice`|
+|set|`track_input_device` first in `GooeySystems::Navigate`; `update_prompts` in `GooeySystems::Style` before `apply_skin`|
+|stick|`model::STICK_PUSH` = 0.5 (of the stick's travel, after the pad's own dead zone)|
+|legend|`position_type: Absolute`, `left` 5%, `bottom` 5%; row, centred, wrapping, `max_width` 90%; `surface` fill, `surface_raised` frame (one line), the skin's radius; padding `padding` by `0.5 padding`; `column_gap` `2 padding`, `row_gap` `gap`|
+|prompt|row, centred, `column_gap` `gap`|
+|keycap|a keycap's fill, frame and padding (`0.5 padding` by `0.3 padding`); `min_width` its own height (the line, that padding twice and the frame twice) so a single character is a square or a circle; text centred; rectangle radius `radius`, pad button radius full|
+
+## Validation targets
+
+- A fresh app shows the keyboard's words: `Prompt::SELECT` "Enter", `Prompt::BACK` "Esc". A pad button pressed (a gamepad plugged in with `GamepadConnectionEvent`, pressed with `RawGamepadEvent`) turns every prompt to "A" and "B" in the frame it is pressed; a key or a mouse button pressed turns them back. `PadStyle::PlayStation` in `BindingSettings` makes them "Cross" and "Circle". A stick pushed past `STICK_PUSH` switches; one inside the dead zone or a small push does not; a mouse that moves does not.
+- A game that sets `InputDevice` shows that device's words at once; a game that sets `Prompt` on a prompt (a rebind) shows the new input's words in the frame, in the same keycap, with no new entity.
+- The legend stands 5% from the window's left and bottom at 720p, 1080p and 1440p (and at 1.5x text), inside the window, wrapping instead of leaving it; the keycap is a square (circle) for a single character and wider for "Left Shift"/"Cross"; adding the legend moves no other widget by a pixel.
+- Contrast, both presets: a keycap's words on its fill 4.5:1; the legend's words on its bar 4.5:1; the keycap's frame against the bar 3:1.
+- The pointer goes through the legend (hover map: the node under it is hit); no prompt is a tab stop, so Tab and the arrows land where they did; a click on a prompt activates nothing.
+- A legend in a dialog's scrim (XAG 112: "When dialog boxes appear, interaction prompts also appear on the bottom of the window") stands at the window's bottom-left, above the scrim.
+- Thirty idle frames write nothing (`Changed<Text>`, `Changed<Node>`, `Changed<BackgroundColor>` stay empty). The gallery's frame time is within 0.5 ms of before.
+
+## What great looks like
+
+The gallery's bottom-left corner holds a slim bar, clear of the panel above it: a rounded keycap "Enter" and the word "Select", two paddings of air, a keycap "Esc" and "Back". The player presses a button on the pad and, in that frame, the keycaps are round: "A Select  B Back". They press a key and it is the keyboard's again. The bar is quiet (the language of the panels, no colour of its own) and always readable, and nothing else on the screen has moved by a pixel. In the Quit dialog the same two hints stand at the same corner, above the dimming.
+
+## Deviations
+
+- **A prompt names one input per device.** Common UI's nav bar can show a chord or a set of keys; here "LB / RB Tabs" is two prompts, and Ctrl+PageDown has no prompt. The open gap; a hint of two inputs is the game's to spell until it asks. A design default.
+- **`Prompt::SELECT` on `PadStyle::Switch` reads "B"**: the crate selects with `South` on every pad (a position: "`East` is positional", `cancel.md`), and `pad_name` calls the south button "B" for a Switch. A Switch player's habit is A to select; a game that wants it sets `Prompt::new(Enter, East)` and moves its own handler. Common UI's override table names the same swap. Documented, not changed: moving Select to East under one style would change what the crate does, not what it says.
+- **A legend, not a free-floating label.** The bar costs a little of the corner; the alternative, bare words over the game world, has no contrast the crate can promise. A design default (the toast's body is framed on `solid_surface` for the same reason).
+- **The mouse's motion is not a device change.** A design default, as P3 says; a game that wants it writes `InputDevice` from its own pointer-move system.
+- **The 5% corner** is the TV safe area and the dialog scrim's own edge, not a number from a source.
+- Assumed decisions (owner may override), all above: the names `Prompt`, `prompt`, `prompts` and `InputDevice`; two inputs (keyboard, pad) per prompt; the bar; the corner; no click on a prompt; the stick threshold; the cap shapes.
+
+## Pending index
+
+- Nothing relevant in home-still (three queries and `catalog_recent` limit 200, 2026-11-01). Index Microsoft's *Xbox Accessibility Guideline 112*, Epic's *Common UI Quickstart Guide* and the Game Accessibility Guidelines' *Allow controls to be remapped / reconfigured* page. Search later for: "input glyph switching gamepad keyboard last used device", "button prompt legibility console games", "keyboard shortcut hints discoverability in game menus".
