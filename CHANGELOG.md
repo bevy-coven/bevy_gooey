@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-01
+
 ### Added
 
 - Design tokens in the skin (G-03): `GooeySkin::spacing` (six steps), `radii` (three), `type_scale` (five) and `surfaces`, a ladder of flat fills, lowest first (five in every preset), read with `space(step)`, `corner(step)`, `type_size(step)` (times `text_scale`) and `surface_at(level)`; a step past the end is the last. Each preset's own `gap`, `padding`, `radius`, `text_size` and `heading_size` are on its scales.
@@ -11,7 +13,7 @@
 
 ### Changed
 
-- `GooeySkin` has four more public fields, `spacing`, `radii`, `type_scale` and `surfaces`; `SkinProblem` and `Role` have more variants. A struct literal that names every field needs the four, a literal that ends in `..GooeySkin::dark()` (or `default()`) is unchanged, and a skin file without them reads the dark skin's. `with_colours_of`, so a theme-row step, carries the ladder with the colours and keeps the scales. `SkinPreset::of` counts the ladder in a look's colours.
+- `GooeySkin` has four more public fields, `spacing`, `radii`, `type_scale` and `surfaces`; `SkinProblem` and `Role` have more variants (`ElevationStep`, `BadScale`, `Surface(u8)`), so a `match` on them needs the arms and `Role`, which holds a `u8` now, is no longer castable with `as`. A struct literal that names every field needs the four, a literal that ends in `..GooeySkin::dark()` (or `default()`) is unchanged, and a skin file without them reads the dark skin's. `with_colours_of`, so a theme-row step, carries the ladder with the colours and keeps the scales. `SkinPreset::of` counts the ladder in a look's colours.
 
 ## [0.10.0] - 2026-11-01
 
