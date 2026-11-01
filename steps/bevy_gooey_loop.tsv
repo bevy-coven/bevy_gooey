@@ -8969,3 +8969,404 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 58	442	log	tool	git	bash	2026-11-01T18:58:01Z	1.4	Verify push state :: cd ~/bevy_gooey_loop && git fetch -q && git status -sb | head -2; git tag --list 'v0.17*'; git ls-remote --tags origin v0.17.0 | head -1
 58	443	log	tool	learn	learn	2026-11-01T18:58:01Z	1.4	Capture split-pane lessons
 58	444	log	model	model		2026-11-01T18:58:02Z	8.0	
+59	1	orient	model	model		2026-11-01T18:58:37Z	4.1	
+59	2	orient	tool	phase mark	bash	2026-11-01T18:58:41Z	2.7	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop; git status --short | head; git branch --show-current; git fetch -q origin;
+59	3	orient	model	model		2026-11-01T18:58:43Z	3.2	
+59	4	orient	tool	github	bash	2026-11-01T18:58:47Z	0.5	cd /home/ladvien/bevy_gooey_loop; gh issue view 14 --repo bevy-coven/bevy_gooey --json body,comments --jq '.body, (.comments[]|.body)'; git branch -a --list '*i
+59	5	orient	model	model		2026-11-01T18:58:47Z	5.0	
+59	6	orient	tool	shell	bash	2026-11-01T18:58:52Z	11.1	cd /home/ladvien/bevy_gooey_loop; echo $CARGO_TARGET_DIR $DISPLAY; wc -l src/*.rs tests/split.rs tests/tabs.rs docs/research/split.md; ls docs/guide docs/resear
+59	7	orient	model	model		2026-11-01T18:59:03Z	5.4	
+59	8	orient	tool	read files	read	2026-11-01T18:59:09Z	0.1	src/tabs.rs
+59	9	orient	tool	search	grep	2026-11-01T18:59:09Z	0.1	src/widgets.rs
+59	10	orient	model	model		2026-11-01T18:59:09Z	1.5	
+59	11	orient	tool	read files	read	2026-11-01T18:59:10Z	0.0	src/widgets.rs:1090-1340
+59	12	orient	tool	read files	read	2026-11-01T18:59:10Z	0.0	src/tabs.rs:40-135
+59	13	orient	model	model		2026-11-01T18:59:10Z	150.7	
+59	14	research	tool	phase mark	bash	2026-11-01T19:01:41Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark research; grep -n "Role::Tabs\|Role::TabPages\|Role::TabPage\b\|Role::TabList\|Rol
+59	15	research	model	model		2026-11-01T19:01:41Z	4.4	
+59	16	research	tool	shell	bash	2026-11-01T19:01:46Z	0.1	cd /home/ladvien/bevy_gooey_loop; R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ecs-0.20.0 | head -1); grep -n "pub fn add_child\|pub fn add_related" $
+59	17	research	tool	read files	read	2026-11-01T19:01:46Z	0.1	src/lib.rs:290-431
+59	18	research	model	model		2026-11-01T19:01:46Z	4.1	
+59	19	research	tool	shell	bash	2026-11-01T19:01:50Z	0.1	cd /home/ladvien/bevy_gooey_loop; R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ecs-0.20.0 | head -1); grep -n "pub fn \|impl.*RelatedSpawner" $R/src/r
+59	20	research	model	model		2026-11-01T19:01:50Z	3.8	
+59	21	research	tool	shell	bash	2026-11-01T19:01:54Z	0.0	cd /home/ladvien/bevy_gooey_loop; R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ecs-0.20.0 | head -1); grep -n "impl<'w, R: Relationship> RelatedSpawne
+59	22	research	model	model		2026-11-01T19:01:54Z	8.1	
+59	23	research	tool	read files	read	2026-11-01T19:02:02Z	0.1	tests/split.rs:80
+59	24	research	model	model		2026-11-01T19:02:02Z	6.1	
+59	25	research	tool	homestill	bash	2026-11-01T19:02:08Z	8.7	cd /home/ladvien/bevy_gooey_loop; for q in "docking panels tabbed window layout drag and drop rearrange interface" "drag and drop alternative to dragging single
+59	26	research	model	model		2026-11-01T19:02:17Z	6.9	
+59	27	research	tool	shell	bash	2026-11-01T19:02:24Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1,68p docs/research/split.md | cut -c1-700
+59	28	research	tool	read files	read	2026-11-01T19:02:24Z	0.9	Docking wiki quotes :: https://github.com/ocornut/imgui/wiki/Docking
+59	29	research	tool	read files	read	2026-11-01T19:02:24Z	0.9	egui_dock API quotes :: https://docs.rs/egui_dock/latest/egui_dock/
+59	30	research	model	model		2026-11-01T19:02:25Z	5.5	
+59	31	research	tool	homestill	bash	2026-11-01T19:02:30Z	1.3	cd /home/ladvien/bevy_gooey_loop; timeout 60 hs distill search "dragging tasks slower less accurate than tapping pointing" --output json 2>&1 | python3 -c " imp
+59	32	research	model	model		2026-11-01T19:02:31Z	39.9	
+59	33	research	tool	git	bash	2026-11-01T19:03:11Z	0.1	cd /home/ladvien/bevy_gooey_loop; git checkout -q -b loop/iter-31 && cat > docs/research/dock.md <<'EOF' # Dock layout as data: split panes and tab groups of pa
+59	34	research	model	model		2026-11-01T19:03:11Z	3.6	
+59	35	build	tool	phase mark	bash	2026-11-01T19:03:15Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark build; grep -n "SplitGrip" src/skin.rs | head -20; grep -n "pub enum Role" -A6 src
+59	36	build	model	model		2026-11-01T19:03:15Z	86.3	
+59	37	build	tool	edit files	write	2026-11-01T19:04:41Z	0.0	src/dock_layout.rs
+59	38	build	model	model		2026-11-01T19:04:41Z	19.4	
+59	39	build	tool	shell	bash	2026-11-01T19:05:01Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "SPLIT_KEY_STEP_PX\|pub fn split_clamp\|^#\[cfg(test)\]\|^mod tests\|^use " src/model.rs | head; sed -n 1,30p src/mode
+59	40	build	model	model		2026-11-01T19:05:01Z	1.5	
+59	41	build	tool	shell	bash	2026-11-01T19:05:02Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1040,1066p src/model.rs
+59	42	build	model	model		2026-11-01T19:05:02Z	3.3	
+59	43	build	tool	read files	read	2026-11-01T19:05:05Z	0.0	src/model.rs:1056-1060
+59	44	build	model	model		2026-11-01T19:05:05Z	30.4	
+59	45	build	tool	edit files	edit	2026-11-01T19:05:36Z	0.0	Add dock maths to model :: [src/model.rs#47FB] PUT >1059: + +/// The least a pane of a [`crate::dock`]'s split may be, in logical pixels: a panel narrower than +/// this is worse than non
+59	46	build	model	model		2026-11-01T19:05:36Z	3.9	
+59	47	build	tool	read files	read	2026-11-01T19:05:40Z	0.0	src/model.rs:1810-1820
+59	48	build	model	model		2026-11-01T19:05:40Z	12.0	
+59	49	build	tool	edit files	edit	2026-11-01T19:05:52Z	0.0	Model tests for dock maths :: [src/model.rs#66C9] PUT >1819: + + #[test] + fn a_dock_zone_is_the_middle_half_or_the_nearest_edge() { + // The middle half of both sides is the group; the quar
+59	50	build	model	model		2026-11-01T19:05:52Z	6.1	
+59	51	build	tool	shell	bash	2026-11-01T19:05:58Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' import re p='src/dock_layout.rs' s=open(p).read() a=s.index(" // The group is found by a panel that stays in
+59	52	build	model	model		2026-11-01T19:05:58Z	12.1	
+59	53	build	tool	shell	bash	2026-11-01T19:06:10Z	0.0	cd /home/ladvien/bevy_gooey_loop; P=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_picking-0.20.0); grep -n "macro_rules! impl_pointer_event" -A40 $P/src/
+59	54	build	model	model		2026-11-01T19:06:10Z	23.9	
+59	55	build	tool	shell	bash	2026-11-01T19:06:34Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "Role::Panel\|Role::SplitDivider\|Role::SplitPane\|Role::Popover\b" src/skin.rs | head -40
+59	56	build	model	model		2026-11-01T19:06:34Z	2.2	
+59	57	build	tool	shell	bash	2026-11-01T19:06:36Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1296,1330p src/skin.rs; sed -n 1425,1445p src/skin.rs; sed -n 1495,1512p src/skin.rs; sed -n 1572,1582p src/skin.rs; se
+59	58	build	model	model		2026-11-01T19:06:36Z	58.6	
+59	59	build	tool	shell	bash	2026-11-01T19:07:35Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "Control\|Shift\|modifier" src/nav.rs | head -20; grep -n "pub fn navigate_by_input" -A60 src/nav.rs | head -110
+59	60	build	model	model		2026-11-01T19:07:35Z	5.2	
+59	61	build	tool	shell	bash	2026-11-01T19:07:40Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "dividers" src/nav.rs | head; grep -n "pub struct FocusScopes" -B3 -A40 src/nav.rs | head -80
+59	62	build	model	model		2026-11-01T19:07:40Z	19.1	
+59	63	build	tool	shell	bash	2026-11-01T19:07:59Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() # tabs -> tabs_in old_start=s.index("pub fn tabs<S: Into<String>>(") old
+59	64	build	model	model		2026-11-01T19:07:59Z	8.0	
+59	65	build	tool	shell	bash	2026-11-01T19:08:07Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "PromptKey" src/skin.rs | head -20; grep -n "Role::MenuNote" src/skin.rs | head
+59	66	build	model	model		2026-11-01T19:08:07Z	1.9	
+59	67	build	tool	shell	bash	2026-11-01T19:08:09Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1790,1812p src/skin.rs; sed -n 2150,2175p src/skin.rs; sed -n 2335,2400p src/skin.rs; sed -n 1700,1712p src/skin.rs
+59	68	build	model	model		2026-11-01T19:08:09Z	31.1	
+59	69	build	tool	shell	bash	2026-11-01T19:08:40Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "derive(EntityEvent" -B3 -A12 src/popover.rs | head -40; sed -n 1,40p src/popover.rs | grep "^use"; grep -n "show_focu
+59	70	build	model	model		2026-11-01T19:08:40Z	168.4	
+59	71	build	tool	edit files	write	2026-11-01T19:11:28Z	0.0	src/dock.rs
+59	72	build	model	model		2026-11-01T19:11:28Z	21.6	
+59	73	build	tool	shell	bash	2026-11-01T19:11:50Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/dock.rs' s=open(p).read() i=s.index("/// Whether `skip` is worth a doc link") s=s[:i].rstrip()+"\n" s
+59	74	build	model	model		2026-11-01T19:11:50Z	10.0	
+59	75	build	tool	shell	bash	2026-11-01T19:12:00Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace(''' SplitGrip, ''',''' SplitGrip, /// A [`crate::dock`]'s root:
+59	76	build	model	model		2026-11-01T19:12:00Z	9.5	
+59	77	build	tool	shell	bash	2026-11-01T19:12:09Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace("[`GooeySkin::accent`] under the dock's panels, framed","[`Gooe
+59	78	build	model	model		2026-11-01T19:12:09Z	5.0	
+59	79	build	tool	shell	bash	2026-11-01T19:12:14Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/lib.rs' s=open(p).read() s=s.replace(" interface_size, label,"," dock, interface_size, label,",1) if 
+59	80	build	model	model		2026-11-01T19:12:15Z	1.6	
+59	81	build	tool	shell	bash	2026-11-01T19:12:16Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1378,1390p src/widgets.rs; grep -n "Pickable" src/widgets.rs | head -3
+59	82	build	model	model		2026-11-01T19:12:16Z	16.8	
+59	83	build	tool	edit files	edit	2026-11-01T19:12:33Z	0.0	Add dock widget :: [src/widgets.rs#9D5A] PUT >1385: + +/// A workbench of panels the player arranges: a tree of splits and tab groups built from a +/// [`DockLayout`], which is pl
+59	84	build	tool	shell	bash	2026-11-01T19:12:33Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() s=s.replace("use crate::list::ListView;","use crate::dock::Dock;\nuse cr
+59	85	build	model	model		2026-11-01T19:12:33Z	4.4	
+59	86	build	tool	cargo build	bash	2026-11-01T19:12:37Z	3.8	cd /home/ladvien/bevy_gooey_loop; sed -i 's/^use crate::choice::{ChoiceCount, Move, MoveChoice};/use crate::choice::{ChoiceCount, Move, MoveChoice};\nuse crate:
+59	87	build	model	model		2026-11-01T19:12:41Z	11.0	
+59	88	build	tool	cargo build	bash	2026-11-01T19:12:52Z	1.8	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' import re p='src/dock.rs' s=open(p).read() for f in ['update_docks','update_dock_drag','land_dock_focus']: s
+59	89	build	model	model		2026-11-01T19:12:54Z	23.9	
+59	90	build	tool	shell	bash	2026-11-01T19:13:18Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "fn set_fraction\|InputFocusVisible" tests/split.rs | head -3; grep -n "\[\[test\]\]\|required-features" Cargo.toml | 
+59	91	build	model	model		2026-11-01T19:13:18Z	11.7	
+59	92	build	tool	shell	bash	2026-11-01T19:13:30Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' src=open('tests/split.rs').read() # reuse helper block: from "fn window" through "fn focused" a=src.index("f
+59	93	build	model	model		2026-11-01T19:13:30Z	74.6	
+59	94	build	tool	cargo test	bash	2026-11-01T19:14:44Z	15.9	cd /home/ladvien/bevy_gooey_loop; cat > /tmp/dock_tests.rs <<'EOF' /// A modifier key pressed and, after `then`, let go. fn with_modifiers(app: &mut App, then: 
+59	95	build	model	model		2026-11-01T19:15:00Z	9.1	
+59	96	build	tool	cargo test	bash	2026-11-01T19:15:09Z	2.3	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' import re p='tests/dock.rs' s=open(p).read() s=re.sub(r'shown\(&app, page\(&mut app, ("[a-z]+")\)\)',r'page_
+59	97	build	model	model		2026-11-01T19:15:12Z	4.5	
+59	98	build	tool	cargo test	bash	2026-11-01T19:15:16Z	8.3	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='tests/dock.rs' s=open(p).read() s=s.replace(" release(&mut app, at(&app, right.center()));"," let to = at
+59	99	build	model	model		2026-11-01T19:15:24Z	34.5	
+59	100	build	tool	shell	bash	2026-11-01T19:15:59Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/dock.rs' s=open(p).read() old_start=s.index(" let rel = at - whole.min;") old_end=s.index(" layout.mo
+59	101	build	model	model		2026-11-01T19:15:59Z	11.7	
+59	102	build	tool	cargo test	bash	2026-11-01T19:16:11Z	9.3	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/dock_layout.rs' s=open(p).read() s=s.replace(" /// For [`DockZone::Into`]: the place among the group'
+59	103	build	model	model		2026-11-01T19:16:20Z	6.9	
+59	104	build	tool	shell	bash	2026-11-01T19:16:27Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0/src; grep -n "FocusedInput\|fn tabs_on_key\|add_observer\|observe(" tab*.rs | head -20
+59	105	build	model	model		2026-11-01T19:16:27Z	1.5	
+59	106	build	tool	shell	bash	2026-11-01T19:16:28Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0/src; sed -n 160,260p tab.rs
+59	107	build	model	model		2026-11-01T19:16:28Z	1.8	
+59	108	build	tool	shell	bash	2026-11-01T19:16:30Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0/src; ls; f=$(grep -ln "fn tab_on_key_input" *.rs */*.rs | head -1); echo $f; grep -n "fn tab_o
+59	109	build	model	model		2026-11-01T19:16:30Z	49.1	
+59	110	build	tool	cargo test	bash	2026-11-01T19:17:19Z	16.9	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/dock.rs' s=open(p).read() s=s.replace(' eprintln!("DBG key {:?}", input.input.key_code);\n','').repla
+59	111	build	model	model		2026-11-01T19:17:36Z	9.5	
+59	112	build	tool	cargo test	bash	2026-11-01T19:17:46Z	17.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/dock.rs' s=open(p).read() s=s.replace(" refocus: Option<String>,\n}"," /// The panel whose tab takes 
+59	113	build	model	model		2026-11-01T19:18:03Z	4.8	
+59	114	build	tool	shell	bash	2026-11-01T19:18:07Z	0.0	cd /home/ladvien/bevy_gooey_loop; tail -30 tests/serde.rs
+59	115	build	model	model		2026-11-01T19:18:07Z	6.6	
+59	116	build	tool	cargo test	bash	2026-11-01T19:18:14Z	9.0	cd /home/ladvien/bevy_gooey_loop; cat >> tests/serde.rs <<'EOF' #[test] fn a_dock_layout_round_trips_through_ron_and_a_short_file_reads() -> Result<(), Box<dyn 
+59	117	build	model	model		2026-11-01T19:18:23Z	3.3	
+59	118	prove	tool	phase mark	bash	2026-11-01T19:18:26Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark prove; wc -l examples/split.rs; cat examples/split.rs
+59	119	prove	model	model		2026-11-01T19:18:26Z	1.7	
+59	120	prove	tool	shell	bash	2026-11-01T19:18:28Z	0.0	cd /home/ladvien/bevy_gooey_loop; cat examples/split.rs | sed -n 1,375p
+59	121	prove	model	model		2026-11-01T19:18:28Z	29.9	
+59	122	prove	tool	cargo build	bash	2026-11-01T19:18:58Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' s=open('examples/split.rs').read() # keep prelude capture machinery: take from "/// Capture mode's state" th
+59	123	prove	model	model		2026-11-01T19:18:58Z	43.2	
+59	124	prove	tool	cargo build	bash	2026-11-01T19:19:41Z	37.6	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' head=open('/tmp/ex_head.rs').read() cap=open('/tmp/ex_cap.rs').read() follow=open('/tmp/ex_follow.rs').read(
+59	125	prove	model	model		2026-11-01T19:20:19Z	4.3	
+59	126	prove	tool	shell	bash	2026-11-01T19:20:23Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "^fn \|^const \|^struct \|^enum \|^/// The frame\|^/// Capture" examples/dock.rs
+59	127	prove	model	model		2026-11-01T19:20:23Z	1.9	
+59	128	prove	tool	cargo build	bash	2026-11-01T19:20:25Z	8.1	cd /home/ladvien/bevy_gooey_loop; sed -i '74,140d' examples/dock.rs && CARGO_BUILD_JOBS=2 cargo build --release --example dock 2>&1 | grep -E "^(error|warning)"
+59	129	prove	model	model		2026-11-01T19:20:33Z	5.0	
+59	130	prove	tool	cargo build	bash	2026-11-01T19:20:38Z	7.9	cd /home/ladvien/bevy_gooey_loop; sed -i 's/ let mut carry =/ let carry =/' examples/dock.rs; ls /tmp/g31 /tmp/g31m 2>&1 | head -2; mkdir -p /tmp/g31m/after && 
+59	131	prove	model	model		2026-11-01T19:20:46Z	1.6	
+59	132	prove	tool	read files	read	2026-11-01T19:20:48Z	0.0	/tmp/g31m/after/dock.png
+59	133	prove	tool	read files	read	2026-11-01T19:20:48Z	0.0	/tmp/g31m/after/hold.png
+59	134	prove	model	model		2026-11-01T19:20:48Z	12.1	
+59	135	prove	tool	cargo build	bash	2026-11-01T19:21:00Z	20.5	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() old=''' Node { display: Display::Grid, grid_template_columns: vec![Repea
+59	136	prove	model	model		2026-11-01T19:21:20Z	1.4	
+59	137	prove	tool	read files	read	2026-11-01T19:21:22Z	0.0	/tmp/g31m/after/hold.png
+59	138	prove	model	model		2026-11-01T19:21:22Z	12.3	
+59	139	prove	tool	cargo build	bash	2026-11-01T19:21:34Z	34.4	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace("Role::DockDrop => Some(skin.accent.with_alpha(DOCK_DROP_ALPHA)
+59	140	prove	model	model		2026-11-01T19:22:09Z	1.8	
+59	141	prove	tool	read files	read	2026-11-01T19:22:10Z	0.0	/tmp/g31m/after/h_dark.png
+59	142	prove	tool	read files	read	2026-11-01T19:22:10Z	0.0	/tmp/g31m/after/h_parchment.png
+59	143	prove	model	model		2026-11-01T19:22:10Z	8.1	
+59	144	prove	tool	read files	read	2026-11-01T19:22:19Z	0.0	/tmp/g31m/after/h_hc.png
+59	145	prove	tool	read files	read	2026-11-01T19:22:19Z	0.1	/tmp/g31m/after/h_large.png
+59	146	prove	model	model		2026-11-01T19:22:19Z	12.8	
+59	147	prove	tool	shell	bash	2026-11-01T19:22:32Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "split" -i docs/media/README.md | head; ls docs/media | head -50; cat docs/guide/splits.md | head -60
+59	148	prove	model	model		2026-11-01T19:22:32Z	14.8	
+59	149	prove	tool	cargo build	bash	2026-11-01T19:22:46Z	37.5	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='examples/dock.rs' s=open(p).read() s=s.replace(''' (label("Drag a tab; Ctrl+Shift+arrow moves the focused
+59	150	prove	model	model		2026-11-01T19:23:24Z	3.6	
+59	151	prove	tool	shell	bash	2026-11-01T19:23:27Z	0.5	cd /tmp/g31m/gif; ls | head -3; montage $(ls f_*.png | awk 'NR%8==1') -tile 4x -geometry 480x270+4+4 /tmp/g31m/sheet.png; identify /tmp/g31m/sheet.png
+59	152	prove	model	model		2026-11-01T19:23:28Z	1.2	
+59	153	prove	tool	read files	read	2026-11-01T19:23:29Z	0.2	/tmp/g31m/sheet.png
+59	154	prove	model	model		2026-11-01T19:23:29Z	28.1	
+59	155	prove	tool	cargo build	bash	2026-11-01T19:23:57Z	11.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='examples/dock.rs' s=open(p).read() a=s.index(" Step::Chord(arrow) => {") b=s.index("/// The window's size
+59	156	prove	model	model		2026-11-01T19:24:09Z	4.1	
+59	157	prove	tool	read files	read	2026-11-01T19:24:13Z	0.2	/tmp/g31m/sheet.png
+59	158	prove	model	model		2026-11-01T19:24:13Z	17.8	
+59	159	prove	tool	cargo test	bash	2026-11-01T19:24:31Z	13.8	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='tests/dock.rs' s=open(p).read() old=''' DockLayout::group(["c"]), ) ); } #[test] fn with_no_group_that_wa
+59	160	prove	model	model		2026-11-01T19:24:44Z	6.3	
+59	161	prove	tool	shell	bash	2026-11-01T19:24:51Z	0.3	cd /tmp/g31m/gif; montage f_0038.png f_0041.png f_0044.png f_0056.png f_0060.png f_0066.png -tile 3x -geometry 640x360+3+3 /tmp/g31m/sheet2.png
+59	162	prove	tool	read files	read	2026-11-01T19:24:51Z	0.3	/tmp/g31m/sheet2.png
+59	163	prove	model	model		2026-11-01T19:24:51Z	2.1	
+59	164	prove	tool	shell	bash	2026-11-01T19:24:53Z	0.3	cd /tmp/g31m/gif; ls | sed -n 36,42p; montage f_0038.png f_0041.png f_0044.png f_0056.png f_0060.png f_0066.png -tile 3x -geometry 640x360+3+3 /tmp/g31m/sheet2.
+59	165	prove	model	model		2026-11-01T19:24:53Z	1.4	
+59	166	prove	tool	read files	read	2026-11-01T19:24:55Z	0.1	/tmp/g31m/sheet2.png
+59	167	prove	model	model		2026-11-01T19:24:55Z	29.7	
+59	168	prove	tool	cargo build	bash	2026-11-01T19:25:25Z	4.7	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() old_a=s.index(" Node {\n display: Display::Grid,\n // A dock's strip") o
+59	169	prove	model	model		2026-11-01T19:25:29Z	1.8	
+59	170	prove	tool	shell	bash	2026-11-01T19:25:31Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 545,575p src/dock.rs
+59	171	prove	model	model		2026-11-01T19:25:31Z	3.7	
+59	172	prove	tool	cargo test	bash	2026-11-01T19:25:35Z	23.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/dock.rs' s=open(p).read() s=s.replace(''' Some(( tab.panel.clone(), at.translation.x * node.inverse_s
+59	173	prove	model	model		2026-11-01T19:25:58Z	4.8	
+59	174	prove	tool	cargo test	bash	2026-11-01T19:26:03Z	9.0	cd /home/ladvien/bevy_gooey_loop; sed -i 's/let others = \[(100.0, 50.0), (400.0, 60.0), (400.0, 300.0), (200.0, 50.0)\];/let others = [(100.0, 50.0), (400.0, 6
+59	175	prove	model	model		2026-11-01T19:26:12Z	9.0	
+59	176	prove	tool	shell	bash	2026-11-01T19:26:21Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='tests/dock.rs' s=open(p).read() s=s.replace('''fn rig(app: &mut App, layout: DockLayout) -> Rig {''','''f
+59	177	prove	model	model		2026-11-01T19:26:21Z	5.5	
+59	178	prove	tool	cargo test	bash	2026-11-01T19:26:26Z	6.1	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='tests/dock.rs' s=open(p).read() s=s.replace(" let _ = rig_in(&mut app, DockLayout::group([\"a\", \"b\", \
+59	179	prove	model	model		2026-11-01T19:26:32Z	4.1	
+59	180	prove	tool	cargo clippy	bash	2026-11-01T19:26:36Z	4.5	cd /home/ladvien/bevy_gooey_loop; CARGO_BUILD_JOBS=2 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(error|warning)" -A12 | head -80
+59	181	prove	model	model		2026-11-01T19:26:41Z	2.9	
+59	182	prove	tool	cargo clippy	bash	2026-11-01T19:26:44Z	6.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/dock_layout.rs' s=open(p).read() s=s.replace('''(!kept.is_empty()).then(|| Self::Group { selected: no
+59	183	prove	model	model		2026-11-01T19:26:50Z	3.3	
+59	184	prove	tool	cargo clippy	bash	2026-11-01T19:26:53Z	5.5	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='tests/dock.rs' s=open(p).read() s=s.replace(''' assert_eq!( reports(&app), [moved.clone()], "one report, 
+59	185	prove	model	model		2026-11-01T19:26:59Z	8.9	
+59	186	prove	tool	cargo clippy	bash	2026-11-01T19:27:08Z	1.6	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' import re p='examples/dock.rs' s=open(p).read() a=s.index("/// Where a tab and the group that holds it are")
+59	187	prove	model	model		2026-11-01T19:27:09Z	4.0	
+59	188	prove	tool	cargo clippy	bash	2026-11-01T19:27:13Z	1.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='examples/dock.rs' s=open(p).read() s=s.replace(" frames: Query<'w, 's, (&'static ComputedNode, &'static U
+59	189	prove	model	model		2026-11-01T19:27:14Z	5.0	
+59	190	prove	tool	cargo clippy	bash	2026-11-01T19:27:20Z	33.1	cd /home/ladvien/bevy_gooey_loop; CARGO_BUILD_JOBS=2 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -3; CARGO_BUILD_JOBS=2 cargo build --r
+59	191	prove	model	model		2026-11-01T19:27:53Z	1.6	
+59	192	prove	tool	read files	read	2026-11-01T19:27:54Z	0.2	/tmp/g31m/sheet.png
+59	193	prove	model	model		2026-11-01T19:27:54Z	7.0	
+59	194	prove	tool	shell	bash	2026-11-01T19:28:01Z	0.1	cd /tmp/g31m/gif; convert f_0043.png -crop 700x240+330+0 +repage -resize 200% /tmp/g31m/ring.png
+59	195	prove	tool	read files	read	2026-11-01T19:28:01Z	0.1	/tmp/g31m/ring.png
+59	196	prove	model	model		2026-11-01T19:28:02Z	2.0	
+59	197	prove	tool	shell	bash	2026-11-01T19:28:04Z	0.1	cd /tmp/g31m/gif; ls f_004*.png | head -3; magick f_0043.png -crop 700x240+330+0 +repage -resize 200% /tmp/g31m/ring.png; ls -la /tmp/g31m/ring.png
+59	198	prove	model	model		2026-11-01T19:28:04Z	1.3	
+59	199	prove	tool	read files	read	2026-11-01T19:28:05Z	0.0	/tmp/g31m/ring.png
+59	200	prove	model	model		2026-11-01T19:28:05Z	8.7	
+59	201	prove	tool	cargo build	bash	2026-11-01T19:28:14Z	56.8	cd /home/ladvien/bevy_gooey_loop; ls ~/g31_bin ~/g31_base 2>&1 | head -2; B=$(git rev-parse main); echo $B; git worktree add --detach ~/g31_base $B 2>&1 | tail 
+59	202	prove	model	model		2026-11-01T19:29:10Z	5.4	
+59	203	prove	tool	shell	bash	2026-11-01T19:29:16Z	47.2	mkdir -p /tmp/g31m/before /tmp/g31m/after2; cd /tmp/g31m; for w in before after; do B=~/g31_bin/gallery_$w; O=/tmp/g31m/$w; [ $w = after ] && O=/tmp/g31m/after2
+59	204	prove	model	model		2026-11-01T19:30:03Z	3.5	
+59	205	prove	tool	shell	bash	2026-11-01T19:30:06Z	60.0	[launched bg_1] cd /tmp/g31m; for i in 1 2 3 4 5 6 7 8 9 10; do for w in before after; do timeout 100 env GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SHOT=/tmp/g31m/
+59	206	prove	model	model		2026-11-01T19:31:06Z	4.4	
+59	207	prove	tool	shell	bash	2026-11-01T19:31:11Z	0.0	cd /home/ladvien/bevy_gooey_loop; wc -l README.md; grep -n "split" -i README.md | cut -c1-300; grep -n "split" -i docs/guide/README.md docs/guide/widgets.md doc
+59	208	prove	model	model		2026-11-01T19:31:11Z	1.9	
+59	209	prove	tool	shell	bash	2026-11-01T19:31:13Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 116,126p README.md | cut -c1-400; sed -n 198,210p README.md | cut -c1-600; sed -n 232,240p README.md | cut -c1-300
+59	210	prove	model	model		2026-11-01T19:31:13Z	6.3	
+59	211	prove	tool	shell	bash	2026-11-01T19:31:19Z	0.0	cd /home/ladvien/bevy_gooey_loop; awk '{print NR": "substr($0,1,150)}' README.md | sed -n 1,115p
+59	212	prove	model	model		2026-11-01T19:31:19Z	29.9	
+59	213	prove	tool	edit files	write	2026-11-01T19:31:49Z	0.0	/home/ladvien/bevy_gooey_loop/docs/guide/docks.md
+59	214	prove	tool	read files	read	2026-11-01T19:31:49Z	0.0	docs/guide/README.md:20-34
+59	215	prove	model	model		2026-11-01T19:31:49Z	3.8	
+59	216	prove	tool	edit files	edit	2026-11-01T19:31:53Z	0.0	Guide index entry for docks :: [docs/guide/README.md#C86B] PUT >29: +- [Docks](docks.md) — `dock(DockLayout)` and the `PanelRegistry`: a workbench of tab groups and splits kept as + data, rea
+59	217	prove	tool	read files	read	2026-11-01T19:31:53Z	0.0	docs/guide/widgets.md:24-30
+59	218	prove	tool	read files	read	2026-11-01T19:31:53Z	0.0	docs/guide/host-api.md:70-82
+59	219	prove	tool	read files	read	2026-11-01T19:31:53Z	0.0	docs/guide/host-api.md:112-165
+59	220	prove	model	model		2026-11-01T19:31:53Z	5.8	
+59	221	prove	tool	edit files	edit	2026-11-01T19:31:59Z	0.0	Document dock in widgets table and host API :: [docs/guide/widgets.md#055D] PUT >27: +| `dock(layout)` | a workbench of tab groups and splits kept as a `DockLayout`, whose panels come from the `PanelRegistry
+59	222	prove	model	model		2026-11-01T19:31:59Z	4.8	
+59	223	prove	tool	clip record/render	bash	2026-11-01T19:32:03Z	1.2	cd /home/ladvien/bevy_gooey_loop; ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/tmp/g31m/gif/f_*.png' -vf "fps=15,scale=960:-1:flags=lanczos,s
+59	224	prove	model	model		2026-11-01T19:32:05Z	9.8	
+59	225	prove	tool	read files	read	2026-11-01T19:32:14Z	0.0	README.md:119-124
+59	226	prove	tool	read files	read	2026-11-01T19:32:14Z	0.0	README.md:203-208
+59	227	prove	model	model		2026-11-01T19:32:14Z	7.6	
+59	228	prove	tool	edit files	edit	2026-11-01T19:32:22Z	0.0	README: dock bullet and demo :: [README.md#3E46] PUT 120.=123: +- **Scroll a list, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so the + player sees there
+59	229	prove	tool	shell	bash	2026-11-01T19:32:22Z	0.0	cd /home/ladvien/bevy_gooey_loop; wc -l README.md; grep -n "split panes, toasts" README.md | cut -c1-80
+59	230	prove	model	model		2026-11-01T19:32:22Z	3.4	
+59	231	prove	tool	read files	read	2026-11-01T19:32:25Z	0.0	README.md:236:raw
+59	232	prove	bg	shell	bash	2026-11-01T19:30:07Z	138.6	bg_1 completed: cd /tmp/g31m; for i in 1 2 3 4 5 6 7 8 9 10; do for w in before after; do timeout 100 env GOOEY_HEALTH=60 GOOEY_KEYS=...
+59	233	prove	model	model		2026-11-01T19:32:25Z	3.6	
+59	234	prove	tool	edit files	edit	2026-11-01T19:32:29Z	0.0	README learn-more list mentions docks :: [README.md#82BD] PUT 236.=236: +- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, l
+59	235	prove	tool	read files	read	2026-11-01T19:32:29Z	0.0	docs/media/README.md:24-34
+59	236	prove	model	model		2026-11-01T19:32:29Z	10.4	
+59	237	prove	tool	edit files	edit	2026-11-01T19:32:39Z	0.0	Media list row for dock.gif :: [docs/media/README.md#6451] PUT >35: +| `dock.gif` | docks (7.3 s, 960×540, the whole window of `examples/dock`, 1280×720 scaled): a Scene and Assets group, a V
+59	238	prove	tool	read files	read	2026-11-01T19:32:39Z	0.0	CHANGELOG.md:1-6
+59	239	prove	model	model		2026-11-01T19:32:39Z	1.3	
+59	240	prove	tool	read files	read	2026-11-01T19:32:41Z	0.0	docs/media/README.md:35:raw
+59	241	prove	model	model		2026-11-01T19:32:41Z	13.9	
+59	242	prove	tool	edit files	edit	2026-11-01T19:32:55Z	0.0	Media list row for dock.gif :: [docs/media/README.md#6451] PUT >35: +| `dock.gif` | docks (7.3 s, 960×540, the whole window of `examples/dock`, 1280×720 scaled): a Scene and Assets group, a V
+59	243	prove	model	model		2026-11-01T19:32:55Z	4.1	
+59	244	prove	tool	search	grep	2026-11-01T19:32:59Z	0.0	Find AGENTS insert points :: AGENTS.md
+59	245	prove	model	model		2026-11-01T19:32:59Z	20.5	
+59	246	prove	tool	edit files	edit	2026-11-01T19:33:19Z	0.0	AGENTS.md: dock notes :: [AGENTS.md#6247] PUT >37: +- `src/dock_layout.rs` — `DockLayout` (`Split { axis, fraction, first, second }` | `Group { panels, selected }`: plain data, serde wi
+59	247	prove	model	model		2026-11-01T19:33:19Z	1.4	
+59	248	prove	tool	read files	read	2026-11-01T19:33:21Z	0.0	AGENTS.md:37,63,108:raw
+59	249	prove	model	model		2026-11-01T19:33:21Z	16.7	
+59	250	prove	tool	edit files	edit	2026-11-01T19:33:37Z	0.1	AGENTS.md: dock notes :: [AGENTS.md#6247] PUT >37: +- `src/dock_layout.rs` — `DockLayout` (`Split { axis, fraction, first, second }` | `Group { panels, selected }`: plain data, serde wi
+59	251	prove	model	model		2026-11-01T19:33:37Z	5.7	
+59	252	prove	tool	shell	bash	2026-11-01T19:33:43Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "split" src/lib.rs | head; git status --short
+59	253	prove	model	model		2026-11-01T19:33:43Z	1.4	
+59	254	prove	tool	read files	read	2026-11-01T19:33:44Z	0.0	src/lib.rs:22-30
+59	255	prove	model	model		2026-11-01T19:33:44Z	4.5	
+59	256	prove	tool	edit files	edit	2026-11-01T19:33:49Z	0.0	lib docs mention dock :: [src/lib.rs#C4CD] PUT 27.=27: +//! [`SplitMin`]), [`dock`] (tab groups and splits of the panels in a [`PanelRegistry`], kept as +//! a [`DockLayout`] and rearra
+59	257	gate	tool	phase mark	bash	2026-11-01T19:33:49Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark gate; git add -A docs/research docs/guide docs/media examples src tests README.md 
+59	258	gate	model	model		2026-11-01T19:33:49Z	6.6	
+59	259	gate	tool	cargo test	bash	2026-11-01T19:33:56Z	23.2	cd /home/ladvien/bevy_gooey_loop; cp src/dock.rs /tmp/g31m/dock.rs.orig; python3 - <<'EOF' p='src/dock.rs' s=open(p).read() s=s.replace(" if shown.refocus.is_so
+59	260	gate	model	model		2026-11-01T19:34:19Z	9.0	
+59	261	gate	tool	cargo build	bash	2026-11-01T19:34:28Z	25.8	cd /tmp/g31m; G="$CARGO_TARGET_DIR/release/examples/dock"; (cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --example dock 2>&1 | tail -1); for
+59	262	gate	model	model		2026-11-01T19:34:54Z	1.7	
+59	263	gate	tool	read files	read	2026-11-01T19:34:55Z	0.1	/tmp/g31m/after/f_x2.png
+59	264	gate	tool	read files	read	2026-11-01T19:34:55Z	0.1	/tmp/g31m/after/f_tool.png
+59	265	gate	model	model		2026-11-01T19:34:55Z	16.8	
+59	266	gate	tool	cargo test	bash	2026-11-01T19:35:12Z	0.0	cat > /tmp/g31m/findings.md <<'EOF' # Game-UI checklist, iteration 31 (docks), 1280x720 dark unless noted - text contrast: the dock draws no new colour pair; ta
+59	267	gate	tool	shell	bash	2026-11-01T19:35:12Z	0.0	[launched bg_3] /tmp/g31m/gate.sh > /tmp/g31m/gate.log 2>&1; tail -5 /tmp/g31m/gate.log; grep -E "GATE FAILED|^error|test result: FAILED" /tmp/g31m/gate.log | head
+59	268	gate	model	model		2026-11-01T19:35:12Z	5.3	
+59	269	gate	tool	wait: gate	wait	2026-11-01T19:35:18Z	184.7	Waiting for the gate
+59	270	gate	model	model		2026-11-01T19:38:22Z	2.0	
+59	271	gate	tool	shell	bash	2026-11-01T19:38:24Z	0.0	grep -E "^test .*FAILED|panicked" -A6 /tmp/g31m/gate.log | head -30; grep -E "Running|test result" /tmp/g31m/gate.log | tail -8
+59	272	gate	model	model		2026-11-01T19:38:24Z	3.7	
+59	273	gate	tool	cargo test	bash	2026-11-01T19:38:28Z	18.9	cd /home/ladvien/bevy_gooey_loop; for i in 1 2 3; do CARGO_BUILD_JOBS=2 cargo test --all-features --test palette large_text 2>&1 | grep -E "test result|panicked
+59	274	gate	model	model		2026-11-01T19:38:47Z	11.7	
+59	275	gate	tool	cargo test	bash	2026-11-01T19:38:59Z	20.0	cd /home/ladvien/bevy_gooey_loop; cp src/lib.rs /tmp/g31m/lib.rs.orig; python3 - <<'EOF' p='src/lib.rs' s=open(p).read() s=s.replace(" dock::update_docks,\n doc
+59	276	gate	model	model		2026-11-01T19:39:19Z	4.0	
+59	277	gate	tool	cargo test	bash	2026-11-01T19:39:23Z	60.0	[launched bg_4] cd ~/g31_base && CARGO_BUILD_JOBS=2 cargo test --all-features --test palette large_text 2>&1 | grep -E "test result|panicked|error"
+59	278	gate	model	model		2026-11-01T19:40:23Z	3.7	
+59	279	gate	tool	shell	bash	2026-11-01T19:40:26Z	0.0	cd /home/ladvien/bevy_gooey_loop; git diff 619e623 -- src/skin.rs src/nav.rs | grep -E "^[+-]" | grep -v "^+++\|^---"
+59	280	gate	model	model		2026-11-01T19:40:26Z	3.2	
+59	281	gate	tool	wait: tests	wait	2026-11-01T19:40:29Z	86.5	Waiting for baseline palette test
+59	282	gate	model	model		2026-11-01T19:41:56Z	10.0	
+59	283	gate	tool	cargo test	bash	2026-11-01T19:42:06Z	21.1	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/lib.rs' s=open(p).read() s=s.replace(" (land_tab_focus, dock::land_dock_focus).chain(),\n"," land_tab
+59	284	gate	model	model		2026-11-01T19:42:27Z	11.2	
+59	285	gate	tool	cargo test	bash	2026-11-01T19:42:38Z	17.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/lib.rs' s=open(p).read() s=s.replace(" (land_tab_focus, dock::land_dock_focus).chain(),\n"," land_tab
+59	286	gate	model	model		2026-11-01T19:42:56Z	9.5	
+59	287	gate	tool	cargo test	bash	2026-11-01T19:43:05Z	20.4	cd /home/ladvien/bevy_gooey_loop; sed -n 940,960p tests/palette.rs; cp tests/palette.rs /tmp/g31m/palette.rs.orig; python3 - <<'EOF' p='tests/palette.rs' s=open
+59	288	gate	model	model		2026-11-01T19:43:25Z	14.0	
+59	289	gate	tool	cargo test	bash	2026-11-01T19:43:39Z	0.0	[launched bg_5] cd ~/g31_base && git checkout 5294192 -- src/skin.rs && CARGO_BUILD_JOBS=2 cargo test --all-features --test palette large_text 2>&1 | grep -E "test result|panic
+59	290	gate	model	model		2026-11-01T19:43:39Z	6.1	
+59	291	gate	tool	wait: other	wait	2026-11-01T19:43:46Z	17.9	Waiting for skin-only bisect
+59	292	gate	model	model		2026-11-01T19:44:03Z	7.0	
+59	293	gate	tool	shell	bash	2026-11-01T19:44:10Z	0.0	cd /home/ladvien/bevy_gooey_loop; git diff 619e623 -- src/widgets.rs | grep -E "^-" | grep -v "^---"
+59	294	gate	model	model		2026-11-01T19:44:10Z	5.8	
+59	295	gate	tool	cargo test	bash	2026-11-01T19:44:16Z	15.8	cd /home/ladvien/bevy_gooey_loop; cp src/nav.rs /tmp/g31m/nav.rs.orig; python3 - <<'EOF' p='src/nav.rs' s=open(p).read() s=s.replace(" if from.is_some_and(|f| s
+59	296	gate	model	model		2026-11-01T19:44:32Z	6.2	
+59	297	gate	tool	shell	bash	2026-11-01T19:44:38Z	0.0	cd /home/ladvien/bevy_gooey_loop; git diff --stat 619e623 | tail -30
+59	298	gate	model	model		2026-11-01T19:44:38Z	15.7	
+59	299	gate	tool	shell	bash	2026-11-01T19:44:54Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "fn rows" -B2 -A25 tests/palette.rs | head -60; grep -n "fn visible_rows" -B3 -A15 src/palette.rs
+59	300	gate	model	model		2026-11-01T19:44:54Z	12.8	
+59	301	gate	tool	shell	bash	2026-11-01T19:45:07Z	0.0	cd /home/ladvien/bevy_gooey_loop; git diff 619e623 -- src/widgets.rs | sed -n 1,140p
+59	302	gate	model	model		2026-11-01T19:45:07Z	8.5	
+59	303	gate	tool	shell	bash	2026-11-01T19:45:15Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "dock::" src/lib.rs
+59	304	gate	model	model		2026-11-01T19:45:15Z	3.6	
+59	305	gate	tool	cargo test	bash	2026-11-01T19:45:19Z	18.4	cd /home/ladvien/bevy_gooey_loop; sed -i -e '384s/.*/ land_tab_focus,/' -e '326,327d' -e '312,313d' src/lib.rs; git diff --stat -- src/lib.rs | tail -1; grep -n
+59	306	gate	model	model		2026-11-01T19:45:37Z	7.6	
+59	307	gate	tool	shell	bash	2026-11-01T19:45:45Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "cap\b\|\.cap\|fn fit\|ComputedNode\|window" src/palette.rs | head -40
+59	308	gate	model	model		2026-11-01T19:45:45Z	5.4	
+59	309	gate	tool	shell	bash	2026-11-01T19:45:50Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 560,612p src/palette.rs
+59	310	gate	model	model		2026-11-01T19:45:50Z	11.8	
+59	311	gate	tool	cargo test	bash	2026-11-01T19:46:02Z	31.7	cd ~/g31_base && for i in 1 2 3; do CARGO_BUILD_JOBS=2 cargo test --all-features --test palette large_text 2>&1 | grep -E "test result|panicked"; done; git stat
+59	312	gate	model	model		2026-11-01T19:46:34Z	7.0	
+59	313	gate	tool	cargo test	bash	2026-11-01T19:46:41Z	0.0	[launched bg_6] cd ~/g31_base && cp ~/bevy_gooey_loop/src/model.rs src/model.rs && CARGO_BUILD_JOBS=2 cargo test --all-features --test palette large_text 2>&1 | grep -E "test r
+59	314	gate	model	model		2026-11-01T19:46:41Z	4.6	
+59	315	gate	tool	wait: other	wait	2026-11-01T19:46:45Z	17.1	Waiting for model-only bisect
+59	316	gate	model	model		2026-11-01T19:47:02Z	4.8	
+59	317	gate	tool	shell	bash	2026-11-01T19:47:07Z	0.0	cd /home/ladvien/bevy_gooey_loop; git diff 619e623 -- src/lib.rs | grep -E "^[+-]" | grep -v "^+++\|^---"
+59	318	gate	model	model		2026-11-01T19:47:07Z	16.8	
+59	319	gate	tool	cargo test	bash	2026-11-01T19:47:24Z	0.0	[launched bg_7] mkdir -p /tmp/g31m/exp && cd /home/ladvien/bevy_gooey_loop && git archive HEAD | tar -x -C /tmp/g31m/exp && cd /tmp/g31m/exp && python3 - <<'EOF' import re s=op
+59	320	gate	model	model		2026-11-01T19:47:24Z	1.4	
+59	321	gate	tool	wait: other	wait	2026-11-01T19:47:25Z	25.3	Waiting for scratch-copy bisect
+59	322	gate	model	model		2026-11-01T19:47:51Z	18.5	
+59	323	gate	tool	shell	bash	2026-11-01T19:48:09Z	0.0	cd /home/ladvien/bevy_gooey_loop; cp src/nav.rs /tmp/g31m/nav.rs.orig; git diff 619e623 -- src/nav.rs | head -50
+59	324	gate	model	model		2026-11-01T19:48:09Z	4.7	
+59	325	gate	tool	cargo test	bash	2026-11-01T19:48:14Z	27.1	cd /home/ladvien/bevy_gooey_loop; git show 619e623:src/nav.rs > src/nav.rs; CARGO_BUILD_JOBS=2 cargo test --all-features --test palette large_text 2>&1 | grep -
+59	326	gate	model	model		2026-11-01T19:48:41Z	8.5	
+59	327	gate	tool	cargo test	bash	2026-11-01T19:48:50Z	32.1	cd /tmp/g31m/exp && cp ~/bevy_gooey_loop/src/dock.rs ~/bevy_gooey_loop/src/dock_layout.rs src/ && sed -i 's/^mod controls;/mod controls;\nmod dock;\nmod dock_la
+59	328	gate	model	model		2026-11-01T19:49:22Z	4.8	
+59	329	gate	tool	cargo test	bash	2026-11-01T19:49:26Z	19.8	cd /tmp/g31m/exp && python3 - <<'EOF' s=open('src/lib.rs').read() s=s.replace("pub use controls::update_sliders;\n","pub use controls::update_sliders;\npub use 
+59	330	gate	model	model		2026-11-01T19:49:46Z	15.6	
+59	331	gate	tool	cargo test	bash	2026-11-01T19:50:02Z	23.1	cd /home/ladvien/bevy_gooey_loop; cp tests/palette.rs /tmp/g31m/palette.rs.orig; python3 - <<'EOF' p='tests/palette.rs' s=open(p).read() s=s.replace(""" let now
+59	332	gate	model	model		2026-11-01T19:50:25Z	10.7	
+59	333	gate	tool	shell	bash	2026-11-01T19:50:36Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "init_resource::<PanelRegistry>" src/lib.rs; sed -n 326,342p src/lib.rs
+59	334	gate	model	model		2026-11-01T19:50:36Z	3.4	
+59	335	gate	tool	cargo test	bash	2026-11-01T19:50:39Z	19.1	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/lib.rs' s=open(p).read() s=s.replace(" .init_resource::<PanelRegistry>()\n","",1) s=s.replace(" .chai
+59	336	gate	model	model		2026-11-01T19:50:58Z	4.6	
+59	337	gate	tool	shell	bash	2026-11-01T19:51:03Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 496,520p src/palette.rs; sed -n 612,700p src/palette.rs
+59	338	gate	model	model		2026-11-01T19:51:03Z	23.7	
+59	339	gate	tool	cargo test	bash	2026-11-01T19:51:27Z	22.3	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/palette.rs' s=open(p).read() old=s[s.index("/// How many rows fit the window, in the units of one lay
+59	340	gate	model	model		2026-11-01T19:51:49Z	3.9	
+59	341	gate	tool	cargo test	bash	2026-11-01T19:51:53Z	17.5	cd /home/ladvien/bevy_gooey_loop; cp src/palette.rs /tmp/g31m/palette_src.rs; python3 - <<'EOF' p='src/palette.rs' s=open(p).read() s=s.replace(" let exact = ro
+59	342	gate	model	model		2026-11-01T19:52:10Z	12.3	
+59	343	gate	tool	shell	bash	2026-11-01T19:52:23Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "row_height" src/palette.rs | head -20
+59	344	gate	model	model		2026-11-01T19:52:23Z	1.7	
+59	345	gate	tool	shell	bash	2026-11-01T19:52:24Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 590,632p src/palette.rs
+59	346	gate	model	model		2026-11-01T19:52:24Z	5.1	
+59	347	gate	tool	cargo test	bash	2026-11-01T19:52:30Z	22.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/palette.rs' s=open(p).read() s=s.replace(''' if let (Some(&row_height), Some(card), Some(window)) = (
+59	348	gate	model	model		2026-11-01T19:52:52Z	7.6	
+59	349	gate	tool	shell	bash	2026-11-01T19:52:59Z	0.1	cd /home/ladvien/bevy_gooey_loop; cp /tmp/g31m/lib.rs.orig src/lib.rs; cmp /tmp/g31m/palette.rs.orig tests/palette.rs && echo palette-test-intact; cmp /tmp/g31m
+59	350	gate	model	model		2026-11-01T19:52:59Z	6.3	
+59	351	gate	tool	edit files	edit	2026-11-01T19:53:06Z	0.0	Changelog: palette fit fix :: [CHANGELOG.md#F626] PUT >14: + +### Fixed + +- The command palette's count of rows that fit a short window no longer flips by one as the lit row walks down the 
+59	352	gate	tool	shell	bash	2026-11-01T19:53:06Z	0.0	[launched bg_8] cd /home/ladvien/bevy_gooey_loop; sed -n 14,22p CHANGELOG.md | cut -c1-120; git add -A src CHANGELOG.md; git commit -qm "Palette: the rows that fit a short wind
+59	353	gate	model	model		2026-11-01T19:53:06Z	3.5	
+59	354	gate	tool	wait: gate	wait	2026-11-01T19:53:09Z	200.7	Waiting for the full gate
+59	355	gate	model	model		2026-11-01T19:56:30Z	1.8	
+59	356	gate	tool	shell	bash	2026-11-01T19:56:32Z	0.0	grep -E "^test .*FAILED|panicked" -A4 /tmp/g31m/gate.log | head -30
+59	357	gate	model	model		2026-11-01T19:56:32Z	6.3	
+59	358	gate	tool	shell	bash	2026-11-01T19:56:38Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "ui_scale" src/dock.rs
+59	359	gate	model	model		2026-11-01T19:56:38Z	5.4	
+59	360	gate	tool	cargo test	bash	2026-11-01T19:56:43Z	0.0	[launched bg_9] cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/dock.rs' s=open(p).read() s=s.replace(" ui_scale: Res<'w, UiScale>,"," ui_scale: Option<Res<'w, UiSca
+59	361	gate	model	model		2026-11-01T19:56:43Z	4.7	
+59	362	gate	tool	wait: gate	wait	2026-11-01T19:56:48Z	250.0	Waiting for the full gate
+59	363	gate	model	model		2026-11-01T20:00:58Z	2.1	
+59	364	gate	tool	shell	bash	2026-11-01T20:01:00Z	0.0	grep -E "^error|^warning" -A8 /tmp/g31m/gate.log | grep -E "error|-->" | head -20; grep -c "test result: ok" /tmp/g31m/gate.log
+59	365	gate	model	model		2026-11-01T20:01:00Z	4.3	
+59	366	gate	tool	cargo build	bash	2026-11-01T20:01:05Z	18.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() i=s.index("/// A workbench of panels the player arranges") j=s.index("pu
+59	367	gate	model	model		2026-11-01T20:01:23Z	6.8	
+59	368	gate	tool	push gate	bash	2026-11-01T20:01:31Z	6.6	cd /home/ladvien/bevy_gooey_loop; cargo fmt --check && git add -A src && git commit -qm "Docs: the dock's rustdoc links resolve from widgets.rs" && git fetch -q
+59	369	gate	model	model		2026-11-01T20:01:37Z	4.7	
+59	370	gate	tool	shell	bash	2026-11-01T20:01:42Z	0.0	[launched bg_10] /tmp/g31m/gate.sh > /tmp/g31m/gate.log 2>&1; tail -3 /tmp/g31m/gate.log; grep -E "GATE FAILED" /tmp/g31m/gate.log
+59	371	gate	tool	github	bash	2026-11-01T20:01:42Z	2.4	cd /home/ladvien/bevy_gooey_loop; which cargo-semver-checks; gh issue view 14 --repo bevy-coven/bevy_gooey --json labels --jq '[.labels[].name]'; gh search issu
+59	372	gate	model	model		2026-11-01T20:01:44Z	2.8	
+59	373	gate	tool	github	bash	2026-11-01T20:01:47Z	0.8	cd /home/ladvien/bevy_gooey_loop; for n in 227 224; do echo "== $n"; gh issue view $n --repo bevy-coven/bevy_grimoire --json body --jq .body | grep -i -n "needs
+59	374	gate	model	model		2026-11-01T20:01:48Z	6.9	
+59	375	gate	tool	shell	bash	2026-11-01T20:01:56Z	0.1	cd /home/ladvien/bevy_gooey_loop; wc -l docs/loop-log.md; git log --oneline -1; df -h /home | tail -1
+59	376	gate	tool	read files	read	2026-11-01T20:01:56Z	0.1	docs/loop-log.md:-2
+59	377	gate	model	model		2026-11-01T20:01:56Z	2.7	
+59	378	gate	tool	wait: gate	wait	2026-11-01T20:01:58Z	301.9	Waiting for merged-tree gate
+59	379	gate	model	model		2026-11-01T20:07:00Z	3.5	
+59	380	ship	tool	phase mark	bash	2026-11-01T20:07:04Z	11.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark ship; git push -q origin main 2>&1 | tail -2; python3 ~/.local/share/wiggum/steps.
+59	381	ship	model	model		2026-11-01T20:07:15Z	4.0	
+59	382	ship	tool	shell	bash	2026-11-01T20:07:19Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "0\.17" README.md Cargo.toml docs/guide/*.md src/lib.rs | head;
+59	383	ship	model	model		2026-11-01T20:07:19Z	3.3	
+59	384	ship	tool	cargo publish	bash	2026-11-01T20:07:22Z	17.3	cd /home/ladvien/bevy_gooey_loop; sed -i '231s/0.1 – 0.17/0.1 – 0.18/' README.md; sed -i '3s/0.17.0/0.18.0/' Cargo.toml; sed -i '0,/^## \[Unreleased\]$/s//## [U
+59	385	ship	model	model		2026-11-01T20:07:40Z	2.8	
+59	386	ship	tool	push gate	bash	2026-11-01T20:07:42Z	20.8	cd /home/ladvien/bevy_gooey_loop; git add Cargo.toml CHANGELOG.md README.md && git commit -qm "release: v0.18.0" && cargo publish 2>&1 | tail -3; git tag -a v0.
+59	387	ship	model	model		2026-11-01T20:08:03Z	9.4	
+59	388	log	tool	phase mark	bash	2026-11-01T20:08:13Z	6.2	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark log; SHA=$(git rev-parse --short HEAD); echo $SHA; gh label create assumed-decisio
+59	389	log	model	model		2026-11-01T20:08:19Z	6.3	
+59	390	log	tool	git	bash	2026-11-01T20:08:25Z	0.0	cd ~/g31_base && git checkout -q 619e623 -- src/skin.rs src/model.rs && git status --short | head -3; cd ~/bevy_gooey_loop && git worktree remove ~/g31_base && 
+59	391	log	model	model		2026-11-01T20:08:25Z	4.3	
+59	392	log	tool	read files	read	2026-11-01T20:08:30Z	0.0	docs/loop-log.md:1223:raw
+59	393	log	model	model		2026-11-01T20:08:30Z	38.7	
+59	394	log	tool	edit files	edit	2026-11-01T20:09:08Z	0.2	Append iteration 31 log :: [docs/loop-log.md#CE28] PUT >1223: + +## Iteration 31 — 2026-11-01 — Docks (G-10, #14) + +**Triage.** `gh issue list`: 20 open, all `grimoire-ui` (#14 to #33), 
+59	395	log	model	model		2026-11-01T20:09:09Z	4.0	
+59	396	log	tool	shell	bash	2026-11-01T20:09:12Z	0.0	cd /home/ladvien/bevy_gooey_loop; git log --oneline | head -9
+59	397	log	model	model		2026-11-01T20:09:12Z	3.6	
+59	398	log	tool	push gate	bash	2026-11-01T20:09:16Z	1.5	cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='docs/loop-log.md' s=open(p).read() s=s.replace("build `5294192`; palette fix `b6ac8a0`'s successor below;
+59	399	log	model	model		2026-11-01T20:09:18Z	9.6	
+59	400	log	tool	learn	learn	2026-11-01T20:09:27Z	0.0	Recording dock lessons
+59	401	log	model	model		2026-11-01T20:09:27Z	13.0	
