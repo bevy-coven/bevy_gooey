@@ -120,9 +120,10 @@ fn text_scale_enlarges_every_text() {
 }
 
 #[test]
-fn both_presets_pass_their_own_checks() {
+fn the_presets_pass_their_own_checks() {
     assert_eq!(GooeySkin::dark().problems(), vec![]);
     assert_eq!(GooeySkin::parchment().problems(), vec![]);
+    assert_eq!(GooeySkin::high_contrast().problems(), vec![]);
 }
 
 #[test]
@@ -250,4 +251,146 @@ fn activating_a_button_reports_feedback() {
             kind: UiFeedbackKind::Activate
         }]
     );
+}
+
+fn rgb(color: Color) -> [f32; 3] {
+    let c = Srgba::from(color);
+    [c.red, c.green, c.blue]
+}
+
+#[test]
+fn high_contrast_holds_every_pair_to_seven_to_one_and_the_other_presets_do_not() {
+    let high = GooeySkin::high_contrast();
+    assert_eq!(high.problems(), vec![]);
+    assert_eq!(high.high_contrast_problems(), vec![]);
+    // The bar is XAG 102's, and it can fail: the other two presets meet the minimums and not it.
+    for (name, skin) in [
+        ("dark", GooeySkin::dark()),
+        ("parchment", GooeySkin::parchment()),
+    ] {
+        assert_eq!(skin.problems(), vec![], "{name} holds the minimums");
+        let weak = skin.high_contrast_problems();
+        assert!(!weak.is_empty(), "{name} is not a high-contrast skin");
+        for problem in &weak {
+            assert!(
+                matches!(problem, SkinProblem::LowContrast { ratio, needed, .. }
+                    if *needed == ENHANCED_CONTRAST && *ratio < ENHANCED_CONTRAST),
+                "{name}: {problem}"
+            );
+        }
+    }
+    // An edge a skin draws is checked too, and the quiet default is not.
+    let faint = GooeySkin {
+        surface_edge: Some(high.surface),
+        ..GooeySkin::high_contrast()
+    };
+    assert!(faint.problems().iter().any(|p| matches!(
+        p,
+        SkinProblem::LowContrast {
+            pair: "surface_edge on surface",
+            ..
+        }
+    )));
+}
+
+/// The opaque fill a text is drawn on: its own, or the nearest ancestor's, or the window's.
+fn solid_behind(app: &App, entity: Entity, skin: &GooeySkin) -> [f32; 3] {
+    let mut at = Some(entity);
+    while let Some(entity) = at {
+        if let Some(fill) = app.world().get::<BackgroundColor>(entity) {
+            let fill = Srgba::from(fill.0);
+            if fill.alpha >= 0.999 {
+                return [fill.red, fill.green, fill.blue];
+            }
+        }
+        at = app.world().get::<ChildOf>(entity).map(|p| p.parent());
+    }
+    rgb(skin.background)
+}
+
+#[test]
+fn every_text_a_high_contrast_screen_draws_reads_at_seven_to_one_in_every_state() {
+    let skin = GooeySkin::high_contrast();
+    let mut app = app();
+    app.insert_resource(skin.clone());
+    let rest = app.world_mut().spawn(button("Rest")).id();
+    let hover = app.world_mut().spawn(button("Hover")).id();
+    let press = app.world_mut().spawn(button("Press")).id();
+    let off = app.world_mut().spawn(button("Off")).id();
+    let widgets = [
+        app.world_mut().spawn(toggle("Subtitles", true)).id(),
+        app.world_mut().spawn(slider("Volume", 0.7, 0.0..=1.0)).id(),
+        app.world_mut()
+            .spawn(choice("Quality", ["Low", "High"], 1))
+            .id(),
+        app.world_mut()
+            .spawn(binding("Jump", Binding::Key(KeyCode::Space)))
+            .id(),
+    ];
+    let legend = app
+        .world_mut()
+        .spawn((prompts(), children![prompt("Select", Prompt::SELECT)]))
+        .id();
+    let title = app.world_mut().spawn(heading("Options")).id();
+    let mut inside = vec![title, rest, hover, press, off, legend];
+    inside.extend(widgets);
+    let card = app.world_mut().spawn(panel()).add_children(&inside).id();
+    app.world_mut().spawn(screen()).add_child(card);
+    app.update();
+    app.world_mut()
+        .entity_mut(hover)
+        .insert(bevy::picking::hover::Hovered(true));
+    app.world_mut().entity_mut(press).insert(Pressed);
+    app.world_mut()
+        .entity_mut(off)
+        .insert(bevy::ui::InteractionDisabled);
+    app.update();
+
+    // What is drawn: a binding's prompt and a choice's other options keep their room and are hidden.
+    let mut texts = app
+        .world_mut()
+        .query_filtered::<(Entity, &Text, &TextColor, &Visibility), ()>();
+    let found: Vec<(Entity, String, Color)> = texts
+        .iter(app.world())
+        .filter(|(.., visibility)| **visibility != Visibility::Hidden)
+        .map(|(e, t, c, _)| (e, t.0.clone(), c.0))
+        .collect();
+    assert!(found.len() >= 12, "the screen draws text: {found:?}");
+    for (entity, words, color) in found {
+        let ratio = contrast_ratio(rgb(color), solid_behind(&app, entity, &skin));
+        assert!(
+            ratio >= ENHANCED_CONTRAST,
+            "{words:?} is drawn at {ratio:.2}:1, high contrast needs {ENHANCED_CONTRAST}:1"
+        );
+    }
+}
+
+#[test]
+fn a_tooltip_and_a_panel_have_a_white_edge_in_high_contrast_and_the_quiet_one_otherwise() {
+    for (skin, edge) in [
+        (GooeySkin::high_contrast(), Color::WHITE),
+        (GooeySkin::dark(), GooeySkin::dark().surface_raised),
+        (
+            GooeySkin::parchment(),
+            GooeySkin::parchment().surface_raised,
+        ),
+    ] {
+        let mut app = app();
+        app.insert_resource(skin);
+        let card = app.world_mut().spawn(panel()).id();
+        let help = app
+            .world_mut()
+            .spawn((button("Help"), Tooltip("Opens the manual".into())))
+            .id();
+        let legend = app.world_mut().spawn(prompts()).id();
+        app.update();
+        let tip = child_with_role(&mut app, help, Role::Tooltip);
+        for entity in [card, tip, legend] {
+            assert_eq!(
+                app.world().get::<BorderColor>(entity),
+                Some(&BorderColor::all(edge)),
+                "{entity}'s edge"
+            );
+        }
+    }
 }

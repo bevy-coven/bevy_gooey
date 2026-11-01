@@ -13,6 +13,11 @@ pub const TEXT_CONTRAST: f32 = 4.5;
 /// to it: WCAG 2.2, success criteria 1.4.11 and 2.4.13.
 pub const NON_TEXT_CONTRAST: f32 = 3.0;
 
+/// The contrast a high-contrast mode holds every part of the interface to, against what it is drawn
+/// on: WCAG 2.2 success criterion 1.4.6 (Level AAA), and Xbox Accessibility Guideline 102's "7:1 for
+/// all UI elements". See [`crate::GooeySkin::high_contrast`].
+pub const ENHANCED_CONTRAST: f32 = 7.0;
+
 /// The smallest a pointer target may be, in logical pixels: WCAG 2.2, success criterion 2.5.8.
 pub const MIN_TARGET_PX: f32 = 24.0;
 

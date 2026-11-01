@@ -25,7 +25,7 @@
 //! over frames 20..n) and exits 10 frames later. `GOOEY_SHOT_DIR=<dir>` also keeps every
 //! `GOOEY_SHOT_EVERY`th frame (`GOOEY_SHOT_FROM`, default frame 30) there as `f_%04d.png`, and prints
 //! `gooey: kept <n> frames in <dir>`: those frames are a GIF's, and the still stays one file.
-//! `GOOEY_SKIN=parchment` starts in parchment;
+//! `GOOEY_SKIN=parchment` or `GOOEY_SKIN=high_contrast` starts in that skin;
 //! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size.
 //! `GOOEY_KEYS=down,down,enter,…` stages a state before the shot: from frame 30 it presses one key
 //! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`, `escape`), or
@@ -193,6 +193,7 @@ const WORLD_PRESSED: Color = Color::srgb(0.42, 0.20, 0.10);
 fn main() {
     let mut skin = match std::env::var("GOOEY_SKIN").as_deref() {
         Ok("parchment") => GooeySkin::parchment(),
+        Ok("high_contrast") => GooeySkin::high_contrast(),
         _ => GooeySkin::dark(),
     };
     if let Some(scale) = std::env::var("GOOEY_TEXT_SCALE")
@@ -432,7 +433,7 @@ fn setup(mut commands: Commands) {
                                                 }
                                             ),
                                         ),
-                                        choice("Window", ["Windowed", "Borderless", "Fullscreen"], 0),
+                                        skin_preset("Theme"),
                                     ]),
                                     tab_page(children![
                                         (

@@ -1,6 +1,6 @@
 # Player options the crate owns
 
-`text_size`, `interface_size` and `pad_style` are the options-screen rows for the three settings this crate itself reads. Each is one line, needs no observer and no state of your own, and the whole screen answers the frame the player steps it:
+`text_size`, `interface_size`, `pad_style` and `skin_preset` are the options-screen rows for the four settings this crate itself reads. Each is one line, needs no observer and no state of your own, and the whole screen answers the frame the player steps it:
 
 ```rust
 use bevy::prelude::*;
@@ -14,6 +14,7 @@ fn display_page(mut commands: Commands) {
             text_size("Text size"),
             interface_size("Interface size"),
             pad_style("Controller"),
+            skin_preset("Theme"),
         ],
     ));
 }
@@ -24,8 +25,11 @@ fn display_page(mut commands: Commands) {
 | `text_size(label)` | how large every word is | `GooeySkin::text_scale` | 100%, 125%, 150%, 200% (`TEXT_SIZE_STEPS`) |
 | `interface_size(label)` | how large the whole interface is, on top of the window's share | `UiScaleSettings::scale` | 75%, 100%, 125%, 150% (`INTERFACE_SIZE_STEPS`) |
 | `pad_style(label)` | whose button names a pad shows | `BindingSettings::pad_style` | Xbox, PlayStation, Switch (`PAD_STYLES`) |
+| `skin_preset(label)` | the look: the colours of every widget | `GooeySkin`'s colours, and no size | Dark, Parchment, High contrast (`SkinPreset::ALL`) |
 
 Text size is the one the Xbox Accessibility Guideline 101 and WCAG 2.2 (1.4.4) ask for: text that resizes to 200% "without loss of content or functionality", and the rule that it reaches everything the player reads, the dialog, the toast and the legend as well as the menu. `GooeySkin::text_scale` is read by every part, so the row only has to write it. Interface size enlarges the panels and the targets too, and goes below 100% for the player who wants the interface to cover less of the game; EVE Online's UI scaling tops out at 150%, as this one does.
+
+Theme is the high-contrast switch: Xbox Accessibility Guideline 102 asks a game for "a high contrast mode ... the contrast ratios should equal or exceed 7:1 for all UI elements against their background", and WCAG's own technique for it is "a control ... that allows users to switch to a presentation that uses sufficient contrast" (G174). A step writes the preset's colours and keeps every size, so a player at 200% text who asks for high contrast gets both, and the row follows the skin the same way the others follow theirs (a skin you tuned shows the nearest of the three). The preset and its 7:1 check are in [skins](skins.md). The names are English words, not numerals, so a game that localises writes a `choice` over its own strings with `SkinPreset::ALL` and `GooeySkin::with_colours_of`.
 
 ## What a row is
 

@@ -1,6 +1,6 @@
 # Skins
 
-`GooeySkin::dark()` is the default; `GooeySkin::parchment()` is the light one. Edit the resource live (an options screen, or an editor) and `apply_skin` restyles every widget that frame. With the `serde` feature a skin is RON or any serde format, and a partial file fills the rest from the default, so a project saves only what it changed:
+`GooeySkin::dark()` is the default; `GooeySkin::parchment()` is the light one and `GooeySkin::high_contrast()` the one for players who need more contrast than WCAG's minimum. Edit the resource live (an options screen, or an editor) and `apply_skin` restyles every widget that frame. With the `serde` feature a skin is RON or any serde format, and a partial file fills the rest from the default, so a project saves only what it changed:
 
 ```ron
 (accent: Srgba((red: 0.2, green: 0.6, blue: 0.9, alpha: 1.0)), text_scale: 1.25)
@@ -11,6 +11,7 @@
 - text under 4.5:1 contrast against the surface, the raised surface, a hovered button, or the accent (WCAG 2.2, 1.4.3);
 - a focus ring under 3:1 against the raised surface (WCAG 2.2, 1.4.11);
 - a meter's fill (the accent) under 3:1 against its track, or its frame (`outline`) under 3:1 against the panel, or an off switch's knob (`text_muted`) under 3:1 against its track, or a toast's mark (`accent`, `danger`) under 3:1 against the toast's surface (WCAG 2.2, 1.4.11);
+- a `surface_edge` a skin sets under 3:1 against the surface (WCAG 2.2, 1.4.11);
 - `min_target` under 24 px (WCAG 2.2, 2.5.8; the default is 44 px);
 - a meter too thin to show a fill inside its frame and gap (`meter_height × text_scale` at most 4 × `border`);
 - a size that is not finite, or not positive where it must be.
@@ -20,13 +21,21 @@ Fonts are yours: set `GooeyFonts { body, heading }`. The default draws Bevy's bu
 ## Every field
 
 The colours are `background`, `surface`, `surface_raised`, `text`, `text_muted`, `accent`,
-`accent_text`, `danger`, `focus_ring`, `outline` and `scrim`; the sizes are `text_size`,
+`accent_text`, `danger`, `focus_ring`, `outline`, `scrim` and `surface_edge` (`None` is `surface_raised`); the sizes are `text_size`,
 `heading_size`, `gap`, `padding`, `radius`, `border`, `meter_height` and `min_target`; `text_scale` is
 the player's option and multiplies text alone. A name ends up in exactly one place: a heading's text
 colour is `text` there and nowhere else, because `apply_skin` styles every widget by its `Role`.
 
 `SkinProblem` is the type `problems()` returns; the plugin warns once per problem on a change and never
 refuses a skin, so an editor can show a half-finished one.
+
+## Three looks, and a high-contrast one that is checked
+
+`GooeySkin::dark()` (the default), `GooeySkin::parchment()` and `GooeySkin::high_contrast()` are the presets, and `SkinPreset::{Dark, Parchment, HighContrast}` names them for a settings row (`SkinPreset::ALL`, `name()`, `skin()`, and `SkinPreset::of(&skin)` for the nearest to a skin). They share one set of sizes, so changing the look never moves a layout.
+
+High contrast is the mode Xbox Accessibility Guideline 102 asks a game for: "When enabled, the contrast ratios should equal or exceed 7:1 for all UI elements against their background." Opaque black surfaces, white text and white outlines, an amber accent, a cyan focus ring that no other state uses, and a light red for danger (WCAG advises against red on black, for protanopia). A panel, a tooltip and the legend are framed in white (`surface_edge: Some(white)`; the other presets leave it `None`, which keeps their quiet `surface_raised` frame), so a tooltip over a panel is a card of its own. `GooeySkin::high_contrast_problems()` is `problems()` with every pair held to `ENHANCED_CONTRAST`, 7:1, so a game that writes its own high-contrast skin has the check in one call (it is empty for `high_contrast()` and not for the other two, which meet the 4.5:1 and 3:1 minimums and no more).
+
+`skin.with_colours_of(&other)` is the skin with `other`'s colours and its own sizes: a player who set 200% text and then asks for high contrast gets both, which is what the [theme row](options.md) does. A game that starts in high contrast because the platform asks (Bevy 0.20 exposes no such setting, so the host reads it) inserts `GooeySkin::high_contrast()` before its first frame.
 
 ## Loading one
 

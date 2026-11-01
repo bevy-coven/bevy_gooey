@@ -67,6 +67,7 @@ fn env<T: std::str::FromStr>(name: &str) -> Option<T> {
 fn main() {
     let mut skin = match std::env::var("GOOEY_SKIN").as_deref() {
         Ok("parchment") => GooeySkin::parchment(),
+        Ok("high_contrast") => GooeySkin::high_contrast(),
         _ => GooeySkin::dark(),
     };
     if let Some(scale) = env("GOOEY_TEXT_SCALE") {
@@ -158,6 +159,7 @@ fn setup(mut commands: Commands) {
                         (text_size("Text size"), AutoFocus),
                         interface_size("Interface size"),
                         pad_style("Controller"),
+                        skin_preset("Theme"),
                     ]
                 )],
             ),

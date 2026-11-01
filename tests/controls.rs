@@ -911,7 +911,11 @@ fn focus_and_a_flip_write_feedback_like_a_button_does() {
 
 #[test]
 fn a_skin_whose_off_knob_vanishes_in_its_track_is_reported() {
-    for skin in [GooeySkin::dark(), GooeySkin::parchment()] {
+    for skin in [
+        GooeySkin::dark(),
+        GooeySkin::parchment(),
+        GooeySkin::high_contrast(),
+    ] {
         assert_eq!(skin.problems(), vec![]);
     }
     let skin = GooeySkin {
