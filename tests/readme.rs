@@ -1,5 +1,5 @@
 //! The README's quick start is the crate-root doctest, so the copy a reader pastes is the copy that
-//! compiles. Run with `cargo test --features readme-example --test readme`.
+//! compiles. Run with `cargo test --features readme-example --test all readme::`.
 #![cfg(feature = "readme-example")]
 
 const README: &str = include_str!("../README.md");

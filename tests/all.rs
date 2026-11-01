@@ -1,0 +1,69 @@
+//! Every integration test in one binary.
+//!
+//! Each file in `tests/` used to be its own test executable, and each linked its own copy of Bevy: 650
+//! to 790 MB apiece, 24 GB for one relink. They are modules of this one now (`autotests = false` in
+//! `Cargo.toml`), so a test is `all::<file>::<name>`. A new file in `tests/` is declared here, or
+//! `every_test_file_is_a_module` fails: an undeclared file is never compiled and its tests never run.
+
+mod binding;
+mod cancel;
+mod choice;
+mod context_menu;
+mod controls;
+mod density;
+mod dialog;
+mod dialog_look;
+mod dock;
+mod large_text;
+mod leaf;
+mod lines;
+mod list;
+mod menu;
+mod meter;
+mod nav;
+mod options;
+mod palette;
+mod pointer;
+mod popover;
+mod prompts;
+mod readme;
+mod scale;
+mod scope;
+mod serde;
+mod shortcut;
+mod skin;
+mod split;
+mod table;
+mod tabs;
+mod text;
+mod toast;
+mod tokens;
+mod tooltip;
+mod tree;
+
+/// The files in `tests/` and the `mod` lines above are the same set.
+#[test]
+fn every_test_file_is_a_module() {
+    const THIS_FILE: &str = include_str!("all.rs");
+    let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests");
+    let entries = std::fs::read_dir(dir).expect("tests/ is readable");
+    let mut missing = Vec::new();
+    for entry in entries {
+        let path = entry.expect("a directory entry").path();
+        if path.extension().is_none_or(|e| e != "rs") {
+            continue;
+        }
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .expect("a UTF-8 file name");
+        if stem != "all" && !THIS_FILE.lines().any(|l| l == format!("mod {stem};")) {
+            missing.push(stem.to_owned());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tests/{{{}}}.rs is not declared as a `mod` in tests/all.rs, so it never compiles or runs",
+        missing.join(",")
+    );
+}
