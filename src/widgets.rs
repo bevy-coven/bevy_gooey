@@ -31,6 +31,7 @@ use crate::list::ListView;
 use crate::meter::Meter;
 use crate::model::{PadStyle, meter_fraction, slider_fraction, slider_text};
 use crate::nav::Dialog;
+use crate::options::{OptionRow, option_on_change};
 use crate::prompt::Prompt;
 use crate::skin::Role;
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
@@ -38,6 +39,11 @@ use crate::text::{
     TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
 };
 use crate::toast::{Toast, ToastKind};
+
+/// A control's label is one line: the row is as wide as its label and its control need, so a label
+/// that wraps was wrapped by a rounding error in the row's width (a label 210 px wide in a row that
+/// came out a hair under 210 stood on two lines at 125% text, and the row was twice as tall).
+const ONE_LINE: TextLayout = TextLayout::new(Justify::Left, LineBreak::NoWrap);
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
 const SLIDER_STEPS: f32 = 20.0;
@@ -271,7 +277,7 @@ pub fn toggle(label: impl Into<String>, on: bool) -> impl Bundle {
         AutoDirectionalNavigation::default(),
         observe(checkbox_self_update),
         children![
-            (Text::new(label), Role::ControlText),
+            (Text::new(label), ONE_LINE, Role::ControlText),
             (
                 Node {
                     align_items: AlignItems::Center,
@@ -335,8 +341,12 @@ pub fn slider(label: impl Into<String>, value: f32, range: RangeInclusive<f32>) 
                 },
                 Role::SliderHeader,
                 children![
-                    (Text::new(label), Role::ControlText),
-                    (Text::new(slider_text(value, min, max)), Role::SliderReadout),
+                    (Text::new(label), ONE_LINE, Role::ControlText),
+                    (
+                        Text::new(slider_text(value, min, max)),
+                        ONE_LINE,
+                        Role::SliderReadout
+                    ),
                 ],
             ),
             (
@@ -427,7 +437,12 @@ pub fn choice<S: Into<String>>(
         observe(choice_on_activate),
         observe(choice_on_key_input),
         children![
-            (Text::new(label), Role::ControlText, Pickable::IGNORE),
+            (
+                Text::new(label),
+                ONE_LINE,
+                Role::ControlText,
+                Pickable::IGNORE
+            ),
             (
                 Node {
                     align_items: AlignItems::Center,
@@ -454,6 +469,7 @@ pub fn choice<S: Into<String>>(
                                         ..default()
                                     },
                                     Text::new(text),
+                                    ONE_LINE,
                                     Role::ChoiceOption,
                                     Pickable::IGNORE,
                                     if index == selected {
@@ -470,6 +486,90 @@ pub fn choice<S: Into<String>>(
             ),
         ],
     )
+}
+
+/// One of the options screen's rows for the settings this crate itself reads: a [`choice`] over
+/// the steps of `kind`, which edits one field of its resource and shows it.
+fn option_row(kind: OptionRow, label: impl Into<String>) -> impl Bundle {
+    (
+        choice(label, kind.options(), 0),
+        kind,
+        observe(option_on_change),
+    )
+}
+
+/// The player's **text size**: a [`choice`] row over 100%, 125%, 150% and 200%
+/// ([`TEXT_SIZE_STEPS`](crate::TEXT_SIZE_STEPS)) that sets
+/// [`GooeySkin::text_scale`](crate::GooeySkin::text_scale), so every
+/// heading, label, button, dialog, toast and legend grows the frame the player steps it (WCAG 2.2 SC
+/// 1.4.4 and Xbox Accessibility Guideline 101 ask for 200%). `label` is the row's name, in the
+/// host's language.
+///
+/// The skin is the one place the setting lives. The row moves to the step nearest the skin's
+/// `text_scale` the frame it is spawned and whenever the skin changes, with no
+/// [`ValueChange`](crate::ValueChange), so a
+/// loaded save shows on it; a value between two steps shows the nearest and is left alone until
+/// the player steps. A player's step writes `text_scale` and no other field. It is a [`choice`] in
+/// every other way: it takes `Tooltip`, `InteractionDisabled` and a game's own
+/// `ValueChange<usize>` observer (the index into `TEXT_SIZE_STEPS`), and a game that wants other
+/// steps writes a `choice` and its own observer. Needs [`GooeyStylePlugin`](crate::GooeyStylePlugin).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((panel(), children![heading("Display"), text_size("Text size")]));
+/// # }
+/// ```
+pub fn text_size(label: impl Into<String>) -> impl Bundle {
+    option_row(OptionRow::TextSize, label)
+}
+
+/// The player's **interface size**: a [`choice`] row over 75%, 100%, 125% and 150%
+/// ([`INTERFACE_SIZE_STEPS`](crate::INTERFACE_SIZE_STEPS)) that sets
+/// [`UiScaleSettings::scale`](crate::UiScaleSettings::scale),
+/// which enlarges everything, where [`text_size`] enlarges text alone: on top of the window's own
+/// share, so 125% is 1.25 times what the window would draw. `label` is the row's name, in the host's
+/// language.
+///
+/// It behaves as [`text_size`] does: the scale is the one place the setting lives, the row follows
+/// it with no event, and a step writes `scale` and nothing else (not `reference_short_side`).
+/// Needs [`GooeyStylePlugin`](crate::GooeyStylePlugin) for the row and
+/// [`GooeyScalePlugin`](crate::GooeyScalePlugin) for the setting; without the second the row steps
+/// and nothing is drawn differently.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((panel(), children![heading("Display"), interface_size("Interface size")]));
+/// # }
+/// ```
+pub fn interface_size(label: impl Into<String>) -> impl Bundle {
+    option_row(OptionRow::InterfaceSize, label)
+}
+
+/// The player's **controller**: a [`choice`] row over Xbox, PlayStation and Switch
+/// ([`PAD_STYLES`](crate::PAD_STYLES)) that sets
+/// [`BindingSettings::pad_style`](crate::BindingSettings::pad_style), so every
+/// [`binding`] row and [`prompts`] legend names a pad's buttons as the player's controller prints
+/// them ("A" or "Cross", "B" or "Circle"). `label` is the row's name, in the host's language; the
+/// options are the makers' names. The crate does not detect a pad's make: the setting starts at the
+/// host's [`BindingSettings`](crate::BindingSettings) (Xbox by default) and this row is how the
+/// player changes it.
+///
+/// It behaves as [`text_size`] does: the resource is the one place the setting lives, the row
+/// follows it with no event, and a step writes `pad_style` and nothing else.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((panel(), children![heading("Controls"), pad_style("Controller")]));
+/// # }
+/// ```
+pub fn pad_style(label: impl Into<String>) -> impl Bundle {
+    option_row(OptionRow::PadStyle, label)
 }
 
 /// One of a choice's two arrows: a target as wide as a button, with the chevron drawn in it. The
@@ -542,6 +642,7 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
                 ..default()
             },
             Text::new(text),
+            ONE_LINE,
             role,
             visibility,
             Pickable::IGNORE,
@@ -563,7 +664,12 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
         observe(binding_on_activate),
         observe(binding_on_key_input),
         children![
-            (Text::new(label), Role::ControlText, Pickable::IGNORE),
+            (
+                Text::new(label),
+                ONE_LINE,
+                Role::ControlText,
+                Pickable::IGNORE
+            ),
             (
                 Node {
                     display: Display::Grid,
@@ -638,7 +744,12 @@ pub fn text_input(label: impl Into<String>, value: impl Into<String>) -> impl Bu
         observe(text_row_on_acquire),
         Children::spawn(SpawnWith(move |row: &mut RelatedSpawner<ChildOf>| {
             let root = row.target_entity();
-            row.spawn((Text::new(label), Role::ControlText, Pickable::IGNORE));
+            row.spawn((
+                Text::new(label),
+                ONE_LINE,
+                Role::ControlText,
+                Pickable::IGNORE,
+            ));
             row.spawn((Node::default(), Role::TextCell))
                 .with_children(|cell| {
                     cell.spawn((

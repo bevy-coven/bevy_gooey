@@ -954,3 +954,39 @@ fn a_choice_has_a_role_for_every_part_and_the_skin_has_no_problem_with_it() {
     assert!(GooeySkin::dark().problems().is_empty());
     assert!(GooeySkin::parchment().problems().is_empty());
 }
+
+#[test]
+fn choices_stacked_in_a_panel_have_their_arrows_and_values_in_one_place_each() {
+    let mut app = app();
+    // Options of very different widths, as a settings column has them.
+    let world = app.world_mut();
+    let rows: Vec<Entity> = [
+        ("Text size", vec!["100%", "200%"]),
+        ("Quality", vec!["Low", "Medium", "Ultra high"]),
+        ("Controller", vec!["Xbox", "PlayStation", "Switch"]),
+        ("Window", vec!["Windowed", "Borderless", "Fullscreen"]),
+    ]
+    .into_iter()
+    .map(|(label, options)| world.spawn(choice(label, options, 0)).id())
+    .collect();
+    let card = world.spawn(panel()).add_children(&rows).id();
+    world.spawn(screen()).add_child(card);
+    settle(&mut app);
+    for role in [Role::ChoiceBack, Role::ChoiceForward, Role::ChoiceCell] {
+        let places: Vec<f32> = rows
+            .iter()
+            .map(|&row| rect(&app, part(&app, row, role)).center().x)
+            .collect();
+        assert!(
+            places.iter().all(|x| (x - places[0]).abs() <= 1.0),
+            "{role:?} of four choices stand at {places:?}"
+        );
+    }
+    // And the widest option still fits: the cell is no narrower than it needs.
+    for &row in &rows {
+        let cell = rect(&app, part(&app, row, Role::ChoiceCell));
+        for option in parts(&app, row, Role::ChoiceOption) {
+            assert!(rect(&app, option).width() <= cell.width() + 1.0);
+        }
+    }
+}
