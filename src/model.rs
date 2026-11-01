@@ -1215,6 +1215,172 @@ pub fn dock_neighbour(from: (f32, f32), others: &[(f32, f32)], toward: DockZone)
         .map(|(index, _)| index)
 }
 
+/// The order of two cells' text for a table's sort: runs of digits compare by value ("2" before
+/// "10", "007" the same number as "7"), everything else letter by letter without regard to case,
+/// and what is still equal falls back to the exact bytes, so the order is total and stable.
+///
+/// ```
+/// use std::cmp::Ordering::{Equal, Greater, Less};
+/// assert_eq!(bevy_gooey::natural_cmp("Item 2", "Item 10"), Less);
+/// assert_eq!(bevy_gooey::natural_cmp("item 10", "Item 2"), Greater);
+/// assert_eq!(bevy_gooey::natural_cmp("apple", "Banana"), Less);
+/// assert_eq!(bevy_gooey::natural_cmp("a", "a"), Equal);
+/// ```
+pub fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    // The digits at the start of `s` (ASCII, so a byte length is a char length), without the
+    // zeros that lead them.
+    fn digits(s: &str) -> (&str, usize) {
+        let run = s.bytes().take_while(u8::is_ascii_digit).count();
+        (s[..run].trim_start_matches('0'), run)
+    }
+    let (mut x, mut y) = (a, b);
+    loop {
+        match (x.chars().next(), y.chars().next()) {
+            (None, None) => return a.cmp(b),
+            (None, Some(_)) => return Ordering::Less,
+            (Some(_), None) => return Ordering::Greater,
+            (Some(p), Some(q)) if p.is_ascii_digit() && q.is_ascii_digit() => {
+                let ((m, taken_x), (n, taken_y)) = (digits(x), digits(y));
+                let order = m.len().cmp(&n.len()).then_with(|| m.cmp(n));
+                if order != Ordering::Equal {
+                    return order;
+                }
+                (x, y) = (&x[taken_x..], &y[taken_y..]);
+            }
+            (Some(p), Some(q)) => {
+                let order = p.to_lowercase().cmp(q.to_lowercase());
+                if order != Ordering::Equal {
+                    return order;
+                }
+                (x, y) = (&x[p.len_utf8()..], &y[q.len_utf8()..]);
+            }
+        }
+    }
+}
+
+/// The first row a virtualized table draws: the row the `scroll` offset has at its top, held so
+/// that `pool` rows from it are all rows (`len` rows in all, each `pitch` tall). A scroll past the
+/// end, a pool larger than the data or a pitch that is not usable answer with a valid first row.
+///
+/// ```
+/// assert_eq!(bevy_gooey::table_window(0.0, 40.0, 10, 1000), 0);
+/// assert_eq!(bevy_gooey::table_window(400.0, 40.0, 10, 1000), 10);
+/// assert_eq!(bevy_gooey::table_window(399.0, 40.0, 10, 1000), 9);
+/// // The last rows: the pool never runs past the data.
+/// assert_eq!(bevy_gooey::table_window(1e9, 40.0, 10, 1000), 990);
+/// assert_eq!(bevy_gooey::table_window(400.0, 40.0, 10, 4), 0);
+/// assert_eq!(bevy_gooey::table_window(f32::NAN, 40.0, 10, 1000), 0);
+/// ```
+pub fn table_window(scroll: f32, pitch: f32, pool: usize, len: usize) -> usize {
+    let last = len.saturating_sub(pool);
+    if !(scroll.is_finite() && pitch.is_finite()) || pitch <= 0.0 || scroll <= 0.0 {
+        return 0;
+    }
+    ((scroll / pitch).floor() as usize).min(last)
+}
+
+/// A move of a table's cursor row.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TableStep {
+    /// One row up.
+    Up,
+    /// One row down.
+    Down,
+    /// A page up.
+    PageUp,
+    /// A page down.
+    PageDown,
+    /// The first row of the data.
+    First,
+    /// The last row of the data, not of the rows drawn.
+    Last,
+}
+
+/// Where a table's cursor goes: from display row `from` (none yet) by `step`, in `len` rows with
+/// `page` rows to a page. Never past either end; `None` when there are no rows. With no cursor
+/// yet, any step but Up and PageUp lands on the first row and those two on the last, so the first
+/// key press lands somewhere in sight of where the player was going.
+///
+/// ```
+/// use bevy_gooey::TableStep::*;
+/// assert_eq!(bevy_gooey::table_step(Some(5), Down, 10, 4), Some(6));
+/// assert_eq!(bevy_gooey::table_step(Some(9), Down, 10, 4), Some(9));
+/// assert_eq!(bevy_gooey::table_step(Some(5), PageDown, 10, 4), Some(9));
+/// assert_eq!(bevy_gooey::table_step(Some(2), PageUp, 10, 4), Some(0));
+/// assert_eq!(bevy_gooey::table_step(Some(2), Last, 10_000, 4), Some(9_999));
+/// assert_eq!(bevy_gooey::table_step(None, Down, 10, 4), Some(0));
+/// assert_eq!(bevy_gooey::table_step(None, Up, 10, 4), Some(9));
+/// assert_eq!(bevy_gooey::table_step(Some(0), Down, 0, 4), None);
+/// ```
+pub fn table_step(from: Option<usize>, step: TableStep, len: usize, page: usize) -> Option<usize> {
+    let last = len.checked_sub(1)?;
+    let page = page.max(1);
+    let Some(from) = from.map(|f| f.min(last)) else {
+        return Some(match step {
+            TableStep::Up | TableStep::PageUp | TableStep::Last => last,
+            TableStep::Down | TableStep::PageDown | TableStep::First => 0,
+        });
+    };
+    Some(match step {
+        TableStep::Up => from.saturating_sub(1),
+        TableStep::Down => (from + 1).min(last),
+        TableStep::PageUp => from.saturating_sub(page),
+        TableStep::PageDown => (from + page).min(last),
+        TableStep::First => 0,
+        TableStep::Last => last,
+    })
+}
+
+/// The scroll that keeps a table's anchor row where it stood when its rows change under it: the
+/// row that was `old_first` at the top of the view, `scroll` pixels down, is now display row
+/// `new_index` (`None`: it is gone, so the scroll stays), `pitch` pixels to a row, held to `max`.
+///
+/// ```
+/// // 100 rows come in above the row that was at the top, 5 px into row 50.
+/// assert_eq!(bevy_gooey::table_anchor(2005.0, 40.0, 50, Some(150), 1e9), 6005.0);
+/// // The anchor row is gone: stay.
+/// assert_eq!(bevy_gooey::table_anchor(2005.0, 40.0, 50, None, 1e9), 2005.0);
+/// // Held to the end of the data.
+/// assert_eq!(bevy_gooey::table_anchor(2005.0, 40.0, 50, Some(150), 3000.0), 3000.0);
+/// ```
+pub fn table_anchor(
+    scroll: f32,
+    pitch: f32,
+    old_first: usize,
+    new_index: Option<usize>,
+    max: f32,
+) -> f32 {
+    let moved = new_index.map_or(scroll, |new| {
+        scroll + (new as f32 - old_first as f32) * pitch
+    });
+    if moved.is_finite() {
+        moved.clamp(0.0, max.max(0.0))
+    } else {
+        0.0
+    }
+}
+
+/// The least a table's column may be, in body text sizes: room for a letter and a sort mark.
+pub const TABLE_LEAST_COLUMN: f32 = 3.0;
+
+/// A column's width after its edge moves `by` pixels from `start` (all in logical pixels), never
+/// under `least`.
+///
+/// ```
+/// assert_eq!(bevy_gooey::column_resize(100.0, 40.0, 48.0), 140.0);
+/// assert_eq!(bevy_gooey::column_resize(100.0, -90.0, 48.0), 48.0);
+/// assert_eq!(bevy_gooey::column_resize(100.0, f32::NAN, 48.0), 100.0);
+/// ```
+pub fn column_resize(start: f32, by: f32, least: f32) -> f32 {
+    let wide = start + by;
+    if wide.is_finite() {
+        wide.max(least)
+    } else {
+        start.max(least)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
