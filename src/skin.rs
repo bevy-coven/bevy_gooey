@@ -670,6 +670,17 @@ impl GooeySkin {
         }
     }
 
+    /// The height of one row of a [`crate::table`], logical px: a button's, so a thumb or a pad's
+    /// focus jump hits it, and a whole number of pixels so ten thousand of them add up to what the
+    /// layout lays out. Every row is exactly this tall: it is the one fact that lets a table draw
+    /// only the rows in view.
+    pub fn table_pitch(&self) -> f32 {
+        let text = self.text_size * self.text_scale;
+        (text * LIST_LINE_TEXT_SIZES + self.pad() * LIST_PADDING_FACTOR)
+            .max(self.target())
+            .ceil()
+    }
+
     /// This skin with every colour taken from `look` and every size kept, the text scale and a
     /// game's own gap and padding included: the step of a [`crate::skin_preset`] row, so a player
     /// who set 200% text and then asks for high contrast has both.
