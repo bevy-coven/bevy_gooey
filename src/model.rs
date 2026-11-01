@@ -1509,6 +1509,167 @@ pub fn type_ahead(
     (0..len).map(|k| (start + k) % len.max(1)).find(|&i| hit(i))
 }
 
+/// Why [`parse_number`] would not read some text as a number. The words are for the player
+/// ([`std::fmt::Display`]): a game shows them beside the field, the crate sends them with
+/// [`crate::NumberRefused`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum NumberError {
+    /// Nothing was typed.
+    Empty,
+    /// An expression such as `1.5*2`: a number field takes a number, not a sum.
+    Expression,
+    /// Letters, or digits in the wrong places.
+    NotANumber,
+    /// A number too large to hold, or `inf` or `NaN`.
+    NotFinite,
+}
+
+impl std::fmt::Display for NumberError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Empty => "type a number",
+            Self::Expression => "type a number, not an expression",
+            Self::NotANumber => "that is not a number",
+            Self::NotFinite => "that number is too large",
+        })
+    }
+}
+
+/// The number a player typed: spaces round it are ignored, a leading `+`, `-` or `−` (U+2212) is
+/// a sign, and a decimal point and an exponent (`1e3`) are read; the decimal comma is not. An
+/// expression (`1.5*2`, `3+4`, `(2)`) is refused as [`NumberError::Expression`], never evaluated.
+///
+/// ```
+/// use bevy_gooey::{NumberError, parse_number};
+/// assert_eq!(parse_number(" 2.5 "), Ok(2.5));
+/// assert_eq!(parse_number("−3"), Ok(-3.0));
+/// assert_eq!(parse_number("1e3"), Ok(1000.0));
+/// assert_eq!(parse_number("1.5*2"), Err(NumberError::Expression));
+/// assert_eq!(parse_number("abc"), Err(NumberError::NotANumber));
+/// assert_eq!(parse_number(""), Err(NumberError::Empty));
+/// ```
+pub fn parse_number(text: &str) -> Result<f32, NumberError> {
+    let text = text.trim();
+    if text.is_empty() {
+        return Err(NumberError::Empty);
+    }
+    let text = text.replace('\u{2212}', "-");
+    let mut previous = None;
+    for (i, c) in text.char_indices() {
+        let sign = matches!(c, '+' | '-');
+        let exponent_sign = sign && matches!(previous, Some('e' | 'E'));
+        if matches!(c, '*' | '/' | '(' | ')' | '^' | '%' | '\u{d7}' | '\u{f7}')
+            || (sign && i > 0 && !exponent_sign)
+        {
+            return Err(NumberError::Expression);
+        }
+        previous = Some(c);
+    }
+    match text.parse::<f32>() {
+        Ok(n) if n.is_finite() => Ok(n),
+        Ok(_) => Err(NumberError::NotFinite),
+        Err(_) => Err(NumberError::NotANumber),
+    }
+}
+
+/// The digits after the point that show every multiple of `step` exactly: 1 for 0.1, 2 for 0.25,
+/// 0 for 1 or 5, at most 6. A step that is not a positive number shows 2.
+///
+/// ```
+/// assert_eq!(bevy_gooey::number_decimals(0.1), 1);
+/// assert_eq!(bevy_gooey::number_decimals(0.25), 2);
+/// assert_eq!(bevy_gooey::number_decimals(5.0), 0);
+/// ```
+pub fn number_decimals(step: f32) -> usize {
+    if !(step.is_finite() && step > 0.0) {
+        return 2;
+    }
+    (0..=6)
+        .find(|&d| {
+            let scale = 10f32.powi(d);
+            ((step * scale).round() / scale - step).abs() <= step * 1e-4
+        })
+        .map_or(6, |d| d as usize)
+}
+
+/// A number as a field shows it: the digits of `step` (see [`number_decimals`]) and more when the
+/// value needs them (the fewest, up to 6, that read back as the same number), so the text never
+/// says a different number than the value. Never `-0`.
+///
+/// ```
+/// assert_eq!(bevy_gooey::format_number(5.0, 0.1), "5.0");
+/// assert_eq!(bevy_gooey::format_number(1.55, 0.1), "1.55");
+/// assert_eq!(bevy_gooey::format_number(-0.0, 0.1), "0.0");
+/// assert_eq!(bevy_gooey::format_number(42.0, 1.0), "42");
+/// ```
+pub fn format_number(value: f32, step: f32) -> String {
+    let base = number_decimals(step);
+    if !value.is_finite() {
+        return format!("{value}");
+    }
+    let value = if value == 0.0 { 0.0 } else { value };
+    (base..=6)
+        .map(|d| format!("{value:.d$}"))
+        .find(|s| s.parse::<f32>().is_ok_and(|n| n == value))
+        .unwrap_or_else(|| format!("{value:.6}"))
+}
+
+/// What a drag of `distance` logical pixels makes of a number that was `start` when the press
+/// began: `start + distance × step`, so 50 px at a step of 0.1 is 5.0. `fine` (Shift) takes a
+/// tenth of the rate and `coarse` (Ctrl) ten times it; the result is rounded to the digits of the
+/// rate, so there is no `5.000001`, and held to `min..=max`.
+///
+/// ```
+/// use bevy_gooey::scrub_value;
+/// assert_eq!(scrub_value(0.0, 50.0, 0.1, 0.0, 100.0, false, false), 5.0);
+/// assert_eq!(scrub_value(0.0, 50.0, 0.1, 0.0, 100.0, true, false), 0.5);
+/// assert_eq!(scrub_value(0.0, 50.0, 0.1, 0.0, 100.0, false, true), 50.0);
+/// assert_eq!(scrub_value(0.0, 5000.0, 0.1, 0.0, 100.0, false, false), 100.0);
+/// ```
+pub fn scrub_value(
+    start: f32,
+    distance: f32,
+    step: f32,
+    min: f32,
+    max: f32,
+    fine: bool,
+    coarse: bool,
+) -> f32 {
+    let rate = step
+        * if fine {
+            0.1
+        } else if coarse {
+            10.0
+        } else {
+            1.0
+        };
+    let raw = start + distance * rate;
+    if !raw.is_finite() {
+        return start;
+    }
+    let scale = 10f32.powi(number_decimals(rate).max(number_decimals(step)) as i32);
+    hold((raw * scale).round() / scale, min, max)
+}
+
+/// A number moved by `steps` of `step` (negative goes down), rounded to the digits of the step and
+/// held to `min..=max`. A key, the D-pad or an arrow press is one step; Shift is ten.
+///
+/// ```
+/// use bevy_gooey::step_value;
+/// assert_eq!(step_value(0.3, 1.0, 0.1, 0.0, 1.0), 0.4);
+/// assert_eq!(step_value(0.95, 10.0, 0.1, 0.0, 1.0), 1.0);
+/// ```
+pub fn step_value(value: f32, steps: f32, step: f32, min: f32, max: f32) -> f32 {
+    let scale = 10f32.powi(number_decimals(step) as i32);
+    hold(((value + steps * step) * scale).round() / scale, min, max)
+}
+
+/// `value` held to `min..=max`, whichever order the two came in, and never a panic on a NaN.
+pub(crate) fn hold(value: f32, min: f32, max: f32) -> f32 {
+    value.clamp(min.min(max), max.max(min))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2188,5 +2349,55 @@ mod tests {
             dock_tab_slot(&[(50.0, 0.0, 40.0), (150.0, 0.0, 40.0)], 100.0, 20.0),
             1
         );
+    }
+
+    #[test]
+    fn a_typed_number_is_read_and_a_sum_a_word_or_an_overflow_is_refused_for_its_own_reason() {
+        assert_eq!(parse_number("+5"), Ok(5.0));
+        assert_eq!(parse_number("-.5"), Ok(-0.5));
+        assert_eq!(parse_number("1e-3"), Ok(0.001));
+        assert_eq!(parse_number("2E+2"), Ok(200.0));
+        for sum in [
+            "1-2", "3+4", "--3", "2*3", "6/2", "(2)", "2^3", "50%", "1e3-1",
+        ] {
+            assert_eq!(parse_number(sum), Err(NumberError::Expression), "{sum}");
+        }
+        for word in [".", "1.2.3", "1,5", "ten", "1e", "0x10"] {
+            assert_eq!(parse_number(word), Err(NumberError::NotANumber), "{word}");
+        }
+        for big in ["inf", "NaN", "1e99"] {
+            assert_eq!(parse_number(big), Err(NumberError::NotFinite), "{big}");
+        }
+        assert_eq!(parse_number("  "), Err(NumberError::Empty));
+    }
+
+    #[test]
+    fn a_number_shows_the_digits_of_its_step_and_more_only_when_it_needs_them() {
+        assert_eq!(format_number(-2.0, 0.1), "-2.0");
+        assert_eq!(format_number(0.1 + 0.2, 0.1), "0.3");
+        assert_eq!(format_number(99999.9, 0.1), "99999.9");
+        assert_eq!(format_number(1.0 / 3.0, 0.1), "0.333333");
+        assert_eq!(format_number(7.0, 0.25), "7.00");
+        assert_eq!(format_number(-0.0, 1.0), "0");
+        // A step that is no step shows two digits.
+        assert_eq!(format_number(1.5, 0.0), "1.50");
+        assert_eq!(number_decimals(f32::NAN), 2);
+        assert_eq!(number_decimals(0.001), 3);
+    }
+
+    #[test]
+    fn a_scrub_and_a_step_are_rounded_to_their_digits_and_held_to_the_range() {
+        // Down and up by the same distance is where it began, with no 0.1 + 0.2 dust.
+        let up = scrub_value(0.3, 3.0, 0.1, 0.0, 1.0, false, false);
+        assert_eq!(up, 0.6);
+        assert_eq!(scrub_value(up, -3.0, 0.1, 0.0, 1.0, false, false), 0.3);
+        // Shift's finer rate keeps its extra digit and Ctrl keeps the step's own.
+        assert_eq!(scrub_value(0.0, 3.0, 0.1, 0.0, 1.0, true, false), 0.03);
+        assert_eq!(scrub_value(0.5, 5.0, 0.1, 0.0, 100.0, false, true), 5.5);
+        // A range given the wrong way round is read either way, and a NaN distance never moves it.
+        assert_eq!(scrub_value(1.0, 5.0, 0.1, 3.0, 0.0, false, false), 1.5);
+        assert_eq!(scrub_value(1.0, f32::NAN, 0.1, 0.0, 9.0, false, false), 1.0);
+        assert_eq!(step_value(0.1, 2.0, 0.1, 0.0, 1.0), 0.3);
+        assert_eq!(step_value(0.1, -5.0, 0.1, 0.0, 1.0), 0.0);
     }
 }

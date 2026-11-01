@@ -27,6 +27,7 @@ use crate::dock::{DockTab, moves_tabs};
 use crate::list::{ListView, span};
 use crate::menu::{MenuRow, MenuTitle};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
+use crate::number::{NumberInput, NumberStepBy};
 use crate::popover::PopoverPanel;
 use crate::skin::Role;
 use crate::split::{SplitAxis, SplitDivider};
@@ -36,14 +37,20 @@ use crate::tree::TreeView;
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
 type TakesSideways = (
-    Or<(With<Slider>, With<ChoiceCount>)>,
+    Or<(With<Slider>, With<ChoiceCount>, With<NumberInput>)>,
     Without<InteractionDisabled>,
 );
 
 /// The widgets whose Left and Right never also move focus: [`TakesSideways`], a tab, whose keys
 /// are Bevy's and whose D-pad is [`crate::step_tabs`]', and a tree, whose are [`crate::tree_by_input`]'s.
 type KeepsSideways = (
-    Or<(With<Slider>, With<ChoiceCount>, With<Tab>, With<TreeView>)>,
+    Or<(
+        With<Slider>,
+        With<ChoiceCount>,
+        With<Tab>,
+        With<TreeView>,
+        With<NumberInput>,
+    )>,
     Without<InteractionDisabled>,
 );
 
@@ -132,6 +139,9 @@ pub struct FocusScopes<'w, 's> {
     menu_rows: Query<'w, 's, (), MenuRow>,
     /// Menu titles, whose Down opens their menu.
     menu_titles: Query<'w, 's, (), With<MenuTitle>>,
+    /// The number fields' text fields, whose Up and Down keys step the number and whose D-pad
+    /// Left and Right do ([`crate::number_field`]).
+    numbers: Query<'w, 's, (), (With<NumberInput>, Without<InteractionDisabled>)>,
     /// The text fields, which take the keys Left and Right themselves.
     typing: Query<'w, 's, (), TypesText>,
     /// The lists, to tell a widget one has clipped away from one in view.
@@ -412,6 +422,13 @@ pub fn navigate_by_input(
     } else {
         net_y
     };
+    // Up and Down on a number field step it (its observer); the D-pad's Up and Down still move
+    // focus, its Left and Right step it (`gamepad_adjust`).
+    let net_y = if from.is_some_and(|f| scopes.numbers.contains(f)) {
+        axis(pad(GamepadButton::DPadUp), pad(GamepadButton::DPadDown))
+    } else {
+        net_y
+    };
     // Up and Down on a table move its cursor row (`table_by_input`) while there is a row that way,
     // and move focus on from its first and last rows. Ctrl and Left or Right on a table's header
     // size its column.
@@ -635,17 +652,22 @@ pub fn gamepad_adjust(
     focus: Res<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     gamepads: Query<&Gamepad>,
-    controls: Query<Has<Slider>, TakesSideways>,
+    controls: Query<(Has<Slider>, Has<NumberInput>), TakesSideways>,
     mut held: Local<(i8, f32)>,
     mut commands: Commands,
 ) {
     let down = |button| gamepads.iter().any(|g| g.pressed(button));
     let direction = down(GamepadButton::DPadRight) as i8 - down(GamepadButton::DPadLeft) as i8;
     let vertical = down(GamepadButton::DPadUp) || down(GamepadButton::DPadDown);
-    let Some((control, is_slider)) = focus
+    let Some((control, is_slider, is_number)) = focus
         .get()
         .filter(|_| direction != 0 && !vertical)
-        .and_then(|f| controls.get(f).ok().map(|slider| (f, slider)))
+        .and_then(|f| {
+            controls
+                .get(f)
+                .ok()
+                .map(|(slider, number)| (f, slider, number))
+        })
     else {
         *held = (0, 0.0);
         return;
@@ -661,7 +683,12 @@ pub fn gamepad_adjust(
     };
     if steps > 0 {
         show_focus(&mut shown);
-        if is_slider {
+        if is_number {
+            commands.trigger(NumberStepBy {
+                entity: control,
+                steps: f32::from(direction) * steps as f32,
+            });
+        } else if is_slider {
             commands.trigger(SetSliderValue {
                 entity: control,
                 change: SliderValueChange::RelativeStep(f32::from(direction) * steps as f32),
