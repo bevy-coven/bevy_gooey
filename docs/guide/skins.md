@@ -41,6 +41,34 @@ High contrast is the mode Xbox Accessibility Guideline 102 asks a game for: "Whe
 
 `skin.with_colours_of(&other)` is the skin with `other`'s colours and its own sizes: a player who set 200% text and then asks for high contrast gets both, which is what the [theme row](options.md) does. A game that starts in high contrast because the platform asks (Bevy 0.20 exposes no such setting, so the host reads it) inserts `GooeySkin::high_contrast()` before its first frame.
 
+## A skin for one subtree
+
+`SkinScope(skin)` on any node styles that node and everything below it from `skin` and not from the
+`GooeySkin` resource, so a preview of a theme, a tool's own chrome or a vendor's window stands next to the
+rest of the interface in another look:
+
+```rust,ignore
+commands.spawn((panel(), SkinScope(GooeySkin::parchment()), children![button("Play")]));
+```
+
+- **The nearest scope wins.** A widget takes the scope on itself or on its nearest ancestor; a scope nested
+  in another shadows it, and a widget under none is styled from the resource.
+- **It is the whole skin.** Sizes and `text_scale` are the scope's, so a preview at 200% text, or a compact
+  panel, is a scope too; `GooeyFonts` stays global (a font is an asset the host loads). The player's own
+  text size is the resource's: a scope that should follow it copies `text_scale` itself.
+- **A change touches the subtree and nothing else.** Adding, changing or removing a scope restyles every
+  widget below it in the same frame (removed: from the next scope up, or the resource), and so does moving
+  a widget under or out of one; a changed resource restyles the unscoped and leaves a scoped widget as it
+  is. An idle frame writes nothing, and with no scope anywhere the cost is one empty-query check.
+- **A scope is checked like a skin.** One that fails `problems()` logs a warning per problem when it
+  changes and is applied anyway.
+- **A toast stack and the legend are not below the node that spawned them.** Put a `SkinScope` on them to
+  have them follow a scope; a tooltip box is a child of its widget and follows its widget.
+
+`cargo run --release --example scope` shows the options panel in the player's skin next to a preview panel
+in parchment: Theme and Text size change the left one, the right one stays, and Enter on its button takes
+the scope off so it joins the left one.
+
 ## Loading one
 
 `GooeySkin` and `UiScaleSettings` derive serde under the `serde` feature, and both are

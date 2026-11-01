@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- `SkinScope(GooeySkin)`, a component on any node: that node and everything below it is styled from this skin and not from the `GooeySkin` resource, so a preview of a theme, a tool's own chrome or a vendor's window can stand next to the rest of the interface in another look. The nearest scope at or above a widget wins (its own included), a nested scope shadows the one above, none is the resource; it is the whole skin, sizes and `text_scale` included, and `GooeyFonts` stays global. `apply_skin` restyles exactly the subtree in the frame a scope is added, changed or removed, or a widget moves under or out of one; a changed resource leaves scoped widgets alone; a scope that fails `problems()` warns and is applied anyway. With no scope anywhere the cost is one empty-query check.
+- `examples/scope` (an options panel next to a panel in a parchment `SkinScope`), `docs/research/skin-scope.md`, the "A skin for one subtree" section of `docs/guide/skins.md` and `tests/scope.rs` (two scopes' accents and removal in the same frame, nesting, a scope on the widget itself, a change confined to its subtree, a changed resource, reparenting in and out, a scope's sizes, nothing written idle).
+
 ## [0.8.0] - 2026-11-01
 
 ### Added
