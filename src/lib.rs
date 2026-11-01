@@ -145,12 +145,13 @@ pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, NON_TEXT_CONTRAST,
-    PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH, TEXT_CONTRAST,
-    TEXT_SIZE_STEPS, choice_next, choice_step, composite, contrast_ratio, key_name, list_height,
-    meter_fraction, mouse_name, nearest_step, pad_name, page_target, relative_luminance,
-    repeat_steps, scroll_to_reveal, slider_fraction, slider_text, snap_line_width, snap_to_row,
-    tab_step, toast_alpha, toast_grow, toast_hold, toast_life, window_ui_scale,
+    COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
+    NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle, STICK_PUSH,
+    TEXT_CONTRAST, TEXT_SIZE_STEPS, choice_next, choice_step, cie_lightness, composite,
+    contrast_ratio, key_name, list_height, meter_fraction, mouse_name, nearest_step, pad_name,
+    page_target, relative_luminance, repeat_steps, scroll_to_reveal, slider_fraction, slider_text,
+    snap_line_width, snap_to_row, tab_step, toast_alpha, toast_grow, toast_hold, toast_life,
+    window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -170,8 +171,8 @@ pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
     binding, button, choice, dialog, heading, interface_size, label, list, menu, meter, pad_style,
-    panel, prompt, prompts, screen, skin_preset, slider, tab_page, tabs, text_input, text_size,
-    toast, toast_alert, toggle,
+    panel, prompt, prompts, screen, skin_preset, slider, surface, tab_page, tabs, text_input,
+    text_size, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
