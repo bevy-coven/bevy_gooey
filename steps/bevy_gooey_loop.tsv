@@ -6356,3 +6356,273 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 51	281	release	model	model		2026-11-01T14:02:58Z	7.5	
 51	282	release	tool	push gate	bash	2026-11-01T14:03:05Z	1.5	cd ~/bevy_gooey_loop && df -h /home | tail -1; rm -rf ~/g23_bin /tmp/g23m; df -h /home | tail -1; git worktree list | tail -n +2; cat >> docs/loop-log.md <<'E' 
 51	283	release	model	model		2026-11-01T14:03:07Z	8.1	
+52	1	orient	model	model		2026-11-01T14:03:42Z	3.2	
+52	2	orient	tool	phase mark	bash	2026-11-01T14:03:45Z	1.5	Orienting: state, audit, parked work :: python3 ~/.local/share/wiggum/steps.py mark orient; cd ~/bevy_gooey_loop && git status --short | head; git branch --show-current; git fetch -q origin; git log -
+52	3	orient	tool	github	bash	2026-11-01T14:03:45Z	1.5	Listing open issues :: cd ~/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.number) \(.tit
+52	4	orient	model	model		2026-11-01T14:03:46Z	2.9	
+52	5	orient	tool	github	bash	2026-11-01T14:03:49Z	1.2	Reading G-03 and log tail :: cd ~/bevy_gooey_loop && gh issue view 7 --repo bevy-coven/bevy_gooey --comments; gh issue list --repo bevy-coven/bevy_gooey --state closed --limit 10 --json num
+52	6	orient	model	model		2026-11-01T14:03:51Z	2.7	
+52	7	orient	tool	github	bash	2026-11-01T14:03:53Z	0.4	Reading G-03 issue body :: cd ~/bevy_gooey_loop && gh issue view 7 --repo bevy-coven/bevy_gooey --json body,comments --jq '.body, (.comments[]|.body)'
+52	8	orient	model	model		2026-11-01T14:03:54Z	5.6	
+52	9	choose	tool	phase mark	bash	2026-11-01T14:03:59Z	0.2	Reading skin struct and Role :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; wc -l src/*.rs docs/research/*.md docs/guide/*.md; grep -n "pub enum Role" -A60 src/
+52	10	choose	model	model		2026-11-01T14:03:59Z	7.1	
+52	11	choose	tool	github	bash	2026-11-01T14:04:07Z	0.9	Reading grimoire's token design :: cd ~/bevy_gooey_loop && gh api repos/bevy-coven/bevy_grimoire/contents/docs/ui/vision.md --jq .content | base64 -d | grep -n -i -E "token|ladder|surface|spacing
+52	12	choose	tool	github	bash	2026-11-01T14:04:07Z	36.5	Reading chrome.rs ladder test :: cd ~/bevy_gooey_loop && grep -n "the_ladder_is_a_ladder" -r ~ --include=chrome.rs -l 2>/dev/null | head -3; gh api repos/bevy-coven/bevy_grimoire/contents/crate
+52	13	choose	model	model		2026-11-01T14:04:43Z	3.4	
+52	14	choose	tool	shell	bash	2026-11-01T14:04:46Z	0.0	Reading skin.rs head :: cd ~/bevy_gooey_loop && sed -n 1,142p src/skin.rs
+52	15	choose	tool	shell	bash	2026-11-01T14:04:46Z	0.0	Reading skin methods and problems :: cd ~/bevy_gooey_loop && sed -n 289,760p src/skin.rs
+52	16	choose	model	model		2026-11-01T14:04:46Z	42.2	
+52	17	choose	tool	shell	bash	2026-11-01T14:05:29Z	0.0	Reading Role tail and apply_skin :: cd ~/bevy_gooey_loop && sed -n 821,1010p src/skin.rs; grep -n "Role::Panel =>" src/skin.rs; grep -n "fn apply_skin" -A60 src/skin.rs | head -150
+52	18	choose	model	model		2026-11-01T14:05:29Z	4.0	
+52	19	choose	tool	shell	bash	2026-11-01T14:05:33Z	0.0	Reading fill match and panel widget :: cd ~/bevy_gooey_loop && sed -n 1280,1330p src/skin.rs; sed -n 1495,1540p src/skin.rs; grep -n "Role::Screen" src/*.rs | head -20; grep -n "pub fn panel" -B6 -A2
+52	20	choose	model	model		2026-11-01T14:05:33Z	3.4	
+52	21	choose	tool	shell	bash	2026-11-01T14:05:36Z	0.0	Reading fill application :: cd ~/bevy_gooey_loop && sed -n 1330,1500p src/skin.rs; sed -n 105,131p src/widgets.rs; grep -n "BackgroundColor" src/widgets.rs | head
+52	22	choose	model	model		2026-11-01T14:05:36Z	18.9	
+52	23	choose	tool	shell	bash	2026-11-01T14:05:55Z	0.1	Reading density example and Cargo :: cd ~/bevy_gooey_loop && ls examples docs/research docs/media | head -80; wc -l examples/*.rs; sed -n 1,140p examples/density.rs; cat Cargo.toml | sed -n 1,80p
+52	24	choose	model	model		2026-11-01T14:05:55Z	5.6	
+52	25	research	tool	phase mark	bash	2026-11-01T14:06:01Z	14.3	Reading previous note format, home-still status :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; cat docs/research/density.md | head -80; hs status 2>&1 | head -15
+52	26	research	tool	homestill	bash	2026-11-01T14:06:01Z	14.3	Searching corpus for sources :: cd ~/bevy_gooey_loop && for q in "perceptual lightness difference just noticeable difference luminance steps between adjacent surfaces" "visual hierarchy depth 
+52	27	research	model	model		2026-11-01T14:06:15Z	5.4	
+52	28	research	tool	homestill	bash	2026-11-01T14:06:21Z	1.5	Pulling quotable corpus chunks :: cd ~/bevy_gooey_loop && hs distill search "just noticeable difference CIELAB lightness threshold" --output json 2>&1 | python3 -c " import sys,json d=json.load(
+52	29	research	model	model		2026-11-01T14:06:22Z	6.0	
+52	30	research	tool	homestill	bash	2026-11-01T14:06:28Z	1.4	Finding Wagemans figure-ground quote :: cd ~/bevy_gooey_loop && hs distill search "figure ground segregation luminance contrast edge surface" --output json 2>&1 | python3 -c " import sys,json d=json.l
+52	31	research	tool	web	web_search	2026-11-01T14:06:28Z	8.2	Shipping-system elevation source :: Material Design 3 elevation tonal surface color levels distinguish surfaces
+52	32	research	model	model		2026-11-01T14:06:36Z	6.5	
+52	33	research	tool	shell	bash	2026-11-01T14:06:43Z	0.1	Computing L* of preset colours :: cat > /tmp/ladder.py <<'EOF' def lin(c): return c/12.92 if c<=0.04045 else ((c+0.055)/1.055)**2.4 def Y(r,g,b): return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b)
+52	34	research	model	model		2026-11-01T14:06:43Z	15.2	
+52	35	research	tool	shell	bash	2026-11-01T14:06:58Z	0.0	Computing candidate ladders :: cat >> /tmp/ladder.py <<'EOF' def mix(a,b,t): return tuple(round(x+(y-x)*t,3) for x,y in zip(a,b)) def show(name, steps): print(name) prev=None for s in steps: 
+52	36	research	model	model		2026-11-01T14:06:58Z	29.4	
+52	37	research	tool	edit files	write	2026-11-01T14:07:28Z	0.0	docs/research/tokens.md
+52	38	research	model	model		2026-11-01T14:07:28Z	3.9	
+52	39	research	tool	git	bash	2026-11-01T14:07:31Z	0.1	Commit research note, check env :: cd ~/bevy_gooey_loop && git checkout -q -b loop/iter-24 && git add docs/research/tokens.md && git commit -q -m "Research: design tokens and a measured surface l
+52	40	research	model	model		2026-11-01T14:07:32Z	3.9	
+52	41	prove	tool	phase mark	bash	2026-11-01T14:07:35Z	49.6	Building baseline gallery :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; mkdir -p ~/g24_bin /tmp/g24/before && CARGO_BUILD_JOBS=2 cargo build --release --exam
+52	42	prove	model	model		2026-11-01T14:08:25Z	3.6	
+52	43	prove	tool	shell	bash	2026-11-01T14:08:29Z	60.0	[launched bg_2] Capturing baseline stills :: cd /tmp/g24/before && G=~/g24_bin/gallery_before; for size in 1280x720 2560x1440; do GOOEY_HEALTH=60 GOOEY_SIZE=$size GOOEY_FRAMES=120 GOOEY_SHOT=dark-$size.png
+52	44	prove	model	model		2026-11-01T14:09:29Z	2.9	
+52	45	build	tool	phase mark	bash	2026-11-01T14:09:32Z	0.1	Reading model luminance fn :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; grep -n "pub fn relative_luminance" -B12 -A14 src/model.rs; grep -n "pub const .*CONT
+52	46	build	bg	shell	bash	2026-11-01T14:08:30Z	61.5	bg_2 completed: G=~/g24_bin/gallery_before; for size in 1280x720 2560x1440; do GOOEY_HEALTH=60 GOOEY_SIZE=$size GOOEY_FRAMES=120 GO...
+52	47	build	model	model		2026-11-01T14:09:32Z	2.9	
+52	48	build	tool	shell	bash	2026-11-01T14:09:35Z	0.0	Reading model contrast fn and lib exports :: cd ~/bevy_gooey_loop && sed -n 44,62p src/model.rs; grep -n "pub use\|pub mod\|^mod " src/lib.rs
+52	49	build	model	model		2026-11-01T14:09:35Z	1.2	
+52	50	build	tool	shell	bash	2026-11-01T14:09:36Z	0.0	Reading lib exports :: cd ~/bevy_gooey_loop && sed -n 147,176p src/lib.rs; grep -n "\[model\]\|model::" src/lib.rs | head
+52	51	build	model	model		2026-11-01T14:09:36Z	4.0	
+52	52	build	tool	edit files	edit	2026-11-01T14:09:40Z	0.0	Adding cie_lightness and ELEVATION_STEP to model :: [src/model.rs#0000] PUT >51: + +/// The least CIE L\* two adjacent surfaces of a skin's ladder may differ by: a just-noticeable +/// difference of a large flat 
+52	53	build	model	model		2026-11-01T14:09:40Z	14.6	
+52	54	build	model	model		2026-11-01T14:09:54Z	11.5	
+52	55	build	tool	edit files	edit	2026-11-01T14:10:06Z	0.0	Adding cie_lightness and ELEVATION_STEP to model :: [src/model.rs#B1E8] PUT >53: + +/// The least CIE L\* two adjacent surfaces of a skin's ladder may differ by: a just-noticeable +/// difference of a large flat 
+52	56	build	tool	edit files	edit	2026-11-01T14:10:06Z	0.0	Exporting new model items and surface widget :: [src/lib.rs#0000] PUT 148.=148: + COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, + NON_TEXT_CONTRAST,
+52	57	build	model	model		2026-11-01T14:10:06Z	2.8	
+52	58	build	tool	edit files	edit	2026-11-01T14:10:09Z	0.0	Exporting new model items and surface widget :: [src/lib.rs#C3C1] PUT 148.=148: + COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, + NON_TEXT_CONTRAST, PUT 150.=150: 
+52	59	build	tool	read files	read	2026-11-01T14:10:09Z	0.0	Checking lib exports edit :: src/lib.rs:146-180
+52	60	build	model	model		2026-11-01T14:10:09Z	1.8	
+52	61	build	tool	edit files	edit	2026-11-01T14:10:10Z	0.0	Exporting new model items and surface widget :: [src/lib.rs#C3C1] PUT 148.=148: + COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, INTERFACE_SIZE_STEPS, MIN_TARGET_PX, + NON_TEXT_CONTRAST, PUT 150.=150: 
+52	62	build	model	model		2026-11-01T14:10:10Z	2.9	
+52	63	build	tool	read files	read	2026-11-01T14:10:13Z	0.0	Reading panel for tag :: src/widgets.rs:128-148
+52	64	build	model	model		2026-11-01T14:10:13Z	3.8	
+52	65	build	tool	edit files	edit	2026-11-01T14:10:17Z	0.0	Adding the surface widget :: [src/widgets.rs#87CC] PUT >147: +/// A column filled with one step of the skin's surface ladder, [`GooeySkin::surfaces`], and +/// nothing else: no padding, fra
+52	66	build	tool	shell	bash	2026-11-01T14:10:17Z	0.0	Checking widget imports :: cd ~/bevy_gooey_loop && sed -n 1,30p src/widgets.rs | grep -n "^use"
+52	67	build	model	model		2026-11-01T14:10:17Z	9.6	
+52	68	build	tool	read files	read	2026-11-01T14:10:27Z	0.0	Reading skin anchors :: src/skin.rs:19-22,205-211,225-229,243-247,268-273,286-322,462-466,526-533,584-606,622-640
+52	69	build	model	model		2026-11-01T14:10:27Z	5.8	
+52	70	build	tool	read files	read	2026-11-01T14:10:33Z	0.0	Reading more skin anchors :: src/skin.rs:16-19,496-500,533-549,553-582,707-714,742-760,861-866
+52	71	build	model	model		2026-11-01T14:10:33Z	25.7	
+52	72	build	tool	edit files	edit	2026-11-01T14:10:58Z	0.0	Skin: tokens, ladders, checks, theme carry :: [src/skin.rs#F03A] PUT 17.=18: + COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST, + TEXT_CONTRAST, cie_lightness, composi
+52	73	build	model	model		2026-11-01T14:10:58Z	3.3	
+52	74	build	tool	read files	read	2026-11-01T14:11:02Z	0.0	Reading sizes, pad(), enum end :: src/skin.rs:350-385,420-428,722-745
+52	75	build	model	model		2026-11-01T14:11:02Z	12.9	
+52	76	build	model	model		2026-11-01T14:11:14Z	25.6	
+52	77	build	tool	read files	read	2026-11-01T14:11:40Z	0.0	Reading enum end :: src/skin.rs:756-770
+52	78	build	model	model		2026-11-01T14:11:40Z	8.0	
+52	79	build	tool	edit files	edit	2026-11-01T14:11:48Z	0.0	Skin: defaults, accessors, problem variants :: [src/skin.rs#8ACF] PUT >376: + spacing: [4.0, 8.0, 10.0, 14.0, 20.0, 28.0], + radii: [4.0, 8.0, 16.0], + type_scale: [14.0, 16.0, 20.0, 26.0, 32.0], + surfaces:
+52	80	build	model	model		2026-11-01T14:11:48Z	3.4	
+52	81	build	tool	shell	bash	2026-11-01T14:11:52Z	0.0	Locating Role anchors :: cd ~/bevy_gooey_loop && grep -n "^ Panel,\|Role::Scrim => Some\|Role::TextHint => None\|Role::Menu | Role::TabPage" src/skin.rs
+52	82	build	model	model		2026-11-01T14:11:52Z	0.9	
+52	83	build	tool	read files	read	2026-11-01T14:11:52Z	0.0	Reading Role anchors :: src/skin.rs:920-923,1500-1503
+52	84	build	model	model		2026-11-01T14:11:52Z	2.5	
+52	85	build	tool	edit files	edit	2026-11-01T14:11:55Z	0.0	Role::Surface variant and fill :: [src/skin.rs#F796] PUT >922: + /// A column filled with one step of [`GooeySkin::surfaces`], lowest first; nothing else is + /// drawn (see [`crate::surface`]).
+52	86	build	tool	cargo build	bash	2026-11-01T14:11:55Z	6.8	Compile check :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo check --all-targets --all-features 2>&1 | grep -E "^(error|warning)" -A8 | head -60
+52	87	build	model	model		2026-11-01T14:12:02Z	4.0	
+52	88	build	tool	cargo build	bash	2026-11-01T14:12:06Z	0.5	Confirm check finished :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo check --all-targets --all-features 2>&1 | tail -3; git status --short
+52	89	build	model	model		2026-11-01T14:12:06Z	2.7	
+52	90	build	tool	shell	bash	2026-11-01T14:12:09Z	0.0	Reading test style :: cd ~/bevy_gooey_loop && sed -n 1,110p tests/density.rs; sed -n 1,60p tests/serde.rs; grep -n "\[\[test\]\]" -A3 Cargo.toml
+52	91	build	model	model		2026-11-01T14:12:09Z	35.3	
+52	92	build	tool	edit files	write	2026-11-01T14:12:44Z	0.0	Writing tokens tests :: tests/tokens.rs
+52	93	build	tool	cargo test	bash	2026-11-01T14:12:44Z	11.7	Run tokens tests :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --all-features --test tokens 2>&1 | tail -50
+52	94	build	model	model		2026-11-01T14:12:56Z	5.8	
+52	95	build	tool	shell	bash	2026-11-01T14:13:02Z	0.0	Locate bad expectation :: cd ~/bevy_gooey_loop && grep -n "0.62" tests/tokens.rs
+52	96	build	model	model		2026-11-01T14:13:02Z	1.0	
+52	97	build	tool	read files	read	2026-11-01T14:13:03Z	0.0	Tag for edit :: tests/tokens.rs:50-53
+52	98	build	model	model		2026-11-01T14:13:03Z	4.5	
+52	99	build	tool	edit files	edit	2026-11-01T14:13:07Z	0.0	Fix near-black expectation :: [tests/tokens.rs#4046] PUT 52.=52: + // sRGB 0.02 is linear 0.00155 (below the 0.04045 knee), so L* is 903.3 times it. + assert!((cie_lightness([0.02; 3]) - 1.4
+52	100	build	tool	cargo test	bash	2026-11-01T14:13:07Z	5.1	Add serde test and rerun :: cd ~/bevy_gooey_loop && cat >> tests/serde.rs <<'EOF' #[test] fn the_ladder_and_the_scales_are_data_and_a_file_without_them_reads_as_the_default() -> Result<(),
+52	101	build	model	model		2026-11-01T14:13:12Z	6.9	
+52	102	build	tool	shell	bash	2026-11-01T14:13:19Z	0.0	Locate test lines to drop :: cd ~/bevy_gooey_loop && grep -n "The ladder is part of a look" -A8 tests/tokens.rs
+52	103	build	model	model		2026-11-01T14:13:19Z	1.0	
+52	104	build	tool	read files	read	2026-11-01T14:13:20Z	0.0	Tag for edit :: tests/tokens.rs:244-254
+52	105	build	model	model		2026-11-01T14:13:20Z	1.0	
+52	106	build	tool	edit files	edit	2026-11-01T14:13:21Z	0.0	Drop non-discriminating assertion :: [tests/tokens.rs#1A60] CUT 246.=252
+52	107	build	model	model		2026-11-01T14:13:21Z	3.5	
+52	108	build	tool	shell	bash	2026-11-01T14:13:25Z	0.0	Backup for mutation checks :: cd ~/bevy_gooey_loop && cp src/model.rs /tmp/g24/model.rs.orig && cp src/skin.rs /tmp/g24/skin.rs.orig && grep -n "pub const ELEVATION_STEP" src/model.rs; grep 
+52	109	build	model	model		2026-11-01T14:13:25Z	1.3	
+52	110	build	tool	read files	read	2026-11-01T14:13:26Z	0.0	Tag for mutation :: src/model.rs:58
+52	111	build	tool	read files	read	2026-11-01T14:13:26Z	0.0	Tag for mutation :: src/skin.rs:672
+52	112	build	model	model		2026-11-01T14:13:26Z	3.3	
+52	113	build	tool	edit files	edit	2026-11-01T14:13:29Z	0.0	Mutation: step threshold 1.0 :: [src/model.rs#F3A4] PUT 58.=58: +pub const ELEVATION_STEP: f32 = 1.0;
+52	114	build	tool	edit files	edit	2026-11-01T14:13:29Z	0.0	Mutation: theme step drops the ladder :: [src/skin.rs#39F9] CUT 672.=672
+52	115	build	tool	cargo test	bash	2026-11-01T14:13:29Z	8.4	Run mutants and restore :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --all-features --test tokens 2>&1 | grep -E "^test .*FAILED|test result"; cp /tmp/g24/model.rs.orig src/mo
+52	116	build	model	model		2026-11-01T14:13:38Z	12.4	
+52	117	build	tool	shell	bash	2026-11-01T14:13:50Z	0.0	Reading capture system :: cd ~/bevy_gooey_loop && grep -n "^fn capture" -A60 examples/density.rs | head -90; grep -n "GOOEY_HEALTH" examples/gallery.rs | head -3
+52	118	build	model	model		2026-11-01T14:13:50Z	18.9	
+52	119	build	tool	shell	bash	2026-11-01T14:14:09Z	0.0	Reading key staging to reuse :: cd ~/bevy_gooey_loop && sed -n 241,300p examples/density.rs; sed -n 140,198p examples/density.rs
+52	120	build	model	model		2026-11-01T14:14:09Z	22.9	
+52	121	build	tool	edit files	write	2026-11-01T14:14:32Z	0.0	examples/ladder.rs
+52	122	build	tool	cargo build	bash	2026-11-01T14:14:32Z	55.7	Build and capture ladder stills :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | grep -E "^(error|warning)" -A8 | head -40; cp $CARGO_TARGET_DIR/
+52	123	build	model	model		2026-11-01T14:15:28Z	3.3	
+52	124	build	tool	cargo build	bash	2026-11-01T14:15:31Z	0.5	See build result :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -15; ls -la ~/g24_bin
+52	125	build	model	model		2026-11-01T14:15:31Z	2.8	
+52	126	build	tool	shell	bash	2026-11-01T14:15:34Z	2.7	Run ladder example directly :: cd /tmp/g24/after && GOOEY_FRAMES=60 GOOEY_SHOT=ladder-dark.png timeout 100 ~/g24_bin/ladder 2>&1 | tail -8; ls
+52	127	build	model	model		2026-11-01T14:15:37Z	1.6	
+52	128	build	tool	shell	bash	2026-11-01T14:15:39Z	2.8	Find panic message :: cd /tmp/g24/after && GOOEY_FRAMES=60 GOOEY_SHOT=ladder-dark.png timeout 100 ~/g24_bin/ladder 2>&1 | grep -n -i "panic" -A4 | head -20
+52	129	build	model	model		2026-11-01T14:15:41Z	4.6	
+52	130	build	tool	shell	bash	2026-11-01T14:15:46Z	0.0	Locate surface() uses :: cd ~/bevy_gooey_loop && grep -n "surface(0)\|surface(level)" examples/ladder.rs
+52	131	build	model	model		2026-11-01T14:15:46Z	1.0	
+52	132	build	tool	read files	read	2026-11-01T14:15:47Z	0.0	Tag for example edit :: examples/ladder.rs:120-142
+52	133	build	model	model		2026-11-01T14:15:47Z	1.6	
+52	134	build	tool	edit files	edit	2026-11-01T14:15:49Z	0.0	Use Role::Surface with own Node :: [examples/ladder.rs#163F] PUT 124.=124: + Role::Surface(0), PUT 139.=139: + Role::Surface(level),
+52	135	build	tool	read files	read	2026-11-01T14:15:49Z	0.0	Tag for widget doc edit :: src/widgets.rs:148-171
+52	136	build	model	model		2026-11-01T14:15:49Z	3.3	
+52	137	build	tool	edit files	edit	2026-11-01T14:15:52Z	0.0	Document own-node route :: [src/widgets.rs#52BE] PUT >154: +/// +/// A bundle cannot carry a `Node` twice: for a surface with its own padding, size or corners, spawn +/// your own `Node` 
+52	138	build	tool	cargo build	bash	2026-11-01T14:15:52Z	20.2	Rebuild and capture ladder stills :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | grep -E "^(error|warning)" -A8 | head -30; cp $CARGO_TARGET_DIR/
+52	139	build	model	model		2026-11-01T14:16:12Z	1.7	
+52	140	build	tool	read files	read	2026-11-01T14:16:14Z	0.0	Viewing dark ladder :: /tmp/g24/after/ladder-dark.png
+52	141	build	tool	read files	read	2026-11-01T14:16:14Z	0.0	Viewing parchment ladder :: /tmp/g24/after/ladder-parchment.png
+52	142	build	model	model		2026-11-01T14:16:14Z	7.4	
+52	143	build	tool	read files	read	2026-11-01T14:16:21Z	0.0	Viewing HC ladder :: /tmp/g24/after/ladder-high_contrast.png
+52	144	build	tool	read files	read	2026-11-01T14:16:21Z	0.0	Viewing Tool ladder :: /tmp/g24/after/ladder-tool.png
+52	145	build	model	model		2026-11-01T14:16:21Z	7.9	
+52	146	build	tool	shell	bash	2026-11-01T14:16:29Z	0.0	Reading media recipe :: cd ~/bevy_gooey_loop && grep -n "density" -B2 -A14 docs/media/README.md | head -60; sed -n 1,30p docs/media/README.md
+52	147	build	model	model		2026-11-01T14:16:29Z	6.6	
+52	148	build	tool	clip record/render	bash	2026-11-01T14:16:36Z	5.2	Record ladder GIF :: mkdir -p /tmp/g24/gif && cd /tmp/g24 && rm -f gif/*; GOOEY_FRAMES=190 GOOEY_KEY_EVERY=24 GOOEY_KEYS=right,right,right,left,left,left GOOEY_SIZE=1280x720 GOOEY_S
+52	149	build	model	model		2026-11-01T14:16:41Z	3.6	
+52	150	build	tool	clip record/render	bash	2026-11-01T14:16:45Z	0.4	Montage of GIF frames :: cd /tmp/g24 && for t in 0.2 1.0 1.8 2.5 3.3; do ffmpeg -v error -y -ss $t -i ladder.gif -frames:v 1 /tmp/g24/gf_$t.png; done; magick gf_0.2.png gf_1.0.png gf_1.
+52	151	build	model	model		2026-11-01T14:16:45Z	1.0	
+52	152	build	tool	read files	read	2026-11-01T14:16:46Z	0.0	View GIF montage :: /tmp/g24/m.png
+52	153	build	model	model		2026-11-01T14:16:46Z	8.0	
+52	154	build	tool	clip record/render	bash	2026-11-01T14:16:54Z	0.1	Check Tool frame :: cd /tmp/g24 && ffmpeg -v error -y -ss 1.25 -i ladder.gif -frames:v 1 gt.png && magick gt.png -resize 60% gt_s.png
+52	155	build	tool	read files	read	2026-11-01T14:16:54Z	0.1	View Tool frame :: /tmp/g24/gt_s.png
+52	156	build	model	model		2026-11-01T14:16:54Z	1.4	
+52	157	build	tool	clip record/render	bash	2026-11-01T14:16:56Z	0.1	Debug frame extraction :: cd /tmp/g24 && ls gt* ; ffmpeg -y -ss 1.25 -i ladder.gif -frames:v 1 gt.png 2>&1 | tail -3; ls gt*
+52	158	build	model	model		2026-11-01T14:16:56Z	1.3	
+52	159	build	tool	read files	read	2026-11-01T14:16:57Z	0.0	View Tool frame :: /tmp/g24/gt_s.png
+52	160	build	model	model		2026-11-01T14:16:57Z	5.8	
+52	161	build	tool	shell	bash	2026-11-01T14:17:03Z	60.0	[launched bg_3] Capture after stills and compare pixel identity :: cp /tmp/g24/ladder.gif ~/bevy_gooey_loop/docs/media/ladder.gif; cd /tmp/g24/after && G=~/g24_bin/gallery_after; for size in 1280x720 2560x1440; do GOOEY_HEALTH=
+52	162	build	model	model		2026-11-01T14:18:03Z	6.4	
+52	163	build	tool	shell	bash	2026-11-01T14:18:09Z	0.0	Locating README sections :: cd ~/bevy_gooey_loop && wc -l README.md && grep -n "density\|Density\|Tool" README.md | cut -c1-200; grep -n "^## \|^### " README.md
+52	164	build	bg	shell	bash	2026-11-01T14:17:05Z	64.1	bg_3 completed: cp /tmp/g24/ladder.gif ~/bevy_gooey_loop/docs/media/ladder.gif; cd /tmp/g24/after && G=~/g24_bin/gallery_after; for ...
+52	165	build	model	model		2026-11-01T14:18:09Z	3.8	
+52	166	build	tool	shell	bash	2026-11-01T14:18:13Z	60.0	[launched bg_4] Run paired perf comparison :: cat > ~/g24_bin/perf.sh <<'EOF' #!/bin/bash # 12 alternating pairs, gallery before/after, 240 frames, 1280x720 cd /tmp/g24 for i in $(seq 1 12); do for v in bef
+52	167	build	model	model		2026-11-01T14:19:13Z	2.7	
+52	168	build	tool	read files	read	2026-11-01T14:19:16Z	0.0	Reading README bullets :: README.md:95-110
+52	169	build	tool	read files	read	2026-11-01T14:19:16Z	0.0	Reading README density caption :: README.md:157-168
+52	170	build	model	model		2026-11-01T14:19:16Z	16.7	
+52	171	build	model	model		2026-11-01T14:19:33Z	11.2	
+52	172	build	tool	edit files	edit	2026-11-01T14:19:44Z	0.0	README bullet and demo :: [README.md#A993] PUT 99.=101: + WCAG 2.2 contrast and target-size rules, `density: Density::Compact` for a desktop tool's rows (half + the padding, a 24 px leas
+52	173	build	tool	shell	bash	2026-11-01T14:19:44Z	0.0	Locating guide and changelog anchors :: cd ~/bevy_gooey_loop && grep -n "^#" docs/guide/skins.md; grep -n "panel\b" docs/guide/widgets.md | head -5; grep -n "problems" docs/guide/host-api.md | cut -c1
+52	174	build	model	model		2026-11-01T14:19:44Z	1.7	
+52	175	build	tool	read files	read	2026-11-01T14:19:45Z	0.0	Reading skins guide fields section :: docs/guide/skins.md:21-34
+52	176	build	tool	read files	read	2026-11-01T14:19:45Z	0.0	Reading skins guide around density end :: docs/guide/skins.md:56-66
+52	177	build	tool	read files	read	2026-11-01T14:19:45Z	0.0	Reading widgets table :: docs/guide/widgets.md:8-12
+52	178	build	model	model		2026-11-01T14:19:46Z	12.1	
+52	179	build	tool	edit files	edit	2026-11-01T14:19:58Z	0.0	Skins guide: tokens section :: [docs/guide/skins.md#9A04] PUT 27.=27: +colour is `text` there and nowhere else, because `apply_skin` styles every widget by its `Role`. The +design tokens, `sp
+52	180	build	tool	edit files	edit	2026-11-01T14:19:58Z	0.0	Widgets table row :: [docs/guide/widgets.md#51E5] PUT >10: +| `surface(level)` | a column filled with one step of the skin's surface ladder (see [skins](skins.md#design-tokens-and-t
+52	181	build	model	model		2026-11-01T14:19:58Z	6.8	
+52	182	build	tool	read files	read	2026-11-01T14:20:04Z	0.0	Reading media README anchors :: docs/media/README.md:7-8,28-29
+52	183	build	model	model		2026-11-01T14:20:04Z	10.0	
+52	184	build	tool	edit files	edit	2026-11-01T14:20:14Z	0.0	Media list row and intro :: [docs/media/README.md#606E] PUT 8.=8: +`examples/scope`, `density.gif` from `examples/density` and `ladder.gif` from `examples/ladder`, which have the same capt
+52	185	build	tool	edit files	edit	2026-11-01T14:20:14Z	0.0	Changelog entry :: [CHANGELOG.md#0000] PUT >3: + +### Added + +- Design tokens in the skin (G-03): `GooeySkin::spacing` (six steps), `radii` (three), `type_scale` (five) and `surf
+52	186	build	model	model		2026-11-01T14:20:14Z	5.7	
+52	187	build	tool	edit files	edit	2026-11-01T14:20:20Z	0.0	Changelog entry :: [CHANGELOG.md#8616] PUT >3: + +### Added + +- Design tokens in the skin (G-03): `GooeySkin::spacing` (six steps), `radii` (three), `type_scale` (five) and `surf
+52	188	build	tool	shell	bash	2026-11-01T14:20:20Z	0.0	Locate AGENTS and problems doc anchors :: cd ~/bevy_gooey_loop && grep -n "pub fn problems" -B6 src/skin.rs | head -12; grep -n "src/skin.rs\` — \|tests/density.rs\|examples/scope.rs" AGENTS.md | cut -c
+52	189	build	model	model		2026-11-01T14:20:20Z	1.8	
+52	190	build	tool	read files	read	2026-11-01T14:20:22Z	0.0	Tag for problems doc :: src/skin.rs:447-450
+52	191	build	tool	read files	read	2026-11-01T14:20:22Z	0.0	Tag for AGENTS insert :: AGENTS.md:27
+52	192	build	tool	read files	read	2026-11-01T14:20:22Z	0.0	Tag for AGENTS example insert :: AGENTS.md:45
+52	193	build	model	model		2026-11-01T14:20:22Z	7.0	
+52	194	build	tool	edit files	edit	2026-11-01T14:20:29Z	0.0	AGENTS and problems doc :: [AGENTS.md#435A] PUT >27: +- **Design tokens** (`GooeySkin::{spacing: [f32; 6], radii: [f32; 3], type_scale: [f32; 5], surfaces: Vec<Color>}`, read with `space`
+52	195	build	model	model		2026-11-01T14:20:29Z	7.6	
+52	196	build	tool	edit files	edit	2026-11-01T14:20:37Z	0.0	AGENTS tokens bullets :: [AGENTS.md#435A] PUT >45: +- `examples/ladder.rs` — the surface ladder: four `Role::Surface` cards nested on the skin's tokens, each labelled with its L\* and s
+52	197	build	tool	edit files	edit	2026-11-01T14:20:37Z	0.0	problems doc order :: [src/skin.rs#39F9] PUT 449.=449: + /// then unusable sizes, then the surface ladder's steps and the token scales. Empty for a good + /// skin; all four presets 
+52	198	build	model	model		2026-11-01T14:20:37Z	3.1	
+52	199	build	tool	shell	bash	2026-11-01T14:20:40Z	0.1	Read perf results :: cat /tmp/g24/perf.txt | wc -l; python3 - <<'EOF' import statistics as s b=[];a=[] for l in open('/tmp/g24/perf.txt'): p=l.split() if len(p)!=2: continue (b if p
+52	200	build	model	model		2026-11-01T14:20:40Z	3.5	
+52	201	build	tool	wait: other	wait	2026-11-01T14:20:43Z	10.9	Waiting for perf run to finish
+52	202	build	model	model		2026-11-01T14:20:54Z	6.9	
+52	203	build	tool	shell	bash	2026-11-01T14:21:01Z	0.0	[launched bg_5] Rerun perf with swapped order :: cat > ~/g24_bin/perf2.sh <<'EOF' #!/bin/bash cd /tmp/g24 for i in $(seq 1 12); do for v in after before; do GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_SIZE=1280x720 
+52	204	build	model	model		2026-11-01T14:21:01Z	5.9	
+52	205	build	tool	shell	bash	2026-11-01T14:21:07Z	0.5	Compute label contrast and sample pixels :: cat > /tmp/g24/contrast.py <<'EOF' def lin(c): return c/12.92 if c<=0.04045 else ((c+0.055)/1.055)**2.4 def Y(c): return 0.2126*lin(c[0])+0.7152*lin(c[1])+0.072
+52	206	build	model	model		2026-11-01T14:21:07Z	11.6	
+52	207	build	tool	shell	bash	2026-11-01T14:21:19Z	0.0	Writing findings and critique files :: cat > /tmp/g24/findings.md <<'EOF' # Iteration 24 findings (G-03 tokens and ladder) - Gallery stills (dark, parchment, dark 1.5x, dialog) at 1280x720 and 2560x1
+52	208	build	model	model		2026-11-01T14:21:19Z	4.2	
+52	209	build	tool	shell	bash	2026-11-01T14:21:23Z	0.0	Find guide line :: cd ~/bevy_gooey_loop && grep -n "alpha of a" docs/guide/skins.md | cut -c1-60
+52	210	build	model	model		2026-11-01T14:21:23Z	1.1	
+52	211	build	tool	read files	read	2026-11-01T14:21:24Z	0.0	Read guide lines for edit :: docs/guide/skins.md:106-110
+52	212	build	model	model		2026-11-01T14:21:24Z	2.3	
+52	213	build	tool	edit files	edit	2026-11-01T14:21:27Z	0.0	Guide: ladder is for fills, not a text pairing :: [docs/guide/skins.md#87D2] PUT 107.=108: +surface is ignored. The check is about fills telling apart, not about text: the crate checks `text` against +`surface`
+52	214	build	model	model		2026-11-01T14:21:27Z	4.0	
+52	215	build	tool	shell	bash	2026-11-01T14:21:31Z	0.4	Commit implementation and docs :: cd ~/bevy_gooey_loop && cargo fmt --check 2>&1 | head -5; git add src tests examples && git commit -q -m "Design tokens in the skin: spacing, radii, type scale 
+52	216	build	tool	wait: other	wait	2026-11-01T14:21:31Z	133.1	Waiting for perf rerun
+52	217	build	model	model		2026-11-01T14:23:44Z	11.6	
+52	218	build	tool	shell	bash	2026-11-01T14:23:55Z	0.0	[launched bg_6] Null experiment: same binary twice :: cp ~/g24_bin/gallery_before ~/g24_bin/gallery_nullcopy; cat > ~/g24_bin/perf3.sh <<'EOF' #!/bin/bash cd /tmp/g24 for i in $(seq 1 12); do for v in before nullco
+52	219	build	tool	wait: other	wait	2026-11-01T14:23:55Z	174.5	Waiting for null experiment
+52	220	build	model	model		2026-11-01T14:26:50Z	30.5	
+52	221	build	model	model		2026-11-01T14:27:20Z	21.7	
+52	222	gate	tool	phase mark	bash	2026-11-01T14:27:42Z	0.0	[launched bg_7] Run the full gate :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; cat > ~/g24_bin/gate.sh <<'EOF' #!/bin/bash cd ~/bevy_gooey_loop export CARGO_BUILD_JO
+52	223	gate	model	model		2026-11-01T14:27:42Z	3.5	
+52	224	gate	tool	read files	read	2026-11-01T14:27:46Z	0.1	Get loop-log tag :: docs/loop-log.md:-3
+52	225	gate	model	model		2026-11-01T14:27:46Z	25.3	
+52	226	gate	tool	edit files	edit	2026-11-01T14:28:11Z	0.1	Append iteration 24 log :: [docs/loop-log.md#1B0A] PUT >950: + +## Iteration 24 — 2026-11-01 — Design tokens and a measured surface ladder (G-03, #7) + +**Triage.** `gh issue list`: 26 op
+52	227	gate	model	model		2026-11-01T14:28:11Z	3.4	
+52	228	gate	tool	wait: gate	wait	2026-11-01T14:28:14Z	137.1	Waiting for gate
+52	229	gate	model	model		2026-11-01T14:30:32Z	3.1	
+52	230	gate	tool	read files	read	2026-11-01T14:30:35Z	0.0	Read doc for link fix :: src/widgets.rs:148-158
+52	231	gate	model	model		2026-11-01T14:30:35Z	2.6	
+52	232	gate	tool	edit files	edit	2026-11-01T14:30:37Z	0.0	Fix intra-doc links :: [src/widgets.rs#E00F] PUT 148.=150: +/// A column filled with one step of the skin's surface ladder, [`crate::GooeySkin::surfaces`], and +/// nothing else: no p
+52	233	gate	tool	cargo build	bash	2026-11-01T14:30:37Z	3.2	Rebuild docs after fix :: cd ~/bevy_gooey_loop && cargo fmt && git diff --stat && RUSTDOCFLAGS="-D warnings" CARGO_BUILD_JOBS=2 cargo doc --no-deps 2>&1 | tail -4
+52	234	gate	model	model		2026-11-01T14:30:41Z	3.6	
+52	235	ship	tool	phase mark	bash	2026-11-01T14:30:44Z	3.2	Commit, push branch, merge to main :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship; git add src/widgets.rs && git commit -q -m "Docs: surface() links resolve under cargo 
+52	236	ship	model	model		2026-11-01T14:30:47Z	2.3	
+52	237	ship	tool	shell	bash	2026-11-01T14:30:50Z	0.0	[launched bg_8] Gate on merged tree :: ~/g24_bin/gate.sh > ~/g24_bin/gate2.log 2>&1; tail -3 ~/g24_bin/gate2.log; grep -c "test result: ok" ~/g24_bin/gate2.log; grep -E "FAILED|failed;" ~/g24_bin/gat
+52	238	ship	tool	wait: gate	wait	2026-11-01T14:30:50Z	125.0	Waiting for merged-tree gate
+52	239	ship	model	model		2026-11-01T14:32:55Z	2.3	
+52	240	release	tool	phase mark	bash	2026-11-01T14:32:57Z	12.9	Push main and run semver-checks :: cd ~/bevy_gooey_loop && git push -q origin main 2>&1 | tail -2; python3 ~/.local/share/wiggum/steps.py mark release; cargo semver-checks --version 2>&1 | head -
+52	241	release	model	model		2026-11-01T14:33:10Z	3.6	
+52	242	release	tool	shell	bash	2026-11-01T14:33:13Z	0.0	Find version references :: cd ~/bevy_gooey_loop && sed -n 185,195p README.md | cut -c1-160; grep -n "0\.10" README.md docs/guide/*.md Cargo.toml | cut -c1-140 | head
+52	243	release	model	model		2026-11-01T14:33:13Z	1.7	
+52	244	release	tool	read files	read	2026-11-01T14:33:15Z	0.0	Tag for compat row :: README.md:197
+52	245	release	tool	read files	read	2026-11-01T14:33:15Z	0.0	Tag for version :: Cargo.toml:3
+52	246	release	tool	read files	read	2026-11-01T14:33:15Z	0.0	Tag for changelog :: CHANGELOG.md:1-5
+52	247	release	model	model		2026-11-01T14:33:15Z	5.0	
+52	248	release	tool	read files	read	2026-11-01T14:33:20Z	0.0	Read changed bullet :: CHANGELOG.md:12-15
+52	249	release	model	model		2026-11-01T14:33:20Z	3.7	
+52	250	release	tool	edit files	edit	2026-11-01T14:33:24Z	0.0	Release: changelog and version :: [CHANGELOG.md#C36D] PUT 14.=14: +- `GooeySkin` has four more public fields, `spacing`, `radii`, `type_scale` and `surfaces`; `SkinProblem` and `Role` have more 
+52	251	release	tool	edit files	edit	2026-11-01T14:33:24Z	0.0	Release: version bump :: [Cargo.toml#5886] PUT 3.=3: +version = "0.11.0"
+52	252	release	tool	edit files	edit	2026-11-01T14:33:24Z	0.0	Release: compat row :: [README.md#C7EB] PUT 197.=197: +| 0.1 – 0.11 | 0.20 |
+52	253	release	model	model		2026-11-01T14:33:24Z	2.8	
+52	254	release	tool	cargo publish	bash	2026-11-01T14:33:27Z	18.3	Dry run then publish v0.11.0 :: cd ~/bevy_gooey_loop && git add Cargo.toml CHANGELOG.md README.md && git commit -q -m "release: v0.11.0" && CARGO_BUILD_JOBS=2 cargo publish --dry-run 2>&1 | ta
+52	255	release	model	model		2026-11-01T14:33:45Z	1.6	
+52	256	release	tool	push gate	bash	2026-11-01T14:33:46Z	3.1	Tag, push, verify crate :: cd ~/bevy_gooey_loop && git tag -a v0.11.0 -m v0.11.0 && git push -q origin main && git push -q origin v0.11.0 2>&1 | tail -2; cargo info bevy_gooey@0.11.0 2>&1
+52	257	release	model	model		2026-11-01T14:33:50Z	11.9	
+52	258	release	model	model		2026-11-01T14:34:02Z	7.9	
+52	259	log	tool	phase mark	bash	2026-11-01T14:34:09Z	1.1	Verify on crates.io, find grimoire Needs G-03 :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; curl -s -H "User-Agent: bevy_gooey_loop (ladvien)" https://crates.io/api/v1/crates/bevy
+52	260	log	model	model		2026-11-01T14:34:11Z	6.7	
+52	261	log	tool	github	bash	2026-11-01T14:34:17Z	4.8	Comment, label and close #7 :: cd ~/bevy_gooey_loop && gh label create assumed-decision --color FBCA04 2>/dev/null; gh issue edit 7 --repo bevy-coven/bevy_gooey --add-label assumed-decision >
+52	262	log	model	model		2026-11-01T14:34:22Z	5.3	
+52	263	log	tool	shell	bash	2026-11-01T14:34:27Z	0.1	Clean up own scratch :: cd ~/bevy_gooey_loop && df -h /home | tail -1; rm -rf ~/g24_bin /tmp/g24 /tmp/ladder.py; df -h /home | tail -1; git worktree list | tail -n +2; tail -c 300 docs
+52	264	log	tool	read files	read	2026-11-01T14:34:27Z	0.1	Tag for log append :: docs/loop-log.md:-2
+52	265	log	model	model		2026-11-01T14:34:28Z	6.6	
+52	266	log	tool	edit files	edit	2026-11-01T14:34:34Z	0.0	Append merge/release/cleanup to log :: [docs/loop-log.md#F845] PUT >988: + +**Gate.** Run twice with `CARGO_BUILD_JOBS=2`: on the branch (fmt, clippy, all tests and doctests, `cargo check --lib`, was
+52	267	log	model	model		2026-11-01T14:34:34Z	3.4	
+52	268	log	tool	edit files	edit	2026-11-01T14:34:38Z	0.0	Tidy gate sentence :: [docs/loop-log.md#43E4] PUT 990.=990: +**Gate.** Run twice with `CARGO_BUILD_JOBS=2`: on the branch (fmt, clippy, all tests and doctests, `cargo check --lib` an
+52	269	log	tool	push gate	bash	2026-11-01T14:34:38Z	1.5	Commit and push final log :: cd ~/bevy_gooey_loop && git add docs/loop-log.md && git commit -q -m "Loop log: iteration 24, release v0.11.0 and cleanup" && git push -q origin main 2>&1 | tai
+52	270	log	model	model		2026-11-01T14:34:39Z	7.3	
