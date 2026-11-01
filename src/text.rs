@@ -148,12 +148,15 @@ pub(crate) fn text_on_key_input(
     }
 }
 
+/// An enabled text field: the ones a press on the row may focus.
+type EnabledField = (With<TextInput>, Without<InteractionDisabled>);
+
 /// A press on the row, its label or its padding focuses its field, as a click on an HTML label
 /// does, so the whole row is the target. Bevy's `AcquireFocus` bubbles up from the press; this
 /// takes it at the row, before it reaches the window and clears focus.
 pub(crate) fn text_row_on_acquire(
     mut acquire: On<AcquireFocus>,
-    fields: Query<(Entity, &TextInputOf), (With<TextInput>, Without<InteractionDisabled>)>,
+    fields: Query<(Entity, &TextInputOf), EnabledField>,
     mut focus: ResMut<InputFocus>,
 ) {
     let row = acquire.focused_entity;
