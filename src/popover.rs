@@ -215,15 +215,18 @@ pub(crate) fn stop_acquire(mut acquire: On<bevy::input_focus::AcquireFocus>) {
     acquire.propagate(false);
 }
 
-/// Puts each new [`Placement::AtPointer`] popover at the pointer: a zero-size node, child of the
-/// anchor, laid out on the window and not the anchor (`FixedNode`), left and top at the pointer's
+/// Puts each new [`Placement::AtPointer`] popover at the pointer: a zero-size node at the pointer's
 /// position, with the panel moved under it. Bevy's `Popover` then places the panel against that
-/// point and flips it at the window's edge like any other. Runs in
+/// point and flips it at the window's edge like any other. The point is a child of the anchor,
+/// laid out on the window and not the anchor (`FixedNode`), so it goes with its anchor; an anchor
+/// that is not a UI node (a sprite or a mesh in the world, whose children are never laid out) gets
+/// a point of its own at the root, which the panel's closing removes. Runs in
 /// [`crate::GooeySystems::Navigate`].
 pub fn anchor_pointer_popovers(
     new: Query<(Entity, &PopoverPanel), Added<PopoverPanel>>,
     pointers: Query<&PointerLocation>,
-    ui_scale: Option<Res<UiScale>>,
+    anchors: Query<(), With<Node>>,
+    pointers: Query<&PointerLocation>,
     mut commands: Commands,
 ) {
     for (panel, info) in &new {
@@ -239,21 +242,21 @@ pub fn anchor_pointer_popovers(
         else {
             continue;
         };
-        let point = commands
-            .spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(at.x),
-                    top: Val::Px(at.y),
-                    width: Val::Px(0.0),
-                    height: Val::Px(0.0),
-                    ..default()
-                },
-                FixedNode,
-                PopoverPoint,
-                ChildOf(info.anchor),
-            ))
-            .id();
+        let mut point = commands.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: Val::Px(at.x),
+                top: Val::Px(at.y),
+                width: Val::Px(0.0),
+                height: Val::Px(0.0),
+                ..default()
+            },
+            PopoverPoint,
+        ));
+        if anchors.contains(info.anchor) {
+            point.insert((FixedNode, ChildOf(info.anchor)));
+        }
+        let point = point.id();
         commands.entity(panel).insert(ChildOf(point));
     }
 }
