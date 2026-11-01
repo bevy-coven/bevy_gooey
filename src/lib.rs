@@ -27,7 +27,8 @@
 //!   [`InputDevice`] tracks), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
 //!   timed by [`ToastSettings`]),
-//!   [`Tooltip`] and the modal [`dialog`]. Each is a free function returning a bundle, so they
+//!   [`Tooltip`], the modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
+//!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed). Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
 //!   to the game under a HUD, while every widget on it takes the pointer. A toast takes no input
@@ -123,6 +124,7 @@ mod list;
 mod meter;
 mod nav;
 mod options;
+mod popover;
 mod prompt;
 mod scale;
 mod skin;
@@ -157,6 +159,10 @@ pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
 };
 pub use options::{OptionRow, update_option_rows};
+pub use popover::{
+    CloseReason, Placement, PopoverClosed, PopoverPanel, PopoverPoint, anchor_pointer_popovers,
+    close_popovers_on_press, drop_pointer_anchors, reveal_popovers,
+};
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use skin::{
@@ -171,8 +177,8 @@ pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
     binding, button, choice, dialog, heading, interface_size, label, list, menu, meter, pad_style,
-    panel, prompt, prompts, screen, skin_preset, slider, surface, tab_page, tabs, text_input,
-    text_size, toast, toast_alert, toggle,
+    panel, popover, popover_modal, prompt, prompts, screen, skin_preset, slider, surface, tab_page,
+    tabs, text_input, text_size, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -237,6 +243,10 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ChoiceCount>()
             .register_type::<ListView>()
             .register_type::<Tooltip>()
+            .register_type::<Placement>()
+            .register_type::<PopoverPanel>()
+            .register_type::<CloseReason>()
+            .register_type::<PopoverClosed>()
             .register_type::<Toast>()
             .register_type::<ToastStack>()
             .register_type::<ToastSettings>()
@@ -304,6 +314,10 @@ impl Plugin for GooeyNavPlugin {
                 (
                     track_input_device,
                     track_text_editing,
+                    close_popovers_on_press,
+                    anchor_pointer_popovers,
+                    drop_pointer_anchors,
+                    reveal_popovers,
                     focus_opened_dialogs,
                     land_tab_focus,
                     step_tabs.run_if(not_capturing),
