@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-01
+
 ### Added
 
 - Menus (G-05, #9): `menu_bar(children![menu_title("File", children![..])])` and the rows `menu_item(label)` (`.with_shortcut(Shortcut)` draws the chord right-aligned in muted text), `check_item(label, checked)`, `radio_item(label, checked)`, `submenu(label, items)` and `separator()`. A menu is spawned once with its title and shown by opening it, as a modal popover under the title (right of the item, for a submenu), so the popover's placement, outside-press close, `Cancel` and focus in and back all apply; the items are live entities, so `observe(|_: On<Activate>| ..)` sits where it is written. F10, or Alt pressed and let go alone, puts focus on the bar; Left and Right walk the titles (wrapping) and, in a menu, open a submenu or move to the next or previous title's menu; Down, Enter, Space, South or a click open a menu with focus on its first item; Home and End go to the first and last item; Escape or B closes one level and gives focus to what opened it, then (from the bar) back to where F10 found it; a pointer on another title switches menus. A check item flips its own `Checked` and a radio item sets its own and clears the run of radio items beside it (to the nearest separator), each sending one `ValueChange<bool>`. `Disabled::new(reason)` makes an item unavailable (`InteractionDisabled`) with a tooltip of the reason; it stays focusable. An empty submenu says "Nothing here"; a menu taller than the window leaves room for is capped and scrolls, following focus.
