@@ -12,7 +12,9 @@
 //!   [`GooeyFonts`].
 //! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], [`meter`]
 //!   (a HUD bar driven by [`Meter`]), [`toggle`], [`slider`] and [`choice`] (an options screen's
-//!   switch, scrubber and stepper, reporting through [`ValueChange`]), [`tabs`] (its pages, each a
+//!   switch, scrubber and stepper, reporting through [`ValueChange`]), [`binding`] (a controls
+//!   screen's row: the player's next key, mouse button or pad button is the new [`Binding`]), [`tabs`]
+//!   (its pages, each a
 //!   [`tab_page`], turned by a click, the arrows and the pad's bumpers), [`list`] (rows that scroll,
 //!   following focus), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
@@ -35,7 +37,9 @@
 //!   ([`land_tab_focus`]). A [`list`] scrolls to keep the focused row and
 //!   the next one in sight ([`scroll_to_focus`]), and PageUp and PageDown ([`page_lists`]) move a
 //!   viewport at a time. Escape and a pad's B are one [`Cancel`] event, sent to the focused widget
-//!   (or the open dialog) and bubbling up to the layer the game observes ([`cancel_by_input`]).
+//!   (or the open dialog) and bubbling up to the layer the game observes ([`cancel_by_input`]),
+//!   except while a [`binding`] row waits for a press: then nothing else hears the player
+//!   ([`not_capturing`], [`bind_by_input`]).
 //! - Scale — [`GooeyScalePlugin`]: the whole interface keeps its share of the screen at every
 //!   resolution, so text legible at 720p is legible on a 1440p monitor and a 4K television
 //!   ([`UiScaleSettings`], [`scale_with_window`]).
@@ -102,6 +106,7 @@
 
 pub mod model;
 
+mod binding;
 mod cancel;
 mod choice;
 mod controls;
@@ -118,6 +123,10 @@ mod widgets;
 
 pub use bevy::ui::Checked;
 pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
+pub use binding::{
+    Binding, BindingSettings, BindingValue, Capturing, bind_by_input, catch_pointer, not_capturing,
+    update_bindings,
+};
 pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use controls::update_sliders;
@@ -126,10 +135,10 @@ pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use meter::{Meter, update_meters};
 pub use model::{
     COMFORT_TARGET_PX, MIN_TARGET_PX, NON_TEXT_CONTRAST, PAD_REPEAT_DELAY, PAD_REPEAT_RATE,
-    TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio, list_height,
-    meter_fraction, page_target, relative_luminance, repeat_steps, scroll_to_reveal,
-    slider_fraction, slider_text, snap_line_width, snap_to_row, tab_step, toast_alpha, toast_grow,
-    toast_hold, toast_life, window_ui_scale,
+    PadStyle, TEXT_CONTRAST, choice_next, choice_step, composite, contrast_ratio, key_name,
+    list_height, meter_fraction, mouse_name, pad_name, page_target, relative_luminance,
+    repeat_steps, scroll_to_reveal, slider_fraction, slider_text, snap_line_width, snap_to_row,
+    tab_step, toast_alpha, toast_grow, toast_hold, toast_life, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -140,8 +149,8 @@ pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use widgets::{
-    button, choice, dialog, heading, label, list, menu, meter, panel, screen, slider, tab_page,
-    tabs, toast, toast_alert, toggle,
+    binding, button, choice, dialog, heading, label, list, menu, meter, panel, screen, slider,
+    tab_page, tabs, toast, toast_alert, toggle,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -182,12 +191,17 @@ impl Plugin for GooeyStylePlugin {
         app.init_resource::<GooeySkin>()
             .init_resource::<GooeyFonts>()
             .init_resource::<ToastSettings>()
+            .init_resource::<BindingSettings>()
             .init_resource::<InputFocus>()
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<GooeySkin>()
             .register_type::<Role>()
             .register_type::<Meter>()
+            .register_type::<Binding>()
+            .register_type::<BindingValue>()
+            .register_type::<BindingSettings>()
+            .register_type::<Capturing>()
             .register_type::<ChoiceValue>()
             .register_type::<TabsValue>()
             .register_type::<TabsCount>()
@@ -209,6 +223,7 @@ impl Plugin for GooeyStylePlugin {
                     update_toasts,
                     update_tooltip_text,
                     show_tooltips,
+                    update_bindings,
                     update_choices,
                     update_tabs,
                     apply_skin,
@@ -243,6 +258,7 @@ impl Plugin for GooeyNavPlugin {
             app.add_plugins(DirectionalNavigationPlugin);
         }
         app.init_resource::<InputFocus>()
+            .init_resource::<BindingSettings>()
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<Dialog>()
@@ -254,12 +270,14 @@ impl Plugin for GooeyNavPlugin {
                 (
                     focus_opened_dialogs,
                     land_tab_focus,
-                    step_tabs,
-                    navigate_by_input,
-                    gamepad_adjust,
-                    gamepad_select,
-                    cancel_by_input,
-                    page_lists,
+                    step_tabs.run_if(not_capturing),
+                    navigate_by_input.run_if(not_capturing),
+                    gamepad_adjust.run_if(not_capturing),
+                    gamepad_select.run_if(not_capturing),
+                    cancel_by_input.run_if(not_capturing),
+                    page_lists.run_if(not_capturing),
+                    bind_by_input,
+                    catch_pointer,
                     scroll_to_focus,
                     feedback_on_focus,
                 )
