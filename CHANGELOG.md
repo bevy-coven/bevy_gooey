@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-01
+
 ### Added
 
 - Colour fields (G-13 slice two, #17): `color_field(label, Srgba)` is a text row with a swatch. The field shows the colour as hex and takes `#ff8800`, `f80` or `#ff880080` (Enter or leaving applies it as one final `ValueChange<Srgba>`, Escape puts the old colour back, anything else is refused with its reason as a `ColorRefused`); the swatch is a button (Enter, Space, South or a click) that opens a modal popover picker and closes it again. The picker is a saturation and value area (a press and drag, or the arrows, Shift ten times as far; the D-pad's Left and Right step the saturation) over Hue, Brightness and Alpha strips, which are `Slider`s drawn with `BackgroundGradient`s (no shader, so it lays out in a headless window). The colour applies as it is picked. The picker keeps the hue, saturation and value it is on, so dragging to black and back or typing a grey keeps the hue. `MixedValue` works as on a number field. State is `ColorValue`; `ColorPicker` is the open picker's.
