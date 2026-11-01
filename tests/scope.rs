@@ -43,7 +43,9 @@ fn fill(app: &App, entity: Entity) -> Color {
 }
 
 fn scope_node(app: &mut App, scope: GooeySkin) -> Entity {
-    app.world_mut().spawn((Node::default(), SkinScope(scope))).id()
+    app.world_mut()
+        .spawn((Node::default(), SkinScope(scope)))
+        .id()
 }
 
 #[test]
@@ -86,7 +88,9 @@ fn a_scope_restyles_a_widget_in_the_frame_it_is_added_and_the_nearest_wins() {
     app.update();
     assert_eq!(fill(&app, deep), RED, "the scope above shows through");
 
-    app.world_mut().entity_mut(inner).insert(SkinScope(skin(BLUE, Color::WHITE)));
+    app.world_mut()
+        .entity_mut(inner)
+        .insert(SkinScope(skin(BLUE, Color::WHITE)));
     app.update();
     assert_eq!(fill(&app, deep), BLUE, "a scope added to a settled tree");
 }
@@ -111,9 +115,13 @@ fn a_changed_scope_restyles_its_subtree_and_nothing_else() {
     let beside = pressed_button(&mut app, None);
     app.update();
     // A marker no restyle would leave, so a widget restyled for nothing shows it.
-    app.world_mut().entity_mut(beside).insert(BackgroundColor(MAGENTA));
+    app.world_mut()
+        .entity_mut(beside)
+        .insert(BackgroundColor(MAGENTA));
 
-    app.world_mut().entity_mut(scope).insert(SkinScope(skin(GREEN, Color::WHITE)));
+    app.world_mut()
+        .entity_mut(scope)
+        .insert(SkinScope(skin(GREEN, Color::WHITE)));
     app.update();
     assert_eq!(fill(&app, inside), GREEN);
     assert_eq!(fill(&app, beside), MAGENTA, "a widget outside was restyled");
@@ -190,7 +198,9 @@ fn a_scoped_tree_written_by_nothing_stays_put() {
     let scope = scope_node(&mut app, skin(RED, Color::WHITE));
     let inside = pressed_button(&mut app, Some(scope));
     app.update();
-    app.world_mut().entity_mut(inside).insert(BackgroundColor(MAGENTA));
+    app.world_mut()
+        .entity_mut(inside)
+        .insert(BackgroundColor(MAGENTA));
     for _ in 0..30 {
         app.update();
     }
