@@ -19,6 +19,9 @@ per subject. The README links each bullet to its page.
 - [Text input](text-input.md) — `text_input(label, value)`: a row with a field the player types in, the
   edit and its end in `ValueChange<String>`, `TextEditing` for a game's hotkeys and a pad's keyboard, and
   why a field never traps focus.
+- [Numbers](numbers.md) — `number_field(label, value, step, range)` and `vec_field`: a number the player
+  scrubs with a drag, types or steps with the keys and the D-pad, held to a range, `MixedValue` for a
+  multi-selection, and the reason a typed expression is refused.
 - [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB

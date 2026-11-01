@@ -10,6 +10,7 @@
 - A `list` scrolls to follow the focus a key, the D-pad or Tab gives its rows (with the next row kept in sight), PageUp and PageDown (the pad's triggers) move a viewport at a time, and Up and Down stay among a list's rows until they run out; see [lists](lists.md).
 - `tabs` turn their page with a click, Left and Right on a focused tab (they wrap), the D-pad on a tab, and **LB and RB** (or Ctrl+PageUp and Ctrl+PageDown) from anywhere in the widget, so a pad player never goes back up to the strip; focus stays in the page and lands on the new page's first widget, and Up from a page goes to the selected tab. See [tabs](tabs.md).
 - A focused `text_input` field takes the keys a caret and a typist need (characters, Backspace, Left, Right, Home, End, selection, paste), so Left and Right never also move focus off it; **Up, Down, Tab, the D-pad and Escape leave it**, so a field never traps a keyboard or a pad. A click on its label focuses it. See [text input](text-input.md).
+- A focused `number_field` is a text field that takes **Up and Down as steps** (Shift for ten; the APG's spinbutton), so those two keys do not leave it: Tab does, and so do the D-pad's Up and Down, while the D-pad's Left and Right step it as they do a slider. Left, Right, Home and End are the caret's. See [numbers](numbers.md).
 
 ## Back
 
@@ -24,6 +25,10 @@ commands.spawn((
     children![(panel(), children![label("Leave the game?"), button("Stay")])],
 ));
 ```
+
+![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
+
+*Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
 
 - **It starts at the focused widget and bubbles up its parents**, so the innermost layer hears it first. `cancel.entity` is the entity your observer is on; `On::original_event_target()` is the widget that had focus. An observer that handled it calls `cancel.propagate(false)` so a layer above does not also act.
 - **It never leaves a `dialog`.** A modal dialog is its own scope, as for the arrows and Tab: a Back inside it does not reach the screen under it, even one the dialog was spawned beneath.
