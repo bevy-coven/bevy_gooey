@@ -7669,3 +7669,308 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 55	278	log	model	model		2026-11-01T16:33:47Z	10.3	
 55	279	log	tool	push gate	bash	2026-11-01T16:33:58Z	1.6	cd ~/bevy_gooey_loop && python3 - <<'EOF' p='docs/loop-log.md' s=open(p).read().rstrip('\n')+'\n' s+=''' **Merge and release.** The pass committed straight on `
 55	280	log	model	model		2026-11-01T16:33:59Z	9.4	
+56	1	orient	model	model		2026-11-01T16:34:35Z	4.2	
+56	2	orient	tool	phase mark	bash	2026-11-01T16:34:39Z	1.7	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git fetch -q origin loop-stats; git show orig
+56	3	orient	model	model		2026-11-01T16:34:41Z	3.6	
+56	4	orient	tool	github	bash	2026-11-01T16:34:44Z	0.9	cd /home/ladvien/bevy_gooey_loop && gh issue view 10 --repo bevy-coven/bevy_gooey --comments; git log --oneline -n 3 --grep=parked --all; tail -80 docs/loop-log
+56	5	orient	model	model		2026-11-01T16:34:45Z	1.8	
+56	6	orient	tool	github	bash	2026-11-01T16:34:47Z	1.4	cd /home/ladvien/bevy_gooey_loop && gh issue view 10 --repo bevy-coven/bevy_gooey --comments | cat; gh issue view 9 --repo bevy-coven/bevy_gooey --json comments
+56	7	orient	model	model		2026-11-01T16:34:48Z	1.6	
+56	8	orient	tool	github	bash	2026-11-01T16:34:50Z	0.5	cd /home/ladvien/bevy_gooey_loop && gh issue view 10 --repo bevy-coven/bevy_gooey --json body,comments --jq '.body,(.comments[]|.body)'
+56	9	orient	model	model		2026-11-01T16:34:50Z	3.3	
+56	10	research	tool	phase mark	bash	2026-11-01T16:34:54Z	0.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; wc -l src/*.rs tests/menu.rs tests/popover.rs examples/popover.rs exam
+56	11	research	model	model		2026-11-01T16:34:54Z	1.8	
+56	12	research	tool	read files	read	2026-11-01T16:34:56Z	0.0	src/menu.rs:1-135
+56	13	research	tool	read files	read	2026-11-01T16:34:56Z	0.0	src/menu.rs:270-520
+56	14	research	tool	read files	read	2026-11-01T16:34:56Z	0.0	src/popover.rs
+56	15	research	model	model		2026-11-01T16:34:56Z	19.5	
+56	16	research	tool	shell	bash	2026-11-01T16:35:15Z	0.0	cd /home/ladvien/bevy_gooey_loop && B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); echo $B; grep -rn "UiRootNodes" $B/src | head; grep -n "r
+56	17	research	model	model		2026-11-01T16:35:15Z	62.8	
+56	18	research	tool	read files	read	2026-11-01T16:36:18Z	0.0	src/menu.rs:524-989
+56	19	research	model	model		2026-11-01T16:36:18Z	6.5	
+56	20	research	tool	shell	bash	2026-11-01T16:36:25Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 40,60p src/popover.rs; sed -n 104,121p src/popover.rs; sed -n 160,176p src/popover.rs; sed -n 296,338p src/popover.rs
+56	21	research	model	model		2026-11-01T16:36:25Z	1.9	
+56	22	research	tool	shell	bash	2026-11-01T16:36:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1105,1135p src/skin.rs; sed -n 1240,1275p src/skin.rs; sed -n 2285,2330p src/skin.rs; sed -n 120,200p src/lib.rs; sed
+56	23	research	model	model		2026-11-01T16:36:26Z	5.9	
+56	24	research	tool	shell	bash	2026-11-01T16:36:32Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "context\|Secondary\|AtPointer" examples/popover.rs tests/popover.rs | head -40; sed -n 1,120p tests/menu.rs
+56	25	research	model	model		2026-11-01T16:36:32Z	1.7	
+56	26	research	tool	shell	bash	2026-11-01T16:36:34Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 120,330p tests/menu.rs; sed -n 205,260p examples/popover.rs
+56	27	research	model	model		2026-11-01T16:36:34Z	24.3	
+56	28	research	tool	shell	bash	2026-11-01T16:36:58Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/ && grep -n "pub struct PointerClick" -B5 -A25 bevy_picking-0.20.0/src/events.rs | head -70; grep -n "fn trigger_with
+56	29	research	model	model		2026-11-01T16:36:58Z	2.5	
+56	30	research	tool	shell	bash	2026-11-01T16:37:01Z	0.1	R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/); cd $R; grep -n "pub struct PointerClick" -B5 -A25 bevy_picking-0.20.0/src/events.rs | head -60; grep -rn "P
+56	31	research	model	model		2026-11-01T16:37:01Z	2.0	
+56	32	research	tool	shell	bash	2026-11-01T16:37:03Z	0.0	R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/); sed -n 225,330p $R/bevy_ecs-0.20.0/src/event/trigger.rs; grep -n "PointerTraversal" -A25 $R/bevy_picking-0.
+56	33	research	model	model		2026-11-01T16:37:03Z	27.5	
+56	34	research	tool	shell	bash	2026-11-01T16:37:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2100,2135p src/skin.rs; grep -n "fn owner_of" -A30 src/skin.rs | head -60; grep -n "MenuPanel\|MenuTitle" src/nav.rs 
+56	35	research	model	model		2026-11-01T16:37:31Z	6.0	
+56	36	research	tool	shell	bash	2026-11-01T16:37:37Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn menu_bar\|pub fn menu_title\|pub fn submenu\|pub fn separator" src/widgets.rs; grep -n "pub fn submenu" -B40
+56	37	research	model	model		2026-11-01T16:37:37Z	26.2	
+56	38	research	tool	shell	bash	2026-11-01T16:38:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn\|pub const" src/shortcut.rs; grep -n "pub fn show_focus" -A8 src/nav.rs; grep -n "fn remember_opener\|fn ret
+56	39	research	model	model		2026-11-01T16:38:03Z	12.9	
+56	40	research	tool	shell	bash	2026-11-01T16:38:16Z	0.0	R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/); grep -n "images.get\|custom_size\|PickingMode\|pickable\|Pickable" $R/bevy_sprite-0.20.0/src/picking_backen
+56	41	research	model	model		2026-11-01T16:38:16Z	3.4	
+56	42	research	tool	shell	bash	2026-11-01T16:38:19Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 315,345p examples/gallery.rs; grep -n "SpritePicking" -r examples tests | head
+56	43	research	model	model		2026-11-01T16:38:19Z	1.6	
+56	44	build	tool	phase mark	bash	2026-11-01T16:38:21Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n "fn spawn_world" -A30 examples/gallery.rs; python3 ~/.local/share/wiggum/steps.py mark build
+56	45	build	model	model		2026-11-01T16:38:21Z	6.1	
+56	46	build	tool	homestill	bash	2026-11-01T16:38:27Z	10.0	cd /home/ladvien/bevy_gooey_loop && cat docs/research/menu.md | head -72; hs distill search "context menu right-click pointer menu performance" --output json 2>
+56	47	build	model	model		2026-11-01T16:38:37Z	3.5	
+56	48	build	tool	homestill	bash	2026-11-01T16:38:41Z	7.0	cd /home/ladvien/bevy_gooey_loop && hs distill search "context menu right-click keyboard accessibility" --output json 2>/dev/null | python3 -c " import json,sys
+56	49	build	model	model		2026-11-01T16:38:48Z	6.1	
+56	50	build	tool	shell	bash	2026-11-01T16:38:54Z	0.4	cd /tmp && curl -sL "https://learn.microsoft.com/en-us/windows/win32/uxguide/mnu-contextmenus" -A "Mozilla/5.0" | python3 -c " import sys,re,html t=sys.stdin.re
+56	51	build	model	model		2026-11-01T16:38:54Z	1.4	
+56	52	build	tool	read files	read	2026-11-01T16:38:56Z	0.2	Context menu guidance :: https://learn.microsoft.com/en-us/windows/win32/uxguide/mnu-contextmenus
+56	53	build	model	model		2026-11-01T16:38:56Z	1.8	
+56	54	build	tool	web	web_search	2026-11-01T16:38:58Z	7.1	Finding context menu keyboard guideline :: Microsoft Windows UX guide context menus "Shift+F10" "Menu key" display context menu at the object
+56	55	build	model	model		2026-11-01T16:39:05Z	30.7	
+56	56	build	tool	edit files	write	2026-11-01T16:39:35Z	0.0	docs/research/context-menu.md
+56	57	build	tool	git	bash	2026-11-01T16:39:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && git checkout -q -b loop/iter-28 && git add docs/research/context-menu.md && git commit -qm "Research: context menus" && git 
+56	58	build	model	model		2026-11-01T16:39:35Z	4.7	
+56	59	build	tool	sleep	bash	2026-11-01T16:39:40Z	1.3	cd /home/ladvien/bevy_gooey_loop && echo $CARGO_TARGET_DIR; mkdir -p ~/g28_bin /tmp/g28m && (CARGO_BUILD_JOBS=2 cargo build --release --example gallery 2>&1 | t
+56	60	build	model	model		2026-11-01T16:39:41Z	17.9	
+56	61	build	tool	remote wait	bash	2026-11-01T16:39:59Z	60.0	[launched bg_1] sleep 120; cat /tmp/g28m/base.log
+56	62	build	model	model		2026-11-01T16:40:59Z	4.4	
+56	63	build	tool	shell	bash	2026-11-01T16:41:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn button" -B3 -A12 src/widgets.rs | head -40; sed -n 330,420p tests/popover.rs
+56	64	build	model	model		2026-11-01T16:41:04Z	59.5	
+56	65	build	tool	edit files	write	2026-11-01T16:42:03Z	0.0	/home/ladvien/bevy_gooey_loop/tests/context_menu.rs
+56	66	build	bg	remote wait	bash	2026-11-01T16:40:03Z	120.0	bg_1 completed: sleep 120; cat /tmp/g28m/base.log
+56	67	build	model	model		2026-11-01T16:42:03Z	3.6	
+56	68	build	tool	phase mark	bash	2026-11-01T16:42:07Z	0.1	cd /home/ladvien/bevy_gooey_loop && ls -la ~/g28_bin; python3 ~/.local/share/wiggum/steps.py mark build; grep -n "fn is_text_editing" -B2 -A8 src/text.rs; grep 
+56	69	build	model	model		2026-11-01T16:42:07Z	5.9	
+56	70	build	tool	edit files	edit	2026-11-01T16:42:13Z	0.0	Refactoring open_menu into show_menu :: [src/menu.rs#1CC5] PUT 330.=346: + let placement = if world.get::<MenuTitle>(anchor).is_some() { + Placement::Below + } else { + Placement::Right + }; + show_me
+56	71	build	model	model		2026-11-01T16:42:13Z	4.0	
+56	72	build	tool	read files	read	2026-11-01T16:42:17Z	0.0	src/menu.rs:308:370
+56	73	build	model	model		2026-11-01T16:42:17Z	1.0	
+56	74	build	tool	read files	read	2026-11-01T16:42:18Z	0.0	src/menu.rs:308-372
+56	75	build	model	model		2026-11-01T16:42:18Z	2.1	
+56	76	build	tool	edit files	edit	2026-11-01T16:42:20Z	0.0	Dropping stray lines :: [src/menu.rs#B00D] CUT 359.=362
+56	77	build	tool	read files	read	2026-11-01T16:42:20Z	0.0	src/menu.rs:352-392
+56	78	build	model	model		2026-11-01T16:42:20Z	3.9	
+56	79	build	tool	edit files	edit	2026-11-01T16:42:24Z	0.0	Context panels detach on close :: [src/menu.rs#0720] PUT 371.=377: + if let Ok(mut entity) = world.get_entity_mut(panel) { + entity.remove::<(PopoverPanel, Dialog, TabGroup)>(); + entity.insert(
+56	80	build	model	model		2026-11-01T16:42:24Z	22.5	
+56	81	build	tool	edit files	write	2026-11-01T16:42:46Z	0.0	/home/ladvien/bevy_gooey_loop/src/context.rs
+56	82	build	model	model		2026-11-01T16:42:46Z	6.7	
+56	83	build	tool	shell	bash	2026-11-01T16:42:53Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "menu_panel\|^use" src/widgets.rs | head -40
+56	84	build	model	model		2026-11-01T16:42:53Z	1.4	
+56	85	build	tool	edit files	edit	2026-11-01T16:42:55Z	0.0	Adding context_menu widget :: [src/widgets.rs#0000]
+56	86	build	model	model		2026-11-01T16:42:55Z	1.2	
+56	87	build	tool	read files	read	2026-11-01T16:42:56Z	0.0	src/widgets.rs:1483-1500
+56	88	build	model	model		2026-11-01T16:42:56Z	6.2	
+56	89	build	tool	edit files	edit	2026-11-01T16:43:02Z	0.0	Adding context_menu widget :: [src/widgets.rs#20A9] PUT >1485: + +/// A menu that belongs to a thing: spawn it once, anywhere, and name it with +/// [`ContextMenu`](crate::ContextMenu) on wh
+56	90	build	tool	read files	read	2026-11-01T16:43:02Z	0.0	src/lib.rs:255-275
+56	91	build	model	model		2026-11-01T16:43:02Z	6.7	
+56	92	build	tool	edit files	edit	2026-11-01T16:43:09Z	0.0	Wiring context menus in lib.rs :: [src/lib.rs#5EB3] PUT 265.=265: + .register_type::<MenuOpen>() + .register_type::<ContextMenu>() + .register_type::<ContextTarget>()
+56	93	build	tool	shell	bash	2026-11-01T16:43:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='src/lib.rs'; s=open(p).read() s=s.replace("mod controls;\nmod feedback;","mod context;\nmod con
+56	94	build	model	model		2026-11-01T16:43:09Z	3.8	
+56	95	build	tool	search	grep	2026-11-01T16:43:12Z	0.0	Locating F10 check :: src/menu.rs
+56	96	build	model	model		2026-11-01T16:43:12Z	2.5	
+56	97	build	tool	edit files	edit	2026-11-01T16:43:15Z	0.0	F10 with Shift is the context menu's :: [src/menu.rs#B297] PUT 799.=799: + // Shift+F10 is the context menu's ([`crate::context_by_key`]). + let f10 = keys.just_pressed(KeyCode::F10) && !Modifiers::he
+56	98	build	model	model		2026-11-01T16:43:15Z	4.7	
+56	99	build	tool	edit files	edit	2026-11-01T16:43:20Z	0.0	Restore context import :: [src/menu.rs#2026] PUT <26: +use crate::context::ContextTarget;
+56	100	build	tool	cargo clippy	bash	2026-11-01T16:43:20Z	7.5	cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=2 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -50
+56	101	build	model	model		2026-11-01T16:43:27Z	3.4	
+56	102	build	tool	cargo clippy	bash	2026-11-01T16:43:30Z	5.8	cd /home/ladvien/bevy_gooey_loop && sed -i 's/On<Add, ContextTarget>/On<Add<ContextTarget>>/g' tests/context_menu.rs src/context.rs docs/research/context-menu.m
+56	103	build	model	model		2026-11-01T16:43:36Z	2.7	
+56	104	build	tool	cargo test	bash	2026-11-01T16:43:39Z	14.5	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test context_menu 2>&1 | tail -60
+56	105	build	model	model		2026-11-01T16:43:53Z	3.6	
+56	106	build	tool	cargo test	bash	2026-11-01T16:43:57Z	1.8	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 timeout 1500 cargo test --all-features --test context_menu 2>&1 | grep -A6 "^---- "| grep -v "^ [0-9]\|st
+56	107	build	model	model		2026-11-01T16:43:59Z	5.1	
+56	108	build	tool	shell	bash	2026-11-01T16:44:04Z	0.0	R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.*/ | tail -1); echo $R; sed -n 95,260p $R/src/layout/mod.rs
+56	109	build	model	model		2026-11-01T16:44:04Z	7.6	
+56	110	build	tool	shell	bash	2026-11-01T16:44:11Z	0.0	R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.1/); grep -rn "fn propagate_ui_target_cameras" -A90 $R/src/update.rs | head -150
+56	111	build	model	model		2026-11-01T16:44:11Z	12.8	
+56	112	build	tool	read files	read	2026-11-01T16:44:24Z	0.0	src/popover.rs:217-262
+56	113	build	model	model		2026-11-01T16:44:24Z	7.3	
+56	114	build	tool	edit files	edit	2026-11-01T16:44:32Z	0.0	Pointer point is a root under a non-UI anchor :: [src/popover.rs#9231] PUT 218.=223: +/// Puts each new [`Placement::AtPointer`] popover at the pointer: a zero-size node at the pointer's +/// position, with th
+56	115	build	model	model		2026-11-01T16:44:32Z	4.1	
+56	116	build	tool	edit files	edit	2026-11-01T16:44:36Z	0.0	Fix params :: [src/popover.rs#B9B9] PUT 229.=229: + ui_scale: Option<Res<UiScale>>,
+56	117	build	tool	cargo test	bash	2026-11-01T16:44:36Z	11.7	cd /home/ladvien/bevy_gooey_loop && sed -i 's/(card.min.x - anchor.min.x).abs() <= 1.0,/(card.min.x - anchor.min.x).abs() <= 4.0,/' tests/context_menu.rs && car
+56	118	build	model	model		2026-11-01T16:44:47Z	13.8	
+56	119	build	tool	cargo test	bash	2026-11-01T16:45:01Z	6.0	cd /home/ladvien/bevy_gooey_loop && sed -i 's/Vec2::new(300.0, 250.0)/Vec2::new(300.0, 300.0)/g; s/Vec2::new(380.0, 400.0)/Vec2::new(380.0, 420.0)/' tests/conte
+56	120	build	model	model		2026-11-01T16:45:07Z	5.1	
+56	121	build	tool	shell	bash	2026-11-01T16:45:12Z	0.0	R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.*/ | tail -1); grep -n "PointerClick\|button\b\|Primary" $R/src/button.rs | head -20
+56	122	build	model	model		2026-11-01T16:45:12Z	1.9	
+56	123	build	tool	shell	bash	2026-11-01T16:45:14Z	0.0	R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.*/ | tail -1); sed -n 55,100p $R/src/button.rs
+56	124	build	model	model		2026-11-01T16:45:14Z	22.1	
+56	125	build	tool	shell	bash	2026-11-01T16:45:36Z	0.0	R=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.*/ | tail -1); sed -n 100,145p $R/src/button.rs; grep -n "PointerClick" -B3 -A20 $R/../be
+56	126	build	model	model		2026-11-01T16:45:36Z	10.6	
+56	127	build	tool	cargo test	bash	2026-11-01T16:45:47Z	7.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='tests/context_menu.rs'; s=open(p).read() a=s.index("#[test]\nfn a_right_click_on_the_open_menu_
+56	128	build	model	model		2026-11-01T16:45:54Z	18.9	
+56	129	build	tool	cargo test	bash	2026-11-01T16:46:13Z	9.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/context_menu.rs'; s=open(p).read() a=s.index("#[test]\nfn near_the_windows_edge_the_menu_flips_and_
+56	130	build	model	model		2026-11-01T16:46:22Z	7.6	
+56	131	build	tool	cargo test	bash	2026-11-01T16:46:29Z	37.3	cd /home/ladvien/bevy_gooey_loop && mkdir -p /tmp/g28m/mut && cp src/context.rs src/menu.rs src/popover.rs /tmp/g28m/mut/ && run(){ CARGO_BUILD_JOBS=2 timeout 9
+56	132	build	model	model		2026-11-01T16:47:07Z	6.2	
+56	133	build	tool	phase mark	bash	2026-11-01T16:47:13Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; sed -n 1,200p examples/popover.rs
+56	134	build	tool	shell	bash	2026-11-01T16:47:13Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 260,401p examples/popover.rs; grep -n "popover\|menus" Cargo.toml docs/media/README.md | head -20
+56	135	build	model	model		2026-11-01T16:47:13Z	40.0	
+56	136	build	tool	cargo build	bash	2026-11-01T16:47:53Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' src=open('examples/popover.rs').read() # reuse: header replaced; keep imports, Capture, capture(), stage() w
+56	137	build	model	model		2026-11-01T16:47:53Z	5.1	
+56	138	build	tool	shell	bash	2026-11-01T16:47:58Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 296,350p examples/context.rs
+56	139	build	model	model		2026-11-01T16:47:58Z	8.6	
+56	140	build	tool	cargo clippy	bash	2026-11-01T16:48:07Z	6.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='examples/context.rs'; s=open(p).read() old=s[s.index(" match step {\n Step::Key(key_code) => {"):s.index(
+56	141	build	model	model		2026-11-01T16:48:13Z	3.6	
+56	142	prove	tool	phase mark	bash	2026-11-01T16:48:17Z	60.0	[launched bg_2] cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -3; cp $C
+56	143	prove	model	model		2026-11-01T16:49:17Z	3.7	
+56	144	prove	tool	shell	bash	2026-11-01T16:49:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && cat docs/guide/menus.md | head -80; grep -n "enus\|menu" README.md docs/guide/README.md docs/guide/widgets.md docs/guide/hos
+56	145	prove	model	model		2026-11-01T16:49:21Z	3.7	
+56	146	prove	tool	shell	bash	2026-11-01T16:49:24Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 128,145p README.md; sed -n 180,192p README.md | cut -c1-200; sed -n 26,36p docs/guide/README.md; sed -n 60,70p docs/g
+56	147	prove	bg	phase mark	bash	2026-11-01T16:48:17Z	67.2	bg_2 failed: python3 ~/.local/share/wiggum/steps.py mark prove; CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -3...
+56	148	prove	model	model		2026-11-01T16:49:24Z	6.1	
+56	149	prove	tool	shell	bash	2026-11-01T16:49:30Z	3.2	mkdir -p /tmp/g28m/after && cd /tmp/g28m/after && export DISPLAY=:93 && G=~/g28_bin/context && GOOEY_FRAMES=100 GOOEY_KEYS=context GOOEY_POINTS="940,300" GOOEY_
+56	150	prove	model	model		2026-11-01T16:49:34Z	1.5	
+56	151	prove	tool	read files	read	2026-11-01T16:49:35Z	0.0	/tmp/g28m/after/c1.png
+56	152	prove	model	model		2026-11-01T16:49:35Z	9.9	
+56	153	prove	tool	shell	bash	2026-11-01T16:49:45Z	8.7	mkdir -p /tmp/g28m/frames && cd /tmp/g28m && export DISPLAY=:93 && GOOEY_FRAMES=330 GOOEY_KEY_EVERY=18 GOOEY_KEYS=context,down,down,enter,context,escape,shiftf1
+56	154	prove	model	model		2026-11-01T16:49:54Z	2.9	
+56	155	prove	tool	shell	bash	2026-11-01T16:49:57Z	0.8	cd /tmp/g28m/frames && montage $(ls f_*.png | awk 'NR%4==1') -tile 5x -geometry 384x216+2+2 -background '#333' /tmp/g28m/sheet.png && identify /tmp/g28m/sheet.p
+56	156	prove	model	model		2026-11-01T16:49:57Z	1.2	
+56	157	prove	tool	read files	read	2026-11-01T16:49:59Z	0.2	/tmp/g28m/sheet.png
+56	158	prove	model	model		2026-11-01T16:49:59Z	11.7	
+56	159	prove	tool	shell	bash	2026-11-01T16:50:10Z	0.0	cd /tmp/g28m/frames && for n in 0027 0028 0029 0030 0031; do echo $n; done; cp f_0029.png /tmp/g28m/f29.png
+56	160	prove	tool	read files	read	2026-11-01T16:50:10Z	0.0	/tmp/g28m/f29.png
+56	161	prove	model	model		2026-11-01T16:50:10Z	2.5	
+56	162	prove	tool	shell	bash	2026-11-01T16:50:13Z	0.3	cd /tmp/g28m/frames && ls | sed -n 24,40p; for f in $(ls | sed -n 26,34p); do magick $f -crop 360x260+920+380 +repage -resize 50% /tmp/g28m/t_$f; done; montage 
+56	163	prove	model	model		2026-11-01T16:50:13Z	1.1	
+56	164	prove	tool	read files	read	2026-11-01T16:50:14Z	0.0	/tmp/g28m/flip.png
+56	165	prove	model	model		2026-11-01T16:50:14Z	3.7	
+56	166	prove	tool	read files	read	2026-11-01T16:50:18Z	0.0	/tmp/g28m/frames/f_0031.png
+56	167	prove	model	model		2026-11-01T16:50:18Z	17.1	
+56	168	prove	tool	cargo test	bash	2026-11-01T16:50:35Z	4.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/context_menu.rs'; s=open(p).read() old=''' assert!( (card.max.x - corner.x).abs() <= 1.0 && (card.m
+56	169	prove	model	model		2026-11-01T16:50:40Z	2.0	
+56	170	prove	tool	cargo test	bash	2026-11-01T16:50:42Z	2.2	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo test --all-features --test context_menu near_the 2>&1 | tail -20
+56	171	prove	model	model		2026-11-01T16:50:44Z	2.4	
+56	172	prove	tool	cargo test	bash	2026-11-01T16:50:46Z	7.2	cd /home/ladvien/bevy_gooey_loop && sed -i 's/let row = rect(&app, item(&mut app, label));/let entity = item(\&mut app, label);\n let row = rect(\&app, entity);
+56	173	prove	model	model		2026-11-01T16:50:54Z	2.2	
+56	174	prove	tool	shell	bash	2026-11-01T16:50:56Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "let room = match panel.placement" -B6 -A12 src/menu.rs
+56	175	prove	model	model		2026-11-01T16:50:56Z	5.1	
+56	176	prove	tool	edit files	edit	2026-11-01T16:51:01Z	0.0	fit_menus counts the side a menu flips to :: [src/menu.rs#D52B] PUT 900.=903: + // A menu opens on the side of its anchor with the room (the popover's flip), so it is + // capped at the larger side, not at
+56	177	prove	tool	cargo test	bash	2026-11-01T16:51:01Z	16.3	cd /home/ladvien/bevy_gooey_loop && sed -n 872,880p src/menu.rs; CARGO_BUILD_JOBS=2 cargo test --all-features --test context_menu --test menu 2>&1 | grep -E "pa
+56	178	prove	model	model		2026-11-01T16:51:17Z	5.2	
+56	179	prove	tool	cargo build	bash	2026-11-01T16:51:22Z	15.4	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --example context 2>&1 | tail -1; cp $CARGO_TARGET_DIR/release/examples/context ~/g
+56	180	prove	model	model		2026-11-01T16:51:38Z	4.0	
+56	181	prove	tool	read files	read	2026-11-01T16:51:42Z	0.1	/tmp/g28m/sheet.png
+56	182	prove	model	model		2026-11-01T16:51:42Z	5.1	
+56	183	prove	tool	shell	bash	2026-11-01T16:51:47Z	0.0	cd /tmp/g28m/frames && ls | sed -n 28,31p; magick f_0030.png -crop 300x260+960+420 +repage -filter point -resize 200% /tmp/g28m/flipzoom.png
+56	184	prove	tool	read files	read	2026-11-01T16:51:47Z	0.0	/tmp/g28m/flipzoom.png
+56	185	prove	model	model		2026-11-01T16:51:47Z	2.3	
+56	186	prove	tool	shell	bash	2026-11-01T16:51:49Z	0.1	cd /tmp/g28m/frames && for f in f_0028 f_0029 f_0030 f_0031 f_0032; do magick $f.png -crop 300x300+960+400 +repage /tmp/g28m/z_$f.png; done; montage /tmp/g28m/z
+56	187	prove	model	model		2026-11-01T16:51:50Z	1.2	
+56	188	prove	tool	read files	read	2026-11-01T16:51:51Z	0.0	/tmp/g28m/flipzoom.png
+56	189	prove	model	model		2026-11-01T16:51:51Z	9.0	
+56	190	prove	tool	shell	bash	2026-11-01T16:52:00Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,25p examples/menus.rs | cut -c1-220; grep -n "MenuCheck" src/skin.rs | head
+56	191	prove	model	model		2026-11-01T16:52:00Z	4.0	
+56	192	prove	tool	shell	bash	2026-11-01T16:52:04Z	6.0	mkdir -p /tmp/g28m/mf && cd /tmp/g28m && export DISPLAY=:93 && GOOEY_FRAMES=70 GOOEY_KEY_EVERY=18 GOOEY_KEYS=f10,right,right,down GOOEY_SHOT_DIR=/tmp/g28m/mf GO
+56	193	prove	model	model		2026-11-01T16:52:10Z	6.2	
+56	194	prove	tool	shell	bash	2026-11-01T16:52:16Z	3.7	rm -rf /tmp/g28m/mf && mkdir -p /tmp/g28m/mf && cd /tmp/g28m && export DISPLAY=:93 && GOOEY_FRAMES=110 GOOEY_KEY_EVERY=18 GOOEY_KEYS=f10,right,right,down GOOEY_
+56	195	prove	model	model		2026-11-01T16:52:20Z	1.2	
+56	196	prove	tool	read files	read	2026-11-01T16:52:21Z	0.1	/tmp/g28m/mfs.png
+56	197	prove	model	model		2026-11-01T16:52:21Z	10.0	
+56	198	prove	tool	cargo build	bash	2026-11-01T16:52:31Z	5.5	cd /home/ladvien/bevy_gooey_loop && sed -i 's/check_item("Locked", false)/check_item("Locked", true)/' examples/context.rs && CARGO_BUILD_JOBS=2 cargo build --r
+56	199	prove	model	model		2026-11-01T16:52:36Z	3.1	
+56	200	prove	tool	read files	read	2026-11-01T16:52:40Z	0.1	/tmp/g28m/mfs.png
+56	201	prove	model	model		2026-11-01T16:52:40Z	12.3	
+56	202	prove	tool	shell	bash	2026-11-01T16:52:52Z	0.3	cd /home/ladvien/bevy_gooey_loop && sed -i 's/chose("Moved to chest 1:")/chose("Moved to chest 1")/; s/chose("Moved to chest 2:")/chose("Moved to chest 2")/' ex
+56	203	prove	model	model		2026-11-01T16:52:52Z	5.1	
+56	204	prove	tool	phase mark	bash	2026-11-01T16:52:57Z	0.1	cd /home/ladvien/bevy_gooey_loop && git add src tests/context_menu.rs examples/context.rs docs/research/context-menu.md && git commit -qm "Context menus: contex
+56	205	prove	model	model		2026-11-01T16:52:57Z	7.0	
+56	206	prove	tool	cargo build	bash	2026-11-01T16:53:04Z	60.0	[launched bg_3] cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -1; cp $CARGO_TARGET_DIR/release/examples/gallery ~/g28_bin/
+56	207	prove	model	model		2026-11-01T16:54:04Z	5.4	
+56	208	prove	tool	shell	bash	2026-11-01T16:54:10Z	0.1	ls -la --time-style=full-iso $CARGO_TARGET_DIR/release/examples/gallery ~/g28_bin/ /home/ladvien/bevy_gooey_loop/src/menu.rs | cut -c30-; date
+56	209	prove	model	model		2026-11-01T16:54:10Z	16.7	
+56	210	prove	tool	edit files	write	2026-11-01T16:54:27Z	0.0	/home/ladvien/bevy_gooey_loop/docs/guide/context-menus.md
+56	211	prove	model	model		2026-11-01T16:54:27Z	14.2	
+56	212	prove	tool	shell	bash	2026-11-01T16:54:41Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='README.md'; s=open(p).read() old=""" disabled items that say why: [menus](https://github.com/bevy-coven/b
+56	213	prove	model	model		2026-11-01T16:54:41Z	3.3	
+56	214	prove	tool	read files	read	2026-11-01T16:54:44Z	0.0	docs/media/README.md:32:raw
+56	215	prove	model	model		2026-11-01T16:54:44Z	6.8	
+56	216	prove	tool	clip record/render	bash	2026-11-01T16:54:51Z	9.0	rm -rf /tmp/g28m/gif && mkdir -p /tmp/g28m/gif && cd /tmp/g28m && export DISPLAY=:93 && GOOEY_FRAMES=290 GOOEY_KEY_EVERY=18 GOOEY_KEYS=context,down,down,enter,c
+56	217	prove	bg	cargo build	bash	2026-11-01T16:53:20Z	100.4	bg_3 completed: CARGO_BUILD_JOBS=2 cargo build --release --examples 2>&1 | tail -1; cp $CARGO_TARGET_DIR/release/examples/gallery ~/g...
+56	218	prove	model	model		2026-11-01T16:55:00Z	4.2	
+56	219	prove	tool	shell	bash	2026-11-01T16:55:04Z	60.0	[launched bg_4] cd /tmp/g28m && export DISPLAY=:93 GOOEY_HEALTH=60 GOOEY_KEYS=down; for i in $(seq 10); do for v in before after; do GOOEY_FRAMES=240 GOOEY_SHOT=/tmp/g28m/p.png
+56	220	prove	model	model		2026-11-01T16:56:04Z	2.4	
+56	221	prove	tool	shell	bash	2026-11-01T16:56:07Z	1.0	cd /tmp/g28m/gif && montage $(ls f_*.png | awk 'NR%3==1') -tile 5x -geometry 384x216+2+2 -background '#333' /tmp/g28m/gifsheet.png
+56	222	prove	tool	read files	read	2026-11-01T16:56:07Z	1.0	/tmp/g28m/gifsheet.png
+56	223	prove	model	model		2026-11-01T16:56:08Z	4.2	
+56	224	prove	tool	edit files	edit	2026-11-01T16:56:12Z	0.0	Changelog entry :: [CHANGELOG.md#0000]
+56	225	prove	model	model		2026-11-01T16:56:12Z	6.8	
+56	226	prove	tool	edit files	edit	2026-11-01T16:56:19Z	0.0	Changelog entry :: [CHANGELOG.md#C30D] PUT >3: + +### Added + +- Context menus (G-06, #10): `context_menu(items)` spawns a menu of `menu_item`, `check_item`, `radio_item`, `submen
+56	227	prove	model	model		2026-11-01T16:56:19Z	5.4	
+56	228	prove	tool	search	grep	2026-11-01T16:56:24Z	0.0	Locate insertion point :: AGENTS.md
+56	229	prove	model	model		2026-11-01T16:56:24Z	10.5	
+56	230	prove	tool	edit files	edit	2026-11-01T16:56:34Z	0.0	AGENTS.md layout entry for context menus :: [AGENTS.md#5F7D] PUT >44: +- `src/context.rs` — `ContextMenu(Entity)` (on any entity, a UI node, a sprite or a mesh with `Pickable`: the `context_menu(..)` pane
+56	231	prove	model	model		2026-11-01T16:56:34Z	10.2	
+56	232	prove	tool	shell	bash	2026-11-01T16:56:45Z	0.1	cd /home/ladvien/bevy_gooey_loop && cat > /tmp/g28m/agents_entry.txt <<'E' - `src/context.rs` — `ContextMenu(Entity)` (on any entity, a UI node, a sprite or a m
+56	233	prove	model	model		2026-11-01T16:56:45Z	5.7	
+56	234	prove	tool	wait: other	wait	2026-11-01T16:56:50Z	28.3	{}
+56	235	prove	model	model		2026-11-01T16:57:19Z	6.2	
+56	236	prove	tool	shell	bash	2026-11-01T16:57:25Z	0.0	[launched bg_5] cd /tmp/g28m && export DISPLAY=:93 GOOEY_HEALTH=60 GOOEY_KEYS=down; for i in $(seq 10); do for v in after before; do GOOEY_FRAMES=240 GOOEY_SHOT=/tmp/g28m/p.png
+56	237	prove	tool	read files	read	2026-11-01T16:57:25Z	0.0	docs/media/README.md:33-36
+56	238	prove	model	model		2026-11-01T16:57:25Z	3.8	
+56	239	prove	tool	wait: other	wait	2026-11-01T16:57:29Z	126.5	{}
+56	240	prove	model	model		2026-11-01T16:59:35Z	3.1	
+56	241	prove	tool	shell	bash	2026-11-01T16:59:38Z	1.0	cd /tmp/g28m/gif && montage $(ls f_*.png | awk 'NR%3==1') -tile 5x -geometry 384x216+2+2 -background '#333' /tmp/g28m/gifsheet.png && ls | wc -l
+56	242	prove	model	model		2026-11-01T16:59:39Z	1.2	
+56	243	prove	tool	read files	read	2026-11-01T16:59:40Z	0.2	/tmp/g28m/gifsheet.png
+56	244	prove	model	model		2026-11-01T16:59:41Z	10.9	
+56	245	prove	tool	read files	read	2026-11-01T16:59:51Z	0.0	/tmp/g28m/gif/f_0064.png
+56	246	prove	model	model		2026-11-01T16:59:51Z	8.3	
+56	247	prove	tool	shell	bash	2026-11-01T17:00:00Z	13.0	cd /tmp/g28m && export DISPLAY=:93; for cfg in "parchment:1.0" "high_contrast:1.0" "dark:2.0"; do s=${cfg%%:*}; t=${cfg##*:}; GOOEY_SKIN=$s GOOEY_TEXT_SCALE=$t 
+56	248	prove	model	model		2026-11-01T17:00:13Z	1.3	
+56	249	prove	tool	read files	read	2026-11-01T17:00:14Z	0.1	/tmp/g28m/sheet2.png
+56	250	prove	model	model		2026-11-01T17:00:14Z	10.7	
+56	251	prove	tool	cargo build	bash	2026-11-01T17:00:25Z	12.4	cd /home/ladvien/bevy_gooey_loop && sed -i 's/label("Right-click a crate or a row, or press Shift+F10 on a row")/label("Right-click a thing, or Shift+F10 on a r
+56	252	prove	model	model		2026-11-01T17:00:37Z	3.7	
+56	253	prove	tool	shell	bash	2026-11-01T17:00:41Z	0.1	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g28m/context-menu.gif docs/media/context-menu.gif && magick /tmp/g28m/gif/f_0003.png -crop 700x60+0+660 +repage /tmp
+56	254	prove	tool	read files	read	2026-11-01T17:00:41Z	0.1	/tmp/g28m/labs.png
+56	255	prove	model	model		2026-11-01T17:00:41Z	2.1	
+56	256	prove	tool	shell	bash	2026-11-01T17:00:43Z	0.0	cd /tmp/g28m && ls gif | sed -n '1p;$p'; magick gif/f_0001.png -crop 700x60+0+660 +repage lab.png; magick gif/f_0089.png -crop 700x60+0+660 +repage lab2.png; mo
+56	257	prove	model	model		2026-11-01T17:00:43Z	2.2	
+56	258	prove	tool	shell	bash	2026-11-01T17:00:46Z	0.0	cd /tmp/g28m && magick gif/f_0091.png -crop 700x60+0+660 +repage lab2.png; montage lab.png lab2.png -tile 1x -geometry +0+2 labs.png
+56	259	prove	tool	read files	read	2026-11-01T17:00:46Z	0.0	/tmp/g28m/labs.png
+56	260	prove	model	model		2026-11-01T17:00:46Z	10.9	
+56	261	prove	tool	cargo build	bash	2026-11-01T17:00:56Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/guide/context-menus.md'; s=open(p).read() s=s.replace("choosing Duplicate says so at the bottom;","c
+56	262	prove	model	model		2026-11-01T17:00:56Z	6.0	
+56	263	prove	tool	shell	bash	2026-11-01T17:01:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='AGENTS.md'; s=open(p).read() old="an `Added<PopoverPanel>` of `AtPointer` gets a zero-size `FixedNode` ch
+56	264	prove	model	model		2026-11-01T17:01:02Z	3.5	
+56	265	prove	tool	read files	read	2026-11-01T17:01:06Z	0.0	docs/guide/popovers.md:42-49
+56	266	prove	model	model		2026-11-01T17:01:06Z	3.0	
+56	267	prove	tool	edit files	edit	2026-11-01T17:01:09Z	0.0	popovers guide: pointer anchors and context menus :: [docs/guide/popovers.md#0265] PUT 44.=46: +`AtPointer` needs a pointer: the anchor is the widget, panel or world entity (a sprite or mesh) the pointer +was over
+56	268	prove	model	model		2026-11-01T17:01:09Z	4.5	
+56	269	prove	tool	shell	bash	2026-11-01T17:01:13Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 30,37p src/lib.rs
+56	270	prove	model	model		2026-11-01T17:01:13Z	2.4	
+56	271	prove	tool	edit files	edit	2026-11-01T17:01:16Z	0.0	Crate docs mention context menus :: [src/lib.rs#1B0C] PUT 34.=34: +//! [`submenu`] and [`separator`] rows (chords right-aligned, [`Disabled`] items that say why), or a +//! [`context_menu`] that a
+56	272	prove	model	model		2026-11-01T17:01:16Z	2.2	
+56	273	prove	tool	edit files	edit	2026-11-01T17:01:18Z	0.0	Crate docs mention context menus :: [src/lib.rs#CBD8] PUT 34.=34: +//! [`submenu`] and [`separator`] rows (chords right-aligned, [`Disabled`] items that say why), or a +//! [`context_menu`] that a
+56	274	prove	model	model		2026-11-01T17:01:18Z	4.6	
+56	275	ship	tool	phase mark	bash	2026-11-01T17:01:23Z	0.4	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && cargo fmt && git add -A README.md CHANGELOG.md AGENTS.md docs src exampl
+56	276	ship	model	model		2026-11-01T17:01:23Z	3.9	
+56	277	gate	tool	phase mark	bash	2026-11-01T17:01:27Z	0.7	cd /home/ladvien/bevy_gooey_loop && git fetch -q origin && git log --oneline HEAD..origin/main | head; python3 ~/.local/share/wiggum/steps.py mark gate
+56	278	gate	tool	shell	bash	2026-11-01T17:01:27Z	0.7	[launched bg_7] /tmp/g28m/gate.sh > /tmp/g28m/gate.log 2>&1; tail -25 /tmp/g28m/gate.log | cut -c1-200
+56	279	gate	model	model		2026-11-01T17:01:28Z	6.7	
+56	280	gate	tool	wait: other	wait	2026-11-01T17:01:34Z	202.6	{}
+56	281	gate	model	model		2026-11-01T17:04:57Z	3.7	
+56	282	release	tool	phase mark	bash	2026-11-01T17:05:01Z	12.1	grep -c "^test result: ok" /tmp/g28m/gate.log; grep -E "FAILED|failed|warning" /tmp/g28m/gate.log | head -3; cd /home/ladvien/bevy_gooey_loop && python3 ~/.loca
+56	283	release	model	model		2026-11-01T17:05:13Z	29.8	
+56	284	release	tool	push gate	bash	2026-11-01T17:05:43Z	3.4	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'E' ## Iteration 28 — 2026-11-01 — Context menus (G-06, #10) **Triage.** `gh issue list`: 23 open,
+56	285	release	model	model		2026-11-01T17:05:46Z	5.6	
+56	286	release	tool	git	bash	2026-11-01T17:05:52Z	0.7	cd /home/ladvien/bevy_gooey_loop && git checkout -q main && git pull -q --ff-only && git merge --no-ff loop/iter-28 -m "Merge loop/iter-28: context menus Fixes 
+56	287	release	model	model		2026-11-01T17:05:52Z	2.8	
+56	288	release	tool	shell	bash	2026-11-01T17:05:55Z	0.8	cd /home/ladvien/bevy_gooey_loop && sed -i '3s/0.14.0/0.15.0/' Cargo.toml && sed -i 's/^## \[Unreleased\]$/## [Unreleased]\n\n## [0.15.0] - 2026-11-01/' CHANGEL
+56	289	release	model	model		2026-11-01T17:05:56Z	2.7	
+56	290	release	tool	cargo test	bash	2026-11-01T17:05:59Z	22.0	cd /home/ladvien/bevy_gooey_loop && sed -i '223s/0.1 – 0.14/0.1 – 0.15/' README.md && CARGO_BUILD_JOBS=2 cargo test --features readme-example --test readme 2>&1
+56	291	release	model	model		2026-11-01T17:06:21Z	4.8	
+56	292	release	tool	push gate	bash	2026-11-01T17:06:25Z	12.2	cd /home/ladvien/bevy_gooey_loop && git add Cargo.toml CHANGELOG.md README.md && git commit -qm "release: v0.15.0" && git status --short | head -3; git push -q 
+56	293	release	model	model		2026-11-01T17:06:38Z	8.9	
+56	294	release	tool	github	bash	2026-11-01T17:06:46Z	5.2	cd /home/ladvien/bevy_gooey_loop && gh issue view 10 --repo bevy-coven/bevy_gooey --json state --jq .state; SHA=$(git rev-parse --short 0a41fd7); MERGE=$(git lo
+56	295	release	model	model		2026-11-01T17:06:52Z	3.8	
+56	296	release	tool	shell	bash	2026-11-01T17:06:56Z	2.4	cd /home/ladvien && gh search issues --repo bevy-coven/bevy_grimoire "bevy_gooey#10" --state open --json number,title 2>&1 | head; gh search issues --repo bevy-
+56	297	release	model	model		2026-11-01T17:06:58Z	1.8	
+56	298	release	tool	github	bash	2026-11-01T17:07:00Z	0.6	cd /home/ladvien && gh issue view 230 --repo bevy-coven/bevy_grimoire --json body --jq .body | grep -i "needs" | head -3
+56	299	release	model	model		2026-11-01T17:07:00Z	3.7	
+56	300	release	tool	github	bash	2026-11-01T17:07:04Z	1.5	cd /home/ladvien && gh issue comment 230 --repo bevy-coven/bevy_grimoire --body "Fixed in 15116c1 (bevy-coven/bevy_gooey#10, G-06), released as v0.15.0; move th
+56	301	release	model	model		2026-11-01T17:07:06Z	4.1	
+56	302	log	tool	phase mark	bash	2026-11-01T17:07:10Z	0.3	python3 ~/.local/share/wiggum/steps.py mark log; cd /home/ladvien/bevy_gooey_loop && df -h /home | tail -1; rm -rf ~/g28_bin /tmp/g28m; git worktree list | tail
+56	303	log	model	model		2026-11-01T17:07:10Z	7.9	
+56	304	log	tool	push gate	bash	2026-11-01T17:07:18Z	1.7	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'E' **Merge and release.** `loop/iter-28` pushed and merged `--no-ff` into `main` (`15116c1`, `Fix
+56	305	log	model	model		2026-11-01T17:07:20Z	11.0	
