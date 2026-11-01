@@ -27,6 +27,12 @@ const METER_MIN_TEXT_SIZES: f32 = 8.0;
 /// A slider's least width, in body text sizes: 10 × 20 px = 200 px at the default size.
 const SLIDER_MIN_TEXT_SIZES: f32 = 10.0;
 
+/// The least width of a choice's value cell (its option, the air round it and nothing of the
+/// arrows), in body text sizes: 8 × 20 px = 160 px at the default size, which holds "PlayStation"
+/// and "Fullscreen" in the host's font with room, so choices stacked in a panel have their arrows
+/// and values aligned instead of each at its widest option's width.
+const CHOICE_MIN_TEXT_SIZES: f32 = 8.0;
+
 /// A toggle's track is this many body text sizes high and twice as wide.
 const SWITCH_TEXT_SIZES: f32 = 1.5;
 
@@ -1343,10 +1349,12 @@ fn restyle(
                     }
                 };
             }
-            // The widest option sets the width; half a gap of air stands each side of it, so the
-            // value reads as one thing with the arrows round it.
+            // The widest option sets the width, but never less than `CHOICE_MIN_TEXT_SIZES`: half a
+            // gap of air stands each side of it, so the value reads as one thing with the arrows
+            // round it, and a column of choices has its arrows and values in one place each.
             Role::ChoiceCell => {
                 next.padding = UiRect::horizontal(Val::Px(skin.gap / 2.0));
+                next.min_width = Val::Px(text_px * CHOICE_MIN_TEXT_SIZES);
                 next.flex_shrink = 0.0;
             }
             // A toggle's frame and height. The keycap stands in it with `0.3` of a padding of air
