@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-31
+
 ### Added
 
 - `binding(label, value)`: a row that rebinds one action, for a controls screen (Xbox Accessibility Guideline 107, Game Accessibility Guidelines: "remappable controls are one of the best value accessibility features"). The label on the left and a keycap on the right with the key, mouse button or pad button it is bound to ("Space", "Right Click", "A"); its root is Bevy's headless `Button` carrying the new `BindingValue(Binding)` (the state: read it, or write one to change the row from code with no event), so Tab, the arrows, the D-pad, Enter, Space, South and a click reach it and start a capture. The keycap lights in the accent and says what it waits for ("Press a key, Esc exits"); the player's next press is the binding, said once as Bevy's `ValueChange<Binding>`. A key row hears any key and any mouse button, a pad row any pad button; Escape (and Start on a pad row) exits without binding and cannot be bound; a press on the other device exits. The press that started a capture is never the binding. The keycap and the row never change size (the name and the prompt share one cell; at least 17 body text sizes wide, so a column of rows shares its edges), and the row is a toggle's height.
@@ -13,6 +15,7 @@
 ### Changed
 
 - `Role` has four more variants (`Binding`, `BindingCap`, `BindingText`, `BindingPrompt`): a `match` over it that is exhaustive needs arms for them. `GooeyNavPlugin` runs `navigate_by_input`, `gamepad_select`, `gamepad_adjust`, `cancel_by_input`, `page_lists` and `step_tabs` under `not_capturing`, so a host that registers those systems itself adds the condition; with no `binding` row in the game it is always true. The gallery's Controls tab holds `binding` rows where it held two placeholder buttons.
+- `apply_skin` takes one more system parameter (`RemovedComponents<Capturing>`): a host that adds `GooeyStylePlugin` is unaffected, one that calls or registers `apply_skin` by hand rebuilds against the new signature. Breaking for both reasons (`cargo semver-checks`: `enum_variant_added` on `Role`, `function_parameter_count_changed` on `apply_skin`), so the version is 0.5.0.
 
 ## [0.4.1] - 2026-10-31
 
