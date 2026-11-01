@@ -29,8 +29,9 @@ APG, spinbutton: "The text field is usually the only focusable component because
 - **N2. The label is the dragger** (Unity), and so is the row's padding: a press and drag that starts on the row itself scrubs; one that starts in the field is the field's. The label is `Pickable::IGNORE` already, so a drag from it lands on the row. `value = start + distance_px / UiScale × step` (so 50 px at step 0.1 is 5.0), Shift one tenth of that, Ctrl ten times it (Blender), the result rounded to the digits of the rate (no `5.000001`) and held to the range. One non-final `ValueChange<f32>` per change and one final at the end.
 - **N3. Typed values apply on Enter or on leaving, and Escape reverts.** The row's final `ValueChange<String>` is parsed (`model::parse_number`): a number is clamped to the range and sent as a final `ValueChange<f32>`; anything else is **refused with its reason** — `NumberRefused { reason }` on the row, the text goes back to the value. An expression (`1.5*2`) is refused as `NumberError::Expression` (Unity: off by default; the issue says unsupported). Escape puts the text back to the value before the edit (Blender) and the blur it causes sends nothing.
 - **N4. The keys (APG).** Up and Down on the focused field step by `step` and Shift+Up, Shift+Down by ten (one final change each, held keys repeat); Left, Right, Home and End are the caret's, as in a text field; Tab leaves. The D-pad's Left and Right step it, as a slider's, and its Up and Down move focus. So a pad player has a way that is not typing, and a keyboard player never needs the mouse (WCAG 2.1.1, 2.5.7). Up and Down no longer leave a number field (the spinbutton says they step): Tab does.
-- **N5. `MixedValue`** (a marker on the row) is a multi-selection whose members differ: the field is empty and shows a muted "—" as its hint, and any change the player makes (a scrub from the representative `NumberValue`, a typed number, a step) removes it and sets every member through the one `ValueChange<f32>`; Enter on the untouched field changes nothing.
-- **N6. `vec_field(label, [f32; N])`** is a label and N number rows (axis letters X, Y, Z, W for up to 4; numbers past that), each a scrub handle, all keeping the one `VecValue`; a change in any is one `ValueChange<Vec<f32>>` on the vec row (`NumberStep` and `NumberRange` as the row's, applied to every component).
+- **N5. `MixedValue`** (a marker on the row) is a multi-selection whose members differ: the field is empty and shows a muted `MIXED_HINT` (`--`) as its hint, and any change the player makes (a scrub from the representative `NumberValue`, a typed number, a step) removes it and sets every member through the one `ValueChange<f32>`; Enter on the untouched field changes nothing. On a vec row it is `VecMixed(Vec<bool>)`, one flag a component, because the usual multi-selection differs in one axis.
+- **N6. `vec_field(label, [f32; N])`** is a label and N number rows (axis letters X, Y, Z, W for up to 4; numbers past that), each a scrub handle, all keeping the one `VecValue`; a change in any is one `VecChange { index, value, values, is_final }` on the vec row, so a game applying a change to a mixed selection knows the axis (`NumberStep` and `NumberRange` as the row's, applied to every component).
+- **N8. A scrub is not typing** (found by capturing it). The press on the label focuses the field, as a form's label does, and the first capture showed a caret and a blue ring while the number rolled, which reads as "edit mode". A scrub lets go of focus when the drag begins (`TextEditing` goes, so a game's hotkeys are back); a click without a drag still focuses. Focusing a number field selects its number (`SelectAllOnFocus`, Bevy's: a pointer press selects on release), so typing replaces it, as in Blender.
 - **N7. One path, no new colour.** Styled only in `apply_skin` through the text row's roles; no `GooeySkin` field. A number is shown with the digits of its step, and more when the value needs them, so the text never lies (`model::format_number`).
 
 ## Parameters
@@ -39,7 +40,7 @@ APG, spinbutton: "The text field is usually the only focusable component because
 |---|---|
 |widget|`number_field(label, value, step, range) -> impl Bundle`, `vec_field(label, [f32; N], step, range) -> impl Bundle`|
 |state|`NumberValue(f32)`, `NumberStep(f32)`, `NumberRange { min, max }`, marker `MixedValue`; `VecValue(Vec<f32>)` on a vec row|
-|events|`ValueChange<f32>` (`is_final` false while scrubbing, true at the end, on Enter, on leaving, on a step); `ValueChange<Vec<f32>>` on a vec row; `NumberRefused { entity, text, reason }`|
+|events|`ValueChange<f32>` (`is_final` false while scrubbing, true at the end, on Enter, on leaving, on a step); `VecChange` on a vec row; `NumberRefused { entity, text, reason }`|
 |scrub rate|`step` per logical px; Shift ×0.1; Ctrl ×10; start from the value at the press|
 |keys|Up, Down ±step; Shift+Up, Shift+Down ±10 steps; D-pad Left, Right ±step (repeat as the slider's); Enter applies; Escape reverts|
 |width|the field is 12 characters of "0"|
@@ -50,14 +51,14 @@ APG, spinbutton: "The text field is usually the only focusable component because
 - Dragging 50 px with step 0.1 from 0 gives exactly 5.0 within a range of 0..=100 (the issue's acceptance), also at a UI scale of 1.5; a drag past the end holds at the range; Shift and Ctrl scale the rate; the drag's changes are non-final and the last is one final.
 - Typing `2.5` and Enter sets 2.5 (one final); typing `150` in a range to 100 sets 100; `1.5*2`, `abc` and an empty field are refused with a `NumberError` and leave the value; Escape restores the text and sends nothing; leaving after a good edit applies it once.
 - Up and Down step and move no focus; the D-pad steps and Up/Down on it moves focus; a held Up repeats; Tab leaves.
-- `MixedValue` shows the "—" hint over an empty field; a scrub, a typed number and a step remove it and send one change; Enter on the untouched field sends nothing.
+- `MixedValue` shows the `MIXED_HINT` over an empty field; a scrub, a typed number and a step remove it and send one change; Enter on the untouched field sends nothing.
 - The row is a text row's size (a target high) and does not change size while scrubbing a value of 0 to 99999.9; the hint's contrast is the text hint's (4.5:1, all four looks).
 - A game's `NumberValue` shows at once with no event; thirty idle frames write nothing; a disabled row does not scrub, step or take text.
 - Frame time of the gallery within 0.5 ms of before.
 
 ## What great looks like
 
-A Transform block of a properties panel: a "Position" row with three framed fields, each led by a letter, a "Scale" row beneath, and a "Health" row with `100.0`. The pointer over a letter turns to the resize cursor; dragging it rolls the number smoothly, left and right, with the digits steady in their width; letting go leaves it. Tab to the field, type `2.5`, Enter: the number is `2.5`. A multi-selection shows a muted "—" in the field that differing values leave empty.
+A Transform block of a properties panel: a "Position" row with three framed fields, each led by a letter, a "Scale" row beneath, and a "Health" row with `100.0`. The pointer over a letter turns to the resize cursor; dragging it rolls the number smoothly, left and right, with the digits steady in their width and no caret; letting go leaves it. Click a field and its number is selected: type `2.5`, Enter, and the number is `2.5`. A multi-selection shows a muted `--` in the field that differing values leave empty.
 
 ## Deviations
 
@@ -67,7 +68,9 @@ A Transform block of a properties panel: a "Position" row with three framed fiel
 - **Expressions are refused**, not evaluated, as the issue says. The refusal carries `NumberError::Expression`; a later pass can evaluate behind a setting.
 - **No unit suffix, no wrap, no log scale.** Open gaps.
 - **A typed value is held to the range, not snapped to the step** (the digits are the player's). A design default.
-- Assumed decisions (owner may override; on #17): the API is `number_field(label, value, step, range)` as asked, with `NumberValue` as state and `ValueChange<f32>` as the event; `vec_field` carries `VecValue(Vec<f32>)` and `ValueChange<Vec<f32>>` (an array's length is not a type a component can have without a generic); a mixed value is the muted "—" hint over an empty field.
+- **The mixed hint is two hyphens, not an em dash** (found by capturing it): the em dash drew as a missing-glyph box in the default font, and the host supplies the font. A design default; `MIXED_HINT` is public so a host with a fuller font can match it.
+- **`selected_text_color` was drawn without focus** (found by capturing it). Bevy applies `TextCursorStyle::selected_text_color` whether or not the field has focus, and `apply_skin` set it to the accent's dark ink: a field left with its text selected (a number field selects on focus and a scrub leaves it) drew its number dark on no highlight. It is set only on the field that has focus now, which also fixes a `text_input` a player Tabs away from with a word selected.
+- Assumed decisions (owner may override; on #17): the API is `number_field(label, value, step, range)` as asked, with `NumberValue` as state and `ValueChange<f32>` as the event; `vec_field` carries `VecValue(Vec<f32>)` and sends `VecChange` (an array's length is not a type a component can have without a generic, and the axis matters to a mixed selection); a mixed value is the muted `--` hint over an empty field; the typed `1.5*2` is refused as `NumberError::Expression`, with the reason in words.
 
 ## Pending index
 

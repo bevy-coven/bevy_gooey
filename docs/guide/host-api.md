@@ -43,6 +43,12 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   row. `TextEditing` is on the row exactly while its field has focus, for a game that gates its own key
   readers on it (`is_text_editing`, a run condition) or opens the platform's keyboard when it is added;
   `TextInputOf(row)` is on the field and the hint. See [text input](text-input.md).
+- `NumberValue(f32)`, `NumberStep(f32)`, `NumberRange { min, max }` — a `number_field`'s number, how far a
+  pixel of drag or a key moves it, and the ends the player is held to. Write the value to change the field
+  from code (no `ValueChange<f32>` comes back for that); `MixedValue` on the row shows `MIXED_HINT` for a
+  multi-selection that differs. A `vec_field` has `VecValue(Vec<f32>)` and `VecMixed(Vec<bool>)` and
+  sends `VecChange`; a typed word it would not take is a `NumberRefused` with its `NumberError`. See
+  [numbers](numbers.md).
 - `Prompt { keyboard, pad }` — a `prompt`'s two inputs, `Prompt::SELECT` and `Prompt::BACK` for the ones
   the crate acts on. Set it on the prompt's entity to keep the hint true after a rebind (the keycap
   follows in the same frame). See [prompts](prompts.md).
@@ -141,6 +147,8 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_bindings` | Style | a `binding` row's keycap: the input's name, or the prompt while it waits |
 | `update_prompts` | Style | a `prompt`'s keycap: the input's name for the device in use, and its shape |
 | `update_text_inputs` | Style | a `text_input`'s text the game set shown in its field, the hint while it is empty, the limit, a disabled row's field |
+| `update_numbers` | Style | a `number_field`'s number written as its text (and the mixed hint) when the value, the step or the mixed marker changed, before `update_text_inputs` |
+| `update_vecs` | Style | a `vec_field`'s `VecValue`, step, range and `VecMixed` pushed into its component rows, before `update_numbers` |
 | `update_palette` | Style | an open palette's matches, lit row, eight rows' words, "No command matches" and the count, only when its field, its lit row, `CommandList` or `PaletteHistory` changed |
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |

@@ -107,7 +107,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   and says each change once in `ValueChange`, `binding("Jump", Binding::Key(KeyCode::Space))` rebinds a
   key, a mouse button, a pad button or a chord ("Ctrl+Shift+K") on the player's next press, `text_input("Name", "")` is a field the
   player types in (a caret, a selection, paste and IME on Bevy's own `TextInput`, and focus it never
-  traps), `tabs` puts them on pages a click, the arrows or LB and RB turn, and `text_size("Text size")`,
+  traps), `number_field("Health", 100.0, 0.5, 0.0..=250.0)` is a number the player scrubs with a drag, types or steps with the keys and the D-pad (`vec_field` for a position), `tabs` puts them on pages a click, the arrows or LB and RB turn, and `text_size("Text size")`,
   `interface_size("Interface size")`, `pad_style("Controller")` and `skin_preset("Theme")` are the
   player's own text size (up to 200%), interface size, controller and theme (dark, parchment, a
   high-contrast look that holds 7:1 everywhere and a tool's blue), one line each with nothing to wire:
@@ -115,7 +115,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [player options](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/options.md),
   [rebinding](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/bindings.md),
   [shortcuts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/shortcuts.md),
-  [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md),
+  [text input](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/text-input.md), [numbers](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/numbers.md),
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
 - **Scroll a list, show a table or a tree, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so the
   player sees there is more; `table(columns, rows)` is ten thousand sortable rows and `tree(nodes)` ten thousand nodes that open and close, each in a dozen entities; `split(SplitAxis::Horizontal, a, b)` is two panes
@@ -165,6 +165,10 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *Text input: `text_input("Save as", "")` takes the keys the moment it has focus, says each edit once as a `ValueChange<String>` and the end of the edit (Enter, or focus leaving) with `is_final`. Up leaves it: a field never traps focus, and the row never moves while the player types.*
 
+![The numbers example: an Inspector panel with a Position row of three fields (X, Y, Z), a Scale row whose Y is a muted "--", and Health, Speed and Mass fields; a drag on the Health label rolls it to 52.6, a drag on the Position Y letter to 6.3, a click on Speed selects its number and typing 7.5 replaces it, typing 1.5*2 in Health is refused ("Refused: type a number, not an expression") and the field keeps 52.6, Mass takes 2 and Up and Shift+Up step it to 2.25 and 4.75](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/numbers.gif)
+
+*Numbers: `number_field("Health", 72.5, 0.5, 0.0..=100.0)` is scrubbed by its label (50 px at a step of 0.1 is 5.0), typed, or stepped with Up and Down and the D-pad; `vec_field` is X, Y and Z; a typed expression is refused with its reason, and `MixedValue` shows "--" for a multi-selection.*
+
 ![The options example: a panel with the rows Text size, Interface size, Controller and Theme and the legend in the bottom-left corner; the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with each step, then back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to "A Select, B Back" and Controller steps to PlayStation, where it reads "Cross Select, Circle Back", then Switch and back to Xbox; Theme steps to Parchment and to High contrast, where the screen turns black with white frames, and back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/options.gif)
 
 *Player options: `text_size`, `interface_size`, `pad_style` and `skin_preset` each edit the crate's own settings and follow them, so a loaded save shows on them and the whole screen answers the frame the player steps one.*
@@ -204,10 +208,6 @@ grow everything to 200%, and Controller renames the pad's buttons.
 ![The tree example: an outliner of ten thousand nodes; Down and Right walk into Ashfall Market and open Market Cellar, Left goes back and closes it, typing "ashfa" jumps to Ashfall Docks, a star opens every sibling and the count goes from 40 shown to 120, End goes to the last region, and a click on Ashfall's chevron closes it (10 shown) and opens it again](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tree.gif)
 
 *Trees: `tree(nodes)` is the table's pool over `TreeNode`s, ten thousand in a dozen entities; Right and Left open, close and walk, `*` opens the siblings, typing goes to a label, a chevron click opens (`TreeToggled`), and a removed node hands its selection to a neighbour. [Tables](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tables.md) share the pool and the selection.*
-
-![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
-
-*Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
 
 ![The gallery's settings panel and the Quit dialog over it, with the legend in the bottom-left corner: it reads "Enter Select, Esc Back" in rounded keycaps, "A Select, B Back" in round ones after a pad button is pressed, and back to keys on the next key; the Quit dialog has its own legend above the dimmed screen, which turns to the pad's the same way](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/prompts.gif)
 
