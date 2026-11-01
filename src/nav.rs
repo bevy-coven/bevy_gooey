@@ -28,6 +28,7 @@ use crate::menu::{MenuRow, MenuTitle};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
 use crate::popover::PopoverPanel;
 use crate::skin::Role;
+use crate::split::{SplitAxis, SplitDivider};
 use crate::tabs::{TabsCount, TabsValue};
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
@@ -114,6 +115,8 @@ pub struct FocusScopes<'w, 's> {
     stops: Query<'w, 's, Option<&'static InheritedVisibility>, With<TabIndex>>,
     /// The sliders, choices and tabs that take Left and Right themselves.
     sideways: Query<'w, 's, (), KeepsSideways>,
+    /// The dividers of splits, which take the arrows along their axis themselves.
+    dividers: Query<'w, 's, &'static SplitDivider, Without<InteractionDisabled>>,
     /// Menu titles and items, whose Left, Right, Home and End are [`crate::menu_by_input`]'s.
     menu_rows: Query<'w, 's, (), MenuRow>,
     /// Menu titles, whose Down opens their menu.
@@ -390,6 +393,19 @@ pub fn navigate_by_input(
     };
     // Down on a menu title opens its menu (`menu_by_input`), and moves nothing.
     let net_y = if from.is_some_and(|f| scopes.menu_titles.contains(f)) {
+        0.0
+    } else {
+        net_y
+    };
+    // The arrows along a divider's axis are its own (the keys through its observer, the D-pad
+    // through `split_by_pad`): they never also move focus off it. The others still do.
+    let divider = from.and_then(|f| scopes.dividers.get(f).ok().map(SplitDivider::axis));
+    let net_x = if divider == Some(SplitAxis::Horizontal) {
+        0.0
+    } else {
+        net_x
+    };
+    let net_y = if divider == Some(SplitAxis::Vertical) {
         0.0
     } else {
         net_y
