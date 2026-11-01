@@ -24,6 +24,7 @@ use bevy::ui_widgets::{
 
 use crate::choice::{ChoiceCount, Move, MoveChoice};
 use crate::list::{ListView, span};
+use crate::menu::{MenuItem, MenuTitle};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
 use crate::popover::PopoverPanel;
 use crate::skin::Role;
@@ -113,6 +114,10 @@ pub struct FocusScopes<'w, 's> {
     stops: Query<'w, 's, Option<&'static InheritedVisibility>, With<TabIndex>>,
     /// The sliders, choices and tabs that take Left and Right themselves.
     sideways: Query<'w, 's, (), KeepsSideways>,
+    /// Menu titles and items, whose Left, Right, Home and End are [`crate::menu_by_input`]'s.
+    menu_rows: Query<'w, 's, (), Or<(With<MenuTitle>, With<MenuItem>)>>,
+    /// Menu titles, whose Down opens their menu.
+    menu_titles: Query<'w, 's, (), With<MenuTitle>>,
     /// The text fields, which take the keys Left and Right themselves.
     typing: Query<'w, 's, (), TypesText>,
     /// The lists, to tell a widget one has clipped away from one in view.
@@ -146,6 +151,10 @@ impl FocusScopes<'_, '_> {
     /// Whether `entity` is a slider or a choice that takes Left and Right itself: those presses
     /// adjust it and never move focus off it. A disabled one takes nothing.
     fn keeps_sideways(&self, entity: Entity) -> bool {
+        self.menu_rows.contains(entity) || self.keeps_own_sideways(entity)
+    }
+
+    fn keeps_own_sideways(&self, entity: Entity) -> bool {
         self.sideways.contains(entity)
     }
 
@@ -378,6 +387,12 @@ pub fn navigate_by_input(
         axis(pad(GamepadButton::DPadRight), pad(GamepadButton::DPadLeft))
     } else {
         net_x
+    };
+    // Down on a menu title opens its menu (`menu_by_input`), and moves nothing.
+    let net_y = if from.is_some_and(|f| scopes.menu_titles.contains(f)) {
+        0.0
+    } else {
+        net_y
     };
     let Some(direction) = Dir2::from_xy(net_x, net_y).ok().map(CompassOctant::from) else {
         return;

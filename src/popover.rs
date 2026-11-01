@@ -9,6 +9,7 @@ use bevy::ui::{FixedNode, UiScale};
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 
 use crate::cancel::Cancel;
+use crate::menu::{MenuPanel, close_menu};
 
 /// Where a [`popover`](crate::popover) opens, relative to the widget it is anchored to.
 ///
@@ -110,6 +111,12 @@ impl PopoverPanel {
             shown: false,
         }
     }
+
+    /// The panel of a [`crate::menu_title`] or [`crate::submenu`] while it is open: a modal popover
+    /// that [`close`] hides instead of despawning, so the menu's items outlive their opening.
+    pub(crate) fn menu(anchor: Entity, placement: Placement) -> Self {
+        Self::new(anchor, placement, true)
+    }
 }
 
 /// The candidate positions Bevy's `Popover` chooses from for a placement: the preferred side
@@ -150,14 +157,21 @@ pub(crate) fn placement_of(placement: Placement, gap: f32, margin: f32) -> Popov
     }
 }
 
-/// Triggers [`PopoverClosed`] on `popover` and despawns it. A popover already gone is left alone.
+/// Triggers [`PopoverClosed`] on `popover` and despawns it; a menu's panel is hidden instead, to
+/// open again. A popover already gone is left alone.
 fn close(commands: &mut Commands, popover: Entity, anchor: Entity, reason: CloseReason) {
-    commands.trigger(PopoverClosed {
-        entity: popover,
-        anchor,
-        reason,
+    commands.queue(move |world: &mut World| {
+        world.trigger(PopoverClosed {
+            entity: popover,
+            anchor,
+            reason,
+        });
+        if world.get::<MenuPanel>(popover).is_some() {
+            close_menu(world, popover);
+        } else if let Ok(entity) = world.get_entity_mut(popover) {
+            entity.despawn();
+        }
     });
-    commands.entity(popover).try_despawn();
 }
 
 /// A [`Cancel`] reaching a popover closes it and goes no further: Escape closed the popover, so
