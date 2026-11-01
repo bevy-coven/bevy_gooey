@@ -1,6 +1,14 @@
 # Where bevy_gooey_loop's time goes
 
-Written by `tools/loop/steps.py publish` after every pass; the rows are in [`bevy_gooey_loop.tsv`](bevy_gooey_loop.tsv). Updated 2026-10-31 22:29Z.
+Written by `tools/loop/steps.py publish` after every pass; the rows are in [`bevy_gooey_loop.tsv`](bevy_gooey_loop.tsv). Updated 2026-11-01 00:31Z.
+
+## What the last passes shipped
+
+From [`bevy_gooey_loop-audit.tsv`](bevy_gooey_loop-audit.tsv): commits on main, unpushed commits, package files changed, release tags, doc and demo files, and what was missing.
+
+| pass | at | commits | unpushed | package_files | released | docs_files | demo_files | missing |
+|---|---|---|---|---|---|---|---|---|
+| 0 | 2026-11-01T00:31Z | 16 | 0 | 5 | - | 12 | 2 | release |
 
 ## The last 12 passes
 
