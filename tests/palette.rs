@@ -718,7 +718,7 @@ fn the_pointer_lights_the_row_it_moves_over_and_a_click_runs_it_once() {
     let at = rect(&app, third.entity).center();
     let label = third.label.clone();
     point_at(&mut app, at);
-    assert_eq!(lit(&mut app, palette), [label.clone()]);
+    assert_eq!(lit(&mut app, palette), std::slice::from_ref(&label));
     click(&mut app, at);
     let id = {
         let list = app.world().resource::<CommandList>();
@@ -971,7 +971,7 @@ fn large_text_shows_fewer_rows_so_the_card_never_leaves_the_window() {
             .visible_rows();
         let shown = rows(&mut app, palette);
         assert_eq!(shown.len(), visible, "{scale}x at {height} px");
-        assert!(visible >= 1 && visible <= PALETTE_ROWS);
+        assert!((1..=PALETTE_ROWS).contains(&visible));
         // The card ends above the scrim's safe edge (5% of the width), so every row is whole.
         let bottom = rect(&app, card).max.y;
         assert!(

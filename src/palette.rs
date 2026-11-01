@@ -468,6 +468,17 @@ fn rank(list: &[PaletteCommand], history: &[String], query: &str) -> Vec<usize> 
     scored.into_iter().map(|(index, ..)| index).collect()
 }
 
+/// What [`update_palette`] writes the count line from.
+type CountParts = (
+    &'static PaletteCount,
+    &'static mut Node,
+    &'static mut Text,
+    &'static ComputedNode,
+);
+
+/// The count line is neither a row nor the note.
+type CountOnly = (Without<PaletteRow>, Without<PaletteNote>);
+
 /// What [`update_palette`] writes a row from, and measures the room by.
 type RowParts = (
     Entity,
@@ -522,10 +533,7 @@ pub fn update_palette(
     layouts: Query<(Ref<ComputedNode>, &UiGlobalTransform)>,
     mut rows: Query<RowParts>,
     mut notes: Query<(&PaletteNote, &mut Node), Without<PaletteRow>>,
-    mut counts: Query<
-        (&PaletteCount, &mut Node, &mut Text, &ComputedNode),
-        (Without<PaletteRow>, Without<PaletteNote>),
-    >,
+    mut counts: Query<CountParts, CountOnly>,
     mut texts: Query<&mut Text, (Without<PaletteCount>, Without<PaletteNote>)>,
     mut commands: Commands,
 ) {
