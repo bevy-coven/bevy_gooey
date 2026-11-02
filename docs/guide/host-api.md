@@ -15,6 +15,9 @@ crate root.
 | `BindingSettings` | `key_prompt`, `pad_prompt`, `chord_prompt`, `pad_style` (the `pad_style` row edits it), `cancel_key`, `cancel_button` | a resource, read by `update_bindings` and `bind_by_input` |
 | `InputDevice` | `Keyboard` or `Pad`: the device the player used last, what a `prompt` shows | a resource, kept by `track_input_device`; write it to start on the pad |
 | `Meter` | `value` and `max` | a component on a `meter()` |
+| `Progress` | the fraction, `0.0` to `1.0` (`ProgressClamped` while it is outside) | a component on a `progress()`, with `ProgressText { step, eta_seconds }` |
+| `Icon`, `IconTone`, `IconSize` | the `IconSource`, the skin colour that tints it (`Text`, `Muted`, `Accent`, `Danger`), the `type_scale` step (default 2); `IconMissing` marks a failed image | components on an `icon()` |
+| `FieldProblem` | `text` and `kind` (`Error`, `Warning`) | a component on a text row: the message under it, gone when removed |
 
 `GooeySkin`, `UiScaleSettings`, `ToastSettings` and `BindingSettings` are serde data under the `serde`
 feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
@@ -150,6 +153,10 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_numbers` | Style | a `number_field`'s number written as its text (and the mixed hint) when the value, the step or the mixed marker changed, before `update_text_inputs` |
 | `update_vecs` | Style | a `vec_field`'s `VecValue`, step, range and `VecMixed` pushed into its component rows, before `update_numbers` |
 | `update_palette` | Style | an open palette's matches, lit row, eight rows' words, "No command matches" and the count, only when its field, its lit row, `CommandList` or `PaletteHistory` changed |
+| `update_icons` | Style | an `icon`'s image and atlas cell from its `Icon`, and `IconMissing` for a failed image, before `apply_skin` |
+| `update_field_problems` | Style | measures each `FieldProblem` message so its row keeps the room under itself, before `apply_skin` |
+| `update_progress` | Style | a `progress`'s fill and its line of words, and `ProgressClamped` |
+| `update_spinners` | Style | each `spinner`'s turn from `Time<Real>` |
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |

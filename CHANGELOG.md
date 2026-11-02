@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- Icons (G-21, #25): `icon(IconSource)`, with `IconSource::{Image, Atlas}`, `Icon`, `IconTone::{Text, Muted, Accent, Danger}` (the tint is a colour of the skin; `Text` follows the button it is in like the button's text), `IconSize` (a `type_scale` step, default the body's line) and `IconMissing` (a failed image draws an empty box of the right size and warns once). `update_icons` (Style). `Role::Button` gets a half-gap `column_gap`, so an icon beside its label has air.
+- Field validation messages (G-25, #29): `FieldProblem { text, kind }` (`FieldProblem::error`, `::warning`; `FieldProblemKind`) on a text row draws its words under it, a bar in the kind's colour beside them and, for an error, the field's frame in `danger`; removing it removes the words in the same frame and the rows below make room. `update_field_problems` (Style).
+- Progress and spinner (G-17, #21): `progress(fraction)` with `Progress`, `ProgressText { step, eta_seconds }` ("3 of 7: Measuring meshes, about 20 s left") and `ProgressClamped`, and `spinner()` with `Spinner`, a ring that turns on real time. `update_progress` and `update_spinners` (Style). `model::{eta_words, progress_text, spinner_angle, SPINNER_PERIOD_SECS}`.
+- `Role::{Icon, FieldMessage, FieldMark, Progress, ProgressLine, Spinner}` (a minor bump: `Role` is exhaustive).
+- `examples/forms`, `docs/research/{icons, field-problem, progress}.md`, `docs/guide/{icons, field-problems, progress}.md`, `docs/media/forms.gif`, and `tests/{icon, field_problem, progress}.rs` (21 tests).
+
+### Changed
+
+- The README's colours GIF gives its place to `forms.gif` (the colours GIF is in `docs/guide/colors.md`), keeping the README at 250 lines.
+
 ## [0.22.0] - 2026-11-01
 
 ### Added
