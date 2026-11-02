@@ -1526,3 +1526,5 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. Toolbar: trailing separators before More; a roving tab stop if the owner wants APG's; items that name themselves (a `Name` component) instead of the tooltip.
 4. Status bar: a click-through to a notification log (#22), a middle group.
 5. A popover that no side can hold (a colour picker at 200% text on 720p); named tones (#33) so a warning mark can be amber.
+
+**Cleanup.** Removed this pass's own: `/tmp/g38` (captures, frames, the before and after galleries, gate, mutation and perf logs, 391 MB) and `/tmp/g38_ui.json` (no baseline worktree: the before gallery was a copied binary). `df -h /home` 3.7T, 214 GB free (the shared target is the loop's). **Left for a person, untouched:** the worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (1.8 MB each, clean, detached at `4497376` and `4859669`, unchanged since iteration 36): safe to remove with `git worktree remove`; the shared target's old per-file test executables from before iteration 34.
