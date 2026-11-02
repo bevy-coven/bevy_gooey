@@ -265,7 +265,10 @@ pub use shortcut::{Modifiers, Platform, Shortcut};
 pub use skin::{
     Density, GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin,
 };
-pub use slots::{Slot, SlotCursor, SlotGrid, SlotItems, SlotMoved, SlotRef, update_slot_grids};
+pub use slots::{
+    Slot, SlotCursor, SlotGrid, SlotItems, SlotMoved, SlotRef, SlotRefused, SlotRules,
+    update_slot_grids,
+};
 pub use split::{
     Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, split_by_pad,
     update_splits,

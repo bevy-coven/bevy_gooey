@@ -42,6 +42,10 @@ impl Default for Moves {
     }
 }
 
+/// Every `SlotRefused` a game would see.
+#[derive(Resource, Default)]
+struct Refusals(Vec<SlotRefused>);
+
 fn app() -> App {
     let mut app = App::new();
     app.add_plugins((
@@ -70,6 +74,10 @@ fn app() -> App {
     })
     .init_resource::<Changes>()
     .init_resource::<Moves>()
+    .init_resource::<Refusals>()
+    .add_observer(|refused: On<SlotRefused>, mut seen: ResMut<Refusals>| {
+        seen.0.push(refused.clone());
+    })
     .add_observer(
         |change: On<ValueChange<usize>>, mut seen: ResMut<Changes>| {
             seen.0.push((change.source, change.value, change.is_final))
@@ -1096,4 +1104,232 @@ fn escape_puts_a_carried_item_back() {
     assert!(moves(&app).is_empty());
     assert_eq!(names(&app, ui.grid)[0], "Sword");
     assert!(!carried(&app));
+}
+
+// ---- rules: a slot that says no before the player lets go ----
+
+fn helmet_only(item: &Slot, slot: usize) -> bool {
+    slot != 2 || item.kind.as_deref() == Some("helmet")
+}
+
+/// A sword, a helm and a potion; slot 2 takes a helmet and nothing else, slot 3 is empty.
+fn kit() -> Vec<Option<Slot>> {
+    vec![
+        Some(Slot::new("Sword").kind("weapon")),
+        Some(Slot::new("Helm").kind("helmet")),
+        None,
+        None,
+        Some(Slot::new("Potion").kind("potion")),
+        None,
+    ]
+}
+
+fn ruled(app: &mut App) -> Scene {
+    let ui = scene_of(app, 3, kit());
+    app.world_mut()
+        .entity_mut(ui.grid)
+        .insert(SlotRules::new(helmet_only));
+    settle(app);
+    ui
+}
+
+fn refusals(app: &App) -> Vec<SlotRefused> {
+    app.world().resource::<Refusals>().0.clone()
+}
+
+fn refused_roles(app: &mut App) -> Vec<Role> {
+    app.world_mut()
+        .query::<&Role>()
+        .iter(app.world())
+        .filter(|role| matches!(role, Role::DragGhostRefused | Role::DropMarkRefused))
+        .copied()
+        .collect()
+}
+
+/// Presses on `from`, moves to `to` and stops there, the item still in the hand.
+fn hold_over(app: &mut App, from: Entity, to: Entity) -> Vec2 {
+    let (from, to) = (centre(app, from), centre(app, to));
+    pointer(app, from, PointerAction::Move { delta: Vec2::X });
+    pointer(app, from, PointerAction::Press(PointerButton::Primary));
+    pointer(app, to, PointerAction::Move { delta: to - from });
+    settle(app);
+    to
+}
+
+#[test]
+fn a_slot_that_will_not_take_the_item_shows_the_refusal_while_it_is_held_over_it() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+
+    // The sword over the helmet slot: red while still in the hand.
+    let at = hold_over(&mut app, slots[0], slots[2]);
+    assert!(app.world().resource::<DragState>().refused());
+    let roles = refused_roles(&mut app);
+    assert!(roles.contains(&Role::DropMarkRefused), "{roles:?}");
+    assert!(roles.contains(&Role::DragGhostRefused), "{roles:?}");
+    // Moving on to a slot that takes it turns the look back.
+    let ok = centre(&app, slots[3]);
+    pointer(&mut app, ok, PointerAction::Move { delta: ok - at });
+    settle(&mut app);
+    assert!(!app.world().resource::<DragState>().refused());
+    assert!(refused_roles(&mut app).is_empty());
+
+    // Back over the helmet slot and let go: one refusal, nothing moved.
+    pointer(&mut app, at, PointerAction::Move { delta: at - ok });
+    settle(&mut app);
+    pointer(&mut app, at, PointerAction::Release(PointerButton::Primary));
+    settle(&mut app);
+    assert!(moves(&app).is_empty());
+    assert_eq!(
+        refusals(&app),
+        vec![SlotRefused {
+            entity: ui.grid,
+            from: SlotRef {
+                grid: ui.grid,
+                index: 0
+            },
+            to: 2
+        }]
+    );
+    assert_eq!(&names(&app, ui.grid)[..3], ["Sword", "Helm", ""]);
+    assert!(drag_roles(&mut app).is_empty() && refused_roles(&mut app).is_empty());
+}
+
+#[test]
+fn a_slot_that_takes_the_item_gets_the_move_and_focus_follows_it() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+
+    drag_to(&mut app, slots[1], slots[2]);
+
+    assert_eq!(moves(&app).len(), 1);
+    assert!(refusals(&app).is_empty());
+    assert_eq!(&names(&app, ui.grid)[1..3], ["", "Helm"]);
+    assert_eq!(
+        focused(&app),
+        Some(slots[2]),
+        "the press focused the helm's slot, and focus went with the helm"
+    );
+    assert_eq!(app.world().get::<SlotCursor>(ui.grid), Some(&SlotCursor(2)));
+    assert_eq!(tab_stops(&app, ui.grid), [-1, -1, 0, -1, -1, -1]);
+}
+
+#[test]
+fn a_swap_is_refused_when_the_item_going_back_is_not_taken_at_the_origin() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+    drag_to(&mut app, slots[1], slots[2]);
+    clear_changes(&mut app);
+    app.world_mut().resource_mut::<Moves>().seen.clear();
+    app.world_mut().resource_mut::<Refusals>().0.clear();
+
+    // The helm over the sword: the helm would go to slot 0 (it takes anything) and the sword to
+    // slot 2 (a helmet only), so a swap is no.
+    drag_to(&mut app, slots[2], slots[0]);
+    assert!(moves(&app).is_empty());
+    assert_eq!(refusals(&app).len(), 1);
+    assert_eq!(&names(&app, ui.grid)[..3], ["Sword", "", "Helm"]);
+    // The helm to an empty slot is a move.
+    drag_to(&mut app, slots[2], slots[5]);
+    assert_eq!(moves(&app).len(), 1);
+    assert_eq!(names(&app, ui.grid)[5], "Helm");
+}
+
+#[test]
+fn both_grids_rules_apply_to_a_drag_between_them() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let chest = app
+        .world_mut()
+        .spawn(slot_grid(
+            3,
+            vec![None, Some(Slot::new("Helm 2").kind("helmet")), None],
+        ))
+        .id();
+    let root = app.world().get::<ChildOf>(ui.grid).expect("root").parent();
+    app.world_mut().entity_mut(root).add_child(chest);
+    settle(&mut app);
+    let mine = cells(&app, ui.grid);
+    let theirs = cells(&app, chest);
+
+    // The sword to the chest (takes anything): fine. A chest helm onto the sword's old place
+    // (the chest's rules are open, mine take it at 0): fine too.
+    drag_to(&mut app, mine[0], theirs[0]);
+    assert_eq!(moves(&app).len(), 1);
+    // The chest's helm onto my filled slot 4 (a potion): the potion would go to the chest's slot
+    // 1, which takes anything, so it is fine; onto my slot 2 (helmet only) with a sword it is not.
+    drag_to(&mut app, theirs[0], mine[2]);
+    assert_eq!(refusals(&app).len(), 1, "a sword is not a helmet");
+    assert_eq!(names(&app, chest)[0], "Sword");
+    drag_to(&mut app, theirs[1], mine[2]);
+    assert_eq!(moves(&app).len(), 2);
+    assert_eq!(names(&app, ui.grid)[2], "Helm 2");
+}
+
+#[test]
+fn a_locked_slot_takes_nothing_and_gives_its_item_up_to_an_open_slot() {
+    let mut app = app();
+    let ui = scene_of(&mut app, 3, kit());
+    app.world_mut()
+        .entity_mut(ui.grid)
+        .insert(SlotRules::new(|_, slot| slot != 3));
+    settle(&mut app);
+    let slots = cells(&app, ui.grid);
+    drag_to(&mut app, slots[0], slots[3]);
+    assert!(moves(&app).is_empty());
+    assert_eq!(refusals(&app).len(), 1);
+    // A rule written later governs the next drag.
+    app.world_mut()
+        .entity_mut(ui.grid)
+        .insert(SlotRules::default());
+    settle(&mut app);
+    drag_to(&mut app, slots[0], slots[3]);
+    assert_eq!(moves(&app).len(), 1);
+    assert_eq!(names(&app, ui.grid)[3], "Sword");
+    // And a rule that takes nothing never stops the item leaving its own slot for an open one.
+    app.world_mut()
+        .entity_mut(ui.grid)
+        .insert(SlotRules::new(|_, slot| slot != 3));
+    settle(&mut app);
+    drag_to(&mut app, slots[3], slots[5]);
+    assert_eq!(moves(&app).len(), 2);
+    assert_eq!(names(&app, ui.grid)[5], "Sword");
+}
+
+#[test]
+fn the_keyboard_carry_skips_a_slot_that_says_no_and_focus_follows_the_item() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+    focus(&mut app, slots[0]);
+
+    pick_up(&mut app);
+    assert!(carried(&app));
+    // Right of the sword is the helm (fine, it swaps back to slot 0: a sword is taken there);
+    // right of that is the helmet slot, which refuses a sword: the mark stays where it was.
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(app.world().resource::<DragState>().over(), Some(slots[1]));
+    tap(&mut app, KeyCode::ArrowRight);
+    let over = app.world().resource::<DragState>().over();
+    assert_ne!(
+        over,
+        Some(slots[2]),
+        "a refusing slot is never a place to put the item down"
+    );
+    let target = slots.iter().position(|&c| Some(c) == over).expect("a slot");
+    assert_ne!(target, 1, "the mark moved on past the helm");
+    pick_up(&mut app);
+
+    let seen = moves(&app);
+    assert_eq!(seen.len(), 1);
+    assert_eq!((seen[0].from.index, seen[0].to), (0, target));
+    assert!(refusals(&app).is_empty());
+    assert_eq!(focused(&app), over, "the ring went with the sword");
+    assert_eq!(
+        app.world().get::<SlotCursor>(ui.grid),
+        Some(&SlotCursor(target))
+    );
 }

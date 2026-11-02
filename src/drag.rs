@@ -120,12 +120,18 @@ pub struct DragPayload<T: Clone + Send + Sync + 'static>(pub T);
 #[require(DropZone)]
 pub struct DropTarget<T: Clone + Send + Sync + 'static> {
     accepts: Option<fn(&T) -> bool>,
+    /// A test that reads the two nodes (this crate's own widgets keep their state on them): the
+    /// target, the source and the payload.
+    judge: Option<fn(EntityRef, EntityRef, &T) -> bool>,
 }
 
 impl<T: Clone + Send + Sync + 'static> DropTarget<T> {
     /// A target that takes every `T`.
     pub const fn new() -> Self {
-        Self { accepts: None }
+        Self {
+            accepts: None,
+            judge: None,
+        }
     }
 
     /// A target that takes a `T` when `accepts` says so: a slot that holds one kind of item, a
@@ -133,6 +139,15 @@ impl<T: Clone + Send + Sync + 'static> DropTarget<T> {
     pub const fn accepting(accepts: fn(&T) -> bool) -> Self {
         Self {
             accepts: Some(accepts),
+            judge: None,
+        }
+    }
+
+    /// A target whose test reads the target's and the source's own components.
+    pub(crate) const fn judged(judge: fn(EntityRef, EntityRef, &T) -> bool) -> Self {
+        Self {
+            accepts: None,
+            judge: Some(judge),
         }
     }
 }
@@ -253,7 +268,12 @@ fn target_added<T: Clone + Send + Sync + 'static>(
 fn accepts<T: Clone + Send + Sync + 'static>(zone: EntityRef, source: EntityRef) -> Option<bool> {
     let payload = source.get::<DragPayload<T>>()?;
     let target = zone.get::<DropTarget<T>>()?;
-    Some(target.accepts.is_none_or(|accepts| accepts(&payload.0)))
+    Some(
+        target.accepts.is_none_or(|accepts| accepts(&payload.0))
+            && target
+                .judge
+                .is_none_or(|judge| judge(zone, source, &payload.0)),
+    )
 }
 
 fn deliver<T: Clone + Send + Sync + 'static>(

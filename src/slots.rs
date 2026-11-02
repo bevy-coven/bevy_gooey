@@ -13,7 +13,7 @@ use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui::{InteractionDisabled, ZIndex};
 use bevy::ui_widgets::{Activate, ValueChange, observe};
 
-use crate::drag::{DragPayload, DropTarget, Dropped};
+use crate::drag::{DragPayload, DropRefused, DropTarget, Dropped};
 use crate::icon::{Icon, IconSource};
 use crate::model::slot_edge;
 use crate::nav::show_focus;
@@ -41,6 +41,9 @@ pub struct Slot {
     /// The tooltip's line, shown on hover and focus. An icon slot with none shows its name; a slot
     /// with no icon, which already shows its name, has no tooltip.
     pub tooltip: Option<String>,
+    /// What sort of thing the item is (`"helmet"`, `"potion"`), for a [`SlotRules`] test to read.
+    /// The crate gives it no meaning.
+    pub kind: Option<String>,
 }
 
 impl Slot {
@@ -51,6 +54,7 @@ impl Slot {
             icon: None,
             count: 1,
             tooltip: None,
+            kind: None,
         }
     }
 
@@ -69,6 +73,12 @@ impl Slot {
     /// The same item with `text` for its tooltip.
     pub fn tooltip(mut self, text: impl Into<String>) -> Self {
         self.tooltip = Some(text.into());
+        self
+    }
+
+    /// The same item of `kind`, for a [`SlotRules`] test.
+    pub fn kind(mut self, kind: impl Into<String>) -> Self {
+        self.kind = Some(kind.into());
         self
     }
 
@@ -119,10 +129,57 @@ impl FromIterator<Option<Slot>> for SlotItems {
 /// and its state is [`SlotCursor`].
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, PartialEq, Clone)]
-#[require(SlotItems, SlotCursor)]
+#[require(SlotItems, SlotCursor, SlotRules)]
 pub struct SlotGrid {
     /// Slots in a row; at least one.
     pub columns: usize,
+}
+
+/// Which items a [`crate::slot_grid`]'s slots take: `accepts(item, index)` says whether slot `index`
+/// of this grid may hold `item`. The default takes everything. It is a plain `fn` (a closure that
+/// captures nothing), like [`crate::DropTarget::accepting`], so it is data a game writes once.
+///
+/// A move is allowed when both ends are: the slot it goes to must accept the carried item, and a
+/// filled slot, whose item goes back to where the carried one came from, must have that item
+/// accepted there too (by the rule of that slot's grid). A slot that does not take the carried
+/// item is a refused drop target while the item is over it: the drop mark and ghost turn to their
+/// refused look before the player lets go, a release sends one [`SlotRefused`] and moves nothing,
+/// and a keyboard or pad carry skips it. A locked slot is a rule that takes nothing; an item can
+/// still be taken out of it into a slot that takes it. Overwrite the component to change the rule
+/// (the next drag uses it); never remove it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// // An equipment panel: slot 0 holds a helmet, slot 1 a weapon, slot 2 is locked.
+/// commands.spawn((
+///     slot_grid(3, vec![None, None, None]),
+///     SlotRules::new(|item, slot| match slot {
+///         0 => item.kind.as_deref() == Some("helmet"),
+///         1 => item.kind.as_deref() == Some("weapon"),
+///         _ => false,
+///     }),
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug)]
+pub struct SlotRules {
+    /// Whether slot `index` may hold `item`.
+    pub accepts: fn(&Slot, usize) -> bool,
+}
+
+impl SlotRules {
+    /// A rule: `accepts(item, index)`.
+    pub const fn new(accepts: fn(&Slot, usize) -> bool) -> Self {
+        Self { accepts }
+    }
+}
+
+impl Default for SlotRules {
+    fn default() -> Self {
+        Self::new(|_, _| true)
+    }
 }
 
 /// The slot of a grid that Tab enters on: the one the player last had focus on. It is the
@@ -207,6 +264,20 @@ impl SlotMoved {
     }
 }
 
+/// A slot refused an item: the player let go of it over a slot that its grid's [`SlotRules`] do not
+/// let hold it (or whose own item the origin's rules do not take back). An event on the grid of the
+/// slot that refused; nothing moved. A game plays its "no" here.
+#[derive(EntityEvent, Clone, Debug, PartialEq)]
+pub struct SlotRefused {
+    /// The grid of the slot that refused.
+    #[event_target]
+    pub entity: Entity,
+    /// The slot the item was carried from.
+    pub from: SlotRef,
+    /// The slot it was let go over, in [`SlotRefused::entity`].
+    pub to: usize,
+}
+
 /// What a slot last drew, so a change is found by comparing and nothing else is written.
 #[derive(Component, Clone, Debug, PartialEq)]
 pub struct Shown(Option<Slot>);
@@ -229,16 +300,65 @@ fn slot_on_activate(
 
 /// An item dropped on a slot is one [`SlotMoved`] on the slot's grid; dropped on its own slot it is
 /// nothing.
-fn slot_on_dropped(dropped: On<Dropped<SlotRef>>, slots: Query<&SlotRef>, mut commands: Commands) {
+fn slot_on_dropped(
+    dropped: On<Dropped<SlotRef>>,
+    slots: Query<&SlotRef>,
+    mut focus: ResMut<InputFocus>,
+    mut commands: Commands,
+) {
     let Ok(to) = slots.get(dropped.target) else {
         return;
     };
     if dropped.payload != *to {
+        // Focus follows the item: the ring is on the slot it was just put in.
+        if focus.get() == Some(dropped.source) {
+            focus.set(dropped.target, FocusCause::Navigated);
+        }
         commands.trigger(SlotMoved {
             entity: to.grid,
             from: dropped.payload,
             to: to.index,
         });
+    }
+}
+
+/// A drop a slot's rules refused is one [`SlotRefused`] on its grid.
+fn slot_on_refused(
+    refused: On<DropRefused<SlotRef>>,
+    slots: Query<&SlotRef>,
+    mut commands: Commands,
+) {
+    if let Ok(to) = slots.get(refused.target) {
+        commands.trigger(SlotRefused {
+            entity: to.grid,
+            from: refused.payload,
+            to: to.index,
+        });
+    }
+}
+
+/// Whether `zone`, a slot, takes what `source`, another slot, carries: the rule of the zone's grid
+/// takes the carried item there, and a filled zone's item goes back to the source's slot under the
+/// source's rule. Putting an item back where it was is always allowed.
+fn slot_takes(zone: EntityRef, source: EntityRef, from: &SlotRef) -> bool {
+    let (Some(to), Some(onto)) = (zone.get::<SlotRef>(), zone.get::<SlotRules>()) else {
+        return true;
+    };
+    if to == from {
+        return true;
+    }
+    let Some(carried) = source.get::<Shown>().and_then(|shown| shown.0.as_ref()) else {
+        return true;
+    };
+    if !(onto.accepts)(carried, to.index) {
+        return false;
+    }
+    match (
+        zone.get::<Shown>().and_then(|shown| shown.0.as_ref()),
+        source.get::<SlotRules>(),
+    ) {
+        (Some(there), Some(back)) => (back.accepts)(there, from.index),
+        _ => true,
     }
 }
 
@@ -284,6 +404,7 @@ fn spawn_slot(
     grid: Entity,
     index: usize,
     cursor: usize,
+    rules: SlotRules,
     item: &Option<Slot>,
 ) {
     let at = SlotRef { grid, index };
@@ -296,9 +417,11 @@ fn spawn_slot(
         AutoDirectionalNavigation::default(),
         at,
         Shown(item.clone()),
-        DropTarget::<SlotRef>::new(),
+        rules,
+        DropTarget::<SlotRef>::judged(slot_takes),
         observe(slot_on_activate),
         observe(slot_on_dropped),
+        observe(slot_on_refused),
         observe(slot_on_key_input),
         ChildOf(grid),
     ));
@@ -385,6 +508,7 @@ type GridItem<'a> = (
     Entity,
     &'a SlotGrid,
     Ref<'a, SlotItems>,
+    Ref<'a, SlotRules>,
     &'a mut SlotCursor,
     Option<&'a Children>,
 );
@@ -413,7 +537,7 @@ pub fn update_slot_grids(
     mut texts: Query<(&mut Text, &mut Node, &Role), Without<SlotRef>>,
     icons: Query<(Entity, &Role, &Icon), Without<SlotRef>>,
 ) {
-    for (grid_entity, _, items, mut cursor, children) in &mut grids {
+    for (grid_entity, _, items, rules, mut cursor, children) in &mut grids {
         let len = items.0.len();
         // Focus on one of this grid's slots is the player moving the cursor.
         if focus.is_changed()
@@ -435,6 +559,7 @@ pub fn update_slot_grids(
         }
         let existing: &[Entity] = children.map_or(&[][..], |c| &c[..]);
         let settled = !items.is_changed()
+            && !rules.is_changed()
             && !cursor.is_changed()
             && !focus.is_changed()
             && existing.len() == len;
@@ -443,12 +568,15 @@ pub fn update_slot_grids(
         }
         for (index, item) in items.0.iter().enumerate() {
             let Some(&cell) = existing.get(index) else {
-                spawn_slot(&mut commands, grid_entity, index, cursor.0, item);
+                spawn_slot(&mut commands, grid_entity, index, cursor.0, *rules, item);
                 continue;
             };
             let Ok((mut shown, mut role, mut tab, parts, lifts, tip)) = cells.get_mut(cell) else {
                 continue;
             };
+            if rules.is_changed() {
+                commands.entity(cell).insert(*rules);
+            }
             let stop = TabIndex(if index == cursor.0 { 0 } else { -1 });
             if *tab != stop {
                 *tab = stop;
