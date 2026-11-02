@@ -25,6 +25,8 @@
 //! over frames 20..n) and exits 10 frames later. `GOOEY_SHOT_DIR=<dir>` also keeps every
 //! `GOOEY_SHOT_EVERY`th frame (`GOOEY_SHOT_FROM`, default frame 30) there as `f_%04d.png`, and prints
 //! `gooey: kept <n> frames in <dir>`: those frames are a GIF's, and the still stays one file.
+//! `GOOEY_A11Y=1` stands in for a connected screen reader and prints the accessibility tree at the
+//! capture frame, one `gooey: a11y` line per node: its role, name, value and flags.
 //! `GOOEY_SKIN=parchment`, `high_contrast` or `tool` starts in that skin;
 //! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size.
 //! `GOOEY_KEYS=down,down,enter,…` stages a state before the shot: from frame 30 it presses one key
@@ -55,6 +57,7 @@
 //! saves (a toast), and Up leaves it. `GOOEY_KEYS` tokens `name` (focus it) and `type=Aria` (type
 //! those characters, one every beat) stage that.
 
+use bevy::a11y::{AccessibilityNode, AccessibilityRequested};
 use bevy::camera::NormalizedRenderTarget;
 use bevy::ecs::spawn::SpawnIter;
 use bevy::input::ButtonState;
@@ -239,6 +242,7 @@ fn main() {
             follow_background,
             log_feedback,
             capture,
+            dump_accessibility.after(capture),
             stage_keys.after(capture),
         ),
     );
@@ -320,6 +324,9 @@ fn main() {
     }
     if std::env::var_os("GOOEY_WORLD").is_some() {
         app.add_systems(Startup, spawn_world);
+    }
+    if std::env::var_os("GOOEY_A11Y").is_some() {
+        app.world().resource::<AccessibilityRequested>().set(true);
     }
     app.run();
 }
@@ -617,6 +624,67 @@ fn follow_background(skin: Res<GooeySkin>, mut clear: ResMut<ClearColor>) {
 fn log_feedback(mut feedback: MessageReader<UiFeedback>) {
     for f in feedback.read() {
         info!("gooey: feedback {:?}", f.kind);
+    }
+}
+
+/// `GOOEY_A11Y`: at the capture frame, print every node of the accessibility tree, nested as the
+/// screen reader is told it.
+fn dump_accessibility(
+    capture: Option<Res<Capture>>,
+    requested: Option<Res<AccessibilityRequested>>,
+    nodes: Query<(Entity, &AccessibilityNode, Option<&Children>, Option<&ChildOf>)>,
+) {
+    let Some(capture) = capture else {
+        return;
+    };
+    if capture.frame != capture.at || !requested.is_some_and(|r| r.get()) {
+        return;
+    }
+    fn walk(
+        entity: Entity,
+        depth: usize,
+        nodes: &Query<(Entity, &AccessibilityNode, Option<&Children>, Option<&ChildOf>)>,
+    ) {
+        let Ok((_, node, children, _)) = nodes.get(entity) else {
+            return;
+        };
+        let mut flags = String::new();
+        for (on, name) in [
+            (node.is_hidden(), " hidden"),
+            (node.is_disabled(), " disabled"),
+            (node.is_modal(), " modal"),
+        ] {
+            if on {
+                flags.push_str(name);
+            }
+        }
+        if let Some(on) = node.is_selected() {
+            flags.push_str(if on { " selected" } else { " unselected" });
+        }
+        if let Some(on) = node.is_expanded() {
+            flags.push_str(if on { " expanded" } else { " collapsed" });
+        }
+        if let Some(toggled) = node.toggled() {
+            flags.push_str(&format!(" {toggled:?}"));
+        }
+        if let Some(n) = node.numeric_value() {
+            flags.push_str(&format!(" #{n}"));
+        }
+        println!(
+            "gooey: a11y {}{:?} {:?} {:?}{flags}",
+            "  ".repeat(depth),
+            node.role(),
+            node.label().unwrap_or(""),
+            node.value().unwrap_or("")
+        );
+        for child in children.into_iter().flat_map(|c| c.iter()) {
+            walk(child, depth + 1, nodes);
+        }
+    }
+    for (entity, _, _, parent) in &nodes {
+        if parent.is_none_or(|parent| nodes.get(parent.parent()).is_err()) {
+            walk(entity, 0, &nodes);
+        }
     }
 }
 

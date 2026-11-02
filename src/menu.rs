@@ -152,6 +152,16 @@ impl MenuItem {
         }
     }
 
+    /// The role an assistive technology sees, and whether the row opens a menu.
+    pub(crate) fn access(&self) -> (accesskit::Role, bool) {
+        match self.kind {
+            Kind::Command => (accesskit::Role::MenuItem, false),
+            Kind::Check => (accesskit::Role::MenuItemCheckBox, false),
+            Kind::Radio => (accesskit::Role::MenuItemRadio, false),
+            Kind::Submenu => (accesskit::Role::MenuItem, true),
+        }
+    }
+
     /// Shows `shortcut` at the end of the row, in the platform's own words ([`Shortcut::label`]).
     /// The item does not listen for the chord: that is the game's, with
     /// [`Shortcut::just_pressed`].
