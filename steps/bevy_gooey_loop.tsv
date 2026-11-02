@@ -14977,3 +14977,224 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 79	101	ship	model	model		2026-11-02T16:55:43Z	20.4	
 79	102	log	tool	phase mark	bash	2026-11-02T16:56:03Z	1.6	Write log, push, clean up :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log && cat >> docs/loop-log.md <<'EOF' ## Iteration 51 — 2026-11-02 — A plain-ke
 79	103	log	model	model		2026-11-02T16:56:05Z	8.6	
+80	1	orient	model	model		2026-11-02T16:58:23Z	2.6	
+80	2	orient	tool	phase mark	bash	2026-11-02T16:58:25Z	0.7	Orienting: status, log, audit :: python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git log --oneline | head -8; git fetch -q ori
+80	3	orient	model	model		2026-11-02T16:58:26Z	2.1	
+80	4	orient	tool	github	bash	2026-11-02T16:58:28Z	0.5	Reading last log entry and open issues :: cd /home/ladvien/bevy_gooey_loop && git show origin/loop-stats:steps/bevy_gooey_loop-audit.tsv | head -1; python3 - <<'E' import re t=open('docs/loop-log.md').r
+80	5	orient	model	model		2026-11-02T16:58:29Z	5.7	
+80	6	bugs	tool	phase mark	bash	2026-11-02T16:58:34Z	1.5	Checking consumer demand :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark bugs; gh issue list -R bevy-coven/bevy_grimoire --label ui --state open --limit 
+80	7	bugs	model	model		2026-11-02T16:58:36Z	10.0	
+80	8	choose	tool	phase mark	bash	2026-11-02T16:58:46Z	0.1	Scoping drag.rs for valid-slot hint :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; wc -l src/drag.rs src/slots.rs src/skin.rs docs/research/slot-rules.md; 
+80	9	choose	model	model		2026-11-02T16:58:46Z	1.3	
+80	10	choose	tool	read files	read	2026-11-02T16:58:47Z	0.0	src/drag.rs:205-445
+80	11	choose	tool	read files	read	2026-11-02T16:58:47Z	0.0	src/drag.rs:840-935
+80	12	choose	tool	read files	read	2026-11-02T16:58:47Z	0.0	docs/research/slot-rules.md
+80	13	choose	model	model		2026-11-02T16:58:47Z	12.2	
+80	14	choose	tool	shell	bash	2026-11-02T16:58:59Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "takes\|EntityRef\|IsResource" src/drag.rs | sed -n 1,40p; grep -n "Role::Slot\b\|Role::SlotEmpty\|SlotEmpty\|draggi
+80	15	choose	model	model		2026-11-02T16:58:59Z	1.4	
+80	16	choose	tool	shell	bash	2026-11-02T16:59:01Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2040,2075p src/skin.rs; sed -n 2415,2450p src/skin.rs; grep -n "struct State\b" src/skin.rs; grep -n "type StateQuery
+80	17	choose	model	model		2026-11-02T16:59:01Z	3.8	
+80	18	choose	tool	shell	bash	2026-11-02T16:59:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1540,1700p src/skin.rs; grep -n "marked" src/skin.rs | head -30
+80	19	choose	model	model		2026-11-02T16:59:04Z	4.8	
+80	20	choose	tool	shell	bash	2026-11-02T16:59:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1735,1830p src/skin.rs; sed -n 1850,1935p src/skin.rs
+80	21	choose	model	model		2026-11-02T16:59:09Z	18.4	
+80	22	choose	tool	shell	bash	2026-11-02T16:59:28Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^fn \|^#\[test\]" tests/slots.rs | grep -v "#\[test\]" | sed -n 1,80p; grep -n "GOOEY_KEYS\|\"pickup\"\|\"drag\|fit
+80	23	choose	model	model		2026-11-02T16:59:28Z	1.5	
+80	24	choose	tool	shell	bash	2026-11-02T16:59:29Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1105,1200p tests/slots.rs; sed -n 1300,1340p tests/slots.rs; grep -n "accent" src/skin.rs | sed -n 1,60p | grep -i "l
+80	25	choose	model	model		2026-11-02T16:59:29Z	6.8	
+80	26	choose	tool	web	web_search	2026-11-02T16:59:36Z	6.9	Finding shipping-game source for valid-slot highlight :: Path of Exile picking up item highlights equipment slots that can hold it highlight valid slots inventory
+80	27	choose	model	model		2026-11-02T16:59:43Z	2.3	
+80	28	choose	tool	shell	bash	2026-11-02T16:59:45Z	0.1	Fetching PoE thread for a highlight quote :: cd /tmp && curl -sL -A 'Mozilla/5.0' https://www.pathofexile.com/forum/view-thread/15529 | python3 -c " import sys,re,html t=sys.stdin.read() t=re.sub(r'<script
+80	29	choose	model	model		2026-11-02T16:59:45Z	0.9	
+80	30	choose	tool	read files	read	2026-11-02T16:59:46Z	0.4	Reading PoE highlight thread :: https://www.pathofexile.com/forum/view-thread/3085031
+80	31	choose	model	model		2026-11-02T16:59:47Z	5.1	
+80	32	choose	tool	web	web_search	2026-11-02T16:59:52Z	8.5	Shipping-game source for highlighting valid slots on pickup :: when you pick up an item, slots where it can be placed are highlighted green inventory drag Escape from Tarkov OR Diablo OR "Dead Space" valid slots highlight
+80	33	choose	model	model		2026-11-02T17:00:00Z	5.8	
+80	34	choose	tool	shell	bash	2026-11-02T17:00:06Z	0.4	Extracting ARIA drop-target and PoE quotes :: cd /tmp && curl -sL -A 'Mozilla/5.0' https://www.w3.org/TR/wai-aria-1.1/ -o aria11.html; python3 - <<'E' import re,html t=open('/tmp/aria11.html',errors='ignore
+80	35	choose	model	model		2026-11-02T17:00:06Z	1.6	
+80	36	choose	tool	shell	bash	2026-11-02T17:00:08Z	0.0	cd /tmp && python3 - <<'E' import re,html t=open('/tmp/aria11.html',errors='ignore').read() t=re.sub(r'<script.*?</script>|<style.*?</style>','',t,flags=re.S) t
+80	37	choose	model	model		2026-11-02T17:00:08Z	7.1	
+80	38	choose	tool	web	web_search	2026-11-02T17:00:15Z	10.8	One more shipping-game source :: Baldur's Gate 3 drag item equipment slots light up highlighted valid slot while dragging
+80	39	choose	model	model		2026-11-02T17:00:26Z	4.9	
+80	40	choose	tool	shell	bash	2026-11-02T17:00:31Z	0.1	cd /tmp && curl -sL -A 'Mozilla/5.0' https://www.pathofexile.com/forum/view-thread/15529 -o poe.html; wc -c poe.html; python3 - <<'E' import re,html t=open('/tm
+80	41	choose	model	model		2026-11-02T17:00:31Z	2.3	
+80	42	choose	tool	git	bash	2026-11-02T17:00:33Z	0.0	cd /home/ladvien/bevy_gooey_loop && git grep -n "turn red" -- docs | head -3
+80	43	choose	tool	read files	read	2026-11-02T17:00:33Z	0.4	Reading PoE inventory colours thread :: https://www.pathofexile.com/forum/view-thread/15529
+80	44	choose	model	model		2026-11-02T17:00:34Z	20.9	
+80	45	research	tool	phase mark	bash	2026-11-02T17:00:55Z	0.2	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research && cat > docs/research/drop-candidates.md <<'E' # Drop candidates: ever
+80	46	research	model	model		2026-11-02T17:00:55Z	5.8	
+80	47	build	tool	phase mark	bash	2026-11-02T17:01:01Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; echo $CARGO_TARGET_DIR $DISPLAY; grep -n "update_drag_visuals" src/*.rs |
+80	48	build	model	model		2026-11-02T17:01:01Z	1.2	
+80	49	build	tool	shell	bash	2026-11-02T17:01:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 198,210p src/lib.rs; sed -n 455,500p src/lib.rs; sed -n 1,30p src/drag.rs | grep -n "use "
+80	50	build	model	model		2026-11-02T17:01:02Z	3.5	
+80	51	build	tool	shell	bash	2026-11-02T17:01:06Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "fn slot_takes" -A40 src/slots.rs; grep -n "Reflect" src/drag.rs | head -3; grep -n "Dragging" src/*.rs | grep -v "^
+80	52	build	model	model		2026-11-02T17:01:06Z	9.5	
+80	53	build	tool	shell	bash	2026-11-02T17:01:15Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/drag.rs' t=open(p).read() marker='''/// The type-erased half of a source: how to send its typed event
+80	54	build	model	model		2026-11-02T17:01:15Z	3.0	
+80	55	build	tool	shell	bash	2026-11-02T17:01:18Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^use crate::\|MenuMarked," src/skin.rs | head -30; grep -n "marked,$\|(marked, problem, status)\|Has<MenuMarked>\|A
+80	56	build	model	model		2026-11-02T17:01:18Z	6.6	
+80	57	build	tool	cargo clippy	bash	2026-11-02T17:01:25Z	18.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/skin.rs' t=open(p).read() def rep(a,b,count=1): global t assert t.count(a)>=1,(a) t=t.replace(a,b,cou
+80	58	build	model	model		2026-11-02T17:01:43Z	11.0	
+80	59	build	tool	shell	bash	2026-11-02T17:01:54Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,48p tests/slots.rs; sed -n 478,518p tests/slots.rs; sed -n 669,698p tests/slots.rs; sed -n 1220,1242p tests/slots.r
+80	60	build	model	model		2026-11-02T17:01:54Z	12.0	
+80	61	build	tool	shell	bash	2026-11-02T17:02:07Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n "^fn \|^struct\|^#\[test\]" tests/drag.rs | grep -v "^.*#\[test\]" | head -60; grep -n "accepting" tests/drag.rs | h
+80	62	build	model	model		2026-11-02T17:02:07Z	1.3	
+80	63	build	tool	shell	bash	2026-11-02T17:02:08Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 18,160p tests/drag.rs; sed -n 337,356p tests/drag.rs; sed -n 778,820p tests/drag.rs
+80	64	build	model	model		2026-11-02T17:02:08Z	5.2	
+80	65	build	tool	shell	bash	2026-11-02T17:02:13Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 205,235p tests/drag.rs; sed -n 416,440p tests/drag.rs; sed -n 534,547p tests/drag.rs; tail -30 tests/drag.rs
+80	66	build	model	model		2026-11-02T17:02:13Z	10.4	
+80	67	build	tool	cargo test	bash	2026-11-02T17:02:24Z	60.0	[launched bg_1] Adding drag candidate tests and running them :: cd /home/ladvien/bevy_gooey_loop && cat >> tests/drag.rs <<'E' // ---- candidates: the places that take what is carried, from the moment it is lifted ---- fn ca
+80	68	build	model	model		2026-11-02T17:03:24Z	3.2	
+80	69	build	tool	wait: other	wait	2026-11-02T17:03:27Z	0.0	{}
+80	70	build	model	model		2026-11-02T17:03:27Z	16.2	
+80	71	build	tool	cargo test	bash	2026-11-02T17:03:43Z	31.1	Adding slot candidate tests and running :: cd /home/ladvien/bevy_gooey_loop && cat >> tests/slots.rs <<'E' // ---- candidates: every slot that takes the carried item, from the moment it is lifted ---- //
+80	72	build	model	model		2026-11-02T17:04:14Z	6.1	
+80	73	build	tool	cargo test	bash	2026-11-02T17:04:20Z	16.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/slots.rs' t=open(p).read() i=t.index("// ---- candidates:") head,tail=t[:i],t[i:] tail=tail.replace
+80	74	build	model	model		2026-11-02T17:04:37Z	7.7	
+80	75	build	tool	shell	bash	2026-11-02T17:04:45Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 984,1022p tests/slots.rs; sed -n 123,155p tests/slots.rs
+80	76	build	model	model		2026-11-02T17:04:45Z	5.1	
+80	77	build	tool	cargo test	bash	2026-11-02T17:04:50Z	17.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/slots.rs' t=open(p).read() t=t.replace(""" let other = scene_of(&mut app, 3, vec![None, None, None]
+80	78	build	model	model		2026-11-02T17:05:08Z	6.1	
+80	79	build	tool	cargo test	bash	2026-11-02T17:05:14Z	43.2	cd /home/ladvien/bevy_gooey_loop && cp src/drag.rs /tmp/g52_drag.rs && python3 - <<'E' p='src/drag.rs' t=open(p).read() t=t.replace(" && !zone.contains::<Intera
+80	80	build	model	model		2026-11-02T17:05:57Z	5.8	
+80	81	prove	tool	phase mark	bash	2026-11-02T17:06:03Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; python3 - <<'E' t=open('docs/loop-log.md').read() i=t.find('## Iteration 
+80	82	prove	model	model		2026-11-02T17:06:03Z	3.8	
+80	83	prove	tool	cargo build	bash	2026-11-02T17:06:07Z	51.8	cd /home/ladvien/bevy_gooey_loop && sed -n 54p docs/media/README.md | cut -c760-1800; CARGO_BUILD_JOBS=4 cargo build --release --example inventory 2>&1 | tail -
+80	84	prove	model	model		2026-11-02T17:06:59Z	2.5	
+80	85	prove	tool	shell	bash	2026-11-02T17:07:01Z	3.9	mkdir -p /tmp/g52/frames && cd /home/ladvien/bevy_gooey_loop && G=$CARGO_TARGET_DIR/release/examples/inventory; GOOEY_KEYS='drag:b0>e1,drag:b0>e0' GOOEY_FRAMES=
+80	86	prove	model	model		2026-11-02T17:07:05Z	1.3	
+80	87	prove	tool	shell	bash	2026-11-02T17:07:06Z	0.0	cd /tmp/g52/frames && ls | head -3; magick montage f_0{10,14,18,22}.png -tile 2x2 -geometry 640x360+2+2 /tmp/g52/sheet.png 2>&1 | head -2; ls
+80	88	prove	model	model		2026-11-02T17:07:06Z	1.6	
+80	89	prove	tool	shell	bash	2026-11-02T17:07:08Z	0.3	cd /tmp/g52/frames && magick montage f_0008.png f_0012.png f_0016.png f_0024.png f_0030.png f_0036.png -tile 3x2 -geometry 640x360+2+2 /tmp/g52/sheet.png
+80	90	prove	tool	read files	read	2026-11-02T17:07:08Z	0.3	/tmp/g52/sheet.png
+80	91	prove	model	model		2026-11-02T17:07:08Z	1.2	
+80	92	prove	tool	shell	bash	2026-11-02T17:07:10Z	0.0	ls /tmp/g52/; cd /tmp/g52/frames && magick f_0016.png -crop 1030x520+130+100 +repage /tmp/g52/crop16.png; echo $?; ls /tmp/g52
+80	93	prove	model	model		2026-11-02T17:07:10Z	2.2	
+80	94	prove	tool	read files	read	2026-11-02T17:07:12Z	0.1	/tmp/g52/sheet.png
+80	95	prove	model	model		2026-11-02T17:07:12Z	32.4	
+80	96	prove	tool	shell	bash	2026-11-02T17:07:44Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "SlotName\|SlotCount\|SlotIcon" src/skin.rs | head -30
+80	97	prove	model	model		2026-11-02T17:07:44Z	1.6	
+80	98	prove	tool	shell	bash	2026-11-02T17:07:46Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2300,2335p src/skin.rs; sed -n 3335,3375p src/skin.rs; sed -n 3405,3430p src/skin.rs; grep -n "fn owner_of\|owns_part
+80	99	prove	model	model		2026-11-02T17:07:46Z	5.9	
+80	100	prove	tool	shell	bash	2026-11-02T17:07:52Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1940,1990p src/skin.rs
+80	101	prove	model	model		2026-11-02T17:07:52Z	8.0	
+80	102	prove	tool	shell	bash	2026-11-02T17:08:00Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 640,700p src/skin.rs
+80	103	prove	model	model		2026-11-02T17:08:00Z	16.6	
+80	104	prove	tool	cargo clippy	bash	2026-11-02T17:08:16Z	8.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='src/skin.rs' t=open(p).read() def rep(a,b): global t assert a in t,a t=t.replace(a,b) rep("use 
+80	105	prove	model	model		2026-11-02T17:08:24Z	2.5	
+80	106	prove	tool	cargo clippy	bash	2026-11-02T17:08:27Z	14.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/drag.rs' t=open(p).read() t=t.replace(" marked: Query<Entity, Or<(With<DropCandidate>, With<DropRefus
+80	107	prove	model	model		2026-11-02T17:08:41Z	17.0	
+80	108	prove	tool	shell	bash	2026-11-02T17:08:58Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "pub struct SlotRules" -B12 -A30 src/slots.rs
+80	109	prove	model	model		2026-11-02T17:08:58Z	15.1	
+80	110	prove	tool	cargo clippy	bash	2026-11-02T17:09:13Z	53.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/skin.rs' t=open(p).read() def rep(a,b): global t assert a in t,a t=t.replace(a,b) rep("use crate::dra
+80	111	prove	model	model		2026-11-02T17:10:06Z	3.1	
+80	112	prove	tool	shell	bash	2026-11-02T17:10:09Z	0.1	cd /tmp/g52/frames && magick f_0012.png -crop 1030x520+130+100 +repage /tmp/g52/c12.png; magick f_0016.png -crop 1030x520+130+100 +repage /tmp/g52/c16.png; ls /
+80	113	prove	tool	read files	read	2026-11-02T17:10:09Z	0.1	/tmp/g52/c12.png
+80	114	prove	tool	read files	read	2026-11-02T17:10:09Z	0.1	/tmp/g52/c16.png
+80	115	prove	model	model		2026-11-02T17:10:09Z	2.8	
+80	116	prove	tool	read files	read	2026-11-02T17:10:12Z	0.0	/tmp/g52/c12.png
+80	117	prove	tool	read files	read	2026-11-02T17:10:12Z	0.0	/tmp/g52/c16.png
+80	118	prove	model	model		2026-11-02T17:10:12Z	10.0	
+80	119	prove	tool	shell	bash	2026-11-02T17:10:22Z	1.0	cd /tmp/g52/frames && magick f_0002.png -crop 1030x520+130+100 +repage /tmp/g52/c02.png; sleep 1; ls /tmp/g52
+80	120	prove	tool	read files	read	2026-11-02T17:10:22Z	1.0	/tmp/g52/c02.png
+80	121	prove	model	model		2026-11-02T17:10:23Z	1.0	
+80	122	prove	tool	read files	read	2026-11-02T17:10:24Z	0.0	/tmp/g52/c02.png
+80	123	prove	model	model		2026-11-02T17:10:24Z	18.3	
+80	124	prove	tool	cargo test	bash	2026-11-02T17:10:43Z	47.3	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/slots.rs' t=open(p).read() i=t.index("#[test]\nfn a_candidate_slot_is_framed_in_the_accent") j=t.in
+80	125	prove	model	model		2026-11-02T17:11:30Z	4.4	
+80	126	prove	tool	cargo test	bash	2026-11-02T17:11:34Z	16.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/slots.rs' t=open(p).read() a=''' drag_to(&mut app, slots[1], slots[2]); assert_eq!(fill(&app, slots
+80	127	prove	model	model		2026-11-02T17:11:51Z	6.1	
+80	128	prove	tool	cargo test	bash	2026-11-02T17:11:57Z	17.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/drag.rs' t=open(p).read() t=t.replace('''fn sorted(mut entities''','''fn refusers(app: &mut App) ->
+80	129	prove	model	model		2026-11-02T17:12:14Z	7.1	
+80	130	prove	tool	clip record/render	bash	2026-11-02T17:12:21Z	0.7	cd /home/ladvien/bevy_gooey_loop && ls /tmp/g52/frames | wc -l; ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/tmp/g52/frames/f_*.png' -vf "tri
+80	131	prove	model	model		2026-11-02T17:12:22Z	0.9	
+80	132	prove	tool	read files	read	2026-11-02T17:12:23Z	0.1	/tmp/g52/gsheet.png
+80	133	prove	model	model		2026-11-02T17:12:23Z	10.9	
+80	134	prove	tool	cargo build	bash	2026-11-02T17:12:34Z	60.0	[launched bg_2] cd /home/ladvien/bevy_gooey_loop && G=$CARGO_TARGET_DIR/release/examples/inventory; cp $G /tmp/g52/inv_after && git stash -q && CARGO_BUILD_JOBS=4 cargo build -
+80	135	prove	model	model		2026-11-02T17:13:34Z	3.8	
+80	136	prove	tool	shell	bash	2026-11-02T17:13:38Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^## \|^### " docs/guide/inventory.md; sed -n 80,100p docs/guide/inventory.md; grep -n "slot-rules\|SlotRules" READM
+80	137	prove	model	model		2026-11-02T17:13:38Z	1.6	
+80	138	prove	tool	shell	bash	2026-11-02T17:13:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 100,106p docs/guide/inventory.md | cut -c1-700; grep -n "refused look\|drop mark" docs/guide/drag-drop.md | head -5; 
+80	139	prove	model	model		2026-11-02T17:13:39Z	4.7	
+80	140	prove	tool	read files	read	2026-11-02T17:13:44Z	0.0	README.md:122:raw
+80	141	prove	tool	read files	read	2026-11-02T17:13:44Z	0.0	docs/guide/inventory.md:100-106
+80	142	prove	tool	read files	read	2026-11-02T17:13:44Z	0.0	docs/guide/drag-drop.md:1-40
+80	143	prove	model	model		2026-11-02T17:13:44Z	5.1	
+80	144	prove	tool	edit files	edit	2026-11-02T17:13:49Z	0.0	Documenting candidates in guides, README, changelog :: [docs/guide/drag-drop.md#20B5] PUT >31: +- **The places that take it are marked at pick-up.** While a payload is lifted (pointer, keyboard or pad) every enabled
+80	145	prove	model	model		2026-11-02T17:13:49Z	5.3	
+80	146	prove	tool	read files	read	2026-11-02T17:13:54Z	0.0	README.md:122-122
+80	147	prove	model	model		2026-11-02T17:13:54Z	5.6	
+80	148	prove	tool	edit files	edit	2026-11-02T17:14:00Z	0.0	README line for slot hints :: [README.md#95C0] PUT 122.=122: + and a divider a drag or the keys move; `DragPayload(piece)` on a row and `DropTarget::<Piece>::new()` on a panel is drag and dr
+80	149	prove	model	model		2026-11-02T17:14:00Z	3.7	
+80	150	prove	tool	read files	read	2026-11-02T17:14:04Z	0.0	docs/guide/inventory.md:94-98
+80	151	prove	tool	read files	read	2026-11-02T17:14:04Z	0.0	docs/guide/inventory.md:108-112
+80	152	prove	model	model		2026-11-02T17:14:04Z	5.0	
+80	153	prove	tool	edit files	edit	2026-11-02T17:14:09Z	0.0	Updating inventory guide caption and looks :: [docs/guide/inventory.md#700F] PUT 96.=96: +![The inventory example with an Equipment row: the pointer lifts the Iron sword, every slot that takes it is framed 
+80	154	prove	tool	shell	bash	2026-11-02T17:14:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 54p docs/media/README.md | cut -c1-760; echo; sed -n 54p docs/media/README.md | cut -c760-1600; grep -n "src/drag.rs\
+80	155	prove	model	model		2026-11-02T17:14:09Z	6.1	
+80	156	prove	tool	read files	read	2026-11-02T17:14:15Z	0.0	docs/media/README.md:54-54
+80	157	prove	model	model		2026-11-02T17:14:15Z	6.5	
+80	158	prove	tool	edit files	edit	2026-11-02T17:14:21Z	0.0	Updating the slot-rules media row :: [docs/media/README.md#322A] PUT 54.=54: +| `slot-rules.gif` | slot rules and the pick-up hint (2.8 s, 800×404, 42 frames, 201 KB, the panel of `examples/invento
+80	159	prove	model	model		2026-11-02T17:14:21Z	0.9	
+80	160	prove	tool	read files	read	2026-11-02T17:14:22Z	0.0	docs/media/README.md:54:raw
+80	161	prove	model	model		2026-11-02T17:14:22Z	3.9	
+80	162	prove	tool	edit files	edit	2026-11-02T17:14:26Z	0.0	Updating the slot-rules media row :: [docs/media/README.md#322A] PUT 54.=54: +| `slot-rules.gif` | slot rules and the pick-up hint (2.8 s, 800×404, 42 frames, 201 KB, the panel of `examples/invento
+80	163	prove	model	model		2026-11-02T17:14:26Z	5.3	
+80	164	prove	tool	edit files	edit	2026-11-02T17:14:32Z	0.0	Changelog entry :: [CHANGELOG.md#?]
+80	165	prove	model	model		2026-11-02T17:14:32Z	3.7	
+80	166	prove	tool	edit files	edit	2026-11-02T17:14:35Z	0.0	Changelog entry :: [CHANGELOG.md#D253] PUT >3: + +### Added + +- `DropCandidate` and `DropRefusing` (public marker components): while a drag is lifted, by pointer, keyboard or pad
+80	167	prove	tool	shell	bash	2026-11-02T17:14:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^- \`src/drag.rs\`, carrying" AGENTS.md | cut -c1-30; grep -n "DragState\` (the one drag" AGENTS.md | cut -c1-30
+80	168	prove	model	model		2026-11-02T17:14:35Z	4.9	
+80	169	prove	tool	read files	read	2026-11-02T17:14:40Z	0.0	AGENTS.md:46-46
+80	170	prove	model	model		2026-11-02T17:14:40Z	4.8	
+80	171	prove	tool	edit files	edit	2026-11-02T17:14:45Z	0.0	AGENTS.md bullet for drop candidates :: [AGENTS.md#B4A5] PUT >45: +- `src/drag.rs`, drop candidates (iteration 52): `DropCandidate` and `DropRefusing` (public `Reflect` markers) are on every enabled (
+80	172	prove	model	model		2026-11-02T17:14:45Z	3.5	
+80	173	prove	tool	read files	read	2026-11-02T17:14:49Z	0.0	AGENTS.md:45:raw
+80	174	prove	model	model		2026-11-02T17:14:49Z	3.6	
+80	175	prove	tool	edit files	edit	2026-11-02T17:14:52Z	0.0	AGENTS.md bullet for drop candidates :: [AGENTS.md#B4A5] PUT >45: +- `src/drag.rs`, drop candidates (iteration 52): `DropCandidate` and `DropRefusing` (public `Reflect` markers) are on every enabled (
+80	176	prove	model	model		2026-11-02T17:14:52Z	10.7	
+80	177	prove	tool	shell	bash	2026-11-02T17:15:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/research/drop-candidates.md' t=open(p).read() i=t.index("- **C1.") j=t.index("## Pending index") new
+80	178	prove	bg	shell	bash	2026-11-02T17:12:36Z	146.4	bg_2 completed: G=$CARGO_TARGET_DIR/release/examples/inventory; cp $G /tmp/g52/inv_after && git stash -q && CARGO_BUILD_JOBS=4 cargo ...
+80	179	prove	model	model		2026-11-02T17:15:03Z	5.9	
+80	180	prove	tool	shell	bash	2026-11-02T17:15:09Z	60.0	[launched bg_3] cd /tmp/g52 && for i in 1 2 3 4 5 6 7 8 9 10; do for b in before after; do echo -n "$b "; GOOEY_FRAMES=200 timeout 100 /tmp/g52/inv_$b 2>&1 | grep -o "mean_ms [
+80	181	prove	model	model		2026-11-02T17:16:09Z	4.3	
+80	182	prove	tool	wait: other	wait	2026-11-02T17:16:13Z	48.7	{}
+80	183	prove	model	model		2026-11-02T17:17:02Z	6.0	
+80	184	prove	tool	clip record/render	bash	2026-11-02T17:17:08Z	6.5	mkdir -p /tmp/g52/inv && cd /home/ladvien/bevy_gooey_loop && GOOEY_FRAMES=205 GOOEY_KEY_EVERY=14 GOOEY_KEYS="tab,right,right,down,enter,pickup,right,right,right
+80	185	prove	model	model		2026-11-02T17:17:14Z	3.1	
+80	186	prove	tool	read files	read	2026-11-02T17:17:17Z	0.1	/tmp/g52/isheet.png
+80	187	prove	model	model		2026-11-02T17:17:18Z	5.7	
+80	188	prove	tool	shell	bash	2026-11-02T17:17:23Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g52/slot-rules.gif docs/media/slot-rules.gif && cp /tmp/g52/inventory.gif docs/media/inventory.gif && grep -rn "inve
+80	189	prove	tool	read files	read	2026-11-02T17:17:23Z	0.0	docs/media/README.md:53:raw
+80	190	prove	model	model		2026-11-02T17:17:23Z	4.6	
+80	191	prove	tool	shell	bash	2026-11-02T17:17:28Z	0.0	cd /tmp/g52/ig && magick i_092.png -resize 50% /tmp/g52/last.png; ls /tmp/g52/last.png
+80	192	prove	model	model		2026-11-02T17:17:28Z	0.9	
+80	193	prove	tool	read files	read	2026-11-02T17:17:29Z	0.0	/tmp/g52/last.png
+80	194	prove	model	model		2026-11-02T17:17:29Z	12.9	
+80	195	prove	tool	read files	read	2026-11-02T17:17:42Z	0.0	docs/guide/inventory.md:25:raw
+80	196	prove	model	model		2026-11-02T17:17:42Z	1.1	
+80	197	prove	tool	read files	read	2026-11-02T17:17:43Z	0.0	docs/guide/inventory.md:24-26
+80	198	prove	model	model		2026-11-02T17:17:43Z	3.1	
+80	199	prove	tool	edit files	edit	2026-11-02T17:17:46Z	0.0	Fixing inventory GIF captions :: [docs/guide/inventory.md#664A] PUT 25.=25: +![The inventory example: a Backpack of five columns, a Chest of four and an Equipment row of three in one panel, slo
+80	200	prove	tool	read files	read	2026-11-02T17:17:46Z	0.0	docs/media/README.md:53-53
+80	201	prove	model	model		2026-11-02T17:17:46Z	4.9	
+80	202	prove	tool	edit files	edit	2026-11-02T17:17:51Z	0.0	Updating inventory.gif media row :: [docs/media/README.md#8A1B] PUT 53.=53: +| `inventory.gif` | the inventory (4.6 s, 800×462, 92 frames, 162 KB, the panel of `examples/inventory`, a crop of the 
+80	203	prove	model	model		2026-11-02T17:17:51Z	10.3	
+80	204	gate	tool	phase mark	bash	2026-11-02T17:18:01Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate && cat > /tmp/g52/critique.md <<'E' # Critique, iteration 52 (drop candidat
+80	205	gate	model	model		2026-11-02T17:18:01Z	5.0	
+80	206	gate	tool	shell	bash	2026-11-02T17:18:06Z	0.0	cd /home/ladvien/bevy_gooey_loop && rm -f inventory.png && git branch --show-current && git log --oneline | head -4
+80	207	gate	model	model		2026-11-02T17:18:06Z	3.5	
+80	208	gate	tool	git	bash	2026-11-02T17:18:10Z	0.0	[launched bg_4] cd /home/ladvien/bevy_gooey_loop && git branch loop/iter-52 && /tmp/g52/gate.sh 2>&1 | tail -60
+80	209	gate	model	model		2026-11-02T17:18:10Z	2.9	
+80	210	gate	tool	wait: other	wait	2026-11-02T17:18:13Z	189.6	{}
+80	211	gate	model	model		2026-11-02T17:21:22Z	2.8	
+80	212	ship	tool	phase mark	bash	2026-11-02T17:21:25Z	27.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship; git push origin main 2>&1 | tail -2; python3 ~/.local/share/wiggum/steps.p
+80	213	ship	model	model		2026-11-02T17:21:52Z	2.7	
+80	214	ship	tool	shell	bash	2026-11-02T17:21:55Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "0\.31\.0" README.md Cargo.toml docs/guide/*.md src/lib.rs 2>/dev/null | cut -c1-160
+80	215	ship	model	model		2026-11-02T17:21:55Z	2.0	
+80	216	ship	tool	cargo publish	bash	2026-11-02T17:21:57Z	19.8	cd /home/ladvien/bevy_gooey_loop && sed -i '3s/0.31.0/0.31.1/' Cargo.toml && sed -i '0,/^## \[Unreleased\]$/s//## [Unreleased]\n\n## [0.31.1] - 2026-11-02/' CHA
+80	217	ship	model	model		2026-11-02T17:22:17Z	2.8	
+80	218	ship	tool	push gate	bash	2026-11-02T17:22:19Z	13.1	cd /home/ladvien/bevy_gooey_loop && git add Cargo.toml CHANGELOG.md && git commit -qm "release: v0.31.1" && cargo publish 2>&1 | tail -3; git tag -a v0.31.1 -m 
+80	219	ship	model	model		2026-11-02T17:22:33Z	17.0	
+80	220	log	tool	phase mark	bash	2026-11-02T17:22:50Z	1.7	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log && cat >> docs/loop-log.md <<'E' ## Iteration 52 — 2026-11-02 — Drop candida
+80	221	log	model	model		2026-11-02T17:22:51Z	7.8	
