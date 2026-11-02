@@ -59,6 +59,7 @@ fn spec(role: Role) -> Spec {
         | Role::ToastBody
         | Role::Prompts
         | Role::Prompt
+        | Role::ShortcutLegend
         | Role::List
         | Role::ListView
         | Role::ListRows

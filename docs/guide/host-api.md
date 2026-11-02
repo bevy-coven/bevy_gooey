@@ -13,7 +13,8 @@ crate root.
 | `UiScaleSettings` | `reference_short_side` and the player's `scale` (the `interface_size` row edits it) | a resource, read by `scale_with_window` |
 | `ToastSettings` | `anchor`, `max_visible`, `base_seconds`, `chars_per_second`, `duration_scale`, `fade_seconds` | a resource, read by `update_toasts` |
 | `BindingSettings` | `key_prompt`, `pad_prompt`, `chord_prompt`, `pad_style` (the `pad_style` row edits it), `cancel_key`, `cancel_button` | a resource, read by `update_bindings` and `bind_by_input` |
-| `ShortcutBadges` | `hold` (the modifiers that reveal the chords, Alt) and `delay_seconds` (0.3) | a resource, read by `update_shortcut_badges`; badges are `ShortcutBadge` children |
+| `ShortcutBadges` | `hold` (a `Reveal`: `Modifier(Modifiers)` (Alt), `Key(KeyCode)` or `Never`) and `delay_seconds` (0.3) | a resource, read by `update_shortcut_badges`; badges are `ShortcutBadge` children; `BadgesShown(bool)` says the overlay is up |
+| `ShortcutLegend` | `rows` of `LegendRow { chord, words }`: chords that act on nothing on screen | a resource, read by `update_shortcut_legend`; drawn as a `ShortcutLegendCard` while the overlay is up |
 | `GooeySkin::tones` | the host's own named colours (`tone(name)`, `tone_problems(..)`) | data on the skin; drawn by `Role::Tone(name)` |
 | `InputDevice` | `Keyboard` or `Pad`: the device the player used last, what a `prompt` shows | a resource, kept by `track_input_device`; write it to start on the pad |
 | `Meter` | `value` and `max` | a component on a `meter()` |

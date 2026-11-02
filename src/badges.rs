@@ -13,7 +13,7 @@ use crate::skin::Role;
 use crate::text::TextEditing;
 use crate::tooltip::Tooltip;
 
-/// Above a popover's panel (150), under a tooltip (200).
+/// Above a popover's panel (150), under a tooltip (200); the legend card is one above.
 const BADGE_Z: i32 = 160;
 
 /// What reveals the shortcut overlay: a modifier, a plain key, or nothing.
@@ -234,4 +234,126 @@ pub fn update_shortcut_badges(
             commands.spawn((badge(label), ChildOf(widget)));
         }
     }
+}
+
+/// One row of a [`ShortcutLegend`]: a chord and what it does.
+#[derive(Clone, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct LegendRow {
+    /// The chord, drawn as [`Shortcut::label`] on a keycap.
+    pub chord: Shortcut,
+    /// What it does, in the game's words.
+    pub words: String,
+}
+
+impl LegendRow {
+    /// A row: the chord and its words.
+    pub fn new(chord: Shortcut, words: impl Into<String>) -> Self {
+        Self {
+            chord,
+            words: words.into(),
+        }
+    }
+}
+
+/// Chords that act on nothing on screen: "undo", "save all", "toggle the grid". A shortcut with a
+/// widget is badged on it; a verb with none has nowhere to stand, so the host lists it here and
+/// the crate draws the rows as a card in the middle of the window for as long as the overlay is up
+/// ([`BadgesShown`]), over the badges, never taking the pointer or focus. An empty list draws
+/// nothing. Changing the rows while the card is up redraws it in that frame; the crate never runs
+/// a chord.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.insert_resource(ShortcutLegend {
+///     rows: vec![
+///         LegendRow::new(Shortcut::primary(KeyCode::KeyZ), "Undo"),
+///         LegendRow::new(Shortcut::new(Modifiers::SHIFT, KeyCode::KeyG), "Snap to grid"),
+///     ],
+/// });
+/// # }
+/// ```
+#[derive(Resource, Clone, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Resource, Default, Debug, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(default)
+)]
+pub struct ShortcutLegend {
+    /// The rows, top to bottom, in the host's order.
+    pub rows: Vec<LegendRow>,
+}
+
+/// The legend's card, a root node standing while the overlay is up and the [`ShortcutLegend`] has
+/// rows; it holds the rows it was built from, so a settled legend writes nothing and a host can
+/// read what is on show.
+#[derive(Component, Clone, Debug, PartialEq, Eq)]
+pub struct ShortcutLegendCard(pub Vec<LegendRow>);
+
+/// Shows and hides the [`ShortcutLegend`] card with the overlay. Reads one resource and writes
+/// nothing while the overlay is down and no card stands. Runs in [`crate::GooeySystems::Style`],
+/// after [`update_shortcut_badges`].
+pub fn update_shortcut_legend(
+    up: Option<Res<BadgesShown>>,
+    legend: Option<Res<ShortcutLegend>>,
+    cards: Query<(Entity, &ShortcutLegendCard)>,
+    mut commands: Commands,
+) {
+    let wanted: &[LegendRow] = match (&up, &legend) {
+        (Some(up), Some(legend)) if up.0 => &legend.rows,
+        _ => &[],
+    };
+    if !wanted.is_empty() && cards.iter().any(|(_, card)| card.0 == wanted) {
+        return;
+    }
+    for (card, _) in &cards {
+        commands.entity(card).despawn();
+    }
+    if wanted.is_empty() {
+        return;
+    }
+    commands
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                display: Display::Grid,
+                grid_template_columns: vec![GridTrack::auto(), GridTrack::auto()],
+                align_items: AlignItems::Center,
+                left: Val::Percent(50.0),
+                top: Val::Percent(50.0),
+                ..default()
+            },
+            UiTransform {
+                translation: Val2::percent(-50.0, -50.0),
+                ..default()
+            },
+            Role::ShortcutLegend,
+            ShortcutLegendCard(wanted.to_vec()),
+            Pickable::IGNORE,
+            GlobalZIndex(BADGE_Z + 1),
+        ))
+        .with_children(|card| {
+            for row in wanted {
+                card.spawn((
+                    Text::new(row.chord.label()),
+                    TextLayout::new(Justify::Center, LineBreak::NoWrap),
+                    Node {
+                        justify_self: JustifySelf::End,
+                        ..default()
+                    },
+                    Role::PromptKey,
+                    Pickable::IGNORE,
+                ));
+                card.spawn((
+                    Text::new(row.words.clone()),
+                    TextLayout::new(Justify::Left, LineBreak::NoWrap),
+                    Role::Label,
+                    Pickable::IGNORE,
+                ));
+            }
+        });
 }

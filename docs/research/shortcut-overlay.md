@@ -42,6 +42,16 @@ Holding the configured modifier spawns one badge per visible widget with a short
 
 A badge that reads like a keycap on the control, in the skin's own `PromptKey` look, 4.5:1 text and a 3:1 frame, small enough not to hide the control's label (it sits on the corner, not over the words).
 
+## Addendum (iteration 51, #36, G-32): a plain key, a readable "up", a legend
+
+The editor opens its overlay with `K`, a plain key. Sources: ExposeHK as above (the reveal is a held mode, whatever the key: its paper tested Ctrl, "the Control key"); Bevy 0.20 `ButtonInput<KeyCode>` (a held key is read as state each frame, so a release is seen wherever focus is); this crate's `TextEditing` and `Capturing`.
+
+- `ShortcutBadges::hold: Reveal { Modifier(Modifiers), Key(KeyCode), Never }`, default `Modifier(ALT)`. A `Key` is only a reveal with no modifier down (so Ctrl+K is the game's chord), no `TextEditing` (a typed "k") and no `Capturing` row (it binds the K). `Never` holds no time.
+- `BadgesShown(bool)`, a separate resource rather than a field of the settings: the settings are serde data a host writes, the flag is runtime state the crate writes (only on a change), and writing a field of `ShortcutBadges` every frame would flag the host's own change detection. True means the reveal was held for `delay_seconds`, whether or not a widget has a badge, because the legend's own rows have no widget.
+- `ShortcutLegend { rows: Vec<LegendRow> }`: the issue's optional legend. A card of keycaps and words in the middle of the window, the skin's opaque surface in an outline frame (a dialog card's), `GlobalZIndex` one over the badges, built only while shown. The centre is a design default: the legend is for empty ground, and a host with a busy centre changes where its interface stands.
+
+**Assumed decision (owner may override):** the field's type changes (`hold: Modifiers` to `hold: Reveal`) rather than gaining a second field; it is the issue's own shape, and a `From<Modifiers>` keeps the old literal one `.into()` away. Options: keep `hold` and add `key: Option<KeyCode>` (compiles unchanged but allows two reveals at once), or the enum (picked, one value says which).
+
 ## Pending index
 
 Blender's and Photoshop's hint behaviour are not in home-still.
