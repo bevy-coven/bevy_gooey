@@ -1246,6 +1246,9 @@ pub enum Role {
     /// The picker's saturation and value area: a frame, a focus ring, and inside it the colour's
     /// own hue and its gradients (data, not a skin colour).
     ColorArea,
+    /// A [`crate::viewport`]: an unfilled frame in [`GooeySkin::outline`], [`GooeySkin::focus_ring`]
+    /// while it has focus; what it shows is the host's.
+    Viewport,
     /// The ring on the picker's area, outside: the panel's colour, so the ring shows on any fill.
     ColorAreaMarker,
     /// The ring on the picker's area, inside: the text colour.
@@ -1746,6 +1749,7 @@ pub fn apply_skin(
                             | Role::SplitDivider
                             | Role::ColorSwatch
                             | Role::ColorArea
+                            | Role::Viewport
                     )
                 })
                 .map(|item| item.0),
@@ -2091,6 +2095,7 @@ fn restyle(
         | Role::ColorSwatchHalf
         | Role::ColorStripBox
         | Role::ColorArea
+        | Role::Viewport
         | Role::ColorAreaMarker
         | Role::ColorAreaMarkerInner
         | Role::ColorRail
@@ -2239,7 +2244,7 @@ fn restyle(
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         // The swatch and the area are framed in the outline and wear the ring when focused: what
         // they hold is any colour, so the frame is what a panel's 3:1 is measured on.
-        Role::ColorSwatch | Role::ColorArea => {
+        Role::ColorSwatch | Role::ColorArea | Role::Viewport => {
             Some(BorderColor::all(if look.focused == Some(entity) {
                 skin.focus_ring
             } else {
@@ -2632,6 +2637,10 @@ fn restyle(
             }
             // The plane fills the picker's width; the frame is the one line the pointer's position
             // is measured inside of.
+            Role::Viewport => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+            }
             Role::ColorArea => {
                 next.min_height = Val::Px(COLOR_AREA_HEIGHT_PX);
                 next.border = UiRect::all(Val::Px(line));

@@ -98,7 +98,7 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
 - `Dock(DockLayout)`, `PanelRegistry`, `DockPanel(id)`, `DockLayoutChanged { entity, layout }`, `DockPanelSkipped
   { entity, id, reason }` — the state on the entity `dock(layout)` returned (write a layout to load or reset it),
   the panels a game registers (`register(id, title, spawn)`), the marker on a panel's page, the event for each
-  change the player makes and the one for a panel left out. `DockLayout`, `DockSkip` and `DropTarget` are plain
+  change the player makes and the one for a panel left out. `DockLayout`, `DockSkip` and `DockDropTarget` are plain
   data (serde with the `serde` feature). See [docks](docks.md).
 
 Bevy's own types come through the crate so a host never adds a second copy: `Checked`, `SliderValue`,
