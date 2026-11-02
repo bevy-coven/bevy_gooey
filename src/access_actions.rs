@@ -11,6 +11,7 @@
 use accesskit::{Action, ActionData};
 use bevy::a11y::ActionRequest;
 use bevy::ecs::query::QueryData;
+use bevy::ecs::system::SystemParam;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::input_focus::{FocusCause, InputFocus, InputFocusVisible};
 use bevy::prelude::*;
@@ -111,6 +112,15 @@ fn folds(handles: &HandlesItem) -> bool {
     handles.header || handles.title || handles.item.is_some_and(|item| item.access().1)
 }
 
+/// What a request reads besides the widget: where it sits and the state of the strip or section
+/// it belongs to.
+#[derive(SystemParam)]
+pub(crate) struct Around<'w, 's> {
+    parents: Query<'w, 's, &'static ChildOf>,
+    lists: Query<'w, 's, &'static SelectedTab, With<TabList>>,
+    sections: Query<'w, 's, &'static SectionOpen>,
+}
+
 /// Does what an assistive technology asked of a widget, through the widget's own event. A request
 /// for a node that is gone, is no widget, or has not declared the action is ignored (a screen
 /// reader holds a tree one frame old). Runs in [`crate::GooeySystems::Navigate`].
@@ -119,9 +129,7 @@ pub(crate) fn act_on_requests(
     mut focus: ResMut<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     widgets: Query<Handles>,
-    parents: Query<&ChildOf>,
-    lists: Query<&SelectedTab, With<TabList>>,
-    sections: Query<&SectionOpen>,
+    around: Around,
     mut commands: Commands,
 ) {
     for request in requests.read() {
@@ -144,7 +152,7 @@ pub(crate) fn act_on_requests(
                 if handles.checkbox {
                     commands.trigger(ToggleChecked { entity });
                 } else if handles.tab {
-                    select_tab(entity, &parents, &lists, &mut commands);
+                    select_tab(entity, &around, &mut commands);
                 } else {
                     commands.trigger(Activate { entity });
                 }
@@ -205,10 +213,11 @@ pub(crate) fn act_on_requests(
             },
             Action::Expand | Action::Collapse => {
                 let open = if handles.header {
-                    parents
+                    around
+                        .parents
                         .get(entity)
                         .ok()
-                        .and_then(|parent| sections.get(parent.parent()).ok())
+                        .and_then(|parent| around.sections.get(parent.parent()).ok())
                         .is_some_and(|open| open.0)
                 } else {
                     handles.open
@@ -223,16 +232,12 @@ pub(crate) fn act_on_requests(
 }
 
 /// A tab clicked by an assistive technology: the message Bevy's own click observer sends its strip.
-fn select_tab(
-    tab: Entity,
-    parents: &Query<&ChildOf>,
-    lists: &Query<&SelectedTab, With<TabList>>,
-    commands: &mut Commands,
-) {
-    let Ok(strip) = parents.get(tab).map(ChildOf::parent) else {
+fn select_tab(tab: Entity, around: &Around, commands: &mut Commands) {
+    let Ok(strip) = around.parents.get(tab).map(ChildOf::parent) else {
         return;
     };
-    if lists
+    if around
+        .lists
         .get(strip)
         .is_ok_and(|selected| selected.0 != Some(tab))
     {
