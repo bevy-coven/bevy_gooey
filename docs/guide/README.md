@@ -56,6 +56,8 @@ per subject. The README links each bullet to its page.
   `ReflectMut` as `InspectorChange`.
 - [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
+- [Inventory](inventory.md) — `slot_grid(columns, items)`: a backpack or a chest of slots a game fills with
+  items (`SlotItems`), one tab stop, the arrows and Home and End, a choice, and moving items by drag, keyboard or pad.
 - [Radial menu](radial.md) — `radial(items, selected)`: a weapon wheel chosen by the direction of a stick, the pointer or
   the D-pad, one `ValueChange<usize>` while pointing and a final one for the choice, and release-to-select.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB

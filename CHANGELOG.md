@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- `slot_grid(columns, items)`: an inventory of square slots (a backpack, a hotbar, a chest). The contents are data, `SlotItems(Vec<Option<Slot>>)` on the grid (`Slot::new("Potion").count(3).icon(..).tooltip(..)`), and the grid follows them in the same frame, touching only the slots that changed. Each slot is Bevy's `Button` with the focus ring and a tooltip (an icon slot with none shows its name); the grid is one tab stop (`SlotCursor`, a roving `TabIndex`), the arrows and the D-pad walk it, Home and End go to the ends of a row and with Ctrl of the grid, and Enter, Space, South or a click send one final `ValueChange<usize>` for the slot, empty or not (focus moving onto a slot sends a non-final one). Moving an item is the crate's drag and drop: a filled slot is a `DragPayload<SlotRef>`, every slot a `DropTarget<SlotRef>`, so the pointer, Alt+M and the arrows and a pad all end in one `SlotMoved` on the grid it landed in (across grids too); `SlotMoved::apply` swaps the two slots. `model::slot_edge`. New roles `Role::SlotGrid`, `Slot`, `SlotEmpty`, `SlotName`, `SlotCount` and `SlotIcon`. Guide: `docs/guide/inventory.md`; `examples/inventory`.
+
+### Changed
+
+- A node that loses its `DragPayload` is no longer a drag source (its `DragSource` goes with it), so pressing it lifts nothing.
+
 ## [0.26.0] - 2026-11-02
 
 The first publish since 0.24.0 (crates.io refused 0.24.1 to 0.25.1 with a 429): 0.26.0 carries everything in 0.24.1 to 0.25.1 below.

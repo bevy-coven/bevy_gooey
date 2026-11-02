@@ -145,6 +145,47 @@ fn a_radial_is_a_spin_button_valued_with_the_highlighted_name_and_follows_the_ga
 }
 
 #[test]
+fn a_slot_is_a_button_named_by_its_item_with_its_count_and_an_empty_one_says_so() {
+    let mut app = app();
+    let image = app.world().resource::<AssetServer>().add(Image::default());
+    screen_with(
+        &mut app,
+        slot_grid(
+            3,
+            [
+                Some(Slot::new("Arrows").count(24)),
+                Some(Slot::new("Gem").icon(IconSource::Image(image))),
+                None,
+            ],
+        ),
+    );
+    let grid = app
+        .world_mut()
+        .query_filtered::<Entity, With<SlotGrid>>()
+        .single(app.world())
+        .unwrap();
+    let slots: Vec<Entity> = app.world().get::<Children>(grid).unwrap().iter().collect();
+    assert_eq!(node(&app, slots[0]).role(), Ak::Button);
+    assert_eq!(node(&app, slots[0]).label(), Some("Arrows"));
+    assert_eq!(node(&app, slots[0]).value(), Some("24"));
+    // A picture slot is named by its item too, though the name is not drawn.
+    assert_eq!(node(&app, slots[1]).label(), Some("Gem"));
+    assert_eq!(node(&app, slots[1]).value(), None);
+    assert_eq!(node(&app, slots[2]).label(), Some("Empty slot"));
+
+    // The names follow the data.
+    app.world_mut()
+        .get_mut::<SlotItems>(grid)
+        .unwrap()
+        .0
+        .swap(0, 2);
+    settle(&mut app);
+    assert_eq!(node(&app, slots[0]).label(), Some("Empty slot"));
+    assert_eq!(node(&app, slots[2]).label(), Some("Arrows"));
+    assert_eq!(node(&app, slots[2]).value(), Some("24"));
+}
+
+#[test]
 fn a_button_is_named_by_its_text_and_an_icon_button_by_its_tooltip() {
     let mut app = app();
     let root = app.world_mut().spawn(screen()).id();
