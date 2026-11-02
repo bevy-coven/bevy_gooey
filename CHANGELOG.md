@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-11-02
+
+Also the first publish since 0.24.0 if 0.25.0 is still unpublished (crates.io refused it with a 429): 0.25.1 carries everything in 0.24.1 to 0.25.0 below.
+
+### Fixed
+
+- `testing::click` reaches a UI drawn into an image in an app with no window (G-31, #35): the click goes to the render target of the camera that draws the widget (`ComputedUiTargetCamera`, then that camera's `RenderTarget`, a window's or an image's, divided by the target's scale factor), each of two cameras gets the clicks of what it draws, and with no primary window the click also gives focus to the widget under the pointer, which Bevy does only while a window exists. `press` and `type_text` no longer need a primary window. A widget no camera draws is a panic that names it.
+
 ## [0.25.0] - 2026-11-02
 
 The first publish since 0.24.0: it also carries 0.24.1 (the accessibility tree) and 0.24.2 (toast buttons), which crates.io refused with a 429.
