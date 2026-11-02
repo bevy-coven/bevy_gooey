@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- A meter that loses value drops its fill to the new value at once and leaves the lost length behind it as a trail (`Role::MeterTrail`, in the skin's `danger` colour, a second child of the track that `meter()` spawns) that holds for 0.45 s and drains at 1.5 bars a second; a meter that gains value eases up over about 0.24 s with no trail. A meter's first frame is its value. `MotionSettings::off()` makes both instant, `duration_scale` stretches them, and they run on real time. The maths is `model::meter_motion` (`MeterShown`, `METER_GAIN_TAU_SECONDS`, `METER_TRAIL_HOLD_SECONDS`, `METER_TRAIL_RATE`, `METER_SNAP`). The gallery's `GOOEY_KEYS` has `hit` and `heal`. Settled meters are skipped and write nothing.
+
+### Changed
+
+- `Role` has a new variant, `MeterTrail` (a breaking change for an exhaustive `match`), and a `Meter` now requires the new `MeterMotion` state component.
+- A `Meter` that rises is no longer at its new value in the same frame: the fill eases up over about 0.24 s (`MotionSettings::off()` restores the jump). A fall is still at once.
+
 ## [0.27.1] - 2026-11-02
 ### Added
 

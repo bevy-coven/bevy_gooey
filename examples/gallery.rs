@@ -6,7 +6,9 @@
 //!   stay inside it; **Escape** or the pad's B closes it, as Stay does, and either puts focus back
 //!   on Quit); focusing or hovering **Options** shows its tooltip beside it (`GOOEY_KEYS=down`
 //!   stages it).
-//! - The health meter drains and refills (`GOOEY_HEALTH=<value>` holds it at that value instead).
+//! - The health meter drains and refills (`GOOEY_HEALTH=<value>` holds it at that value instead;
+//!   `GOOEY_KEYS` tokens `hit` and `heal` take 40 off or add 40 and hold it there: a hit leaves a
+//!   trail of the lost length, a heal eases up).
 //!   Each `UiFeedback` is logged where a game would play a sound.
 //! - **Audio**, **Display** and **Controls** are the tabs of one settings widget: click a tab, Left
 //!   and Right on a focused tab, or Ctrl+PageDown and Ctrl+PageUp (on a pad, `LB` and `RB`) turn its
@@ -152,6 +154,8 @@ enum Staged {
     Drag,
     /// Let go.
     Drop,
+    /// Add this to the health meter's value and hold it there: a hit (negative) or a heal.
+    Health(f32),
     /// Spawn a short toast.
     Toast,
     /// Spawn an alert toast.
@@ -317,6 +321,8 @@ fn main() {
                         "grab" => Some(Staged::Grab),
                         "drag" => Some(Staged::Drag),
                         "drop" => Some(Staged::Drop),
+                        "hit" => Some(Staged::Health(-40.0)),
+                        "heal" => Some(Staged::Health(40.0)),
                         "toast" => Some(Staged::Toast),
                         "alert" => Some(Staged::Alert),
                         "long" => Some(Staged::Long),
@@ -762,6 +768,8 @@ fn stage_keys(
     slots: Query<(Entity, &UiGlobalTransform), With<SaveSlot>>,
     mut focus: ResMut<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
+    mut held: ResMut<HeldHealth>,
+    health: Query<&Meter, With<Health>>,
     mut commands: Commands,
     mut keys: MessageWriter<KeyboardInput>,
     mut pointer: MessageWriter<PointerInput>,
@@ -1008,6 +1016,11 @@ fn stage_keys(
                     GamepadButton::West,
                     value,
                 )));
+            }
+        }
+        Some(Staged::Health(by)) if state == ButtonState::Pressed => {
+            if let Ok(meter) = health.single() {
+                held.0 = Some((held.0.unwrap_or(meter.value) + by).clamp(0.0, meter.max));
             }
         }
         Some(Staged::Toast) if state == ButtonState::Pressed => {

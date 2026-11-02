@@ -105,6 +105,94 @@ pub fn meter_fraction(value: f32, max: f32) -> f32 {
     }
 }
 
+/// How fast a meter's fill rises to a higher value: the time constant, seconds, of an ease-out
+/// (95% of the way in three of them, so about 0.24 s).
+pub const METER_GAIN_TAU_SECONDS: f32 = 0.08;
+/// How long a meter's trail of lost length stands before it drains, seconds.
+pub const METER_TRAIL_HOLD_SECONDS: f32 = 0.45;
+/// How fast a meter's trail drains once its hold is over, in whole lengths of the bar a second.
+pub const METER_TRAIL_RATE: f32 = 1.5;
+/// A meter fraction this near its target is its target (under a device pixel on any bar).
+pub const METER_SNAP: f32 = 0.002;
+
+/// The fractions of its length a meter draws: the `fill` (the value) and the `trail` behind it, the
+/// length that was lost, which never falls below the fill. `hold` is how long the trail still
+/// stands before it drains.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MeterShown {
+    /// The fill's fraction of the bar, `0.0..=1.0`.
+    pub fill: f32,
+    /// The trail's fraction, `fill..=1.0`: the fill's length before a loss, draining to the fill.
+    pub trail: f32,
+    /// Seconds before the trail starts to drain.
+    pub hold: f32,
+}
+
+/// One step of a meter's motion: `shown` after `dt` seconds of a bar that now reads `target`
+/// (`0.0..=1.0`). A loss drops the fill to the target at once and leaves a trail where it was, held
+/// for [`METER_TRAIL_HOLD_SECONDS`] and then drained at [`METER_TRAIL_RATE`] (a second loss during
+/// the hold does not restart it); a gain eases the fill up with a time constant of
+/// [`METER_GAIN_TAU_SECONDS`] and raises the trail with it. Every length is multiplied by
+/// `duration_scale`; at zero (or any value that is not finite and above zero) the result is the
+/// target and no trail. A `target` that is not finite reads as empty.
+///
+/// ```
+/// # use bevy_gooey::{MeterShown, meter_motion};
+/// let full = MeterShown { fill: 1.0, trail: 1.0, hold: 0.0 };
+/// let hit = meter_motion(full, 0.6, 0.016, 1.0);
+/// assert_eq!(hit.fill, 0.6); // exact the frame it lands
+/// assert_eq!(hit.trail, 1.0); // the lost length lingers
+/// ```
+pub fn meter_motion(shown: MeterShown, target: f32, dt: f32, duration_scale: f32) -> MeterShown {
+    let target = if target.is_finite() {
+        target.clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    if !(duration_scale.is_finite() && duration_scale > 0.0) {
+        return MeterShown {
+            fill: target,
+            trail: target,
+            hold: 0.0,
+        };
+    }
+    let dt = if dt.is_finite() { dt.max(0.0) } else { 0.0 } / duration_scale;
+    let mut next = shown;
+    // A trail already standing keeps its own clock: only a loss with none starts one.
+    let mut fresh = false;
+    if target < shown.fill {
+        next.fill = target;
+        if shown.trail <= shown.fill {
+            next.trail = shown.fill;
+            next.hold = METER_TRAIL_HOLD_SECONDS;
+            fresh = true;
+        }
+    } else if target > shown.fill {
+        let step = 1.0 - (-dt / METER_GAIN_TAU_SECONDS).exp();
+        next.fill = shown.fill + (target - shown.fill) * step;
+        if target - next.fill < METER_SNAP {
+            next.fill = target;
+        }
+    }
+    next.trail = next.trail.max(next.fill);
+    if next.trail > next.fill {
+        if !fresh {
+            let over = dt - next.hold;
+            next.hold = (next.hold - dt).max(0.0);
+            if over > 0.0 {
+                next.trail = (next.trail - METER_TRAIL_RATE * over).max(next.fill);
+            }
+        }
+        if next.trail - next.fill < METER_SNAP {
+            next.trail = next.fill;
+        }
+    }
+    if next.trail <= next.fill {
+        next.hold = 0.0;
+    }
+    next
+}
+
 /// The `UiScale` that keeps an interface's share of a `width` × `height` window (logical px): the
 /// window's shorter side over `reference_short_side`, times the player's `scale`. `None` when there
 /// is no usable scale: a window with no size (minimised), or a reference or a scale that is not
@@ -2302,6 +2390,105 @@ mod tests {
         assert_eq!(meter_fraction(5.0, 0.0), 0.0);
         assert_eq!(meter_fraction(f32::NAN, 100.0), 0.0);
         assert_eq!(meter_fraction(5.0, f32::INFINITY), 0.0);
+    }
+
+    fn settled(at: f32) -> MeterShown {
+        MeterShown {
+            fill: at,
+            trail: at,
+            hold: 0.0,
+        }
+    }
+
+    #[test]
+    fn a_loss_is_exact_at_once_and_leaves_a_trail_that_holds_then_drains_to_the_fill() {
+        let mut s = meter_motion(settled(1.0), 0.4, 0.016, 1.0);
+        assert_eq!((s.fill, s.trail), (0.4, 1.0));
+        // Held: 0.4 s later the trail has not moved.
+        for _ in 0..25 {
+            s = meter_motion(s, 0.4, 0.016, 1.0);
+        }
+        assert_eq!(s.trail, 1.0);
+        // Then it only falls, never below the fill, and ends on it.
+        let mut last = s.trail;
+        let mut seconds = 0.0;
+        while s.trail > s.fill {
+            s = meter_motion(s, 0.4, 0.016, 1.0);
+            assert!(s.trail <= last && s.trail >= s.fill, "{s:?}");
+            last = s.trail;
+            seconds += 0.016;
+            assert!(seconds < 2.0, "never drained: {s:?}");
+        }
+        // 0.6 of the bar at 1.5 a second is 0.4 s, plus the hold's remainder.
+        assert!(seconds < 0.6, "{seconds}");
+        assert_eq!(s, settled(0.4));
+    }
+
+    #[test]
+    fn a_second_loss_in_the_hold_does_not_restart_it() {
+        let mut s = meter_motion(settled(1.0), 0.8, 0.016, 1.0);
+        for _ in 0..20 {
+            s = meter_motion(s, 0.8, 0.016, 1.0);
+        }
+        let hold_before = s.hold;
+        let s = meter_motion(s, 0.5, 0.016, 1.0);
+        assert_eq!(s.fill, 0.5);
+        assert_eq!(s.trail, 1.0, "the trail is still the first loss's start");
+        assert!((s.hold - (hold_before - 0.016)).abs() < 1e-5, "{s:?}");
+    }
+
+    #[test]
+    fn a_gain_eases_up_never_overshoots_and_leaves_no_trail() {
+        let mut s = settled(0.2);
+        let mut last = s.fill;
+        let mut first = true;
+        let mut seconds = 0.0;
+        while s.fill < 0.9 {
+            s = meter_motion(s, 0.9, 0.016, 1.0);
+            if first {
+                assert!(s.fill > 0.2 && s.fill < 0.9, "partway: {s:?}");
+                first = false;
+            }
+            assert!(s.fill > last && s.fill <= 0.9, "{s:?}");
+            assert_eq!(s.trail, s.fill, "a gain draws no trail");
+            last = s.fill;
+            seconds += 0.016;
+            assert!(seconds < 0.6, "too slow: {s:?}");
+        }
+        assert_eq!(s, settled(0.9));
+    }
+
+    #[test]
+    fn a_gain_during_a_trail_lifts_the_trail_with_the_fill() {
+        let mut s = meter_motion(settled(0.5), 0.2, 0.016, 1.0);
+        assert_eq!((s.fill, s.trail), (0.2, 0.5));
+        for _ in 0..200 {
+            s = meter_motion(s, 0.9, 0.016, 1.0);
+            assert!(s.trail >= s.fill);
+        }
+        assert_eq!(s, settled(0.9));
+    }
+
+    #[test]
+    fn the_scale_stretches_every_length_and_zero_is_the_target_at_once() {
+        // Scale 2: after 0.64 s (the hold is 0.9 s long) the trail has not moved.
+        let mut s = meter_motion(settled(1.0), 0.0, 0.0, 2.0);
+        for _ in 0..40 {
+            s = meter_motion(s, 0.0, 0.016, 2.0);
+        }
+        assert_eq!(s.trail, 1.0);
+        // Off, a bad scale and a bad clock are the target and no trail.
+        for scale in [0.0, -1.0, f32::NAN, f32::INFINITY] {
+            assert_eq!(meter_motion(settled(1.0), 0.3, 0.016, scale), settled(0.3));
+            assert_eq!(meter_motion(settled(0.1), 0.7, 0.016, scale), settled(0.7));
+        }
+        // A bad dt is a zero step, and a bad target is empty.
+        let s = meter_motion(settled(0.5), 0.9, f32::NAN, 1.0);
+        assert_eq!(s.fill, 0.5);
+        assert_eq!(
+            meter_motion(settled(0.5), f32::NAN, 0.016, 0.0),
+            settled(0.0)
+        );
     }
 
     #[test]

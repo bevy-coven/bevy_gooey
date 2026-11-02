@@ -133,6 +133,7 @@ fn spec(role: Role) -> Spec {
         | Role::SectionNote => Spec::Node,
         Role::ButtonText
         | Role::MeterFill
+        | Role::MeterTrail
         | Role::ToggleTrack
         | Role::ToggleKnob
         | Role::SliderHeader
