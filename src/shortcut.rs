@@ -131,7 +131,7 @@ impl BitOr for Modifiers {
 /// chord from a non-modifier key; [`Shortcut::is_valid`] checks one loaded from a file.
 ///
 /// It is also a component: put one on a widget (`(button("Save"), Shortcut::primary(KeyCode::KeyS))`)
-/// and [`ShortcutBadges`] shows its label on the widget while the player holds the modifier. The
+/// and [`crate::ShortcutBadges`] shows its label on the widget while the player holds the modifier. The
 /// crate never runs the chord: the game compares [`Shortcut::just_pressed`] itself.
 ///
 /// ```
