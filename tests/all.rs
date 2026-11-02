@@ -38,11 +38,13 @@ mod serde;
 mod shortcut;
 mod skin;
 mod split;
+mod status_bar;
 mod table;
 mod tabs;
 mod text;
 mod toast;
 mod tokens;
+mod toolbar;
 mod tooltip;
 mod tree;
 

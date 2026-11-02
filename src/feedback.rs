@@ -48,7 +48,7 @@ pub(crate) fn feedback_on_activate(
 ) {
     if matches!(
         roles.get(event.entity),
-        Ok(Role::Button | Role::MenuTitle | Role::MenuItem | Role::PaletteRow)
+        Ok(Role::Button | Role::StatusItem | Role::MenuTitle | Role::MenuItem | Role::PaletteRow)
     ) {
         out.write(UiFeedback {
             entity: event.entity,
@@ -79,7 +79,7 @@ pub(crate) fn feedback_on_choice(
     roles: Query<&Role>,
     mut out: MessageWriter<UiFeedback>,
 ) {
-    if matches!(roles.get(event.source), Ok(Role::Choice | Role::Tabs)) {
+    if matches!(roles.get(event.source), Ok(Role::Choice | Role::Tabs | Role::ToggleGroup)) {
         out.write(UiFeedback {
             entity: event.source,
             kind: UiFeedbackKind::Activate,
@@ -106,6 +106,8 @@ pub fn feedback_on_focus(
                 | Role::Choice
                 | Role::Binding
                 | Role::Tab
+                | Role::GroupOption
+                | Role::StatusItem
                 | Role::TextField
                 | Role::MenuTitle
                 | Role::MenuItem

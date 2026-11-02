@@ -1930,6 +1930,47 @@ pub fn progress_text(step: Option<(u32, u32, &str)>, eta_seconds: Option<f32>) -
     }
 }
 
+/// Which items of a bar stay when its room is short: `true` for each of `widths` that is shown.
+///
+/// Everything shows when it fits `room` (items `gap` apart). Otherwise `reserve` (the room a "More"
+/// button takes, its gap included, `0.0` for a bar with none) is kept free and items hide **lowest
+/// rank first, the later of equal ranks first**, until the rest fit. Hidden items take no room and
+/// no gap; non-finite or negative widths count as nothing.
+///
+/// ```
+/// use bevy_gooey::model::bar_fit;
+/// // Three 100 px items, 8 px apart: 316 px. In 300 px the last one hides.
+/// assert_eq!(bar_fit(&[100.0; 3], &[0; 3], 8.0, 300.0, 0.0), [true, true, false]);
+/// // The lowest rank goes first, wherever it stands.
+/// assert_eq!(bar_fit(&[100.0; 3], &[5, 1, 5], 8.0, 300.0, 0.0), [true, false, true]);
+/// ```
+pub fn bar_fit(widths: &[f32], ranks: &[u32], gap: f32, room: f32, reserve: f32) -> Vec<bool> {
+    let width = |w: f32| if w.is_finite() { w.max(0.0) } else { 0.0 };
+    let needed = |shown: &[bool]| {
+        let (sum, count) = widths
+            .iter()
+            .zip(shown)
+            .filter(|(_, shown)| **shown)
+            .fold((0.0, 0usize), |(sum, count), (w, _)| (sum + width(*w), count + 1));
+        sum + gap * count.saturating_sub(1) as f32
+    };
+    let mut shown = vec![true; widths.len()];
+    if needed(&shown) <= room {
+        return shown;
+    }
+    let room = room - reserve;
+    while needed(&shown) > room {
+        let next = (0..widths.len())
+            .filter(|&i| shown[i])
+            .min_by_key(|&i| (ranks.get(i).copied().unwrap_or(0), std::cmp::Reverse(i)));
+        match next {
+            Some(i) => shown[i] = false,
+            None => break,
+        }
+    }
+    shown
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2751,5 +2792,37 @@ mod tests {
         assert!(spinner_angle(SPINNER_PERIOD_SECS * 7.25) < std::f32::consts::TAU);
         assert!(spinner_angle(-0.1) >= 0.0);
         assert_eq!(spinner_angle(f32::NAN), 0.0);
+    }
+
+    #[test]
+    fn a_bar_hides_the_lowest_rank_first_and_the_later_of_equals() {
+        let widths = [100.0; 4];
+        // 4 × 100 + 3 × 10 = 430.
+        assert_eq!(bar_fit(&widths, &[0; 4], 10.0, 430.0, 0.0), [true; 4]);
+        assert_eq!(bar_fit(&widths, &[0; 4], 10.0, 429.0, 0.0), [true, true, true, false]);
+        assert_eq!(bar_fit(&widths, &[3, 1, 3, 2], 10.0, 429.0, 0.0), [true, false, true, true]);
+        assert_eq!(bar_fit(&widths, &[3, 1, 3, 2], 10.0, 300.0, 0.0), [true, false, true, false]);
+        // Equal ranks: the last goes first, then the one before it.
+        assert_eq!(bar_fit(&widths, &[0; 4], 10.0, 320.0, 0.0), [true, true, true, false]);
+        assert_eq!(bar_fit(&widths, &[0; 4], 10.0, 210.0, 0.0), [true, true, false, false]);
+    }
+
+    #[test]
+    fn a_bar_keeps_the_room_of_its_more_button_only_when_something_hides() {
+        let widths = [100.0; 3];
+        // 320 holds all three (316): the button is not needed, so its room is not kept.
+        assert_eq!(bar_fit(&widths, &[0; 3], 8.0, 320.0, 60.0), [true; 3]);
+        // 300 does not: 300 - 60 holds one item and a gap short of two (208), so only two fit.
+        assert_eq!(bar_fit(&widths, &[0; 3], 8.0, 300.0, 60.0), [true, true, false]);
+        assert_eq!(bar_fit(&widths, &[0; 3], 8.0, 250.0, 60.0), [true, false, false]);
+    }
+
+    #[test]
+    fn a_bar_with_no_room_or_odd_widths_hides_all_and_never_loops() {
+        assert_eq!(bar_fit(&[10.0, 10.0], &[0, 0], 4.0, -5.0, 0.0), [false, false]);
+        assert_eq!(bar_fit(&[f32::NAN, 10.0], &[0, 0], 4.0, 14.0, 0.0), [true, true]);
+        assert_eq!(bar_fit(&[], &[], 4.0, 0.0, 0.0), Vec::<bool>::new());
+        // A rank list shorter than the widths ranks the rest 0.
+        assert_eq!(bar_fit(&[50.0; 3], &[1], 0.0, 100.0, 0.0), [true, true, false]);
     }
 }

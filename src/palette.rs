@@ -15,9 +15,10 @@ use bevy::picking::events::PointerMove;
 use bevy::prelude::*;
 use bevy::text::{EditableText, TextEdit};
 use bevy::ui::{ComputedNode, InteractionDisabled, Selected, UiGlobalTransform};
-use bevy::ui_widgets::{Activate, TextInput};
+use bevy::ui_widgets::{Activate, TextInput, ValueChange};
 
 use crate::cancel::Cancel;
+use crate::choice::ChoiceValue;
 use crate::feedback::{UiFeedback, UiFeedbackKind};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, fuzzy_score, repeat_steps};
 use crate::shortcut::Shortcut;
@@ -164,6 +165,17 @@ pub struct CommandPalette {
     cap: usize,
     query: String,
     matches: Vec<usize>,
+    /// The options of the [`crate::select`] this palette chooses for, when it is not the game's
+    /// command palette: the list it matches, in place of [`CommandList`].
+    source: Option<PaletteSource>,
+}
+
+/// What a select's list is made of: its options as commands (the index is the id) and the row
+/// whose value the choice sets.
+#[derive(Clone, Debug)]
+struct PaletteSource {
+    options: Vec<PaletteCommand>,
+    select: Entity,
 }
 
 impl Default for CommandPalette {
@@ -174,6 +186,31 @@ impl Default for CommandPalette {
             cap: PALETTE_ROWS,
             query: String::new(),
             matches: Vec::new(),
+            source: None,
+        }
+    }
+}
+
+impl CommandPalette {
+    /// The state of the list a [`crate::select`] opens: `options` in their own order, the one at
+    /// `selected` lit, a choice of one sets `select`'s value.
+    /// Whether this is the list of the select `select`.
+    pub(crate) fn is_for(&self, select: Entity) -> bool {
+        self.source.as_ref().is_some_and(|source| source.select == select)
+    }
+
+    pub(crate) fn for_select(select: Entity, options: &[String], selected: usize) -> Self {
+        Self {
+            selected,
+            source: Some(PaletteSource {
+                options: options
+                    .iter()
+                    .enumerate()
+                    .map(|(index, label)| PaletteCommand::new(index.to_string(), label.clone()))
+                    .collect(),
+                select,
+            }),
+            ..Self::default()
         }
     }
 }
@@ -313,6 +350,26 @@ fn run_selected(
     history: &mut PaletteHistory,
     commands: &mut Commands,
 ) -> bool {
+    if let Some(source) = &state.source {
+        // A select's list: the choice is the option's index, sent as the row's own change unless
+        // it is the option the row already has. The palette goes first so focus is back on the row.
+        let Some(&index) = state.matches.get(state.selected) else {
+            return false;
+        };
+        let select = source.select;
+        commands.entity(palette).despawn();
+        commands.queue(move |world: &mut World| {
+            let now = world.get::<ChoiceValue>(select).map(|value| value.0);
+            if now.is_some_and(|now| now != index) {
+                world.trigger(ValueChange {
+                    source: select,
+                    value: index,
+                    is_final: true,
+                });
+            }
+        });
+        return true;
+    }
     let Some(command) = state.selected_command(list) else {
         return false;
     };
@@ -438,7 +495,10 @@ pub fn palette_by_input(
 /// The commands that match `query`, as indices into `list`, in the order a palette lists them:
 /// recently run first (history order), then by score, best first, then by label. An empty query
 /// matches everything and orders by recency, then by label.
-fn rank(list: &[PaletteCommand], history: &[String], query: &str) -> Vec<usize> {
+///
+/// With `ordered` (a select's options) ties and the empty query keep the list's own order, not the
+/// alphabet's: the player knows that order.
+fn rank(list: &[PaletteCommand], history: &[String], query: &str, ordered: bool) -> Vec<usize> {
     let labels: Vec<String> = list.iter().map(PaletteCommand::label).collect();
     let keys: Vec<String> = labels.iter().map(|label| label.to_lowercase()).collect();
     let mut scored: Vec<(usize, u32, usize)> = labels
@@ -463,7 +523,13 @@ fn rank(list: &[PaletteCommand], history: &[String], query: &str) -> Vec<usize> 
                     std::cmp::Ordering::Equal
                 }
             })
-            .then_with(|| keys[a.0].cmp(&keys[b.0]))
+            .then_with(|| {
+                if ordered {
+                    a.0.cmp(&b.0)
+                } else {
+                    keys[a.0].cmp(&keys[b.0])
+                }
+            })
     });
     scored.into_iter().map(|(index, ..)| index).collect()
 }
@@ -593,6 +659,11 @@ pub fn update_palette(
         // Our own writes below are not a change for the next run: only the player's (a lit row
         // moved, the field edited), the game's (the list) and the layout's are.
         let state = state.bypass_change_detection();
+        // A select's list matches its own options and has no recents; the game's palette the
+        // command list.
+        let own = state.source.clone();
+        let items: &[PaletteCommand] = own.as_ref().map_or(&list.0, |own| &own.options);
+        let recents: &[String] = if own.is_some() { &[] } else { &history.0 };
 
         // How many rows the last layout had room for, measured from the rows it showed.
         let shown: Vec<f32> = rows
@@ -629,7 +700,7 @@ pub fn update_palette(
             );
         }
 
-        let matches = rank(&list.0, &history.0, &query);
+        let matches = rank(items, recents, &query, own.is_some());
         if query != state.query {
             state.query = query;
             state.selected = 0;
@@ -654,7 +725,7 @@ pub fn update_palette(
             let command = state
                 .matches
                 .get(index)
-                .and_then(|&i| list.0.get(i))
+                .and_then(|&i| items.get(i))
                 .filter(|_| part.slot < cap);
             let display = if command.is_some() {
                 Display::Flex
