@@ -1720,3 +1720,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. Drag and drop: a keyboard pick-up and drop mode, a snap-back for a refused drop, auto-scroll of a list under a drag.
 4. Shortcut overlay: badges for menu items and `icon_button`s, `keyboard_shortcut` on a widget's node.
 5. Toast: a measure that grows with the number of buttons, or a second row for three or more actions.
+
+**Gate and ship.** `CARGO_BUILD_JOBS=4`, merged tree (work was committed straight on `main`, no `loop/iter-43` branch): clippy, `cargo test --all-features --lib --tests` (693 in the one `all` executable), `--doc` (185), `cargo check --lib`, wasm32 and `cargo doc -D warnings` green; `cargo fmt --check` failed on one line of the new test, fixed with `cargo fmt`, the toast tests rerun (17 ok). Pushed `6346286`. **`cargo publish` of v0.24.2 refused with 429 again** (so v0.24.1 and v0.24.2 are both unpublished; crates.io shows 0.24.0); tag `v0.24.2` pushed; not retried, the next pass publishes (its audit will say `missing: release`). #34 closed by `Fixes #34`, with a comment and the `assumed-decision` label; a move-the-pin comment is on bevy_grimoire#233.
+
+**Cleanup.** Removed this pass's own: `/tmp/g43` (captures, binaries, gate script and log), `/tmp/gooey-notifications`, `/tmp/notifications.png`; no baseline worktree was made. `df -h /home` 139 G free (97 %, the shared target is not mine to clean). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (clean, detached at old commits).
