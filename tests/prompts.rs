@@ -523,18 +523,36 @@ const ANCHORS: [PromptsAnchor; 6] = [
 fn assert_anchored(app: &App, legend: Entity, anchor: PromptsAnchor, width: f32, height: f32) {
     let bar = rect(app, legend);
     let label = format!("{anchor:?} at {width}x{height}: {bar:?}");
-    assert!(bar.width() > 0.0 && bar.min.x >= 0.0 && bar.max.x <= width, "{label}");
+    assert!(
+        bar.width() > 0.0 && bar.min.x >= 0.0 && bar.max.x <= width,
+        "{label}"
+    );
     if anchor.is_centred() {
-        assert!((bar.center().x - width / 2.0).abs() <= 1.0, "centred: {label}");
+        assert!(
+            (bar.center().x - width / 2.0).abs() <= 1.0,
+            "centred: {label}"
+        );
     } else if anchor.at_right() {
-        assert!((width - bar.max.x - 0.05 * width).abs() <= 1.0, "right edge: {label}");
+        assert!(
+            (width - bar.max.x - 0.05 * width).abs() <= 1.0,
+            "right edge: {label}"
+        );
     } else {
-        assert!((bar.min.x - 0.05 * width).abs() <= 1.0, "left edge: {label}");
+        assert!(
+            (bar.min.x - 0.05 * width).abs() <= 1.0,
+            "left edge: {label}"
+        );
     }
     if anchor.at_bottom() {
-        assert!((height - bar.max.y - 0.05 * height).abs() <= 1.0, "bottom edge: {label}");
+        assert!(
+            (height - bar.max.y - 0.05 * height).abs() <= 1.0,
+            "bottom edge: {label}"
+        );
     } else {
-        assert!((bar.min.y - 0.05 * height).abs() <= 1.0, "top edge: {label}");
+        assert!(
+            (bar.min.y - 0.05 * height).abs() <= 1.0,
+            "top edge: {label}"
+        );
     }
 }
 
@@ -622,7 +640,10 @@ fn a_dialog_legend_with_the_same_anchor_stands_where_the_screens_does() {
     let legend = world
         .spawn((
             prompts_at(PromptsAnchor::BottomRight),
-            children![prompt("Select", Prompt::SELECT), prompt("Back", Prompt::BACK)],
+            children![
+                prompt("Select", Prompt::SELECT),
+                prompt("Back", Prompt::BACK)
+            ],
         ))
         .id();
     world

@@ -165,7 +165,10 @@ pub enum PromptsAnchor {
 impl PromptsAnchor {
     /// The legend stands on the bottom edge.
     pub const fn at_bottom(self) -> bool {
-        matches!(self, Self::BottomLeft | Self::BottomCenter | Self::BottomRight)
+        matches!(
+            self,
+            Self::BottomLeft | Self::BottomCenter | Self::BottomRight
+        )
     }
 
     /// The legend stands in the middle of its edge, not in a corner.
@@ -193,7 +196,9 @@ impl PromptsAnchor {
 /// way to centre an absolute node that is its content's width (a `left` and a `right` together
 /// would stretch it). Runs in [`crate::GooeySystems::Style`], before [`crate::apply_skin`], in the
 /// frame a legend or its anchor is added or changed, and writes only a difference.
-pub fn place_prompts(mut legends: Query<(&PromptsAnchor, &mut UiTransform), Changed<PromptsAnchor>>) {
+pub fn place_prompts(
+    mut legends: Query<(&PromptsAnchor, &mut UiTransform), Changed<PromptsAnchor>>,
+) {
     for (anchor, mut transform) in &mut legends {
         let wanted = anchor.translation();
         if *transform != wanted {
