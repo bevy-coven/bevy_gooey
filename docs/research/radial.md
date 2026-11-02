@@ -29,7 +29,7 @@ The Sims builds its whole interaction on the ring: the pie menu shows every verb
 
 ## Parameters
 
-`RADIAL_STICK_PUSH` = 0.5 (a deliberate push, the same half as `STICK_PUSH`), `RADIAL_DEAD_ZONE` = 0.25 of the disc's radius for a pointer, disc diameter 26 text sizes, the ring at 40% of the diameter, so a wheel follows `text_scale` and the player's interface size. Design defaults; the guide's "6–10 options" is the stated bound, `tests/radial.rs` lays out 8 labelled items without overlap and 10 without any item leaving the disc.
+`RADIAL_STICK_PUSH` = 0.5 (a deliberate push, the same half as `STICK_PUSH`), `RADIAL_DEAD_ZONE` = 0.25 of the disc's radius for a pointer, disc diameter 26 text sizes, the ring at 36% of the diameter, so a wheel follows `text_scale` and the player's interface size. Design defaults; the guide's "6–10 options" is the stated bound, `tests/radial.rs` lays out 8 labelled items without overlap and 10 without any item leaving the disc.
 
 ## Validation targets
 

@@ -12,6 +12,7 @@ It is on while a screen reader is connected. Bevy's `AccessibilityPlugin` (in `D
 | `toggle` | CheckBox | its label | checked or not |
 | `slider` | Slider | its label | the words ("70%"), the number and its range |
 | `choice`, `select`, the option rows | SpinButton | its label | the selected option's words |
+| `radial` | SpinButton | the host's `AccessibleLabel` | the highlighted item's name |
 | `binding` | Button | its label | the key's name ("Space"), the prompt while it waits |
 | `text_input`, `number_field`, `vec_field` | TextInput | the row's label | the text |
 | `text_area` | MultilineTextInput | the row's label | the text |
