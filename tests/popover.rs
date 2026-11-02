@@ -817,8 +817,10 @@ fn a_popover_stays_inside_the_window_at_large_text_and_on_every_side() {
 #[test]
 fn a_popover_is_drawn_only_once_it_stands_at_its_final_size_and_place() {
     // Bevy lays a new node's text out a frame late: a card drawn in its first frame is as narrow
-    // as its padding, at the place its width moves it from.
+    // as its padding, at the place its width moves it from. Motion is off: a slide is also a
+    // panel not yet at its final place, and this is about the late text.
     let mut app = app();
+    app.insert_resource(MotionSettings::off());
     let anchor = anchor_at(&mut app, "Edit", Val::Px(1150.0), Val::Px(300.0));
     settle(&mut app);
     let panel = open(&mut app, anchor, Placement::Below);

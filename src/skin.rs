@@ -11,6 +11,7 @@ use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
+use crate::PopoverSlide;
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
@@ -1482,7 +1483,7 @@ type Styled = (
         &'static mut Popover,
         &'static mut BoxShadow,
         Option<&'static TooltipBox>,
-        Option<&'static PopoverPanel>,
+        Option<(&'static PopoverPanel, Option<&'static PopoverSlide>)>,
     )>,
     Option<&'static ComputedUiRenderTargetInfo>,
     Option<&'static mut TextCursorStyle>,
@@ -1645,6 +1646,7 @@ type Restyle = (
         Or<(
             Added<MenuOpen>,
             Added<PopoverPanel>,
+            Changed<PopoverSlide>,
             Added<MenuMarked>,
             Changed<TableRow>,
             Changed<FieldProblem>,
@@ -3472,8 +3474,11 @@ fn restyle(
             let gap = skin.gap + skin.pad() + line * 2.0;
             tooltip_placement(gap, skin.gap, tip.in_row)
         } else if let Some(panel) = panel {
-            // Half a gap off its anchor, and a gap from the window's edge.
-            placement_of(panel.placement, skin.gap * 0.5 + line, skin.gap)
+            // Half a gap off its anchor, and a gap from the window's edge; while it opens it
+            // starts that much closer to the anchor ([`PopoverSlide`]).
+            let (panel, slide) = panel;
+            let reach = slide.map_or(0.0, PopoverSlide::reach);
+            placement_of(panel.placement, skin.gap * 0.5 + line - reach, skin.gap)
         } else {
             return;
         };

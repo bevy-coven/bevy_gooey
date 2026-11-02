@@ -4,8 +4,8 @@
 
 use bevy::prelude::{GamepadButton, KeyCode, MouseButton};
 use bevy_gooey::{
-    Binding, BindingSettings, Density, DockLayout, DockZone, GooeySkin, PadStyle, SkinPreset,
-    SplitAxis, SplitFraction, SplitMin, ToastAnchor, ToastSettings, UiScaleSettings,
+    Binding, BindingSettings, Density, DockLayout, DockZone, GooeySkin, MotionSettings, PadStyle,
+    SkinPreset, SplitAxis, SplitFraction, SplitMin, ToastAnchor, ToastSettings, UiScaleSettings,
 };
 
 #[test]
@@ -193,6 +193,18 @@ fn a_dock_layout_round_trips_through_ron_and_a_short_file_reads()
     assert_eq!(
         ron::from_str::<DockZone>(&ron::to_string(&DockZone::Left)?)?,
         DockZone::Left
+    );
+    Ok(())
+}
+
+#[test]
+fn the_reduce_motion_setting_round_trips_and_an_empty_file_is_full_motion()
+-> Result<(), Box<dyn std::error::Error>> {
+    let off = ron::to_string(&MotionSettings::off())?;
+    assert!(ron::from_str::<MotionSettings>(&off)?.is_off());
+    assert_eq!(
+        ron::from_str::<MotionSettings>("()")?,
+        MotionSettings::default()
     );
     Ok(())
 }

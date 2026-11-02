@@ -1984,6 +1984,35 @@ pub fn spinner_angle(elapsed: f32) -> f32 {
     turns * std::f32::consts::TAU
 }
 
+/// How far a dialog's card rises into place, logical px.
+pub const DIALOG_SLIDE_PX: f32 = 12.0;
+/// How long a dialog's card takes to rise into place, seconds.
+pub const DIALOG_SLIDE_SECONDS: f32 = 0.18;
+/// How far a popover (a menu, a select list, a colour picker) slides from its anchor, logical px.
+pub const POPOVER_SLIDE_PX: f32 = 6.0;
+/// How long a popover takes to slide into place, seconds.
+pub const POPOVER_SLIDE_SECONDS: f32 = 0.12;
+
+/// How far a motion that takes `seconds` has come `age` seconds in, from 0 to 1, on a cubic
+/// ease-out (`1 − (1 − t)³`): it starts quickly and settles, which NN/g gives as the easing of
+/// something that arrives. An `age` below nothing is 0, one past `seconds` is 1, and a length that is
+/// not positive (or not finite) is over already.
+///
+/// ```
+/// use bevy_gooey::model::ease_out;
+/// assert_eq!(ease_out(0.0, 0.2), 0.0);
+/// assert_eq!(ease_out(0.2, 0.2), 1.0);
+/// assert!(ease_out(0.1, 0.2) > 0.8);
+/// assert_eq!(ease_out(0.1, 0.0), 1.0);
+/// ```
+pub fn ease_out(age: f32, seconds: f32) -> f32 {
+    if seconds.is_nan() || seconds <= 0.0 || seconds.is_infinite() || age.is_nan() {
+        return 1.0;
+    }
+    let left = 1.0 - (age / seconds).clamp(0.0, 1.0);
+    1.0 - left * left * left
+}
+
 /// How long is left, in words: "about 20 s left", "about 3 min left", "about 1 h 5 min left". Under
 /// ten seconds it counts the seconds, to a minute it rounds to five, to an hour to the minute and
 /// past one to five minutes, because an estimate never has the precision it prints. A time that is
@@ -3054,6 +3083,20 @@ mod tests {
         assert_eq!(eta_words(3900.0), "about 1 h 5 min left");
         assert_eq!(eta_words(f32::NAN), "");
         assert_eq!(eta_words(-3.0), "");
+    }
+
+    #[test]
+    fn an_ease_out_rises_monotonically_and_is_clamped() {
+        let mut last = -1.0;
+        for step in 0..=20 {
+            let now = ease_out(step as f32 * 0.01, 0.2);
+            assert!(now > last, "step {step}: {now} after {last}");
+            last = now;
+        }
+        assert_eq!(ease_out(-1.0, 0.2), 0.0);
+        assert_eq!(ease_out(9.0, 0.2), 1.0);
+        assert_eq!(ease_out(0.1, f32::NAN), 1.0);
+        assert_eq!(ease_out(f32::NAN, 0.2), 1.0);
     }
 
     #[test]
