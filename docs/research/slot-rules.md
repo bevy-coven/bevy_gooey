@@ -34,7 +34,7 @@ A rule that takes nothing refuses every drop onto that slot (one `DropRefused`, 
 
 ## Deviations
 
-No rule-aware `SlotMoved::apply` (a refused move never becomes a `SlotMoved`, so it needs none). No "valid slot" green on every slot at the moment of pick-up (Path of Exile lights the matching slots when an item is picked up): the crate marks the one slot under the pointer or the carry, a design default that keeps the drag a single mark. The rule's removal is unsupported (`SlotRules` is required by `SlotGrid`; overwrite it).
+No rule-aware `SlotMoved::apply` (a refused move never becomes a `SlotMoved`, so it needs none). No "valid slot" green on every slot at the moment of pick-up (the PoE thread shows it does not: its green and red are for the slot under the pointer, and a player asks for more; see `drop-candidates.md`): the crate marks the one slot under the pointer or the carry, a design default that keeps the drag a single mark. The rule's removal is unsupported (`SlotRules` is required by `SlotGrid`; overwrite it).
 
 ## What great looks like
 
