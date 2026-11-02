@@ -10,6 +10,8 @@ per subject. The README links each bullet to its page.
   region that keeps the arrow keys for the host.
 - [Drag and drop](drag-drop.md) — `DragPayload<T>`, `DropTarget<T>`, `Dropped`, `DropRefused` and `DroppedOnWorld`: a
   typed payload, a ghost, a mark that says yes or no before the pointer is let go, and Escape.
+- [Accessibility](accessibility.md) — what a screen reader is told of every widget: role, name, value and state from the
+  words on screen, `AccessibleLabel` for a bar with no label, and what is hidden.
 - [Navigation](navigation.md) — what moves focus, what shows the ring, and what an open dialog holds.
 - [Settings controls](controls.md) — `toggle`, `choice` and `slider`: one bundle each, Bevy's own widget
   at the root, and `ValueChange` once per change.
