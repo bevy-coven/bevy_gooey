@@ -10,6 +10,7 @@ use bevy::prelude::*;
 use bevy::ui::InteractionDisabled;
 use bevy::ui_widgets::{Activate, ValueChange};
 
+use crate::drag::DragState;
 use crate::feedback::{UiFeedback, UiFeedbackKind};
 use crate::model::{PadStyle, is_modifier_key, key_name, mouse_name, pad_name};
 use crate::nav::show_focus;
@@ -196,12 +197,19 @@ impl BindingSettings {
     }
 }
 
-/// Run condition: no [`crate::binding`] row waits for a press. The crate's systems that read keys
-/// and pad buttons ([`crate::navigate_by_input`], [`crate::gamepad_select`],
-/// [`crate::gamepad_adjust`], [`crate::cancel_by_input`], [`crate::page_lists`],
-/// [`crate::step_tabs`]) run under it, so the arrow or button that is the new binding never also
-/// moves focus. A host that registers those systems itself adds it to them.
-pub fn not_capturing(waiting: Query<(), With<Capturing>>) -> bool {
+/// Run condition: no [`crate::binding`] row waits for a press and no payload is carried from the
+/// keyboard or a pad ([`crate::DragSettings`]). The crate's systems that read keys and pad buttons
+/// ([`crate::navigate_by_input`], [`crate::gamepad_select`], [`crate::gamepad_adjust`],
+/// [`crate::cancel_by_input`], [`crate::page_lists`], [`crate::step_tabs`]) run under it, so the
+/// arrow or button that is the new binding, or that steers a carried payload, never also moves
+/// focus. A host that registers those systems itself adds it to them.
+pub fn not_capturing(waiting: Query<(), With<Capturing>>, drag: Option<Res<DragState>>) -> bool {
+    waiting.is_empty() && !drag.is_some_and(|drag| drag.carried_by_key())
+}
+
+/// Run condition: no [`crate::binding`] row waits for a press. [`not_capturing`] without the
+/// carried payload, for the systems that are what carries it.
+pub(crate) fn no_row_waits(waiting: Query<(), With<Capturing>>) -> bool {
     waiting.is_empty()
 }
 

@@ -3,6 +3,9 @@
 
 use bevy::camera::NormalizedRenderTarget;
 use bevy::input::ButtonState;
+use bevy::input::gamepad::{
+    GamepadConnection, GamepadConnectionEvent, RawGamepadButtonChangedEvent, RawGamepadEvent,
+};
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
@@ -27,6 +30,7 @@ struct Heard {
     refused: Vec<(Entity, Piece)>,
     world: Vec<(Piece, Vec2)>,
     cancels: u32,
+    activations: u32,
 }
 
 struct Scene {
@@ -559,4 +563,379 @@ fn letting_go_over_a_world_sprite_is_the_world_too() {
     assert_eq!(heard.world.len(), 1, "one DroppedOnWorld over a sprite");
     assert!((heard.world[0].1 - over).length() < 1.0);
     assert!(heard.dropped.is_empty() && heard.refused.is_empty());
+}
+
+// ---- Carrying without a pointer ------------------------------------------------------------
+
+/// Focuses `entity` as the arrow keys would.
+fn focus(app: &mut App, entity: Entity) {
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(entity, bevy::input_focus::FocusCause::Navigated);
+    settle(app);
+}
+
+fn tap(app: &mut App, key_code: KeyCode) {
+    key(app, key_code, ButtonState::Pressed);
+    key(app, key_code, ButtonState::Released);
+}
+
+/// A chord as a keyboard sends it: the modifier is down a frame before the key.
+fn chord(app: &mut App, modifier: KeyCode, key_code: KeyCode) {
+    key(app, modifier, ButtonState::Pressed);
+    tap(app, key_code);
+    key(app, modifier, ButtonState::Released);
+}
+
+/// The default pick-up key.
+fn pick_up(app: &mut App) {
+    chord(app, KeyCode::AltLeft, KeyCode::KeyM);
+}
+
+fn plug_in_pad(app: &mut App) -> Entity {
+    let pad = app.world_mut().spawn_empty().id();
+    app.world_mut().write_message(GamepadConnectionEvent::new(
+        pad,
+        GamepadConnection::Connected {
+            name: "Test pad".into(),
+            vendor_id: None,
+            product_id: None,
+        },
+    ));
+    app.update();
+    pad
+}
+
+fn pad_press(app: &mut App, pad: Entity, button: GamepadButton) {
+    for value in [1.0, 0.0] {
+        app.world_mut()
+            .write_message(RawGamepadEvent::Button(RawGamepadButtonChangedEvent::new(
+                pad, button, value,
+            )));
+        app.update();
+    }
+}
+
+fn over(app: &App) -> Option<Entity> {
+    app.world().resource::<DragState>().over()
+}
+
+fn carried(app: &App) -> bool {
+    app.world().resource::<DragState>().carried_by_key()
+}
+
+fn count_activations(app: &mut App, entity: Entity) {
+    app.world_mut()
+        .entity_mut(entity)
+        .observe(|_: On<Activate>, mut heard: ResMut<Heard>| heard.activations += 1);
+}
+
+#[test]
+fn a_focused_source_is_lifted_steered_and_dropped_from_the_keyboard() {
+    let mut app = app();
+    let s = scene(&mut app);
+    focus(&mut app, s.wall);
+
+    pick_up(&mut app);
+    assert!(carried(&app), "Alt+M lifts the focused source");
+    assert!(app.world().get::<Dragging>(s.wall).is_some());
+    assert_eq!(
+        over(&app),
+        None,
+        "nothing is marked until the player steers"
+    );
+    assert_eq!(drag_roles(&mut app).len(), 2, "a ghost and a mark");
+    assert!(heard(&app).dropped.is_empty());
+
+    // The nearest target to the right of a source on the left is the top one.
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(over(&app), Some(s.slot));
+    // Down goes slot, small and then past the lights (which take no piece) to both.
+    tap(&mut app, KeyCode::ArrowDown);
+    assert_eq!(over(&app), Some(s.small));
+    tap(&mut app, KeyCode::ArrowDown);
+    assert_eq!(
+        over(&app),
+        Some(s.both),
+        "a target that refuses the piece is skipped"
+    );
+    tap(&mut app, KeyCode::ArrowUp);
+    assert_eq!(over(&app), Some(s.small));
+    tap(&mut app, KeyCode::ArrowDown);
+
+    // The ghost stands beside the marked target, as it does beside a pointer.
+    settle(&mut app);
+    let marked = centre(&app, s.both);
+    let ghost = drag_roles(&mut app)
+        .into_iter()
+        .find(|(_, role)| *role == Role::DragGhost)
+        .map(|(entity, _)| entity)
+        .expect("a ghost");
+    let node = app.world().get::<Node>(ghost).expect("a node");
+    let scale = app.world().resource::<UiScale>().0;
+    let (Val::Px(left), Val::Px(top)) = (node.left, node.top) else {
+        panic!("the ghost is placed in pixels");
+    };
+    assert!((Vec2::new(left, top) * scale - marked).length() < 40.0 * scale);
+
+    pick_up(&mut app);
+
+    let heard = heard(&app);
+    assert_eq!(heard.dropped.len(), 1, "exactly one Dropped");
+    let (target, source, payload, pointer) = &heard.dropped[0];
+    assert_eq!((*target, *source), (s.both, s.wall));
+    assert_eq!(*payload, Piece(7));
+    assert!(
+        (*pointer - marked).length() < 1.0,
+        "the pointer is the target's middle"
+    );
+    assert!(heard.refused.is_empty() && heard.world.is_empty() && heard.lights.is_empty());
+    assert!(!carried(&app));
+    assert!(app.world().get::<Dragging>(s.wall).is_none());
+    assert!(drag_roles(&mut app).is_empty(), "the ghost and the mark go");
+}
+
+#[test]
+fn the_keys_that_steer_move_no_focus_and_send_no_back() {
+    let mut app = app();
+    let s = scene(&mut app);
+    focus(&mut app, s.wall);
+    pick_up(&mut app);
+
+    for code in [
+        KeyCode::ArrowRight,
+        KeyCode::ArrowDown,
+        KeyCode::ArrowLeft,
+        KeyCode::PageDown,
+    ] {
+        tap(&mut app, code);
+    }
+
+    let focused = app
+        .world()
+        .resource::<bevy::input_focus::InputFocus>()
+        .get();
+    assert_eq!(focused, Some(s.wall), "focus stays on the source");
+    assert_eq!(heard(&app).cancels, 0);
+    assert!(carried(&app));
+}
+
+#[test]
+fn a_button_source_is_not_also_pressed_by_carrying() {
+    let mut app = app();
+    let s = scene(&mut app);
+    count_activations(&mut app, s.wall);
+    focus(&mut app, s.wall);
+
+    pick_up(&mut app);
+    tap(&mut app, KeyCode::ArrowRight);
+    pick_up(&mut app);
+
+    assert_eq!(heard(&app).dropped.len(), 1);
+    assert_eq!(heard(&app).activations, 0);
+}
+
+#[test]
+fn escape_puts_a_carried_payload_down_and_sends_nothing() {
+    let mut app = app();
+    let s = scene(&mut app);
+    focus(&mut app, s.wall);
+    pick_up(&mut app);
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(over(&app), Some(s.slot));
+
+    tap(&mut app, KeyCode::Escape);
+
+    {
+        let heard = heard(&app);
+        assert!(heard.dropped.is_empty() && heard.refused.is_empty() && heard.world.is_empty());
+        assert_eq!(heard.cancels, 0, "that Escape was no Back");
+    }
+    assert!(!carried(&app));
+    assert!(app.world().get::<Dragging>(s.wall).is_none());
+    assert!(drag_roles(&mut app).is_empty());
+    // Back works again afterwards.
+    tap(&mut app, KeyCode::Escape);
+    assert_eq!(heard(&app).cancels, 1);
+}
+
+#[test]
+fn dropping_with_nothing_marked_sends_nothing() {
+    let mut app = app();
+    let s = scene(&mut app);
+    focus(&mut app, s.wall);
+    pick_up(&mut app);
+
+    pick_up(&mut app);
+
+    let heard = heard(&app);
+    assert!(heard.dropped.is_empty() && heard.refused.is_empty() && heard.world.is_empty());
+    assert!(!carried(&app));
+    assert!(drag_roles(&mut app).is_empty());
+}
+
+#[test]
+fn only_targets_that_take_the_payload_are_offered() {
+    let mut app = app();
+    let s = scene(&mut app);
+    // A piece of 70 is refused by the "small pieces" target, which a pointer would see in red.
+    let big = app
+        .world_mut()
+        .spawn((button("Big"), DragPayload(Piece(70))))
+        .id();
+    app.world_mut().entity_mut(s.wall).add_child(big);
+    settle(&mut app);
+    focus(&mut app, big);
+    pick_up(&mut app);
+
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(over(&app), Some(s.slot));
+    tap(&mut app, KeyCode::ArrowDown);
+    assert_eq!(
+        over(&app),
+        Some(s.both),
+        "small pieces refuses 70, lights take no piece"
+    );
+    tap(&mut app, KeyCode::ArrowDown);
+    assert_eq!(over(&app), Some(s.both), "nothing is below the last one");
+    assert!(!app.world().resource::<DragState>().refused());
+}
+
+#[test]
+fn a_light_goes_to_the_targets_that_take_lights() {
+    let mut app = app();
+    let s = scene(&mut app);
+    focus(&mut app, s.lamp);
+    pick_up(&mut app);
+
+    tap(&mut app, KeyCode::ArrowRight);
+    assert_eq!(over(&app), Some(s.lights));
+    pick_up(&mut app);
+
+    assert_eq!(heard(&app).lights, vec![(s.lights, Light("warm"))]);
+    assert!(heard(&app).dropped.is_empty());
+}
+
+#[test]
+fn page_keys_step_through_the_targets_in_reading_order_and_wrap() {
+    let mut app = app();
+    let s = scene(&mut app);
+    focus(&mut app, s.wall);
+    pick_up(&mut app);
+
+    let mut seen = Vec::new();
+    for _ in 0..4 {
+        tap(&mut app, KeyCode::PageDown);
+        seen.push(over(&app));
+    }
+    assert_eq!(
+        seen,
+        [Some(s.slot), Some(s.small), Some(s.both), Some(s.slot)]
+    );
+    tap(&mut app, KeyCode::PageUp);
+    assert_eq!(over(&app), Some(s.both));
+}
+
+#[test]
+fn the_pad_lifts_with_west_steers_with_the_dpad_and_drops_with_south() {
+    let mut app = app();
+    let s = scene(&mut app);
+    let pad = plug_in_pad(&mut app);
+    count_activations(&mut app, s.wall);
+    focus(&mut app, s.wall);
+
+    pad_press(&mut app, pad, GamepadButton::West);
+    assert!(carried(&app));
+    pad_press(&mut app, pad, GamepadButton::DPadRight);
+    assert_eq!(over(&app), Some(s.slot));
+    pad_press(&mut app, pad, GamepadButton::DPadDown);
+    assert_eq!(over(&app), Some(s.small));
+    pad_press(&mut app, pad, GamepadButton::South);
+
+    let heard = heard(&app);
+    assert_eq!(heard.dropped.len(), 1);
+    assert_eq!(heard.dropped[0].0, s.small);
+    assert_eq!(heard.activations, 0, "South dropped it and pressed nothing");
+    assert!(!carried(&app));
+}
+
+#[test]
+fn east_puts_a_pad_carried_payload_down() {
+    let mut app = app();
+    let s = scene(&mut app);
+    let pad = plug_in_pad(&mut app);
+    focus(&mut app, s.wall);
+    pad_press(&mut app, pad, GamepadButton::West);
+    pad_press(&mut app, pad, GamepadButton::DPadRight);
+
+    pad_press(&mut app, pad, GamepadButton::East);
+
+    assert!(!carried(&app));
+    assert!(heard(&app).dropped.is_empty());
+    assert_eq!(heard(&app).cancels, 0);
+}
+
+#[test]
+fn picking_up_needs_a_focused_source() {
+    let mut app = app();
+    let s = scene(&mut app);
+    // Nothing focused, then a panel that is not a source.
+    pick_up(&mut app);
+    assert!(!carried(&app));
+    focus(&mut app, s.slot);
+    pick_up(&mut app);
+    assert!(!carried(&app));
+    assert!(drag_roles(&mut app).is_empty());
+}
+
+#[test]
+fn a_source_that_goes_while_it_is_carried_ends_the_carry() {
+    let mut app = app();
+    let s = scene(&mut app);
+    focus(&mut app, s.wall);
+    pick_up(&mut app);
+    tap(&mut app, KeyCode::ArrowRight);
+
+    app.world_mut().entity_mut(s.wall).despawn();
+    settle(&mut app);
+
+    assert!(!carried(&app));
+    assert!(drag_roles(&mut app).is_empty());
+    assert!(heard(&app).dropped.is_empty());
+}
+
+#[test]
+fn the_pick_up_key_is_the_games_to_change() {
+    let mut app = app();
+    let s = scene(&mut app);
+    app.world_mut().resource_mut::<DragSettings>().pick_up =
+        Shortcut::new(Modifiers::NONE, KeyCode::F2);
+    focus(&mut app, s.wall);
+
+    pick_up(&mut app);
+    assert!(!carried(&app), "Alt+M no longer lifts");
+    tap(&mut app, KeyCode::F2);
+    assert!(carried(&app));
+    tap(&mut app, KeyCode::ArrowRight);
+    tap(&mut app, KeyCode::F2);
+
+    assert_eq!(heard(&app).dropped.len(), 1);
+}
+
+#[test]
+fn a_pointer_drag_is_not_disturbed_by_the_keys() {
+    let mut app = app();
+    let s = scene(&mut app);
+    let to = centre(&app, s.slot);
+    let from = centre(&app, s.wall);
+    grab_and_move(&mut app, from, to);
+    assert!(app.world().resource::<DragState>().is_dragging());
+
+    pick_up(&mut app);
+    tap(&mut app, KeyCode::ArrowDown);
+
+    assert!(!carried(&app), "the pointer's drag stays the pointer's");
+    assert_eq!(over(&app), Some(s.slot));
+    release(&mut app, to);
+    assert_eq!(heard(&app).dropped.len(), 1);
 }

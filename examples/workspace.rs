@@ -13,7 +13,8 @@
 //! `GOOEY_SKIN=parchment`, `high_contrast` or `tool`, `GOOEY_TEXT_SCALE=<f>` and
 //! `GOOEY_SIZE=<w>x<h>` set the start. `GOOEY_KEYS=a;b;…` stages one step every `GOOEY_KEY_EVERY`
 //! (default 24) frames from frame 30, as real input: `tab`, `up`, `down`, `left`, `right`, `enter`,
-//! `f6`, `sf6` (Shift+F6), `center` (Ctrl+Enter), `type:<text>` (`_` is a space; a character every
+//! `f6`, `sf6` (Shift+F6), `center` (Ctrl+Enter), `escape`, `pickup` (Alt+M: lifts the focused piece,
+//! and drops it again), `type:<text>` (`_` is a space; a character every
 //! second frame) and `drag:<from>><to>` with `wall`, `door`, `lamp` for `<from>` and `viewport`,
 //! `slot`, `trash`, and `high` and `low` (a point of the viewport above and below its middle) for
 //! `<to>` (the pointer moves from the middle of one to the middle of the
@@ -167,6 +168,13 @@ fn steps_of(text: &str) -> Vec<Step> {
                 "right" => Step::Key(KeyCode::ArrowRight, Key::ArrowRight),
                 "enter" => Step::Key(KeyCode::Enter, Key::Enter),
                 "f6" => Step::Key(KeyCode::F6, Key::F6),
+                "escape" => Step::Key(KeyCode::Escape, Key::Escape),
+                "pickup" => Step::Chord(
+                    KeyCode::AltLeft,
+                    Key::Alt,
+                    KeyCode::KeyM,
+                    Key::Character("m".into()),
+                ),
                 "sf6" => Step::Chord(KeyCode::ShiftLeft, Key::Shift, KeyCode::F6, Key::F6),
                 "center" => Step::Chord(
                     KeyCode::ControlLeft,

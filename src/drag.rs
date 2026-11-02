@@ -5,12 +5,16 @@
 use bevy::ecs::lifecycle::HookContext;
 use bevy::ecs::resource::IsResource;
 use bevy::ecs::world::DeferredWorld;
+use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::picking::events::{PointerCancel, PointerDrag, PointerDragEnd, PointerDragStart};
 use bevy::picking::hover::HoverMap;
 use bevy::picking::pointer::PointerId;
 use bevy::prelude::*;
-use bevy::ui::{ComputedNode, UiGlobalTransform, UiScale};
+use bevy::ui::{ComputedNode, InteractionDisabled, UiGlobalTransform, UiScale};
 
+use crate::model::{Toward, target_step, target_toward};
+use crate::nav::show_focus;
+use crate::shortcut::{Modifiers, Shortcut};
 use crate::skin::Role;
 
 /// How far, in logical pixels, a press must move before it is a drag: a click with a shaking hand
@@ -29,6 +33,49 @@ const GHOST_OFFSET_PX: f32 = 14.0;
 #[derive(Component, Clone, Debug, Default, PartialEq, Eq, Reflect)]
 #[reflect(Component, Default, Debug, PartialEq, Clone)]
 pub struct DragLabel(pub String);
+
+/// The keys that carry a payload without a pointer, so a drag is never the only way (WCAG 2.2,
+/// 2.5.7): a keyboard or gamepad player focuses a source ([`DragPayload`]), presses
+/// [`DragSettings::pick_up`] (a pad's [`DragSettings::pick_up_button`]), steers the mark with the
+/// arrows or the D-pad (PageUp and PageDown, LB and RB step through the targets in reading
+/// order), and drops with the same key again (a pad's South too). Escape or East puts it down. A
+/// game that wants other keys writes this resource; a keymap the player edits is this value.
+///
+/// The pick-up key is not Enter, Space or South on purpose: Bevy's `Button` activates on those, and
+/// a source that is a [`button`](crate::button) would be both pressed and lifted.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// let settings = DragSettings {
+///     pick_up: Shortcut::new(Modifiers::NONE, KeyCode::F2),
+///     ..default()
+/// };
+/// assert_eq!(settings.pick_up_button, GamepadButton::West);
+/// ```
+#[derive(Resource, Clone, Debug, PartialEq, Reflect)]
+#[reflect(Resource, Default, Debug, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(default)
+)]
+pub struct DragSettings {
+    /// The chord that lifts the focused source and, while one is carried, puts it down on the
+    /// marked target. Default: Alt+M.
+    pub pick_up: Shortcut,
+    /// The pad button that does the same, on any gamepad. Default: West (X on an Xbox pad).
+    pub pick_up_button: GamepadButton,
+}
+
+impl Default for DragSettings {
+    fn default() -> Self {
+        Self {
+            pick_up: Shortcut::new(Modifiers::ALT, KeyCode::KeyM),
+            pick_up_button: GamepadButton::West,
+        }
+    }
+}
 
 /// Makes a node a drag source: pressing it and moving more than [`DRAG_LIFT_PX`] picks `T` up. The
 /// node needs [`Pickable`] (every gooey widget has it; a sprite or mesh needs it added).
@@ -275,6 +322,9 @@ struct Drag {
     /// Escape or East was pressed this frame: [`track_drag`] puts it down once the frame's Back
     /// has been left alone.
     cancelled: bool,
+    /// Lifted by [`carry_by_input`], not by the pointer: the target under the mark is the one
+    /// the arrows chose, not the one under the pointer.
+    keyboard: bool,
 }
 
 impl DragState {
@@ -296,6 +346,13 @@ impl DragState {
     /// Whether a drag is lifted.
     pub fn is_dragging(&self) -> bool {
         self.drag.as_ref().is_some_and(|d| d.lifted)
+    }
+
+    /// Whether the carried thing was lifted from the keyboard or a pad (see [`DragSettings`]):
+    /// the crate's own input systems stand still then, so the arrow that steers the mark never
+    /// also moves focus.
+    pub fn carried_by_key(&self) -> bool {
+        self.drag.as_ref().is_some_and(|d| d.lifted && d.keyboard)
     }
 }
 
@@ -325,6 +382,7 @@ pub(crate) fn drag_on_start(
             over: None,
             refused: false,
             cancelled: false,
+            keyboard: false,
         });
     }
 }
@@ -406,6 +464,9 @@ pub(crate) fn track_drag(
     let Some(held) = state.drag.as_mut() else {
         return;
     };
+    if held.keyboard {
+        return;
+    }
     if !held.lifted {
         return;
     }
@@ -470,13 +531,15 @@ pub(crate) fn drag_on_end(
             if let Some(zone) = zone_of(front, &zones, &parents)
                 && let (Ok(zone_ref), Ok(handlers)) = (entities.get(zone), zones.get(zone))
             {
-                let delivered = handlers
-                    .handlers
-                    .iter()
-                    .any(|h| (h.deliver)(&mut commands, zone_ref, source, pointer));
-                if !delivered && let Some(refused) = drag_source.refused {
-                    refused(&mut commands, zone, source, pointer);
-                }
+                release_on(
+                    &mut commands,
+                    zone,
+                    zone_ref,
+                    handlers,
+                    source,
+                    drag_source,
+                    pointer,
+                );
             } else if !nodes.contains(front)
                 && let Some(world_drop) = drag_source.world_drop
             {
@@ -489,6 +552,26 @@ pub(crate) fn drag_on_end(
                 world_drop(&mut commands, source, pointer);
             }
         }
+    }
+}
+
+/// Lets go of `source` over `zone`: one [`Dropped`] if a type the zone takes matches, otherwise
+/// one [`DropRefused`].
+fn release_on(
+    commands: &mut Commands,
+    zone: Entity,
+    zone_ref: EntityRef,
+    handlers: &DropZone,
+    source: EntityRef,
+    drag_source: DragSource,
+    pointer: Vec2,
+) {
+    let delivered = handlers
+        .handlers
+        .iter()
+        .any(|h| (h.deliver)(commands, zone_ref, source, pointer));
+    if !delivered && let Some(refused) = drag_source.refused {
+        refused(commands, zone, source, pointer);
     }
 }
 
@@ -523,6 +606,189 @@ pub fn cancel_drags(
         && let Some(held) = state.drag.as_mut()
     {
         held.cancelled = true;
+    }
+}
+
+/// A node's rect in the interface's own logical pixels, the space `Node` positions are in.
+fn rect_of(node: &ComputedNode, at: &UiGlobalTransform) -> Rect {
+    let inverse = node.inverse_scale_factor();
+    Rect::from_center_size(at.translation * inverse, node.size() * inverse)
+}
+
+fn rect_array(rect: Rect) -> [f32; 4] {
+    [rect.min.x, rect.min.y, rect.max.x, rect.max.y]
+}
+
+/// Carries a payload without a pointer (see [`DragSettings`]): the pick-up key on a focused
+/// source lifts it, the arrows or the D-pad move the mark to the nearest target that takes the
+/// payload in that direction, PageUp, PageDown, LB and RB step through the targets in reading
+/// order, and the pick-up key again (a pad's South too) drops it on the marked one. With nothing
+/// marked a drop does nothing; Escape or East ([`cancel_drags`]) puts the payload down.
+///
+/// Runs in [`crate::GooeySystems::Navigate`] before [`cancel_drags`]; while a payload is carried
+/// by it [`crate::not_capturing`] is false, so the key that steers never also moves focus.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn carry_by_input(
+    keys: Res<ButtonInput<KeyCode>>,
+    gamepads: Query<&Gamepad>,
+    settings: Res<DragSettings>,
+    focus: Res<InputFocus>,
+    mut shown: ResMut<InputFocusVisible>,
+    mut state: ResMut<DragState>,
+    ui_scale: Option<Res<UiScale>>,
+    parents: Query<&ChildOf>,
+    words: (Query<&DragLabel>, Query<&Text>, Query<&Children>),
+    zones: Query<
+        (
+            Entity,
+            &DropZone,
+            &ComputedNode,
+            &UiGlobalTransform,
+            &InheritedVisibility,
+        ),
+        Without<InteractionDisabled>,
+    >,
+    frames: Query<(&ComputedNode, &UiGlobalTransform)>,
+    entities: Query<EntityRef, Without<IsResource>>,
+    mut commands: Commands,
+) {
+    let pad = |button: GamepadButton| gamepads.iter().any(|g| g.just_pressed(button));
+    let key = |code: KeyCode| keys.just_pressed(code);
+    let pick = settings.pick_up.just_pressed(&keys) || pad(settings.pick_up_button);
+    let scale = ui_scale.as_ref().map_or(1.0, |s| s.0).max(f32::EPSILON);
+
+    let Some(held) = state.drag.as_ref() else {
+        // Nothing carried: the pick-up key on a focused source lifts it.
+        if !pick {
+            return;
+        }
+        let (labels, texts, kids) = &words;
+        let Some(source) = focus.get().and_then(|focused| {
+            std::iter::once(focused)
+                .chain(parents.iter_ancestors(focused))
+                .find(|&e| {
+                    entities.get(e).is_ok_and(|e| {
+                        e.contains::<DragSource>() && !e.contains::<InteractionDisabled>()
+                    })
+                })
+        }) else {
+            return;
+        };
+        let label = labels
+            .get(source)
+            .map(|label| label.0.clone())
+            .ok()
+            .or_else(|| first_text(source, texts, kids))
+            .unwrap_or_default();
+        let pointer = frames
+            .get(source)
+            .map_or(Vec2::ZERO, |(node, at)| rect_of(node, at).center() * scale);
+        state.drag = Some(Drag {
+            source,
+            pointer_id: PointerId::Mouse,
+            pointer,
+            lifted: true,
+            label,
+            over: None,
+            refused: false,
+            cancelled: false,
+            keyboard: true,
+        });
+        commands.entity(source).insert(Dragging);
+        show_focus(&mut shown);
+        return;
+    };
+    if !held.keyboard || held.cancelled {
+        return;
+    }
+    let source = held.source;
+    let (Ok(source_ref), Ok((source_node, source_at))) = (entities.get(source), frames.get(source))
+    else {
+        // The source was despawned while it was carried.
+        state.drag = None;
+        return;
+    };
+
+    if pick || pad(GamepadButton::South) {
+        let over = held.over;
+        state.drag = None;
+        commands.entity(source).remove::<Dragging>();
+        let pointer = over
+            .and_then(|over| frames.get(over).ok())
+            .map_or(Vec2::ZERO, |(node, at)| rect_of(node, at).center() * scale);
+        if let Some(zone) = over
+            && let (Ok(zone_ref), Ok((_, handlers, ..))) = (entities.get(zone), zones.get(zone))
+            && let Some(drag_source) = source_ref.get::<DragSource>().copied()
+        {
+            release_on(
+                &mut commands,
+                zone,
+                zone_ref,
+                handlers,
+                source_ref,
+                drag_source,
+                pointer,
+            );
+        }
+        return;
+    }
+
+    let toward = [
+        (KeyCode::ArrowUp, GamepadButton::DPadUp, Toward::Up),
+        (KeyCode::ArrowDown, GamepadButton::DPadDown, Toward::Down),
+        (KeyCode::ArrowLeft, GamepadButton::DPadLeft, Toward::Left),
+        (KeyCode::ArrowRight, GamepadButton::DPadRight, Toward::Right),
+    ]
+    .into_iter()
+    .find(|&(k, b, _)| key(k) || pad(b))
+    .map(|(_, _, toward)| toward);
+    let step = if key(KeyCode::PageDown) || pad(GamepadButton::RightTrigger) {
+        Some(true)
+    } else if key(KeyCode::PageUp) || pad(GamepadButton::LeftTrigger) {
+        Some(false)
+    } else {
+        None
+    };
+    if toward.is_none() && step.is_none() {
+        return;
+    }
+
+    // Only the targets that take the payload and are on screen are offered.
+    let mut candidates: Vec<(Entity, Rect)> = zones
+        .iter()
+        .filter(|&(entity, handlers, node, _, visible)| {
+            entity != source
+                && visible.get()
+                && node.size().cmpgt(Vec2::ZERO).all()
+                && entities
+                    .get(entity)
+                    .is_ok_and(|zone_ref| handlers.takes(zone_ref, source_ref))
+        })
+        .map(|(entity, _, node, at, _)| (entity, rect_of(node, at)))
+        .collect();
+    candidates.sort_by_key(|&(entity, _)| entity);
+    let rects: Vec<[f32; 4]> = candidates.iter().map(|&(_, r)| rect_array(r)).collect();
+    let current = state
+        .drag
+        .as_ref()
+        .and_then(|d| d.over)
+        .and_then(|over| candidates.iter().position(|&(e, _)| e == over));
+    let chosen = match (toward, step) {
+        (Some(toward), _) => {
+            let from =
+                current.map_or_else(|| rect_array(rect_of(source_node, source_at)), |i| rects[i]);
+            target_toward(from, &rects, toward)
+        }
+        (None, Some(forward)) => target_step(&rects, current, forward),
+        (None, None) => None,
+    };
+    if let Some(index) = chosen
+        && let Some(held) = state.drag.as_mut()
+    {
+        let (entity, rect) = candidates[index];
+        held.over = Some(entity);
+        held.refused = false;
+        held.pointer = rect.center() * scale;
     }
 }
 
@@ -605,11 +871,7 @@ pub(crate) fn update_drag_visuals(
     }
     let rect = held.over.and_then(|over| {
         let (node, at) = frames.get(over).ok()?;
-        let inverse = node.inverse_scale_factor();
-        Some(Rect::from_center_size(
-            at.translation * inverse,
-            node.size() * inverse,
-        ))
+        Some(rect_of(node, at))
     });
     match marks.iter_mut().next() {
         Some((_, mut node, mut role)) => {
