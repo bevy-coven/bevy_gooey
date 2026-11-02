@@ -43,6 +43,7 @@ None numeric. Roles: toggle CheckBox (Bevy's), slider Slider (Bevy's), choice Sp
 ## Deviations
 
 - The choice is SpinButton, not ARIA's `combobox`: a combobox promises a popup the choice does not have. Design default; revisit when AccessKit actions are handled.
+- A tree row is a `TreeItem` with no `level` or `expanded`, and a table has no row or column counts: the rows are a pool of a dozen entities rebound while scrolling, so a row's place is the table's, not the entity's. Listed in the backlog.
 - **Actions are not handled** (an assistive technology's Click, Increment, SetValue and Focus requests arrive as `ActionRequest` messages that Bevy does not act on): the tree is complete for reading and for following focus; acting from the screen reader is the next slice and is listed in the backlog.
 
 ## What great looks like
