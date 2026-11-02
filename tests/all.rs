@@ -17,6 +17,7 @@ mod dialog_look;
 mod dock;
 mod field_problem;
 mod icon;
+mod inspector;
 mod large_text;
 mod leaf;
 mod lines;

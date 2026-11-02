@@ -1281,6 +1281,9 @@ pub enum Role {
     Section,
     /// A section's body: the game's widgets, indented under the header; not drawn.
     SectionBody,
+    /// A [`crate::inspector`]'s root: a column of the rows built from a reflected value, a gap
+    /// apart; not drawn.
+    Inspector,
     /// A section's "Empty": [`GooeySkin::text_muted`], in the body's place while it holds nothing.
     SectionNote,
 }
@@ -2027,6 +2030,7 @@ fn restyle(
         | Role::Section
         | Role::SectionBody
         | Role::SectionNote
+        | Role::Inspector
         | Role::TreeClosed
         | Role::TreeOpen
         | Role::Split
@@ -2224,7 +2228,9 @@ fn restyle(
                     next.max_width = Val::Px(text_px * DIALOG_MAX_TEXT_SIZES);
                 }
             }
-            Role::Menu | Role::TabPage | Role::Tabs => next.row_gap = Val::Px(skin.gap),
+            Role::Menu | Role::TabPage | Role::Tabs | Role::Inspector => {
+                next.row_gap = Val::Px(skin.gap)
+            }
             // A section's header stands half a gap off its body, and what is in the body is
             // indented one padding and a half, a gap apart like a panel's rows.
             Role::Section => next.row_gap = Val::Px(skin.gap * 0.5),

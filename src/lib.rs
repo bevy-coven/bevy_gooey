@@ -136,6 +136,8 @@ mod dock_layout;
 mod feedback;
 mod field;
 mod icon;
+#[cfg(feature = "reflect")]
+mod inspector;
 mod list;
 mod menu;
 mod meter;
@@ -181,6 +183,11 @@ pub use dock_layout::{DockLayout, DockSkip, DropTarget};
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
 pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
+#[cfg(feature = "reflect")]
+pub use inspector::{
+    InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange, build_inspectors,
+    inspector, sync_inspectors,
+};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use menu::{
     Disabled, MenuBar, MenuItem, MenuMarked, MenuOpen, MenuPanel, MenuTitle, fit_menus,
@@ -423,6 +430,14 @@ impl Plugin for GooeyStylePlugin {
                     .chain()
                     .in_set(GooeySystems::Style),
             );
+        #[cfg(feature = "reflect")]
+        app.add_systems(
+            Update,
+            (build_inspectors, sync_inspectors)
+                .chain()
+                .in_set(GooeySystems::Style)
+                .before(update_toasts),
+        );
     }
 }
 
