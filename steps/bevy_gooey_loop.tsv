@@ -12377,3 +12377,344 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 68	338	release	model	model		2026-11-02T03:45:24Z	6.3	
 68	339	release	tool	push gate	bash	2026-11-02T03:45:30Z	1.5	Final log commit and push :: cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' **Release.** v0.22.0 published first (the 429 had cleared): https://crates.io/crates/bevy_go
 68	340	release	model	model		2026-11-02T03:45:32Z	10.1	
+69	1	orient	model	model		2026-11-02T03:46:09Z	4.4	
+69	2	orient	tool	phase mark	bash	2026-11-02T03:46:14Z	0.9	Orienting: audit, parked, log :: python3 ~/.local/share/wiggum/steps.py mark orient; cd ~/bevy_gooey_loop && git status --short | head; git fetch -q origin loop-stats 2>&1|tail -1; git show ori
+69	3	orient	model	model		2026-11-02T03:46:15Z	4.5	
+69	4	orient	tool	github	bash	2026-11-02T03:46:19Z	1.3	Listing issues and demand counts :: cd ~/bevy_gooey_loop && git status -sb | head -3; git show --stat HEAD | head -20; gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json nu
+69	5	bugs	tool	phase mark	bash	2026-11-02T03:46:19Z	11.9	Checking home-still status :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark bugs; cat ~/.local/state/wiggum/*/current 2>/dev/null | head -2; date -u; hs status 2>&1 | h
+69	6	bugs	model	model		2026-11-02T03:46:31Z	4.8	
+69	7	bugs	tool	github	bash	2026-11-02T03:46:36Z	1.3	Reading three issues :: cd ~/bevy_gooey_loop && for n in 30 31 33; do echo "=== $n"; gh issue view $n --repo bevy-coven/bevy_gooey --json title,body,comments --jq '.title, .body, (.com
+69	8	bugs	model	model		2026-11-02T03:46:37Z	5.9	
+69	9	bugs	tool	shell	bash	2026-11-02T03:46:43Z	0.0	Inspecting skin structure :: cd ~/bevy_gooey_loop && wc -l src/*.rs && grep -n "pub enum Role" -A12 src/skin.rs | head -40 && grep -n "pub struct GooeySkin" -B6 -A12 src/skin.rs && grep -n 
+69	10	bugs	model	model		2026-11-02T03:46:43Z	1.2	
+69	11	bugs	tool	shell	bash	2026-11-02T03:46:44Z	0.0	Reading GooeySkin fields :: cd ~/bevy_gooey_loop && sed -n 195,205p src/skin.rs; sed -n 217,420p src/skin.rs
+69	12	bugs	model	model		2026-11-02T03:46:44Z	4.5	
+69	13	bugs	tool	shell	bash	2026-11-02T03:46:49Z	0.0	Looking at Surface role handling :: cd ~/bevy_gooey_loop && sed -n 975,992p src/skin.rs; grep -n "Surface(" src/*.rs | head -30; grep -n "fn with_colours_of" -A50 src/skin.rs | head -90; grep -n "
+69	14	bugs	model	model		2026-11-02T03:46:49Z	9.9	
+69	15	bugs	tool	shell	bash	2026-11-02T03:46:59Z	0.1	Checking LowContrast usage :: cd ~/bevy_gooey_loop && grep -rn "LowContrast" --include=*.rs --include=*.md . | grep -v "^./target" | head -40; sed -n 1960,2000p src/skin.rs
+69	16	bugs	model	model		2026-11-02T03:46:59Z	6.2	
+69	17	bugs	tool	shell	bash	2026-11-02T03:47:05Z	0.0	Reading LowContrast sites :: cd ~/bevy_gooey_loop && sed -n 600,625p src/skin.rs; sed -n 855,862p src/skin.rs; sed -n 905,960p src/skin.rs; sed -n 138,150p tests/skin.rs; sed -n 285,295p te
+69	18	bugs	model	model		2026-11-02T03:47:05Z	27.5	
+69	19	bugs	tool	shell	bash	2026-11-02T03:47:32Z	0.0	Mapping apply_skin functions :: cd ~/bevy_gooey_loop && grep -n "Role::Surface\|Role::Scrim" src/*.rs | head; grep -n "^fn \|^pub fn \|^pub(crate) fn " src/skin.rs | sed -n 1,120p
+69	20	bugs	model	model		2026-11-02T03:47:32Z	1.2	
+69	21	bugs	tool	shell	bash	2026-11-02T03:47:34Z	0.0	Reading restyle head :: cd ~/bevy_gooey_loop && sed -n 1803,1870p src/skin.rs; grep -n "Role::Surface\|Surface" tests/tokens.rs | head -20
+69	22	bugs	model	model		2026-11-02T03:47:34Z	8.4	
+69	23	bugs	tool	shell	bash	2026-11-02T03:47:42Z	0.2	Environment check and baseline worktree :: cd ~/bevy_gooey_loop && echo "CTD=$CARGO_TARGET_DIR DISPLAY=$DISPLAY"; nproc; df -h /home | tail -1; uptime; git worktree list; ls /tmp | head -20; SHA=$(git re
+69	24	bugs	model	model		2026-11-02T03:47:42Z	3.4	
+69	25	bugs	tool	cargo build	bash	2026-11-02T03:47:46Z	0.0	[launched bg_2] Building baseline gallery in background :: mkdir -p ~/g41_bin /tmp/g41/before && cd ~/g41_base && (CARGO_BUILD_JOBS=4 cargo build --release --example gallery > /tmp/g41/base-build.log 2>&1; cp $CARGO_TAR
+69	26	choose	tool	phase mark	bash	2026-11-02T03:47:46Z	0.1	Marking choose; reading shortcut.rs :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; sed -n 1,60p src/shortcut.rs; grep -n "Shortcut" src/lib.rs src/tooltip.rs | head -3
+69	27	choose	model	model		2026-11-02T03:47:46Z	12.7	
+69	28	choose	tool	homestill	bash	2026-11-02T03:47:58Z	4.5	Searching corpus for ExposeHK :: cd ~/bevy_gooey_loop && hs distill search "ExposeHK shortcut hotkey exposing modifier key novices keyboard" --output json 2>&1 | head -c 3500
+69	29	choose	model	model		2026-11-02T03:48:03Z	1.8	
+69	30	choose	tool	homestill	bash	2026-11-02T03:48:05Z	1.7	Fetching ExposeHK quotes :: cd ~/bevy_gooey_loop && hs distill search "ExposeHK delay before hotkeys appear when Ctrl held, accidental activation" --output json 2>&1 | python3 -c " import 
+69	31	choose	model	model		2026-11-02T03:48:06Z	11.1	
+69	32	choose	tool	shell	bash	2026-11-02T03:48:17Z	1.8	Fetching quote sources :: cd /tmp && for u in "https://testing-library.com/docs/guiding-principles/" "https://code.visualstudio.com/api/references/theme-color" "https://www.designtokens.
+69	33	choose	model	model		2026-11-02T03:48:19Z	3.6	
+69	34	choose	tool	shell	bash	2026-11-02T03:48:23Z	2.4	Fetching more quote sources :: cd /tmp && for u in "https://code.visualstudio.com/docs/configure/themes" "https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html" "https://docs.rs/
+69	35	choose	model	model		2026-11-02T03:48:25Z	2.4	
+69	36	choose	tool	shell	bash	2026-11-02T03:48:28Z	0.0	Checking note format :: cd ~/bevy_gooey_loop && grep -n "^#" docs/research/shortcut.md docs/research/tokens.md; sed -n 1,25p docs/research/tokens.md
+69	37	choose	model	model		2026-11-02T03:48:28Z	46.6	
+69	38	choose	tool	edit files	write	2026-11-02T03:49:14Z	0.0	/home/ladvien/bevy_gooey_loop/docs/research/tones.md
+69	39	choose	tool	edit files	write	2026-11-02T03:49:14Z	0.0	/home/ladvien/bevy_gooey_loop/docs/research/testing.md
+69	40	choose	tool	edit files	write	2026-11-02T03:49:14Z	0.0	/home/ladvien/bevy_gooey_loop/docs/research/shortcut-overlay.md
+69	41	choose	bg	cargo build	bash	2026-11-02T03:48:23Z	51.5	bg_2 completed: mkdir -p ~/g41_bin /tmp/g41/before && cd ~/g41_base && (CARGO_BUILD_JOBS=4 cargo build --release --example gallery > ...
+69	42	choose	model	model		2026-11-02T03:49:14Z	2.6	
+69	43	choose	tool	shell	bash	2026-11-02T03:49:17Z	0.1	Committing research notes :: cd ~/bevy_gooey_loop && tail -2 /tmp/g41/base-build.log; ls -la ~/g41_bin; git checkout -q -b loop/iter-41 && git add docs/research/tones.md docs/research/testi
+69	44	choose	model	model		2026-11-02T03:49:17Z	4.1	
+69	45	build	tool	phase mark	bash	2026-11-02T03:49:21Z	0.1	Reading sizes() and imports :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; sed -n 420,470p src/skin.rs; grep -n "^use" src/skin.rs | head -20; grep -n "GooeySki
+69	46	build	model	model		2026-11-02T03:49:21Z	16.2	
+69	47	build	tool	shell	bash	2026-11-02T03:49:38Z	0.1	Applying tones field, tone(), tone_problems (script edit) :: cd ~/bevy_gooey_loop && python3 - <<'EOF' import re p='src/skin.rs' s=open(p).read() s=s.replace("use std::fmt;\n","use std::collections::BTreeMap;\nuse std::fm
+69	48	build	model	model		2026-11-02T03:49:38Z	3.9	
+69	49	build	tool	read files	read	2026-11-02T03:49:41Z	0.0	Reading BadScale variant :: src/skin.rs:988-1000
+69	50	build	tool	read files	read	2026-11-02T03:49:41Z	0.0	Reading Display tail :: src/skin.rs:1029-1040
+69	51	build	model	model		2026-11-02T03:49:42Z	1.9	
+69	52	build	tool	edit files	edit	2026-11-02T03:49:43Z	0.0	Adding UnknownTone variant and Display; Role::Tone :: [src/skin.rs#E943] PUT >1034: + Self::UnknownTone { name } => write!( + f, + "\"{name}\" is neither a tone of the skin nor one of its own colours" + ), PUT >995
+69	53	build	model	model		2026-11-02T03:49:43Z	1.3	
+69	54	build	tool	shell	bash	2026-11-02T03:49:45Z	0.0	Locating Role::Surface decl :: cd ~/bevy_gooey_loop && grep -n "Surface(u8)," -B4 -A1 src/skin.rs
+69	55	build	model	model		2026-11-02T03:49:45Z	2.1	
+69	56	build	tool	edit files	edit	2026-11-02T03:49:47Z	0.0	Adding Role::Tone and its fill arm :: [src/skin.rs#B539] PUT >1097: + /// A node filled with the host's own tone of that name, [`GooeySkin::tone`], and nothing else: + /// restyled in the frame the 
+69	57	build	tool	shell	bash	2026-11-02T03:49:47Z	0.0	Finding fill arm line :: cd ~/bevy_gooey_loop && grep -n "Role::Surface(level) =>" src/skin.rs
+69	58	build	model	model		2026-11-02T03:49:47Z	1.4	
+69	59	build	tool	edit files	edit	2026-11-02T03:49:48Z	0.0	Retrying Role::Tone insert :: [src/skin.rs#B539] PUT >1097: + /// A node filled with the host's own tone of that name, [`GooeySkin::tone`], and nothing else: + /// restyled in the frame the 
+69	60	build	model	model		2026-11-02T03:49:48Z	0.8	
+69	61	build	tool	read files	read	2026-11-02T03:49:49Z	0.0	Reading fill arm site :: src/skin.rs:2086-2092
+69	62	build	model	model		2026-11-02T03:49:49Z	2.1	
+69	63	build	tool	edit files	edit	2026-11-02T03:49:51Z	0.0	Adding fill arm for Tone :: [src/skin.rs#0611] PUT >2089: + Role::Tone(name) => skin.tone(name),
+69	64	build	tool	phase mark	bash	2026-11-02T03:49:51Z	7.3	Compiling lib :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build >/dev/null; sed -n 2096,2125p src/skin.rs; CARGO_BUILD_JOBS=4 cargo check --lib --all-
+69	65	build	model	model		2026-11-02T03:49:58Z	5.1	
+69	66	build	tool	shell	bash	2026-11-02T03:50:04Z	0.0	Checking test patterns :: cd ~/bevy_gooey_loop && cat tests/all.rs | head -40; grep -n "fn \|^use\|^#!" tests/tokens.rs | head -50; grep -n "serde" tests/serde.rs | head -5; sed -n 1,40p
+69	67	build	model	model		2026-11-02T03:50:04Z	1.0	
+69	68	build	tool	shell	bash	2026-11-02T03:50:05Z	0.0	Reading tokens test app harness :: cd ~/bevy_gooey_loop && sed -n 245,335p tests/tokens.rs; sed -n 40,80p tests/all.rs
+69	69	build	model	model		2026-11-02T03:50:05Z	19.4	
+69	70	build	tool	edit files	write	2026-11-02T03:50:24Z	0.0	Writing tones test file :: /home/ladvien/bevy_gooey_loop/tests/tones.rs
+69	71	build	model	model		2026-11-02T03:50:24Z	4.7	
+69	72	build	tool	shell	bash	2026-11-02T03:50:29Z	0.0	Finding how fill None is applied :: cd ~/bevy_gooey_loop && grep -n "if let Some(fill)\|fill {" src/skin.rs | head; grep -n "let fill = match role" src/skin.rs; awk 'NR>=2480 && NR<=2700 && /fill/
+69	73	build	model	model		2026-11-02T03:50:29Z	1.1	
+69	74	build	tool	shell	bash	2026-11-02T03:50:30Z	0.0	Finding fill uses :: cd ~/bevy_gooey_loop && grep -n "fill" src/skin.rs | awk -F: '$1>2200 && $1<3300' | head -20
+69	75	build	model	model		2026-11-02T03:50:30Z	4.6	
+69	76	build	tool	shell	bash	2026-11-02T03:50:34Z	0.0	Reading surface() widget :: cd ~/bevy_gooey_loop && sed -n 205,245p src/widgets.rs; grep -n "surface" src/lib.rs | head
+69	77	build	model	model		2026-11-02T03:50:34Z	7.0	
+69	78	build	tool	edit files	edit	2026-11-02T03:50:41Z	0.0	Tone arm: unknown draws no fill; docs :: [src/skin.rs#501F] PUT 2090.=2090: + Role::Tone(name) => Some(skin.tone(name).unwrap_or(Color::NONE)), PUT 1098.=1100: + /// A node filled with the host's own t
+69	79	build	model	model		2026-11-02T03:50:41Z	3.7	
+69	80	build	tool	shell	bash	2026-11-02T03:50:45Z	0.0	Fix test and register module (test scaffolding) :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/tones.rs' s=open(p).read() s=s.replace(""" assert_eq!( fill(&app, suggest).filter(|c| *c == Color::srgb(0.9, 
+69	81	build	model	model		2026-11-02T03:50:45Z	4.3	
+69	82	build	tool	cargo test	bash	2026-11-02T03:50:50Z	48.5	Running tones tests :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo test --all-features --test all tones:: 2>&1 | tail -40
+69	83	build	model	model		2026-11-02T03:51:38Z	5.9	
+69	84	build	tool	phase mark	bash	2026-11-02T03:51:44Z	0.1	Committing tones; checking Cargo features :: cd ~/bevy_gooey_loop && git add src/skin.rs tests/tones.rs tests/all.rs && git commit -qm "Named tones: GooeySkin::tones, tone(), Role::Tone and tone_problems f
+69	85	build	model	model		2026-11-02T03:51:44Z	4.7	
+69	86	build	tool	shell	bash	2026-11-02T03:51:49Z	0.0	Reading existing input-driving test helpers :: cd ~/bevy_gooey_loop && grep -n "PointerInput" -B3 -A12 tests/palette.rs | head -90; grep -n "fn press_key\|fn type_char\|fn key" -A28 tests/text.rs | head -90
+69	87	build	model	model		2026-11-02T03:51:49Z	1.7	
+69	88	build	tool	shell	bash	2026-11-02T03:51:50Z	0.0	Reading click, location, centre helpers :: cd ~/bevy_gooey_loop && sed -n 175,260p tests/palette.rs; grep -n "fn tap_named" -A25 tests/text.rs; grep -n "fn location" -A20 tests/palette.rs; grep -n "fn ce
+69	89	build	model	model		2026-11-02T03:51:50Z	2.0	
+69	90	build	tool	shell	bash	2026-11-02T03:51:53Z	0.0	Reading window(), centre helpers, key helper :: cd ~/bevy_gooey_loop && grep -n "fn window\b\|fn window(" -A8 tests/palette.rs | head -14; grep -n "fn centre\|fn rect_of\|fn middle\|UiGlobalTransform" tests/p
+69	91	build	model	model		2026-11-02T03:51:53Z	1.1	
+69	92	build	tool	shell	bash	2026-11-02T03:51:54Z	0.0	Reading centre helper :: cd ~/bevy_gooey_loop && sed -n 262,300p tests/palette.rs; grep -n "KeyboardInput" tests/nav.rs tests/dialog.rs | head -5
+69	93	build	model	model		2026-11-02T03:51:54Z	12.5	
+69	94	build	tool	shell	bash	2026-11-02T03:52:06Z	0.0	Checking gallery and lib module layout :: cd ~/bevy_gooey_loop && grep -n '"Options"\|Options' examples/gallery.rs | head; grep -n "pub use\|^mod \|^pub mod " src/lib.rs | head -70
+69	95	build	model	model		2026-11-02T03:52:06Z	21.7	
+69	96	build	tool	shell	bash	2026-11-02T03:52:28Z	0.0	Checking exports for testing module :: cd ~/bevy_gooey_loop && grep -n "TextInputOf" src/lib.rs src/text.rs | head -5; grep -rn "NormalizedRenderTarget" src/*.rs | head -3; grep -n "ComputedNode" src
+69	97	build	model	model		2026-11-02T03:52:28Z	28.3	
+69	98	build	tool	edit files	write	2026-11-02T03:52:56Z	0.0	Writing testing module :: /home/ladvien/bevy_gooey_loop/src/testing.rs
+69	99	build	model	model		2026-11-02T03:52:56Z	10.9	
+69	100	build	tool	remote wait	bash	2026-11-02T03:53:07Z	0.1	Cleaning up testing module helpers (own new file) :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/testing.rs' s=open(p).read() a=s.index("//! ```\n//! use bevy::prelude::*;") b=s.index("use std::fmt;") s=s[:a]
+69	101	build	model	model		2026-11-02T03:53:07Z	2.9	
+69	102	build	tool	cargo build	bash	2026-11-02T03:53:10Z	7.1	Registering testing feature, compile :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='Cargo.toml' s=open(p).read() s=s.replace("""# Nothing enables this in normal use. `tests/readme.rs`""","""# `bevy_g
+69	103	build	model	model		2026-11-02T03:53:17Z	7.8	
+69	104	build	tool	shell	bash	2026-11-02T03:53:25Z	0.0	Reading text test preamble :: cd ~/bevy_gooey_loop && sed -n 1,110p tests/text.rs; grep -n "pub fn text_input\|pub fn toggle\|pub fn button" -A3 src/widgets.rs | head -30
+69	105	build	model	model		2026-11-02T03:53:25Z	17.1	
+69	106	build	tool	edit files	write	2026-11-02T03:53:42Z	0.0	Writing testing helper tests :: /home/ladvien/bevy_gooey_loop/tests/testing.rs
+69	107	build	model	model		2026-11-02T03:53:42Z	2.1	
+69	108	build	tool	cargo test	bash	2026-11-02T03:53:44Z	48.6	Running testing tests :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/all.rs' s=open(p).read() s=s.replace("mod text_area;\n","mod testing;\nmod text_area;\n",1) if False else s.r
+69	109	build	model	model		2026-11-02T03:54:33Z	6.3	
+69	110	build	tool	cargo test	bash	2026-11-02T03:54:39Z	2.5	Reading failure details :: cd ~/bevy_gooey_loop && cargo test --all-features --test all testing:: 2>&1 | grep -B2 -A6 "panicked at" | grep -v "^ *[0-9]*:\|at /rustc" | head -40
+69	111	build	model	model		2026-11-02T03:54:42Z	5.7	
+69	112	build	tool	cargo test	bash	2026-11-02T03:54:47Z	23.7	Fixing scale conversion and tests :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/testing.rs' s=open(p).read() s=s.replace("use bevy::ui::{ComputedNode, UiGlobalTransform};","use bevy::ui::{Com
+69	113	build	model	model		2026-11-02T03:55:11Z	5.0	
+69	114	build	tool	cargo test	bash	2026-11-02T03:55:16Z	15.9	Debugging scale click :: cd ~/bevy_gooey_loop && cat > /tmp/dbg.rs <<'EOF' EOF python3 - <<'EOF' p='/home/ladvien/bevy_gooey_loop/tests/testing.rs' s=open(p).read() s=s.replace(""" let 
+69	115	build	model	model		2026-11-02T03:55:32Z	8.1	
+69	116	build	tool	cargo test	bash	2026-11-02T03:55:40Z	3.2	Fix click scale using window scale factor :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='/home/ladvien/bevy_gooey_loop/tests/testing.rs' s=open(p).read() a=s.index(" {\n let w = app.world();") b=s.index("
+69	117	build	model	model		2026-11-02T03:55:43Z	3.1	
+69	118	build	tool	cargo test	bash	2026-11-02T03:55:46Z	23.3	Rerun testing tests :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='/home/ladvien/bevy_gooey_loop/src/testing.rs' s=open(p).read() s=s.replace(""" let window = window(app); let scale 
+69	119	build	model	model		2026-11-02T03:56:10Z	24.5	
+69	120	build	tool	git	bash	2026-11-02T03:56:34Z	0.1	Committing testing; reading PromptKey usage :: cd ~/bevy_gooey_loop && git add -A src tests Cargo.toml && git commit -qm "Headless test helpers: bevy_gooey::testing (feature testing): find_by_label, click, p
+69	121	build	model	model		2026-11-02T03:56:34Z	2.0	
+69	122	build	tool	shell	bash	2026-11-02T03:56:36Z	0.0	Reading PromptKey styling :: cd ~/bevy_gooey_loop && sed -n 2125,2135p src/skin.rs; sed -n 2262,2275p src/skin.rs; sed -n 2795,2850p src/skin.rs; sed -n 3190,3205p src/skin.rs; grep -n "own
+69	123	build	model	model		2026-11-02T03:56:36Z	31.8	
+69	124	build	tool	shell	bash	2026-11-02T03:57:08Z	0.0	Reading plugin wiring and Modifiers::held :: cd ~/bevy_gooey_loop && sed -n 300,520p src/lib.rs; grep -n "pub fn held" -B3 -A22 src/shortcut.rs
+69	125	build	model	model		2026-11-02T03:57:08Z	11.3	
+69	126	build	tool	shell	bash	2026-11-02T03:57:19Z	0.0	Checking z-index, tooltip, capturing, Shortcut decl :: cd ~/bevy_gooey_loop && grep -n "GlobalZIndex(" src/*.rs | head -20; grep -n "UiTransform" src/skin.rs | head -5; sed -n 55,100p src/tooltip.rs; grep -n "pub fn
+69	127	build	model	model		2026-11-02T03:57:19Z	24.6	
+69	128	build	tool	shell	bash	2026-11-02T03:57:44Z	0.0	Making Shortcut a Component; reading its docs :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/shortcut.rs' s=open(p).read() s=s.replace("""#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect)] #[refl
+69	129	build	model	model		2026-11-02T03:57:44Z	16.7	
+69	130	build	tool	shell	bash	2026-11-02T03:58:01Z	0.0	Writing badges.rs (new file) and Shortcut docs :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/shortcut.rs' s=open(p).read() s=s.replace("""/// A modifier is never the key of a shortcut (a press of Ctrl alo
+69	131	build	model	model		2026-11-02T03:58:01Z	2.6	
+69	132	build	tool	shell	bash	2026-11-02T03:58:03Z	0.0	Locate junk lines :: cd ~/bevy_gooey_loop && grep -n "texts\|let _ = &mut" src/badges.rs
+69	133	build	model	model		2026-11-02T03:58:03Z	0.8	
+69	134	build	tool	read files	read	2026-11-02T03:58:04Z	0.0	Read to anchor edit :: src/badges.rs:104-110
+69	135	build	model	model		2026-11-02T03:58:04Z	1.0	
+69	136	build	tool	edit files	edit	2026-11-02T03:58:05Z	0.0	Remove junk param :: [src/badges.rs#3382] CUT 109.=109 CUT 106.=106
+69	137	build	model	model		2026-11-02T03:58:05Z	4.1	
+69	138	build	tool	shell	bash	2026-11-02T03:58:09Z	0.0	Wire badges into lib.rs :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/lib.rs' s=open(p).read() s=s.replace("mod binding;\n","mod badges;\nmod binding;\n",1) s=s.replace("pub use bin
+69	139	build	model	model		2026-11-02T03:58:09Z	3.3	
+69	140	build	tool	edit files	edit	2026-11-02T03:58:13Z	0.0	Add Role::ShortcutBadge :: [src/skin.rs#501F] PUT >1181: + /// A [`crate::ShortcutBadges`] badge: a small keycap with a chord's words on the corner of the + /// widget it names, inside it
+69	141	build	tool	shell	bash	2026-11-02T03:58:13Z	0.0	Locate skin arms :: cd ~/bevy_gooey_loop && grep -n "Role::PromptKey | Role::PromptButton => Some(skin.surface_raised)\| | Role::PromptKey$\|Role::PromptKey | Role::PromptButton =>
+69	142	build	model	model		2026-11-02T03:58:13Z	3.3	
+69	143	build	tool	read files	read	2026-11-02T03:58:16Z	0.0	Anchor fill arm :: src/skin.rs:2136-2138
+69	144	build	tool	read files	read	2026-11-02T03:58:16Z	0.0	Anchor border arm :: src/skin.rs:2270-2275
+69	145	build	tool	read files	read	2026-11-02T03:58:16Z	0.0	Anchor layout arm :: src/skin.rs:2806-2820
+69	146	build	tool	read files	read	2026-11-02T03:58:16Z	0.0	Anchor text arm :: src/skin.rs:3200-3208
+69	147	build	model	model		2026-11-02T03:58:16Z	7.0	
+69	148	build	tool	edit files	edit	2026-11-02T03:58:23Z	0.0	Add ShortcutBadge arms to skin :: [src/skin.rs#4910] PUT 3202.=3202: + Role::ShortcutBadge => Some((skin.text, &look.fonts.body, skin.type_scale[0])), + Role::PromptKey PUT >2819: + // A badge s
+69	149	build	tool	cargo build	bash	2026-11-02T03:58:23Z	6.0	Compile check :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo check --lib --all-features 2>&1 | grep -E "^(error|warning)" -A8 | head -50
+69	150	build	model	model		2026-11-02T03:58:29Z	3.6	
+69	151	build	tool	cargo build	bash	2026-11-02T03:58:33Z	3.8	Make marker public; check :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='src/badges.rs' s=open(p).read() s=s.replace("""/// A badge, a child of the widget it names. #[derive(Component)] pu
+69	152	build	model	model		2026-11-02T03:58:37Z	14.0	
+69	153	build	tool	shell	bash	2026-11-02T03:58:51Z	0.0	Reading menu test key helpers :: cd ~/bevy_gooey_loop && grep -n "AltLeft" tests/menu.rs | head -5; grep -n "fn key_down\|fn hold\|fn press_key\|fn release" -A14 tests/menu.rs | head -50; grep 
+69	154	build	model	model		2026-11-02T03:58:51Z	1.6	
+69	155	build	tool	shell	bash	2026-11-02T03:58:52Z	0.0	Reading key fn and Time usage :: cd ~/bevy_gooey_loop && grep -n "^fn key" -A16 tests/menu.rs | head -30; sed -n 465,480p tests/choice.rs; grep -n "pub fn contrast_ratio" -A3 src/model.rs
+69	156	build	model	model		2026-11-02T03:58:52Z	34.7	
+69	157	build	tool	edit files	write	2026-11-02T03:59:27Z	0.0	Writing badges tests :: /home/ladvien/bevy_gooey_loop/tests/badges.rs
+69	158	build	model	model		2026-11-02T03:59:27Z	2.1	
+69	159	build	tool	cargo test	bash	2026-11-02T03:59:29Z	20.8	Run badge tests :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/all.rs' s=open(p).read() s=s.replace("mod binding;\n","mod badges;\nmod binding;\n",1) open(p,'w').write(s) E
+69	160	build	model	model		2026-11-02T03:59:50Z	2.5	
+69	161	build	tool	cargo test	bash	2026-11-02T03:59:52Z	4.2	Fix FocusCause and rerun :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/badges.rs' s=open(p).read() s=s.replace(".set(t.save);",".set(t.save, FocusCause::Navigation);") s=s.replace(
+69	162	build	model	model		2026-11-02T03:59:56Z	1.2	
+69	163	build	tool	shell	bash	2026-11-02T03:59:58Z	0.0	Find a valid FocusCause :: cd ~/bevy_gooey_loop && grep -rn "FocusCause::" tests/palette.rs | head -3
+69	164	build	model	model		2026-11-02T03:59:58Z	1.8	
+69	165	build	tool	cargo test	bash	2026-11-02T03:59:59Z	25.4	Rerun badge tests :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='tests/badges.rs' s=open(p).read() s=s.replace("FocusCause::Navigation","FocusCause::Navigated") open(p,'w').write(s
+69	166	build	model	model		2026-11-02T04:00:25Z	4.9	
+69	167	build	tool	cargo test	bash	2026-11-02T04:00:30Z	13.9	Mutation check on badge position :: cd ~/bevy_gooey_loop && cp src/skin.rs /tmp/skin.rs.bak && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace("next.right = Val::Px(skin.pad() * 0.5
+69	168	build	model	model		2026-11-02T04:00:44Z	5.1	
+69	169	build	tool	git	bash	2026-11-02T04:00:49Z	0.1	Committing badges; reading gallery key script :: cd ~/bevy_gooey_loop && git add -A src tests && git commit -qm "Shortcut overlay: ShortcutBadges shows every visible widget's chord while a modifier is held (#3
+69	170	build	model	model		2026-11-02T04:00:49Z	1.4	
+69	171	build	tool	shell	bash	2026-11-02T04:00:50Z	0.0	Reading gallery staged inputs :: cd ~/bevy_gooey_loop && sed -n 120,180p examples/gallery.rs; sed -n 262,345p examples/gallery.rs; grep -n "Staged::Plug" -B2 -A12 examples/gallery.rs | sed -n 1
+69	172	build	model	model		2026-11-02T04:00:50Z	1.1	
+69	173	build	tool	shell	bash	2026-11-02T04:00:51Z	0.0	Reading staged key driver :: cd ~/bevy_gooey_loop && sed -n 660,790p examples/gallery.rs
+69	174	build	model	model		2026-11-02T04:00:51Z	8.5	
+69	175	build	tool	shell	bash	2026-11-02T04:01:00Z	0.0	Reading media recipe :: cd ~/bevy_gooey_loop && sed -n 1,40p docs/media/README.md; grep -n "text-area\|focus-regions" docs/media/README.md | head
+69	176	build	model	model		2026-11-02T04:01:00Z	4.0	
+69	177	build	tool	shell	bash	2026-11-02T04:01:04Z	0.0	Inspecting shortcuts example :: cd ~/bevy_gooey_loop && grep -n "GOOEY_KEYS\|Staged\|enum \|\"ctrl\|button(\|Tooltip\|fn " examples/shortcuts.rs | head -60; wc -l examples/shortcuts.rs
+69	178	build	model	model		2026-11-02T04:01:04Z	5.1	
+69	179	build	tool	shell	bash	2026-11-02T04:01:09Z	0.0	Reading a small example as a template :: cd ~/bevy_gooey_loop && wc -l examples/*.rs; sed -n 1,60p examples/sections.rs; grep -n "\[\[example\]\]" -A4 Cargo.toml | head -30
+69	180	build	model	model		2026-11-02T04:01:09Z	1.0	
+69	181	build	tool	shell	bash	2026-11-02T04:01:10Z	0.0	Reading rest of sections example :: cd ~/bevy_gooey_loop && sed -n 60,240p examples/sections.rs
+69	182	build	model	model		2026-11-02T04:01:10Z	25.7	
+69	183	build	tool	cargo build	bash	2026-11-02T04:01:36Z	6.8	Writing badges example and checking :: cd ~/bevy_gooey_loop && cat > examples/badges.rs <<'EOF' //! The shortcut overlay: a small editor's commands, each with a chord. Hold **Alt** for a third of a /
+69	184	build	model	model		2026-11-02T04:01:42Z	6.6	
+69	185	build	tool	cargo build	bash	2026-11-02T04:01:49Z	48.1	Build and capture first badges still :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example badges --example gallery 2>&1 | tail -3; mkdir -p /tmp/g41/shots /tmp/g41/frames && B
+69	186	build	model	model		2026-11-02T04:02:37Z	1.3	
+69	187	build	tool	read files	read	2026-11-02T04:02:39Z	0.0	Viewing badges still :: /tmp/g41/shots/badges-dark.png
+69	188	build	model	model		2026-11-02T04:02:39Z	36.6	
+69	189	build	tool	cargo build	bash	2026-11-02T04:03:15Z	7.2	Restructure example and recapture :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='examples/badges.rs' s=open(p).read() a=s.index("/// A level editor's command panel") b=s.index("fn follow_backgroun
+69	190	build	model	model		2026-11-02T04:03:22Z	2.9	
+69	191	build	tool	read files	read	2026-11-02T04:03:25Z	0.0	View new capture :: /tmp/g41/shots/badges-dark.png
+69	192	build	model	model		2026-11-02T04:03:25Z	2.6	
+69	193	build	tool	shell	bash	2026-11-02T04:03:28Z	0.1	Zoom badges :: cd /tmp/g41/shots && magick badges-dark.png -crop 200x90+660+170 +repage -filter point -resize 400% z1.png && magick badges-dark.png -crop 200x70+660+340 +repag
+69	194	build	model	model		2026-11-02T04:03:28Z	0.9	
+69	195	build	tool	read files	read	2026-11-02T04:03:29Z	0.0	View zoom :: /tmp/g41/shots/z.png
+69	196	build	model	model		2026-11-02T04:03:29Z	6.9	
+69	197	build	tool	shell	bash	2026-11-02T04:03:36Z	8.1	Capture GIF frames :: cd /tmp/g41 && rm -rf frames && mkdir -p frames && B=$CARGO_TARGET_DIR/release/examples/badges && GOOEY_FRAMES=300 GOOEY_KEY_EVERY=34 GOOEY_KEYS="tab;alt;unalt;
+69	198	build	model	model		2026-11-02T04:03:44Z	3.2	
+69	199	build	tool	shell	bash	2026-11-02T04:03:47Z	0.6	Contact sheet of frames :: cd /tmp/g41 && ls frames | head -3; montage $(ls frames/f_*.png | awk 'NR%4==0') -crop 460x520+410+100 +repage -tile 8x -geometry 230x260+2+2 -background '#222'
+69	200	build	model	model		2026-11-02T04:03:48Z	0.9	
+69	201	build	tool	read files	read	2026-11-02T04:03:49Z	0.1	View contact sheet :: /tmp/g41/sheet.png
+69	202	build	model	model		2026-11-02T04:03:49Z	6.5	
+69	203	build	tool	clip record/render	bash	2026-11-02T04:03:55Z	0.5	Build badges GIF :: cd ~/bevy_gooey_loop && ffmpeg -y -loglevel error -framerate 15 -pattern_type glob -i '/tmp/g41/frames/f_*.png' -vf "crop=460:520:410:100,fps=15,split[a][b];[a]
+69	204	build	model	model		2026-11-02T04:03:56Z	4.4	
+69	205	build	tool	shell	bash	2026-11-02T04:04:00Z	28.5	Capture skins and scales :: cd /tmp/g41/shots && B=$CARGO_TARGET_DIR/release/examples/badges; run(){ n=$1; shift; env GOOEY_FRAMES=130 GOOEY_KEY_EVERY=30 GOOEY_KEYS="tab;alt" GOOEY_SHOT=/t
+69	206	build	model	model		2026-11-02T04:04:29Z	1.3	
+69	207	build	tool	read files	read	2026-11-02T04:04:30Z	0.1	View skins montage :: /tmp/g41/shots/m.png
+69	208	build	model	model		2026-11-02T04:04:30Z	6.8	
+69	209	build	tool	cargo build	bash	2026-11-02T04:04:37Z	7.6	Fix example width scaling; recapture big :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='examples/badges.rs' s=open(p).read() s=s.replace("fn setup(mut commands: Commands) {","fn setup(mut commands: Comma
+69	210	build	tool	read files	read	2026-11-02T04:04:37Z	7.6	View 1.5x text :: /tmp/g41/shots/c_big.png
+69	211	build	tool	read files	read	2026-11-02T04:04:37Z	7.6	View parchment zoom :: /tmp/g41/shots/c_parch_z.png
+69	212	build	model	model		2026-11-02T04:04:44Z	6.2	
+69	213	build	tool	cargo build	bash	2026-11-02T04:04:51Z	4.3	Verify rebuild and recapture :: cd ~/bevy_gooey_loop && grep -n "skin.text_scale" examples/badges.rs; CARGO_BUILD_JOBS=4 cargo build --release --example badges 2>&1 | tail -3; cd /tmp/g41/shot
+69	214	build	model	model		2026-11-02T04:04:55Z	0.9	
+69	215	build	tool	read files	read	2026-11-02T04:04:56Z	0.0	View big again :: /tmp/g41/shots/c_big.png
+69	216	build	model	model		2026-11-02T04:04:56Z	3.7	
+69	217	build	tool	shell	bash	2026-11-02T04:05:00Z	0.3	Zoom parchment, high contrast :: cd /tmp/g41/shots && magick parch.png -crop 200x100+640+170 +repage -filter point -resize 400% c_parch_z.png; magick hc.png -crop 200x100+640+170 +repage -filte
+69	218	build	tool	read files	read	2026-11-02T04:05:00Z	0.3	View zooms :: /tmp/g41/shots/zz.png
+69	219	build	tool	read files	read	2026-11-02T04:05:00Z	0.3	View 2560x1440 :: /tmp/g41/shots/c_uhd.png
+69	220	build	model	model		2026-11-02T04:05:00Z	8.0	
+69	221	build	tool	read files	read	2026-11-02T04:05:08Z	0.0	View parchment zoom :: /tmp/g41/shots/c_parch_z.png
+69	222	build	model	model		2026-11-02T04:05:08Z	12.8	
+69	223	build	tool	shell	bash	2026-11-02T04:05:21Z	0.0	Locate badge arms :: cd ~/bevy_gooey_loop && grep -n "Role::ShortcutBadge" src/skin.rs
+69	224	build	model	model		2026-11-02T04:05:21Z	4.7	
+69	225	build	tool	cargo build	bash	2026-11-02T04:05:25Z	26.2	Try inverted chip look :: cd ~/bevy_gooey_loop && cp src/skin.rs /tmp/skin.pre-invert && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace("Role::ShortcutBadge => Some(skin.
+69	226	build	model	model		2026-11-02T04:05:52Z	1.0	
+69	227	build	tool	read files	read	2026-11-02T04:05:53Z	0.1	View inverted look :: /tmp/g41/shots/mi.png
+69	228	build	model	model		2026-11-02T04:05:53Z	4.5	
+69	229	build	tool	shell	bash	2026-11-02T04:05:57Z	0.0	Locate Role doc :: cd ~/bevy_gooey_loop && grep -n "A \[\`crate::ShortcutBadges\`\] badge" -A4 src/skin.rs
+69	230	build	model	model		2026-11-02T04:05:57Z	1.3	
+69	231	build	tool	read files	read	2026-11-02T04:05:59Z	0.0	Anchor for doc edit :: /home/ladvien/bevy_gooey_loop/src/skin.rs:1182-1186
+69	232	build	model	model		2026-11-02T04:05:59Z	2.2	
+69	233	build	tool	edit files	edit	2026-11-02T04:06:01Z	0.0	Update ShortcutBadge role doc :: [src/skin.rs#C92D] PUT 1182.=1185: + /// A [`crate::ShortcutBadges`] badge: a small chip with a chord's words on the right of the + /// widget it names, inside 
+69	234	build	model	model		2026-11-02T04:06:01Z	5.2	
+69	235	build	tool	clip record/render	bash	2026-11-02T04:06:06Z	8.3	Regenerate GIF with new look; inspect README structure :: cd /tmp/g41 && rm -rf frames && mkdir frames && B=$CARGO_TARGET_DIR/release/examples/badges && GOOEY_FRAMES=300 GOOEY_KEY_EVERY=34 GOOEY_KEYS="tab;alt;unalt;tab
+69	236	build	model	model		2026-11-02T04:06:14Z	3.6	
+69	237	build	tool	read files	read	2026-11-02T04:06:18Z	0.0	Read README middle :: README.md:100-175
+69	238	build	model	model		2026-11-02T04:06:18Z	7.6	
+69	239	build	tool	read files	read	2026-11-02T04:06:26Z	0.0	Read README tail :: README.md:179-250
+69	240	build	tool	read files	read	2026-11-02T04:06:26Z	0.0	Read README upper :: README.md:60-98
+69	241	build	model	model		2026-11-02T04:06:26Z	10.2	
+69	242	build	tool	shell	bash	2026-11-02T04:06:36Z	1.6	Per-frame chip presence :: cd /tmp/g41/frames && for f in f_*.png; do v=$(magick $f -crop 60x18+770+188 +repage -colorspace gray -format "%[fx:mean*100]" info:); printf "%s:%.0f " ${f#f_}
+69	243	build	model	model		2026-11-02T04:06:37Z	12.5	
+69	244	build	tool	edit files	edit	2026-11-02T04:06:50Z	0.0	README edits: features, tones, badges block, docs line :: [README.md#584C] PUT 236.=237: +- [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, l
+69	245	build	tool	shell	bash	2026-11-02T04:06:50Z	0.0	Check README length and guide index :: cd ~/bevy_gooey_loop && wc -l README.md; grep -c "shortcuts.gif" docs/guide/shortcuts.md docs/guide/README.md; cat docs/guide/README.md | head -60; sed -n 1,50p
+69	246	build	model	model		2026-11-02T04:06:50Z	5.7	
+69	247	build	tool	shell	bash	2026-11-02T04:06:56Z	0.0	Find doc insertion points :: cd ~/bevy_gooey_loop && grep -n "A prompt names a chord too\|^\`examples/shortcuts.rs\`\|^## " docs/guide/shortcuts.md; grep -n "^## \|^# " docs/guide/skins.md 
+69	248	build	model	model		2026-11-02T04:06:56Z	10.2	
+69	249	build	tool	edit files	write	2026-11-02T04:07:06Z	0.0	/home/ladvien/bevy_gooey_loop/docs/guide/testing.md
+69	250	build	tool	read files	read	2026-11-02T04:07:06Z	0.0	Anchor shortcuts guide edit :: /home/ladvien/bevy_gooey_loop/docs/guide/shortcuts.md:36-46
+69	251	build	model	model		2026-11-02T04:07:06Z	9.1	
+69	252	build	tool	edit files	edit	2026-11-02T04:07:15Z	0.0	Add overlay section to shortcuts guide :: [docs/guide/shortcuts.md#7E05] PUT >45: +## Show every chord: hold a modifier + +A tooltip teaches a chord to the player who waits for it. `ShortcutBadges` teac
+69	253	build	tool	shell	bash	2026-11-02T04:07:15Z	0.0	Read skins guide around tokens :: cd ~/bevy_gooey_loop && sed -n 60,70p docs/guide/skins.md; sed -n 116,145p docs/guide/skins.md | cut -c1-200
+69	254	build	model	model		2026-11-02T04:07:15Z	1.2	
+69	255	build	tool	shell	bash	2026-11-02T04:07:16Z	0.0	Get tag for skins guide :: cd ~/bevy_gooey_loop && grep -n "^## A skin for one subtree" docs/guide/skins.md
+69	256	build	model	model		2026-11-02T04:07:16Z	1.0	
+69	257	build	tool	read files	read	2026-11-02T04:07:17Z	0.0	Anchor skins guide :: /home/ladvien/bevy_gooey_loop/docs/guide/skins.md:114-117
+69	258	build	model	model		2026-11-02T04:07:17Z	13.5	
+69	259	build	tool	edit files	edit	2026-11-02T04:07:31Z	0.0	Add named tones section to skins guide :: [docs/guide/skins.md#ABE6] PUT >115: +## Your own named colours + +A tool has more semantic colours than a skin's fixed fields: a suggestion ink, a map's grid l
+69	260	build	tool	cargo build	bash	2026-11-02T04:07:31Z	0.0	Update guide index and media README :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='docs/guide/README.md' s=open(p).read() s=s.replace("""- [Text input](text-input.md)""","""- [Shortcut badges](short
+69	261	build	model	model		2026-11-02T04:07:31Z	4.8	
+69	262	build	tool	shell	bash	2026-11-02T04:07:35Z	0.0	Check host-api table :: cd ~/bevy_gooey_loop && grep -n "Shortcut\|BindingSettings\|ToastSettings" docs/guide/host-api.md | cut -c1-240 | head
+69	263	build	model	model		2026-11-02T04:07:35Z	1.6	
+69	264	build	tool	read files	read	2026-11-02T04:07:37Z	0.0	Anchor host-api edit :: /home/ladvien/bevy_gooey_loop/docs/guide/host-api.md:14-16
+69	265	build	tool	read files	read	2026-11-02T04:07:37Z	0.0	Anchor second host-api edit :: /home/ladvien/bevy_gooey_loop/docs/guide/host-api.md:63-64
+69	266	build	model	model		2026-11-02T04:07:37Z	9.8	
+69	267	build	tool	edit files	edit	2026-11-02T04:07:47Z	0.0	Add host-api rows :: [docs/guide/host-api.md#074C] PUT >64: + A `Shortcut` is also a component: on a widget it is what `ShortcutBadges` shows while the player holds a modifier. PUT 
+69	268	build	tool	shell	bash	2026-11-02T04:07:47Z	0.0	CHANGELOG entry :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='CHANGELOG.md' s=open(p).read() new='''## [Unreleased] ### Added - Named tones (G-29, #33): `GooeySkin::tones: BTree
+69	269	build	model	model		2026-11-02T04:07:47Z	4.5	
+69	270	build	tool	read files	read	2026-11-02T04:07:51Z	0.0	Anchor AGENTS insert :: /home/ladvien/bevy_gooey_loop/AGENTS.md:54-56
+69	271	build	model	model		2026-11-02T04:07:51Z	9.3	
+69	272	build	tool	edit files	edit	2026-11-02T04:08:01Z	0.0	AGENTS layout entries :: [AGENTS.md#8E5A] PUT >55: +- `src/badges.rs` — `ShortcutBadges { hold: Modifiers, delay_seconds }` (a resource `GooeyStylePlugin` inits; default Alt and 0.3 s; 
+69	273	build	model	model		2026-11-02T04:08:01Z	8.2	
+69	274	build	tool	cargo test	bash	2026-11-02T04:08:09Z	0.0	Insert AGENTS entries (docs file, scripted insert) :: cd ~/bevy_gooey_loop && python3 - <<'EOF' p='AGENTS.md' lines=open(p).read().split('\n') i=next(k for k,l in enumerate(lines) if l.startswith('- `src/shortcut.r
+69	275	build	model	model		2026-11-02T04:08:09Z	5.0	
+69	276	prove	tool	phase mark	bash	2026-11-02T04:08:14Z	0.4	Commit docs; run fmt check :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; git add -A && git commit -qm "Docs, example and GIF for the shortcut overlay, named t
+69	277	prove	model	model		2026-11-02T04:08:14Z	1.7	
+69	278	prove	tool	cargo clippy	bash	2026-11-02T04:08:16Z	8.6	cargo fmt then clippy :: cd ~/bevy_gooey_loop && cargo fmt && cargo fmt --check && echo FMT_OK; git status --short | head; CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -
+69	279	prove	model	model		2026-11-02T04:08:25Z	3.4	
+69	280	prove	tool	read files	read	2026-11-02T04:08:28Z	0.0	Anchor badges query :: src/badges.rs:80-110
+69	281	prove	model	model		2026-11-02T04:08:28Z	3.1	
+69	282	prove	tool	edit files	edit	2026-11-02T04:08:31Z	0.0	Alias query item type :: [src/badges.rs#F4D8] PUT 97.=107: + widgets: Query<BadgeItem, Badgeable>, PUT >86: + +/// What the overlay reads of a widget: its chord (either source), whether
+69	283	prove	tool	cargo clippy	bash	2026-11-02T04:08:31Z	12.8	clippy again :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(warning|error)" -A12 | head -
+69	284	prove	model	model		2026-11-02T04:08:44Z	2.2	
+69	285	prove	tool	shell	bash	2026-11-02T04:08:46Z	0.0	Find complex type in test :: cd ~/bevy_gooey_loop && grep -n "Query<(), Or<" -B6 -A4 tests/badges.rs
+69	286	prove	model	model		2026-11-02T04:08:46Z	0.9	
+69	287	prove	tool	read files	read	2026-11-02T04:08:47Z	0.0	Anchor test edit :: tests/badges.rs:445-458
+69	288	prove	model	model		2026-11-02T04:08:47Z	2.5	
+69	289	prove	tool	edit files	edit	2026-11-02T04:08:50Z	0.0	Alias type in test :: [tests/badges.rs#FC3D] PUT 450.=454: + #[derive(Resource, Default)] + struct Writes(u32); + type Written = Or<(Changed<Text>, Changed<Node>, Changed<BackgroundC
+69	290	prove	tool	cargo clippy	bash	2026-11-02T04:08:50Z	5.4	clippy third run :: cd ~/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(warning|error)" -A12 | head -
+69	291	prove	model	model		2026-11-02T04:08:55Z	6.3	
+69	292	prove	tool	cargo build	bash	2026-11-02T04:09:01Z	60.0	[launched bg_3] Capture before/after gallery and compare :: cd ~/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example gallery 2>&1 | tail -1; cp $CARGO_TARGET_DIR/release/examples/gallery ~/g41_bin/galle
+69	293	prove	model	model		2026-11-02T04:10:01Z	6.3	
+69	294	prove	tool	wait: clip	wait	2026-11-02T04:10:08Z	34.4	Waiting for after-captures
+69	295	prove	model	model		2026-11-02T04:10:42Z	5.4	
+69	296	prove	tool	shell	bash	2026-11-02T04:10:47Z	60.0	[launched bg_4] Paired perf measurement :: cat > /tmp/g41/perf.sh <<'EOF' #!/bin/bash for i in $(seq 1 12); do for w in gallery gallery_new; do v=$(GOOEY_HEALTH=60 GOOEY_FRAMES=240 GOOEY_KEYS=down GOOEY_
+69	297	prove	model	model		2026-11-02T04:11:47Z	6.8	
+69	298	prove	tool	edit files	write	2026-11-02T04:11:54Z	0.0	/tmp/g41/critique.md
+69	299	prove	tool	wait: other	wait	2026-11-02T04:11:54Z	79.4	Waiting for perf run
+69	300	prove	model	model		2026-11-02T04:13:14Z	8.1	
+69	301	gate	tool	phase mark	bash	2026-11-02T04:13:22Z	2.2	Push branch, merge, prepare gate :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; git add -A && git commit -qm "Fix clippy type_complexity in the badges system and its 
+69	302	gate	model	model		2026-11-02T04:13:24Z	1.3	
+69	303	gate	tool	shell	bash	2026-11-02T04:13:25Z	0.0	[launched bg_5] Run full gate on merged tree :: /tmp/g41/gate.sh > /tmp/g41/gate.log 2>&1; cat /tmp/g41/gate.log
+69	304	gate	model	model		2026-11-02T04:13:25Z	8.3	
+69	305	gate	tool	github	bash	2026-11-02T04:13:34Z	9.5	Post assumed-decision comments :: cd ~/bevy_gooey_loop && gh label create assumed-decision --color FBCA04 2>/dev/null; gh issue comment 33 --repo bevy-coven/bevy_gooey --body "Assumed decision (
+69	306	gate	model	model		2026-11-02T04:13:43Z	0.9	
+69	307	gate	tool	wait: gate	wait	2026-11-02T04:13:44Z	132.3	Waiting for gate
+69	308	gate	model	model		2026-11-02T04:15:56Z	4.2	
+69	309	gate	tool	shell	bash	2026-11-02T04:16:00Z	0.0	Find unresolved link :: cd ~/bevy_gooey_loop && grep -n "\[\`ShortcutBadges\`\]" src/*.rs
+69	310	gate	model	model		2026-11-02T04:16:00Z	1.0	
+69	311	gate	tool	read files	read	2026-11-02T04:16:01Z	0.0	Anchor link fix :: src/shortcut.rs:134-134
+69	312	gate	model	model		2026-11-02T04:16:01Z	2.5	
+69	313	gate	tool	edit files	edit	2026-11-02T04:16:04Z	0.0	Fix intra-doc link :: [src/shortcut.rs#D8DA] PUT 134.=134: +/// and [`crate::ShortcutBadges`] shows its label on the widget while the player holds the modifier. The
+69	314	gate	tool	cargo build	bash	2026-11-02T04:16:04Z	10.2	Re-run doc steps :: cd ~/bevy_gooey_loop && export CARGO_BUILD_JOBS=4; RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features 2>&1 | grep -E "^(error|warning)" -A6 | head -2
+69	315	gate	model	model		2026-11-02T04:16:14Z	2.4	
+69	316	ship	tool	phase mark	bash	2026-11-02T04:16:17Z	19.2	semver-checks :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship; git add -A && git commit -qm "Fix an intra-doc link to ShortcutBadges" && which cargo-
+69	317	ship	model	model		2026-11-02T04:16:36Z	6.4	
+69	318	log	tool	phase mark	bash	2026-11-02T04:16:42Z	0.1	Gather commits for the log :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; git log --oneline main -12 | cat; git tag | tail -3; df -h /home | tail -1; python3 - <
+69	319	log	model	model		2026-11-02T04:16:42Z	3.4	
+69	320	log	tool	shell	bash	2026-11-02T04:16:46Z	4.3	Check target size and test executables :: du -sh $CARGO_TARGET_DIR 2>/dev/null; ls $CARGO_TARGET_DIR/debug/deps | grep -c "^all-"; ls $CARGO_TARGET_DIR/debug/deps | grep "^all-" | grep -v "\.d$" | head
+69	321	log	model	model		2026-11-02T04:16:50Z	26.6	
+69	322	log	tool	push gate	bash	2026-11-02T04:17:16Z	1.4	Write loop log, push main :: cd ~/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' ## Iteration 41 — 2026-11-02 — Shortcut overlay, named tones and headless test helpers (#30, #31, #33) *
+69	323	log	model	model		2026-11-02T04:17:18Z	4.2	
+69	324	release	tool	phase mark	bash	2026-11-02T04:17:22Z	0.1	Locate version strings :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; grep -n '^version' Cargo.toml | head -2; grep -n "0.1 – 0.23" README.md; grep -n "b
+69	325	release	model	model		2026-11-02T04:17:22Z	2.7	
+69	326	release	tool	cargo build	bash	2026-11-02T04:17:25Z	6.0	Bump version and dry-run publish :: cd ~/bevy_gooey_loop && python3 - <<'EOF' import re p='Cargo.toml'; s=open(p).read(); s=s.replace('version = "0.23.0"','version = "0.24.0"',1); open(p,'w').writ
+69	327	release	model	model		2026-11-02T04:17:31Z	2.4	
+69	328	release	tool	cargo publish	bash	2026-11-02T04:17:33Z	15.2	Commit release and dry-run again :: cd ~/bevy_gooey_loop && git add -A && git commit -qm "release: v0.24.0" && CARGO_BUILD_JOBS=4 cargo publish --dry-run 2>&1 | tail -4
+69	329	release	model	model		2026-11-02T04:17:49Z	1.3	
+69	330	release	tool	push gate	bash	2026-11-02T04:17:50Z	7.3	Push and publish :: cd ~/bevy_gooey_loop && git push -q origin main 2>&1 | tail -2; CARGO_BUILD_JOBS=4 cargo publish 2>&1 | tail -5
+69	331	release	model	model		2026-11-02T04:17:57Z	2.3	
+69	332	release	tool	push gate	bash	2026-11-02T04:18:00Z	3.7	Tag, verify, find dependent issues :: cd ~/bevy_gooey_loop && git tag -a v0.24.0 -m v0.24.0 && git push -q origin v0.24.0 2>&1 | tail -1; cargo info bevy_gooey@0.24.0 2>&1 | head -4; SHA=$(git rev-p
+69	333	release	model	model		2026-11-02T04:18:03Z	4.4	
+69	334	release	tool	github	bash	2026-11-02T04:18:08Z	1.8	Map grimoire issues to gooey issues :: cd ~/bevy_gooey_loop && SHA=94664e4; for n in 235 214 210 208; do needs=$(gh issue view $n -R bevy-coven/bevy_grimoire --json body --jq '.body' | grep -o "bevy_
+69	335	release	model	model		2026-11-02T04:18:09Z	8.0	
+69	336	release	tool	github	bash	2026-11-02T04:18:17Z	13.9	Comment, close issues and notify grimoire :: cd ~/bevy_gooey_loop && SHA=94664e4 gh issue comment 30 --repo bevy-coven/bevy_gooey --body "Fixed in $SHA (shortcut overlay: \`ShortcutBadges\`, \`Shortcut\` a
+69	337	release	model	model		2026-11-02T04:18:31Z	4.0	
+69	338	log	tool	phase mark	bash	2026-11-02T04:18:35Z	2.3	Clean up my worktree and scratch :: cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log >/dev/null; df -h /home | tail -1; git worktree remove ~/g41_base && rm -rf ~/g41_bin /t
+69	339	log	model	model		2026-11-02T04:18:38Z	4.9	
+69	340	log	tool	push gate	bash	2026-11-02T04:18:43Z	1.4	Final log and push :: cd ~/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' **Release.** v0.24.0 published from `94664e4` (`cargo semver-checks`: major, so a minor bump pre-1.0: `G
+69	341	log	model	model		2026-11-02T04:18:44Z	7.0	
