@@ -126,6 +126,7 @@ fn spec(role: Role) -> Spec {
         | Role::Spinner
         | Role::Toolbar
         | Role::GroupOption
+        | Role::Radial
         | Role::SectionNote => Spec::Node,
         Role::ButtonText
         | Role::MeterFill
@@ -183,6 +184,9 @@ fn spec(role: Role) -> Spec {
         | Role::StatusMark
         | Role::MenuSeparator
         | Role::ToolbarSeparator
+        | Role::RadialSlot
+        | Role::RadialText
+        | Role::RadialCentre
         | Role::ToastActionText => Spec::Hidden,
     }
 }
@@ -403,6 +407,12 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.value = facts
                 .choice
                 .and_then(|value| look.selected_option(entity, value.0));
+        }
+        // A wheel is read as a spin button whose value is the highlighted item's name, the one
+        // in its middle; the host names it with `AccessibleLabel`.
+        Role::Radial => {
+            wanted.role = Some(Ak::SpinButton);
+            wanted.value = look.words(entity, |role| role == Role::RadialCentre);
         }
         Role::Binding => {
             wanted.name = look.control_text(entity);

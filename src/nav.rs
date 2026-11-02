@@ -30,6 +30,7 @@ use crate::menu::{MenuRow, MenuTitle};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
 use crate::number::{NumberInput, NumberStepBy};
 use crate::popover::PopoverPanel;
+use crate::radial::RadialCount;
 use crate::region::{ArrowPolicy, FocusRegion};
 use crate::skin::Role;
 use crate::split::{SplitAxis, SplitDivider};
@@ -163,6 +164,8 @@ pub struct FocusScopes<'w, 's> {
     /// the number (the value) and whose D-pad Left and Right do ([`crate::number_field`],
     /// [`crate::color_field`]).
     numbers: Query<'w, 's, (), Steppable>,
+    /// The radials, which take all four arrows and the D-pad as steps ([`crate::radial`]).
+    radials: Query<'w, 's, (), (With<RadialCount>, Without<InteractionDisabled>)>,
     /// The text fields, which take the keys Left and Right themselves.
     typing: Query<'w, 's, (), TypesText>,
     /// The text areas, whose caret takes Up and Down too.
@@ -506,6 +509,11 @@ pub fn navigate_by_input(
         return;
     }
     show_focus(&mut shown);
+    // A radial takes every arrow key (its observer) and the D-pad (`radial_by_pad`) as a step
+    // round its ring: none of them also moves focus off it.
+    if from.is_some_and(|f| scopes.radials.contains(f)) {
+        return;
+    }
     // Ctrl+Shift and an arrow on a dock's tab moves its panel (its own observer), not focus.
     if from.is_some_and(|f| scopes.dock_tabs.contains(f)) && moves_tabs(&keys) {
         return;

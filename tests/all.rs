@@ -35,6 +35,7 @@ mod pointer;
 mod popover;
 mod progress;
 mod prompts;
+mod radial;
 mod readme;
 mod region;
 mod scale;
