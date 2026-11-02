@@ -162,6 +162,8 @@ fn a_skin_that_breaks_the_rules_says_which() {
 #[test]
 fn a_meter_fills_by_fraction() {
     let mut app = app();
+    // The fraction and its clamp, not the motion toward it (`tests/meter_motion.rs`).
+    app.insert_resource(MotionSettings::off());
     let meter = app.world_mut().spawn(meter(25.0, 100.0)).id();
     app.update();
     let fill = child_with_role(&mut app, meter, Role::MeterFill);
