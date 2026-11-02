@@ -56,6 +56,11 @@ const CHOICE_MIN_TEXT_SIZES: f32 = 8.0;
 /// still a fraction of a 720p window at the default size (26 × 16 px = 416 px).
 const RADIAL_DIAMETER_TEXT_SIZES: f32 = 26.0;
 
+/// A picture on a [`crate::radial`]'s ring is this many of the wheel's text sizes square (48 px by
+/// default): big enough to tell eight weapons apart, small enough that the ring's items stand
+/// clear of one another.
+const RADIAL_ICON_TEXT_SIZES: f32 = 3.0;
+
 /// A [`crate::slot_grid`]'s slot is this many body text sizes square (4 × 16 px = 64 px by default,
 /// over the 44 px target), so the grid follows the player's text size.
 const SLOT_TEXT_SIZES: f32 = 4.0;
@@ -1323,6 +1328,9 @@ pub enum Role {
     /// An item's label: [`GooeySkin::accent_text`] on the highlighted item, else
     /// [`GooeySkin::text`].
     RadialText,
+    /// An item's picture ([`crate::RadialItem::icon`]): 3 of the wheel's text sizes square, the
+    /// image tinted like an [`Role::Icon`] (the accent's text on the highlighted item).
+    RadialIcon,
     /// The highlighted item's name, in the middle of the disc in the heading's size.
     RadialCentre,
     /// A [`crate::slot_grid`]'s grid: its slots in a row-and-column grid half a
@@ -2292,6 +2300,7 @@ fn restyle(
         | Role::SlotGrid
         | Role::SlotName
         | Role::SlotIcon
+        | Role::RadialIcon
         | Role::RadialText
         | Role::RadialCentre
         | Role::RadialTrack
@@ -2570,6 +2579,15 @@ fn restyle(
                 let side = Val::Px(text_px * SLOT_TEXT_SIZES * SLOT_ICON_SHARE);
                 next.width = side;
                 next.height = side;
+                next.flex_shrink = 0.0;
+            }
+            // A picture's item is as wide as it is high: the negative margin takes back the
+            // sides' extra padding an item with words has, so the pill round it is a square.
+            Role::RadialIcon => {
+                let side = Val::Px(wheel_px * RADIAL_ICON_TEXT_SIZES);
+                next.width = side;
+                next.height = side;
+                next.margin = UiRect::horizontal(Val::Px(-skin.pad() * 0.9));
                 next.flex_shrink = 0.0;
             }
             Role::Menu | Role::TabPage | Role::Tabs | Role::Inspector => {
@@ -3293,7 +3311,7 @@ fn restyle(
 
     // An icon is its image times a colour of the skin: the text's, following the widget it stands
     // in (muted when disabled, the accent's text pressed), or a fixed tone.
-    if let (Role::Icon | Role::SlotIcon, Some(mut image)) = (role, image) {
+    if let (Role::Icon | Role::SlotIcon | Role::RadialIcon, Some(mut image)) = (role, image) {
         let tone = tone.copied().unwrap_or_default();
         let parent = parent.unwrap_or_default();
         let disabled = parent.disabled || owner.disabled;

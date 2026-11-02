@@ -256,7 +256,7 @@ pub use progress::{
     Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
 };
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
-pub use radial::{RadialCount, RadialSlot, RadialValue, radial_by_pad, update_radials};
+pub use radial::{RadialCount, RadialItem, RadialSlot, RadialValue, radial_by_pad, update_radials};
 pub use region::{ArrowPolicy, FocusRegion, cycle_regions};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_sections};

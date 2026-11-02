@@ -809,3 +809,216 @@ fn an_idle_radial_writes_nothing() {
         assert!(!e.get_ref::<BackgroundColor>().expect("b").is_changed());
     }
 }
+
+/// A wheel of the eight `ITEMS` where every item in `with_picture` has a picture and the rest are
+/// text, highlighting `selected`, placed as `wheel_of` does.
+fn picture_wheel(app: &mut App, with_picture: &[usize], selected: usize) -> Wheel {
+    let source = IconSource::Image(
+        app.world_mut()
+            .resource_mut::<Assets<Image>>()
+            .add(Image::default()),
+    );
+    let items: Vec<RadialItem> = ITEMS
+        .iter()
+        .enumerate()
+        .map(|(index, name)| {
+            let item = RadialItem::new(*name);
+            if with_picture.contains(&index) {
+                item.icon(source.clone())
+            } else {
+                item
+            }
+        })
+        .collect();
+    let world = app.world_mut();
+    let radial = world.spawn(radial(items, selected)).id();
+    let next = world.spawn(button("Next")).id();
+    world
+        .spawn(Node {
+            position_type: PositionType::Absolute,
+            top: Val::Px(20.0),
+            left: Val::Px(20.0),
+            column_gap: Val::Px(20.0),
+            align_items: AlignItems::Center,
+            ..default()
+        })
+        .add_children(&[radial, next]);
+    settle(app);
+    Wheel { radial, next }
+}
+
+fn picture_of(app: &App, slot: Entity) -> Option<Entity> {
+    descendants(app.world(), slot)
+        .into_iter()
+        .find(|&e| app.world().get::<Role>(e) == Some(&Role::RadialIcon))
+}
+
+fn has_text(app: &App, slot: Entity) -> bool {
+    descendants(app.world(), slot)
+        .into_iter()
+        .any(|e| app.world().get::<Text>(e).is_some())
+}
+
+#[test]
+fn an_item_with_a_picture_draws_the_picture_and_no_words_and_the_centre_still_names_it() {
+    let mut app = app();
+    let all: Vec<usize> = (0..ITEMS.len()).collect();
+    let ui = picture_wheel(&mut app, &all, 2);
+    for &slot in &slots(&app, ui.radial) {
+        let picture = picture_of(&app, slot).expect("a picture");
+        assert!(app.world().get::<ImageNode>(picture).is_some());
+        assert!(
+            !has_text(&app, slot),
+            "a picture item has no words of its own"
+        );
+    }
+    assert_eq!(centre_text(&app, ui.radial), "Shotgun");
+    tap_focused(&mut app, ui.radial, KeyCode::ArrowRight);
+    assert_eq!(centre_text(&app, ui.radial), "Grenade");
+    app.world_mut().entity_mut(ui.radial).insert(RadialValue(6));
+    settle(&mut app);
+    assert_eq!(
+        centre_text(&app, ui.radial),
+        "Torch",
+        "the game's own value too"
+    );
+    assert_eq!(lit(&app, ui.radial), vec![6]);
+}
+
+/// Focus the wheel, then tap `key`.
+fn tap_focused(app: &mut App, radial: Entity, key: KeyCode) {
+    focus(app, radial);
+    tap(app, key);
+}
+
+#[test]
+fn a_mixed_wheel_keeps_its_words_where_it_has_no_picture() {
+    let mut app = app();
+    let ui = picture_wheel(&mut app, &[0, 2, 4], 1);
+    let slots = slots(&app, ui.radial);
+    for (index, &slot) in slots.iter().enumerate() {
+        let pictured = [0, 2, 4].contains(&index);
+        assert_eq!(picture_of(&app, slot).is_some(), pictured, "item {index}");
+        assert_eq!(has_text(&app, slot), !pictured, "item {index}");
+    }
+    assert_eq!(
+        centre_text(&app, ui.radial),
+        "Rifle",
+        "a text item still names itself"
+    );
+    tap_focused(&mut app, ui.radial, KeyCode::ArrowRight);
+    assert_eq!(
+        centre_text(&app, ui.radial),
+        "Shotgun",
+        "and a picture item names itself too"
+    );
+}
+
+#[test]
+fn the_picture_is_the_texts_colour_and_the_accents_ink_on_the_lit_item_and_dim_when_disabled() {
+    let mut app = app();
+    let all: Vec<usize> = (0..ITEMS.len()).collect();
+    let ui = picture_wheel(&mut app, &all, 3);
+    let skin = app.world().resource::<GooeySkin>().clone();
+    let tint = |app: &App, slot: Entity| {
+        let picture = picture_of(app, slot).expect("a picture");
+        app.world().get::<ImageNode>(picture).expect("image").color
+    };
+    for (index, &slot) in slots(&app, ui.radial).iter().enumerate() {
+        let want = if index == 3 {
+            skin.accent_text
+        } else {
+            skin.text
+        };
+        assert_eq!(tint(&app, slot), want, "item {index}");
+    }
+    app.world_mut()
+        .entity_mut(ui.radial)
+        .insert(InteractionDisabled);
+    settle(&mut app);
+    for (index, &slot) in slots(&app, ui.radial).iter().enumerate() {
+        assert_eq!(tint(&app, slot), skin.text_muted, "disabled item {index}");
+    }
+}
+
+/// A wheel of eight pictures in a window `width` × `height` at text scale `step`: the pictures
+/// are square, 3 text sizes of the wheel's own size, the items stand clear of one another and
+/// inside the round disc, and each is a target high.
+fn check_picture_wheel(width: u32, height: u32, step: f32) {
+    let mut app = app_sized(width, height);
+    app.world_mut().resource_mut::<GooeySkin>().text_scale = step;
+    let all: Vec<usize> = (0..ITEMS.len()).collect();
+    let ui = picture_wheel(&mut app, &all, 0);
+    let disc = rect(&app, ui.radial);
+    let skin = app.world().resource::<GooeySkin>().clone();
+    let short = width.min(height) as f32;
+    let wheel_px = (skin.text_size * step).min(short * 0.92 / 26.0);
+    let at = format!("{width}x{height} at {step}");
+    let slots = slots(&app, ui.radial);
+    let rects: Vec<Rect> = slots.iter().map(|&s| rect(&app, s)).collect();
+    for (index, &slot) in slots.iter().enumerate() {
+        let picture = rect(&app, picture_of(&app, slot).expect("a picture"));
+        assert!(
+            (picture.width() - wheel_px * 3.0).abs() < 1.0
+                && (picture.height() - wheel_px * 3.0).abs() < 1.0,
+            "{at}: item {index}'s picture is {} square, {picture:?}",
+            wheel_px * 3.0
+        );
+        let item = rects[index];
+        assert!(
+            item.contains(picture.min) && item.contains(picture.max),
+            "{at}: item {index} holds its picture"
+        );
+        assert!(item.height() + 0.5 >= skin.target(), "{at}: a target high");
+        assert!(
+            (item.width() - item.height()).abs() < 1.5,
+            "{at}: item {index} is a square, {item:?}"
+        );
+        for corner in [
+            item.min,
+            item.max,
+            Vec2::new(item.min.x, item.max.y),
+            Vec2::new(item.max.x, item.min.y),
+        ] {
+            assert!(
+                (corner - disc.center()).length() <= disc.width() * 0.5,
+                "{at}: item {index} is inside the round disc"
+            );
+        }
+        for (other, rival) in rects.iter().enumerate().skip(index + 1) {
+            let overlap = item.intersect(*rival);
+            assert!(
+                overlap.is_empty() || overlap.width().min(overlap.height()) < 1.0,
+                "{at}: items {index} and {other} overlap by {overlap:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn eight_pictures_fit_the_ring_at_every_text_size_and_in_a_short_window() {
+    for step in TEXT_SIZE_STEPS {
+        check_picture_wheel(1280, 1080, step);
+    }
+    check_picture_wheel(1280, 720, 2.0);
+}
+
+#[test]
+fn an_idle_wheel_of_pictures_writes_nothing() {
+    let mut app = app();
+    let all: Vec<usize> = (0..ITEMS.len()).collect();
+    let ui = picture_wheel(&mut app, &all, 0);
+    focus(&mut app, ui.radial);
+    settle(&mut app);
+    app.world_mut().clear_trackers();
+    for _ in 0..30 {
+        app.update();
+    }
+    let world = app.world();
+    for slot in slots(&app, ui.radial) {
+        let picture = picture_of(&app, slot).expect("a picture");
+        let e = world.entity(picture);
+        assert!(!e.get_ref::<Node>().expect("n").is_changed());
+        assert!(!e.get_ref::<ImageNode>().expect("i").is_changed());
+    }
+}
