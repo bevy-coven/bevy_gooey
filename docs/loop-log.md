@@ -2142,3 +2142,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
 4. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
 5. Radial: a pointing arc that follows the stick, an item showing picture and label together.
+
+**Release (iteration 55).** `cargo semver-checks --baseline-rev v0.31.3`: 3 major checks (new `Role` and `SkinProblem` variants, new `GooeySkin` fields): minor bump pre-1.0. `release: v0.32.0`, published (https://crates.io/crates/bevy_gooey/0.32.0), tag `v0.32.0` pushed. #37 closed by the merge's `Fixes #37`; comments on #37 (assumed decisions, `assumed-decision` label) and bevy_grimoire#210 (move the pin to 86caae7).
+
+**Cleanup (iteration 55).** Removed this pass's own `/tmp/g55` (captures, frames, gate script and log) and the Xvfb `:93` it started; no baseline worktree was made. The release example `states` left in `/home/ladvien/target/gooey-loop` (the loop's shared target, 197 GB before this pass). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
