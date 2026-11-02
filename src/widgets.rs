@@ -60,6 +60,7 @@ use crate::popover::{
 };
 use crate::progress::{Progress, Spinner};
 use crate::prompt::Prompt;
+use crate::section::{SectionHeader, SectionOpen, header_on_activate, section_self_update};
 use crate::select::{SELECT_HINT, SELECT_NO_MATCH, Select, select_on_activate};
 use crate::skin::Role;
 use crate::split::{
@@ -2875,5 +2876,117 @@ pub(crate) fn select_list(select: Entity, options: &[String], selected: usize) -
         CommandPalette::for_select(select, options, selected),
         SELECT_HINT,
         SELECT_NO_MATCH,
+    )
+}
+
+/// A collapsible section: a header you press to fold the group of widgets under it away, so a long
+/// inspector or settings screen stays scannable. `children` is any bundle (`children![..]`); a
+/// section inside it is a nested section. Enter, Space, South and a click on the header toggle it
+/// and send one [`ValueChange<bool>`](crate::ValueChange) on the section (the new state); the state
+/// is [`SectionOpen`](crate::SectionOpen), which the game may set (no event). A closed section is
+/// only its header: its widgets are not laid out and focus never stops in them, and focus inside
+/// one that closes goes to the header. A section with nothing in it shows "Empty".
+///
+/// Add a [`SectionId`](crate::SectionId) and the section keeps its state across a despawn and a
+/// respawn ([`SectionStates`](crate::SectionStates)): `open` is only its first choice.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     panel(),
+///     children![
+///         (
+///             section("Physics", true, children![slider("Gravity", 9.8, 0.0..=20.0), toggle("Wind", false)]),
+///             SectionId::new("physics"),
+///         ),
+///         section("Debug", false, children![toggle("Show colliders", false)]),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn section(title: impl Into<String>, open: bool, children: impl Bundle) -> impl Bundle {
+    let title = title.into();
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Section,
+        SectionOpen(open),
+        observe(section_self_update),
+        Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
+            parent.spawn((
+                Node {
+                    justify_content: JustifyContent::FlexStart,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                bevy::ui_widgets::Button,
+                Role::Button,
+                SectionHeader,
+                Hovered::default(),
+                TabIndex(0),
+                AutoDirectionalNavigation::default(),
+                observe(header_on_activate),
+                Children::spawn(SpawnWith(move |header: &mut RelatedSpawner<ChildOf>| {
+                    let chevron = |role, at: Vec2, shown: bool| {
+                        (
+                            Node {
+                                display: if shown { Display::Flex } else { Display::None },
+                                ..default()
+                            },
+                            UiTransform {
+                                translation: Val2::percent(at.x, at.y),
+                                rotation: Rot2::degrees(45.0),
+                                ..default()
+                            },
+                            role,
+                            Pickable::IGNORE,
+                        )
+                    };
+                    header.spawn(chevron(
+                        Role::TreeClosed,
+                        Vec2::new(-CHEVRON_INK_SHIFT, 0.0),
+                        !open,
+                    ));
+                    header.spawn(chevron(
+                        Role::TreeOpen,
+                        Vec2::new(0.0, -CHEVRON_INK_SHIFT),
+                        open,
+                    ));
+                    header.spawn((
+                        Text::new(title),
+                        Role::ButtonText,
+                        ONE_LINE,
+                        Pickable::IGNORE,
+                    ));
+                })),
+            ));
+            parent.spawn((
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    display: if open { Display::Flex } else { Display::None },
+                    ..default()
+                },
+                if open {
+                    Visibility::Inherited
+                } else {
+                    Visibility::Hidden
+                },
+                Role::SectionBody,
+                children,
+            ));
+            parent.spawn((
+                Node {
+                    display: Display::None,
+                    ..default()
+                },
+                Text::new("Empty"),
+                Role::SectionNote,
+                Pickable::IGNORE,
+            ));
+        })),
     )
 }
