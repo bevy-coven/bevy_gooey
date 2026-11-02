@@ -15463,3 +15463,171 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 82	152	release	model	model		2026-11-02T17:53:19Z	2.9	
 82	153	release	tool	push gate	bash	2026-11-02T17:53:22Z	1.5	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' **Release (iteration 54).** `cargo semver-checks --baseline-rev v0.31.2`: no breaking checks
 82	154	release	model	model		2026-11-02T17:53:23Z	5.8	
+83	1	orient	model	model		2026-11-02T17:54:59Z	4.9	
+83	2	orient	tool	phase mark	bash	2026-11-02T17:55:04Z	0.7	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git fetch -q origin loop-stats; git show orig
+83	3	orient	model	model		2026-11-02T17:55:05Z	2.6	
+83	4	orient	tool	github	bash	2026-11-02T17:55:07Z	0.6	cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels --jq '.[] | "#\(.number) \(.t
+83	5	orient	model	model		2026-11-02T17:55:08Z	2.3	
+83	6	orient	tool	github	bash	2026-11-02T17:55:10Z	1.7	cd /home/ladvien/bevy_gooey_loop && gh issue view 37 --repo bevy-coven/bevy_gooey --comments | cut -c1-1500; gh issue list -R bevy-coven/bevy_grimoire --label u
+83	7	orient	model	model		2026-11-02T17:55:12Z	1.4	
+83	8	orient	tool	github	bash	2026-11-02T17:55:13Z	0.4	cd /home/ladvien/bevy_gooey_loop && gh issue view 37 --repo bevy-coven/bevy_gooey --json body,comments,state --jq '.body, .comments'
+83	9	orient	model	model		2026-11-02T17:55:14Z	3.7	
+83	10	research	tool	phase mark	bash	2026-11-02T17:55:17Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; wc -l src/skin.rs; grep -n "Tone\|pub enum Role\|ShortcutBadge\|Surfac
+83	11	research	model	model		2026-11-02T17:55:17Z	1.9	
+83	12	research	tool	shell	bash	2026-11-02T17:55:19Z	0.0	cd /home/ladvien/bevy_gooey_loop && cat docs/research/tones.md | cut -c1-600; sed -n 20,140p src/skin.rs
+83	13	research	model	model		2026-11-02T17:55:19Z	1.6	
+83	14	research	tool	shell	bash	2026-11-02T17:55:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 215,420p src/skin.rs
+83	15	research	model	model		2026-11-02T17:55:21Z	25.2	
+83	16	research	tool	shell	bash	2026-11-02T17:55:46Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n "hovered(" src/*.rs | head -50; grep -n "pub fn hovered" -B6 -A14 src/skin.rs
+83	17	research	model	model		2026-11-02T17:55:46Z	73.8	
+83	18	research	tool	shell	bash	2026-11-02T17:57:00Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn "Role::Tone\|Role::Surface" src/ | grep -v "^src/skin.rs:.*///" ; sed -n 1105,1135p src/skin.rs
+83	19	research	model	model		2026-11-02T17:57:00Z	2.6	
+83	20	research	tool	shell	bash	2026-11-02T17:57:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2215,2235p src/skin.rs; sed -n 2262,2276p src/skin.rs; sed -n 2405,2425p src/skin.rs; sed -n 3075,3100p src/skin.rs; 
+83	21	research	model	model		2026-11-02T17:57:03Z	5.0	
+83	22	research	tool	shell	bash	2026-11-02T17:57:08Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 500,800p src/skin.rs
+83	23	research	model	model		2026-11-02T17:57:08Z	2.7	
+83	24	research	tool	shell	bash	2026-11-02T17:57:10Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "fn with_colours_of\|fn colour_distance\|fn colour_named" src/skin.rs; sed -n 800,1000p src/skin.rs
+83	25	research	model	model		2026-11-02T17:57:10Z	28.4	
+83	26	research	tool	shell	bash	2026-11-02T17:57:39Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n "^fn fill\|^fn border\|fn .*-> Option<Color>\|fn .*-> Option<BorderColor>" src/skin.rs; sed -n 2395,2406p src/skin.r
+83	27	research	model	model		2026-11-02T17:57:39Z	4.0	
+83	28	research	tool	homestill	bash	2026-11-02T17:57:43Z	6.9	cd /home/ladvien/bevy_gooey_loop && timeout 60 hs distill search "interaction states hover pressed visual feedback user interface design" --output json 2>&1 | h
+83	29	research	model	model		2026-11-02T17:57:50Z	5.7	
+83	30	research	tool	shell	bash	2026-11-02T17:57:55Z	0.3	cd /tmp && mkdir -p g55 && cd g55 && curl -sL https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html | python3 -c " import sys,re,html t=re.sub(r'<[
+83	31	research	model	model		2026-11-02T17:57:56Z	4.2	
+83	32	research	tool	shell	bash	2026-11-02T17:58:00Z	0.5	cd /tmp/g55 && curl -sL https://m3.material.io/foundations/interaction/states/state-layers | python3 -c " import sys,re,html t=re.sub(r'<[^>]+>',' ',sys.stdin.r
+83	33	research	model	model		2026-11-02T17:58:00Z	3.3	
+83	34	research	tool	web	web_search	2026-11-02T17:58:04Z	4.2	Finding Material state-layer quote :: Material Design 3 state layers hover focus pressed dragged opacity "state layer" 8% 10% 10%
+83	35	research	model	model		2026-11-02T17:58:08Z	31.6	
+83	36	research	tool	git	bash	2026-11-02T17:58:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && cat > docs/research/state-roles.md <<'EOF' # State roles: the skin owns the interaction states a host composes its own contr
+83	37	research	model	model		2026-11-02T17:58:39Z	7.3	
+83	38	research	tool	shell	bash	2026-11-02T17:58:47Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "ELEVATION_STEP" -B6 -A2 src/model.rs | head -30; grep -n "ELEVATION_STEP" src/lib.rs; grep -n "fn tool" -A40 src/sk
+83	39	research	model	model		2026-11-02T17:58:47Z	5.7	
+83	40	research	tool	shell	bash	2026-11-02T17:58:52Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='src/model.rs'; s=open(p).read() s=s.replace("""pub const ELEVATION_STEP: f32 = 2.0; ""","""pu
+83	41	research	model	model		2026-11-02T17:58:53Z	23.1	
+83	42	research	tool	shell	bash	2026-11-02T17:59:16Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -i 's/SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH,/SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STATE_STEP, STICK_PUSH
+83	43	research	model	model		2026-11-02T17:59:16Z	10.1	
+83	44	research	tool	shell	bash	2026-11-02T17:59:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs'; s=open(p).read() def rep(a,b,n=1): global s assert s.count(a)>=1,(a) s=s.replace(a,b,n) r
+83	45	research	model	model		2026-11-02T17:59:26Z	23.3	
+83	46	research	tool	cargo build	bash	2026-11-02T17:59:49Z	7.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs'; s=open(p).read() def rep(a,b,n=1): global s assert s.count(a)>=1,(a) s=s.replace(a,b,n) r
+83	47	research	model	model		2026-11-02T17:59:56Z	3.1	
+83	48	research	tool	shell	bash	2026-11-02T17:59:59Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2570,2610p src/skin.rs; grep -n "fill" src/skin.rs | sed -n '/let fill/,+2p' | head; grep -n "Some(fill)\|if let Some
+83	49	research	model	model		2026-11-02T17:59:59Z	5.7	
+83	50	research	tool	cargo build	bash	2026-11-02T18:00:05Z	6.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs'; s=open(p).read() a=" Role::Card => Some(skin.card()),\n" s=s.replace(a,a+" // An edge alo
+83	51	research	model	model		2026-11-02T18:00:12Z	4.7	
+83	52	build	tool	phase mark	bash	2026-11-02T18:00:16Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; sed -n 1,40p tests/tones.rs; sed -n 170,230p tests/tones.rs; grep -n "ton
+83	53	build	model	model		2026-11-02T18:00:16Z	1.6	
+83	54	build	tool	shell	bash	2026-11-02T18:00:18Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 138,172p tests/tones.rs; sed -n 50,70p tests/all.rs
+83	55	build	model	model		2026-11-02T18:00:18Z	13.4	
+83	56	build	tool	shell	bash	2026-11-02T18:00:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 112,137p tests/tones.rs
+83	57	build	model	model		2026-11-02T18:00:31Z	4.4	
+83	58	build	tool	shell	bash	2026-11-02T18:00:36Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn "Hovered(true)\|HoverMap" tests/*.rs | head -5; grep -n "fn hover" -A25 tests/controls.rs | head -50
+83	59	build	model	model		2026-11-02T18:00:36Z	45.0	
+83	60	prove	tool	phase mark	bash	2026-11-02T18:01:21Z	48.2	cd /home/ladvien/bevy_gooey_loop && sed -n 330,360p tests/skin.rs; python3 - <<'EOF' head=open('tests/tones.rs').read() i=head.index("fn app_with") j=head.index
+83	61	prove	model	model		2026-11-02T18:02:09Z	5.4	
+83	62	prove	tool	shell	bash	2026-11-02T18:02:15Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Hovered(true)" -B22 tests/skin.rs | head -60
+83	63	prove	model	model		2026-11-02T18:02:15Z	4.3	
+83	64	prove	tool	cargo test	bash	2026-11-02T18:02:19Z	9.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/state_roles.rs'; s=open(p).read() a=""" .insert(bevy::picking::hover::Hovered(true)); settle(&mut
+83	65	prove	model	model		2026-11-02T18:02:28Z	4.5	
+83	66	prove	tool	shell	bash	2026-11-02T18:02:32Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 300,322p tests/skin.rs; grep -n "Role::Button =>" src/skin.rs | head -3; grep -n "hovered:" src/skin.rs | head
+83	67	prove	model	model		2026-11-02T18:02:32Z	1.6	
+83	68	prove	tool	shell	bash	2026-11-02T18:02:34Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2005,2040p src/skin.rs; grep -n "Role::Button" src/skin.rs | head -8
+83	69	prove	model	model		2026-11-02T18:02:34Z	1.6	
+83	70	prove	tool	shell	bash	2026-11-02T18:02:36Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2268,2285p src/skin.rs; sed -n 1915,1935p src/skin.rs
+83	71	prove	model	model		2026-11-02T18:02:36Z	7.2	
+83	72	prove	tool	shell	bash	2026-11-02T18:02:43Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n -i "hover" tests/controls.rs | head -20
+83	73	prove	model	model		2026-11-02T18:02:43Z	1.6	
+83	74	prove	tool	shell	bash	2026-11-02T18:02:45Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -ln "PointerInput" tests/*.rs | head; grep -n "fn hover_over\|fn move_pointer\|fn point_at" -A25 tests/menu.rs | head -
+83	75	prove	model	model		2026-11-02T18:02:45Z	2.8	
+83	76	prove	tool	shell	bash	2026-11-02T18:02:47Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^fn mouse\|^fn rect" -A22 tests/menu.rs | head -60; sed -n 1,25p tests/menu.rs | grep -n "use"
+83	77	prove	model	model		2026-11-02T18:02:47Z	6.3	
+83	78	prove	tool	cargo test	bash	2026-11-02T18:02:54Z	9.7	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/state_roles.rs'; s=open(p).read() s=s.replace("use bevy::prelude::*;\n","use bevy::camera::Normal
+83	79	prove	model	model		2026-11-02T18:03:03Z	6.1	
+83	80	prove	tool	cargo test	bash	2026-11-02T18:03:09Z	11.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/state_roles.rs'; s=open(p).read() i=s.index("/// A colour of the same lightness") j=s.index("fn r
+83	81	prove	model	model		2026-11-02T18:03:21Z	5.3	
+83	82	prove	tool	cargo test	bash	2026-11-02T18:03:26Z	41.9	cd /home/ladvien/bevy_gooey_loop && cp src/skin.rs /tmp/g55/skin.rs.bak && sed -i 's/if delta.is_nan() || delta < STATE_STEP {/if delta.is_nan() || delta < 0.0 
+83	83	prove	model	model		2026-11-02T18:04:08Z	6.7	
+83	84	prove	tool	shell	bash	2026-11-02T18:04:15Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l examples/ladder.rs && sed -n 1,140p examples/ladder.rs; ls docs/media | head -50; ls docs/guide
+83	85	prove	model	model		2026-11-02T18:04:15Z	8.1	
+83	86	prove	tool	shell	bash	2026-11-02T18:04:23Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 140,275p examples/ladder.rs; grep -n "ladder" docs/media/README.md README.md docs/guide/*.md | cut -c1-400
+83	87	prove	model	model		2026-11-02T18:04:23Z	28.7	
+83	88	prove	tool	cargo build	bash	2026-11-02T18:04:52Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' src=open('examples/ladder.rs').read() # boilerplate pieces: keep header up to 'fn main' replaced, capture 
+83	89	prove	model	model		2026-11-02T18:04:52Z	13.1	
+83	90	prove	tool	shell	bash	2026-11-02T18:05:05Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/states.rs'; s=open(p).read() s=s.replace("/// Capture mode's state","""/// A world glyph the h
+83	91	prove	model	model		2026-11-02T18:05:05Z	3.9	
+83	92	prove	tool	shell	bash	2026-11-02T18:05:09Z	0.1	cd /home/ladvien/bevy_gooey_loop && echo "T=$CARGO_TARGET_DIR DISPLAY=$DISPLAY"; ls target 2>/dev/null | head; df -h /home | tail -1; ls target/release/examples
+83	93	prove	model	model		2026-11-02T18:05:09Z	3.7	
+83	94	prove	tool	shell	bash	2026-11-02T18:05:13Z	4.8	du -sh /home/ladvien/target/gooey-loop 2>/dev/null; ls /home/ladvien/target/gooey-loop/release/examples 2>/dev/null | grep -v '\.d$' | head -20; xdpyinfo -displ
+83	95	prove	model	model		2026-11-02T18:05:17Z	4.4	
+83	96	prove	tool	cargo build	bash	2026-11-02T18:05:22Z	0.0	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && (Xvfb :93 -screen 0 1500x950x24 -nolisten tcp >/dev/null 2>&1 &) ; sleep 1; CARGO_BUILD_JOBS=6 timeout 1500 cargo build --re
+83	97	prove	model	model		2026-11-02T18:05:22Z	3.5	
+83	98	prove	tool	shell	bash	2026-11-02T18:05:25Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 96,116p docs/guide/skins.md; sed -n 99,103p README.md | cut -c1-700; sed -n 1,20p CHANGELOG.md | cut -c1-300; wc -l R
+83	99	prove	model	model		2026-11-02T18:05:25Z	19.5	
+83	100	prove	tool	shell	bash	2026-11-02T18:05:45Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' # guide p='docs/guide/skins.md'; s=open(p).read() a="## Your own named colours" new='''## State roles: hov
+83	101	prove	model	model		2026-11-02T18:05:45Z	6.3	
+83	102	prove	tool	wait: other	wait	2026-11-02T18:05:51Z	12.3	{}
+83	103	prove	model	model		2026-11-02T18:06:03Z	3.0	
+83	104	prove	tool	shell	bash	2026-11-02T18:06:06Z	13.1	cd /tmp/g55 && G=/home/ladvien/target/gooey-loop/release/examples/states; for sk in dark parchment; do GOOEY_FRAMES=60 GOOEY_SKIN=$sk GOOEY_SHOT=/tmp/g55/$sk.pn
+83	105	prove	model	model		2026-11-02T18:06:19Z	4.8	
+83	106	prove	tool	cargo build	bash	2026-11-02T18:06:24Z	12.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/states.rs'; s=open(p).read() a=""" panel(), Node { width: Val::Px(700.0), ..default() }, """ a
+83	107	prove	model	model		2026-11-02T18:06:37Z	2.5	
+83	108	prove	tool	read files	read	2026-11-02T18:06:39Z	0.0	/tmp/g55/dark.png
+83	109	prove	tool	read files	read	2026-11-02T18:06:39Z	0.0	/tmp/g55/parchment.png
+83	110	prove	model	model		2026-11-02T18:06:39Z	33.4	
+83	111	prove	tool	shell	bash	2026-11-02T18:07:13Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re def sub(p,a,b,cnt=1): s=open(p).read(); assert a in s,(p,a); s=s.replace(a,b,cnt); open(p,'w').w
+83	112	prove	model	model		2026-11-02T18:07:13Z	8.6	
+83	113	prove	tool	cargo build	bash	2026-11-02T18:07:21Z	35.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/states.rs'; s=open(p).read() i=s.index(" // The swatches stand on the window's ground") j=s.in
+83	114	prove	model	model		2026-11-02T18:07:57Z	1.5	
+83	115	prove	tool	read files	read	2026-11-02T18:07:58Z	0.0	/tmp/g55/dark.png
+83	116	prove	tool	read files	read	2026-11-02T18:07:58Z	0.0	/tmp/g55/parchment.png
+83	117	prove	model	model		2026-11-02T18:07:58Z	17.4	
+83	118	prove	tool	shell	bash	2026-11-02T18:08:16Z	0.1	cd /tmp/g55 && magick high_contrast.png -crop 800x420+240+160 +repage a.png && magick tool.png -crop 800x420+240+160 +repage b.png && magick a.png b.png -append
+83	119	prove	tool	read files	read	2026-11-02T18:08:16Z	0.1	/tmp/g55/ab.png
+83	120	prove	model	model		2026-11-02T18:08:16Z	1.8	
+83	121	prove	tool	shell	bash	2026-11-02T18:08:18Z	0.0	cd /tmp/g55 && ls;
+83	122	prove	model	model		2026-11-02T18:08:18Z	1.1	
+83	123	prove	tool	read files	read	2026-11-02T18:08:19Z	0.0	/tmp/g55/ab.png
+83	124	prove	model	model		2026-11-02T18:08:19Z	9.1	
+83	125	prove	tool	clip record/render	bash	2026-11-02T18:08:28Z	4.0	cd /tmp/g55 && rm -rf fr && mkdir fr && G=/home/ladvien/target/gooey-loop/release/examples/states; GOOEY_FRAMES=125 GOOEY_SHOT=/tmp/g55/x.png GOOEY_SHOT_DIR=/tm
+83	126	prove	model	model		2026-11-02T18:08:32Z	5.7	
+83	127	prove	tool	clip record/render	bash	2026-11-02T18:08:38Z	0.9	cd /tmp/g55 && ffmpeg -v error -y -framerate 12 -i fr/f_%04d.png -vf "crop=800:400:240:165,split[a][b];[a]palettegen=max_colors=64[p];[b][p]paletteuse" states.g
+83	128	prove	tool	read files	read	2026-11-02T18:08:38Z	0.9	/tmp/g55/sheet.png
+83	129	prove	model	model		2026-11-02T18:08:38Z	3.2	
+83	130	prove	tool	read files	read	2026-11-02T18:08:42Z	0.1	/tmp/g55/sheet.png
+83	131	prove	model	model		2026-11-02T18:08:42Z	7.5	
+83	132	prove	tool	clip record/render	bash	2026-11-02T18:08:49Z	4.7	cd /tmp/g55 && rm -rf fr && mkdir fr && G=/home/ladvien/target/gooey-loop/release/examples/states; GOOEY_FRAMES=128 GOOEY_SHOT=/tmp/g55/x.png GOOEY_SHOT_DIR=/tm
+83	133	prove	tool	read files	read	2026-11-02T18:08:49Z	4.7	/tmp/g55/tt.png
+83	134	prove	model	model		2026-11-02T18:08:54Z	4.2	
+83	135	prove	tool	read files	read	2026-11-02T18:08:58Z	0.0	/tmp/g55/tt.png
+83	136	prove	model	model		2026-11-02T18:08:58Z	6.8	
+83	137	prove	tool	shell	bash	2026-11-02T18:09:05Z	0.2	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g55/states.gif docs/media/states.gif && python3 - <<'EOF' p='docs/media/README.md'; s=open(p).read() lines=s.split('
+83	138	prove	model	model		2026-11-02T18:09:05Z	14.5	
+83	139	gate	tool	phase mark	bash	2026-11-02T18:09:20Z	0.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='AGENTS.md'; s=open(p).read() lines=s.split('\n') i=[k for k,l in enumerate(lines) if l.startswith('- **
+83	140	gate	model	model		2026-11-02T18:09:21Z	3.5	
+83	141	gate	tool	git	bash	2026-11-02T18:09:24Z	2.1	cd /home/ladvien/bevy_gooey_loop && git checkout -q -b loop/iter-55 && git add src tests examples && git commit -qm "Add state roles: hover, pressed, held, held
+83	142	gate	model	model		2026-11-02T18:09:26Z	4.4	
+83	143	gate	tool	remote wait	bash	2026-11-02T18:09:31Z	60.0	[launched bg_2] until grep -q 'GATE DONE' /tmp/g55/gate.log; do sleep 15; done; cat /tmp/g55/gate.log | cut -c1-200
+83	144	gate	model	model		2026-11-02T18:10:31Z	1.3	
+83	145	gate	tool	wait: other	wait	2026-11-02T18:10:32Z	1800.0	{}
+83	146	gate	model	model		2026-11-02T18:40:32Z	1.5	
+83	147	gate	tool	wait: other	wait	2026-11-02T18:40:33Z	537.3	{}
+83	148	gate	model	model		2026-11-02T18:49:31Z	1.9	
+83	149	gate	tool	shell	bash	2026-11-02T18:49:33Z	0.0	cat /tmp/g55/gate.log | cut -c1-200; pgrep -af "cargo|rustc" | head -5 | cut -c1-150
+83	150	gate	model	model		2026-11-02T18:49:33Z	4.5	
+83	151	gate	tool	shell	bash	2026-11-02T18:49:37Z	0.0	[launched bg_3] /tmp/g55/gate.sh 2>&1 | tee /tmp/g55/gate.log | cut -c1-220
+83	152	gate	model	model		2026-11-02T18:49:37Z	4.7	
+83	153	gate	tool	wait: other	wait	2026-11-02T18:49:42Z	228.7	{}
+83	154	gate	model	model		2026-11-02T18:53:30Z	24.5	
+83	155	ship	tool	phase mark	bash	2026-11-02T18:53:55Z	4.2	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && cat >> docs/loop-log.md <<'EOF' ## Iteration 55 — 2026-11-02 — State rol
+83	156	ship	model	model		2026-11-02T18:53:59Z	4.0	
+83	157	release	tool	phase mark	bash	2026-11-02T18:54:03Z	32.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; CARGO_BUILD_JOBS=4 cargo semver-checks --baseline-rev v0.31.3 2>&1 | gr
+83	158	release	model	model		2026-11-02T18:54:35Z	3.5	
+83	159	release	tool	shell	bash	2026-11-02T18:54:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "0\.31" README.md Cargo.toml docs/guide/*.md src/lib.rs | head;
+83	160	release	model	model		2026-11-02T18:54:39Z	3.4	
+83	161	release	tool	cargo publish	bash	2026-11-02T18:54:42Z	18.3	cd /home/ladvien/bevy_gooey_loop && sed -i 's/^| 0.1 – 0.31 | 0.20 |/| 0.1 – 0.32 | 0.20 |/' README.md && sed -i '3s/0.31.3/0.32.0/' Cargo.toml && python3 - <<'
+83	162	release	model	model		2026-11-02T18:55:01Z	2.6	
+83	163	release	tool	push gate	bash	2026-11-02T18:55:03Z	7.9	cd /home/ladvien/bevy_gooey_loop && sed -i 's/^## \[0.32.0\] - 2026-11-02$/&\n/' CHANGELOG.md && git add -A Cargo.toml CHANGELOG.md README.md && git commit -qm 
+83	164	release	model	model		2026-11-02T18:55:11Z	8.6	
+83	165	release	tool	push gate	bash	2026-11-02T18:55:20Z	8.0	cd /home/ladvien/bevy_gooey_loop && git tag -a v0.32.0 -m v0.32.0 && git push -q origin v0.32.0 2>&1 | tail -1; cargo info bevy_gooey@0.32.0 2>&1 | head -3; SHA
+83	166	release	model	model		2026-11-02T18:55:28Z	6.2	
+83	167	release	tool	push gate	bash	2026-11-02T18:55:34Z	1.6	cd /home/ladvien/bevy_gooey_loop && pkill -f "Xvfb :93" ; rm -rf /tmp/g55; cat >> docs/loop-log.md <<'EOF' **Release (iteration 55).** `cargo semver-checks --ba
+83	168	release	model	model		2026-11-02T18:55:36Z	10.6	
