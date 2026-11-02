@@ -113,6 +113,33 @@ A theme step (`with_colours_of`) brings the ladder with the colours and keeps th
 
 *`examples/ladder`: the steps in dark are L\* 12.9, 18.3, 23.6 and 31.6 over a ground of 6.5; the labels are the ladder read back through `cie_lightness`.*
 
+## Your own named colours
+
+A tool has more semantic colours than a skin's fixed fields: a suggestion ink, a map's grid line, a problem banner's fill, a rarity. `GooeySkin::tones` carries them by name, so a skin file lists them, a theme can change them and "the UI's colours are the skin" holds:
+
+```rust
+fn setup(mut commands: Commands, mut skin: ResMut<GooeySkin>) {
+    skin.tones.insert("suggest".into(), Color::srgb(0.62, 0.86, 0.55));
+    skin.tones.insert("banner".into(), Color::srgb(0.30, 0.10, 0.10));
+
+    // A node drawn with a tone: restyled in the frame the skin changes.
+    commands.spawn((Role::Tone("banner"), Node { padding: UiRect::all(Val::Px(8.0)), ..default() }));
+
+    // The pairs your own chrome relies on, checked like the crate's: (label, ink, ground, needed).
+    // Each name is a tone or one of the skin's own colours ("text", "surface", "accent", ...).
+    let problems = skin.tone_problems(&[
+        ("suggest on surface", "suggest", "surface", 4.5),
+        ("text on banner", "text", "banner", 4.5),
+    ]);
+    assert!(problems.is_empty(), "{problems:?}");
+}
+```
+
+- **`skin.tone("suggest")` is `Some(color)`, and an unknown name is `None`**, never a stand-in colour; names are case-sensitive and not translated. Every preset has no tones, so a skin with none is valid, and `problems()` does not look at them (it cannot know which pairs you draw).
+- **`Role::Tone(name)` is a fill and nothing else**: give the node its own `Node`. A name the skin lacks draws no fill (transparent), including after a skin swap that drops the tone.
+- **`tone_problems`** returns one `SkinProblem::LowContrast { pair: label, .. }` for each declared pair under its ratio (4.5 for text, 3.0 for a graphic, `ENHANCED_CONTRAST` for a high-contrast look of your own) and one `SkinProblem::UnknownTone { name }` for a name that is neither a tone nor a skin colour, because a pair that cannot be read must not pass. The label is yours because `LowContrast::pair` is a `&'static str`. Alpha is ignored, as everywhere else: declare the opaque ground a translucent tone sits on.
+- **A theme step leaves them.** `skin_preset("Theme")` writes the preset's own colours and keeps `tones`, which are the host's; a preset has none to give. With the `serde` feature they are a `tones: {"suggest": Srgba(..)}` map in a skin file.
+
 ## A skin for one subtree
 
 `SkinScope(skin)` on any node styles that node and everything below it from `skin` and not from the

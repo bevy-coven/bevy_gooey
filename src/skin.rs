@@ -1179,10 +1179,11 @@ pub enum Role {
     /// A prompt's keycap for a pad button: the same fill, frame and text, fully round (a circle
     /// for "A", a pill for "LB").
     PromptButton,
-    /// A [`crate::ShortcutBadges`] badge: a small keycap with a chord's words on the corner of the
-    /// widget it names, inside its frame; [`GooeySkin::surface`]'s fill in an [`GooeySkin::outline`]
-    /// frame, so it stands off a button's own fill, in the smallest step of
-    /// [`GooeySkin::type_scale`].
+    /// A [`crate::ShortcutBadges`] badge: a small chip with a chord's words on the right of the
+    /// widget it names, inside its frame, in the smallest step of [`GooeySkin::type_scale`]. It is
+    /// the inverse of a panel: [`GooeySkin::text`] as the fill and the surface under a panel's
+    /// text as the ink (the pair [`GooeySkin::problems`] holds at 4.5:1), so it stands off the
+    /// fill of any button, hovered, pressed or lit, in every look.
     ShortcutBadge,
     /// The one full-window column the toasts stand in; not drawn, it pads the toasts.
     ToastStack,
@@ -2135,7 +2136,7 @@ fn restyle(
         // world; a keycap is a binding keycap at rest: raised, framed in the outline.
         Role::Prompts => Some(skin.surface),
         Role::PromptKey | Role::PromptButton => Some(skin.surface_raised),
-        Role::ShortcutBadge => Some(skin.solid_surface()),
+        Role::ShortcutBadge => Some(skin.text),
         // The landing is the ring's colour let through to the panels under it, so fill and frame are one; the ghost is as opaque as
         // a dialog's card, so its title is read at the contrast of any panel's text.
         Role::DockDrop => Some(skin.focus_ring.with_alpha(DOCK_DROP_ALPHA)),
@@ -2271,9 +2272,9 @@ fn restyle(
         | Role::SliderRail
         | Role::ColorRail
         | Role::BindingCap
-        | Role::ShortcutBadge
         | Role::PromptKey
         | Role::PromptButton => Some(BorderColor::all(skin.outline)),
+        Role::ShortcutBadge => Some(BorderColor::all(skin.text)),
         Role::ToastAction => Some(BorderColor::all(if look.focused == Some(entity) {
             faded(skin.focus_ring, owner.alpha)
         } else {
@@ -3214,7 +3215,7 @@ fn restyle(
             Some((skin.text_muted, &look.fonts.body, skin.text_size))
         }
         Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
-        Role::ShortcutBadge => Some((skin.text, &look.fonts.body, skin.type_scale[0])),
+        Role::ShortcutBadge => Some((skin.solid_surface(), &look.fonts.body, skin.type_scale[0])),
         Role::PromptKey
         | Role::PromptButton
         | Role::DockGhost

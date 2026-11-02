@@ -76,7 +76,7 @@ for changes not released yet:
 bevy_gooey = { git = "https://github.com/bevy-coven/bevy_gooey" }
 ```
 
-Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data), `reflect` (`inspector(..)`, below).
+Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data), `reflect` (`inspector(..)`, below), `testing` (`bevy_gooey::testing`: find a widget by its label, click it and type in a headless test).
 
 ## Try it
 
@@ -98,7 +98,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   parchment, a high-contrast one held to 7:1 and a compact `Tool` one), a `problems()` check against the
   WCAG 2.2 contrast and target-size rules, `density: Density::Compact` for a desktop tool's rows (half
   the padding, a 24 px least target), design tokens (`spacing`, `radii`, `type_scale` and a `surfaces`
-  ladder of five fills whose every step `problems()` holds to at least ΔL\* 2, drawn by `surface(n)`),
+  ladder of five fills whose every step `problems()` holds to at least ΔL\* 2, drawn by `surface(n)`; your own named colours go in `tones`, drawn by `Role::Tone` and checked pair by pair with `tone_problems`),
   and a `SkinScope(skin)` on any node restyles just that subtree (a preview of a theme, an editor's own
   chrome next to a game's skin):
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
@@ -157,9 +157,9 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *Rebinding: `binding("Jump", Binding::Key(KeyCode::Space))` waits for the next press and says it once as a `ValueChange<Binding>`. The panel never moves, and nothing else hears the key.*
 
-![The shortcuts example: a Keymap panel with three rows, Save, Save all and Palette, each showing a chord on a keycap (Ctrl+S, Ctrl+Shift+S, Ctrl+P), a conflict line, a line naming the command that ran and a Save button; Enter on Save lights its keycap amber with "Press a shortcut, Esc exits" and Ctrl+Shift+K turns the keycap from Ctrl+S to Ctrl+Shift+K; the same chord on Save all makes the line read "Conflict: Save and Save all" and Ctrl+Alt+J clears it; Ctrl+Shift+K runs Save, and the ring on the Save button opens its tooltip, "Write to disk" with Ctrl+Shift+K on a keycap](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcuts.gif)
+![The shortcut badges example: a Level editor panel with the commands New, Open, Save, Save all, Undo, Redo (dimmed) and Help, the ring on New; holding Alt shows a white chip with the chord at the right of New (Ctrl+N), Open, Save, Save all (Ctrl+Shift+S) and Undo, none on Redo or Help, and letting go hides them; Tab moves the ring to Open, Alt shows the chips again, Shift added hides them (Alt+Shift is not the hold) and letting go of Shift shows them again](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcut-badges.gif)
 
-*Shortcuts: a `binding` row whose value is a `Binding::Chord` captures a key chord; `model::shortcut_conflicts` finds two commands on one chord; `Shortcut::just_pressed` runs the command; `Tooltip::new("Write to disk").with_shortcut(chord)` shows it on a keycap.*
+*Shortcuts: `(button("Save"), Shortcut::primary(KeyCode::KeyS))` and holding Alt for 0.3 s (`ShortcutBadges`) shows the chord on the button, inside its frame so the ring stays whole; a `binding` row whose value is a `Binding::Chord` captures a chord, `model::shortcut_conflicts` finds two commands on one, `Shortcut::just_pressed` runs it, `Tooltip::with_shortcut` shows it.*
 
 ![The gallery's Load game list with the Save as field under it: the field rests as a quiet outline over the muted hint "Name this save", its frame turns blue with a caret while "Aria" is typed, Enter shows the toast "Saved as Aria" at the window's corner, and Up moves the ring onto the save slot Cellar, 01:48 with the field back to its quiet outline and its text kept](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/text-input.gif)
 
@@ -234,7 +234,7 @@ see [use it in the Cauldron](https://bevy-coven.github.io/crates/bevy_gooey.html
 
 - [docs.rs](https://docs.rs/bevy_gooey) — the API reference (`cargo doc --open`); [the book page](https://bevy-coven.github.io/crates/bevy_gooey.html) — the same guide with the pictures.
 - [`docs/guide/`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/README.md) — the detail: navigation, controls, lists, tables, split panes, docks, toasts, skins, screen
-  size, the pointer, feedback, every widget in one table, what a host touches and what it only sees, and the boundary with the game.
+  size, the pointer, feedback, [testing a gooey UI](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/testing.md), every widget in one table, what a host touches and what it only sees, and the boundary with the game.
 - [`examples/`](https://github.com/bevy-coven/bevy_gooey/tree/main/examples) — `gallery`, every widget on one screen.
 - [`docs/media/README.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/media/README.md) — how every picture here is made.
 - [`CHANGELOG.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/CHANGELOG.md) — what each release changed, and what it broke.

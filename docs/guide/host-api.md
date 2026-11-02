@@ -13,6 +13,8 @@ crate root.
 | `UiScaleSettings` | `reference_short_side` and the player's `scale` (the `interface_size` row edits it) | a resource, read by `scale_with_window` |
 | `ToastSettings` | `anchor`, `max_visible`, `base_seconds`, `chars_per_second`, `duration_scale`, `fade_seconds` | a resource, read by `update_toasts` |
 | `BindingSettings` | `key_prompt`, `pad_prompt`, `chord_prompt`, `pad_style` (the `pad_style` row edits it), `cancel_key`, `cancel_button` | a resource, read by `update_bindings` and `bind_by_input` |
+| `ShortcutBadges` | `hold` (the modifiers that reveal the chords, Alt) and `delay_seconds` (0.3) | a resource, read by `update_shortcut_badges`; badges are `ShortcutBadge` children |
+| `GooeySkin::tones` | the host's own named colours (`tone(name)`, `tone_problems(..)`) | data on the skin; drawn by `Role::Tone(name)` |
 | `InputDevice` | `Keyboard` or `Pad`: the device the player used last, what a `prompt` shows | a resource, kept by `track_input_device`; write it to start on the pad |
 | `Meter` | `value` and `max` | a component on a `meter()` |
 | `Progress` | the fraction, `0.0` to `1.0` (`ProgressClamped` while it is outside) | a component on a `progress()`, with `ProgressText { step, eta_seconds }` |
@@ -62,6 +64,7 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   edit it and the open box follows. See [shortcuts](shortcuts.md).
 - `Shortcut { modifiers, key }`, `Modifiers` and `Platform` — a key chord, its platform's words
   (`label`, `label_on`) and the one rule for "went down this frame" (`just_pressed`).
+  A `Shortcut` is also a component: on a widget it is what `ShortcutBadges` shows while the player holds a modifier.
 - `Toast { .. }` — the component `toast()` and `toast_alert()` return; despawn the entity to take one
   back sooner.
 - `Dialog` — the component `dialog()` returns, for a game that wants to find the open one.
