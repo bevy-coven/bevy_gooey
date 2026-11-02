@@ -2,12 +2,14 @@
 #![cfg(feature = "testing")]
 
 use accesskit::{Role as Ak, Toggled};
-use bevy::a11y::{AccessibilityNode, AccessibilityRequested};
+use bevy::a11y::{AccessibilityNode, AccessibilityRequested, ActionRequest};
 use bevy::input_focus::tab_navigation::TabIndex;
+use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
 use bevy::ui::InteractionDisabled;
+use bevy::ui_widgets::{Activate, SliderValue, ValueChange};
 use bevy::window::WindowResolution;
 use bevy::winit::WinitPlugin;
 use bevy_gooey::testing::{click, find_by_label};
@@ -16,6 +18,16 @@ use bevy_gooey::*;
 /// How many accessibility nodes changed in the last frame.
 #[derive(Resource, Default)]
 struct NodesChanged(usize);
+
+/// What a game's observers heard.
+#[derive(Resource, Default)]
+struct Seen {
+    toggles: Vec<bool>,
+    numbers: Vec<f32>,
+    indices: Vec<usize>,
+    texts: Vec<String>,
+    activations: usize,
+}
 
 fn app() -> App {
     let mut app = App::new();
@@ -40,6 +52,22 @@ fn app() -> App {
         GooeyPlugins,
     ))
     .init_resource::<NodesChanged>()
+    .init_resource::<Seen>()
+    .add_observer(|change: On<ValueChange<bool>>, mut seen: ResMut<Seen>| {
+        seen.toggles.push(change.value);
+    })
+    .add_observer(|change: On<ValueChange<f32>>, mut seen: ResMut<Seen>| {
+        seen.numbers.push(change.value);
+    })
+    .add_observer(|change: On<ValueChange<usize>>, mut seen: ResMut<Seen>| {
+        seen.indices.push(change.value);
+    })
+    .add_observer(|change: On<ValueChange<String>>, mut seen: ResMut<Seen>| {
+        seen.texts.push(change.value.clone());
+    })
+    .add_observer(|_: On<Activate>, mut seen: ResMut<Seen>| {
+        seen.activations += 1;
+    })
     .add_systems(
         Last,
         |changed: Query<(), Changed<AccessibilityNode>>, mut count: ResMut<NodesChanged>| {
@@ -642,4 +670,315 @@ fn a_hosts_own_label_wins_over_the_crates_words() {
         .id();
     settle(&mut app);
     assert_eq!(node(&app, button).label(), Some("Accept the terms"));
+}
+
+// --- Actions: what an assistive technology can do to what it reads ---------------------------
+
+/// Asks, as a platform's screen reader does, for `action` on `target`, and lets the frame run.
+fn act(
+    app: &mut App,
+    target: Entity,
+    action: accesskit::Action,
+    data: Option<accesskit::ActionData>,
+) {
+    app.world_mut()
+        .write_message(ActionRequest(accesskit::ActionRequest {
+            action,
+            target_tree: accesskit::TreeId::ROOT,
+            target_node: accesskit::NodeId(target.to_bits()),
+            data,
+        }));
+    settle(app);
+}
+
+fn seen(app: &App) -> &Seen {
+    app.world().resource::<Seen>()
+}
+
+fn only<T: Component>(app: &mut App) -> Entity {
+    let world = app.world_mut();
+    let mut found = world.query_filtered::<Entity, With<T>>();
+    let all: Vec<Entity> = found.iter(world).collect();
+    assert_eq!(all.len(), 1, "exactly one");
+    all[0]
+}
+
+#[test]
+fn a_node_declares_exactly_the_actions_its_widget_takes() {
+    use accesskit::Action as A;
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    let column = app.world_mut().spawn((panel(), ChildOf(root))).id();
+    app.world_mut().entity_mut(column).with_children(|p| {
+        p.spawn(heading("Settings"));
+        p.spawn(button("Resume"));
+        p.spawn(toggle("Subtitles", true));
+        p.spawn(slider("Music", 0.5, 0.0..=1.0));
+        p.spawn(choice("Quality", ["Low", "High"], 0));
+        p.spawn(text_input("Name", "Ada"));
+        p.spawn(section("Audio", false, children![]));
+        p.spawn((button("Locked"), InteractionDisabled));
+    });
+    settle(&mut app);
+    let declared = |app: &mut App, label: &str| {
+        let entity = find_by_label(app, label).unwrap();
+        let node = node(app, entity);
+        [
+            A::Click,
+            A::Focus,
+            A::Increment,
+            A::Decrement,
+            A::SetValue,
+            A::Expand,
+            A::Collapse,
+        ]
+        .into_iter()
+        .filter(|a| node.supports_action(*a))
+        .collect::<Vec<_>>()
+    };
+    assert_eq!(declared(&mut app, "Resume"), [A::Click, A::Focus]);
+    assert_eq!(declared(&mut app, "Subtitles"), [A::Click, A::Focus]);
+    assert_eq!(
+        declared(&mut app, "Music"),
+        [A::Focus, A::Increment, A::Decrement, A::SetValue]
+    );
+    assert_eq!(
+        declared(&mut app, "Quality"),
+        [A::Click, A::Focus, A::Increment, A::Decrement]
+    );
+    let name = {
+        let world = app.world_mut();
+        let mut fields = world.query_filtered::<(Entity, &TextInputOf), Without<NumberInput>>();
+        let (field, _) = fields.iter(world).next().expect("a text field");
+        field
+    };
+    let declared_by = |app: &App, entity: Entity| {
+        [A::Focus, A::SetValue, A::Click, A::Increment]
+            .into_iter()
+            .filter(|a| node(app, entity).supports_action(*a))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(declared_by(&app, name), [A::Focus, A::SetValue]);
+    assert_eq!(
+        declared(&mut app, "Audio"),
+        [A::Click, A::Focus, A::Expand, A::Collapse]
+    );
+    assert_eq!(
+        declared(&mut app, "Locked"),
+        [],
+        "a disabled widget takes nothing"
+    );
+    let heading = find_heading(&mut app);
+    assert!(
+        !node(&app, heading).supports_action(A::Focus),
+        "a heading is read, not used"
+    );
+}
+
+fn find_heading(app: &mut App) -> Entity {
+    let world = app.world_mut();
+    let mut q = world.query::<(Entity, &Role)>();
+    q.iter(world)
+        .find(|(_, role)| **role == Role::Heading)
+        .map(|(e, _)| e)
+        .expect("a heading")
+}
+
+#[test]
+fn clicking_a_toggle_flips_it_once_and_a_disabled_one_stays() {
+    use accesskit::Action as A;
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    app.world_mut()
+        .spawn((toggle("Subtitles", false), ChildOf(root)));
+    app.world_mut()
+        .spawn((toggle("Shake", false), InteractionDisabled, ChildOf(root)));
+    settle(&mut app);
+    let subtitles = find_by_label(&mut app, "Subtitles").unwrap();
+    act(&mut app, subtitles, A::Click, None);
+    assert_eq!(seen(&app).toggles, [true], "one change");
+    assert_eq!(node(&app, subtitles).toggled(), Some(Toggled::True));
+    act(&mut app, subtitles, A::Click, None);
+    assert_eq!(seen(&app).toggles, [true, false]);
+
+    let shake = find_by_label(&mut app, "Shake").unwrap();
+    act(&mut app, shake, A::Click, None);
+    assert_eq!(
+        seen(&app).toggles.len(),
+        2,
+        "a disabled toggle is not flipped"
+    );
+}
+
+#[test]
+fn clicking_a_button_activates_it_once_and_a_disabled_one_never() {
+    use accesskit::Action as A;
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    app.world_mut().spawn((button("Resume"), ChildOf(root)));
+    app.world_mut()
+        .spawn((button("Quit"), InteractionDisabled, ChildOf(root)));
+    settle(&mut app);
+    let resume = find_by_label(&mut app, "Resume").unwrap();
+    act(&mut app, resume, A::Click, None);
+    assert_eq!(seen(&app).activations, 1);
+    let quit = find_by_label(&mut app, "Quit").unwrap();
+    act(&mut app, quit, A::Click, None);
+    assert_eq!(seen(&app).activations, 1);
+}
+
+#[test]
+fn a_slider_is_set_stepped_and_held_to_its_range() {
+    use accesskit::{Action as A, ActionData as D};
+    let mut app = app();
+    screen_with(&mut app, slider("Music", 0.5, 0.0..=1.0));
+    let music = find_by_label(&mut app, "Music").unwrap();
+    let value = |app: &App| app.world().get::<SliderValue>(music).unwrap().0;
+
+    act(&mut app, music, A::SetValue, Some(D::NumericValue(0.25)));
+    assert!((value(&app) - 0.25).abs() < 1e-6, "{}", value(&app));
+    assert_eq!(seen(&app).numbers.len(), 1, "one change");
+    assert!((node(&app, music).numeric_value().unwrap() - 0.25).abs() < 1e-6);
+
+    act(&mut app, music, A::Increment, None);
+    assert!(
+        (value(&app) - 0.30).abs() < 1e-4,
+        "one step up: {}",
+        value(&app)
+    );
+    act(&mut app, music, A::Decrement, None);
+    act(&mut app, music, A::Decrement, None);
+    assert!((value(&app) - 0.20).abs() < 1e-4, "{}", value(&app));
+
+    act(&mut app, music, A::SetValue, Some(D::NumericValue(7.0)));
+    assert_eq!(value(&app), 1.0, "held to the range");
+    act(&mut app, music, A::SetValue, Some(D::Value("loud".into())));
+    assert_eq!(value(&app), 1.0, "words are not a number");
+}
+
+#[test]
+fn a_choice_steps_one_option_and_stops_at_its_end() {
+    use accesskit::Action as A;
+    let mut app = app();
+    screen_with(&mut app, choice("Quality", ["Low", "Medium", "High"], 1));
+    let quality = find_by_label(&mut app, "Quality").unwrap();
+    act(&mut app, quality, A::Increment, None);
+    assert_eq!(seen(&app).indices, [2]);
+    assert_eq!(node(&app, quality).value(), Some("High"));
+    act(&mut app, quality, A::Increment, None);
+    assert_eq!(seen(&app).indices, [2], "the end says nothing");
+    act(&mut app, quality, A::Decrement, None);
+    assert_eq!(seen(&app).indices, [2, 1]);
+}
+
+#[test]
+fn a_text_field_takes_the_words_it_is_set_to_and_a_number_field_holds_them_to_its_range() {
+    use accesskit::{Action as A, ActionData as D};
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    let column = app.world_mut().spawn((panel(), ChildOf(root))).id();
+    app.world_mut().entity_mut(column).with_children(|p| {
+        p.spawn(text_input("Name", "Ada"));
+        p.spawn(number_field("Health", 50.0, 1.0, 0.0..=100.0));
+    });
+    settle(&mut app);
+    let world = app.world_mut();
+    let mut fields = world.query::<(Entity, &TextInputOf, Has<NumberInput>)>();
+    let fields: Vec<(Entity, Entity, bool)> = fields
+        .iter(world)
+        .map(|(e, row, number)| (e, row.0, number))
+        .collect();
+    let (name, name_row, _) = *fields.iter().find(|f| !f.2).expect("a text field");
+    let (health, health_row, _) = *fields.iter().find(|f| f.2).expect("a number field");
+
+    act(&mut app, name, A::SetValue, Some(D::Value("Grace".into())));
+    assert_eq!(seen(&app).texts.first().map(String::as_str), Some("Grace"));
+    assert_eq!(
+        app.world().get::<TextInputValue>(name_row).unwrap().0,
+        "Grace"
+    );
+
+    act(&mut app, health, A::SetValue, Some(D::NumericValue(150.0)));
+    assert_eq!(seen(&app).numbers, [100.0], "held to the range");
+    assert_eq!(app.world().get::<NumberValue>(health_row).unwrap().0, 100.0);
+    act(&mut app, health, A::Decrement, None);
+    assert_eq!(seen(&app).numbers, [100.0, 99.0]);
+}
+
+#[test]
+fn clicking_a_tab_selects_its_page_once_and_the_selected_one_says_nothing() {
+    use accesskit::Action as A;
+    let mut app = app();
+    screen_with(
+        &mut app,
+        tabs(
+            ["Video", "Audio"],
+            0,
+            children![tab_page(children![]), tab_page(children![])],
+        ),
+    );
+    let audio = find_by_label(&mut app, "Audio").unwrap();
+    act(&mut app, audio, A::Click, None);
+    assert_eq!(seen(&app).indices, [1]);
+    act(&mut app, audio, A::Click, None);
+    assert_eq!(seen(&app).indices, [1], "already shown");
+    let video = find_by_label(&mut app, "Video").unwrap();
+    act(&mut app, video, A::Click, None);
+    assert_eq!(seen(&app).indices, [1, 0]);
+}
+
+#[test]
+fn a_section_opens_on_expand_and_shuts_on_collapse_and_never_toggles_for_the_state_it_is_in() {
+    use accesskit::Action as A;
+    let mut app = app();
+    screen_with(&mut app, section("Audio", false, children![]));
+    let header = find_by_label(&mut app, "Audio").unwrap();
+    act(&mut app, header, A::Collapse, None);
+    assert!(seen(&app).toggles.is_empty());
+    assert_eq!(node(&app, header).is_expanded(), Some(false));
+    act(&mut app, header, A::Expand, None);
+    assert_eq!(node(&app, header).is_expanded(), Some(true));
+    act(&mut app, header, A::Expand, None);
+    assert_eq!(node(&app, header).is_expanded(), Some(true), "still open");
+    act(&mut app, header, A::Collapse, None);
+    assert_eq!(node(&app, header).is_expanded(), Some(false));
+}
+
+#[test]
+fn focus_lands_where_tab_would_and_shows_the_ring() {
+    use accesskit::Action as A;
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    app.world_mut().spawn((button("One"), ChildOf(root)));
+    app.world_mut().spawn((button("Two"), ChildOf(root)));
+    settle(&mut app);
+    let two = find_by_label(&mut app, "Two").unwrap();
+    assert!(!app.world().resource::<InputFocusVisible>().0);
+    act(&mut app, two, A::Focus, None);
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(two));
+    assert!(
+        app.world().resource::<InputFocusVisible>().0,
+        "the ring shows"
+    );
+}
+
+#[test]
+fn a_request_for_a_node_that_is_gone_or_never_a_widget_does_nothing() {
+    use accesskit::Action as A;
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    let gone = app.world_mut().spawn((button("Old"), ChildOf(root))).id();
+    app.world_mut().spawn((heading("Settings"), ChildOf(root)));
+    settle(&mut app);
+    let window = only::<bevy::window::PrimaryWindow>(&mut app);
+    let title = find_heading(&mut app);
+    app.world_mut().despawn(gone);
+    settle(&mut app);
+    for target in [gone, window, title, root] {
+        for action in [A::Click, A::Focus, A::Increment, A::SetValue, A::Expand] {
+            act(&mut app, target, action, None);
+        }
+    }
+    assert_eq!(seen(&app).activations, 0);
+    assert!(app.world().resource::<InputFocus>().get() != Some(title));
 }

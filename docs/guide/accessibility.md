@@ -70,8 +70,35 @@ TabPanel hidden
 
 In a test, read the node the way a reader would: `app.world().get::<AccessibilityNode>(entity)` and `.role()`, `.label()`, `.value()`, `.toggled()` (`accesskit` is the crate Bevy's nodes are made of), after setting `AccessibilityRequested` to true. See [testing](testing.md).
 
+## What a screen reader can do
+
+The tree is not read-only. A node declares an action only when the crate handles it, and a request (Bevy delivers every platform request as the message `bevy::a11y::ActionRequest`) becomes the event the keyboard, the pad or the pointer already sends, so a game's `observe` hears the same `ValueChange` or `Activate` whichever input made it:
+
+| Widget | Declared | Becomes |
+| --- | --- | --- |
+| button, menu row, slot, binding, swatch, toast button | Focus, Click | `Activate` |
+| toggle | Focus, Click | `ToggleChecked`, one `ValueChange<bool>` |
+| tab | Focus, Click | the tab's page selected, one `ValueChange<usize>` (none for the tab already shown) |
+| choice | Focus, Click, Increment, Decrement | `Activate` (next, wraps) or a step (stops at its ends) |
+| slider, number field | Focus, Increment, Decrement, SetValue | one step, or the number held to its range |
+| colour area | Focus, Increment, Decrement | a step of saturation |
+| text field | Focus, SetValue | one final `ValueChange<String>` on the row |
+| section header, menu title, submenu | Focus, Click, Expand, Collapse | `Activate`, only when the state differs |
+| any other focus stop | Focus | `InputFocus` and the ring |
+
+Focus puts `InputFocus` on the widget and shows the ring, as Tab does. A disabled widget declares nothing and a request for it is ignored; so is one for a node that is gone or is no widget (a screen reader holds a tree one frame old). Nothing else is offered: a one-line field is set whole (`ReplaceSelectedText` and a text selection are a keyboard's), and a tree row's Expand is Left and Right.
+
+In a test, send the request as a platform would and read what your observer heard:
+
+```rust,ignore
+app.world_mut().write_message(bevy::a11y::ActionRequest(accesskit::ActionRequest {
+    action: accesskit::Action::SetValue,
+    target_tree: accesskit::TreeId::ROOT,
+    target_node: accesskit::NodeId(slider.to_bits()),
+    data: Some(accesskit::ActionData::NumericValue(0.25)),
+}));
+```
+
 ## Not yet
 
-An assistive technology's own requests (Click, Increment, SetValue, Focus) reach a game as Bevy's `ActionRequest` messages and nothing in Bevy or this crate acts on them yet: the tree is complete for reading and for following focus (every focus stop has a named node), but acting from the screen reader is the next step. A tree row is a `TreeItem` without its depth (`level`) or its open state yet, and a table's rows and columns carry no counts.
-
-Research: `docs/research/accessibility.md` (Xbox Accessibility Guideline 112, the WAI-ARIA authoring practices on names, Naughty Dog's text-to-speech over every menu).
+A tree row is a `TreeItem` without its depth (`level`) or its open state yet, and a table's rows and columns carry no counts.

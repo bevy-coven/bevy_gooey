@@ -125,7 +125,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   nearest widget, an open dialog (a framed panel with a title, a line of body and its choices) holds it,
   the ring appears the moment a key is pressed, Escape or the pad's B is one `Cancel` event that
   reaches the dialog or screen you are leaving, `FocusRegion`s split a tool's screen into parts F6 walks between (a `viewport()` keeps the arrow keys for the host), and `prompts()` says so in the corner, in the words of
-  the device the player used last ("Esc Back", then "B Back" the frame they pick up a pad); a screen reader is told every widget's role, name and state from the words on screen, nothing to write:
+  the device the player used last ("Esc Back", then "B Back" the frame they pick up a pad); a screen reader is told every widget's role, name and state from the words on screen, and can press, focus, step and set them (the same events the keyboard sends), nothing to write:
   [navigation](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/navigation.md),
   [focus regions](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/focus-regions.md), [prompts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/prompts.md),
   [the dialog](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/widgets.md#a-dialog), [accessibility](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/accessibility.md).

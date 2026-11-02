@@ -2046,3 +2046,29 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 5. Radial: a pointing arc that follows the stick, an item showing picture and label together.
 
 **Cleanup.** Removed this pass's own: `/tmp/g52` (captures, frames, binaries `inv_before`/`inv_after`, gate script), `/tmp/g52_drag.rs`. No baseline worktree was made (the before binary was built from a `git stash` of the same tree). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits).
+
+## Iteration 53 — 2026-11-02 — Accessibility actions: a screen reader can press, focus, step and set
+
+**Triage.** Last audit row (pass 80): nothing missing. No open issue on `bevy_gooey`, no `grimoire-ui` request, no parked work except the old `wiggum/parked-pass-23-…` (ignored). Corpus not re-scanned, home-still not queried (sources were fetched from the web and the vendored crates).
+
+**Pick.** Ranked: (1) **AccessKit actions** (backlog #4; the tree of iteration 42 was read-only, so a narrator, voice-control or switch-access user could hear a slider and not move it, a WCAG 4.1.2 "set" gap); (2) legend placement (#1, host-facing and small); (3) a stronger cue for a lone fitting slot; (4) motion; (5) radial arc. (1) beat the rest because every widget in the crate is affected and the plumbing (`bevy::a11y::ActionRequest`, `Entity::to_bits` node ids) was already delivered by Bevy and unused.
+
+**Sources** (`docs/research/access-actions.md`, committed alone first): craft, W3C *Understanding SC 4.1.2 Name, Role, Value* ("states, properties, and values that can be set by the user can be programmatically set") and XAG 112; shipping game, Naughty Dog *TLOU2 Accessibility Features Detailed* (TTS over every menu) and Xbox narration; technical, `accesskit` 0.24 `Action`/`ActionRequest`/`ActionData` and `bevy_winit::accessibility`, `bevy_ui_widgets`. **Gap:** home-still has no stem on screen-reader invocation.
+
+**What changed.** `src/access_actions.rs`: `actions_of(&Handles)` is the single table of which actions a widget takes; `update_accessibility` declares them with `Node::add_action` (only on a difference, none while disabled) and `act_on_requests` (Navigate, after `gamepad_select`) turns each request into the widget's own event: Click is `Activate` (`ToggleChecked` for a checkbox, a `ValueChange<Option<Entity>>` on the strip for a tab), Focus is `InputFocus` plus the ring, Increment/Decrement are `SetSliderValue::RelativeStep`, `MoveChoice::Step`, `NumberStepBy`, `AreaStepBy`, SetValue is `SetSliderValue::Absolute` or a final `ValueChange<String>` on the text row (a number field parses and holds it to its range through `number_on_text`), Expand/Collapse are `Activate` when the state differs. A request for an undeclared action, a disabled widget, a gone entity or the window is ignored. The plugin registers the `ActionRequest` message (a `MessageReader` of an unregistered one panics headless).
+
+**Tests** (`tests/access.rs`, 10 new, 28 in the file; mutation-checked: dropping the declared-action guard fails the disabled-button and stale-node tests; the tab re-click guard in `select_tab` is redundant with `tabs_on_select`'s own, which the mutation showed): the declared set per widget (and none for a heading, a disabled button), toggle Click once and a disabled one stays, button Activate once, slider SetValue/Increment/Decrement/held to range/words ignored, choice steps and stops at the end, text field SetValue (one final change, shown), number field SetValue 150 on 0..100 reports 100 and Decrement 99, tab Click once and none for the shown tab, section Expand/Collapse idempotent, Focus lands with the ring, stale/window/heading/root requests do nothing. The existing `a_settled_interface_marks_no_node_changed` still passes with actions declared.
+
+**Demo.** None: nothing visible changes (a screen reader is audible, not drawable); a guide section with a table and a test snippet in `docs/guide/accessibility.md`, README line extended in place (still 250 lines), CHANGELOG, AGENTS. Not run against a real platform adapter: this machine has no screen reader; the proof is the same `ActionRequest` message `bevy_winit` writes, delivered in a headless window.
+
+**Critique and verdict.** No pixels. Flaws: Collapse/Expand on a tree row and a menu *item* that is not a submenu are not offered (a tree row is not a `Button`); `ReplaceSelectedText` and `SetTextSelection` not offered; a radial's Increment is not offered. Verdict **GREAT** for the contract (one table for declaring and handling, one event per action); the three gaps above are the follow-up.
+
+**mean_ms.** Not measured: no drawing path changed. With no screen reader connected `update_accessibility` returns at once (unchanged) and `act_on_requests` reads an empty message queue.
+
+### Ranked backlog
+
+1. Legend placement: a host-chosen anchor and one keycap vocabulary for badges and legend.
+2. Accessibility: a tree row's `level` and `expanded`, and its Expand/Collapse; a radial's Increment/Decrement; `ReplaceSelectedText`.
+3. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
+4. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
+5. Radial: a pointing arc that follows the stick, an item showing picture and label together.

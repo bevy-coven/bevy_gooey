@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- A screen reader can act on what it reads (backlog of the accessibility tree, #32): every node declares the AccessKit actions its widget handles, and `bevy::a11y::ActionRequest` messages are turned into the widget's own events in `GooeySystems::Navigate`. Click presses a button, toggle, tab or menu row (`Activate`, `ToggleChecked`, a tab's selection), Focus moves `InputFocus` and shows the ring, Increment and Decrement step a slider, choice, number field or colour area, SetValue sets a slider, a number field (held to its range) or a text field (one final `ValueChange<String>`), Expand and Collapse open and shut a section or a menu. A disabled widget declares nothing, and a request for a node that is gone or no widget is ignored. Ten tests in `tests/access.rs`, `docs/guide/accessibility.md`, `docs/research/access-actions.md`.
+
 ## [0.31.1] - 2026-11-02
 
 ### Added
