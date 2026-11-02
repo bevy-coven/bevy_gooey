@@ -2065,6 +2065,12 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 
 **mean_ms.** Not measured: no drawing path changed. With no screen reader connected `update_accessibility` returns at once (unchanged) and `act_on_requests` reads an empty message queue.
 
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings` (one `too_many_arguments` fixed with a `SystemParam`), 827 tests + 73 lib, 205 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green. Merge `6dfdf9d`.
+
+**Release.** `cargo semver-checks --baseline-rev v0.31.1`: no change, patch. `release: v0.31.2`, published (https://crates.io/crates/bevy_gooey/0.31.2), tag `v0.31.2` pushed.
+
+**Cleanup.** No baseline worktree or /tmp scratch made this pass (`/tmp/aa.rs`, the mutation copy, removed). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
+
 ### Ranked backlog
 
 1. Legend placement: a host-chosen anchor and one keycap vocabulary for badges and legend.
