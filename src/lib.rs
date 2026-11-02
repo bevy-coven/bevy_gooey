@@ -151,6 +151,7 @@ mod inspector;
 mod list;
 mod menu;
 mod meter;
+mod motion;
 mod nav;
 mod notification;
 mod number;
@@ -214,23 +215,25 @@ pub use menu::{
 };
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
-    ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
-    NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle,
-    RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH, SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH,
-    TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward,
-    area_values, bar_fit, choice_next, choice_step, cie_lightness, clock_text, column_resize,
-    composite, contrast_ratio, dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot,
-    dock_zone, eta_words, format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key,
-    key_name, list_height, meter_fraction, mouse_name, natural_cmp, nearest_step, number_decimals,
-    pad_name, page_target, parse_hex, parse_number, progress_text, radial_pick, radial_place,
-    radial_step, relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
+    COMFORT_TARGET_PX, DIALOG_SLIDE_PX, DIALOG_SLIDE_SECONDS, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE,
+    DOCK_PANE_MIN_PX, DockZone, ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS,
+    MIN_TARGET_PX, NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES,
+    POPOVER_SLIDE_PX, POPOVER_SLIDE_SECONDS, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH,
+    SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST,
+    TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit, choice_next,
+    choice_step, cie_lightness, clock_text, column_resize, composite, contrast_ratio,
+    dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, ease_out, eta_words,
+    format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key, key_name, list_height,
+    meter_fraction, mouse_name, natural_cmp, nearest_step, number_decimals, pad_name, page_target,
+    parse_hex, parse_number, progress_text, radial_pick, radial_place, radial_step,
+    relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
     shortcut_conflicts, shortcut_label, slider_fraction, slider_text, slot_edge, snap_line_width,
     snap_to_row, spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step,
     table_anchor, table_step, table_window, target_step, target_toward, toast_alpha, toast_grow,
     toast_hold, toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible,
     type_ahead, window_ui_scale,
 };
+pub use motion::{MotionSettings, PopoverSlide, SlideIn, begin_entrances, update_motion};
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
 };
@@ -336,6 +339,7 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<GooeyFonts>()
             .init_resource::<PanelRegistry>()
             .init_resource::<ToastSettings>()
+            .init_resource::<MotionSettings>()
             .init_resource::<ShortcutBadges>()
             .init_resource::<ToastLog>()
             .init_resource::<CommandList>()
@@ -422,6 +426,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Toast>()
             .register_type::<ToastStack>()
             .register_type::<ToastSettings>()
+            .register_type::<MotionSettings>()
+            .register_type::<SlideIn>()
             .register_type::<ToastAnchor>()
             .register_type::<ToastKind>()
             .register_type::<ToastLog>()
@@ -441,6 +447,7 @@ impl Plugin for GooeyStylePlugin {
                 Update,
                 (
                     (
+                        (begin_entrances, update_motion).chain(),
                         update_toasts,
                         update_notification_centers,
                         update_slot_grids,
