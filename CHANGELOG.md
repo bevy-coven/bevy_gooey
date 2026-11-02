@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- `Reveal` (G-32, #36): `ShortcutBadges::hold` is now `Reveal::Modifier(Modifiers)` (the default, Alt), `Reveal::Key(KeyCode)` (a plain key: nothing while any modifier is down, a text field has focus or a `binding` row waits) or `Reveal::Never`. `BadgesShown(bool)` (a resource the crate keeps) is true while the overlay is up, for a host that dims the ground or re-places on it. `ShortcutLegend { rows: Vec<LegendRow> }` draws chords that act on nothing on screen as a card in the middle of the window (`Role::ShortcutLegend`, `ShortcutLegendCard`, `update_shortcut_legend`) while the overlay is up. `examples/badges` `GOOEY_LEGEND=1`, `docs/media/shortcut-legend.gif`, a section of `docs/guide/shortcuts.md`, five tests and four more in `tests/badges.rs`.
+
+### Changed
+
+- **Breaking:** the type of `ShortcutBadges::hold` is `Reveal`, not `Modifiers` (`hold: Modifiers::ALT` is `hold: Reveal::Modifier(Modifiers::ALT)` or `Modifiers::ALT.into()`); `Modifiers::default()` (none) is `Reveal::Never`. `Default` is unchanged. `Role` gains the variant `ShortcutLegend`.
+
 ## [0.30.0] - 2026-11-02
 
 The first publish since 0.27.0 (crates.io refuses with a 429): 0.30.0 also carries 0.28.0 and 0.29.0 below.

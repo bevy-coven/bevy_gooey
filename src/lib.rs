@@ -179,7 +179,10 @@ mod tooltip;
 mod tree;
 mod widgets;
 
-pub use badges::{ShortcutBadge, ShortcutBadges, update_shortcut_badges};
+pub use badges::{
+    BadgesShown, LegendRow, Reveal, ShortcutBadge, ShortcutBadges, ShortcutLegend,
+    ShortcutLegendCard, update_shortcut_badges, update_shortcut_legend,
+};
 pub use bevy::ui::Checked;
 pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
 pub use binding::{
@@ -345,6 +348,8 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<ToastSettings>()
             .init_resource::<MotionSettings>()
             .init_resource::<ShortcutBadges>()
+            .init_resource::<BadgesShown>()
+            .init_resource::<ShortcutLegend>()
             .init_resource::<ToastLog>()
             .init_resource::<CommandList>()
             .init_resource::<PaletteHistory>()
@@ -378,6 +383,10 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Binding>()
             .register_type::<Shortcut>()
             .register_type::<ShortcutBadges>()
+            .register_type::<Reveal>()
+            .register_type::<BadgesShown>()
+            .register_type::<ShortcutLegend>()
+            .register_type::<LegendRow>()
             .register_type::<Modifiers>()
             .register_type::<Platform>()
             .register_type::<InputDevice>()
@@ -461,7 +470,7 @@ impl Plugin for GooeyStylePlugin {
                         update_spinners,
                         (update_toggle_groups, fit_bars).chain(),
                         update_sections,
-                        update_shortcut_badges,
+                        (update_shortcut_badges, update_shortcut_legend).chain(),
                         drag::update_drag_visuals,
                     )
                         .chain(),

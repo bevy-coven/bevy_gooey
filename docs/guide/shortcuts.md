@@ -49,8 +49,8 @@ A tooltip teaches a chord to the player who waits for it. `ShortcutBadges` teach
 
 ```rust
 fn setup(mut commands: Commands) {
-    // The defaults: Alt, held for 0.3 s. `Modifiers::default()` turns it off.
-    commands.insert_resource(ShortcutBadges { hold: Modifiers::ALT, delay_seconds: 0.3 });
+    // The defaults: Alt, held for 0.3 s. `Reveal::Never` turns it off.
+    commands.insert_resource(ShortcutBadges { hold: Reveal::Modifier(Modifiers::ALT), delay_seconds: 0.3 });
 
     commands.spawn((panel(), children![
         // The chord is a component on the widget.
@@ -61,7 +61,7 @@ fn setup(mut commands: Commands) {
 }
 ```
 
-- **The hold.** `ShortcutBadges::hold` is the modifier set, held *exactly* (either side of the keyboard counts, Alt+Shift is not Alt) for `delay_seconds`; the delay keeps a chord that starts with the modifier from flashing the screen, and `0.0` shows the badges the frame the key goes down. Releasing removes them in the same frame. The default is Alt: Ctrl is held for multi-select and Command for switching windows, so a default on either would flash on every chord.
+- **The hold.** `ShortcutBadges::hold` is a `Reveal`: `Modifier(..)`, the modifier set, held *exactly* (either side of the keyboard counts, Alt+Shift is not Alt) for `delay_seconds`; the delay keeps a chord that starts with the modifier from flashing the screen, and `0.0` shows the badges the frame the key goes down. Releasing removes them in the same frame. The default is Alt: Ctrl is held for multi-select and Command for switching windows, so a default on either would flash on every chord.
 - **Which widgets.** Every one with a `Shortcut` component, or a `Tooltip` that has a `shortcut` (the component wins when both are there), that is visible (a hidden page, a folded section and a closed menu show none) and on screen, and not disabled: a disabled command's chord does nothing, so it is not advertised. Change the `Shortcut` while the badges are up and the words change in place.
 - **Where.** A `Role::ShortcutBadge` child at the widget's right edge, inside its frame, so the focus ring is never covered and a badge never covers its neighbour. It is the inverse of a panel (the text colour as the fill, the panel's ink as the words, 4.5:1), so it stands off a button's own fill, hovered, pressed or lit, in every look, and in the smallest step of the type scale. It takes no pointer and no focus. `ShortcutBadge` is the marker to query.
 - **What it does not do.** It never runs a chord: a game compares `Shortcut::just_pressed` itself, and a chord held while the badges are up still fires. A badge is a child of its widget: a list that clips the widget clips its badge.
@@ -69,6 +69,34 @@ fn setup(mut commands: Commands) {
 ![The shortcut badges example](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcut-badges.gif)
 
 *`examples/badges`: Alt shows a chip with the chord on each command (none on the dimmed Redo or on Help) and letting go hides them; Alt with Shift held hides them.*
+
+## Reveal with a plain key, read when the overlay is up, list chords that act on nothing
+
+A tool whose overlay key is a letter (`K`) uses `Reveal::Key`:
+
+```rust
+fn setup(mut commands: Commands) {
+    commands.insert_resource(ShortcutBadges { hold: Reveal::Key(KeyCode::KeyK), ..default() });
+    // Chords that act on nothing on screen have no widget to stand on: list them.
+    commands.insert_resource(ShortcutLegend {
+        rows: vec![
+            LegendRow::new(Shortcut::primary(KeyCode::KeyZ), "Undo"),
+            LegendRow::new(Shortcut::new(Modifiers::SHIFT, KeyCode::KeyG), "Snap to the grid"),
+        ],
+    });
+}
+
+// A host reacts to the overlay being open: dim the ground, skip an ink census.
+fn dim(shown: Res<BadgesShown>) { /* shown.0 */ }
+```
+
+- **A key never shows it by accident.** `Reveal::Key` does nothing while any modifier is down (Ctrl+K stays the game's chord), while a text field has focus (`TextEditing`: the player is typing a "k") and while a `binding` row waits for a press; each drops the overlay in the frame it comes true. The overlay is gone the frame the key goes up, wherever focus went. `Reveal::Never` shows nothing and holds no time. Writing a new `ShortcutBadges` while it is up changes it in that frame.
+- **`BadgesShown(bool)`** is true from the frame the reveal has been held for `delay_seconds` until it is let go, switched off or blocked, whether or not any widget has a chord to show. The crate writes it only when it changes; a host reads it and never writes it.
+- **`ShortcutLegend { rows }`** draws one card in the middle of the window (a `Role::ShortcutLegend` root over the badges, `ShortcutLegendCard` holds the rows on show) while `BadgesShown` is true: a keycap column (`Shortcut::label`) and a column of words, in the skin's opaque surface and outline frame, 4.5:1 in every look, never taking the pointer or focus. It is for empty ground (a canvas, a game world): put the interface elsewhere or it covers it. An empty list draws nothing, and rows written while it is up redraw it in that frame.
+
+![The legend and a plain-key reveal](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcut-legend.gif)
+
+*`GOOEY_LEGEND=1` `examples/badges`: K shows the chips on the commands and a card of four chords that act on the canvas; letting go hides both; K with Shift held hides both (a modifier is down), and Shift let go shows them again.*
 
 ## What the crate does not do
 

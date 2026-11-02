@@ -1211,6 +1211,10 @@ pub enum Role {
     /// text as the ink (the pair [`GooeySkin::problems`] holds at 4.5:1), so it stands off the
     /// fill of any button, hovered, pressed or lit, in every look.
     ShortcutBadge,
+    /// The card a [`crate::ShortcutLegend`] draws in the middle of the window while the shortcut
+    /// overlay is up: [`GooeySkin::solid_surface`] in an [`GooeySkin::outline`] frame (opaque, so
+    /// its words read over any empty ground), a grid of keycaps and their words.
+    ShortcutLegend,
     /// The one full-window column the toasts stand in; not drawn, it pads the toasts.
     ToastStack,
     /// A [`crate::toast`]'s room: a clipped column whose height opens and closes, so the toasts
@@ -2235,6 +2239,7 @@ fn restyle(
         Role::Prompts => Some(skin.surface),
         Role::PromptKey | Role::PromptButton => Some(skin.surface_raised),
         Role::ShortcutBadge => Some(skin.text),
+        Role::ShortcutLegend => Some(skin.solid_surface()),
         // The landing is the ring's colour let through to the panels under it, so fill and frame are one; the ghost is as opaque as
         // a dialog's card, so its title is read at the contrast of any panel's text.
         Role::DockDrop => Some(skin.focus_ring.with_alpha(DOCK_DROP_ALPHA)),
@@ -2378,7 +2383,8 @@ fn restyle(
         | Role::ColorRail
         | Role::BindingCap
         | Role::PromptKey
-        | Role::PromptButton => Some(BorderColor::all(skin.outline)),
+        | Role::PromptButton
+        | Role::ShortcutLegend => Some(BorderColor::all(skin.outline)),
         Role::ShortcutBadge => Some(BorderColor::all(skin.text)),
         Role::ToastAction => Some(BorderColor::all(if look.focused == Some(entity) {
             faded(skin.focus_ring, owner.alpha)
@@ -3036,6 +3042,16 @@ fn restyle(
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(skin.pad() * 0.3), Val::Px(skin.pad() * 0.1));
                 next.flex_shrink = 0.0;
+            }
+            // A card of rows in the middle of its parent: a pair of paddings between the keycap
+            // column and the words, a gap between rows, the dialog's frame and air.
+            Role::ShortcutLegend => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad() * 1.5));
+                next.column_gap = Val::Px(skin.pad() * PROMPT_SPACING_PADDINGS);
+                next.row_gap = Val::Px(skin.gap);
+                next.max_width = Val::Percent(PROMPTS_MAX_WIDTH_PERCENT);
             }
             // The rows stand `rows` of a button's height and a gap apart; to their right a lane the
             // rail's width and a gap of air, always, so rows never change width when others come
