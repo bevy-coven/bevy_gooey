@@ -52,6 +52,10 @@ fn hud(mut commands: Commands) {
 (`outline`) and the gap round the fill are drawn whole device pixels wide, so the fill sits centred in
 its slot at every scale.
 
+A meter moves as its value does (see [motion](motion.md)): a loss drops the fill at once and leaves the
+lost length behind it, in the skin's `danger` colour, for about half a second before it drains; a gain
+eases up with no trail. `MotionSettings::off()` makes both instant.
+
 ## A tooltip
 
 `Tooltip` is a component whose text is the hint, built `Tooltip::new("Sound, controls and display")`. It

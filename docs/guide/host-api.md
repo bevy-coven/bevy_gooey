@@ -168,7 +168,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_splits` | Style | a split's two panes' `flex_grow` and least sizes from `SplitFraction` and `SplitMin`, before `apply_skin`; writes only when they differ |
 | `update_trees` | Style | a removed node's selection and cursor move to its heir (next sibling, else the one before, else the parent), before `update_tables` |
 | `update_tables` | Style | each table's order, its pool of row entities bound to the rows in view, the room above and below them, the columns' widths, the sort mark and the scroll (the anchor row kept when rows change); before `apply_skin`, writes only when something differs |
-| `update_meters` | Style | a meter's fill and frame from its `Meter` |
+| `update_meters` | Style | a meter's fill and its trail of lost length from its `Meter`, on real time (`model::meter_motion`); a settled meter is skipped |
 | `update_lists` | Style | a list's rail, only on a change |
 | `update_toasts` | Style | the toast clocks, the stack's order and its cap |
 | `apply_skin` | Style | styles every widget carrying a `Role`, and restyles it when the skin changes |
