@@ -2078,3 +2078,31 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
 4. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
 5. Radial: a pointing arc that follows the stick, an item showing picture and label together.
+
+## Iteration 54 — 2026-11-02 — Prompts anchor: the legend in the corner the game chooses
+
+**Triage.** Last audit row (pass 81): only `demo?`, met by iteration 53's line (nothing drawable changed). No open issue, no `grimoire-ui` request, only the old `wiggum/parked-pass-23-…` branch (ignored). Corpus not re-scanned; `hs distill search` for legend placement returned only an unrelated case series (live, answered in 3 s).
+
+**Pick.** Ranked: (1) **legend placement** (backlog #1, host-facing: a game whose HUD or minimap holds the bottom-left had no way to move the Select/Back legend and keep it constant across screens); (2) tree row `level`/`expanded`/Expand, radial Increment; (3) a stronger cue for a lone fitting slot; (4) motion; (5) radial arc. (1) beat the rest because it is a one-line setting every console-style game needs and the other four are deeper work with fewer users. Narrowed from the backlog's "one keycap vocabulary for badges and legend", which is a separate cosmetic change.
+
+**Sources** (`docs/research/prompts-anchor.md`, committed alone first): craft, Microsoft *XAG 112* ("these elements still appear in the same location and relative order": constancy, not a corner); shipping practice, Epic *Using the Common Bound Action Bar* ("Typically, this widget is placed across the bottom of the screen", host places it); technical, taffy 0.14 `perform_absolute_layout_on_absolute_children` (left+right with auto width stretches, so a centred bar needs `left: 50%` and a translation). **Gap:** home-still has no stem on HUD hint placement.
+
+**What changed.** `PromptsAnchor` (`BottomLeft` default, `BottomCenter`, `BottomRight`, `TopLeft`, `TopCenter`, `TopRight`; a `Component`) and `prompts_at(anchor)`; `prompts()` is `prompts_at(default)`. `apply_skin` reads it through the inner `StateQuery` tuple (`Changed<PromptsAnchor>` restyles) and writes all four insets every time (`next` starts from the node's current value); a centred legend is `left: 50%` plus a constant `UiTransform` -50% from `place_prompts` (Style, `Changed`, writes only a difference). Gallery `GOOEY_KEYS` token `legend` cycles the anchor.
+
+**Tests** (`tests/prompts.rs`, 5 new, 832 in the `all` executable, 827 before; mutation-checked: a `place_prompts` that never centres fails three): every anchor 5% from its edges (measured, width % for left/right, height % for top/bottom) and wholly inside at 720p, 1080p, 1440p, a centred one on the window's middle, the default is bottom-left, a live legend moved through five anchors leaves no old inset or translation, a long legend squeezes inside 90% under all six, a dialog's legend with the same anchor stands where the screen's does; the idle test now includes a legend of every anchor and `Changed<UiTransform>`.
+
+**Demo.** `docs/media/prompts-anchor.gif` (76 frames, 5.1 s, 800×450, 99 KB), in `docs/guide/prompts.md` and `docs/media/README.md`; README caption extended in place (still 250 lines), CHANGELOG, AGENTS.md.
+
+**Critique and verdict** (`/tmp/g54/sheet.png`, `gsheet.png`; dark only, 1280x720): the six stills show the same bar mirrored to each corner and edge, 5% in, centred one on the window's middle, no panel moved. Flaws: at 720p the gallery's tall panel nearly touches a top-anchored legend (the panel's own margin, not the legend's); the 2560×1440 and other presets are asserted in tests, not looked at; no per-anchor dialog capture. Verdict **GREAT** for a calm, predictable setting.
+
+**Checklist.** No new skin colour or size. **mean_ms:** not measured; per-frame cost unchanged (`place_prompts` iterates an empty `Changed` filter at rest; the idle test proves zero writes for six legends).
+
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt (one reflow), clippy `-D warnings` (a doc comment moved off `stage_keys` and lost its `#[allow]`: fixed), 832 tests + 73 lib, 206 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green.
+
+### Ranked backlog
+
+1. Accessibility: a tree row's `level` and `expanded`, and its Expand/Collapse; a radial's Increment/Decrement; `ReplaceSelectedText`.
+2. One keycap vocabulary for the shortcut badges and legend.
+3. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
+4. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
+5. Radial: a pointing arc that follows the stick, an item showing picture and label together.
