@@ -60,18 +60,25 @@ use crate::popover::{
 };
 use crate::progress::{Progress, Spinner};
 use crate::prompt::Prompt;
+use crate::select::{SELECT_HINT, SELECT_NO_MATCH, Select, select_on_activate};
 use crate::skin::Role;
 use crate::split::{
     Split, SplitAxis, SplitDivider, divider_on_cancel, divider_on_click, divider_on_drag,
     divider_on_drag_end, divider_on_drag_start, divider_on_key_input, divider_on_press,
     divider_on_release, split_self_update, toggle_split,
 };
+use crate::status::{StatusBar, StatusGroup, StatusItem};
 use crate::table::{Column, RowSource, table_bundle};
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::text::{
     TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
 };
 use crate::toast::{Toast, ToastKind};
+use crate::toolbar::{
+    GroupIndex, GroupOption, OptionContent, ToggleGroupCount, ToggleGroupValue, Toolbar,
+    group_self_update, option_on_activate,
+};
+use crate::tooltip::Tooltip;
 use crate::tree::{Tree, TreeNode, TreeView};
 
 /// A control's label is one line: the row is as wide as its label and its control need, so a label
@@ -2095,6 +2102,16 @@ pub fn dock(layout: DockLayout) -> impl Bundle {
 /// window leaves no room, so the card never leaves the window). The field's hint ("Type a command")
 /// and the line for no match ("No command matches") are English, as a menu's "Nothing here" is.
 pub fn command_palette() -> impl Bundle {
+    palette_card(CommandPalette::default(), PALETTE_HINT, NO_MATCH)
+}
+
+/// A searchable list: the command palette's card over `state`, with `hint` in its field and
+/// `no_match` for an empty result. A [`select`] opens one over its own options.
+fn palette_card(
+    state: CommandPalette,
+    hint: &'static str,
+    no_match: &'static str,
+) -> impl Bundle {
     (
         Node {
             position_type: PositionType::Absolute,
@@ -2111,11 +2128,11 @@ pub fn command_palette() -> impl Bundle {
             order: 0,
             modal: true,
         },
-        CommandPalette::default(),
+        state,
         observe(palette_on_cancel),
         observe(palette_on_acquire),
         observe(palette_on_click),
-        Children::spawn(SpawnWith(|scrim: &mut RelatedSpawner<ChildOf>| {
+        Children::spawn(SpawnWith(move |scrim: &mut RelatedSpawner<ChildOf>| {
             let palette = scrim.target_entity();
             scrim
                 .spawn((Node::default(), Role::Palette))
@@ -2123,7 +2140,7 @@ pub fn command_palette() -> impl Bundle {
                     card.spawn((
                         text_row(None, String::new(), None),
                         PaletteInput(palette),
-                        TextHint(PALETTE_HINT.into()),
+                        TextHint(hint.into()),
                     ));
                     card.spawn(Node {
                         flex_direction: FlexDirection::Column,
@@ -2138,7 +2155,7 @@ pub fn command_palette() -> impl Bundle {
                                 display: Display::None,
                                 ..default()
                             },
-                            Text::new(NO_MATCH),
+                            Text::new(no_match),
                             Role::MenuNote,
                             ONE_LINE,
                             PaletteNote(palette),
@@ -2553,5 +2570,305 @@ fn toast_of(kind: ToastKind, text: String) -> impl Bundle {
                 ),
             ],
         )],
+    )
+}
+
+/// A tool's bar: a full-width row of [`icon_button`]s, [`toggle_group`]s, [`toolbar_separator`]s and
+/// any other widget, on the menu bar's surface with one quiet line under it. When the items do not
+/// fit the bar's width the **last** ones hide and a "More" button appears whose menu lists them;
+/// choosing a row there activates the item ([`fit_bars`](crate::fit_bars)).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, server: Res<AssetServer>) {
+/// let glyph = |name: &str| IconSource::Image(server.load(name.to_string()));
+/// commands.spawn(toolbar(children![
+///     (
+///         icon_button(glyph("save.png"), Tooltip::new("Save").with_shortcut(Shortcut::primary(KeyCode::KeyS))),
+///         observe(|_: On<Activate>| info!("save")),
+///     ),
+///     toolbar_separator(),
+///     (
+///         toggle_group(
+///             [
+///                 GroupOption::icon(glyph("move.png"), Tooltip::new("Move")),
+///                 GroupOption::icon(glyph("paint.png"), Tooltip::new("Paint")),
+///             ],
+///             0,
+///         ),
+///         observe(|mode: On<ValueChange<usize>>| info!("tool {}", mode.value)),
+///     ),
+/// ]));
+/// # }
+/// ```
+///
+/// The bar fills its parent's width, so give the parent one (a [`screen`] or a fixed-width panel):
+/// a bar in an auto-width column is as wide as its items and never overflows. Every control is a
+/// tab stop and the arrows and the D-pad move focus along the row.
+pub fn toolbar(items: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(100.0),
+            min_width: Val::Px(0.0),
+            ..default()
+        },
+        Role::Toolbar,
+        Toolbar::default(),
+        items,
+    )
+}
+
+/// A toolbar's button: a target-sized square with a picture and no words, so `tooltip` is its
+/// name, shown on hover and on visible focus (with its shortcut, if it has one) and listed in the
+/// bar's "More" menu when it does not fit. Observe [`Activate`](crate::Activate) on it like any
+/// [`button`]; the picture is tinted by the button's state ([`icon`]).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, server: Res<AssetServer>) {
+/// commands.spawn((
+///     icon_button(IconSource::Image(server.load("undo.png")), Tooltip::new("Undo")),
+///     observe(|_: On<Activate>| info!("undo")),
+/// ));
+/// # }
+/// ```
+pub fn icon_button(source: IconSource, tooltip: Tooltip) -> impl Bundle {
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::Button,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        tooltip,
+        children![icon(source)],
+    )
+}
+
+/// A row of options of which exactly one is on, like a toolbar's tool modes: the one on is lit in
+/// the accent, like the selected tab. Choosing another with Enter, Space, South or a click sends
+/// one [`ValueChange<usize>`](crate::ValueChange) on the group (the index of the option) and moves
+/// the light; choosing the one that is on sends nothing. The state is
+/// [`ToggleGroupValue`](crate::ToggleGroupValue): set it to change the mode from code, and the
+/// group follows with no event.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     toggle_group([GroupOption::text("Edit"), GroupOption::text("Play")], 0),
+///     observe(|mode: On<ValueChange<usize>>| info!("mode {}", mode.value)),
+/// ));
+/// # }
+/// ```
+pub fn toggle_group(options: impl IntoIterator<Item = GroupOption>, selected: usize) -> impl Bundle {
+    let options: Vec<GroupOption> = options.into_iter().collect();
+    let count = options.len();
+    let selected = selected.min(count.saturating_sub(1));
+    (
+        Node::default(),
+        Role::ToggleGroup,
+        ToggleGroupValue(selected),
+        ToggleGroupCount(count),
+        observe(group_self_update),
+        Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
+            for (index, option) in options.into_iter().enumerate() {
+                let mut entity = parent.spawn((
+                    Node {
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    bevy::ui_widgets::Button,
+                    Role::GroupOption,
+                    GroupIndex(index),
+                    Hovered::default(),
+                    TabIndex(0),
+                    AutoDirectionalNavigation::default(),
+                    observe(option_on_activate),
+                ));
+                if let Some(tooltip) = option.tooltip {
+                    entity.insert(tooltip);
+                }
+                match option.content {
+                    OptionContent::Text(label) => {
+                        entity.with_child((Text::new(label), Role::TabText, ONE_LINE));
+                    }
+                    OptionContent::Icon(source) => {
+                        entity.with_child(icon(source));
+                    }
+                }
+            }
+        })),
+    )
+}
+
+/// A thin vertical line between two groups of a [`toolbar`]. (The menu's [`separator`] is the
+/// horizontal one.)
+pub fn toolbar_separator() -> impl Bundle {
+    (Node::default(), Role::ToolbarSeparator, Pickable::IGNORE)
+}
+
+/// A tool's status line along the foot of the window: workspace state on the left, the context's
+/// on the right, each a row of [`status_item`]s. When the window is too narrow the lowest
+/// [`StatusPriority`](crate::StatusPriority) hides first, the right group's before the left's
+/// ([`fit_bars`](crate::fit_bars)); a hidden item returns when the room does.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(status_bar(
+///     children![status_item("main"), (status_item("2 problems"), StatusKind::Warning)],
+///     children![(status_item("UTF-8"), StatusPriority(10)), status_item("Ln 4, Col 12")],
+/// ));
+/// # }
+/// ```
+pub fn status_bar(left: impl Bundle, right: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(100.0),
+            min_width: Val::Px(0.0),
+            ..default()
+        },
+        Role::StatusBar,
+        StatusBar,
+        children![
+            (
+                Node {
+                    flex_grow: 1.0,
+                    min_width: Val::Px(0.0),
+                    ..default()
+                },
+                Role::StatusGroup,
+                StatusGroup { left: true },
+                left,
+            ),
+            (
+                Node {
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+                Role::StatusGroup,
+                StatusGroup { left: false },
+                right,
+            ),
+        ],
+    )
+}
+
+/// One entry of a [`status_bar`]: a short line of text a target high that sends
+/// [`Activate`](crate::Activate) on Enter, Space, South or a click, and takes a
+/// [`Tooltip`](crate::Tooltip), a [`StatusKind`](crate::StatusKind) and a
+/// [`StatusPriority`](crate::StatusPriority). Edit its [`Text`] child to change the words.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     status_item("Saving..."),
+///     StatusKind::Warning,
+///     Tooltip::new("Open the notification log"),
+///     observe(|_: On<Activate>| info!("log")),
+/// ));
+/// # }
+/// ```
+pub fn status_item(text: impl Into<String>) -> impl Bundle {
+    (
+        Node::default(),
+        bevy::ui_widgets::Button,
+        Role::StatusItem,
+        StatusItem,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        children![
+            (Node::default(), Role::StatusMark, Pickable::IGNORE),
+            (Text::new(text), Role::ButtonText, ONE_LINE),
+        ],
+    )
+}
+
+/// A [`status_item`] that also shows a short [`progress`] bar after its words, for a task that
+/// runs while the player works: change the [`Progress`](crate::Progress) on the bar (the item's
+/// second child's child) or query for it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(status_progress("Baking", 0.4));
+/// # }
+/// ```
+pub fn status_progress(text: impl Into<String>, fraction: f32) -> impl Bundle {
+    (
+        Node::default(),
+        bevy::ui_widgets::Button,
+        Role::StatusItem,
+        StatusItem,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        children![
+            (Node::default(), Role::StatusMark, Pickable::IGNORE),
+            (Text::new(text), Role::ButtonText, ONE_LINE),
+            progress(fraction),
+        ],
+    )
+}
+
+/// A row that chooses one of a list of options: a [`choice`] with up to eight, and above eight a
+/// searchable list. The row looks and steps like a choice (Left and Right, Home and End, the
+/// D-pad), and its state is the same [`ChoiceValue`](crate::ChoiceValue); with more than
+/// [`SELECT_FILTER_ABOVE`](crate::SELECT_FILTER_ABOVE) options Enter, Space, South or a click
+/// opens a list instead of cycling: type to narrow it, Up and Down (or the D-pad) move the lit
+/// option, Enter, South or a click chooses it and Escape leaves the value alone. Choosing sends one
+/// [`ValueChange<usize>`](crate::ValueChange) on the row, with the option's index in the list you
+/// gave, and none when the lit option is the one already chosen.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     select("Language", ["English", "Deutsch", "Español", "Français", "Italiano", "Nederlands",
+///         "Polski", "Português", "Svenska", "Türkçe"], 0),
+///     observe(|change: On<ValueChange<usize>>| info!("language {}", change.value)),
+/// ));
+/// # }
+/// ```
+///
+/// While the list is open the options are matched by the same fuzzy rule as the command palette
+/// ("par" finds "Paraguay"), keeping the list's own order among equal matches; with none the card
+/// says "No option matches" and Enter chooses nothing. Like the palette it is a card at the top of
+/// the window and not under the row.
+pub fn select<S: Into<String>>(
+    label: impl Into<String>,
+    options: impl IntoIterator<Item = S>,
+    selected: usize,
+) -> impl Bundle {
+    let options: Vec<String> = options.into_iter().map(Into::into).collect();
+    (
+        choice(label, options.clone(), selected),
+        Select::new(options),
+        observe(select_on_activate),
+    )
+}
+
+/// The list a [`select`] opens: the palette's card over the select's own options, with the one the
+/// row has lit.
+pub(crate) fn select_list(select: Entity, options: &[String], selected: usize) -> impl Bundle {
+    palette_card(
+        CommandPalette::for_select(select, options, selected),
+        SELECT_HINT,
+        SELECT_NO_MATCH,
     )
 }
