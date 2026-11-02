@@ -4,7 +4,7 @@ A player finds "Options" by its words, clicks it where it is drawn and sees wher
 
 ```toml
 [dev-dependencies]
-bevy_gooey = { version = "0.25", features = ["testing"] }
+bevy_gooey = { version = "0.26", features = ["testing"] }
 ```
 
 ```rust
