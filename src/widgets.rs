@@ -40,7 +40,7 @@ use crate::list::ListView;
 use crate::menu::{MenuBar, MenuItem, MenuTitle, bar_on_cancel, menu_panel};
 use crate::meter::Meter;
 use crate::model::{
-    PadStyle, format_number, hex_text, meter_fraction, slider_fraction, slider_text,
+    PadStyle, format_number, hex_text, meter_fraction, radial_place, slider_fraction, slider_text,
 };
 use crate::nav::Dialog;
 use crate::number::{
@@ -60,6 +60,10 @@ use crate::popover::{
 };
 use crate::progress::{Progress, Spinner};
 use crate::prompt::Prompt;
+use crate::radial::{
+    RadialCount, RadialSlot, RadialValue, radial_on_activate, radial_on_key_input,
+    radial_on_pointer_move, radial_on_press, radial_self_update,
+};
 use crate::region::FocusRegion;
 use crate::section::{SectionHeader, SectionOpen, header_on_activate, section_self_update};
 use crate::select::{SELECT_HINT, SELECT_NO_MATCH, Select, select_on_activate};
@@ -825,6 +829,111 @@ fn choice_arrow(step: i32) -> impl Bundle {
             mark,
             Pickable::IGNORE,
         )],
+    )
+}
+
+/// How far from the middle of a [`radial`] the items stand, as a share of its width: 36%, which
+/// keeps an item of eight characters at the side of the ring inside the disc's edge.
+const RADIAL_RING_FRACTION: f32 = 0.36;
+
+/// A **radial menu**: a weapon wheel, an emote wheel, a build menu. The items stand on a ring
+/// round a disc, item 0 at the top and the rest clockwise, and the player points at one and
+/// chooses it. With a pad, push a stick (either one) toward the item, and press South; with a
+/// pointer, move over the item's side of the disc and click, the whole wedge being the target; with
+/// a keyboard, step with the arrows (Right and Down forward, Left and Up back, wrapping round),
+/// Home and End, and press Enter or Space. The highlighted item is lit and its name is read in
+/// the middle of the disc, where the thumb is. A stick that is only brushed, or a pointer in the
+/// middle, leaves the highlight where it is.
+///
+/// It is Bevy's headless [`bevy::ui_widgets::Button`] and a tab stop, so a game that opens it for
+/// the player gives it focus (`AutoFocus`). It keeps its state in [`RadialValue`] (the highlighted
+/// item) and sends `ValueChange<usize>`: with `is_final: false` as the highlight moves, and with
+/// `is_final: true` for the item chosen, even when the highlight did not move. Apply the choice on
+/// the final one. To choose when a hold button is let go ("release to select"), trigger `Activate`
+/// on the radial then. The disc is [`Role::Radial`] and 26 text sizes across, so it grows with
+/// [`GooeySkin::text_scale`](crate::GooeySkin::text_scale); three to eight short labels read best.
+/// Name it for a screen reader with `AccessibleLabel`.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     radial(["Pistol", "Rifle", "Shotgun", "Grenade"], 0),
+///     observe(|change: On<ValueChange<usize>>| {
+///         if change.is_final {
+///             info!("equip item {}", change.value);
+///         }
+///     }),
+/// ));
+/// # }
+/// ```
+pub fn radial<S: Into<String>>(items: impl IntoIterator<Item = S>, selected: usize) -> impl Bundle {
+    let items: Vec<String> = items.into_iter().map(Into::into).collect();
+    let count = items.len();
+    let selected = selected.min(count.saturating_sub(1));
+    let name = items.get(selected).cloned().unwrap_or_default();
+    let middle = |ring: f32, (x, y): (f32, f32)| Node {
+        position_type: PositionType::Absolute,
+        left: Val::Percent(50.0 + x * ring * 100.0),
+        top: Val::Percent(50.0 - y * ring * 100.0),
+        ..default()
+    };
+    let pull_back = UiTransform {
+        translation: Val2::percent(-50.0, -50.0),
+        ..default()
+    };
+    (
+        Node::default(),
+        bevy::ui_widgets::Button,
+        RadialValue(selected),
+        RadialCount(count),
+        Role::Radial,
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        observe(radial_self_update),
+        observe(radial_on_activate),
+        observe(radial_on_key_input),
+        observe(radial_on_pointer_move),
+        observe(radial_on_press),
+        Children::spawn((
+            Spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Percent(50.0),
+                    top: Val::Percent(50.0),
+                    width: Val::Percent(RADIAL_RING_FRACTION * 200.0),
+                    height: Val::Percent(RADIAL_RING_FRACTION * 200.0),
+                    ..default()
+                },
+                pull_back,
+                Role::RadialTrack,
+                Pickable::IGNORE,
+            )),
+            SpawnIter(items.into_iter().enumerate().map(move |(index, text)| {
+                (
+                    middle(RADIAL_RING_FRACTION, radial_place(index, count)),
+                    pull_back,
+                    Role::RadialSlot,
+                    RadialSlot(index),
+                    Pickable::IGNORE,
+                    children![(
+                        Text::new(text),
+                        ONE_LINE,
+                        Role::RadialText,
+                        Pickable::IGNORE
+                    )],
+                )
+            })),
+            Spawn((
+                middle(0.0, (0.0, 0.0)),
+                pull_back,
+                Text::new(name),
+                ONE_LINE,
+                Role::RadialCentre,
+                Pickable::IGNORE,
+            )),
+        )),
     )
 }
 

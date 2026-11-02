@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `radial(items, selected)`: a weapon wheel. The items stand on a ring round a disc (item 0 at the top, clockwise); a stick (either one, of any pad) pushed past half its travel points at the item it faces, the pointer over a wedge does the same and a click chooses, the arrows and the D-pad step round (wrapping), Home and End jump, and South, Enter or Space send one final `ValueChange<usize>` (`is_final: true`) even when the highlight did not move; a move sends one with `is_final: false`. `RadialValue` and `RadialCount` are its state, `radial_by_pad` and `update_radials` its systems, `Role::{Radial, RadialTrack, RadialSlot, RadialText, RadialCentre}` its look (a quiet circle for the items to stand on, the disc capped at 92% of the window's shorter side so it is whole at 200% text, the lit item is the selected tab's look, its name in the heading size in the middle), a spin button valued with that name for a screen reader, and `navigate_by_input` leaves a focused radial all four arrows and the D-pad. `model::{radial_pick, radial_place, radial_step, RADIAL_STICK_PUSH, RADIAL_DEAD_ZONE}`. `examples/radial`, `docs/guide/radial.md`.
+
 ## [0.25.1] - 2026-11-02
 
 Also the first publish since 0.24.0 if 0.25.0 is still unpublished (crates.io refused it with a 429): 0.25.1 carries everything in 0.24.1 to 0.25.0 below.

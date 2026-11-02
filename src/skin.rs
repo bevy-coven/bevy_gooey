@@ -50,6 +50,16 @@ const SLIDER_MIN_TEXT_SIZES: f32 = 10.0;
 /// and values aligned instead of each at its widest option's width.
 const CHOICE_MIN_TEXT_SIZES: f32 = 8.0;
 
+/// A [`crate::radial`]'s disc is this many body text sizes across: wide enough that eight short
+/// labels on its ring (at 36% of the diameter from the middle) stand clear of one another, and
+/// still a fraction of a 720p window at the default size (26 × 16 px = 416 px).
+const RADIAL_DIAMETER_TEXT_SIZES: f32 = 26.0;
+
+/// The most of the window's shorter side a [`crate::radial`]'s disc takes: 92%, which at 720p is a
+/// 662 px wheel and caps its text at 25 px (125% of the default), so the wheel is whole on the
+/// screen at 150% and 200% text too.
+const RADIAL_WINDOW_SHARE: f32 = 0.92;
+
 /// A toggle's track is this many body text sizes high and twice as wide.
 const SWITCH_TEXT_SIZES: f32 = 1.5;
 
@@ -1289,6 +1299,21 @@ pub enum Role {
     Tab,
     /// A tab's label: [`GooeySkin::accent_text`] on the selected tab, else [`GooeySkin::text`].
     TabText,
+    /// A [`crate::radial`]'s disc: a round [`GooeySkin::surface`] with the items on a ring inside
+    /// it, its border the focus ring. As wide as it is high, in text sizes, so it follows the
+    /// player's text scale.
+    Radial,
+    /// The quiet circle the items of a radial stand on: a line in [`GooeySkin::surface_raised`],
+    /// drawn behind them, so the ring reads as a ring and not as eight floating labels.
+    RadialTrack,
+    /// One item of a radial: a button's fill and size, centred on its place on the ring, lit
+    /// [`GooeySkin::accent`] while it is the highlighted one.
+    RadialSlot,
+    /// An item's label: [`GooeySkin::accent_text`] on the highlighted item, else
+    /// [`GooeySkin::text`].
+    RadialText,
+    /// The highlighted item's name, in the middle of the disc in the heading's size.
+    RadialCentre,
     /// The one grid cell every page stands in, so the widget is as large as its largest page; not
     /// drawn.
     TabPages,
@@ -1634,6 +1659,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
                 | Role::Slider
                 | Role::Choice
                 | Role::Binding
+                | Role::Radial
                 | Role::Toast
                 | Role::TextInput
                 | Role::TextArea
@@ -1771,6 +1797,7 @@ pub fn apply_skin(
                                 | Role::Slider
                                 | Role::Choice
                                 | Role::Binding
+                                | Role::Radial
                                 | Role::TextInput
                                 | Role::TextArea
                                 | Role::PaletteField
@@ -1849,6 +1876,7 @@ pub fn apply_skin(
                             | Role::Slider
                             | Role::Choice
                             | Role::Binding
+                            | Role::Radial
                             | Role::Tab
                             | Role::GroupOption
                             | Role::StatusItem
@@ -1937,6 +1965,13 @@ fn restyle(
     let line = snap_line_width(skin.border, target.map_or(1.0, |t| t.scale_factor()));
     // The settings controls' sizes grow with the player's text size, like the meter.
     let text_px = skin.text_size * skin.text_scale;
+    // A wheel is the player's text size until 26 of them would pass `RADIAL_WINDOW_SHARE` of the
+    // window's shorter side: past that the whole wheel (disc, labels and name) stops growing, so
+    // it is always whole on the screen, which 200% text on a 720p window would not be.
+    let wheel_px = target.map_or(text_px, |t| {
+        let size = t.logical_size();
+        text_px.min(RADIAL_WINDOW_SHARE * size.x.min(size.y) / RADIAL_DIAMETER_TEXT_SIZES)
+    });
     let rail = skin.meter_height * skin.text_scale;
     let thumb = Vec2::new(text_px * THUMB_TEXT_SIZES, rail * THUMB_RAIL_RATIO);
     let switch = text_px * SWITCH_TEXT_SIZES;
@@ -1961,6 +1996,16 @@ fn restyle(
             skin.accent
         } else if state.hovered || state.open {
             skin.hovered()
+        } else {
+            skin.surface_raised
+        }),
+        // The disc is the panel's ground; an item rests on a button's fill and the highlighted
+        // one is lit like a selected tab, two cues by luminance and not by hue.
+        Role::Radial => Some(skin.surface),
+        Role::RadialSlot => Some(if owner.disabled {
+            skin.surface
+        } else if state.selected {
+            skin.accent
         } else {
             skin.surface_raised
         }),
@@ -2199,6 +2244,9 @@ fn restyle(
         | Role::Tabs
         | Role::TabList
         | Role::TabText
+        | Role::RadialText
+        | Role::RadialCentre
+        | Role::RadialTrack
         | Role::TabPages
         | Role::TabPage
         | Role::TextInput
@@ -2306,6 +2354,13 @@ fn restyle(
                 skin.text
             },
         )),
+        Role::RadialTrack => Some(BorderColor::all(skin.surface_raised)),
+        // The disc is framed like a panel and wears the ring while it has focus.
+        Role::Radial => Some(BorderColor::all(if look.focused == Some(entity) {
+            skin.focus_ring
+        } else {
+            skin.surface_edge.unwrap_or(skin.surface_raised)
+        })),
         // A row has no fill of its own, so its border speaks: the ring when focused, the outline
         // under the pointer, nothing at rest.
         Role::Toggle | Role::Slider | Role::Choice | Role::Binding => {
@@ -2397,6 +2452,32 @@ fn restyle(
                     next.min_width = Val::Px(text_px * DIALOG_MIN_TEXT_SIZES);
                     next.max_width = Val::Px(text_px * DIALOG_MAX_TEXT_SIZES);
                 }
+            }
+            // A disc as wide as it is high, in text sizes, so it grows with the player's text scale;
+            // the middle holds the highlighted item's name and the items stand on a ring round it.
+            Role::Radial => {
+                let diameter = wheel_px * RADIAL_DIAMETER_TEXT_SIZES;
+                next.width = Val::Px(diameter);
+                next.height = Val::Px(diameter);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = BorderRadius::MAX;
+                next.flex_shrink = 0.0;
+            }
+            Role::RadialTrack => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = BorderRadius::MAX;
+            }
+            // An item is a button's size and look, its middle on its place on the ring (the place
+            // and the half-size pull back are the widget's own).
+            Role::RadialSlot => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
+                next.min_width = Val::Px(skin.target());
+                next.min_height = Val::Px(skin.target());
+                next.justify_content = JustifyContent::Center;
+                next.align_items = AlignItems::Center;
+                next.flex_shrink = 0.0;
             }
             Role::Menu | Role::TabPage | Role::Tabs | Role::Inspector => {
                 next.row_gap = Val::Px(skin.gap)
@@ -3164,6 +3245,28 @@ fn restyle(
             };
             Some((color, &look.fonts.body, skin.text_size))
         }
+        // An item's label is drawn on the accent fill when it is the highlighted one.
+        Role::RadialText => {
+            let parent = parent.unwrap_or_default();
+            let color = if owner.disabled {
+                skin.text_muted
+            } else if parent.selected {
+                skin.accent_text
+            } else {
+                skin.text
+            };
+            Some((color, &look.fonts.body, wheel_px / skin.text_scale))
+        }
+        // The name in the middle is read under the thumb, so it is a heading's size.
+        Role::RadialCentre => Some((
+            if owner.disabled {
+                skin.text_muted
+            } else {
+                skin.text
+            },
+            &look.fonts.heading,
+            skin.heading_size * wheel_px / text_px,
+        )),
         // The selected tab's label is drawn on the accent fill, so it takes the accent's text.
         Role::TabText => {
             let parent = parent.unwrap_or_default();

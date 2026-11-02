@@ -128,6 +128,23 @@ fn a_choice_reads_its_shown_option_and_follows_the_game() {
 }
 
 #[test]
+fn a_radial_is_a_spin_button_valued_with_the_highlighted_name_and_follows_the_game() {
+    let mut app = app();
+    screen_with(&mut app, radial(["Pistol", "Rifle", "Shotgun"], 1));
+    let wheel = app
+        .world_mut()
+        .query_filtered::<Entity, With<RadialCount>>()
+        .single(app.world())
+        .unwrap();
+    assert_eq!(node(&app, wheel).role(), Ak::SpinButton);
+    assert_eq!(node(&app, wheel).value(), Some("Rifle"));
+
+    app.world_mut().entity_mut(wheel).insert(RadialValue(2));
+    settle(&mut app);
+    assert_eq!(node(&app, wheel).value(), Some("Shotgun"));
+}
+
+#[test]
 fn a_button_is_named_by_its_text_and_an_icon_button_by_its_tooltip() {
     let mut app = app();
     let root = app.world_mut().spawn(screen()).id();

@@ -157,6 +157,7 @@ mod palette;
 mod popover;
 mod progress;
 mod prompt;
+mod radial;
 mod region;
 mod scale;
 mod section;
@@ -213,18 +214,19 @@ pub use model::{
     COMFORT_TARGET_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
     ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
     NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle,
-    SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST,
-    TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit, choice_next,
-    choice_step, cie_lightness, clock_text, column_resize, composite, contrast_ratio,
-    dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, eta_words,
-    format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key, key_name, list_height,
-    meter_fraction, mouse_name, natural_cmp, nearest_step, number_decimals, pad_name, page_target,
-    parse_hex, parse_number, progress_text, relative_luminance, repeat_steps, rgb_to_hsv,
-    scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label, slider_fraction,
-    slider_text, snap_line_width, snap_to_row, spinner_angle, split_clamp, split_drag, split_mins,
-    step_value, tab_step, table_anchor, table_step, table_window, target_step, target_toward,
-    toast_alpha, toast_grow, toast_hold, toast_life, tree_ends, tree_heir, tree_indent,
-    tree_parent, tree_visible, type_ahead, window_ui_scale,
+    RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH, SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH,
+    TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward,
+    area_values, bar_fit, choice_next, choice_step, cie_lightness, clock_text, column_resize,
+    composite, contrast_ratio, dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot,
+    dock_zone, eta_words, format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key,
+    key_name, list_height, meter_fraction, mouse_name, natural_cmp, nearest_step, number_decimals,
+    pad_name, page_target, parse_hex, parse_number, progress_text, radial_pick, radial_place,
+    radial_step, relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
+    shortcut_conflicts, shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row,
+    spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step, table_anchor,
+    table_step, table_window, target_step, target_toward, toast_alpha, toast_grow, toast_hold,
+    toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible, type_ahead,
+    window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -247,6 +249,7 @@ pub use progress::{
     Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
 };
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
+pub use radial::{RadialCount, RadialSlot, RadialValue, radial_by_pad, update_radials};
 pub use region::{ArrowPolicy, FocusRegion, cycle_regions};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_sections};
@@ -283,9 +286,9 @@ pub use widgets::{
     binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
     heading, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, menu_title,
     meter, notification_center, number_field, pad_style, panel, popover, popover_modal, progress,
-    prompt, prompts, radio_item, screen, section, select, separator, skin_preset, slider, spinner,
-    split, status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs,
-    text_area, text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar,
+    prompt, prompts, radial, radio_item, screen, section, select, separator, skin_preset, slider,
+    spinner, split, status_bar, status_item, status_progress, submenu, surface, tab_page, table,
+    tabs, text_area, text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar,
     toolbar_separator, tree, vec_field, viewport,
 };
 
@@ -384,6 +387,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TabsValue>()
             .register_type::<TabsCount>()
             .register_type::<ChoiceCount>()
+            .register_type::<RadialValue>()
+            .register_type::<RadialCount>()
+            .register_type::<RadialSlot>()
             .register_type::<ListView>()
             .register_type::<Split>()
             .register_type::<SplitAxis>()
@@ -446,7 +452,7 @@ impl Plugin for GooeyStylePlugin {
                     update_text_inputs,
                     update_palette,
                     update_option_rows,
-                    update_choices,
+                    (update_choices, update_radials).chain(),
                     dock::update_docks,
                     dock::update_dock_drag,
                     update_tabs,
@@ -548,6 +554,7 @@ impl Plugin for GooeyNavPlugin {
                         .chain(),
                     (
                         gamepad_adjust.run_if(not_capturing),
+                        radial_by_pad.run_if(not_capturing),
                         split_by_pad.run_if(not_capturing),
                     )
                         .chain(),
