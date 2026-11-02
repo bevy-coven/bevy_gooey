@@ -74,7 +74,7 @@ use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::text::{
     TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
 };
-use crate::toast::{Toast, ToastKind};
+use crate::toast::{ToastBundle, ToastKind};
 use crate::toolbar::{
     GroupIndex, GroupOption, OptionContent, ToggleGroupCount, ToggleGroupValue, Toolbar,
     group_self_update, option_on_activate,
@@ -2508,9 +2508,13 @@ pub fn separator() -> impl Bundle {
 /// ```
 ///
 /// It takes no input and no focus, so it never gets in the way of what is under it; it is not
-/// announced to screen readers. See [`Toast`] for its lifecycle.
-pub fn toast(text: impl Into<String>) -> impl Bundle {
-    toast_of(ToastKind::Info, text.into())
+/// announced to screen readers. See [`Toast`](crate::Toast) for its lifecycle. Add a button with
+/// [`ToastBundle::action`] (`toast("Item deleted").action("Undo", "undo")`, which then has one
+/// thing that takes input: the button) and make it stand until dismissed with
+/// [`ToastBundle::sticky`]; identical toasts arriving close together are merged into one that
+/// reads "x3", and every toast is kept in the [`ToastLog`](crate::ToastLog).
+pub fn toast(text: impl Into<String>) -> ToastBundle {
+    ToastBundle::new(ToastKind::Info, text.into())
 }
 
 /// A [`toast`] for a refusal or a failure ("Inventory full", "Could not save"): the same line with
@@ -2524,50 +2528,8 @@ pub fn toast(text: impl Into<String>) -> impl Bundle {
 ///     commands.spawn(toast_alert("Inventory full"));
 /// }
 /// ```
-pub fn toast_alert(text: impl Into<String>) -> impl Bundle {
-    toast_of(ToastKind::Alert, text.into())
-}
-
-/// A toast's nodes: a clipped column that holds the room (its height is opened and closed by
-/// [`crate::apply_skin`], and starts closed, so a toast never takes room before it is styled) around
-/// the body, a framed row of a mark and the message. Everything starts transparent and
-/// transparent to the pointer.
-fn toast_of(kind: ToastKind, text: String) -> impl Bundle {
-    (
-        Toast::new(kind, &text),
-        Node {
-            flex_direction: FlexDirection::Column,
-            overflow: Overflow::clip(),
-            max_height: Val::Px(0.0),
-            ..default()
-        },
-        Role::Toast,
-        Pickable::IGNORE,
-        children![(
-            Node {
-                flex_direction: FlexDirection::Row,
-                ..default()
-            },
-            Role::ToastBody,
-            BackgroundColor(Color::NONE),
-            BorderColor::all(Color::NONE),
-            Pickable::IGNORE,
-            children![
-                (
-                    Node::default(),
-                    Role::ToastMark,
-                    BackgroundColor(Color::NONE),
-                    Pickable::IGNORE,
-                ),
-                (
-                    Text::new(text),
-                    TextColor(Color::NONE),
-                    Role::ToastText,
-                    Pickable::IGNORE,
-                ),
-            ],
-        )],
-    )
+pub fn toast_alert(text: impl Into<String>) -> ToastBundle {
+    ToastBundle::new(ToastKind::Alert, text.into())
 }
 
 /// A tool's bar: a full-width row of [`icon_button`]s, [`toggle_group`]s, [`toolbar_separator`]s and
@@ -2990,3 +2952,33 @@ pub fn section(title: impl Into<String>, open: bool, children: impl Bundle) -> i
         })),
     )
 }
+
+/// The log of every toast, as a list the player can scroll and read: "0:07  Item deleted", the
+/// newest first, so a toast that faded before it was read can be found. Put it in a panel or a
+/// dialog of your own; it is a [`list`] of buttons (rows are tab stops, so the keys and the D-pad
+/// scroll it like any list), and an alert's words start with "! ".
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((panel(), children![heading("Notifications"), notification_center()]));
+/// # }
+/// ```
+///
+/// It reads the [`ToastLog`](crate::ToastLog), which keeps the last 200 toasts; clear it to
+/// empty the center.
+pub fn notification_center() -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::NotificationCenter,
+        crate::notification::NotificationCenter,
+        children![list(NOTIFICATION_ROWS, children![])],
+    )
+}
+
+/// How many rows of the log the center shows before it scrolls.
+const NOTIFICATION_ROWS: f32 = 5.5;

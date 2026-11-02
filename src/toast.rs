@@ -1,10 +1,17 @@
 //! Toasts: a line of news a game spawns in one call. A stack takes it in, ages it by the message's
 //! reading time and the player's setting, opens room for it, fades it in and out, and removes it.
 
+use std::collections::VecDeque;
+
 use bevy::ecs::lifecycle::HookContext;
 use bevy::ecs::world::DeferredWorld;
+use bevy::input_focus::InputFocus;
+use bevy::input_focus::tab_navigation::TabIndex;
+use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::ui::ComputedNode;
+use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
+use bevy::ui_widgets::Activate;
 
 use crate::model::{toast_alpha, toast_grow, toast_hold, toast_life};
 use crate::skin::Role;
@@ -88,6 +95,12 @@ pub struct ToastSettings {
     /// Seconds a toast takes to fade in, opening its room, and to fade out, closing it. Default:
     /// 0.3.
     pub fade_seconds: f32,
+    /// The least a toast with an action stands fully shown, before `duration_scale`: a player must
+    /// have time to reach a button (WCAG 2.2.1, timing adjustable). Default: 6.
+    pub action_seconds: f32,
+    /// A toast identical to one that arrived within this many seconds is merged into it, which then
+    /// reads "×2", "×3". Zero turns merging off. Default: 2.
+    pub merge_seconds: f32,
 }
 
 impl Default for ToastSettings {
@@ -99,6 +112,8 @@ impl Default for ToastSettings {
             chars_per_second: 20.0,
             duration_scale: 1.0,
             fade_seconds: 0.3,
+            action_seconds: 6.0,
+            merge_seconds: 2.0,
         }
     }
 }
@@ -140,8 +155,20 @@ pub enum ToastKind {
 #[component(on_add = queue_join)]
 pub struct Toast {
     kind: ToastKind,
+    /// The message.
+    text: String,
     /// The message's length in characters, which its reading time is made of.
     characters: usize,
+    /// How many identical toasts this stands for, itself included: "×3".
+    count: u32,
+    /// Seconds since the last identical toast arrived, on real time: the merge window.
+    since_last: f32,
+    /// Stands until the player dismisses it.
+    sticky: bool,
+    /// Its buttons: a label and the id its [`ToastAction`] carries.
+    actions: Vec<(String, String)>,
+    /// A button was pressed: it fades out now.
+    dismissed: bool,
     /// Seconds since it was spawned, on real time.
     age: f32,
     /// The longest it may stand fully shown: infinite until the stack is over `max_visible`.
@@ -158,7 +185,13 @@ impl Toast {
     pub(crate) fn new(kind: ToastKind, text: &str) -> Self {
         Self {
             kind,
+            text: text.to_string(),
             characters: text.chars().count(),
+            count: 1,
+            since_last: 0.0,
+            sticky: false,
+            actions: Vec::new(),
+            dismissed: false,
             age: 0.0,
             hold_cap: f32::INFINITY,
             alpha: 0.0,
@@ -170,6 +203,26 @@ impl Toast {
     /// What it tells the player.
     pub fn kind(&self) -> ToastKind {
         self.kind
+    }
+
+    /// The message, without its count.
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    /// How many identical toasts it stands for, itself included ([`ToastSettings::merge_seconds`]).
+    pub fn count(&self) -> u32 {
+        self.count
+    }
+
+    /// Whether it stands until the player dismisses it ([`ToastBundle::sticky`]).
+    pub fn is_sticky(&self) -> bool {
+        self.sticky
+    }
+
+    /// Its buttons, as `(label, id)`.
+    pub fn actions(&self) -> &[(String, String)] {
+        &self.actions
     }
 
     /// Seconds since it was spawned, on real time.
@@ -206,17 +259,201 @@ pub struct ToastStack;
 /// it, and below a tooltip (200).
 const STACK_Z: i32 = 150;
 
-/// A toast was just added: make it a child of the stack in this flush, creating the stack if none
-/// stands, before any frame can draw it unparented.
+/// The room a sticky toast holds: far longer than a session, and finite, because the fade's maths
+/// treats a hold that is not finite as none.
+const STICKY_HOLD_SECS: f32 = 1.0e9;
+
+/// A toast, with the buttons it was built with: `commands.spawn(toast("Item deleted").action("Undo",
+/// "undo"))`. [`crate::toast`] and [`crate::toast_alert`] return one; it is a bundle like any other, so
+/// `commands.spawn(toast("Game saved"))` and `(toast("Game saved"), MyMarker)` work as ever.
+///
+/// A toast with no button takes no input and no focus. **One with a button has exactly one thing
+/// that does: each button** (and a sticky toast's Dismiss), a tab stop the pointer, the keys and the
+/// pad reach like any [`crate::button`]; the toast, its mark and its words still let everything
+/// through.
+#[derive(Bundle)]
+pub struct ToastBundle {
+    toast: Toast,
+    node: Node,
+    role: Role,
+    pickable: Pickable,
+}
+
+impl ToastBundle {
+    pub(crate) fn new(kind: ToastKind, text: String) -> Self {
+        Self {
+            toast: Toast::new(kind, &text),
+            node: Node {
+                flex_direction: FlexDirection::Column,
+                overflow: Overflow::clip(),
+                max_height: Val::Px(0.0),
+                ..default()
+            },
+            role: Role::Toast,
+            pickable: Pickable::IGNORE,
+        }
+    }
+
+    /// Adds a button to the toast. Pressing it (Enter, Space, South or a click) sends one
+    /// [`ToastAction`] with `id` and dismisses the toast. A toast with a button stands at least
+    /// [`ToastSettings::action_seconds`], so the player can reach it; offer the same command
+    /// somewhere that does not time out too.
+    ///
+    /// ```
+    /// # use bevy::prelude::*;
+    /// # use bevy_gooey::*;
+    /// fn delete(mut commands: Commands) {
+    ///     commands.spawn(toast("Item deleted").action("Undo", "undo"));
+    /// }
+    ///
+    /// fn undo(action: On<ToastAction>) {
+    ///     if action.id == "undo" {
+    ///         info!("undone");
+    ///     }
+    /// }
+    /// ```
+    pub fn action(mut self, label: impl Into<String>, id: impl Into<String>) -> Self {
+        self.toast.actions.push((label.into(), id.into()));
+        self
+    }
+
+    /// Makes the toast stand until the player dismisses it, with a Dismiss button: an error must not
+    /// vanish before it is read. It does not count against [`ToastSettings::max_visible`], so a
+    /// newer toast never pushes it out.
+    ///
+    /// ```
+    /// # use bevy::prelude::*;
+    /// # use bevy_gooey::*;
+    /// fn failed(mut commands: Commands) {
+    ///     commands.spawn(toast_alert("Could not save").sticky());
+    /// }
+    /// ```
+    pub fn sticky(mut self) -> Self {
+        self.toast.sticky = true;
+        self
+    }
+}
+
+/// A button of a [`Toast`] was pressed. Sent on the toast, and observable globally, once per press:
+/// the toast is dismissed with it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn on_action(action: On<ToastAction>) {
+///     info!("{} on {}", action.id, action.toast);
+/// }
+/// ```
+#[derive(EntityEvent, Clone, Debug, PartialEq, Eq)]
+pub struct ToastAction {
+    /// The toast.
+    #[event_target]
+    pub toast: Entity,
+    /// The id the button was added with ([`ToastBundle::action`]).
+    pub id: String,
+}
+
+/// On a toast's button: which toast, and which id it sends (none for a sticky toast's Dismiss).
+#[derive(Component, Clone, Debug, PartialEq, Eq)]
+pub struct ToastButton {
+    toast: Entity,
+    id: Option<String>,
+}
+
+/// One line of the [`ToastLog`]: a toast that was spawned.
+#[derive(Clone, Debug, PartialEq, Reflect)]
+#[reflect(Debug, Clone, PartialEq)]
+pub struct ToastLogEntry {
+    /// Seconds on `Time<Real>` since the app started, when it was spawned.
+    pub seconds: f32,
+    /// What it told the player.
+    pub kind: ToastKind,
+    /// Its message.
+    pub text: String,
+}
+
+/// The last [`ToastLog::CAPACITY`] toasts that were spawned, oldest first, whether or not they were
+/// merged into another: a toast the player missed can be found here ([`crate::notification_center`]).
+/// It is plain data, so a game may read it, save it or clear it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn count(log: Res<ToastLog>) -> usize {
+///     log.entries().filter(|e| e.kind == ToastKind::Alert).count()
+/// }
+/// ```
+#[derive(Resource, Clone, Debug, Default, PartialEq, Reflect)]
+#[reflect(Resource, Default, Debug, Clone, PartialEq)]
+pub struct ToastLog {
+    entries: VecDeque<ToastLogEntry>,
+}
+
+impl ToastLog {
+    /// How many toasts it keeps.
+    pub const CAPACITY: usize = 200;
+
+    /// Every entry, oldest first.
+    pub fn entries(&self) -> impl DoubleEndedIterator<Item = &ToastLogEntry> {
+        self.entries.iter()
+    }
+
+    /// How many entries it holds.
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Whether it holds none.
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    /// Forgets every entry.
+    pub fn clear(&mut self) {
+        self.entries.clear();
+    }
+
+    /// Adds an entry, forgetting the oldest past [`ToastLog::CAPACITY`].
+    pub fn push(&mut self, entry: ToastLogEntry) {
+        if self.entries.len() >= Self::CAPACITY {
+            self.entries.pop_front();
+        }
+        self.entries.push_back(entry);
+    }
+}
+
+/// A toast was just added: log it, merge it into an identical one that is standing, or make it a
+/// child of the stack in this flush (creating the stack if none stands) and build its body, before
+/// any frame can draw it unparented.
 fn queue_join(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     world.commands().queue(move |world: &mut World| {
-        if world.get_entity(entity).is_err() {
+        let Some(toast) = world.get::<Toast>(entity).cloned() else {
             return;
+        };
+        let seconds = world
+            .get_resource::<Time<Real>>()
+            .map_or(0.0, |time| time.elapsed_secs());
+        if let Some(mut log) = world.get_resource_mut::<ToastLog>() {
+            log.push(ToastLogEntry {
+                seconds,
+                kind: toast.kind,
+                text: toast.text.clone(),
+            });
         }
         let existing = world
             .query_filtered::<Entity, With<ToastStack>>()
             .iter(world)
             .next();
+        let window = world
+            .get_resource::<ToastSettings>()
+            .map_or(0.0, |settings| settings.merge_seconds);
+        if let Some(stack) = existing
+            && window > 0.0
+            && merge_into_standing(world, stack, entity, &toast, window)
+        {
+            world.entity_mut(entity).despawn();
+            return;
+        }
         let stack = existing.unwrap_or_else(|| {
             world
                 .spawn((
@@ -234,7 +471,171 @@ fn queue_join(mut world: DeferredWorld, HookContext { entity, .. }: HookContext)
                 .id()
         });
         world.entity_mut(entity).insert(ChildOf(stack));
+        spawn_body(world, entity, &toast);
     });
+}
+
+/// Folds `new` into a toast in `stack` that says the same and arrived within `window` seconds: its
+/// count goes up, its message reads "×n", and it stands again from the start. Whether one did.
+fn merge_into_standing(
+    world: &mut World,
+    stack: Entity,
+    new: Entity,
+    toast: &Toast,
+    window: f32,
+) -> bool {
+    let candidates: Vec<Entity> = world
+        .get::<Children>(stack)
+        .map(|kids| kids.iter().filter(|&k| k != new).collect())
+        .unwrap_or_default();
+    let found = candidates.into_iter().find(|&other| {
+        world.get::<Toast>(other).is_some_and(|o| {
+            !o.dismissed
+                && o.since_last < window
+                && o.kind == toast.kind
+                && o.text == toast.text
+                && o.sticky == toast.sticky
+                && o.actions == toast.actions
+        })
+    });
+    let Some(other) = found else {
+        return false;
+    };
+    let fade = world
+        .get_resource::<ToastSettings>()
+        .map_or(0.0, |settings| settings.fade_seconds.max(0.0));
+    let (text, count) = {
+        let Some(mut standing) = world.get_mut::<Toast>(other) else {
+            return false;
+        };
+        standing.count += 1;
+        standing.since_last = 0.0;
+        // Fully shown again, whole.
+        standing.age = standing.age.min(fade);
+        standing.hold_cap = f32::INFINITY;
+        (standing.text.clone(), standing.count)
+    };
+    let mut stack_of_nodes = vec![other];
+    while let Some(at) = stack_of_nodes.pop() {
+        if world.get::<Role>(at) == Some(&Role::ToastText) {
+            if let Some(mut words) = world.get_mut::<Text>(at) {
+                words.0 = counted(&text, count);
+            }
+            break;
+        }
+        if let Some(kids) = world.get::<Children>(at) {
+            stack_of_nodes.extend(kids.iter());
+        }
+    }
+    true
+}
+
+/// A message with its count: "Saved" once, "Saved ×3" three times.
+fn counted(text: &str, count: u32) -> String {
+    if count > 1 {
+        format!("{text} x{count}")
+    } else {
+        text.to_string()
+    }
+}
+
+/// A toast's nodes: the body, a framed row of a mark, the message and any buttons, in the room
+/// `entity` holds. Everything that is not a button starts transparent and transparent to the pointer.
+fn spawn_body(world: &mut World, entity: Entity, toast: &Toast) {
+    let body = world
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Row,
+                ..default()
+            },
+            Role::ToastBody,
+            BackgroundColor(Color::NONE),
+            BorderColor::all(Color::NONE),
+            Pickable::IGNORE,
+            ChildOf(entity),
+        ))
+        .id();
+    world.spawn((
+        Node::default(),
+        Role::ToastMark,
+        BackgroundColor(Color::NONE),
+        Pickable::IGNORE,
+        ChildOf(body),
+    ));
+    world.spawn((
+        Text::new(counted(&toast.text, toast.count)),
+        TextColor(Color::NONE),
+        Role::ToastText,
+        Pickable::IGNORE,
+        ChildOf(body),
+    ));
+    let buttons = toast
+        .actions
+        .iter()
+        .map(|(label, id)| (label.clone(), Some(id.clone())))
+        .chain(toast.sticky.then(|| ("Dismiss".to_string(), None)));
+    for (label, id) in buttons {
+        world
+            .spawn((
+                Node {
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                bevy::ui_widgets::Button,
+                Role::ToastAction,
+                ToastButton { toast: entity, id },
+                Hovered::default(),
+                TabIndex(0),
+                AutoDirectionalNavigation::default(),
+                BackgroundColor(Color::NONE),
+                BorderColor::all(Color::NONE),
+                ChildOf(body),
+            ))
+            .with_child((
+                Text::new(label),
+                TextColor(Color::NONE),
+                Role::ToastActionText,
+                crate::widgets::ONE_LINE,
+            ));
+    }
+}
+
+/// A toast's button is going: if it has focus, focus goes with it, so it never rests on nothing. A
+/// global observer.
+pub(crate) fn toast_button_removed(
+    removed: On<Remove<ToastButton>>,
+    mut focus: ResMut<InputFocus>,
+) {
+    if focus.get() == Some(removed.entity) {
+        focus.clear();
+    }
+}
+
+/// A toast's button was activated: send its action, if it has one, and dismiss the toast. A global
+/// observer.
+pub(crate) fn toast_on_activate(
+    activate: On<Activate>,
+    buttons: Query<&ToastButton>,
+    mut toasts: Query<&mut Toast>,
+    mut commands: Commands,
+) {
+    let Ok(button) = buttons.get(activate.entity) else {
+        return;
+    };
+    let Ok(mut toast) = toasts.get_mut(button.toast) else {
+        return;
+    };
+    if toast.dismissed {
+        return;
+    }
+    toast.dismissed = true;
+    if let Some(id) = &button.id {
+        commands.trigger(ToastAction {
+            toast: button.toast,
+            id: id.clone(),
+        });
+    }
 }
 
 /// Ages every [`Toast`], fades it in and out, sends the oldest into its fade when more than
@@ -260,14 +661,26 @@ pub fn update_toasts(
     } else {
         0.0
     };
+    let action_hold = if usable(settings.action_seconds) && usable(settings.duration_scale) {
+        settings.action_seconds * settings.duration_scale
+    } else {
+        0.0
+    };
     let hold_of = |toast: &Toast| {
-        toast_hold(
+        let reading = toast_hold(
             toast.characters,
             settings.base_seconds,
             settings.chars_per_second,
             settings.duration_scale,
-        )
-        .min(toast.hold_cap)
+        );
+        let hold = if toast.sticky {
+            STICKY_HOLD_SECS
+        } else if toast.actions.is_empty() {
+            reading
+        } else {
+            reading.max(action_hold)
+        };
+        hold.min(toast.hold_cap)
     };
     let (direction, justify, across) = settings.anchor.layout();
     let max = settings.max_visible.max(1);
@@ -292,11 +705,19 @@ pub fn update_toasts(
                 continue;
             };
             // The clock is not a change worth a restyle: only the look below is.
-            toast.bypass_change_detection().age += delta;
+            {
+                let quiet = toast.bypass_change_detection();
+                quiet.age += delta;
+                quiet.since_last += delta;
+                // A button was pressed: it begins to fade now, whole as it is.
+                if quiet.dismissed && quiet.hold_cap.is_infinite() {
+                    quiet.hold_cap = (quiet.age - fade).max(0.0);
+                }
+            }
             let hold = hold_of(&toast);
             if toast.age >= toast_life(hold, fade) {
                 commands.entity(entity).despawn();
-            } else if toast.age < fade + hold {
+            } else if toast.age < fade + hold && !toast.sticky {
                 standing += 1;
             }
         }
@@ -311,7 +732,7 @@ pub fn update_toasts(
             let Ok((_, mut toast)) = item else {
                 continue;
             };
-            if toast.age < fade + hold_of(&toast) {
+            if !toast.sticky && toast.age < fade + hold_of(&toast) {
                 let cut = (toast.age - fade).max(0.0);
                 toast.bypass_change_detection().hold_cap = cut;
                 excess -= 1;
