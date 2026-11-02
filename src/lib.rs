@@ -130,6 +130,7 @@ pub mod model;
 #[cfg(feature = "testing")]
 pub mod testing;
 
+mod access;
 mod badges;
 mod binding;
 mod cancel;
@@ -454,7 +455,7 @@ impl Plugin for GooeyStylePlugin {
                     apply_skin,
                     update_meters,
                     update_sliders,
-                    update_lists,
+                    (update_lists, access::update_accessibility).chain(),
                 )
                     .chain()
                     .in_set(GooeySystems::Style),
