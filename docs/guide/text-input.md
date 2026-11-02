@@ -38,3 +38,27 @@ fn save_dialog(mut commands: Commands) {
 - **No password mask, no filter, no undo.** Bevy's `EditableText` lists masking and undo as not implemented; a character filter (digits only) is a game's rule: observe `ValueChange<String>` and write `TextInputValue` back.
 - **No on-screen keyboard.** A pad types through the platform's keyboard or not at all; selection-based entry is slow ([Wobbrock, Myers and Aung](../research/text-input.md)), and every platform ships its own.
 - **Validation and error text.** Whether a name is taken is the game's; show it with a `toast_alert` or a `label` under the row.
+
+## A text area
+
+`text_area(label, value, rows)` is the same row with the label over a field `rows` lines high that wraps at its width and scrolls past the last line, for notes and descriptions.
+
+```rust
+commands.spawn((
+    text_area("Notes", "", 5),
+    TextLimit(500),
+    observe(|change: On<ValueChange<String>>| {
+        if change.is_final {
+            info!("saved {} lines", change.value.lines().count());
+        }
+    }),
+));
+```
+
+![The workspace example's Inspector: focus is on the Notes field (five lines high, a caret at the end of "Walls hold the roof up."); Enter starts lines "Doors open." and "Lamps hang.", the line under it counts "Editing, 3 lines."; Ctrl+Enter ends the edit and it says "Saved 3 lines." with the field's frame back to the outline](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/text-area.gif)
+
+- **Enter adds a line** (Bevy's `allow_newlines`); **Ctrl+Enter or Cmd+Enter ends the edit**: one final `ValueChange<String>` with the text as it stands, the field kept. Either chord works on every platform.
+- **Up and Down are the caret's** (a line up or down): the arrow keys never move focus out of an area. The D-pad still does (a pad has no caret), Tab leaves, and Escape blurs, so the field never traps the keyboard (WCAG 2.1.2).
+- **The field is `rows` lines high and stays so**: typing never grows it (it scrolls with the caret), and nothing in the panel moves.
+- **`TextLimit` is Bevy's rule**: an edit that would pass the limit is ignored, so a paste that does not fit is not taken at all, and a paste that fits is. The game's own `TextInputValue` is never cut.
+- Everything else is the text input's: `TextInputValue` is the state (a write shows with no event), `TextHint`, `FieldProblem`, `TextEditing` and `is_text_editing`.

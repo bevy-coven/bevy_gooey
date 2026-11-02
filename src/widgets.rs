@@ -60,6 +60,7 @@ use crate::popover::{
 };
 use crate::progress::{Progress, Spinner};
 use crate::prompt::Prompt;
+use crate::region::FocusRegion;
 use crate::section::{SectionHeader, SectionOpen, header_on_activate, section_self_update};
 use crate::select::{SELECT_HINT, SELECT_NO_MATCH, Select, select_on_activate};
 use crate::skin::Role;
@@ -72,7 +73,8 @@ use crate::status::{StatusBar, StatusGroup, StatusItem};
 use crate::table::{Column, RowSource, table_bundle};
 use crate::tabs::{TabsCount, TabsValue, tabs_on_select, tabs_self_update};
 use crate::text::{
-    TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire, text_self_update,
+    AreaField, TextHint, TextInputOf, TextInputValue, text_on_key_input, text_row_on_acquire,
+    text_self_update,
 };
 use crate::toast::{ToastBundle, ToastKind};
 use crate::toolbar::{
@@ -105,6 +107,9 @@ const SPLIT_GRIP_LENGTH: f32 = 40.0;
 /// instead of scrolling its first letter away. Longer text scrolls in it, so the row never changes
 /// size.
 const TEXT_INPUT_CHARS: f32 = 17.0;
+
+/// How many character advances wide a [`text_area`]'s field is: a text input's and a half.
+const TEXT_AREA_CHARS: f32 = 26.0;
 
 /// A text field's caret, as a share of the font size: 2 px at the body size, a hair thinner than
 /// Bevy's 0.2 so it does not cover a letter's stem.
@@ -950,6 +955,74 @@ pub fn text_input(label: impl Into<String>, value: impl Into<String>) -> impl Bu
     text_row(Some(label.into()), value.into(), Some(TEXT_INPUT_CHARS))
 }
 
+/// A frame for what the host draws itself (a 3D view, a map, a canvas): it fills the room its
+/// parent leaves, is a tab stop, shows the focus ring while it has focus, and is a
+/// [`FocusRegion::host`]: with focus in it the arrow keys are the host's (read them from
+/// `ButtonInput<KeyCode>`), Tab and F6 still leave, so the keyboard is never trapped. Put what
+/// draws into it (a `ViewportNode`, an image) as children or on the entity itself, and
+/// `.insert(DropTarget::<T>::new())` makes it a place pieces are dropped.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn pan(keys: Res<ButtonInput<KeyCode>>, focus: Res<bevy::input_focus::InputFocus>, view: Single<Entity, With<Role>>) {
+///     // Read the arrows when the viewport has focus; gooey moves no focus meanwhile.
+///     if focus.get() == Some(*view) && keys.pressed(KeyCode::ArrowLeft) {
+///         // pan left
+///     }
+/// }
+/// # fn setup(mut commands: Commands) { commands.spawn(viewport()); }
+/// ```
+pub fn viewport() -> impl Bundle {
+    (
+        Node {
+            flex_grow: 1.0,
+            align_self: AlignSelf::Stretch,
+            ..default()
+        },
+        Role::Viewport,
+        FocusRegion::host(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+    )
+}
+
+/// A row with a text field several lines high: the label over a framed field that wraps its
+/// words at its width and scrolls past `rows` lines, for notes and descriptions. It is a
+/// [`text_input`] in every other way: [`crate::TextInputValue`] is the text, a game's write shows in
+/// the same frame with no event, [`crate::TextHint`], [`crate::TextLimit`] (a paste is cut at it),
+/// [`crate::FieldProblem`] and [`crate::TextEditing`] go on the row, and every edit is one
+/// [`ValueChange<String>`](bevy::ui_widgets::ValueChange) on it.
+///
+/// **Enter adds a line** and Up and Down move the caret between lines. **Ctrl+Enter or Cmd+Enter
+/// ends the edit**: one final change with the text, the field kept. Tab, and Escape, leave the
+/// field as in a [`text_input`] (it never traps the keyboard); a pad's D-pad moves focus off it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn setup(mut commands: Commands) {
+/// commands.spawn((
+///     text_area("Notes", "", 5),
+///     TextLimit(500),
+///     observe(|change: On<ValueChange<String>>| {
+///         if change.is_final {
+///             info!("saved {} characters", change.value.chars().count());
+///         }
+///     }),
+/// ));
+/// # }
+/// ```
+pub fn text_area(label: impl Into<String>, value: impl Into<String>, rows: usize) -> impl Bundle {
+    text_row_as(
+        Role::TextArea,
+        Some(label.into()),
+        value.into(),
+        Some(TEXT_AREA_CHARS),
+        RowKind::Area(rows.max(1)),
+    )
+}
+
 /// The row under [`text_input`]: a label if it has one and the field, which is `chars` character
 /// advances wide, or fills the room its parent leaves when `chars` is `None` (a command palette's
 /// field has no label and the card's whole width).
@@ -968,6 +1041,8 @@ pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>)
 #[derive(Clone, Copy)]
 enum RowKind {
     Text,
+    /// A field `usize` lines high: Enter adds a line.
+    Area(usize),
     Number,
     Colour(Srgba),
 }
@@ -981,10 +1056,24 @@ fn text_row_as(
     kind: RowKind,
 ) -> impl Bundle {
     let fills = chars.is_none();
+    let area = matches!(kind, RowKind::Area(_));
     (
         Node {
-            justify_content: JustifyContent::SpaceBetween,
-            align_items: AlignItems::Center,
+            flex_direction: if area {
+                FlexDirection::Column
+            } else {
+                FlexDirection::Row
+            },
+            justify_content: if area {
+                JustifyContent::FlexStart
+            } else {
+                JustifyContent::SpaceBetween
+            },
+            align_items: if area {
+                AlignItems::Stretch
+            } else {
+                AlignItems::Center
+            },
             width: if fills {
                 Val::Percent(100.0)
             } else {
@@ -1027,10 +1116,19 @@ fn text_row_as(
                     TextInput,
                     EditableText {
                         visible_width: chars,
+                        visible_lines: match kind {
+                            RowKind::Area(rows) => Some(rows as f32),
+                            _ => Some(1.0),
+                        },
+                        allow_newlines: area,
                         cursor_width: TEXT_CARET_WIDTH,
                         ..EditableText::new(&value)
                     },
-                    TextLayout::no_wrap(),
+                    if area {
+                        TextLayout::default()
+                    } else {
+                        TextLayout::no_wrap()
+                    },
                     TextCursorStyle::default(),
                     Role::TextField,
                     TextInputOf(root),
@@ -1041,6 +1139,9 @@ fn text_row_as(
                 ));
                 match kind {
                     RowKind::Text => {}
+                    RowKind::Area(_) => {
+                        field.insert(AreaField);
+                    }
                     RowKind::Number => {
                         field.insert((
                             NumberInput,

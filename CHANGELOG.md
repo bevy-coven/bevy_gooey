@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- Focus regions (G-23, #27): `FocusRegion { arrows: ArrowPolicy }` (`FocusRegion::host()` and `::navigate()`) on any node. **F6 and Shift+F6** (`cycle_regions`, Navigate) move focus to the first widget of the next or previous region in UI-tree order, wrapping, skipping a region with nothing focusable; with `ArrowPolicy::Host` the arrow keys move no gooey focus and show no ring while focus is in the region (the D-pad, Tab and F6 still leave: no keyboard trap), and stay readable in `ButtonInput<KeyCode>`. An open dialog holds focus over every region. `viewport()` is a framed host region and a tab stop (`Role::Viewport`: the `outline` frame, the ring while focused). `examples/workspace`, `docs/research/focus-regions.md`, `docs/guide/focus-regions.md`, `docs/media/focus-regions.gif`, `tests/region.rs` (13 tests).
+- Drag and drop with payloads (G-22, #26): `DragPayload<T>` on a source (a press that moves 6 px lifts it), `DropTarget<T>` / `DropTarget::accepting(fn(&T) -> bool)` on targets (a node may take several types), `Dropped<T> { target, source, payload, pointer }` and `DropRefused<T>` (entity events on the target), `DroppedOnWorld<T>` (global, over nothing the interface draws, with the pointer position), `DragLabel`, `Dragging` (on the source while carried), `DragState`, `is_dragging`, `cancel_drags` and `DRAG_LIFT_PX`. A ghost with the source's words follows the pointer and the target under it gets a mark, the ring's colour when it takes the payload and `danger` (ghost frame too) when it does not; Escape or East puts it down and is no `Cancel`. `Role::{DragGhost, DragGhostRefused, DropMark, DropMarkRefused}`; `docs/research/drag-drop.md`, `docs/guide/drag-drop.md`, `docs/media/drag-drop.gif`, `tests/drag.rs` (13 tests).
+- Multiline text area (G-24, #28): `text_area(label, value, rows)` is a text row with the label over a field `rows` lines high that wraps and scrolls: Enter adds a line, **Ctrl+Enter or Cmd+Enter ends the edit** (one final `ValueChange<String>`, the field kept), Up and Down are the caret's (the D-pad still leaves, Tab and Escape too), `TextLimit` is Bevy's rule (an edit that would pass it is ignored). `Role::TextArea`; `docs/research/text-area.md`, a section of `docs/guide/text-input.md`, `docs/media/text-area.gif`, `tests/text_area.rs` (12 tests).
+- `Role::Viewport` and `viewport()`; `examples/workspace` shows the three together (`GOOEY_KEYS` steps `f6`, `sf6`, `center`, `type:<text>`, `drag:<from>><to>`).
+
+### Changed
+
+- **Breaking:** the dock's `DropTarget` (where a dragged tab lands) is now `DockDropTarget`, so `DropTarget<T>` can be the name of drag and drop's target, as the request asked. `Role` gains the variants above: a `match` with no wildcard needs them.
+- The README's tree GIF gives its place to `drag-drop.gif` (it stays in `docs/guide/trees.md`), keeping the README at 250 lines.
+
 ## [0.22.0] - 2026-11-01
 
 ### Added

@@ -204,7 +204,7 @@ pub fn step_tabs(
 }
 
 /// What [`land_tab_focus`] reads about an entity on the way to the page's first widget.
-type StopQuery = (
+pub(crate) type StopQuery = (
     Option<&'static TabIndex>,
     Option<&'static InheritedVisibility>,
     Option<&'static Children>,
@@ -273,7 +273,7 @@ pub fn land_tab_focus(
 /// visible descendants, the first in tree order among equals. A hidden subtree is skipped whole,
 /// as Bevy's Tab navigation skips it. Bevy's own `TabNavigation::initialize` needs a `TabGroup`
 /// to start from; a page is not one.
-fn first_stop(page: Entity, stops: &Query<StopQuery>) -> Option<Entity> {
+pub(crate) fn first_stop(page: Entity, stops: &Query<StopQuery>) -> Option<Entity> {
     let mut best: Option<(i32, Entity)> = None;
     let mut pending = vec![page];
     // Depth first, in tree order: a stack, with the children pushed last first.

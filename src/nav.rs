@@ -30,10 +30,12 @@ use crate::menu::{MenuRow, MenuTitle};
 use crate::model::{PAD_REPEAT_DELAY, PAD_REPEAT_RATE, repeat_steps};
 use crate::number::{NumberInput, NumberStepBy};
 use crate::popover::PopoverPanel;
+use crate::region::{ArrowPolicy, FocusRegion};
 use crate::skin::Role;
 use crate::split::{SplitAxis, SplitDivider};
 use crate::table::{TableCache, TableCursor, TableHeaderCell};
-use crate::tabs::{TabsCount, TabsValue};
+use crate::tabs::{StopQuery, TabsCount, TabsValue, first_stop};
+use crate::text::AreaField;
 use crate::tree::TreeView;
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
@@ -163,6 +165,8 @@ pub struct FocusScopes<'w, 's> {
     numbers: Query<'w, 's, (), Steppable>,
     /// The text fields, which take the keys Left and Right themselves.
     typing: Query<'w, 's, (), TypesText>,
+    /// The text areas, whose caret takes Up and Down too.
+    areas: Query<'w, 's, (), (With<AreaField>, Without<InteractionDisabled>)>,
     /// The lists, to tell a widget one has clipped away from one in view.
     lists: Query<'w, 's, (&'static ComputedNode, &'static UiGlobalTransform), With<ListView>>,
     /// A tab strip's tabs, and the tab widgets that hold them.
@@ -171,9 +175,74 @@ pub struct FocusScopes<'w, 's> {
     tab_values: Query<'w, 's, (&'static TabsValue, &'static TabsCount)>,
     kids: Query<'w, 's, &'static Children>,
     roles: Query<'w, 's, &'static Role>,
+    /// The parts of the screen F6 cycles through.
+    regions: Query<'w, 's, (Entity, &'static FocusRegion, &'static InheritedVisibility)>,
 }
 
 impl FocusScopes<'_, '_> {
+    /// Whether the arrow keys are the host's on `entity`: the nearest [`FocusRegion`] at or above it
+    /// says [`ArrowPolicy::Host`].
+    fn hosts_arrows(&self, entity: Entity) -> bool {
+        std::iter::once(entity)
+            .chain(self.parents.iter_ancestors(entity))
+            .find_map(|e| self.regions.get(e).ok())
+            .is_some_and(|(_, region, _)| region.arrows == ArrowPolicy::Host)
+    }
+
+    /// Where F6 (or Shift+F6, `backwards`) takes focus from `from`: the first widget of the next
+    /// [`FocusRegion`] in tree order among those of the scope the player sees, wrapping. With focus
+    /// in no region it is the first (the last, going back). A region that is hidden, in another
+    /// scope or holds nothing focusable is skipped.
+    pub(crate) fn region_stop(
+        &self,
+        from: Option<Entity>,
+        backwards: bool,
+        stops: &Query<StopQuery>,
+    ) -> Option<Entity> {
+        let scope = self.active();
+        let mut found: Vec<(Vec<usize>, Entity, Entity)> = self
+            .regions
+            .iter()
+            .filter(|&(entity, _, visible)| visible.get() && self.of(entity) == scope)
+            .filter_map(|(entity, ..)| {
+                Some((self.tree_path(entity), entity, first_stop(entity, stops)?))
+            })
+            .collect();
+        found.sort_by(|a, b| a.0.cmp(&b.0));
+        let here = from.and_then(|f| {
+            std::iter::once(f)
+                .chain(self.parents.iter_ancestors(f))
+                .find_map(|e| found.iter().position(|(_, region, _)| *region == e))
+        });
+        let at = match (here, backwards) {
+            (Some(i), false) => (i + 1) % found.len(),
+            (Some(i), true) => (i + found.len() - 1) % found.len(),
+            (None, false) => 0,
+            (None, true) => found.len().checked_sub(1)?,
+        };
+        found.get(at).map(|&(_, _, stop)| stop)
+    }
+
+    /// Where `entity` stands in the UI tree as the sibling index at each level from its root (the
+    /// root's own id first), so paths compare in the order a depth-first walk reaches them.
+    fn tree_path(&self, entity: Entity) -> Vec<usize> {
+        let mut path = Vec::new();
+        let mut current = entity;
+        while let Ok(parent) = self.parents.get(current) {
+            let index = self
+                .kids
+                .get(parent.parent())
+                .ok()
+                .and_then(|kids| kids.iter().position(|kid| kid == current))
+                .unwrap_or(0);
+            path.push(index);
+            current = parent.parent();
+        }
+        path.push(current.index_u32() as usize);
+        path.reverse();
+        path
+    }
+
     /// The modal `TabGroup` an entity is inside, `None` outside every modal group. Like Tab, only
     /// the nearest group counts.
     fn of(&self, entity: Entity) -> Option<Entity> {
@@ -205,6 +274,11 @@ impl FocusScopes<'_, '_> {
     /// one takes nothing.
     fn types_text(&self, entity: Entity) -> bool {
         self.typing.contains(entity)
+    }
+
+    /// Whether `entity` is an enabled text area, whose caret takes every arrow key.
+    fn types_lines(&self, entity: Entity) -> bool {
+        self.areas.contains(entity)
     }
 
     /// Whether `entity` is one of a tab strip's tabs.
@@ -417,11 +491,21 @@ pub fn navigate_by_input(
         pressed(KeyCode::ArrowUp, GamepadButton::DPadUp),
         pressed(KeyCode::ArrowDown, GamepadButton::DPadDown),
     );
+    let from = nav.focus.get().filter(|&f| scopes.holds(f));
+    // In a region that keeps the arrow keys for the host, or a text area whose caret takes them,
+    // only the D-pad moves focus.
+    let (net_x, net_y) = if from.is_some_and(|f| scopes.hosts_arrows(f) || scopes.types_lines(f)) {
+        (
+            axis(pad(GamepadButton::DPadRight), pad(GamepadButton::DPadLeft)),
+            axis(pad(GamepadButton::DPadUp), pad(GamepadButton::DPadDown)),
+        )
+    } else {
+        (net_x, net_y)
+    };
     if net_x == 0.0 && net_y == 0.0 {
         return;
     }
     show_focus(&mut shown);
-    let from = nav.focus.get().filter(|&f| scopes.holds(f));
     // Ctrl+Shift and an arrow on a dock's tab moves its panel (its own observer), not focus.
     if from.is_some_and(|f| scopes.dock_tabs.contains(f)) && moves_tabs(&keys) {
         return;

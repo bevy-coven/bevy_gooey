@@ -127,6 +127,10 @@ const DIALOG_MAX_TEXT_SIZES: f32 = 36.0;
 const DIALOG_ROOM_FACTOR: f32 = 1.5;
 /// How much of the ring's colour the landing of a carried tab lets over the panels it covers.
 const DOCK_DROP_ALPHA: f32 = 0.22;
+
+/// How much of the ring's (or the danger's) colour a drop mark lets through: less than a dock's landing,
+/// because a target may be the whole viewport and what is under the mark must stay readable.
+const DROP_MARK_ALPHA: f32 = 0.12;
 /// How much of the raised fill a table's banded row has: half, so the band is a hint under the text
 /// and never a second look.
 const TABLE_BAND_ALPHA: f32 = 0.5;
@@ -1157,6 +1161,18 @@ pub enum Role {
     DockDrop,
     /// The title of a tab being carried, beside the pointer: an opaque card in the ring's frame.
     DockGhost,
+    /// What a [`crate::DragPayload`] source carries, beside the pointer: an opaque card in the
+    /// ring's frame.
+    DragGhost,
+    /// The same card while the node under the pointer refuses what is carried: framed in
+    /// [`GooeySkin::danger`].
+    DragGhostRefused,
+    /// The mark on the [`crate::DropTarget`] under the pointer: [`GooeySkin::focus_ring`] let
+    /// through, and framed in it.
+    DropMark,
+    /// The mark while the target refuses what is carried: [`GooeySkin::danger`], let through and
+    /// framed.
+    DropMarkRefused,
     /// A [`crate::tabs`] widget's column: the strip, a gap, the pages; not drawn.
     Tabs,
     /// The strip of tabs, in a row a [`GooeySkin::gap`] apart; not drawn.
@@ -1172,6 +1188,8 @@ pub enum Role {
     TabPage,
     /// A [`crate::text_input`] row: a label and a field on no fill, laid out like a toggle's row.
     TextInput,
+    /// A [`crate::text_area`] row: a label over a field several lines high, on no fill.
+    TextArea,
     /// The cell a text input's field and hint stand in, so the hint can lie over the field; not
     /// drawn.
     TextCell,
@@ -1232,6 +1250,9 @@ pub enum Role {
     /// The picker's saturation and value area: a frame, a focus ring, and inside it the colour's
     /// own hue and its gradients (data, not a skin colour).
     ColorArea,
+    /// A [`crate::viewport`]: an unfilled frame in [`GooeySkin::outline`], [`GooeySkin::focus_ring`]
+    /// while it has focus; what it shows is the host's.
+    Viewport,
     /// The ring on the picker's area, outside: the panel's colour, so the ring shows on any fill.
     ColorAreaMarker,
     /// The ring on the picker's area, inside: the text colour.
@@ -1281,7 +1302,7 @@ pub enum Role {
     Section,
     /// A section's body: the game's widgets, indented under the header; not drawn.
     SectionBody,
-    /// A [`crate::inspector`]'s root: a column of the rows built from a reflected value, a gap
+    /// A `inspector`'s root: a column of the rows built from a reflected value, a gap
     /// apart; not drawn.
     Inspector,
     /// A [`crate::notification_center`]'s root: a column holding the log's list; not drawn.
@@ -1507,6 +1528,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
                 | Role::Binding
                 | Role::Toast
                 | Role::TextInput
+                | Role::TextArea
                 | Role::PaletteField
                 | Role::NumberPart
                 | Role::MenuItem
@@ -1642,6 +1664,7 @@ pub fn apply_skin(
                                 | Role::Choice
                                 | Role::Binding
                                 | Role::TextInput
+                                | Role::TextArea
                                 | Role::PaletteField
                                 | Role::NumberPart
                                 | Role::Toast
@@ -1730,6 +1753,7 @@ pub fn apply_skin(
                             | Role::SplitDivider
                             | Role::ColorSwatch
                             | Role::ColorArea
+                            | Role::Viewport
                     )
                 })
                 .map(|item| item.0),
@@ -2006,7 +2030,9 @@ fn restyle(
         // The landing is the ring's colour let through to the panels under it, so fill and frame are one; the ghost is as opaque as
         // a dialog's card, so its title is read at the contrast of any panel's text.
         Role::DockDrop => Some(skin.focus_ring.with_alpha(DOCK_DROP_ALPHA)),
-        Role::DockGhost => Some(skin.solid_surface()),
+        Role::DropMark => Some(skin.focus_ring.with_alpha(DROP_MARK_ALPHA)),
+        Role::DropMarkRefused => Some(skin.danger.with_alpha(DROP_MARK_ALPHA)),
+        Role::DockGhost | Role::DragGhost | Role::DragGhostRefused => Some(skin.solid_surface()),
         // The field is an outlined box in the panel's own colour, so the typed text and the hint
         // meet on it the contrast they are checked at on the panel.
         Role::TextField => Some(skin.solid_surface()),
@@ -2066,6 +2092,7 @@ fn restyle(
         | Role::TabPages
         | Role::TabPage
         | Role::TextInput
+        | Role::TextArea
         | Role::PaletteField
         | Role::NumberPart
         | Role::NumberParts
@@ -2073,6 +2100,7 @@ fn restyle(
         | Role::ColorSwatchHalf
         | Role::ColorStripBox
         | Role::ColorArea
+        | Role::Viewport
         | Role::ColorAreaMarker
         | Role::ColorAreaMarkerInner
         | Role::ColorRail
@@ -2101,7 +2129,10 @@ fn restyle(
         Role::Panel if in_dialog => Some(BorderColor::all(skin.outline)),
         // A popover floats over whatever is behind it, so its edge is the dialog's: the outline.
         Role::Popover | Role::MenuPanel | Role::Palette => Some(BorderColor::all(skin.outline)),
-        Role::DockDrop | Role::DockGhost => Some(BorderColor::all(skin.focus_ring)),
+        Role::DockDrop | Role::DockGhost | Role::DropMark | Role::DragGhost => {
+            Some(BorderColor::all(skin.focus_ring))
+        }
+        Role::DropMarkRefused | Role::DragGhostRefused => Some(BorderColor::all(skin.danger)),
         // The bar's one frame is the line under it, the panel's own quiet edge.
         Role::MenuBar | Role::Toolbar | Role::StatusBar => Some(BorderColor::all(
             skin.surface_edge.unwrap_or(skin.surface_raised),
@@ -2194,7 +2225,7 @@ fn restyle(
         // The row has no frame of its own: the field speaks. Its edge is the outline at rest, the
         // muted text colour under the pointer, and the ring while it holds focus, shown or not
         // (its caret already says who has the keys, and a pointer press hides every other ring).
-        Role::TextInput | Role::PaletteField | Role::NumberPart => {
+        Role::TextInput | Role::TextArea | Role::PaletteField | Role::NumberPart => {
             Some(BorderColor::all(Color::NONE))
         }
         Role::TextField => Some(BorderColor::all(if state.disabled {
@@ -2218,7 +2249,7 @@ fn restyle(
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         // The swatch and the area are framed in the outline and wear the ring when focused: what
         // they hold is any colour, so the frame is what a panel's 3:1 is measured on.
-        Role::ColorSwatch | Role::ColorArea => {
+        Role::ColorSwatch | Role::ColorArea | Role::Viewport => {
             Some(BorderColor::all(if look.focused == Some(entity) {
                 skin.focus_ring
             } else {
@@ -2561,7 +2592,7 @@ fn restyle(
             // air the field needs round it, is a toggle's. A palette's field has no label to stand
             // under, so its row has no side padding and no frame: the field's own frame is as wide
             // as the rows' lit bars under it.
-            Role::TextInput | Role::PaletteField => {
+            Role::TextInput | Role::TextArea | Role::PaletteField => {
                 next.margin = UiRect::bottom(problem_room);
                 let palette = *role == Role::PaletteField;
                 next.border = if palette {
@@ -2576,6 +2607,12 @@ fn restyle(
                 );
                 next.min_height = Val::Px(skin.target());
                 next.column_gap = Val::Px(skin.gap);
+                // A text area's label stands over its field.
+                next.row_gap = Val::Px(if *role == Role::TextArea {
+                    skin.gap * 0.5
+                } else {
+                    0.0
+                });
             }
             // A vec field's component: the label is the scrub handle, so the row's own padding on
             // its left, a pad wide, makes the handle (padding, letter, gap) a target of at least 24 px
@@ -2605,6 +2642,10 @@ fn restyle(
             }
             // The plane fills the picker's width; the frame is the one line the pointer's position
             // is measured inside of.
+            Role::Viewport => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+            }
             Role::ColorArea => {
                 next.min_height = Val::Px(COLOR_AREA_HEIGHT_PX);
                 next.border = UiRect::all(Val::Px(line));
@@ -2765,11 +2806,11 @@ fn restyle(
                 next.border_radius = radius;
             }
             Role::SplitGrip => next.border_radius = BorderRadius::MAX,
-            Role::DockDrop => {
+            Role::DockDrop | Role::DropMark | Role::DropMarkRefused => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
             }
-            Role::DockGhost => {
+            Role::DockGhost | Role::DragGhost | Role::DragGhostRefused => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(skin.pad() * 0.8), Val::Px(skin.pad() * 0.4));
@@ -3050,9 +3091,11 @@ fn restyle(
             Some((skin.text_muted, &look.fonts.body, skin.text_size))
         }
         Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
-        Role::PromptKey | Role::PromptButton | Role::DockGhost => {
-            Some((skin.text, &look.fonts.body, skin.text_size))
-        }
+        Role::PromptKey
+        | Role::PromptButton
+        | Role::DockGhost
+        | Role::DragGhost
+        | Role::DragGhostRefused => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::ToastText => Some((
             faded(skin.text, owner.alpha),
             &look.fonts.body,
