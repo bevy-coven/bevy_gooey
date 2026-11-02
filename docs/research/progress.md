@@ -19,7 +19,7 @@ Loading and processing screens in shipped games pair a length with words ("Compi
 ## Model adopted
 
 - **P1. `progress(fraction) -> impl Bundle`** is a column: a `Role::Meter` track and `Role::MeterFill` (the meter's look: one visual language) and a line of text. `Progress(f32)` is the state; the fill is its fraction the same frame; outside 0 to 1 it is clamped and reported once (the marker `ProgressClamped`, one `warn!`).
-- **P2. The words are `ProgressText { step: Option<(u32, u32, String)>, eta_seconds: Option<f32> }`**, drawn "3 of 7: Measuring meshes · about 20 s left"; with neither, the line is not drawn. `model::progress_text` and `model::eta_words` are engine-free: under 10 s exact seconds, then 5 s steps to a minute, whole minutes to an hour, then "1 h 5 min".
+- **P2. The words are `ProgressText { step: Option<(u32, u32, String)>, eta_seconds: Option<f32> }`**, drawn "3 of 7: Measuring meshes, about 20 s left"; with neither, the line is not drawn. `model::progress_text` and `model::eta_words` are engine-free: under 10 s exact seconds, then 5 s steps to a minute, whole minutes to an hour, then "1 h 5 min".
 - **P3. `spinner()` is indeterminate**: a ring of one accent quarter on the track colour turning once in 0.9 s on `Time<Real>`, so it keeps turning while the game is paused or a frame stalls. There is no static variant. A `Spinner` marker only; `update_spinners` writes the rotation each frame.
 - **P4. The guide documents the thresholds** (NN/g): under 1 s nothing; 1 to 10 s a spinner; 10 s or more a progress with the time left.
 
@@ -35,7 +35,7 @@ Loading and processing screens in shipped games pair a length with words ("Compi
 ## Validation targets
 
 - A progress at 0.5 draws half its track (fill width = half the track's inner width); 0.25 a quarter; 1.5 draws full, 2 is one warning not two, back in range clears the marker; NaN draws empty.
-- `ProgressText` draws "3 of 7: Measuring meshes · about 20 s left"; step only, eta only, none (line hidden, no height).
+- `ProgressText` draws "3 of 7: Measuring meshes, about 20 s left"; step only, eta only, none (line hidden, no height).
 - A spinner's rotation advances each frame on `Time<Real>` (at a fixed step the angle moves by the step over 0.9 s), and wraps.
 - Thirty idle frames write nothing for a progress; a spinner writes its rotation only.
 - Words at 4.5:1 on the panel in all four looks; ring at 3:1; whole at 200% text.
@@ -46,6 +46,7 @@ A bar that is the meter's own track, the words under it in the panel's text colo
 
 ## Deviations
 
+- The issue draws the step and the time left joined by "·" (U+00B7). Bevy's default font draws that as a box (the host supplies the font, as `MIXED_HINT`'s "--" already found for an em dash), so the line is joined by a comma: "3 of 7: Measuring meshes, about 20 s left". Assumed decision (owner may override).
 No percent figure is drawn unless the host puts it in a step's text. Design default.
 
 ## Pending index
