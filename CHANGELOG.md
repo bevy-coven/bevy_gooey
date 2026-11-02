@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-11-02
+
 ### Added
 
 - Accessibility tree (G-28, #32): every widget is a node of Bevy's accessibility tree with a role, a name, a value and its state, built from the words it draws, while a screen reader is connected (`bevy::a11y::AccessibilityRequested`; otherwise the new system returns at once). A toggle is a CheckBox with its label and its checked state, a slider a Slider with its label, "70%" and its number, a choice a SpinButton with its selected option, a text field a TextInput named by its row and holding its text, a dialog a modal Dialog named by its heading, a menu a Menu of MenuItem, MenuItemCheckBox and MenuItemRadio rows (open or not, checked), a table, a tab strip, a toast, a meter, a progress bar and a splitter their ARIA roles; a page not shown, a closed menu and an icon are hidden, a disabled control is `disabled`. Bevy's own `AccessibleLabel` on any node replaces the crate's name. `access::spec` is an exhaustive `match` over `Role`, so a new role cannot ship unclassified. `GOOEY_A11Y=1` on the gallery prints the tree. `docs/research/accessibility.md`, `docs/guide/accessibility.md`, `tests/access.rs` (16 tests). New dependency: `accesskit` 0.24 (the version Bevy's nodes are made of).
