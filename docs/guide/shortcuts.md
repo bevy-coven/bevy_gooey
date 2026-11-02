@@ -43,6 +43,33 @@ fn run(keys: Res<ButtonInput<KeyCode>>) {
 
 *`examples/shortcuts`: Enter on Save, Ctrl+Shift+K binds it; the same chord on Save all makes the clash line appear and Ctrl+Alt+J clears it; Ctrl+Shift+K runs Save, and the ring on the Save button opens its tooltip with the chord on a keycap.*
 
+## Show every chord: hold a modifier
+
+A tooltip teaches a chord to the player who waits for it. `ShortcutBadges` teaches it to the one who does not: while a modifier is held, every widget with a chord shows it on a badge (ExposeHK, Malacria et al., CHI 2013), so the place a command is already known by becomes the chord to learn.
+
+```rust
+fn setup(mut commands: Commands) {
+    // The defaults: Alt, held for 0.3 s. `Modifiers::default()` turns it off.
+    commands.insert_resource(ShortcutBadges { hold: Modifiers::ALT, delay_seconds: 0.3 });
+
+    commands.spawn((panel(), children![
+        // The chord is a component on the widget.
+        (button("Save"), Shortcut::primary(KeyCode::KeyS)),
+        // A tooltip's chord counts too: one declaration for the hint and the badge.
+        (button("Open"), Tooltip::new("Open a file").with_shortcut(Shortcut::primary(KeyCode::KeyO))),
+    ]));
+}
+```
+
+- **The hold.** `ShortcutBadges::hold` is the modifier set, held *exactly* (either side of the keyboard counts, Alt+Shift is not Alt) for `delay_seconds`; the delay keeps a chord that starts with the modifier from flashing the screen, and `0.0` shows the badges the frame the key goes down. Releasing removes them in the same frame. The default is Alt: Ctrl is held for multi-select and Command for switching windows, so a default on either would flash on every chord.
+- **Which widgets.** Every one with a `Shortcut` component, or a `Tooltip` that has a `shortcut` (the component wins when both are there), that is visible (a hidden page, a folded section and a closed menu show none) and on screen, and not disabled: a disabled command's chord does nothing, so it is not advertised. Change the `Shortcut` while the badges are up and the words change in place.
+- **Where.** A `Role::ShortcutBadge` child at the widget's right edge, inside its frame, so the focus ring is never covered and a badge never covers its neighbour. It is the inverse of a panel (the text colour as the fill, the panel's ink as the words, 4.5:1), so it stands off a button's own fill, hovered, pressed or lit, in every look, and in the smallest step of the type scale. It takes no pointer and no focus. `ShortcutBadge` is the marker to query.
+- **What it does not do.** It never runs a chord: a game compares `Shortcut::just_pressed` itself, and a chord held while the badges are up still fires. A badge is a child of its widget: a list that clips the widget clips its badge.
+
+![The shortcut badges example](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcut-badges.gif)
+
+*`examples/badges`: Alt shows a chip with the chord on each command (none on the dimmed Redo or on Help) and letting go hides them; Alt with Shift held hides them.*
+
 ## What the crate does not do
 
 - **A keymap or a dispatcher.** The crate holds no table of commands and runs none: a game (or the menu bar to come) owns its commands and calls `just_pressed` for each.

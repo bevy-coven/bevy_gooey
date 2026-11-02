@@ -130,6 +130,10 @@ impl BitOr for Modifiers {
 /// A modifier is never the key of a shortcut (a press of Ctrl alone is not a shortcut): build a
 /// chord from a non-modifier key; [`Shortcut::is_valid`] checks one loaded from a file.
 ///
+/// It is also a component: put one on a widget (`(button("Save"), Shortcut::primary(KeyCode::KeyS))`)
+/// and [`ShortcutBadges`] shows its label on the widget while the player holds the modifier. The
+/// crate never runs the chord: the game compares [`Shortcut::just_pressed`] itself.
+///
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_gooey::*;
@@ -140,8 +144,8 @@ impl BitOr for Modifiers {
 /// let save = Shortcut::primary(KeyCode::KeyS);
 /// assert_eq!(save.label(), if cfg!(target_os = "macos") { "⌘S" } else { "Ctrl+S" });
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect)]
-#[reflect(Debug, PartialEq, Hash, Clone)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Component, Debug, PartialEq, Hash, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Shortcut {
     /// The modifiers held with the key.

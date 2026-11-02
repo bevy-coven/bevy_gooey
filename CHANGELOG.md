@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- Named tones (G-29, #33): `GooeySkin::tones: BTreeMap<String, Color>` (serde `default`, empty in every preset) carries a host's own semantic colours, `GooeySkin::tone(name) -> Option<Color>` reads one (an unknown name is `None`, never a stand-in), `Role::Tone(&'static str)` draws a node's fill with one (restyled in the frame the skin changes; a name the skin lacks draws no fill) and `GooeySkin::tone_problems(&[(label, ink, ground, needed)])` checks the pairs a host's chrome draws with the crate's own arithmetic (a tone or a skin colour by name; one `SkinProblem::LowContrast` named `label` per pair under its ratio, one `SkinProblem::UnknownTone` for a name that is neither). A theme step keeps the host's tones. `docs/research/tones.md`, a section of `docs/guide/skins.md`, `tests/tones.rs` (8 tests).
+- Headless test helpers (G-27, #31), cargo feature `testing`: `bevy_gooey::testing::{find_by_label, click, press, type_text, focused, focused_label, label_of, FindError}` drive a headless `App` by what the player reads, through real `PointerInput`, `MouseButtonInput` and `KeyboardInput` (two widgets with one label are a `FindError::Ambiguous` naming both; a hidden one is not found; a click lands at any window scale and a covered node is not clicked). `docs/research/testing.md`, `docs/guide/testing.md`, `tests/testing.rs` (9 tests).
+- Shortcut overlay (G-26, #30): `ShortcutBadges { hold, delay_seconds }` (a resource; Alt and 0.3 s by default) shows every visible, enabled widget's chord on a badge while exactly that modifier is held, and removes them the frame it is let go. A widget's chord is a `Shortcut` component (`Shortcut` is now a `Component`) or its `Tooltip`'s. The badge (`Role::ShortcutBadge`, marker `ShortcutBadge`, system `update_shortcut_badges`) sits inside the widget's frame, so the focus ring is never covered, in the inverse of a panel's colours (4.5:1 in every look). `examples/badges`, `docs/media/shortcut-badges.gif`, `docs/research/shortcut-overlay.md`, a section of `docs/guide/shortcuts.md`, `tests/badges.rs` (8 tests).
+
+### Changed
+
+- **Breaking:** `GooeySkin` gains the `tones` field (a struct literal without `..` needs it), `Role` gains `Tone` and `ShortcutBadge`, `SkinProblem` gains `UnknownTone`, and `Shortcut` derives `Component`.
+- The README's shortcuts GIF gives its place to `shortcut-badges.gif` (it stays in `docs/guide/shortcuts.md`), keeping the README at 250 lines.
+
 ## [0.23.0] - 2026-11-02
 
 ### Added

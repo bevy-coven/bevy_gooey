@@ -20,6 +20,8 @@ per subject. The README links each bullet to its page.
 - [Shortcuts](shortcuts.md) — `Shortcut`, `Modifiers` and `Platform`: a key chord in the platform's own words
   ("Ctrl+Shift+P", "⇧⌘P"), `just_pressed`, `model::shortcut_conflicts`, a `binding` row that captures a
   chord and a tooltip that shows the command's chord on a keycap.
+- [Shortcut badges](shortcuts.md#show-every-chord-hold-a-modifier) — `ShortcutBadges` and `Shortcut` on a widget: hold Alt
+  and every command's chord shows on its button, inside its frame, gone the frame the key is let go.
 - [Text input](text-input.md) — `text_input(label, value)`: a row with a field the player types in, the
   edit and its end in `ValueChange<String>`, `TextEditing` for a game's hotkeys and a pad's keyboard, and
   why a field never traps focus.
@@ -77,7 +79,10 @@ per subject. The README links each bullet to its page.
   field, one `RunCommand` on Enter or a click.
 - [Toasts](toasts.md) — one spawn, the reading-time maths, `ToastSettings`, and the cap on the stack; `.action(..)`,
   `.sticky()`, merged repeats, the `ToastLog` and `notification_center()`.
-- [Skins](skins.md) — `GooeySkin`, its fields, the two presets, and every rule `problems()` checks.
+- [Skins](skins.md) — `GooeySkin`, its fields, the presets, every rule `problems()` checks, and `tones`: a host's own
+  named colours, `Role::Tone` and `tone_problems`.
+- [Testing a gooey UI](testing.md) — `bevy_gooey::testing` (feature `testing`): `find_by_label`, `click`, `press`,
+  `type_text` and `focused_label` over a headless `App`, by what the player reads.
 - [Screen size](scale.md) — `GooeyScalePlugin`, `UiScaleSettings`, and whole-device-pixel lines.
 - [The pointer](pointer.md) — which parts of the interface take the pointer and which let it through.
 - [Feedback](feedback.md) — `UiFeedback`, the message a game turns into sound.
