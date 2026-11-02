@@ -28,7 +28,9 @@
 //! `GOOEY_A11Y=1` stands in for a connected screen reader and prints the accessibility tree at the
 //! capture frame, one `gooey: a11y` line per node: its role, name, value and flags.
 //! `GOOEY_SKIN=parchment`, `high_contrast` or `tool` starts in that skin;
-//! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size.
+//! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size;
+//! `GOOEY_MOTION=<f>` sets `MotionSettings::duration_scale` (`0` is "reduce motion", `3` a slow
+//! entrance for a GIF).
 //! `GOOEY_KEYS=down,down,enter,…` stages a state before the shot: from frame 30 it presses one key
 //! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`, `escape`), or
 //! clicks the window's empty top-left corner, as real pointer input (`click`). `untip` takes
@@ -228,6 +230,12 @@ fn main() {
     .insert_resource(ClearColor(skin.background))
     .insert_resource(skin)
     .insert_resource(toast_settings())
+    .insert_resource(MotionSettings {
+        duration_scale: std::env::var("GOOEY_MOTION")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(1.0),
+    })
     .insert_resource(HeldHealth(
         std::env::var("GOOEY_HEALTH")
             .ok()

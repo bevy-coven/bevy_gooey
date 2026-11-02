@@ -58,6 +58,8 @@ per subject. The README links each bullet to its page.
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Inventory](inventory.md) — `slot_grid(columns, items)`: a backpack or a chest of slots a game fills with
   items (`SlotItems`), one tab stop, the arrows and Home and End, a choice, and moving items by drag, keyboard or pad.
+- [Motion](motion.md) — a dialog's card and a popover's panel ease into place, `MotionSettings::off()` is the player's
+  "reduce motion", and `SlideIn` moves your own panel.
 - [Radial menu](radial.md) — `radial(items, selected)`: a weapon wheel chosen by the direction of a stick, the pointer or
   the D-pad, one `ValueChange<usize>` while pointing and a final one for the choice, and release-to-select.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB
