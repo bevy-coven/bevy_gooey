@@ -54,7 +54,24 @@ That sends the same final `ValueChange`. Showing and hiding the wheel (a `Displa
 
 The disc is 26 body text sizes across, so it follows `text_scale` and the player's interface size (416 px at the default size at 720p); the ring is 36% of that from the middle, drawn as a quiet circle the items stand on. It stops growing at 92% of the window's shorter side (662 px at 720p, at 125% text): past that the labels and the name stop growing with it, so the whole wheel is on the screen at 150% and 200% text too. Give it the middle of the screen; the status line and the legend stay in the corners. The highlighted item takes the accent fill with inverted text, the selected tab's look (two cues by luminance, not hue), and its name is read in the middle in the heading's size, where the thumb is. The disc's frame is the panel's and becomes the focus ring while it has focus. Three to eight short labels read best: eight labels of about seven characters stand clear of one another and inside the disc at every text size up to 200%, and ten of five or fewer do (`tests/radial.rs` lays both out); beyond that use a second wheel or a [`select`](select.md).
 
-Items are text; an icon per item is not drawn yet (an item's label is its name).
+## Pictures
+
+An item is a name, or a `RadialItem` with a picture. A picture item draws the picture on the ring and no words; its name is read in the middle when it is lit, which is the pairing craft guides ask for ("distinctive icons alongside concise labels") and the item's accessible name. Text and picture items mix on one wheel.
+
+```rust
+commands.spawn(radial(
+    [
+        RadialItem::new("Pistol").icon(IconSource::Image(pistol)),
+        RadialItem::new("Rifle").icon(IconSource::Atlas { image, layout, index: 1 }),
+        RadialItem::new("Unarmed"), // no picture: draws its name
+    ],
+    0,
+));
+```
+
+The picture is white on transparent: the skin tints it like a button's icon (`text`, the accent's text on the lit item, muted when disabled), so it keeps its contrast in every preset. It is three body text sizes square (48 px at the default size, `Role::RadialIcon`) and its item is a square a little larger; it shrinks with the wheel in a short window. `GOOEY_PICTURES=1 cargo run --example radial` draws the weapons as pictures.
+
+![The radial example with pictures: a pistol, a rifle, a shotgun, a grenade, a knife, a bow, a torch and a medkit on the ring; the stick moves the amber highlight to the rifle, grenade, knife and medkit and back to the grenade, the name read in the middle each time, and South chooses the grenade](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/radial-pictures.gif)
 
 ## Accessibility
 

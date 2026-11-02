@@ -192,6 +192,7 @@ fn spec(role: Role) -> Spec {
         | Role::SlotName
         | Role::SlotCount
         | Role::SlotIcon
+        | Role::RadialIcon
         | Role::RadialSlot
         | Role::RadialText
         | Role::RadialCentre
