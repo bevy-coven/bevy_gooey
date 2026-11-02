@@ -133,6 +133,7 @@ pub mod model;
 pub mod testing;
 
 mod access;
+mod access_actions;
 mod badges;
 mod binding;
 mod cancel;
@@ -535,6 +536,7 @@ impl Plugin for GooeyNavPlugin {
             .init_resource::<PaletteHistory>()
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
+            .add_message::<bevy::a11y::ActionRequest>()
             .register_type::<Dialog>()
             .register_type::<FocusRegion>()
             .register_type::<DragLabel>()
@@ -590,7 +592,11 @@ impl Plugin for GooeyNavPlugin {
                         split_by_pad.run_if(not_capturing),
                     )
                         .chain(),
-                    gamepad_select.run_if(not_capturing),
+                    (
+                        gamepad_select.run_if(not_capturing),
+                        access_actions::act_on_requests,
+                    )
+                        .chain(),
                     (
                         drag::carry_by_input.run_if(binding::no_row_waits),
                         cancel_drags.run_if(binding::no_row_waits),

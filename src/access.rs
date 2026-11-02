@@ -10,14 +10,18 @@
 //! The system returns at once unless `bevy::a11y::AccessibilityRequested` is set (an assistive
 //! technology connected). It reads each node through `Deref` and writes only a difference, so a
 //! settled interface marks nothing changed.
+//!
+//! The same pass declares what an assistive technology may ask of each widget (press, focus, step,
+//! set); [`crate::access_actions`] carries the requests out as the widget's own events.
 
-use accesskit::{HasPopup, Node as Node_, Role as Ak, Toggled};
+use accesskit::{Action, HasPopup, Node as Node_, Role as Ak, Toggled};
 use bevy::a11y::{AccessibilityNode, AccessibilityRequested};
 use bevy::ecs::query::QueryData;
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy::ui::{Checked, InteractionDisabled, Selected};
 
+use crate::access_actions::{Handles, MANAGED, actions_of};
 use crate::binding::Capturing;
 use crate::choice::ChoiceValue;
 use crate::color::ColorSwatch;
@@ -230,6 +234,8 @@ struct Wanted {
     modal: bool,
     hidden: bool,
     disabled: bool,
+    /// What an assistive technology may ask of the widget ([`actions_of`]).
+    actions: &'static [Action],
 }
 
 /// The name a crate part gives an unlabelled control, English like the crate's other words
@@ -262,6 +268,7 @@ pub(crate) struct Facts {
     swatch: Option<&'static ColorSwatch>,
     choice: Option<&'static ChoiceValue>,
     divider: Option<&'static SplitDivider>,
+    handles: Handles,
 }
 
 /// The queries a name or a value is read through.
@@ -548,6 +555,7 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
         wanted.name = Some(label.0.clone());
     }
     wanted.disabled = facts.disabled;
+    wanted.actions = actions_of(&facts.handles);
     wanted.hidden = facts.seen.is_some_and(|seen| !seen.get())
         || facts.node.is_some_and(|node| node.display == Display::None);
     Some(wanted)
@@ -576,6 +584,9 @@ fn says(node: &Node_, wanted: &Wanted) -> bool {
         && node.is_modal() == wanted.modal
         && node.is_hidden() == wanted.hidden
         && node.is_disabled() == wanted.disabled
+        && MANAGED
+            .iter()
+            .all(|action| node.supports_action(*action) == wanted.actions.contains(action))
 }
 
 /// Writes what `wanted` asks, field by field.
@@ -616,6 +627,13 @@ fn write(node: &mut Node_, wanted: &Wanted) {
         Node_::set_disabled,
         Node_::clear_disabled,
     );
+    for action in MANAGED {
+        if wanted.actions.contains(&action) {
+            node.add_action(action);
+        } else {
+            node.remove_action(action);
+        }
+    }
 }
 
 fn flag(on: bool, node: &mut Node_, set: fn(&mut Node_), clear: fn(&mut Node_)) {
