@@ -1277,6 +1277,22 @@ pub enum Role {
     /// The mark at the start of a status item of a [`crate::StatusKind`] other than info: a bar
     /// in [`GooeySkin::accent`] or [`GooeySkin::danger`].
     StatusMark,
+    /// A [`crate::section`]'s root: a column of its header, its body and its note; not drawn.
+    Section,
+    /// A section's body: the game's widgets, indented under the header; not drawn.
+    SectionBody,
+    /// A [`crate::inspector`]'s root: a column of the rows built from a reflected value, a gap
+    /// apart; not drawn.
+    Inspector,
+    /// A [`crate::notification_center`]'s root: a column holding the log's list; not drawn.
+    NotificationCenter,
+    /// A button in a toast: a button's look, fading with its toast. Part of a toast that was given
+    /// one with [`crate::ToastBundle::action`] or [`crate::ToastBundle::sticky`].
+    ToastAction,
+    /// The words of a toast's button.
+    ToastActionText,
+    /// A section's "Empty": [`GooeySkin::text_muted`], in the body's place while it holds nothing.
+    SectionNote,
 }
 
 type Styled = (
@@ -1705,6 +1721,7 @@ pub fn apply_skin(
                             | Role::Tab
                             | Role::GroupOption
                             | Role::StatusItem
+                            | Role::ToastAction
                             | Role::TextField
                             | Role::MenuItem
                             | Role::MenuTitle
@@ -1877,6 +1894,19 @@ fn restyle(
         }),
         Role::MenuSeparator => Some(skin.outline),
         Role::MenuDot => Some(menu_ink(owner, skin)),
+        // A toast's button is a button's fill, fading with its toast.
+        Role::ToastAction => Some(faded(
+            if state.disabled {
+                skin.surface
+            } else if state.pressed {
+                skin.accent
+            } else if state.hovered {
+                skin.hovered()
+            } else {
+                skin.surface_raised
+            },
+            owner.alpha,
+        )),
         Role::ToastBody => Some(faded(skin.solid_surface(), owner.alpha)),
         Role::ToastMark => Some(faded(
             if owner.alert {
@@ -2005,6 +2035,7 @@ fn restyle(
         | Role::Toast
         | Role::ToastStack
         | Role::ToastText
+        | Role::ToastActionText
         | Role::List
         | Role::ListView
         | Role::ListRows
@@ -2018,6 +2049,11 @@ fn restyle(
         | Role::TableCell
         | Role::TableCellText
         | Role::TreeTwisty
+        | Role::Section
+        | Role::SectionBody
+        | Role::SectionNote
+        | Role::Inspector
+        | Role::NotificationCenter
         | Role::TreeClosed
         | Role::TreeOpen
         | Role::Split
@@ -2097,6 +2133,11 @@ fn restyle(
         | Role::BindingCap
         | Role::PromptKey
         | Role::PromptButton => Some(BorderColor::all(skin.outline)),
+        Role::ToastAction => Some(BorderColor::all(if look.focused == Some(entity) {
+            faded(skin.focus_ring, owner.alpha)
+        } else {
+            Color::NONE
+        })),
         Role::Button | Role::Tab | Role::GroupOption | Role::StatusItem | Role::TableHeaderCell
             if look.focused == Some(entity) =>
         {
@@ -2113,11 +2154,16 @@ fn restyle(
         })),
         Role::TableSortUp | Role::TableSortDown => Some(BorderColor::all(menu_ink(owner, skin))),
         // A node's chevron is drawn in its borders, in the row's ink: inverted on the accent.
-        Role::TreeClosed | Role::TreeOpen => Some(BorderColor::all(if owner.selected {
-            skin.accent_text
-        } else {
-            skin.text
-        })),
+        // A section's header is the chevron's parent: its press inverts the ink and its disabling mutes it.
+        Role::TreeClosed | Role::TreeOpen => Some(BorderColor::all(
+            if owner.selected || parent.is_some_and(|p| p.pressed && !p.disabled) {
+                skin.accent_text
+            } else if parent.is_some_and(|p| p.disabled) {
+                skin.text_muted
+            } else {
+                skin.text
+            },
+        )),
         // A row has no fill of its own, so its border speaks: the ring when focused, the outline
         // under the pointer, nothing at rest.
         Role::Toggle | Role::Slider | Role::Choice | Role::Binding => {
@@ -2210,13 +2256,27 @@ fn restyle(
                     next.max_width = Val::Px(text_px * DIALOG_MAX_TEXT_SIZES);
                 }
             }
-            Role::Menu | Role::TabPage | Role::Tabs => next.row_gap = Val::Px(skin.gap),
+            Role::Menu | Role::TabPage | Role::Tabs | Role::Inspector => {
+                next.row_gap = Val::Px(skin.gap)
+            }
+            // A section's header stands half a gap off its body, and what is in the body is
+            // indented one padding and a half, a gap apart like a panel's rows.
+            Role::Section => next.row_gap = Val::Px(skin.gap * 0.5),
+            Role::SectionBody => {
+                next.row_gap = Val::Px(skin.gap);
+                next.padding = UiRect::left(Val::Px(skin.pad() * 1.5));
+            }
+            Role::SectionNote => next.padding = UiRect::left(Val::Px(skin.pad() * 1.5)),
             // The strip's tabs stand a gap apart like a menu's buttons, and each is a button's size.
             Role::TabList => {
                 next.column_gap = Val::Px(skin.gap);
                 next.row_gap = Val::Px(skin.gap);
             }
-            Role::Button | Role::Tab | Role::GroupOption | Role::TableHeaderCell => {
+            Role::Button
+            | Role::Tab
+            | Role::GroupOption
+            | Role::TableHeaderCell
+            | Role::ToastAction => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
@@ -2678,6 +2738,9 @@ fn restyle(
                 next.width = Val::Px(size);
                 next.height = Val::Px(size);
                 next.flex_shrink = 0.0;
+                // Air either side, for the turned square's corners and, in a section's header,
+                // for the title; in a tree's twisty, which centres it, it moves nothing.
+                next.margin = UiRect::horizontal(Val::Px(size * 0.5));
                 let line = Val::Px(line);
                 next.border = if *role == Role::TreeClosed {
                     UiRect {
@@ -2905,6 +2968,18 @@ fn restyle(
     let text = match role {
         Role::Heading => Some((skin.text, &look.fonts.heading, skin.heading_size)),
         Role::Label | Role::ProgressLine => Some((skin.text, &look.fonts.body, skin.text_size)),
+        Role::SectionNote => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
+        // The label of a toast's button follows the button: inverted on the accent, faded with
+        // the toast.
+        Role::ToastActionText => {
+            let parent = parent.unwrap_or_default();
+            let color = if parent.pressed {
+                skin.accent_text
+            } else {
+                skin.text
+            };
+            Some((faded(color, owner.alpha), &look.fonts.body, skin.text_size))
+        }
         Role::ButtonText => {
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {

@@ -24,6 +24,10 @@ default = []
 # `serde` derives on `GooeySkin`, `UiScaleSettings` and `Meter`, and Bevy's own `serialize` for `Color`: a
 # project saves its skin and scale as data and an editor (bevy_grimoire's family host) edits them live.
 serde = ["dep:serde", "bevy/serialize"]
+# `inspector(InspectTarget)`: a column of a reflected component's or resource's fields, each the widget of
+# its type, written back through `ReflectMut`. Also turns on Bevy's `reflect_documentation`, so a field's
+# doc comment is its tooltip.
+reflect = ["bevy/reflect_documentation"]
 # Nothing enables this in normal use. `tests/readme.rs` checks the README's quick start against the
 # crate-root doctest, so the two cannot drift.
 readme-example = []
@@ -52,3 +56,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 [dev-dependencies]
 bevy = { version = "0.20.0" }
 ron = "0.12"
+
+[[example]]
+name = "inspector"
+required-features = ["reflect"]

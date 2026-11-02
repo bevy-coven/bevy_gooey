@@ -833,6 +833,29 @@ pub fn toast_grow(age: f32, hold: f32, fade: f32) -> f32 {
     1.0 - left * left * left
 }
 
+/// A time since the app started as a clock reads it: `m:ss`, and `h:mm:ss` from an hour. A time that
+/// is not finite or is negative reads as zero.
+///
+/// ```
+/// assert_eq!(bevy_gooey::clock_text(7.4), "0:07");
+/// assert_eq!(bevy_gooey::clock_text(754.0), "12:34");
+/// assert_eq!(bevy_gooey::clock_text(3723.0), "1:02:03");
+/// assert_eq!(bevy_gooey::clock_text(f32::NAN), "0:00");
+/// ```
+pub fn clock_text(seconds: f32) -> String {
+    let total = if seconds.is_finite() && seconds > 0.0 {
+        seconds as u64
+    } else {
+        0
+    };
+    let (hours, minutes, secs) = (total / 3600, total / 60 % 60, total % 60);
+    if hours > 0 {
+        format!("{hours}:{minutes:02}:{secs:02}")
+    } else {
+        format!("{minutes}:{secs:02}")
+    }
+}
+
 /// How tall a list stands to show `rows` rows, in the units of its inputs: `rows × (row + gap)`,
 /// `row` the height of one row and `gap` the space between two, so each row counts with the gap
 /// after it. `4.5` is four rows and half a pitch of the fifth, which cuts it, the signifier that

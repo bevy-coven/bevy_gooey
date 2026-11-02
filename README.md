@@ -76,7 +76,7 @@ for changes not released yet:
 bevy_gooey = { git = "https://github.com/bevy-coven/bevy_gooey" }
 ```
 
-Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data).
+Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data), `reflect` (`inspector(..)`, below).
 
 ## Try it
 
@@ -119,7 +119,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [tabs](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tabs.md).
 - **Scroll a list, show a table or a tree, split the screen and dock panels** — `list(4.5, children![..])` cuts the fifth row so the
   player sees there is more; `table(columns, rows)` is ten thousand sortable rows and `tree(nodes)` ten thousand nodes that open and close, each in a dozen entities; `split(SplitAxis::Horizontal, a, b)` is two panes
-  and a divider a drag or the keys move; `dock(DockLayout)` is tab groups of your registered panels the player rearranges by dragging a tab; a tool's chrome is `toolbar(..)` of `icon_button`s and a `toggle_group` (the last items go behind a More button when the bar is too narrow), `status_bar(left, right)` (the lowest priority hides first) and `select(..)`, a choice that opens a filtering list past eight options:
+  and a divider a drag or the keys move; `dock(DockLayout)` is tab groups of your registered panels the player rearranges by dragging a tab; a tool's chrome is `toolbar(..)` of `icon_button`s and a `toggle_group` (the last items go behind a More button when the bar is too narrow), `status_bar(left, right)` (the lowest priority hides first) and `select(..)`, a choice that opens a filtering list past eight options, and `section(title, open, children)` folds a group of widgets under a header, its state kept by `SectionId`, and (feature `reflect`) `inspector(InspectTarget::component::<T>(entity))` builds the rows for a reflected component or resource, one widget per field:
   [lists](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/lists.md), [tables](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/tables.md), [trees](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/trees.md), [split panes](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/splits.md), [docks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/docks.md), [toolbars](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toolbars.md), [status bar](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/status-bar.md), [select](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/select.md).
 - **Reach every screen with keys or a pad, and back out of it** — arrows and the D-pad move focus to the
   nearest widget, an open dialog (a framed panel with a title, a line of body and its choices) holds it,
@@ -130,7 +130,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [prompts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/prompts.md),
   [the dialog](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/widgets.md#a-dialog).
 - **Say something, or open a menu, without building a layout** — `commands.spawn(toast("Game saved"))`
-  stacks, times itself to its own length and ages on real time, and `popover(anchor, Placement::Below)`
+  stacks, times itself to its own length and ages on real time (`.action("Undo", id)` adds a button, `.sticky()` keeps an error until dismissed, repeats merge into "x3", and `notification_center()` lists the log), and `popover(anchor, Placement::Below)`
   opens a panel beside any widget or at the pointer, kept inside the window and closed by Escape or a
   press elsewhere:
   [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md),
@@ -165,9 +165,9 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *Text input: `text_input("Save as", "")` takes the keys the moment it has focus, says each edit once as a `ValueChange<String>` and the end of the edit (Enter, or focus leaving) with `is_final`. Up leaves it: a field never traps focus, and the row never moves while the player types.*
 
-![The tools example: a toolbar of nine icon buttons with a four-mode group (Move lit amber) over a Project panel with a Language row, and a status bar along the foot (main, 2 problems behind an amber bar, Baking with a short progress bar on the left; UTF-8, Spaces: 4 and Ln 4, Col 12 on the right); the ring on Save opens its tooltip "Save Ctrl+S", the ring moves to Move (tooltip "Move"), Right goes to Draw and Enter lights it; the window narrows to 640 px, the last three buttons hide behind a More button whose menu lists Delete, Add layer and Validate and the status bar drops UTF-8, Spaces and Ln; it widens again and every item returns; Enter on Language opens a list of twelve, the typed "po" narrows it to Polski, Portugues and Espanol, Down lights Portugues and Enter chooses it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tools.gif)
+![The inspector example: a Turret panel built from a reflected component with no panel written for it: an Online switch, a Mode choice, a Rate number field, an Aim vector of X, Y and Z, a Tint colour field and a Barrel section with its Length and Label; the ring goes to Online and Enter turns it off, Right steps Mode from Track to Fire, and Up on Rate steps it from 6.0 to 7.8 while the readout beside it shows each change as the game sees it; a field's doc comment is its tooltip ("Tracks targets.", "Shots a second.")](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/inspector.gif)
 
-*Tools: `toolbar(..)` holds `icon_button`s (their tooltips are their names) and a `toggle_group` that keeps one mode lit, and when it is too narrow its last items go behind a More button; `status_bar(left, right)` hides its lowest-priority items first; `select(..)` is a choice that opens a filtering list past eight options and sends one `ValueChange<usize>`.*
+*Inspector: `inspector(InspectTarget::component::<Turret>(entity))` makes a `toggle`, `choice`, `number_field`, `vec_field`, `color_field`, `text_input` or `section` for each reflected field (a `#[reflect(@RangeInclusive::<f32>::new(0.0, 20.0))]` is its range, a doc comment its tooltip), writes an edit back through `ReflectMut` and sends one `InspectorChange { path }`; a value the game writes moves the row.*
 
 ![The options example: a panel with the rows Text size, Interface size, Controller and Theme and the legend in the bottom-left corner; the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with each step, then back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to "A Select, B Back" and Controller steps to PlayStation, where it reads "Cross Select, Circle Back", then Switch and back to Xbox; Theme steps to Parchment and to High contrast, where the screen turns black with white frames, and back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/options.gif)
 
