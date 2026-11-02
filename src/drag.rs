@@ -207,6 +207,26 @@ pub struct DroppedOnWorld<T: Clone + Send + Sync + 'static> {
 #[reflect(Component, Default, Debug, Clone)]
 pub struct Dragging;
 
+/// On every [`DropTarget`] node that takes what is being carried, exactly while a drag is lifted:
+/// the places the item may land, known the moment it is picked up (WAI-ARIA: "authors SHOULD show
+/// a visual indication of potential drop targets"). It is the test the drop and the keyboard
+/// steering use, so a candidate is a place the carry can really land: not the source itself, not
+/// a target whose [`DropTarget::accepting`] test or a slot's rule says no, not a disabled or
+/// hidden one. The crate draws nothing for it (see [`DropRefusing`]); style your own targets with
+/// `Has<DropCandidate>`. Put on and taken off by the crate; never add it yourself.
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component, Default, Debug, Clone)]
+pub struct DropCandidate;
+
+/// On every enabled, visible [`DropTarget`] node that refuses what is being carried, exactly while
+/// a drag is lifted: the opposite of [`DropCandidate`], for a source that is not the target itself.
+/// The crate dims an inventory slot that has it, so in an equipment panel the one slot that fits
+/// stays bright, and when everything takes the item nothing changes on screen. Put on and taken
+/// off by the crate; never add it yourself.
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component, Default, Debug, Clone)]
+pub struct DropRefusing;
+
 /// The type-erased half of a source: how to send its typed events. Put on by [`DragPayload`].
 #[derive(Component, Clone, Copy, Default)]
 pub(crate) struct DragSource {
@@ -930,6 +950,60 @@ pub(crate) fn update_drag_visuals(
                 GlobalZIndex(DRAG_Z - 1),
                 MarkPart,
             ));
+        }
+    }
+}
+
+/// A target that carries either drop mark.
+type IsMarked = Or<(With<DropCandidate>, With<DropRefusing>)>;
+
+/// Marks every target the lifted drag may land on with [`DropCandidate`] and every one that
+/// refuses it with [`DropRefusing`], pointer, keyboard or pad alike, and takes the marks off when
+/// it ends. Writes only a difference; while nothing is dragged it looks at the marked nodes, of
+/// which there are none. Runs in [`crate::GooeySystems::Style`] after [`update_drag_visuals`].
+pub(crate) fn update_drop_candidates(
+    state: Option<Res<DragState>>,
+    zones: Query<(Entity, &DropZone)>,
+    marked: Query<Entity, IsMarked>,
+    entities: Query<EntityRef, Without<IsResource>>,
+    mut commands: Commands,
+) {
+    let source = state
+        .as_ref()
+        .and_then(|state| state.source())
+        .and_then(|source| entities.get(source).ok());
+    let Some(source) = source else {
+        for entity in &marked {
+            commands
+                .entity(entity)
+                .remove::<(DropCandidate, DropRefusing)>();
+        }
+        return;
+    };
+    for (entity, handlers) in &zones {
+        let Ok(zone) = entities.get(entity) else {
+            continue;
+        };
+        let live = entity != source.id()
+            && !zone.contains::<InteractionDisabled>()
+            && zone
+                .get::<InheritedVisibility>()
+                .is_none_or(|visible| visible.get());
+        let takes = live && handlers.takes(zone, source);
+        let refuses = live && !takes;
+        if takes != zone.contains::<DropCandidate>() {
+            if takes {
+                commands.entity(entity).insert(DropCandidate);
+            } else {
+                commands.entity(entity).remove::<DropCandidate>();
+            }
+        }
+        if refuses != zone.contains::<DropRefusing>() {
+            if refuses {
+                commands.entity(entity).insert(DropRefusing);
+            } else {
+                commands.entity(entity).remove::<DropRefusing>();
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use crate::PopoverSlide;
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
+use crate::drag::{DropCandidate, DropRefusing};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
 use crate::icon::{IconSize, IconTone};
 use crate::list::ListView;
@@ -1578,6 +1579,10 @@ struct State {
     marked: bool,
     /// A row of a table that is an odd one of the display, drawn with a quiet band.
     band: bool,
+    /// A drop target that takes what is being carried: a slot draws it framed.
+    candidate: bool,
+    /// A drop target that refuses what is being carried: a slot draws it dimmed.
+    refusing: bool,
     /// The kind of the [`crate::FieldProblem`] on a text row, if it has one.
     problem: Option<FieldProblemKind>,
     /// How tall the problem's message stands, logical px.
@@ -1609,6 +1614,8 @@ impl Default for State {
             open: false,
             marked: false,
             band: false,
+            candidate: false,
+            refusing: false,
             problem: None,
             problem_room: 0.0,
             status: None,
@@ -1635,6 +1642,8 @@ type StateQuery = (
         Has<MenuMarked>,
         Option<(&'static FieldProblem, &'static ProblemRoom)>,
         Option<&'static StatusKind>,
+        Has<DropCandidate>,
+        Has<DropRefusing>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -1669,6 +1678,8 @@ type Restyle = (
             Changed<IconTone>,
             Changed<IconSize>,
             Changed<StatusKind>,
+            Added<DropCandidate>,
+            Added<DropRefusing>,
         )>,
     )>,
 );
@@ -1685,6 +1696,8 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, SkinScope>,
     RemovedComponents<'w, 's, ChildOf>,
     RemovedComponents<'w, 's, FieldProblem>,
+    RemovedComponents<'w, 's, DropCandidate>,
+    RemovedComponents<'w, 's, DropRefusing>,
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
@@ -1759,6 +1772,8 @@ pub fn apply_skin(
         unscoped,
         orphaned,
         unproblemed,
+        undropped,
+        unrefused,
     ) = &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -1784,7 +1799,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    (marked, problem, status),
+                    (marked, problem, status, candidate, refusing),
                     row,
                     role,
                 )| {
@@ -1812,6 +1827,8 @@ pub fn apply_skin(
                             || row.is_some_and(|r| r.cursor && look.focused == Some(r.table)),
                         open,
                         marked,
+                        candidate,
+                        refusing,
                         problem: problem.map(|(problem, _)| problem.kind),
                         problem_room: problem.map_or(0.0, |(_, room)| room.0),
                         status: status.copied(),
@@ -1864,6 +1881,8 @@ pub fn apply_skin(
         closed.clear();
         unmarked.clear();
         unproblemed.clear();
+        undropped.clear();
+        unrefused.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -1902,6 +1921,8 @@ pub fn apply_skin(
     dirty.extend(closed.read());
     dirty.extend(unmarked.read());
     dirty.extend(unproblemed.read());
+    dirty.extend(undropped.read());
+    dirty.extend(unrefused.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -2052,7 +2073,11 @@ fn restyle(
         // A slot is a button's well: raised when it holds an item, the panel's own fill when it is
         // empty (its quiet frame is the border), the hovered fill under the pointer and the
         // accent while pressed. The count's chip is the opaque surface, whatever is under it.
-        Role::Slot => Some(if state.pressed {
+        // A slot that refuses what is carried is the panel's well, items and all: only the
+        // places that take it stay raised.
+        Role::Slot => Some(if state.refusing {
+            skin.surface
+        } else if state.pressed {
             skin.accent
         } else if state.hovered {
             skin.hovered()
@@ -2423,16 +2448,22 @@ fn restyle(
         Role::Slot | Role::SlotEmpty if look.focused == Some(entity) => {
             Some(BorderColor::all(skin.focus_ring))
         }
-        Role::Slot => Some(BorderColor::all(if state.pressed {
+        Role::Slot => Some(BorderColor::all(if state.refusing {
+            skin.surface_edge.unwrap_or(skin.surface_raised)
+        } else if state.candidate {
+            skin.outline
+        } else if state.pressed {
             skin.accent
         } else if state.hovered {
             skin.hovered()
         } else {
             skin.surface_raised
         })),
-        Role::SlotEmpty => Some(BorderColor::all(
-            skin.surface_edge.unwrap_or(skin.surface_raised),
-        )),
+        Role::SlotEmpty => Some(BorderColor::all(if state.candidate {
+            skin.outline
+        } else {
+            skin.surface_edge.unwrap_or(skin.surface_raised)
+        })),
         Role::RadialTrack => Some(BorderColor::all(skin.surface_raised)),
         // The disc is framed like a panel and wears the ring while it has focus.
         Role::Radial => Some(BorderColor::all(if look.focused == Some(entity) {
@@ -3334,7 +3365,7 @@ fn restyle(
     if let (Role::Icon | Role::SlotIcon | Role::RadialIcon, Some(mut image)) = (role, image) {
         let tone = tone.copied().unwrap_or_default();
         let parent = parent.unwrap_or_default();
-        let disabled = parent.disabled || owner.disabled;
+        let disabled = parent.disabled || owner.disabled || parent.refusing;
         let color = match tone {
             IconTone::Text if disabled => skin.text_muted,
             IconTone::Text if parent.pressed || parent.selected || owner.pressed => {
@@ -3403,6 +3434,8 @@ fn restyle(
             let parent = parent.unwrap_or_default();
             let color = if parent.pressed {
                 skin.accent_text
+            } else if parent.refusing {
+                skin.text_muted
             } else {
                 skin.text
             };
