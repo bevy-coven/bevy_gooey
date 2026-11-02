@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-11-02
+
+The first publish since 0.27.0 (crates.io refused 0.27.1 and 0.28.0 with a 429): 0.29.0 carries 0.28.0 below.
+
 ### Added
 
 - `RadialItem { label, icon }` (`RadialItem::new(label).icon(source)`): a `radial` item can draw a picture on the ring instead of its name (`Role::RadialIcon`, three body text sizes square, tinted like a button's icon: the accent's text on the lit item, muted when disabled); the name is read in the middle when the item is lit and is its accessible name. `radial` takes anything `Into<RadialItem>`, so `radial(["Pistol", "Rifle"], 0)` and a list of `String`s compile as before. Text and picture items mix. `RadialSlot::label()`. The radial example draws pictures with `GOOEY_PICTURES=1`.
