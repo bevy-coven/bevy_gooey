@@ -15309,3 +15309,157 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 81	109	release	model	model		2026-11-02T17:36:55Z	4.8	
 81	110	log	tool	phase mark	bash	2026-11-02T17:37:00Z	3.1	Tag, push, final log :: cd /home/ladvien/bevy_gooey_loop && git tag -a v0.31.2 -m v0.31.2 && git push -q origin main v0.31.2 2>&1 | tail -2; cargo info bevy_gooey@0.31.2 2>&1 | head -3
 81	111	log	model	model		2026-11-02T17:37:03Z	5.3	
+82	1	orient	model	model		2026-11-02T17:39:22Z	2.5	
+82	2	orient	tool	phase mark	bash	2026-11-02T17:39:25Z	0.7	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git fetch -q origin loop-stats; git show orig
+82	3	orient	model	model		2026-11-02T17:39:26Z	2.8	
+82	4	choose	tool	phase mark	bash	2026-11-02T17:39:28Z	1.3	cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels --jq '.[] | "#\(.number) \(.t
+82	5	choose	model	model		2026-11-02T17:39:30Z	5.3	
+82	6	choose	tool	shell	bash	2026-11-02T17:39:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn prompts\|pub fn prompt\b\|pub fn prompt(" -A40 src/widgets.rs | head -120; grep -n "Legend placement\|legend
+82	7	choose	model	model		2026-11-02T17:39:35Z	4.6	
+82	8	choose	tool	shell	bash	2026-11-02T17:39:40Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Role::Prompts" src/*.rs | head -20; grep -n "SAFE_EDGE_PERCENT" src/*.rs | head; grep -n "Prompts" src/lib.rs | hea
+82	9	choose	model	model		2026-11-02T17:39:40Z	1.2	
+82	10	choose	tool	shell	bash	2026-11-02T17:39:41Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 3025,3060p src/skin.rs; cat docs/research/prompts.md | head -80; grep -n "Prompts\|prompts" src/skin.rs | head -40
+82	11	choose	model	model		2026-11-02T17:39:41Z	10.8	
+82	12	choose	tool	shell	bash	2026-11-02T17:39:52Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "type StateQuery\|struct State\b\|struct State \|problem_room\|struct Restyle\|ProblemRoom" src/skin.rs | head -30
+82	13	choose	model	model		2026-11-02T17:39:52Z	1.4	
+82	14	choose	tool	shell	bash	2026-11-02T17:39:53Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1540,1720p src/skin.rs; sed -n 1780,1850p src/skin.rs
+82	15	choose	model	model		2026-11-02T17:39:53Z	13.9	
+82	16	choose	tool	shell	bash	2026-11-02T17:40:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "UiTransform" src/skin.rs | head -20; grep -n "taffy" Cargo.lock | head -3; ls ~/.cargo/registry/src/*/ | grep -i ta
+82	17	choose	model	model		2026-11-02T17:40:07Z	3.1	
+82	18	choose	tool	shell	bash	2026-11-02T17:40:10Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 5118,5122p Cargo.lock; grep -n "justify_self\|inset_horizontal\|fn perform_absolute_layout_on_absolute_children" ~/.c
+82	19	choose	model	model		2026-11-02T17:40:10Z	1.6	
+82	20	choose	tool	shell	bash	2026-11-02T17:40:12Z	0.0	cd ~/.cargo/registry/src/*/taffy-0.14.0/src/compute && grep -n "fn perform_absolute_layout_on_absolute_children" flexbox.rs; sed -n '/fn perform_absolute_layout
+82	21	choose	model	model		2026-11-02T17:40:12Z	1.7	
+82	22	choose	tool	shell	bash	2026-11-02T17:40:13Z	0.0	cd $(ls -d ~/.cargo/registry/src/*/taffy-0.14.0)/src/compute && sed -n '/fn perform_absolute_layout_on_absolute_children/,/^}/p' flexbox.rs | grep -n "justify_s
+82	23	choose	model	model		2026-11-02T17:40:13Z	12.1	
+82	24	choose	tool	shell	bash	2026-11-02T17:40:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "let mut next" src/skin.rs | head; grep -n "fn style_node\|fn node_for\|fn layout_of" src/skin.rs | head; sed -n 160
+82	25	choose	model	model		2026-11-02T17:40:26Z	6.5	
+82	26	research	tool	phase mark	bash	2026-11-02T17:40:32Z	3.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; timeout 60 hs distill search "button prompt legend placement screen co
+82	27	research	tool	web	web_search	2026-11-02T17:40:32Z	8.5	Finding shipping-game prompt placement sources :: Unreal Common UI bound action bar placement bottom of screen navigation bar controller prompts position
+82	28	research	model	model		2026-11-02T17:40:40Z	3.6	
+82	29	research	tool	read files	read	2026-11-02T17:40:44Z	0.6	Quote Epic's placement statement :: https://dev.epicgames.com/documentation/en-us/unreal-engine/using-the-common-bound-action-bar-in-unreal-engine
+82	30	research	model	model		2026-11-02T17:40:45Z	20.7	
+82	31	research	tool	edit files	write	2026-11-02T17:41:05Z	0.0	docs/research/prompts-anchor.md
+82	32	build	tool	phase mark	bash	2026-11-02T17:41:05Z	0.1	cd /home/ladvien/bevy_gooey_loop && git add docs/research/prompts-anchor.md && git commit -qm "Research: prompts anchor" && python3 ~/.local/share/wiggum/steps.
+82	33	build	model	model		2026-11-02T17:41:05Z	3.1	
+82	34	build	tool	shell	bash	2026-11-02T17:41:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 20,70p src/prompt.rs; sed -n 120,200p src/prompt.rs; sed -n 465,500p src/lib.rs; sed -n 298,308p src/lib.rs
+82	35	build	model	model		2026-11-02T17:41:09Z	12.0	
+82	36	build	tool	shell	bash	2026-11-02T17:41:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='src/prompt.rs' s=open(p).read() marker="/// Writes each prompt's keycap:" new='''/// Where a 
+82	37	build	model	model		2026-11-02T17:41:21Z	5.3	
+82	38	build	tool	shell	bash	2026-11-02T17:41:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() old='''pub fn prompts() -> impl Bundle { ( Node { position_type: Posit
+82	39	build	model	model		2026-11-02T17:41:26Z	6.1	
+82	40	build	tool	shell	bash	2026-11-02T17:41:32Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/widgets.rs' s=open(p).read() s=s.replace("use crate::prompt::Prompt;","use crate::prompt::{Prompt, 
+82	41	build	model	model		2026-11-02T17:41:32Z	2.4	
+82	42	build	tool	cargo clippy	bash	2026-11-02T17:41:34Z	8.0	cd /home/ladvien/bevy_gooey_loop && sed -i 's|^use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};|&\nuse crate::prompt::PromptsAnchor;|' src/skin.
+82	43	build	model	model		2026-11-02T17:41:42Z	2.0	
+82	44	build	tool	cargo clippy	bash	2026-11-02T17:41:45Z	14.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/lib.rs' s=open(p).read() s=s.replace(" update_prompts,\n place_prompts,\n"," (update_prompts, place
+82	45	build	model	model		2026-11-02T17:41:59Z	1.7	
+82	46	build	tool	shell	bash	2026-11-02T17:42:01Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,120p tests/prompts.rs; grep -n "^fn \|^#\[test\]" tests/prompts.rs | head -80
+82	47	build	model	model		2026-11-02T17:42:01Z	1.4	
+82	48	build	tool	shell	bash	2026-11-02T17:42:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 160,176p tests/prompts.rs; sed -n 405,495p tests/prompts.rs; sed -n 630,680p tests/prompts.rs
+82	49	build	model	model		2026-11-02T17:42:03Z	14.9	
+82	50	build	tool	cargo test	bash	2026-11-02T17:42:17Z	53.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/prompts.rs' s=open(p).read() s=s.replace(" Changed<Node>,\n)>;"," Changed<Node>,\n Changed<UiTran
+82	51	build	model	model		2026-11-02T17:43:10Z	3.1	
+82	52	build	tool	cargo test	bash	2026-11-02T17:43:14Z	21.9	cd /home/ladvien/bevy_gooey_loop && cp src/prompt.rs /tmp/prompt.rs.bak && sed -i 's|if self.is_centred() {|if false \&\& self.is_centred() {|' src/prompt.rs &&
+82	53	build	model	model		2026-11-02T17:43:35Z	3.5	
+82	54	build	tool	shell	bash	2026-11-02T17:43:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -ln "prompts()" examples/*.rs; grep -n "prompts()" examples/gallery.rs; grep -n "GOOEY_" examples/gallery.rs | head -40
+82	55	build	model	model		2026-11-02T17:43:39Z	1.4	
+82	56	build	tool	shell	bash	2026-11-02T17:43:40Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 40,50p examples/gallery.rs; sed -n 500,520p examples/gallery.rs; sed -n 575,590p examples/gallery.rs; grep -n "GOOEY_
+82	57	build	model	model		2026-11-02T17:43:40Z	5.9	
+82	58	build	tool	shell	bash	2026-11-02T17:43:46Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 138,190p examples/gallery.rs; grep -n "Key::Pad\|\"plug\"\|Staged::" examples/gallery.rs | head -40
+82	59	build	model	model		2026-11-02T17:43:46Z	4.6	
+82	60	build	tool	shell	bash	2026-11-02T17:43:51Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Some(&Staged::Pad)\|Some(&Staged::Plug)\|Some(&Staged::Toast)" -B2 -A14 examples/gallery.rs | sed -n 1,80p; grep -n
+82	61	build	model	model		2026-11-02T17:43:51Z	1.1	
+82	62	build	tool	shell	bash	2026-11-02T17:43:52Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 787,800p examples/gallery.rs; grep -n "Staged::Plug\|Staged::Toast =>" -A8 examples/gallery.rs | sed -n 10,50p
+82	63	build	model	model		2026-11-02T17:43:52Z	6.4	
+82	64	build	tool	cargo build	bash	2026-11-02T17:43:58Z	56.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/gallery.rs' s=open(p).read() def rep(a,b): global s assert a in s,a s=s.replace(a,b,1) rep(" /
+82	65	build	model	model		2026-11-02T17:44:55Z	2.7	
+82	66	build	tool	cargo build	bash	2026-11-02T17:44:58Z	2.6	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example gallery 2>&1 | grep -E "^error" -A8 | cut -c1-200 | head -20
+82	67	build	model	model		2026-11-02T17:45:00Z	6.2	
+82	68	build	tool	cargo build	bash	2026-11-02T17:45:06Z	14.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/gallery.rs' s=open(p).read() def rep(a,b): global s assert a in s,a s=s.replace(a,b,1) rep(" m
+82	69	build	model	model		2026-11-02T17:45:21Z	3.2	
+82	70	build	tool	shell	bash	2026-11-02T17:45:24Z	41.5	mkdir -p /tmp/g54 /tmp/g54/frames && cd /tmp/g54 && G=$CARGO_TARGET_DIR/release/examples/gallery; for k in 1 2 3 4 5; do GOOEY_HEALTH=60 GOOEY_FRAMES=$((60+k*0)
+82	71	build	model	model		2026-11-02T17:46:06Z	4.0	
+82	72	build	tool	shell	bash	2026-11-02T17:46:10Z	19.0	cd /tmp/g54 && G=$CARGO_TARGET_DIR/release/examples/gallery; for k in 1 2 3 4 5; do GOOEY_HEALTH=60 GOOEY_FRAMES=140 GOOEY_KEY_EVERY=10 GOOEY_KEYS=$(python3 -c 
+82	73	build	tool	read files	read	2026-11-02T17:46:10Z	19.0	Viewing anchor contact sheet :: /tmp/g54/sheet.png
+82	74	build	model	model		2026-11-02T17:46:29Z	1.5	
+82	75	build	tool	shell	bash	2026-11-02T17:46:30Z	3.7	cd /tmp/g54 && ls; G=$CARGO_TARGET_DIR/release/examples/gallery; GOOEY_HEALTH=60 GOOEY_FRAMES=140 GOOEY_KEY_EVERY=10 GOOEY_KEYS=legend GOOEY_SIZE=1280x720 GOOEY
+82	76	build	model	model		2026-11-02T17:46:34Z	1.0	
+82	77	build	tool	read files	read	2026-11-02T17:46:35Z	0.1	Viewing anchor contact sheet :: /tmp/g54/sheet.png
+82	78	build	model	model		2026-11-02T17:46:35Z	4.5	
+82	79	prove	tool	phase mark	bash	2026-11-02T17:46:39Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; sed -n 21p docs/media/README.md | cut -c700-1500; ls docs/media | head -5
+82	80	prove	model	model		2026-11-02T17:46:40Z	2.7	
+82	81	prove	tool	clip record/render	bash	2026-11-02T17:46:42Z	7.1	cd /tmp/g54 && rm -rf frames && mkdir frames && G=$CARGO_TARGET_DIR/release/examples/gallery; GOOEY_HEALTH=60 GOOEY_FRAMES=170 GOOEY_KEY_EVERY=22 GOOEY_KEYS=leg
+82	82	prove	model	model		2026-11-02T17:46:49Z	3.3	
+82	83	prove	tool	shell	bash	2026-11-02T17:46:53Z	2.2	cd /tmp/g54 && magick prompts-anchor.gif -coalesce -scene 1 +adjoin g_%02d.png; ls g_*.png | wc -l; magick montage g_05.png g_16.png g_27.png g_38.png g_49.png 
+82	84	prove	tool	read files	read	2026-11-02T17:46:53Z	2.2	Inspect GIF frames :: /tmp/g54/gsheet.png
+82	85	prove	model	model		2026-11-02T17:46:55Z	0.9	
+82	86	prove	tool	read files	read	2026-11-02T17:46:56Z	0.1	Inspect GIF frames :: /tmp/g54/gsheet.png
+82	87	prove	model	model		2026-11-02T17:46:56Z	6.4	
+82	88	prove	tool	shell	bash	2026-11-02T17:47:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g54/prompts-anchor.gif docs/media/prompts-anchor.gif && wc -l README.md && sed -n 127p README.md | cut -c1-900; sed 
+82	89	prove	model	model		2026-11-02T17:47:02Z	4.1	
+82	90	prove	tool	read files	read	2026-11-02T17:47:06Z	0.0	Read README line :: README.md:214:raw
+82	91	prove	model	model		2026-11-02T17:47:06Z	1.0	
+82	92	prove	tool	read files	read	2026-11-02T17:47:07Z	0.1	Get tag :: README.md:214
+82	93	prove	model	model		2026-11-02T17:47:08Z	3.1	
+82	94	prove	tool	edit files	edit	2026-11-02T17:47:11Z	0.0	README caption mentions anchor :: [README.md#3ACE] PUT 214.=214: +*Prompts: `prompts()` holds `prompt("Select", Prompt::SELECT)` and `prompt("Back", Prompt::BACK)`; the keycaps follow the last d
+82	95	prove	tool	read files	read	2026-11-02T17:47:11Z	0.0	Guide head :: docs/guide/prompts.md:1-12
+82	96	prove	model	model		2026-11-02T17:47:11Z	4.6	
+82	97	prove	tool	edit files	edit	2026-11-02T17:47:15Z	0.0	Guide: anchor bullet :: [docs/guide/prompts.md#13C6] PUT >26: +- **The corner is yours to choose, once.** `prompts()` is `prompts_at(PromptsAnchor::BottomLeft)`; `prompts_at(PromptsAnc
+82	98	prove	tool	read files	read	2026-11-02T17:47:15Z	0.0	Check placement :: docs/guide/prompts.md:24-30
+82	99	prove	model	model		2026-11-02T17:47:15Z	5.6	
+82	100	prove	tool	edit files	edit	2026-11-02T17:47:21Z	0.0	Guide: anchor bullet and gif :: [docs/guide/prompts.md#13C6] PUT >27: +- **The corner is yours to choose, once.** `prompts()` is `prompts_at(PromptsAnchor::BottomLeft)`; `prompts_at(PromptsAnc
+82	101	prove	tool	read files	read	2026-11-02T17:47:21Z	0.0	Media table head :: docs/media/README.md:1-6
+82	102	prove	model	model		2026-11-02T17:47:21Z	3.9	
+82	103	prove	tool	read files	read	2026-11-02T17:47:25Z	0.0	Read full row :: docs/media/README.md:21:raw
+82	104	prove	tool	read files	read	2026-11-02T17:47:25Z	0.0	Get tag :: docs/media/README.md:20-22
+82	105	prove	model	model		2026-11-02T17:47:25Z	5.1	
+82	106	prove	tool	edit files	edit	2026-11-02T17:47:30Z	0.0	Media table row :: [docs/media/README.md#5F90] PUT <22: +| `prompts-anchor.gif` | the legend's anchor (5.2 s, 800×450, the whole window scaled from 1280×720): "Enter Select, Esc B
+82	107	prove	tool	shell	bash	2026-11-02T17:47:30Z	0.4	cd /home/ladvien/bevy_gooey_loop && ffprobe -v error -show_entries format=duration -of csv=p=0 docs/media/prompts-anchor.gif; magick identify docs/media/prompts
+82	108	prove	model	model		2026-11-02T17:47:30Z	5.2	
+82	109	prove	tool	edit files	edit	2026-11-02T17:47:36Z	0.0	Fix duration in caption :: [docs/media/README.md#9DA0] PUT 22.=22: +| `prompts-anchor.gif` | the legend's anchor (5.1 s, 800×450, the whole window scaled from 1280×720): "Enter Select, Es
+82	110	prove	tool	read files	read	2026-11-02T17:47:36Z	0.0	Changelog tag :: CHANGELOG.md:1-5
+82	111	prove	model	model		2026-11-02T17:47:36Z	7.5	
+82	112	prove	tool	edit files	edit	2026-11-02T17:47:43Z	0.0	Fix version in media row and add changelog :: [docs/media/README.md#B23F] PUT 22.=22: +| `prompts-anchor.gif` | the legend's anchor (5.1 s, 800×450, the whole window scaled from 1280×720): "Enter Select, Es
+82	113	prove	model	model		2026-11-02T17:47:43Z	3.1	
+82	114	prove	tool	shell	bash	2026-11-02T17:47:46Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n '^- `src/prompt.rs`' AGENTS.md | cut -c1-40; grep -n "bottom-left" docs/research/prompts-anchor.md | head
+82	115	prove	model	model		2026-11-02T17:47:46Z	1.4	
+82	116	prove	tool	shell	bash	2026-11-02T17:47:48Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "which is how taffy\|Percent insets on the vertical" docs/research/prompts-anchor.md | cut -c1-60
+82	117	prove	model	model		2026-11-02T17:47:48Z	1.4	
+82	118	prove	tool	read files	read	2026-11-02T17:47:49Z	0.0	Get tags :: docs/research/prompts-anchor.md:41-53
+82	119	prove	tool	read files	read	2026-11-02T17:47:49Z	0.0	Read AGENTS prompt line :: AGENTS.md:37:raw
+82	120	prove	model	model		2026-11-02T17:47:49Z	8.4	
+82	121	prove	tool	edit files	edit	2026-11-02T17:47:58Z	0.0	AGENTS, research note fixes :: [docs/research/prompts-anchor.md#8B99] PUT 41.=41: +- At 720p, 1080p and 1440p each anchor's legend stands 5% from the edge(s) it names (a percentage inset is o
+82	122	prove	model	model		2026-11-02T17:47:58Z	3.5	
+82	123	prove	tool	git	bash	2026-11-02T17:48:01Z	0.0	cd /home/ladvien/bevy_gooey_loop && git diff --stat; sed -n 41p docs/research/prompts-anchor.md | cut -c1-80
+82	124	prove	model	model		2026-11-02T17:48:01Z	7.4	
+82	125	prove	tool	edit files	edit	2026-11-02T17:48:09Z	0.0	Research note fixes :: [docs/research/prompts-anchor.md#8B99] PUT 41.=41: +- At 720p, 1080p and 1440p each anchor's legend stands 5% from the edge(s) it names (a percentage inset is o
+82	126	prove	tool	edit files	edit	2026-11-02T17:48:09Z	0.0	AGENTS prompt line :: [AGENTS.md#3C5B] PUT 37.=37: +- `src/prompt.rs` — `InputDevice` (a resource enum, `Keyboard` or `Pad`; it cannot also be a component, `Resource: Component` in B
+82	127	prove	model	model		2026-11-02T17:48:09Z	4.7	
+82	128	gate	tool	phase mark	bash	2026-11-02T17:48:13Z	5.9	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate && git add -A && git commit -qm "Add PromptsAnchor and prompts_at: the lege
+82	129	gate	model	model		2026-11-02T17:48:19Z	4.6	
+82	130	gate	tool	shell	bash	2026-11-02T17:48:24Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 755,795p examples/gallery.rs
+82	131	gate	model	model		2026-11-02T17:48:24Z	1.5	
+82	132	gate	tool	edit files	edit	2026-11-02T17:48:25Z	0.0	Move the doc and allow back to stage_keys :: [examples/gallery.rs#0000]
+82	133	gate	tool	read files	read	2026-11-02T17:48:25Z	0.0	Get tag :: examples/gallery.rs:763-768
+82	134	gate	model	model		2026-11-02T17:48:25Z	1.9	
+82	135	gate	tool	edit files	edit	2026-11-02T17:48:27Z	0.0	Reattach docs to stage_keys :: [examples/gallery.rs#C4D1] PUT 764.=767: +/// `GOOEY_KEYS` token `legend`: every legend to the next anchor, a live change of its component. PUT >790: + +/// `GO
+82	136	gate	model	model		2026-11-02T17:48:27Z	4.7	
+82	137	gate	tool	read files	read	2026-11-02T17:48:32Z	0.0	View lines :: examples/gallery.rs:788-793
+82	138	gate	model	model		2026-11-02T17:48:32Z	1.1	
+82	139	gate	tool	edit files	edit	2026-11-02T17:48:33Z	0.0	Move the doc and allow to stage_keys :: [examples/gallery.rs#C4D1] CUT 764.=767 @d PUT <792 @d
+82	140	gate	model	model		2026-11-02T17:48:33Z	4.3	
+82	141	gate	tool	shell	bash	2026-11-02T17:48:37Z	60.0	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && bash /tmp/g54/gate.sh 2>&1 | tail -30
+82	142	gate	model	model		2026-11-02T17:49:37Z	0.9	
+82	143	gate	tool	wait: gate	wait	2026-11-02T17:49:38Z	155.1	Waiting for gate
+82	144	gate	model	model		2026-11-02T17:52:13Z	15.7	
+82	145	log	tool	phase mark	bash	2026-11-02T17:52:29Z	15.4	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log && git add -A && git commit -qm "Gallery: keep stage_keys' doc and allow wit
+82	146	log	model	model		2026-11-02T17:52:45Z	2.3	
+82	147	release	tool	phase mark	bash	2026-11-02T17:52:47Z	0.8	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release && sed -i '0,/^version = "0.31.2"/s//version = "0.31.3"/' Cargo.toml && 
+82	148	release	model	model		2026-11-02T17:52:48Z	1.4	
+82	149	release	tool	cargo publish	bash	2026-11-02T17:52:49Z	24.9	cd /home/ladvien/bevy_gooey_loop && git status --short; git add -A && git commit -qm "release: v0.31.3" && cargo publish --dry-run 2>&1 | tail -3 && cargo publi
+82	150	release	model	model		2026-11-02T17:53:14Z	2.1	
+82	151	release	tool	push gate	bash	2026-11-02T17:53:16Z	2.9	cd /home/ladvien/bevy_gooey_loop && git tag -a v0.31.3 -m v0.31.3 && git push -q origin main && git push -q origin v0.31.3 && cargo info bevy_gooey@0.31.3 2>&1 
+82	152	release	model	model		2026-11-02T17:53:19Z	2.9	
+82	153	release	tool	push gate	bash	2026-11-02T17:53:22Z	1.5	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' **Release (iteration 54).** `cargo semver-checks --baseline-rev v0.31.2`: no breaking checks
+82	154	release	model	model		2026-11-02T17:53:23Z	5.8	
