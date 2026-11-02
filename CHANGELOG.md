@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.31.3] - 2026-11-02
+
 ### Added
 
 - `PromptsAnchor` and `prompts_at(anchor)`: the legend of `prompts()` can stand in any corner or at the middle of the top or bottom edge (`BottomLeft`, the default and what `prompts()` is, `BottomCenter`, `BottomRight`, `TopLeft`, `TopCenter`, `TopRight`), 5% in from the edges it touches, no wider than 90% of its parent. A game whose own HUD holds the bottom-left picks one anchor for every screen and dialog (Xbox's guideline 112 asks for one place, not a corner). `PromptsAnchor` is a component, so inserting another on a live legend moves it in that frame; a centred legend is `left: 50%` pulled back by `place_prompts`' translation of half its own width, so it stays its content's width, and nothing is written while the anchor stays. Five tests in `tests/prompts.rs`; the gallery's `GOOEY_KEYS` token `legend` cycles the anchor, shown in `docs/media/prompts-anchor.gif`.
