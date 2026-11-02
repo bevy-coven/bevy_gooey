@@ -13373,3 +13373,355 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 72	305	log	model	model		2026-11-02T05:30:02Z	4.6	
 72	306	log	tool	push gate	bash	2026-11-02T05:30:07Z	1.4	Log cleanup and push :: cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' **Gate and ship.** The merged tree with both slices: fmt, clippy, `cargo test --all-features
 72	307	log	model	model		2026-11-02T05:30:08Z	6.8	
+73	1	orient	model	model		2026-11-02T05:30:38Z	3.9	
+73	2	orient	tool	phase mark	bash	2026-11-02T05:30:42Z	0.7	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; git status --short | head; git branch --show-current; git log --oneline 
+73	3	orient	model	model		2026-11-02T05:30:42Z	3.3	
+73	4	orient	tool	shell	bash	2026-11-02T05:30:46Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l docs/loop-log.md && tail -60 docs/loop-log.md | cut -c1-900; grep -n '^version' Cargo.toml; git tag | tail -3; git bra
+73	5	orient	tool	github	bash	2026-11-02T05:30:46Z	0.4	cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+73	6	orient	model	model		2026-11-02T05:30:46Z	3.3	
+73	7	orient	tool	github	bash	2026-11-02T05:30:50Z	1.7	cd /home/ladvien/bevy_gooey_loop && curl -s -A "gooey-loop" https://crates.io/api/v1/crates/bevy_gooey | python3 -c "import json,sys; d=json.load(sys.stdin); pr
+73	8	orient	model	model		2026-11-02T05:30:51Z	3.4	
+73	9	release	tool	phase mark	bash	2026-11-02T05:30:55Z	16.5	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; export CARGO_BUILD_JOBS=4; cargo publish 2>&1 | tail -8
+73	10	release	model	model		2026-11-02T05:31:11Z	7.0	
+73	11	choose	tool	phase mark	bash	2026-11-02T05:31:18Z	1.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; gh issue list -R bevy-coven/bevy_grimoire --label ui --state open --limi
+73	12	choose	model	model		2026-11-02T05:31:19Z	7.6	
+73	13	choose	tool	shell	bash	2026-11-02T05:31:27Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -rli 'radial\|inventory\|grid_nav\|hotbar' src docs/research docs/guide README.md | head; ls docs/research docs/guide e
+73	14	choose	model	model		2026-11-02T05:31:27Z	12.8	
+73	15	research	tool	phase mark	bash	2026-11-02T05:31:40Z	16.2	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; (hs distill search "pie menu radial menu selection speed accuracy" --o
+73	16	research	model	model		2026-11-02T05:31:56Z	3.1	
+73	17	research	tool	homestill	bash	2026-11-02T05:31:59Z	1.0	cd /home/ladvien/bevy_gooey_loop && hs distill search "pie menu radial menu selection speed accuracy" --output json 2>&1 | python3 -c " import json,sys for r in
+73	18	research	model	model		2026-11-02T05:32:00Z	6.7	
+73	19	research	tool	homestill	bash	2026-11-02T05:32:07Z	2.6	cd /home/ladvien/bevy_gooey_loop && hs distill search "radial menu number of items selection error target width pie segment" --output json 2>&1 | python3 -c " i
+73	20	research	tool	web	web_search	2026-11-02T05:32:07Z	8.8	Finding shipping-game radial menu source :: weapon wheel radial menu design game UI controller stick selection direction not distance GDC OR postmortem
+73	21	research	model	model		2026-11-02T05:32:16Z	4.2	
+73	22	research	tool	read files	read	2026-11-02T05:32:20Z	0.4	Reading radial menu API doc :: https://gameface-ui.coherent-labs.com/components/complex/radial-menu/
+73	23	research	tool	read files	read	2026-11-02T05:32:20Z	2.6	Reading radial menu design article :: https://300mind.studio/blog/radial-menus-in-game-design/
+73	24	research	model	model		2026-11-02T05:32:22Z	3.3	
+73	25	research	tool	shell	bash	2026-11-02T05:32:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n -i -B1 -A3 'dead zone\|highlight\|keyboard\|confirm\|release' /dev/null; ls ~/.omp 2>/dev/null | head -1; cat docs/r
+73	26	research	tool	read files	read	2026-11-02T05:32:26Z	0.0	Reading rest of radial article :: artifact://12:301-380
+73	27	research	model	model		2026-11-02T05:32:26Z	31.7	
+73	28	research	tool	shell	bash	2026-11-02T05:32:57Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'ChoiceCell\|ChoiceOption' src/*.rs | cut -c1-170; wc -l src/*.rs | tail -1; wc -l src/choice.rs src/skin.rs src/nav
+73	29	research	model	model		2026-11-02T05:32:57Z	2.0	
+73	30	research	tool	read files	read	2026-11-02T05:32:59Z	0.0	Reading choice widget as pattern :: src/choice.rs
+73	31	research	tool	read files	read	2026-11-02T05:32:59Z	0.0	Reading choice builder :: src/widgets.rs:590-720
+73	32	research	model	model		2026-11-02T05:32:59Z	1.3	
+73	33	research	tool	read files	read	2026-11-02T05:33:01Z	0.0	Reading choice event plumbing :: src/choice.rs:44-145
+73	34	research	model	model		2026-11-02T05:33:01Z	3.0	
+73	35	research	tool	search	grep	2026-11-02T05:33:04Z	0.0	Locating navigation hooks for sideways keys :: src
+73	36	research	model	model		2026-11-02T05:33:04Z	1.8	
+73	37	research	tool	read files	read	2026-11-02T05:33:06Z	0.0	Reading nav type aliases :: src/nav.rs:30-110
+73	38	research	tool	read files	read	2026-11-02T05:33:06Z	0.0	Reading navigate_by_input :: src/nav.rs:225-420
+73	39	research	model	model		2026-11-02T05:33:06Z	2.0	
+73	40	research	tool	shell	bash	2026-11-02T05:33:08Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'pub fn navigate_by_input\|keeps_sideways\|types_lines\|hosts_arrows\|numbers(\|fn gamepad_adjust\|fn gamepad_select
+73	41	research	model	model		2026-11-02T05:33:08Z	1.8	
+73	42	research	tool	read files	read	2026-11-02T05:33:09Z	0.0	Reading navigate_by_input body :: src/nav.rs:462-600
+73	43	research	tool	read files	read	2026-11-02T05:33:09Z	0.0	Reading gamepad_adjust :: src/nav.rs:735-811
+73	44	research	model	model		2026-11-02T05:33:09Z	16.7	
+73	45	research	tool	shell	bash	2026-11-02T05:33:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'fn palette_on_move' -B3 -A30 src/palette.rs | head -60; grep -n 'STICK_PUSH' src/model.rs | head -3
+73	46	research	model	model		2026-11-02T05:33:26Z	5.0	
+73	47	research	tool	shell	bash	2026-11-02T05:33:31Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0/src && grep -n 'position' picking_backend.rs | head -20; cd ../../bevy_picking-0.20.0/src && grep -n '
+73	48	research	model	model		2026-11-02T05:33:31Z	2.2	
+73	49	research	tool	shell	bash	2026-11-02T05:33:33Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); P=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_picking-0.20.0); echo $D $P; grep -n '
+73	50	research	model	model		2026-11-02T05:33:33Z	1.6	
+73	51	research	tool	shell	bash	2026-11-02T05:33:35Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); sed -n 15,30p $D/src/picking_backend.rs; sed -n 225,245p $D/src/picking_backend.rs
+73	52	research	model	model		2026-11-02T05:33:35Z	22.5	
+73	53	research	tool	shell	bash	2026-11-02T05:33:57Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'TabText\|Role::Tab\b' src/skin.rs | head -40; sed -n 2140,2200p src/skin.rs
+73	54	research	model	model		2026-11-02T05:33:57Z	4.3	
+73	55	research	tool	shell	bash	2026-11-02T05:34:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n '^fn \|^pub fn \|^pub(crate) fn \|^type \|^struct \|^impl ' src/skin.rs | sed -n 1,200p | awk -F'(' '{print $1}' | t
+73	56	research	model	model		2026-11-02T05:34:02Z	1.5	
+73	57	research	tool	shell	bash	2026-11-02T05:34:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1427,1450p src/skin.rs; sed -n 1484,1660p src/skin.rs
+73	58	research	model	model		2026-11-02T05:34:03Z	5.6	
+73	59	research	tool	shell	bash	2026-11-02T05:34:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1955,2010p src/skin.rs; echo ----; sed -n 2262,2330p src/skin.rs
+73	60	research	tool	shell	bash	2026-11-02T05:34:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2400,2475p src/skin.rs; echo ----; sed -n 3140,3215p src/skin.rs
+73	61	research	model	model		2026-11-02T05:34:09Z	11.5	
+73	62	research	tool	shell	bash	2026-11-02T05:34:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1820,1902p src/skin.rs; grep -n 'fn owner_of\|owner_of\|let owner\|let parent' src/skin.rs | head
+73	63	research	model	model		2026-11-02T05:34:20Z	36.1	
+73	64	research	tool	shell	bash	2026-11-02T05:34:57Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1740,1800p src/skin.rs; grep -n 'fn show_focus' -A8 src/nav.rs
+73	65	research	model	model		2026-11-02T05:34:57Z	11.5	
+73	66	research	tool	shell	bash	2026-11-02T05:35:08Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'update_choices\|choice::\|mod choice\|mod region\|pub use region\|pub use choice\|ChoiceCount\|cycle_regions\|step_
+73	67	research	model	model		2026-11-02T05:35:08Z	1.7	
+73	68	research	tool	shell	bash	2026-11-02T05:35:10Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 425,470p src/lib.rs; sed -n 500,560p src/lib.rs; sed -n 60,120p src/access.rs; grep -n 'Role::Choice =>' -B2 -A25 src
+73	69	research	model	model		2026-11-02T05:35:10Z	10.3	
+73	70	research	tool	shell	bash	2026-11-02T05:35:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 170,200p src/model.rs; grep -n '^#\[cfg(test)\]' src/model.rs; grep -n 'pub fn target_step' -B6 -A20 src/model.rs | h
+73	71	research	model	model		2026-11-02T05:35:20Z	28.8	
+73	72	research	tool	edit files	write	2026-11-02T05:35:49Z	0.0	Writing the radial menu research note :: docs/research/radial.md
+73	73	research	model	model		2026-11-02T05:35:49Z	8.5	
+73	74	research	tool	git	bash	2026-11-02T05:35:57Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/research/radial.md' s=open(p).read() s=s.replace("1. Bailly, Lecolinet and Nigay / the IJHCS 2011 st
+73	75	research	model	model		2026-11-02T05:35:58Z	1.5	
+73	76	research	tool	shell	bash	2026-11-02T05:35:59Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'target_step' src/lib.rs; sed -n 2084,2100p src/model.rs
+73	77	research	model	model		2026-11-02T05:35:59Z	1.3	
+73	78	research	tool	shell	bash	2026-11-02T05:36:00Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 215,232p src/lib.rs
+73	79	research	model	model		2026-11-02T05:36:00Z	23.1	
+73	80	research	tool	shell	bash	2026-11-02T05:36:23Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() new='''/// How far a stick must be pushed, as a share of its travel, to po
+73	81	research	model	model		2026-11-02T05:36:24Z	19.2	
+73	82	research	tool	shell	bash	2026-11-02T05:36:43Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'pub fn update_tabs' -B3 -A60 src/tabs.rs | head -110; sed -n 1,30p src/tabs.rs
+73	83	research	model	model		2026-11-02T05:36:43Z	5.6	
+73	84	research	tool	shell	bash	2026-11-02T05:36:48Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,15p src/choice.rs; sed -n 185,215p src/choice.rs
+73	85	research	model	model		2026-11-02T05:36:48Z	31.8	
+73	86	research	tool	edit files	write	2026-11-02T05:37:20Z	0.0	Writing radial menu module :: src/radial.rs
+73	87	research	model	model		2026-11-02T05:37:20Z	4.9	
+73	88	research	tool	shell	bash	2026-11-02T05:37:25Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 1140,1165p src/skin.rs; sed -n 1280,1300p src/skin.rs; grep -n 'Role::PromptKey' src/skin.rs | head; grep -n 'PromptK
+73	89	research	model	model		2026-11-02T05:37:25Z	3.7	
+73	90	research	tool	edit files	edit	2026-11-02T05:37:29Z	0.0	Adding radial roles to Role enum :: [src/skin.rs#6699] PUT >1291: + /// A [`crate::radial`]'s disc: a round [`GooeySkin::surface`] with the items on a ring inside + /// it, its border the focus ri
+73	91	research	model	model		2026-11-02T05:37:29Z	3.0	
+73	92	research	tool	edit files	edit	2026-11-02T05:37:32Z	0.0	Adding radial roles to Role enum :: [src/skin.rs#6699] PUT >1291: + /// A [`crate::radial`]'s disc: a round [`GooeySkin::surface`] with the items on a ring inside + /// it, its border the focus ri
+73	93	research	model	model		2026-11-02T05:37:32Z	7.8	
+73	94	research	tool	shell	bash	2026-11-02T05:37:40Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'Role::Tab | Role::GroupOption => Some(if state.disabled' src/skin.rs; grep -n 'Role::Toggle | Role::Slider | Role::
+73	95	research	model	model		2026-11-02T05:37:40Z	3.5	
+73	96	research	tool	shell	bash	2026-11-02T05:37:43Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2368,2416p src/skin.rs; grep -n 'Role::PromptKey | Role::PromptButton => {' -A40 src/skin.rs | head -70
+73	97	research	model	model		2026-11-02T05:37:43Z	3.3	
+73	98	research	tool	shell	bash	2026-11-02T05:37:47Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'UiTransform' src/widgets.rs src/skin.rs | head; grep -n 'fn choice_arrow' -A45 src/widgets.rs | head -70
+73	99	research	model	model		2026-11-02T05:37:47Z	12.1	
+73	100	research	tool	shell	bash	2026-11-02T05:37:59Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'BackgroundColor' src/widgets.rs | head -5; grep -n 'pub fn panel' -A22 src/widgets.rs | head -40; grep -n 'let text
+73	101	research	model	model		2026-11-02T05:37:59Z	6.3	
+73	102	research	tool	read files	read	2026-11-02T05:38:05Z	0.0	Reading anchors for apply_skin edits :: src/skin.rs:1978-1984,2321-2324,2411-2414,3178-3192
+73	103	research	model	model		2026-11-02T05:38:05Z	9.9	
+73	104	research	tool	edit files	edit	2026-11-02T05:38:15Z	0.0	Adding radial arms to apply_skin :: [src/skin.rs#186C] PUT <1979: + // The disc is the panel's ground; an item rests on a button's fill and the highlighted + // one is lit like a selected tab, two
+73	105	research	model	model		2026-11-02T05:38:15Z	4.3	
+73	106	research	tool	shell	bash	2026-11-02T05:38:19Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'const CHOICE_MIN_TEXT_SIZES' -B3 -A2 src/skin.rs; grep -n 'Role::TabText' src/skin.rs | head -3; grep -n ' | Role::
+73	107	research	model	model		2026-11-02T05:38:19Z	1.6	
+73	108	research	tool	read files	read	2026-11-02T05:38:21Z	0.0	Reading edit anchors :: src/skin.rs:1646-1649,1783-1786,1861-1864,2221-2224,2429-2431
+73	109	research	model	model		2026-11-02T05:38:21Z	4.5	
+73	110	research	tool	edit files	edit	2026-11-02T05:38:25Z	0.0	Registering radial roles in skin lists :: [src/skin.rs#3D1C] PUT >1648: + | Role::Radial PUT >1785: + | Role::Radial PUT >1863: + | Role::Radial PUT >2223: + | Role::RadialText + | Role::RadialCentre PU
+73	111	research	model	model		2026-11-02T05:38:25Z	3.3	
+73	112	research	tool	edit files	edit	2026-11-02T05:38:29Z	0.0	Registering radial roles in skin lists :: [src/skin.rs#3D1C] PUT >1648: + | Role::Radial PUT >1785: + | Role::Radial PUT >1863: + | Role::Radial PUT >2223: + | Role::RadialText + | Role::RadialCentre PU
+73	113	research	model	model		2026-11-02T05:38:29Z	6.1	
+73	114	research	tool	shell	bash	2026-11-02T05:38:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'Spec::Hidden' src/access.rs | head; sed -n 160,200p src/access.rs
+73	115	research	model	model		2026-11-02T05:38:35Z	3.0	
+73	116	research	tool	shell	bash	2026-11-02T05:38:38Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'Role::GroupOption$\| | Role::GroupOption' src/access.rs | head -3; grep -n 'Role::Binding => {' src/access.rs
+73	117	research	model	model		2026-11-02T05:38:38Z	1.3	
+73	118	research	tool	read files	read	2026-11-02T05:38:39Z	0.0	Anchors for access edits :: src/access.rs:126-129,184-187,405-408
+73	119	research	model	model		2026-11-02T05:38:39Z	2.9	
+73	120	research	tool	edit files	edit	2026-11-02T05:38:42Z	0.0	Classifying radial roles for accessibility :: [src/access.rs#8B48] PUT >128: + | Role::Radial PUT 186.=186: + | Role::RadialSlot + | Role::RadialText + | Role::RadialCentre + | Role::ToastActionText => Spec
+73	121	research	model	model		2026-11-02T05:38:42Z	5.8	
+73	122	research	tool	read files	read	2026-11-02T05:38:48Z	0.0	Anchors for nav edits :: src/nav.rs:144-150,160-170,504-512
+73	123	research	model	model		2026-11-02T05:38:48Z	4.3	
+73	124	research	tool	edit files	edit	2026-11-02T05:38:52Z	0.0	Leaving arrows to a focused radial :: [src/nav.rs#CE34] PUT >165: + /// The radials, which take all four arrows and the D-pad as steps ([`crate::radial`]). + radials: Query<'w, 's, (), (With<RadialC
+73	125	research	model	model		2026-11-02T05:38:52Z	13.0	
+73	126	research	tool	shell	bash	2026-11-02T05:39:05Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,90p src/widgets.rs | grep -n 'use ' | head -50
+73	127	research	model	model		2026-11-02T05:39:05Z	2.2	
+73	128	research	tool	shell	bash	2026-11-02T05:39:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 42,45p src/widgets.rs; sed -n 60,63p src/widgets.rs
+73	129	research	tool	read files	read	2026-11-02T05:39:07Z	0.0	Anchor for radial builder :: src/widgets.rs:826-831
+73	130	research	model	model		2026-11-02T05:39:07Z	14.7	
+73	131	research	tool	edit files	edit	2026-11-02T05:39:22Z	0.0	Adding radial() builder :: [src/widgets.rs#6B3A] PUT >830: +/// How far from the middle of a [`radial`] the items stand, as a share of its width: 40%, which +/// leaves the item at the ed
+73	132	research	model	model		2026-11-02T05:39:22Z	14.0	
+73	133	research	tool	edit files	edit	2026-11-02T05:39:36Z	0.0	Adding radial() builder :: [src/widgets.rs#8B01] PUT >830: +/// How far from the middle of a [`radial`] the items stand, as a share of its width: 40%, which +/// leaves the item at the ed
+73	134	research	model	model		2026-11-02T05:39:36Z	5.5	
+73	135	research	tool	shell	bash	2026-11-02T05:39:41Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'pub use widgets' -A12 src/lib.rs | head -30; grep -n '^mod prompt;\|^mod progress;\|^mod popover' src/lib.rs; grep 
+73	136	research	model	model		2026-11-02T05:39:41Z	2.9	
+73	137	research	tool	edit files	edit	2026-11-02T05:39:44Z	0.0	Wiring radial into lib.rs :: [src/lib.rs#9F5B] PUT 287.=287: + split, status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs, + text_area, text_input, text_size, 
+73	138	research	model	model		2026-11-02T05:39:44Z	4.3	
+73	139	research	tool	edit files	edit	2026-11-02T05:39:48Z	0.0	Wiring radial into lib.rs :: [src/lib.rs#9F5B] PUT 289.=289: + toolbar_separator, tree, vec_field, viewport, radial, PUT >249: +pub use radial::{RadialCount, RadialValue, radial_by_pad, upd
+73	140	research	model	model		2026-11-02T05:39:48Z	5.0	
+73	141	research	tool	cargo build	bash	2026-11-02T05:39:53Z	7.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/lib.rs' s=open(p).read() s=s.replace(" update_choices,\n dock::update_docks,"," (update_choices, upda
+73	142	research	model	model		2026-11-02T05:40:01Z	6.3	
+73	143	research	tool	cargo build	bash	2026-11-02T05:40:07Z	4.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/radial.rs' s=open(p).read() s=s.replace("#[derive(Component, Clone, Copy, Debug)]\npub(crate) struct 
+73	144	research	model	model		2026-11-02T05:40:11Z	3.3	
+73	145	build	tool	phase mark	bash	2026-11-02T05:40:15Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; sed -n 1,140p tests/choice.rs
+73	146	build	model	model		2026-11-02T05:40:15Z	1.8	
+73	147	build	tool	shell	bash	2026-11-02T05:40:16Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 140,330p tests/choice.rs; grep -n 'fn plug\|fn pad_press\|fn press_pad\|fn hold' tests/choice.rs
+73	148	build	model	model		2026-11-02T05:40:16Z	9.1	
+73	149	build	tool	shell	bash	2026-11-02T05:40:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'idle' tests/choice.rs | head; grep -n 'fn nothing_is_written_while_idle' -A40 tests/choice.rs | head -60; grep -n '
+73	150	build	model	model		2026-11-02T05:40:26Z	2.1	
+73	151	build	tool	shell	bash	2026-11-02T05:40:28Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn 'writes_nothing\|nothing_written\|while_idle' tests/*.rs | head -5; grep -n 'fn nothing_is_written' -B2 -A40 tests/
+73	152	build	model	model		2026-11-02T05:40:28Z	1.4	
+73	153	build	tool	shell	bash	2026-11-02T05:40:29Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 805,870p tests/list.rs
+73	154	build	model	model		2026-11-02T05:40:29Z	1.8	
+73	155	build	tool	shell	bash	2026-11-02T05:40:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'struct Writes' -B3 -A12 tests/list.rs; grep -n 'Writes' tests/list.rs | head -8; sed -n 534,570p tests/drag.rs
+73	156	build	model	model		2026-11-02T05:40:31Z	86.1	
+73	157	build	tool	edit files	write	2026-11-02T05:41:57Z	0.0	Writing radial integration tests :: tests/radial.rs
+73	158	build	model	model		2026-11-02T05:41:57Z	3.7	
+73	159	build	tool	shell	bash	2026-11-02T05:42:01Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,80p tests/access.rs | grep -n 'Accessib\|fn ' ; grep -n 'AccessibilityRequested' tests/access.rs | head -5
+73	160	build	model	model		2026-11-02T05:42:01Z	3.7	
+73	161	build	tool	shell	bash	2026-11-02T05:42:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,76p tests/access.rs; grep -n 'fn a_choice' -A22 tests/access.rs | head -40
+73	162	build	model	model		2026-11-02T05:42:04Z	9.7	
+73	163	build	tool	cargo test	bash	2026-11-02T05:42:14Z	0.0	[launched bg_3] cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/radial.rs' s=open(p).read() i=s.index("// ---- who reads it ----") s=s[:i].rstrip()+"\n" a=s.index(
+73	164	build	model	model		2026-11-02T05:42:14Z	3.3	
+73	165	build	tool	shell	bash	2026-11-02T05:42:17Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l examples/*.rs; grep -n '\[\[example' -A4 Cargo.toml | head -30; sed -n 1,200p examples/options.rs
+73	166	build	model	model		2026-11-02T05:42:17Z	6.5	
+73	167	build	tool	shell	bash	2026-11-02T05:42:24Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 200,286p examples/options.rs
+73	168	build	model	model		2026-11-02T05:42:24Z	22.8	
+73	169	build	tool	shell	bash	2026-11-02T05:42:47Z	0.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' s=open('examples/options.rs').read() # header head_end=s.index("use bevy::input::ButtonState;") header='''//
+73	170	build	bg	shell	bash	2026-11-02T05:42:25Z	22.8	bg_3 completed: python3 - <<'E' p='tests/radial.rs' s=open(p).read() i=s.index("// ---- who reads it ----") s=s[:i].rstrip()+"\n" a=s...
+73	171	build	model	model		2026-11-02T05:42:47Z	4.4	
+73	172	build	tool	cargo test	bash	2026-11-02T05:42:52Z	24.3	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='tests/radial.rs' s=open(p).read() s=s.replace(" assert!(contrast_ratio(skin.accent, skin.accent
+73	173	build	model	model		2026-11-02T05:43:16Z	5.2	
+73	174	build	tool	cargo test	bash	2026-11-02T05:43:21Z	1.2	P=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_picking-0.20.0); grep -n 'PointerAction::Move' -B3 -A25 $P/src/events.rs | head -60; cd /home/ladvien/bev
+73	175	build	model	model		2026-11-02T05:43:23Z	10.3	
+73	176	build	tool	shell	bash	2026-11-02T05:43:33Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'text_size:' src/skin.rs | head -5; grep -n 'TEXT_SIZE_STEPS' src/model.rs | head -2; sed -n 1955,1968p src/skin.rs;
+73	177	build	model	model		2026-11-02T05:43:33Z	7.6	
+73	178	build	tool	shell	bash	2026-11-02T05:43:40Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'UiScale\|app_sized\|fn app' tests/large_text.rs | head -12; grep -n 'pub struct UiScaleSettings' -B3 -A25 src/scale
+73	179	build	model	model		2026-11-02T05:43:40Z	5.1	
+73	180	build	tool	cargo test	bash	2026-11-02T05:43:46Z	12.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/radial.rs' s=open(p).read() s=s.replace(" GooeyPlugins,\n ))\n .init_resource::<Changes>()"," Gooey
+73	181	build	model	model		2026-11-02T05:43:58Z	8.5	
+73	182	build	tool	cargo test	bash	2026-11-02T05:44:06Z	13.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/radial.rs' s=open(p).read() old=""" assert!( (item.center() - want).length() < 1.5,""" new=""" // T
+73	183	build	model	model		2026-11-02T05:44:20Z	7.1	
+73	184	build	tool	shell	bash	2026-11-02T05:44:27Z	0.0	cd /home/ladvien/bevy_gooey_loop && echo $CARGO_TARGET_DIR $DISPLAY; ls $CARGO_TARGET_DIR 2>/dev/null | head; ls $CARGO_TARGET_DIR/release/examples 2>/dev/null 
+73	185	build	model	model		2026-11-02T05:44:27Z	2.6	
+73	186	build	tool	cargo build	bash	2026-11-02T05:44:29Z	47.2	cd /home/ladvien/bevy_gooey_loop && mkdir -p /tmp/g45 && CARGO_BUILD_JOBS=4 cargo build --release --example radial 2>&1 | tail -15 && G=$CARGO_TARGET_DIR/releas
+73	187	build	model	model		2026-11-02T05:45:16Z	1.4	
+73	188	build	tool	read files	read	2026-11-02T05:45:18Z	0.0	Viewing first radial render :: /tmp/g45/a.png
+73	189	build	model	model		2026-11-02T05:45:18Z	10.9	
+73	190	build	tool	shell	bash	2026-11-02T05:45:29Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n '40%\|0\.4\b' src/widgets.rs src/skin.rs docs/research/radial.md tests/radial.rs | grep -i 'radial\|ring\|40%'
+73	191	build	model	model		2026-11-02T05:45:29Z	4.9	
+73	192	build	tool	cargo test	bash	2026-11-02T05:45:34Z	17.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re def sub(p,a,b): s=open(p).read(); assert a in s,(p,a); open(p,'w').write(s.replace(a,b)) sub('src/
+73	193	build	model	model		2026-11-02T05:45:51Z	5.8	
+73	194	build	tool	cargo test	bash	2026-11-02T05:45:57Z	13.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/radial.rs' s=open(p).read() a=s.index(" assert!(\n item.min.x >= disc.min.x - 1.0") b=s.index('"{st
+73	195	build	model	model		2026-11-02T05:46:10Z	6.6	
+73	196	build	tool	cargo test	bash	2026-11-02T05:46:17Z	33.2	cd /home/ladvien/bevy_gooey_loop && cp src/nav.rs /tmp/g45/nav.rs.bak && python3 - <<'E' p='src/nav.rs' s=open(p).read() s=s.replace("if from.is_some_and(|f| sc
+73	197	build	model	model		2026-11-02T05:46:50Z	4.9	
+73	198	prove	tool	phase mark	bash	2026-11-02T05:46:55Z	0.2	cd /home/ladvien/bevy_gooey_loop && git checkout -q -b loop/iter-45 && git add src tests examples && git commit -qm "radial(): a weapon wheel chosen by stick, p
+73	199	prove	model	model		2026-11-02T05:46:55Z	6.1	
+73	200	prove	tool	cargo build	bash	2026-11-02T05:47:01Z	12.1	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example radial 2>&1 | tail -2; G=$CARGO_TARGET_DIR/release/examples/radial; mkdir
+73	201	prove	model	model		2026-11-02T05:47:13Z	3.5	
+73	202	prove	tool	shell	bash	2026-11-02T05:47:17Z	0.5	cd /tmp/g45/gif && ls | head -3; montage $(ls f_*.png | awk 'NR%6==1') -tile 4x -geometry 480x270+2+2 /tmp/g45/sheet.png 2>&1 | tail -1; ls /tmp/g45/
+73	203	prove	model	model		2026-11-02T05:47:17Z	1.3	
+73	204	prove	tool	read files	read	2026-11-02T05:47:19Z	0.1	Viewing contact sheet of radial sequence :: /tmp/g45/sheet.png
+73	205	prove	model	model		2026-11-02T05:47:19Z	8.2	
+73	206	prove	tool	clip record/render	bash	2026-11-02T05:47:27Z	0.6	cd /tmp/g45 && ffmpeg -v error -y -framerate 20 -pattern_type glob -i 'gif/f_*.png' -vf "scale=800:450:flags=lanczos,split[a][b];[a]palettegen=max_colors=96[p];
+73	207	prove	model	model		2026-11-02T05:47:28Z	4.2	
+73	208	log	tool	phase mark	bash	2026-11-02T05:47:32Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; wc -l README.md; grep -n 'drag-keys\|drag-drop' README.md | cut -c1-220; se
+73	209	log	model	model		2026-11-02T05:47:32Z	6.0	
+73	210	log	tool	shell	bash	2026-11-02T05:47:38Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn 'drag-keys.gif' docs/guide README.md | cut -c1-120; sed -n 94,106p README.md | cut -c1-300; sed -n 208,211p README.
+73	211	log	model	model		2026-11-02T05:47:38Z	6.3	
+73	212	log	tool	read files	read	2026-11-02T05:47:44Z	0.0	Reading README bullet lines raw :: README.md:120-123:raw
+73	213	log	model	model		2026-11-02T05:47:44Z	3.7	
+73	214	log	tool	read files	read	2026-11-02T05:47:48Z	0.0	Reading options bullet raw :: README.md:105-119:raw
+73	215	log	model	model		2026-11-02T05:47:48Z	5.5	
+73	216	log	tool	read files	read	2026-11-02T05:47:54Z	0.0	Anchor lines for README edit :: README.md:110,119:raw
+73	217	log	model	model		2026-11-02T05:47:54Z	5.1	
+73	218	log	tool	read files	read	2026-11-02T05:47:59Z	0.0	Getting README edit tag :: README.md:110,119,207-211
+73	219	log	model	model		2026-11-02T05:47:59Z	11.5	
+73	220	log	tool	edit files	edit	2026-11-02T05:48:10Z	0.0	README: radial line and GIF block :: [README.md#B9B7] PUT 110.=110: + traps; `text_area("Notes", "", 5)` is the same five lines high, Ctrl+Enter ends the edit), `number_field("Health", 100.0, 0.5, 
+73	221	log	model	model		2026-11-02T05:48:10Z	5.7	
+73	222	log	tool	shell	bash	2026-11-02T05:48:16Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g45/radial.gif docs/media/radial.gif && wc -l README.md && sed -n 1,30p docs/guide/tabs.md && head -30 CHANGELOG.md 
+73	223	log	model	model		2026-11-02T05:48:16Z	22.8	
+73	224	log	tool	shell	bash	2026-11-02T05:48:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && cat > docs/guide/radial.md <<'E' # Radial menu `radial(items, selected)` is a weapon wheel, an emote wheel, a build menu or 
+73	225	log	model	model		2026-11-02T05:48:39Z	9.6	
+73	226	log	tool	cargo build	bash	2026-11-02T05:48:48Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/guide/radial.md' s=open(p).read() s=s.replace("(WCAG 2.1.1, and 2.5.1: no path-based gesture, the ke
+73	227	log	model	model		2026-11-02T05:48:48Z	4.0	
+73	228	log	tool	shell	bash	2026-11-02T05:48:52Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/media/README.md' s=open(p).read() s=s.replace('GOOEY_HEALTH=60 GOOEY_SHOT=/tmp/b.png GOOEY_SHOT_DIR=
+73	229	log	model	model		2026-11-02T05:48:52Z	1.4	
+73	230	log	tool	read files	read	2026-11-02T05:48:54Z	0.0	Anchor for AGENTS entry :: AGENTS.md:31-32
+73	231	log	model	model		2026-11-02T05:48:54Z	10.4	
+73	232	log	tool	edit files	edit	2026-11-02T05:49:04Z	0.0	AGENTS.md radial entry :: [AGENTS.md#684F] PUT >31: +- `src/radial.rs` — `RadialValue` (the highlighted item, the widget's state; a value past the end is pulled back) and `RadialCount`, 
+73	233	log	model	model		2026-11-02T05:49:04Z	9.5	
+73	234	log	tool	git	bash	2026-11-02T05:49:14Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='AGENTS.md' lines=open(p).read().split('\n') new="- `src/radial.rs` — `RadialValue` (the highlighted item,
+73	235	log	model	model		2026-11-02T05:49:14Z	4.3	
+73	236	log	tool	shell	bash	2026-11-02T05:49:18Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n -i 'choice' docs/guide/accessibility.md | head -5 | cut -c1-200; grep -n 'choice' docs/guide/widgets.md | head -3 | 
+73	237	log	model	model		2026-11-02T05:49:18Z	6.4	
+73	238	gate	tool	phase mark	bash	2026-11-02T05:49:24Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/guide/accessibility.md' s=open(p).read() l="| `choice`, `select`, the option rows | SpinButton | its
+73	239	gate	model	model		2026-11-02T05:49:25Z	7.6	
+73	240	gate	tool	shell	bash	2026-11-02T05:49:32Z	27.9	cd /home/ladvien/bevy_gooey_loop && G=$CARGO_TARGET_DIR/release/examples/radial; mkdir -p /tmp/g45/v; for cfg in "dark-1280:GOOEY_SIZE=1280x720" "parch:GOOEY_SK
+73	241	gate	model	model		2026-11-02T05:50:00Z	2.5	
+73	242	gate	tool	shell	bash	2026-11-02T05:50:03Z	0.3	cd /tmp/g45/v && montage parch.png hc.png tool.png dark-1280.png -tile 2x -geometry 640x360+3+3 m1.png && montage large.png big.png -tile 2x -geometry 800x450+3
+73	243	gate	tool	read files	read	2026-11-02T05:50:03Z	0.3	Viewing skin variants :: /tmp/g45/v/m1.png
+73	244	gate	model	model		2026-11-02T05:50:03Z	2.0	
+73	245	gate	tool	shell	bash	2026-11-02T05:50:05Z	0.3	cd /tmp/g45/v && ls; montage parch.png hc.png tool.png dark-1280.png -tile 2x -geometry 640x360+3+3 /tmp/g45/m1.png; montage large.png big.png -tile 2x -geometr
+73	246	gate	model	model		2026-11-02T05:50:05Z	1.5	
+73	247	gate	tool	read files	read	2026-11-02T05:50:07Z	0.1	Viewing skin variants montage :: /tmp/g45/m1.png
+73	248	gate	model	model		2026-11-02T05:50:07Z	8.5	
+73	249	gate	tool	read files	read	2026-11-02T05:50:15Z	0.1	Viewing large text and 1440p captures :: /tmp/g45/m2.png
+73	250	gate	model	model		2026-11-02T05:50:15Z	37.3	
+73	251	gate	tool	shell	bash	2026-11-02T05:50:53Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'if let Some((color, font, size)) = text\|if let (Some((' src/skin.rs | head; grep -n 'font_size' src/skin.rs | head
+73	252	gate	model	model		2026-11-02T05:50:53Z	2.1	
+73	253	gate	tool	shell	bash	2026-11-02T05:50:55Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 3316,3340p src/skin.rs; grep -n 'let scaled' -B2 -A3 src/skin.rs | head -12; grep -n 'target.map\|physical_size' src/
+73	254	gate	model	model		2026-11-02T05:50:55Z	8.8	
+73	255	gate	tool	shell	bash	2026-11-02T05:51:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'let text_px = skin.text_size' src/skin.rs; grep -n 'RadialText =>' -A14 src/skin.rs | head -30; grep -n 'let diamet
+73	256	gate	model	model		2026-11-02T05:51:04Z	2.0	
+73	257	gate	tool	shell	bash	2026-11-02T05:51:06Z	0.0	cd /home/ladvien/bevy_gooey_loop && P=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); sed -n 3500,3545p $P/src/ui_node.rs; sed -n 3243,3252p sr
+73	258	gate	model	model		2026-11-02T05:51:06Z	9.3	
+73	259	gate	tool	cargo build	bash	2026-11-02T05:51:15Z	6.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/skin.rs' s=open(p).read() s=s.replace(""" let text_px = skin.text_size * skin.text_scale; """,""" let
+73	260	gate	model	model		2026-11-02T05:51:21Z	14.5	
+73	261	gate	tool	cargo test	bash	2026-11-02T05:51:36Z	25.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/radial.rs' s=open(p).read() a=s.index("#[test]\nfn the_disc_is_round_and_its_items_stand_on_the_rin
+73	262	gate	model	model		2026-11-02T05:52:01Z	5.7	
+73	263	gate	tool	cargo build	bash	2026-11-02T05:52:07Z	38.2	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example radial 2>&1 | tail -1; G=$CARGO_TARGET_DIR/release/examples/radial; rm -f
+73	264	gate	tool	read files	read	2026-11-02T05:52:07Z	38.2	Viewing capped large text wheel :: /tmp/g45/m3.png
+73	265	gate	model	model		2026-11-02T05:52:45Z	5.0	
+73	266	gate	tool	shell	bash	2026-11-02T05:52:50Z	0.2	cd /tmp/g45/v && ls; montage dark.png parch.png large.png large15.png -tile 2x -geometry 640x360+3+3 /tmp/g45/m3.png; ls /tmp/g45/*.png
+73	267	gate	model	model		2026-11-02T05:52:50Z	1.4	
+73	268	gate	tool	read files	read	2026-11-02T05:52:52Z	0.1	Viewing capped large text wheel :: /tmp/g45/m3.png
+73	269	gate	model	model		2026-11-02T05:52:52Z	14.0	
+73	270	gate	tool	cargo build	bash	2026-11-02T05:53:06Z	15.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='examples/radial.rs' s=open(p).read() a=s.index(" screen(),\n children![") b=s.index(" (\n prompts(),") ne
+73	271	gate	tool	read files	read	2026-11-02T05:53:06Z	15.5	Viewing example layout after fix :: /tmp/g45/m4.png
+73	272	gate	model	model		2026-11-02T05:53:21Z	4.1	
+73	273	gate	tool	shell	bash	2026-11-02T05:53:25Z	0.2	cd /tmp/g45/v && ls && montage dark.png hc.png large.png large15.png -tile 2x -geometry 640x360+3+3 /tmp/g45/m4.png; ls /tmp/g45/m4.png
+73	274	gate	model	model		2026-11-02T05:53:26Z	1.4	
+73	275	gate	tool	read files	read	2026-11-02T05:53:27Z	0.1	Viewing example layout after fix :: /tmp/g45/m4.png
+73	276	gate	model	model		2026-11-02T05:53:27Z	18.2	
+73	277	gate	tool	cargo build	bash	2026-11-02T05:53:45Z	9.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='examples/radial.rs' s=open(p).read() s=s.replace('children![(panel(), children![(heading("Equipped: nothi
+73	278	gate	model	model		2026-11-02T05:53:55Z	3.1	
+73	279	gate	tool	read files	read	2026-11-02T05:53:58Z	0.1	Viewing GIF contact sheet :: /tmp/g45/sheet2.png
+73	280	gate	model	model		2026-11-02T05:53:58Z	7.5	
+73	281	gate	tool	cargo build	bash	2026-11-02T05:54:06Z	57.5	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g45/radial.gif docs/media/radial.gif && python3 - <<'E' for p in ['README.md','docs/media/README.md']: s=open(p).rea
+73	282	gate	model	model		2026-11-02T05:55:03Z	5.9	
+73	283	gate	tool	shell	bash	2026-11-02T05:55:09Z	60.0	[launched bg_4] cd /tmp/g45 && for v in before after; do GOOEY_HEALTH=60 GOOEY_FRAMES=120 GOOEY_SHOT=/tmp/g45/gal-$v.png timeout 100 ~/g45_gallery_$v 2>&1 | grep 'gooey: frames
+73	284	gate	model	model		2026-11-02T05:56:09Z	14.7	
+73	285	gate	tool	wait: other	wait	2026-11-02T05:56:24Z	85.6	Waiting for perf pairs
+73	286	gate	model	model		2026-11-02T05:57:50Z	6.8	
+73	287	gate	tool	shell	bash	2026-11-02T05:57:56Z	60.0	[launched bg_5] cd /tmp/g45 && for i in $(seq 1 12); do for v in after before; do GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SHOT=/tmp/g45/x.png timeout 100 ~/g45_g
+73	288	gate	model	model		2026-11-02T05:58:56Z	2.8	
+73	289	gate	tool	wait: other	wait	2026-11-02T05:58:59Z	91.5	Waiting for reversed pairs
+73	290	gate	model	model		2026-11-02T06:00:31Z	11.6	
+73	291	gate	tool	cargo build	bash	2026-11-02T06:00:42Z	5.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' def sub(p,a,b,count=1): s=open(p).read(); assert a in s,(p,a); open(p,'w').write(s.replace(a,b,count)) sub('
+73	292	gate	model	model		2026-11-02T06:00:47Z	5.4	
+73	293	gate	tool	cargo build	bash	2026-11-02T06:00:53Z	46.7	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example radial 2>&1 | grep -E '^error|Finished'; G=$CARGO_TARGET_DIR/release/exam
+73	294	gate	tool	read files	read	2026-11-02T06:00:53Z	46.7	Viewing wheel with track ring :: /tmp/g45/m5.png
+73	295	gate	model	model		2026-11-02T06:01:39Z	3.4	
+73	296	gate	tool	shell	bash	2026-11-02T06:01:43Z	0.2	cd /tmp/g45/v && montage dark.png parch.png hc.png tool.png -tile 2x -geometry 640x360+3+3 /tmp/g45/m5.png; ls -la /tmp/g45/m5.png
+73	297	gate	model	model		2026-11-02T06:01:43Z	1.4	
+73	298	gate	tool	read files	read	2026-11-02T06:01:44Z	0.1	Viewing wheel with track ring :: /tmp/g45/m5.png
+73	299	gate	model	model		2026-11-02T06:01:44Z	6.7	
+73	300	gate	tool	shell	bash	2026-11-02T06:01:51Z	0.2	cd /tmp/g45/v && magick dark.png -crop 330x260+640+300 +repage -filter point -resize 300% /tmp/g45/zoom.png; magick dark.png -crop 40x20+720+484 +repage -format
+73	301	gate	tool	read files	read	2026-11-02T06:01:51Z	0.2	Zooming into lit item :: /tmp/g45/zoom.png
+73	302	gate	model	model		2026-11-02T06:01:51Z	6.2	
+73	303	gate	tool	shell	bash	2026-11-02T06:01:57Z	0.1	ls -la /tmp/g45/zoom.png; python3 - <<'E' from PIL import Image im=Image.open('/tmp/g45/v/dark.png').convert('RGB') def lum(c): f=lambda v:(v/255/12.92) if v/25
+73	304	gate	model	model		2026-11-02T06:01:58Z	1.4	
+73	305	gate	tool	read files	read	2026-11-02T06:01:59Z	0.0	Zooming into lit item :: /tmp/g45/zoom.png
+73	306	gate	model	model		2026-11-02T06:01:59Z	8.2	
+73	307	gate	tool	cargo test	bash	2026-11-02T06:02:07Z	37.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/radial.rs' s=open(p).read() marker="#[test]\nfn ten_short_items_fit_the_ring_too()" new='''#[test] 
+73	308	gate	model	model		2026-11-02T06:02:44Z	5.9	
+73	309	gate	tool	cargo test	bash	2026-11-02T06:02:50Z	3.7	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/radial.rs' s=open(p).read() s=s.replace(" let want = disc.width() * 0.36 * 2.0;\n assert!((track_re
+73	310	gate	model	model		2026-11-02T06:02:54Z	4.4	
+73	311	gate	tool	cargo test	bash	2026-11-02T06:02:58Z	2.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/radial.rs' s=open(p).read() s=s.replace(" let want = (disc.width() - 2.0 * skin.border)"," let skin
+73	312	gate	model	model		2026-11-02T06:03:00Z	1.4	
+73	313	gate	tool	shell	bash	2026-11-02T06:03:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 415,442p tests/radial.rs
+73	314	gate	model	model		2026-11-02T06:03:02Z	2.9	
+73	315	gate	tool	edit files	edit	2026-11-02T06:03:05Z	0.0	Fixing track test expectations :: [tests/radial.rs#9AB2] PUT 425.=429: + // Its line runs through the items' middles: a circle of the ring's radius. + let skin = app.world().resource::<GooeySkin
+73	316	gate	model	model		2026-11-02T06:03:05Z	2.5	
+73	317	gate	tool	edit files	edit	2026-11-02T06:03:07Z	0.0	Fixing track test expectations :: [tests/radial.rs#3085] PUT 426.=430: + let skin = app.world().resource::<GooeySkin>().clone(); + let want = (disc.width() - 2.0 * skin.border) * 0.36 * 2.0; + a
+73	318	gate	model	model		2026-11-02T06:03:07Z	5.4	
+73	319	gate	tool	cargo test	bash	2026-11-02T06:03:12Z	19.6	cd /home/ladvien/bevy_gooey_loop && cargo fmt; CARGO_BUILD_JOBS=4 cargo test --all-features --test all radial:: 2>&1 | grep -A8 'panicked\|test result\|^error';
+73	320	gate	model	model		2026-11-02T06:03:32Z	9.0	
+73	321	gate	tool	phase mark	bash	2026-11-02T06:03:41Z	1.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' def sub(p,a,b): s=open(p).read(); assert a in s,(p,a); open(p,'w').write(s.replace(a,b,1)) sub('CHANGELOG.md
+73	322	gate	model	model		2026-11-02T06:03:42Z	3.6	
+73	323	gate	tool	remote wait	bash	2026-11-02T06:03:46Z	20.1	sleep 20; cat /tmp/g45/gate.log | tail -5; pgrep -f gate.sh | head -2
+73	324	gate	model	model		2026-11-02T06:04:06Z	2.2	
+73	325	gate	tool	shell	bash	2026-11-02T06:04:08Z	0.0	[launched bg_6] bash /tmp/g45/gate.sh > /tmp/g45/gate.log 2>&1; tail -12 /tmp/g45/gate.log
+73	326	gate	model	model		2026-11-02T06:04:08Z	8.3	
+73	327	gate	tool	shell	bash	2026-11-02T06:04:16Z	0.0	python3 - <<'E' def lum(c): f=lambda v:(v/255/12.92) if v/255<=0.03928 else ((v/255+0.055)/1.055)**2.4 r,g,b=c; return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b) def c
+73	328	gate	model	model		2026-11-02T06:04:16Z	10.7	
+73	329	gate	tool	shell	bash	2026-11-02T06:04:27Z	0.0	cat > /tmp/g45/findings.md <<'E' # Findings, iteration 45 (radial menu), dark skin, 1280x720, /tmp/g45/v/dark.png, gallery stills pixel-identical before/after (
+73	330	gate	model	model		2026-11-02T06:04:27Z	5.3	
+73	331	gate	tool	wait: gate	wait	2026-11-02T06:04:32Z	150.2	Waiting for the gate
+73	332	gate	model	model		2026-11-02T06:07:03Z	1.8	
+73	333	gate	tool	shell	bash	2026-11-02T06:07:05Z	0.0	grep -E 'test result|GATE|FAILED|warning|error' /tmp/g45/gate.log | head
+73	334	gate	model	model		2026-11-02T06:07:05Z	39.3	
+73	335	log	tool	phase mark	bash	2026-11-02T06:07:44Z	0.2	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log && git rev-parse --short HEAD && git log --oneline main..HEAD | cat && cat >
+73	336	log	model	model		2026-11-02T06:07:44Z	6.1	
+73	337	log	tool	git	bash	2026-11-02T06:07:50Z	0.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/loop-log.md' s=open(p).read() a="Verdict: **GREAT** as a direction-picked wheel of text items (funct
+73	338	log	model	model		2026-11-02T06:07:51Z	3.0	
+73	339	ship	tool	phase mark	bash	2026-11-02T06:07:54Z	3.0	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship; git push -u origin loop/iter-45 2>&1 | tail -1; git push origin main 2>&1 
+73	340	ship	model	model		2026-11-02T06:07:57Z	8.8	
+73	341	release	tool	phase mark	bash	2026-11-02T06:08:06Z	0.0	[launched bg_7] cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; CARGO_BUILD_JOBS=4 cargo semver-checks check-release 2>&1 | tail -15
+73	342	release	model	model		2026-11-02T06:08:06Z	1.2	
+73	343	release	tool	wait: other	wait	2026-11-02T06:08:07Z	9.1	Waiting for semver-checks
+73	344	release	model	model		2026-11-02T06:08:16Z	6.5	
+73	345	release	tool	shell	bash	2026-11-02T06:08:22Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n '0\.25' README.md Cargo.toml docs/guide/*.md src/lib.rs | cut -c1-160 | head
+73	346	release	model	model		2026-11-02T06:08:22Z	4.5	
+73	347	release	tool	cargo publish	bash	2026-11-02T06:08:27Z	22.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' def sub(p,a,b): s=open(p).read(); assert a in s,(p,a); open(p,'w').write(s.replace(a,b,1)) sub('Cargo.toml',
+73	348	release	model	model		2026-11-02T06:08:50Z	5.5	
+73	349	release	tool	push gate	bash	2026-11-02T06:08:55Z	7.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='CHANGELOG.md' s=open(p).read() s=s.replace("## [Unreleased]\n","## [Unreleased]\n\n## [0.26.0] - 2026-11-
+73	350	release	model	model		2026-11-02T06:09:03Z	7.8	
+73	351	release	tool	push gate	bash	2026-11-02T06:09:11Z	1.5	cd /home/ladvien/bevy_gooey_loop && git worktree remove ~/g45_base && rm -f ~/g45_gallery_before ~/g45_gallery_after && rm -rf /tmp/g45 && git worktree list --p
+73	352	release	model	model		2026-11-02T06:09:12Z	10.0	
