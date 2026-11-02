@@ -39,6 +39,8 @@ per subject. The README links each bullet to its page.
   `StatusPriority`, `status_progress`: workspace state left, context right, the lowest priority hiding first.
 - [Select](select.md) — `select(label, options, selected)`: a choice up to eight options, a searchable list
   above, one `ValueChange<usize>` and "No option matches".
+- [Sections](sections.md) — `section(title, open, children)`: a header that folds a group of widgets out of layout
+  and focus, `ValueChange<bool>`, a state kept by `SectionId` across a respawn, and "Empty" for a section with nothing in it.
 - [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB

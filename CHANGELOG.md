@@ -20,6 +20,9 @@
 - Searchable select (G-16, #20): `select(label, options, selected)` is a `choice` with eight options or fewer (`SELECT_FILTER_ABOVE`) and opens a filtering list above that: the command palette's card over the select's own options (type to narrow it, "No option matches", Up and Down, Enter or a click chooses, Escape leaves the value), one `ValueChange<usize>` with the option's index in the list given. `Select`.
 - `Role::{Toolbar, ToolbarSeparator, ToggleGroup, GroupOption, StatusBar, StatusGroup, StatusItem, StatusMark}`; `CommandPalette` can hold a select's own list (the palette's own list and history are untouched).
 - `examples/tools`, `docs/research/{toolbar, status-bar, select}.md`, `docs/guide/{toolbars, status-bar, select}.md`, `docs/media/tools.gif`, and `tests/{toolbar, status_bar, select}.rs`.
+- Collapsible sections (G-15, #19): `section(title, open, children)` is a header (a button's look: target high, ring, hover, press; a chevron right when closed and down when open) over a body of any bundle, so a section inside one is a nested section. Enter, Space, South and a click toggle it and send one `ValueChange<bool>` on the section; `SectionOpen(bool)` is the state (a game's write moves it with no event); a closed body is `Display::None` and `Visibility::Hidden`, so layout and focus skip it, and focus inside a body that closes goes to the header; an open section with nothing in it says "Empty". `SectionId` and the `SectionStates` resource (serde with the `serde` feature) keep the state across a despawn and a respawn. `update_sections` (Style), `SectionHeader`.
+- `Role::{Section, SectionBody, SectionNote}`; the tree's chevron boxes carry a margin of half their size either side (the tree's twisty centres them, so no tree row moves).
+- `examples/sections`, `docs/research/sections.md`, `docs/guide/sections.md`, `docs/media/sections.gif`, and `tests/section.rs` (11 tests).
 
 ### Changed
 
