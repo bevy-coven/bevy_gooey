@@ -12718,3 +12718,209 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 69	339	log	model	model		2026-11-02T04:18:38Z	4.9	
 69	340	log	tool	push gate	bash	2026-11-02T04:18:43Z	1.4	Final log and push :: cd ~/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' **Release.** v0.24.0 published from `94664e4` (`cargo semver-checks`: major, so a minor bump pre-1.0: `G
 69	341	log	model	model		2026-11-02T04:18:44Z	7.0	
+70	1	orient	model	model		2026-11-02T04:19:16Z	3.7	
+70	2	orient	tool	phase mark	bash	2026-11-02T04:19:20Z	0.8	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop; git status --short | head; git branch --show-current; git log --oneline | 
+70	3	orient	model	model		2026-11-02T04:19:20Z	3.1	
+70	4	orient	tool	github	bash	2026-11-02T04:19:24Z	0.6	cd /home/ladvien/bevy_gooey_loop; gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels --jq '.[] | "#\(.number) \(.tit
+70	5	orient	model	model		2026-11-02T04:19:24Z	3.2	
+70	6	choose	tool	phase mark	bash	2026-11-02T04:19:27Z	0.5	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark choose; gh issue view 32 --repo bevy-coven/bevy_gooey --json body,comments --jq '.
+70	7	choose	model	model		2026-11-02T04:19:28Z	3.1	
+70	8	choose	tool	shell	bash	2026-11-02T04:19:31Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/; ls | grep -E "bevy_a11y|accesskit|bevy_ui-|bevy_ui_widgets|bevy_winit|^bevy-0.20"; grep -rn "AccessibilityNode" bev
+70	9	choose	model	model		2026-11-02T04:19:31Z	3.5	
+70	10	choose	tool	shell	bash	2026-11-02T04:19:34Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/; cat bevy_ui-0.20.0/src/accessibility.rs | sed -n 1,260p; sed -n 1,140p bevy_ui-0.20.0/src/interaction_states.rs
+70	11	choose	model	model		2026-11-02T04:19:34Z	8.1	
+70	12	choose	tool	shell	bash	2026-11-02T04:19:42Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1,80p Cargo.toml; wc -l src/*.rs | tail -1; grep -n "pub enum Role" -A140 src/skin.rs | cut -c1-140
+70	13	choose	model	model		2026-11-02T04:19:42Z	3.8	
+70	14	choose	tool	shell	bash	2026-11-02T04:19:46Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/; grep -n "a11y" bevy-0.20.1/Cargo.toml | head -20; ls bevy-0.20.1 >/dev/null; grep -n "a11y\|accesskit" bevy_ui_widg
+70	15	choose	model	model		2026-11-02T04:19:46Z	4.6	
+70	16	choose	tool	shell	bash	2026-11-02T04:19:51Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/; grep -n "a11y\|accesskit" bevy_internal-0.20.1/Cargo.toml bevy_internal-0.20.1/src/lib.rs bevy_ui-0.20.1/src/lib.rs
+70	17	choose	model	model		2026-11-02T04:19:51Z	18.8	
+70	18	choose	tool	shell	bash	2026-11-02T04:20:10Z	0.2	cd ~/.cargo/registry/src/index.crates.io-*/; grep -rln "ActionRequest" bevy_*-0.20.1/src | head; sed -n 190,210p bevy_internal-0.20.1/Cargo.toml; grep -n "Acces
+70	19	choose	model	model		2026-11-02T04:20:10Z	6.3	
+70	20	choose	tool	shell	bash	2026-11-02T04:20:16Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/; grep -n "focus\|fn " bevy_winit-0.20.1/src/accessibility.rs | head -50
+70	21	choose	model	model		2026-11-02T04:20:16Z	23.2	
+70	22	choose	tool	shell	bash	2026-11-02T04:20:39Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/; sed -n 100,125p bevy_winit-0.20.1/src/accessibility.rs; sed -n 176,312p bevy_winit-0.20.1/src/accessibility.rs
+70	23	choose	model	model		2026-11-02T04:20:39Z	7.7	
+70	24	choose	tool	shell	bash	2026-11-02T04:20:47Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1230,1500p src/skin.rs | grep -v "^\s*///" | tr -d '\n' | tr -s ' ' ; echo; grep -n "^pub fn " src/*.rs | cut -c1-150
+70	25	choose	model	model		2026-11-02T04:20:47Z	31.8	
+70	26	choose	tool	shell	bash	2026-11-02T04:21:19Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "ToggleGroup" src/skin.rs | head -3; awk 'NR>=1090 && NR<=1700' src/skin.rs | grep -n "^}" | head -2; grep -n "^ [A-Z]
+70	27	choose	model	model		2026-11-02T04:21:19Z	3.2	
+70	28	choose	tool	shell	bash	2026-11-02T04:21:22Z	0.0	cd /home/ladvien/bevy_gooey_loop; awk 'NR>=1090 && NR<=1440' src/skin.rs | grep -E "^ [A-Z][A-Za-z]*(\(|,)" | sed 's/^ *//' | tr -d ',' | tr '\n' ' '; echo; sed
+70	29	choose	model	model		2026-11-02T04:21:22Z	8.1	
+70	30	choose	tool	shell	bash	2026-11-02T04:21:30Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "ControlText" src/widgets.rs | head -40; grep -n "fn text_row_as" -A90 src/widgets.rs | cut -c1-150 | head -140
+70	31	choose	model	model		2026-11-02T04:21:30Z	3.7	
+70	32	choose	tool	shell	bash	2026-11-02T04:21:34Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/; grep -rn "Role::" bevy_ui_widgets-0.20.1/src bevy_ui-0.20.1/src bevy_text-0.20.1/src --include=*.rs | grep -v "^.*:
+70	33	choose	model	model		2026-11-02T04:21:34Z	51.6	
+70	34	choose	tool	shell	bash	2026-11-02T04:22:25Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "pub struct Toast\b" -B3 -A30 src/toast.rs | cut -c1-140; grep -n "pub enum ToastKind" -A8 src/toast.rs; grep -n "pub 
+70	35	choose	model	model		2026-11-02T04:22:25Z	7.5	
+70	36	research	tool	phase mark	bash	2026-11-02T04:22:33Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark research; ls docs/research | head -60; grep -n "accessib\|a11y\|screen reader\|nar
+70	37	research	tool	eval	eval	2026-11-02T04:22:33Z	30.0	{"language": "js", "code": "const qs=[\"Xbox Accessibility Guidelines 112 UI navigation narration screen reader\",\"The Last of Us Part II accessibility menu na
+70	38	research	model	model		2026-11-02T04:23:03Z	2.0	
+70	39	research	tool	read files	read	2026-11-02T04:23:05Z	1.0	Reading XAG text narration guideline :: https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/102
+70	40	research	tool	read files	read	2026-11-02T04:23:05Z	1.0	Reading APG names and descriptions :: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
+70	41	research	model	model		2026-11-02T04:23:06Z	5.1	
+70	42	research	tool	shell	bash	2026-11-02T04:23:11Z	0.9	cd /tmp; mkdir -p g42; cd g42; for n in 101 112 ; do curl -sL -A "Mozilla/5.0" -H "Accept: text/markdown" "https://learn.microsoft.com/en-us/gaming/accessibilit
+70	43	research	model	model		2026-11-02T04:23:12Z	4.7	
+70	44	research	tool	shell	bash	2026-11-02T04:23:17Z	0.0	cd /tmp/g42; grep -n -i "narrat" xag112.md | cut -c1-700; grep -n -i "narrat\|screen reader" xag101.md | head; ls ~/bevy_gooey_loop/docs/research/testing.md >/d
+70	45	research	model	model		2026-11-02T04:23:17Z	5.7	
+70	46	research	tool	shell	bash	2026-11-02T04:23:22Z	0.5	cd /tmp/g42; curl -sL -m 20 -A "Mozilla/5.0" "https://www.naughtydog.com/blog/the_last_of_us_part_ii_accessibility_features" -o tlou.html; python3 - <<'E' impor
+70	47	research	model	model		2026-11-02T04:23:23Z	2.4	
+70	48	research	tool	shell	bash	2026-11-02T04:23:25Z	1.3	cd /tmp/g42; wc -c tlou.html; curl -sL -m 25 -A "Mozilla/5.0" "https://blog.playstation.com/2020/06/16/the-last-of-us-part-ii-accessibility-features-detailed/" 
+70	49	research	model	model		2026-11-02T04:23:26Z	1.6	
+70	50	research	tool	web	web_search	2026-11-02T04:23:28Z	7.4	Finding TLOU2 narration quote :: Last of Us Part II "text-to-speech" menus "read aloud" accessibility features detailed Naughty Dog
+70	51	research	model	model		2026-11-02T04:23:35Z	26.7	
+70	52	research	tool	edit files	write	2026-11-02T04:24:02Z	0.0	Writing accessibility research note :: docs/research/accessibility.md
+70	53	build	tool	phase mark	bash	2026-11-02T04:24:02Z	0.1	cd /home/ladvien/bevy_gooey_loop; git add docs/research/accessibility.md && git commit -qm "Research: accessibility tree" && git log --oneline | head -1; python
+70	54	build	model	model		2026-11-02T04:24:02Z	5.0	
+70	55	build	tool	shell	bash	2026-11-02T04:24:07Z	0.0	cd /home/ladvien/bevy_gooey_loop; git checkout -q -b loop/iter-42; echo $CARGO_TARGET_DIR $DISPLAY $CARGO_BUILD_JOBS; nproc; free -g | head -2; ls ~ | grep -E "
+70	56	build	model	model		2026-11-02T04:24:07Z	3.2	
+70	57	build	tool	sleep	bash	2026-11-02T04:24:11Z	1.3	cd /home/ladvien/bevy_gooey_loop; mkdir -p ~/g42_bin /tmp/g42/before; (CARGO_BUILD_JOBS=4 cargo build --release --example gallery 2>&1 | tail -3; cp $CARGO_TARG
+70	58	build	model	model		2026-11-02T04:24:12Z	4.9	
+70	59	build	tool	shell	bash	2026-11-02T04:24:17Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 262,330p src/widgets.rs; sed -n 455,520p src/widgets.rs
+70	60	build	model	model		2026-11-02T04:24:17Z	14.3	
+70	61	build	tool	shell	bash	2026-11-02T04:24:31Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/accesskit-0.24.1/src; grep -n "pub enum Toggled" -A8 lib.rs; grep -n "property_methods\|^ (Label\|^ (Value\|NumericVa
+70	62	build	model	model		2026-11-02T04:24:31Z	3.0	
+70	63	build	tool	shell	bash	2026-11-02T04:24:34Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/accesskit-0.24.1/src; grep -n "flag_methods\|property_methods\|string_property_methods\|f64_property_methods\|usize_p
+70	64	build	model	model		2026-11-02T04:24:34Z	3.4	
+70	65	build	tool	shell	bash	2026-11-02T04:24:37Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/accesskit-0.24.1/src; sed -n 1798,1830p lib.rs; sed -n 1840,1880p lib.rs; sed -n 1996,2010p lib.rs; grep -n "(Role\b\
+70	66	build	model	model		2026-11-02T04:24:37Z	3.6	
+70	67	build	tool	shell	bash	2026-11-02T04:24:41Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/accesskit-0.24.1/src; sed -n 2010,2060p lib.rs | grep -n "Expanded\|Selected\|Toggled\|HasPopup\|Orientation\|Live" ;
+70	68	build	model	model		2026-11-02T04:24:41Z	9.7	
+70	69	build	tool	shell	bash	2026-11-02T04:24:51Z	0.0	cd /home/ladvien/bevy_gooey_loop; awk 'NR>=1090 && NR<=1440' src/skin.rs | grep -E "^ [A-Z][A-Za-z]*(\(|,)" | sed 's/^ *//' | tr -d ',' | tr '\n' ' ' | cut -c70
+70	70	build	model	model		2026-11-02T04:24:51Z	5.7	
+70	71	build	tool	shell	bash	2026-11-02T04:24:56Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 609,716p src/widgets.rs | grep -v "^\s*///" | cut -c1-120
+70	72	build	model	model		2026-11-02T04:24:56Z	16.7	
+70	73	build	tool	shell	bash	2026-11-02T04:25:13Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/accesskit_consumer-0.38.0/src; grep -n "fn label_comes_from_value" -B2 -A14 node.rs; grep -n "fn labelled_by\|fn name
+70	74	build	model	model		2026-11-02T04:25:13Z	45.0	
+70	75	build	tool	shell	bash	2026-11-02T04:25:58Z	0.0	cd /home/ladvien/bevy_gooey_loop; cat /tmp/g42/base.log; grep -n "Role::" src/menu.rs | head -40; grep -n "fn menu_panel" -A30 src/widgets.rs | grep -n "Role\|M
+70	76	build	model	model		2026-11-02T04:25:58Z	7.2	
+70	77	build	tool	shell	bash	2026-11-02T04:26:05Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 90,215p src/menu.rs | grep -v "^\s*///" ; grep -n "MenuOpen\b" src/menu.rs | head -5; sed -n 985,1000p src/menu.rs
+70	78	build	model	model		2026-11-02T04:26:05Z	5.6	
+70	79	build	tool	shell	bash	2026-11-02T04:26:11Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "Checked\|\.on\b\|kind ==\|Kind::" src/menu.rs | head -40; grep -n "^enum Kind" -B2 -A8 src/menu.rs
+70	80	build	model	model		2026-11-02T04:26:11Z	25.4	
+70	81	build	tool	shell	bash	2026-11-02T04:26:36Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "TabIndex" src/*.rs | grep -v "^src/widgets.rs" | cut -c1-120 | head -20; grep -n "TabIndex" src/widgets.rs | wc -l; g
+70	82	build	model	model		2026-11-02T04:26:36Z	19.5	
+70	83	build	tool	shell	bash	2026-11-02T04:26:56Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "Text::new\|Text(" src/widgets.rs src/table.rs src/toolbar.rs src/section.rs src/menu.rs src/status.rs src/palette.rs 
+70	84	build	model	model		2026-11-02T04:26:56Z	9.4	
+70	85	build	tool	shell	bash	2026-11-02T04:27:05Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "update_shortcut_badges\|update_sections\|mod badges\|pub use badges\|mod section\|pub use section" src/lib.rs; grep -
+70	86	build	model	model		2026-11-02T04:27:05Z	1.2	
+70	87	build	tool	shell	bash	2026-11-02T04:27:06Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 380,470p src/lib.rs
+70	88	build	model	model		2026-11-02T04:27:06Z	7.1	
+70	89	build	tool	shell	bash	2026-11-02T04:27:13Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "pub struct TreeView\|pub struct TableRow\b" -A8 src/tree.rs src/table.rs | head -30; grep -n "pub struct AreaField\|s
+70	90	build	model	model		2026-11-02T04:27:13Z	5.4	
+70	91	build	tool	shell	bash	2026-11-02T04:27:19Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.1/src; grep -n "accessibility\|AccessibleLabel\|interaction_states" lib.rs | head; grep -rn "pub struct 
+70	92	build	model	model		2026-11-02T04:27:19Z	5.0	
+70	93	build	tool	shell	bash	2026-11-02T04:27:24Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "Meter\b" src/lib.rs | head -3; sed -n 100,112p src/binding.rs; grep -n "pub struct SplitDivider" -B3 -A6 src/split.rs
+70	94	build	model	model		2026-11-02T04:27:24Z	12.8	
+70	95	build	tool	shell	bash	2026-11-02T04:27:37Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 20,35p src/section.rs; sed -n 15,60p src/meter.rs | head -5; grep -n "pub struct ToggleGroupValue\|pub struct GroupInde
+70	96	build	model	model		2026-11-02T04:27:37Z	14.0	
+70	97	build	tool	edit files	write	2026-11-02T04:27:51Z	0.0	Writing accessibility module :: src/access.rs
+70	98	build	model	model		2026-11-02T04:27:51Z	11.3	
+70	99	build	tool	shell	bash	2026-11-02T04:28:02Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 830,842p src/table.rs; sed -n 1222,1232p src/table.rs; sed -n 3018,3030p src/widgets.rs; sed -n 388,398p src/widgets.rs
+70	100	build	model	model		2026-11-02T04:28:02Z	63.6	
+70	101	build	tool	remote wait	bash	2026-11-02T04:29:06Z	0.3	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='src/access.rs' s=open(p).read() s=s.replace(" | Role::TextField_Hidden\n","") s=s.replace(" | Role::Section
+70	102	build	model	model		2026-11-02T04:29:06Z	6.9	
+70	103	build	tool	shell	bash	2026-11-02T04:29:13Z	0.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='src/access.rs' s=open(p).read() for a,b in [ (" progress_text: Query<'w, 's, &'static ProgressText>,\n","")
+70	104	build	model	model		2026-11-02T04:29:13Z	4.7	
+70	105	build	tool	cargo build	bash	2026-11-02T04:29:18Z	10.1	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' import re # menu accessor p='src/menu.rs' s=open(p).read() a=""" #[must_use] pub fn with_shortcut(mut self, sh
+70	106	build	model	model		2026-11-02T04:29:28Z	2.2	
+70	107	build	tool	shell	bash	2026-11-02T04:29:30Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='src/toast.rs' s=open(p).read() s=s.replace(""" /// Information or an alert. pub(crate) fn kind(&self) -> To
+70	108	build	model	model		2026-11-02T04:29:30Z	5.5	
+70	109	build	tool	cargo build	bash	2026-11-02T04:29:36Z	6.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='src/access.rs' s=open(p).read() s=s.replace(" Role::MenuSeparator | Role::ToolbarSeparator => wanted.role =
+70	110	build	model	model		2026-11-02T04:29:42Z	6.6	
+70	111	build	tool	cargo build	bash	2026-11-02T04:29:48Z	6.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='src/menu.rs' s=open(p).read() i=s.index(" /// The role an assistive technology sees, and whether the row op
+70	112	build	model	model		2026-11-02T04:29:55Z	2.1	
+70	113	build	tool	cargo build	bash	2026-11-02T04:29:57Z	6.6	cd /home/ladvien/bevy_gooey_loop; sed -i 's/^struct Facts {/pub(crate) struct Facts {/; s/^struct Look<'"'"'w, '"'"'s> {/pub(crate) struct Look<'"'"'w, '"'"'s> 
+70	114	build	model	model		2026-11-02T04:30:03Z	3.8	
+70	115	build	tool	shell	bash	2026-11-02T04:30:07Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1,90p tests/tones.rs; cat tests/all.rs | head -30
+70	116	build	model	model		2026-11-02T04:30:07Z	1.9	
+70	117	build	tool	shell	bash	2026-11-02T04:30:09Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 100,200p tests/tones.rs | grep -n "fn app\|fn run\|add_plugins\|fn settle" ; grep -n "fn app" -A32 tests/tones.rs | hea
+70	118	build	model	model		2026-11-02T04:30:09Z	16.8	
+70	119	build	tool	shell	bash	2026-11-02T04:30:26Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1,60p tests/testing.rs; grep -n "pub fn tabs" -B2 -A12 src/widgets.rs | grep -v "///" | head -20; grep -n "pub fn table
+70	120	build	model	model		2026-11-02T04:30:26Z	40.1	
+70	121	build	tool	edit files	write	2026-11-02T04:31:06Z	0.0	Writing accessibility tests :: tests/access.rs
+70	122	build	model	model		2026-11-02T04:31:06Z	2.3	
+70	123	build	tool	cargo test	bash	2026-11-02T04:31:08Z	60.0	[launched bg_1] cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='tests/all.rs' s=open(p).read() s=s.replace("mod badges;","mod access;\nmod badges;",1) open(p,'w').write(s)
+70	124	build	model	model		2026-11-02T04:32:08Z	7.1	
+70	125	build	tool	wait: tests	wait	2026-11-02T04:32:15Z	5.3	Waiting for access tests build
+70	126	build	model	model		2026-11-02T04:32:21Z	8.5	
+70	127	build	tool	shell	bash	2026-11-02T04:32:29Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "tab_page" tests/tabs.rs | head -4; grep -n "section(" tests/section.rs | head -3; sed -n 2965,2985p src/widgets.rs; g
+70	128	build	model	model		2026-11-02T04:32:29Z	6.6	
+70	129	build	tool	cargo test	bash	2026-11-02T04:32:36Z	17.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='tests/access.rs' s=open(p).read() s=s.replace(""" tabs( ["Video", "Audio"], 0, ( tab_page(label("video page
+70	130	build	model	model		2026-11-02T04:32:53Z	3.8	
+70	131	build	tool	shell	bash	2026-11-02T04:32:57Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "menu_bar(" -A8 tests/menu.rs | head -14
+70	132	build	model	model		2026-11-02T04:32:57Z	2.3	
+70	133	build	tool	cargo test	bash	2026-11-02T04:32:59Z	15.9	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='tests/access.rs' s=open(p).read() s=s.replace('menu_bar(menu_title("File", (menu_item("Open"), check_item("
+70	134	build	model	model		2026-11-02T04:33:15Z	6.8	
+70	135	build	tool	shell	bash	2026-11-02T04:33:22Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "GOOEY_FRAMES\|GOOEY_SHOT\b\|fn capture\|AppExit\|mean_ms" examples/gallery.rs | head -30; wc -l examples/gallery.rs
+70	136	build	model	model		2026-11-02T04:33:22Z	1.4	
+70	137	build	tool	shell	bash	2026-11-02T04:33:23Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 15,40p examples/gallery.rs; sed -n 618,670p examples/gallery.rs; sed -n 236,262p examples/gallery.rs
+70	138	build	model	model		2026-11-02T04:33:23Z	6.6	
+70	139	build	tool	shell	bash	2026-11-02T04:33:30Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "^use \|add_plugins\|\.run();" examples/gallery.rs | head -30; grep -n "capture,$" examples/gallery.rs
+70	140	build	model	model		2026-11-02T04:33:30Z	9.0	
+70	141	build	tool	cargo build	bash	2026-11-02T04:33:39Z	49.3	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='examples/gallery.rs' s=open(p).read() s=s.replace("use bevy::camera::NormalizedRenderTarget;","use bevy::a1
+70	142	build	model	model		2026-11-02T04:34:28Z	10.8	
+70	143	build	tool	cargo build	bash	2026-11-02T04:34:39Z	2.8	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='src/access.rs' s=open(p).read() a=s.index(" /// The one option of a choice that is shown.") b=s.index(" fn 
+70	144	build	model	model		2026-11-02T04:34:42Z	7.8	
+70	145	build	tool	cargo test	bash	2026-11-02T04:34:50Z	28.7	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='tests/access.rs' s=open(p).read() s=s.replace('tab_page(children![label("audio page")]),','tab_page(childre
+70	146	build	model	model		2026-11-02T04:35:18Z	5.5	
+70	147	build	tool	cargo test	bash	2026-11-02T04:35:24Z	36.2	cd /home/ladvien/bevy_gooey_loop; cp src/access.rs /tmp/g42/access.rs.bak sed -i 's/ if requested.is_some_and(|requested| !requested.get()) {/ if false {/' src/
+70	148	build	model	model		2026-11-02T04:36:00Z	4.2	
+70	149	prove	tool	phase mark	bash	2026-11-02T04:36:04Z	0.1	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark prove; wc -l README.md; grep -n "shortcut\|Shortcut\|testing\|a11y\|ccessib" READM
+70	150	prove	model	model		2026-11-02T04:36:04Z	3.7	
+70	151	prove	tool	shell	bash	2026-11-02T04:36:08Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 100,125p README.md | cut -c1-400; sed -n 230,240p README.md | cut -c1-500; sed -n 1,30p docs/guide/README.md | cut -c1-
+70	152	prove	model	model		2026-11-02T04:36:08Z	3.6	
+70	153	prove	tool	shell	bash	2026-11-02T04:36:12Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 124,134p README.md:raw 2>/dev/null | head -3; awk 'NR>=124 && NR<=134' README.md | cut -c1-700
+70	154	prove	model	model		2026-11-02T04:36:12Z	4.4	
+70	155	prove	tool	shell	bash	2026-11-02T04:36:16Z	0.2	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='README.md' s=open(p).read() a=""" the device the player used last ("Esc Back", then "B Back" the frame they
+70	156	prove	model	model		2026-11-02T04:36:16Z	5.1	
+70	157	prove	tool	cargo build	bash	2026-11-02T04:36:21Z	46.7	cd /home/ladvien/bevy_gooey_loop; CARGO_BUILD_JOBS=4 cargo build --release --example gallery 2>&1 | tail -1; cp $CARGO_TARGET_DIR/release/examples/gallery ~/g42
+70	158	prove	model	model		2026-11-02T04:37:08Z	5.0	
+70	159	prove	tool	shell	bash	2026-11-02T04:37:13Z	60.0	[launched bg_2] cd /tmp/g42; B=~/g42_bin/gallery_before; A=~/g42_bin/gallery_after; : > pairs.txt; for i in $(seq 1 12); do b=$(GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240
+70	160	prove	model	model		2026-11-02T04:38:13Z	1.4	
+70	161	prove	tool	shell	bash	2026-11-02T04:38:14Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 1,24p /tmp/g42/tree.txt | cut -c13-;
+70	162	prove	model	model		2026-11-02T04:38:14Z	15.4	
+70	163	prove	tool	edit files	write	2026-11-02T04:38:30Z	0.0	Writing accessibility guide page :: docs/guide/accessibility.md
+70	164	prove	model	model		2026-11-02T04:38:30Z	15.1	
+70	165	prove	tool	homestill	bash	2026-11-02T04:38:45Z	0.0	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='docs/guide/accessibility.md' s=open(p).read() s=s.replace("but acting from the screen reader is the next st
+70	166	prove	model	model		2026-11-02T04:38:45Z	1.1	
+70	167	prove	tool	wait: other	wait	2026-11-02T04:38:46Z	65.3	Waiting for frame time pairs
+70	168	prove	model	model		2026-11-02T04:39:51Z	3.5	
+70	169	prove	tool	shell	bash	2026-11-02T04:39:55Z	60.0	[launched bg_3] cd /tmp/g42; A=~/g42_bin/gallery_after; for i in 1 2 3 4 5; do a=$(GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SHOT=/tmp/g42/p.png timeout 100 $A 2>&
+70	170	prove	model	model		2026-11-02T04:40:55Z	4.1	
+70	171	prove	tool	cargo clippy	bash	2026-11-02T04:40:59Z	13.8	cd /home/ladvien/bevy_gooey_loop; cargo fmt; git status --short; CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(e
+70	172	prove	bg	shell	bash	2026-11-02T04:40:09Z	63.7	bg_3 completed: cd /tmp/g42; A=~/g42_bin/gallery_after; for i in 1 2 3 4 5; do a=$(GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 G...
+70	173	prove	model	model		2026-11-02T04:41:13Z	3.9	
+70	174	gate	tool	phase mark	bash	2026-11-02T04:41:17Z	0.1	cd /home/ladvien/bevy_gooey_loop; git add src/access.rs src/lib.rs src/menu.rs Cargo.toml tests/access.rs tests/all.rs examples/gallery.rs && git commit -qm "Ac
+70	175	gate	model	model		2026-11-02T04:41:17Z	23.1	
+70	176	gate	tool	push gate	bash	2026-11-02T04:41:40Z	2.1	cd /home/ladvien/bevy_gooey_loop; cat >> docs/loop-log.md <<'EOF' ## Iteration 42 — 2026-11-02 — Accessibility tree (#32) **Triage.** 1 open issue, #32 G-28 (`g
+70	177	gate	model	model		2026-11-02T04:41:42Z	7.0	
+70	178	gate	tool	cargo test	bash	2026-11-02T04:41:49Z	3.0	cd /home/ladvien/bevy_gooey_loop; cat > /tmp/g42/gate.sh <<'EOF' #!/bin/bash cd /home/ladvien/bevy_gooey_loop export CARGO_BUILD_JOBS=4 step() { echo "=== $1"; 
+70	179	gate	tool	shell	bash	2026-11-02T04:41:49Z	3.0	[launched bg_5] cd /tmp/g42; ./gate.sh > gate.log 2>&1; tail -60 gate.log
+70	180	gate	model	model		2026-11-02T04:41:52Z	1.4	
+70	181	gate	tool	wait: gate	wait	2026-11-02T04:41:53Z	165.4	Waiting for gate
+70	182	gate	model	model		2026-11-02T04:44:39Z	3.1	
+70	183	gate	tool	shell	bash	2026-11-02T04:44:42Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "the_dependency_list_stays_closed" -B3 -A25 tests/leaf.rs
+70	184	gate	model	model		2026-11-02T04:44:42Z	1.3	
+70	185	gate	tool	shell	bash	2026-11-02T04:44:43Z	0.0	cd /home/ladvien/bevy_gooey_loop; sed -n 161,200p tests/leaf.rs
+70	186	gate	model	model		2026-11-02T04:44:43Z	1.4	
+70	187	gate	tool	shell	bash	2026-11-02T04:44:45Z	0.0	cd /home/ladvien/bevy_gooey_loop; grep -n "ALLOWED_DEPS" -B4 -A4 tests/leaf.rs | head -24
+70	188	gate	model	model		2026-11-02T04:44:45Z	3.8	
+70	189	gate	tool	cargo test	bash	2026-11-02T04:44:48Z	10.7	cd /home/ladvien/bevy_gooey_loop; git checkout -q -b loop/iter-42b; sed -i 's/const ALLOWED_DEPS: &\[&str\] = &\["bevy", "serde"\];/const ALLOWED_DEPS: \&[\&str
+70	190	gate	model	model		2026-11-02T04:44:59Z	5.6	
+70	191	gate	tool	push gate	bash	2026-11-02T04:45:05Z	3.2	cd /home/ladvien/bevy_gooey_loop; cargo fmt --check && git commit -qam "assumed owner exception: accesskit added to tests/leaf.rs ALLOWED_DEPS (the node type Be
+70	192	gate	model	model		2026-11-02T04:45:08Z	3.8	
+70	193	release	tool	phase mark	bash	2026-11-02T04:45:12Z	13.9	cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark release; CARGO_BUILD_JOBS=4 timeout 1500 cargo semver-checks check-release 2>&1 | 
+70	194	release	model	model		2026-11-02T04:45:25Z	3.4	
+70	195	release	tool	cargo publish	bash	2026-11-02T04:45:29Z	16.9	cd /home/ladvien/bevy_gooey_loop; sed -i 's/^version = "0.24.0"/version = "0.24.1"/' Cargo.toml; python3 - <<'E' p='CHANGELOG.md' s=open(p).read() s=s.replace("
+70	196	release	model	model		2026-11-02T04:45:46Z	2.8	
+70	197	release	tool	push gate	bash	2026-11-02T04:45:49Z	6.8	cd /home/ladvien/bevy_gooey_loop; sed -i 's/^## \[0.24.1\] - 2026-11-02$/## [0.24.1] - 2026-11-02\n/' CHANGELOG.md; sed -n 3,8p CHANGELOG.md | cut -c1-60; git c
+70	198	release	model	model		2026-11-02T04:45:55Z	6.3	
+70	199	release	tool	github	bash	2026-11-02T04:46:02Z	1.5	cd /home/ladvien/bevy_gooey_loop; sha=$(git rev-parse --short ed2170a); gh issue view 32 --repo bevy-coven/bevy_gooey --json state --jq .state; gh issue list -R
+70	200	release	model	model		2026-11-02T04:46:03Z	3.9	
+70	201	log	tool	phase mark	bash	2026-11-02T04:46:07Z	2.4	cd /home/ladvien/bevy_gooey_loop; gh issue comment 32 --repo bevy-coven/bevy_gooey --body "Verified on main (\`ed2170a\`): \`tests/access.rs::a_toggle_is_a_chec
+70	202	log	model	model		2026-11-02T04:46:09Z	4.1	
+70	203	log	tool	shell	bash	2026-11-02T04:46:13Z	0.0	cd /home/ladvien/bevy_gooey_loop; df -h /home | tail -1; rm -rf ~/g42_bin /tmp/g42; for w in ~/g17_base ~/g17_parked ~/g17s_base; do echo "$w $(du -sh $w 2>/dev
+70	204	log	model	model		2026-11-02T04:46:13Z	6.1	
+70	205	log	tool	phase mark	bash	2026-11-02T04:46:20Z	1.6	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='docs/loop-log.md' s=open(p).read() s=s.replace("**Gate.** `CARGO_BUILD_JOBS=4`, merged tree, see below.",""
+70	206	log	model	model		2026-11-02T04:46:21Z	6.1	
