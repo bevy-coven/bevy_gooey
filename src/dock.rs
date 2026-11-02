@@ -21,7 +21,7 @@ use bevy::ui::{ComputedNode, UiGlobalTransform};
 use bevy::ui_widgets::{ValueChange, observe};
 
 use crate::cancel::Cancel;
-use crate::dock_layout::{DockLayout, DockSkip, DropTarget};
+use crate::dock_layout::{DockLayout, DockSkip, DockDropTarget};
 use crate::model::{
     DOCK_PANE_MIN_PX, DockZone, MIN_TARGET_PX, dock_drop_rect, dock_edge_zone, dock_neighbour,
     dock_tab_slot, dock_zone,
@@ -203,7 +203,7 @@ pub(crate) struct DockDrag {
     /// The pointer, in window pixels.
     pointer: Vec2,
     /// Where the panel will go if the pointer is let go now.
-    target: Option<DropTarget>,
+    target: Option<DockDropTarget>,
 }
 
 /// The entities of an existing node adopted as the children of the one this is inserted in, in
@@ -466,7 +466,7 @@ fn move_panel(
     docks: &mut Query<(&mut Dock, &mut DockShown)>,
     dock: Entity,
     panel: &str,
-    target: &DropTarget,
+    target: &DockDropTarget,
     commands: &mut Commands,
 ) {
     let Ok((mut state, mut shown)) = docks.get_mut(dock) else {
@@ -525,7 +525,7 @@ struct GroupSeen {
 
 /// Where a drop would land: the target, and the part of the screen it takes, in layout pixels.
 struct Landing {
-    target: DropTarget,
+    target: DockDropTarget,
     rect: Rect,
 }
 
@@ -610,7 +610,7 @@ impl DockGeometry<'_, '_> {
                 .map(|&(_, x, top, bottom)| (x, top, bottom))
                 .collect();
             Landing {
-                target: DropTarget {
+                target: DockDropTarget {
                     onto: Some(group.tabs.first().map(|(id, ..)| id.clone())?),
                     zone: DockZone::Into,
                     index: Some(dock_tab_slot(&slots, at.x, at.y)),
@@ -621,7 +621,7 @@ impl DockGeometry<'_, '_> {
             dock_edge_zone(whole.width(), whole.height(), rel.x, rel.y, MIN_TARGET_PX)
         {
             Landing {
-                target: DropTarget {
+                target: DockDropTarget {
                     onto: None,
                     zone,
                     index: None,
@@ -637,7 +637,7 @@ impl DockGeometry<'_, '_> {
                 at.y - group.card.min.y,
             );
             Landing {
-                target: DropTarget {
+                target: DockDropTarget {
                     onto: Some(group.tabs.first().map(|(id, ..)| id.clone())?),
                     zone,
                     index: None,
@@ -808,12 +808,12 @@ fn tab_on_key(
         .collect();
     let from = (here.card.center().x, here.card.center().y);
     let target = match dock_neighbour(from, &centres, zone) {
-        Some(index) => DropTarget {
+        Some(index) => DockDropTarget {
             onto: others[index].tabs.first().map(|(id, ..)| id.clone()),
             zone: DockZone::Into,
             index: None,
         },
-        None => DropTarget {
+        None => DockDropTarget {
             onto: None,
             zone,
             index: None,

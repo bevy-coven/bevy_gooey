@@ -133,6 +133,7 @@ mod context;
 mod controls;
 mod dock;
 mod dock_layout;
+mod drag;
 mod feedback;
 mod field;
 mod icon;
@@ -149,6 +150,7 @@ mod palette;
 mod popover;
 mod progress;
 mod prompt;
+mod region;
 mod scale;
 mod section;
 mod select;
@@ -180,7 +182,11 @@ pub use color::{
 pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use controls::update_sliders;
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
-pub use dock_layout::{DockLayout, DockSkip, DropTarget};
+pub use dock_layout::{DockLayout, DockSkip, DockDropTarget};
+pub use drag::{
+    DRAG_LIFT_PX, DragLabel, DragPayload, DragState, Dragging, DropRefused, DropTarget, Dropped,
+    DroppedOnWorld, cancel_drags, is_dragging,
+};
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
 pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
@@ -232,6 +238,7 @@ pub use progress::{
     Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
 };
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
+pub use region::{ArrowPolicy, FocusRegion, cycle_regions};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_sections};
 pub use select::{SELECT_FILTER_ABOVE, Select};
@@ -416,6 +423,7 @@ impl Plugin for GooeyStylePlugin {
                         update_spinners,
                         (update_toggle_groups, fit_bars).chain(),
                         update_sections,
+                        drag::update_drag_visuals,
                     )
                         .chain(),
                     update_tooltip_text,
@@ -480,6 +488,15 @@ impl Plugin for GooeyNavPlugin {
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<Dialog>()
+            .register_type::<FocusRegion>()
+            .register_type::<DragLabel>()
+            .register_type::<Dragging>()
+            .init_resource::<DragState>()
+            .add_observer(drag::drag_on_start)
+            .add_observer(drag::drag_on_drag)
+            .add_observer(drag::drag_on_end)
+            .add_observer(drag::drag_on_pointer_cancel)
+            .register_type::<ArrowPolicy>()
             .register_type::<Cancel>()
             .add_observer(menu::menu_on_activate)
             .add_observer(context::context_on_click)
@@ -496,7 +513,11 @@ impl Plugin for GooeyNavPlugin {
                     reveal_popovers,
                     focus_opened_dialogs,
                     (land_tab_focus, dock::land_dock_focus).chain(),
-                    step_tabs.run_if(not_capturing),
+                    (
+                        step_tabs.run_if(not_capturing),
+                        cycle_regions.run_if(not_capturing),
+                    )
+                        .chain(),
                     (
                         focus_menu_bar.run_if(not_capturing),
                         menu_by_input.run_if(not_capturing),
@@ -517,11 +538,17 @@ impl Plugin for GooeyNavPlugin {
                     )
                         .chain(),
                     gamepad_select.run_if(not_capturing),
-                    cancel_by_input.run_if(not_capturing),
+                    (
+                        cancel_drags.run_if(not_capturing),
+                        cancel_by_input
+                            .run_if(not_capturing)
+                            .run_if(not(is_dragging)),
+                    )
+                        .chain(),
                     (page_lists.run_if(not_capturing), palette_by_input).chain(),
                     bind_by_input,
                     catch_pointer,
-                    scroll_to_focus,
+                    (drag::track_drag, scroll_to_focus).chain(),
                     scroll_menus_to_focus,
                     feedback_on_focus,
                 )

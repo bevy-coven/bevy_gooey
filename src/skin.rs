@@ -1157,6 +1157,18 @@ pub enum Role {
     DockDrop,
     /// The title of a tab being carried, beside the pointer: an opaque card in the ring's frame.
     DockGhost,
+    /// What a [`crate::DragPayload`] source carries, beside the pointer: an opaque card in the
+    /// ring's frame.
+    DragGhost,
+    /// The same card while the node under the pointer refuses what is carried: framed in
+    /// [`GooeySkin::danger`].
+    DragGhostRefused,
+    /// The mark on the [`crate::DropTarget`] under the pointer: [`GooeySkin::focus_ring`] let
+    /// through, and framed in it.
+    DropMark,
+    /// The mark while the target refuses what is carried: [`GooeySkin::danger`], let through and
+    /// framed.
+    DropMarkRefused,
     /// A [`crate::tabs`] widget's column: the strip, a gap, the pages; not drawn.
     Tabs,
     /// The strip of tabs, in a row a [`GooeySkin::gap`] apart; not drawn.
@@ -2005,8 +2017,9 @@ fn restyle(
         Role::PromptKey | Role::PromptButton => Some(skin.surface_raised),
         // The landing is the ring's colour let through to the panels under it, so fill and frame are one; the ghost is as opaque as
         // a dialog's card, so its title is read at the contrast of any panel's text.
-        Role::DockDrop => Some(skin.focus_ring.with_alpha(DOCK_DROP_ALPHA)),
-        Role::DockGhost => Some(skin.solid_surface()),
+        Role::DockDrop | Role::DropMark => Some(skin.focus_ring.with_alpha(DOCK_DROP_ALPHA)),
+        Role::DropMarkRefused => Some(skin.danger.with_alpha(DOCK_DROP_ALPHA)),
+        Role::DockGhost | Role::DragGhost | Role::DragGhostRefused => Some(skin.solid_surface()),
         // The field is an outlined box in the panel's own colour, so the typed text and the hint
         // meet on it the contrast they are checked at on the panel.
         Role::TextField => Some(skin.solid_surface()),
@@ -2101,7 +2114,10 @@ fn restyle(
         Role::Panel if in_dialog => Some(BorderColor::all(skin.outline)),
         // A popover floats over whatever is behind it, so its edge is the dialog's: the outline.
         Role::Popover | Role::MenuPanel | Role::Palette => Some(BorderColor::all(skin.outline)),
-        Role::DockDrop | Role::DockGhost => Some(BorderColor::all(skin.focus_ring)),
+        Role::DockDrop | Role::DockGhost | Role::DropMark | Role::DragGhost => {
+            Some(BorderColor::all(skin.focus_ring))
+        }
+        Role::DropMarkRefused | Role::DragGhostRefused => Some(BorderColor::all(skin.danger)),
         // The bar's one frame is the line under it, the panel's own quiet edge.
         Role::MenuBar | Role::Toolbar | Role::StatusBar => Some(BorderColor::all(
             skin.surface_edge.unwrap_or(skin.surface_raised),
@@ -2765,11 +2781,11 @@ fn restyle(
                 next.border_radius = radius;
             }
             Role::SplitGrip => next.border_radius = BorderRadius::MAX,
-            Role::DockDrop => {
+            Role::DockDrop | Role::DropMark | Role::DropMarkRefused => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
             }
-            Role::DockGhost => {
+            Role::DockGhost | Role::DragGhost | Role::DragGhostRefused => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(skin.pad() * 0.8), Val::Px(skin.pad() * 0.4));
@@ -3050,7 +3066,11 @@ fn restyle(
             Some((skin.text_muted, &look.fonts.body, skin.text_size))
         }
         Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
-        Role::PromptKey | Role::PromptButton | Role::DockGhost => {
+        Role::PromptKey
+        | Role::PromptButton
+        | Role::DockGhost
+        | Role::DragGhost
+        | Role::DragGhostRefused => {
             Some((skin.text, &look.fonts.body, skin.text_size))
         }
         Role::ToastText => Some((

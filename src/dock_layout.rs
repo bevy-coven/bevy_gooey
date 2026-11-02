@@ -73,7 +73,7 @@ pub enum DockSkip {
 /// Where a dragged panel lands: next to or into the group holding `onto`, or at an edge of the
 /// whole dock.
 #[derive(Clone, Debug, PartialEq)]
-pub struct DropTarget {
+pub struct DockDropTarget {
     /// A panel of the group the drop is on (any one; the group is found by it), or `None` for the
     /// dock as a whole, which takes edge zones only.
     pub onto: Option<String>,
@@ -253,7 +253,7 @@ impl DockLayout {
     /// group that holds only the panel itself). The panel leaves its group (an emptied one
     /// collapses), then goes into the target group at its place and is shown there, or into a new
     /// group of its own beside the target (half and half; a quarter at an edge of the whole dock).
-    pub fn moved(&self, panel: &str, target: &DropTarget) -> Option<Self> {
+    pub fn moved(&self, panel: &str, target: &DockDropTarget) -> Option<Self> {
         if !self.contains(panel) {
             return None;
         }
@@ -373,8 +373,8 @@ mod tests {
         )
     }
 
-    fn onto(panel: &str, zone: DockZone) -> DropTarget {
-        DropTarget {
+    fn onto(panel: &str, zone: DockZone) -> DockDropTarget {
+        DockDropTarget {
             onto: Some(panel.to_owned()),
             zone,
             index: None,
@@ -438,7 +438,7 @@ mod tests {
 
     #[test]
     fn an_edge_of_the_whole_dock_takes_a_quarter() {
-        let target = DropTarget {
+        let target = DockDropTarget {
             onto: None,
             zone: DockZone::Right,
             index: None,
@@ -454,7 +454,7 @@ mod tests {
             )
         );
         // Into needs a group.
-        let into = DropTarget {
+        let into = DockDropTarget {
             zone: DockZone::Into,
             ..target
         };
@@ -464,7 +464,7 @@ mod tests {
     #[test]
     fn a_tab_reorders_within_its_group_and_a_drop_in_place_is_no_change() {
         let layout = DockLayout::group(["a", "b", "c"]);
-        let at = |index| DropTarget {
+        let at = |index| DockDropTarget {
             onto: Some("a".into()),
             zone: DockZone::Into,
             index: Some(index),
