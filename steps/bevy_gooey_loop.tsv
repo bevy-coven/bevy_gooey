@@ -14874,3 +14874,106 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 78	142	log	model	model		2026-11-02T08:29:34Z	3.0	
 78	143	ship	tool	phase mark	bash	2026-11-02T08:29:37Z	1.3	cd /home/ladvien/bevy_gooey_loop && git fetch -q origin && git rev-parse origin/main HEAD && git ls-remote --tags origin v0.30.0 | head -2; python3 ~/.local/sha
 78	144	ship	model	model		2026-11-02T08:29:38Z	9.9	
+79	1	orient	model	model		2026-11-02T16:39:57Z	6.1	
+79	2	orient	tool	phase mark	bash	2026-11-02T16:40:03Z	0.8	Orienting: status, log, audit, parked :: python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git log --oneline | head -8; tail -60 docs/lo
+79	3	orient	tool	github	bash	2026-11-02T16:40:03Z	1.1	Listing open issues :: cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+79	4	orient	model	model		2026-11-02T16:40:04Z	3.3	
+79	5	orient	tool	github	bash	2026-11-02T16:40:07Z	1.0	Reading issue 36 and crates.io state :: cd /home/ladvien/bevy_gooey_loop && gh issue view 36 -R bevy-coven/bevy_gooey --json body,comments --jq '.body, (.comments[]|.body)'; curl -s -A "gooey-loop" ht
+79	6	orient	model	model		2026-11-02T16:40:08Z	3.9	
+79	7	release	tool	phase mark	bash	2026-11-02T16:40:12Z	6.8	Publishing pending v0.30.0 :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; grep -m1 '^version' Cargo.toml; git diff --stat v0.30.0 HEAD | tail -2;
+79	8	release	model	model		2026-11-02T16:40:19Z	2.5	
+79	9	choose	tool	phase mark	bash	2026-11-02T16:40:22Z	0.1	Reading badges.rs and usages :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; cat src/badges.rs | head -300; grep -rn "ShortcutBadges\|\.hold\b" --inc
+79	10	choose	model	model		2026-11-02T16:40:22Z	19.6	
+79	11	choose	tool	shell	bash	2026-11-02T16:40:41Z	0.0	Checking gating helpers and badge tests :: cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn is_text_editing\|pub fn not_capturing\|fn no_row_waits" -A8 src/text.rs src/binding.rs src/drag.rs | head -5
+79	12	choose	model	model		2026-11-02T16:40:41Z	12.3	
+79	13	choose	tool	shell	bash	2026-11-02T16:40:54Z	0.0	Locating role plumbing for badges and prompts :: cd /home/ladvien/bevy_gooey_loop && grep -n "ShortcutBadge\|Role::Prompts\|Role::PromptKey\|Prompts\b" src/skin.rs src/access.rs src/widgets.rs src/prompt.rs | 
+79	14	choose	model	model		2026-11-02T16:40:54Z	6.3	
+79	15	choose	tool	shell	bash	2026-11-02T16:41:00Z	0.0	Reading prompt/badge skin arms and keycap helper :: cd /home/ladvien/bevy_gooey_loop && sed -n 2995,3050p src/skin.rs; sed -n 1650,1730p src/widgets.rs; grep -n "fn keycap" -B3 -A25 src/tooltip.rs; sed -n 2228,22
+79	16	choose	model	model		2026-11-02T16:41:00Z	32.7	
+79	17	choose	tool	shell	bash	2026-11-02T16:41:33Z	0.0	Implementing Reveal, BadgesShown :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='src/badges.rs' s=open(p).read() s=s.replace('''use crate::shortcut::{Modifiers, Shortcut}; us
+79	18	choose	model	model		2026-11-02T16:41:33Z	4.1	
+79	19	choose	tool	shell	bash	2026-11-02T16:41:37Z	0.0	Reading test helpers :: cd /home/ladvien/bevy_gooey_loop && sed -n 100,160p tests/badges.rs; sed -n 190,265p tests/badges.rs; sed -n 436,480p tests/badges.rs; grep -n "pub fn text_inpu
+79	20	choose	model	model		2026-11-02T16:41:37Z	24.9	
+79	21	choose	tool	cargo test	bash	2026-11-02T16:42:02Z	27.1	Writing tests and running them :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/badges.rs' s=open(p).read() s=s.replace('hold: Modifiers::ALT,','hold: Reveal::Modifier(Modifiers
+79	22	choose	model	model		2026-11-02T16:42:29Z	1.9	
+79	23	choose	tool	shell	bash	2026-11-02T16:42:31Z	0.0	Finding FocusCause variant used :: cd /home/ladvien/bevy_gooey_loop && grep -n "FocusCause::" tests/badges.rs | head -3
+79	24	choose	model	model		2026-11-02T16:42:31Z	2.0	
+79	25	choose	tool	cargo test	bash	2026-11-02T16:42:33Z	27.1	Run badge tests :: cd /home/ladvien/bevy_gooey_loop && sed -i '564s/Keyboard/Navigated/' tests/badges.rs && (CARGO_BUILD_JOBS=4 timeout 3000 cargo test --all-features --test all b
+79	26	choose	model	model		2026-11-02T16:43:00Z	5.9	
+79	27	choose	tool	cargo test	bash	2026-11-02T16:43:06Z	34.1	Mutation checks :: cd /home/ladvien/bevy_gooey_loop && cp src/badges.rs /tmp/badges.rs.orig && sed -i 's/keys.pressed(key) \&\& Modifiers::held(keys).is_empty()/keys.pressed(key)/
+79	28	choose	model	model		2026-11-02T16:43:40Z	4.7	
+79	29	build	tool	phase mark	bash	2026-11-02T16:43:45Z	0.1	Committing core slice :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build && git checkout -q -b loop/iter-51 && git add -A src tests docs/guide/shor
+79	30	build	model	model		2026-11-02T16:43:45Z	17.9	
+79	31	build	tool	shell	bash	2026-11-02T16:44:03Z	0.0	Checking Role classification sites :: cd /home/ladvien/bevy_gooey_loop && sed -n 40,70p src/access.rs; grep -n "Role::Prompts" src/*.rs; grep -n "Role::Prompt\b" src/*.rs | head; grep -n "Role::Labe
+79	32	build	model	model		2026-11-02T16:44:03Z	2.3	
+79	33	build	tool	shell	bash	2026-11-02T16:44:05Z	0.0	Reading Node/transform patterns in skin :: cd /home/ladvien/bevy_gooey_loop && sed -n 2255,2270p src/skin.rs; sed -n 895,930p src/widgets.rs; sed -n 3195,3215p src/skin.rs; grep -n "Role::Label\b" src/sk
+79	34	build	model	model		2026-11-02T16:44:05Z	35.4	
+79	35	build	tool	shell	bash	2026-11-02T16:44:40Z	0.0	Implementing the legend :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/badges.rs' s=open(p).read() s+=''' /// One row of a [`ShortcutLegend`]: a chord and what it does. #
+79	36	build	model	model		2026-11-02T16:44:40Z	4.2	
+79	37	build	tool	cargo build	bash	2026-11-02T16:44:45Z	7.9	Compile check :: cd /home/ladvien/bevy_gooey_loop && sed -i '473s/.*/ (update_shortcut_badges, update_shortcut_legend).chain(),/' src/lib.rs && cargo fmt && cargo check --all-fe
+79	38	build	model	model		2026-11-02T16:44:53Z	10.4	
+79	39	build	tool	cargo build	bash	2026-11-02T16:45:03Z	7.6	Fix privacy, recheck :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/badges.rs' s=open(p).read() a=s.index('/// The legend\'s card, a root node') s=s[:a]+'''/// The leg
+79	40	build	model	model		2026-11-02T16:45:10Z	25.5	
+79	41	build	tool	cargo test	bash	2026-11-02T16:45:36Z	26.0	Legend tests :: cd /home/ladvien/bevy_gooey_loop && cat >> tests/badges.rs <<'EOF' fn legend_rows() -> ShortcutLegend { ShortcutLegend { rows: vec![ LegendRow::new(Shortcut::pr
+79	42	build	model	model		2026-11-02T16:46:02Z	5.8	
+79	43	build	tool	shell	bash	2026-11-02T16:46:08Z	0.0	Seeing contrast test pattern :: cd /home/ladvien/bevy_gooey_loop && sed -n 428,452p tests/badges.rs
+79	44	build	model	model		2026-11-02T16:46:08Z	12.1	
+79	45	build	tool	cargo test	bash	2026-11-02T16:46:20Z	26.8	Run legend tests again :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/badges.rs' s=open(p).read() s=s.replace(" assert!(world.get::<TabIndex>(card).is_none());"," asse
+79	46	build	model	model		2026-11-02T16:46:47Z	4.6	
+79	47	build	tool	cargo test	bash	2026-11-02T16:46:51Z	9.8	Result summary and example look :: cd /home/ladvien/bevy_gooey_loop && (cargo test --all-features --test all badges:: 2>&1 | grep -E "^test result|FAILED|legend_stays"); wc -l examples/badges.rs;
+79	48	build	model	model		2026-11-02T16:47:01Z	1.8	
+79	49	build	tool	shell	bash	2026-11-02T16:47:03Z	0.0	Reading badges example :: cd /home/ladvien/bevy_gooey_loop && sed -n 1,16p examples/badges.rs; sed -n 30,60p examples/badges.rs; sed -n 100,240p examples/badges.rs
+79	50	build	model	model		2026-11-02T16:47:03Z	18.1	
+79	51	build	tool	cargo build	bash	2026-11-02T16:47:21Z	47.5	Adding legend mode to example and building :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/badges.rs' s=open(p).read() s=s.replace('''//! `shift` and `unshift` (hold or release Shift: t
+79	52	build	model	model		2026-11-02T16:48:08Z	3.9	
+79	53	build	tool	shell	bash	2026-11-02T16:48:12Z	15.9	Capturing legend screenshots :: cd /home/ladvien/bevy_gooey_loop && G=$CARGO_TARGET_DIR/release/examples/badges; echo $DISPLAY; for sk in dark parchment; do GOOEY_LEGEND=1 GOOEY_SKIN=$sk GOOEY
+79	54	build	model	model		2026-11-02T16:48:28Z	1.6	
+79	55	build	tool	read files	read	2026-11-02T16:48:30Z	0.0	/tmp/g51/legend-dark.png
+79	56	build	tool	read files	read	2026-11-02T16:48:30Z	0.0	/tmp/g51/legend-parchment.png
+79	57	build	model	model		2026-11-02T16:48:30Z	9.1	
+79	58	build	tool	cargo build	bash	2026-11-02T16:48:39Z	9.2	Adjust example layout and recapture :: cd /home/ladvien/bevy_gooey_loop && sed -i 's/width: Val::Px(400.0 \* skin.text_scale),/width: Val::Px(if legend { 360.0 } else { 400.0 } * skin.text_scale),/; 
+79	59	build	model	model		2026-11-02T16:48:48Z	3.5	
+79	60	build	tool	read files	read	2026-11-02T16:48:52Z	0.0	/tmp/g51/legend-dark.png
+79	61	build	tool	read files	read	2026-11-02T16:48:52Z	0.0	/tmp/g51/legend-large.png
+79	62	build	model	model		2026-11-02T16:48:52Z	8.4	
+79	63	build	tool	cargo build	bash	2026-11-02T16:49:00Z	19.4	Raise legend z and recapture large :: cd /home/ladvien/bevy_gooey_loop && sed -i 's/GlobalZIndex(BADGE_Z - 1)/GlobalZIndex(BADGE_Z + 1)/; s/ (\[`BadgesShown`\]), under the badges, never taking/ ([`B
+79	64	build	model	model		2026-11-02T16:49:19Z	1.5	
+79	65	build	tool	read files	read	2026-11-02T16:49:21Z	0.1	/tmp/g51/legend-large.png
+79	66	build	model	model		2026-11-02T16:49:21Z	7.4	
+79	67	build	tool	shell	bash	2026-11-02T16:49:28Z	0.0	Reading media recipe :: cd /home/ladvien/bevy_gooey_loop && grep -n "shortcut-badges" -B2 -A12 docs/media/README.md | head -50; ls docs/media | head -80 | tr '\n' ' '
+79	68	build	model	model		2026-11-02T16:49:28Z	9.3	
+79	69	build	tool	clip record/render	bash	2026-11-02T16:49:38Z	8.2	Recording the GIF and contact sheet :: cd /home/ladvien/bevy_gooey_loop && G=$CARGO_TARGET_DIR/release/examples/badges; rm -rf /tmp/g51/gif; mkdir -p /tmp/g51/gif; GOOEY_LEGEND=1 GOOEY_FRAMES=270 GOO
+79	70	build	model	model		2026-11-02T16:49:46Z	1.2	
+79	71	build	tool	read files	read	2026-11-02T16:49:47Z	0.2	/tmp/g51/sheet/s.png
+79	72	build	model	model		2026-11-02T16:49:47Z	9.1	
+79	73	build	tool	clip record/render	bash	2026-11-02T16:49:56Z	0.4	Cropping GIF :: cd /home/ladvien/bevy_gooey_loop && ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/tmp/g51/gif/f_*.png' -vf "crop=860:540:0:90,scale=688:-1:fla
+79	74	build	model	model		2026-11-02T16:49:57Z	2.7	
+79	75	build	tool	clip record/render	bash	2026-11-02T16:49:59Z	0.1	cd /tmp/g51 && for n in 28 62; do ffmpeg -loglevel error -y -i /home/ladvien/bevy_gooey_loop/docs/media/shortcut-legend.gif -vf "select=eq(n\,$n)" -vframes 1 -u
+79	76	build	model	model		2026-11-02T16:50:00Z	1.1	
+79	77	build	tool	read files	read	2026-11-02T16:50:01Z	0.0	/tmp/g51/m28.png
+79	78	build	model	model		2026-11-02T16:50:01Z	4.2	
+79	79	build	tool	clip record/render	bash	2026-11-02T16:50:05Z	0.1	cd /tmp/g51 && ffmpeg -loglevel error -y -i /home/ladvien/bevy_gooey_loop/docs/media/shortcut-legend.gif -vf "select=eq(n\,17)" -vframes 1 -update 1 m17.png
+79	80	build	tool	read files	read	2026-11-02T16:50:05Z	0.1	/tmp/g51/m17.png
+79	81	build	model	model		2026-11-02T16:50:05Z	2.5	
+79	82	build	tool	clip record/render	bash	2026-11-02T16:50:07Z	0.1	cd /tmp/g51 && rm -f f*.png; ffmpeg -loglevel error -y -i /home/ladvien/bevy_gooey_loop/docs/media/shortcut-legend.gif -vf "fps=15" x_%03d.png; ls | head -30
+79	83	build	model	model		2026-11-02T16:50:08Z	1.2	
+79	84	build	tool	read files	read	2026-11-02T16:50:09Z	0.0	/tmp/g51/x_019.png
+79	85	build	model	model		2026-11-02T16:50:09Z	7.2	
+79	86	prove	tool	phase mark	bash	2026-11-02T16:50:16Z	0.1	Reading docs to update :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; sed -n 44,80p docs/guide/shortcuts.md; sed -n 10,20p docs/guide/host-api.
+79	87	prove	model	model		2026-11-02T16:50:16Z	26.3	
+79	88	prove	tool	cargo build	bash	2026-11-02T16:50:42Z	0.0	Writing docs :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' def sub(p, a, b, count=1): s=open(p).read() assert a in s, (p, a[:50]) s=s.replace(a,b,count) open(p,'w').
+79	89	prove	model	model		2026-11-02T16:50:42Z	16.6	
+79	90	prove	tool	shell	bash	2026-11-02T16:50:59Z	0.7	README, research addendum, AGENTS :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='README.md' s=open(p).read() a='and holding Alt for 0.3 s (`ShortcutBadges`) shows the chord on the butt
+79	91	prove	model	model		2026-11-02T16:51:00Z	6.4	
+79	92	gate	tool	phase mark	bash	2026-11-02T16:51:06Z	60.0	[launched bg_2] Commit and run full gate :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate && git add -A src tests examples docs README.md AGENTS.md CHANGELOG.md && g
+79	93	gate	model	model		2026-11-02T16:52:06Z	3.5	
+79	94	gate	tool	wait: other	wait	2026-11-02T16:52:10Z	137.5	{}
+79	95	gate	model	model		2026-11-02T16:54:27Z	4.0	
+79	96	ship	tool	phase mark	bash	2026-11-02T16:54:31Z	28.3	Merge, push, semver check :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && git checkout -q main && git pull -q --ff-only && git merge -q --no-ff lo
+79	97	ship	model	model		2026-11-02T16:54:59Z	5.4	
+79	98	ship	tool	push gate	bash	2026-11-02T16:55:05Z	27.1	Release v0.31.0 :: cd /home/ladvien/bevy_gooey_loop && sed -i '0,/^version = "0.30.0"/s//version = "0.31.0"/' Cargo.toml && sed -i 's/^| 0.1 – 0.30 | 0.20 |/| 0.1 – 0.31 | 0.20 |/
+79	99	ship	model	model		2026-11-02T16:55:32Z	7.1	
+79	100	ship	tool	github	bash	2026-11-02T16:55:39Z	3.9	Verify and comment on issues :: cd /home/ladvien/bevy_gooey_loop && git status --short | head -3; git log --oneline -3; gh issue view 36 -R bevy-coven/bevy_gooey --json state --jq .state; SHA=
+79	101	ship	model	model		2026-11-02T16:55:43Z	20.4	
+79	102	log	tool	phase mark	bash	2026-11-02T16:56:03Z	1.6	Write log, push, clean up :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log && cat >> docs/loop-log.md <<'EOF' ## Iteration 51 — 2026-11-02 — A plain-ke
+79	103	log	model	model		2026-11-02T16:56:05Z	8.6	
