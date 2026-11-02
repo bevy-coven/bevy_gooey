@@ -138,7 +138,7 @@ fn setup(mut commands: Commands) {
                     button("Break something"),
                     observe(|_: On<Activate>, mut commands: Commands| {
                         commands.spawn(
-                            toast_alert("Could not write the save")
+                            toast_alert("Could not write the save: the disk is full")
                                 .action("Show", "show")
                                 .sticky(),
                         );

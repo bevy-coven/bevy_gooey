@@ -2434,6 +2434,14 @@ fn restyle(
                     next.column_gap = Val::Px(skin.gap * 0.5);
                 }
                 next.min_height = Val::Px(skin.target());
+                // A toast's button never gives up its padded label to a long message (which
+                // shrinks and wraps), stands a gap from its neighbours on the row, and keeps its
+                // own height beside a wrapped message instead of stretching to it.
+                if *role == Role::ToastAction {
+                    next.flex_shrink = 0.0;
+                    next.align_self = AlignSelf::Center;
+                    next.margin = UiRect::horizontal(Val::Px(skin.gap * 0.5));
+                }
             }
             // A bar is a row of items centred on its line, never squeezed, with one quiet line on
             // the side that faces the rest of the screen.

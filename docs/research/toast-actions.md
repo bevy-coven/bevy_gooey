@@ -58,6 +58,7 @@ A toast with one quiet button at its end ("Item deleted" [Undo]), an error that 
 - Carbon says an actionable notification "comes into focus when triggered"; here it never takes focus by itself (a game's focus must not jump), so a keyboard player reaches it with Tab (design default).
 - The issue writes "×3"; ASCII "x3" is used (the host supplies the font).
 - The issue's `ToastKind::Error`: the crate's kinds are `Info` and `Alert`; `.sticky()` applies to either.
+- #34 (G-30) proposed `column_gap: skin.gap` on `Role::ToastBody`; that would also widen the mark-to-message space of every plain toast (the message already has its own padding), so each button carries half a gap of margin on each side instead, and a button is `align_self: Center` so it keeps its height beside a wrapped message. A button that shrinks is the bug; three or more actions are not wrapped onto a second row (the guide says prefer one button) (design default).
 
 ## Pending index
 

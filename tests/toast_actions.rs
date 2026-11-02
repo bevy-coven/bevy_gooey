@@ -598,3 +598,103 @@ fn the_action_buttons_words_read_on_its_fill_in_every_look() {
         assert!(rect(&app, button).height() >= skin.target() - 1.0);
     }
 }
+
+/// The words of a toast's button, and the width of its label's own box.
+fn label_width(app: &App, button: Entity) -> f32 {
+    let label = descendants(app.world(), button)
+        .into_iter()
+        .find(|&e| app.world().get::<Text>(e).is_some())
+        .expect("label");
+    app.world()
+        .get::<ComputedNode>(label)
+        .expect("laid out")
+        .size()
+        .x
+}
+
+#[test]
+fn a_long_message_never_squeezes_the_buttons_or_leaves_them_touching() {
+    let mut app = app();
+    let skin = app.world().resource::<GooeySkin>().clone();
+    let long = "The save file could not be written to the folder you chose, so the game kept \
+                the last good copy";
+    app.world_mut()
+        .spawn(toast_alert(long).sticky().action("Show", "show"));
+    frames(&mut app, 20);
+    let mut found = buttons(&mut app);
+    found.sort_by(|a, b| rect(&app, *a).min.x.total_cmp(&rect(&app, *b).min.x));
+    let [show, dismiss] = found[..] else {
+        panic!("Show and Dismiss");
+    };
+    let words = |button| {
+        descendants(app.world(), button)
+            .into_iter()
+            .find_map(|e| app.world().get::<Text>(e).map(|t| t.0.clone()))
+    };
+    assert_eq!(words(show).as_deref(), Some("Show"));
+    assert_eq!(words(dismiss).as_deref(), Some("Dismiss"));
+    for button in [show, dismiss] {
+        let room = label_width(&app, button) + skin.pad() * 3.0;
+        assert!(
+            rect(&app, button).width() >= room - 0.5,
+            "a button keeps its label and padding: {} < {room}",
+            rect(&app, button).width()
+        );
+    }
+    let between = rect(&app, dismiss).min.x - rect(&app, show).max.x;
+    assert!(
+        between >= skin.gap - 0.5,
+        "the buttons stand a gap ({}) apart, not {between}",
+        skin.gap
+    );
+    let [toast] = toasts(&mut app)[..] else {
+        panic!("one toast");
+    };
+    let text = descendants(app.world(), toast)
+        .into_iter()
+        .find(|&e| app.world().get::<Role>(e) == Some(&Role::ToastText))
+        .expect("message");
+    // The message's own box ends in its right padding, so the words end `pad()` before it.
+    let gap_to_words = rect(&app, show).min.x - rect(&app, text).max.x + skin.pad();
+    assert!(
+        gap_to_words >= skin.gap - 0.5,
+        "the words and the first button stand a gap apart, not {gap_to_words}"
+    );
+    let body = descendants(app.world(), toast)
+        .into_iter()
+        .find(|&e| app.world().get::<Role>(e) == Some(&Role::ToastBody))
+        .expect("body");
+    assert!(
+        rect(&app, dismiss).max.x < rect(&app, body).max.x - 0.5,
+        "the last button stands inside the frame, not on it"
+    );
+}
+
+#[test]
+fn a_toast_with_no_button_is_its_mark_and_its_message_and_nothing_between() {
+    let mut app = app();
+    app.world_mut().spawn(toast("Game saved"));
+    frames(&mut app, 20);
+    let [toast] = toasts(&mut app)[..] else {
+        panic!("one toast");
+    };
+    let all = descendants(app.world(), toast);
+    let part = |role: Role| {
+        all.iter()
+            .copied()
+            .find(|&e| app.world().get::<Role>(e) == Some(&role))
+            .expect("part")
+    };
+    let (body, mark, text) = (
+        part(Role::ToastBody),
+        part(Role::ToastMark),
+        part(Role::ToastText),
+    );
+    let line = app.world().get::<ComputedNode>(body).expect("body").border.min_inset.x;
+    let inside = rect(&app, body).width() - 2.0 * line;
+    let parts = rect(&app, mark).width() + rect(&app, text).width();
+    assert!(
+        (inside - parts).abs() <= 1.0,
+        "the body is exactly its mark and message: {inside} vs {parts}"
+    );
+}
