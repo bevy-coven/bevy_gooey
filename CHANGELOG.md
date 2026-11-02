@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+## [0.27.1] - 2026-11-02
 ### Added
 
 - Motion: a dialog's card rises 12 px over 0.18 s into place and a popover's panel (a menu, a select list, the colour picker) opens 6 px nearer its anchor and settles over 0.12 s, on a cubic ease-out and on real time (a paused game's menu still moves), with nothing to write. `MotionSettings { duration_scale }` is the one switch (a resource in `GooeyStylePlugin`, serde): `MotionSettings::off()` is the player's "reduce motion" (WCAG 2.2 SC 2.3.3) and ends every slide at once. `SlideIn { from, seconds }` is the public token for a game's own panel (the `UiTransform` translation eases to nothing; the crate never replaces one a card carries), `begin_entrances` and `update_motion` are the systems, `PopoverSlide` is the popover's (Bevy's `Popover` corrects `UiTransform` every frame, so a popover slides by its gap to the anchor, which `apply_skin` writes), `model::ease_out` and the `DIALOG_SLIDE_*` and `POPOVER_SLIDE_*` constants are the maths. Only the picture moves: layout, focus and sizes are final from the first frame. A tooltip, a toast and a context menu at the pointer do not slide. `GOOEY_MOTION=<f>` in the gallery sets the scale for a capture. Guide: `docs/guide/motion.md`; research: `docs/research/motion.md`.
