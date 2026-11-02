@@ -2553,6 +2553,10 @@ fn restyle(
                 next.flex_shrink = 0.0;
             }
             Role::SlotGrid => {
+                // Tracks stand at the start and are never stretched: a grid in a column wider than
+                // its slots (a stretched flex child) keeps the slots together.
+                next.justify_content = JustifyContent::Start;
+                next.align_content = AlignContent::Start;
                 next.column_gap = Val::Px(skin.gap * 0.5);
                 next.row_gap = Val::Px(skin.gap * 0.5);
             }

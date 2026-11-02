@@ -61,7 +61,7 @@ Moving an item is the crate's own [drag and drop](drag-drop.md): every filled sl
 - the **keyboard and the gamepad** lift, steer and drop with no pointer: Alt+M (a pad's West) lifts the focused item, the arrows steer the mark, Alt+M or South drops it, Escape puts it back ([drag and drop without a pointer](drag-drop.md#without-a-pointer));
 - an emptied slot is not a source, so pressing on an empty slot lifts nothing.
 
-A drop is one `SlotMoved { entity: the grid it landed in, from: SlotRef, to: index }`. The grid changes nothing itself. `moved.apply(&mut grids)` swaps the two slots' contents (onto an empty slot that is a move), across two grids when the item came from another, and says whether anything changed. A game with rules does its own and writes the result into `SlotItems`: stacks that merge, a slot that takes only helmets, a full chest.
+A drop is one `SlotMoved { entity: the grid it landed in, from: SlotRef, to: index }`. The grid changes nothing itself. `moved.apply(&mut grids)` swaps the two slots' contents (onto an empty slot that is a move), across two grids when the item came from another, and says whether anything changed. A game with more rules than "which slot takes which item" (see [Rules](#rules)) does its own and writes the result into `SlotItems`: stacks that merge, a full chest, a weight limit.
 
 ```rust
 .observe(|moved: On<SlotMoved>, mut grids: Query<&mut SlotItems>| {
@@ -76,6 +76,34 @@ A drop is one `SlotMoved { entity: the grid it landed in, from: SlotRef, to: ind
 
 A move onto the slot it came from sends nothing.
 
+## Rules
+
+`SlotRules` on the grid says which items its slots take: `accepts(item, index)` is whether slot `index` may hold `item`. It is a plain `fn` (a closure that captures nothing), so it is data you write once. `Slot::kind("helmet")` is a free label for it to read; the crate gives it no meaning.
+
+```rust
+commands.spawn((
+    slot_grid(3, [None, None, None]),
+    // An equipment panel: a helmet, a weapon, and a slot that is locked.
+    SlotRules::new(|item, slot| match slot {
+        0 => item.kind.as_deref() == Some("helmet"),
+        1 => item.kind.as_deref() == Some("weapon"),
+        _ => false,
+    }),
+))
+.observe(|refused: On<SlotRefused>| warn!("slot {} will not take that", refused.to));
+```
+
+![The inventory example with an Equipment row: the pointer lifts the Iron sword and moves it over the torch slot, where the landing mark and the ghost turn red and the line below reads "Iron sword does not fit there"; it is let go there and nothing moves; the second drag puts the sword in the weapon slot, "Moved Iron sword".](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/slot-rules.gif)
+
+*`examples/inventory` with `GOOEY_KEYS=drag:b0>e1,drag:b0>e0`: the sword over the torch slot is refused while it is still in the hand, then it goes to the weapon slot.*
+
+- **The slot says no before the player lets go.** Over a slot that will not take the carried item the drop mark and the ghost take their refused look (red), as over any refusing [drop target](drag-drop.md); a release sends one `SlotRefused { entity: the grid, from, to }` (play your "no" sound there) and moves nothing. A keyboard or pad carry never lands on such a slot: the mark skips it.
+- **A move is allowed when both ends are.** A filled target's item goes back to where the carried one came from, so that slot's grid must take it there too (a helmet cannot be swapped for a sword). A drop across two grids obeys both grids' rules.
+- **A locked slot is a rule that takes nothing** (`|_, i| i != 3`); its item can still be taken out into a slot that takes it.
+- **Change the rule by writing the component again**; the next drag uses it. Do not remove it.
+
+After a drop the focus follows the item: if the slot it came from had focus (a keyboard carry, or the click that began a drag), the ring is on the slot it went to, and the grid's tab stop with it.
+
 ## Looks
 
 A filled slot is a button's fill; an empty one is the panel's own fill with its quiet frame, so the grid reads as wells. The focused slot wears the focus ring; the pressed one the accent. Every colour is the skin's and the count's words are held to 4.5:1 on its chip in every preset.
@@ -86,4 +114,4 @@ Each slot is a button named by its item ("Health potion") with its count as its 
 
 ## Not here
 
-Shift-click to transfer, right-click to split a stack, merging, weight and rarity colours are the game's rules; the events above are enough to write them (a right-click is a [context menu](context-menus.md) trigger). Per-slot acceptance (an equipment slot that takes only helmets) is declining to apply the `SlotMoved`; the drop mark does not say no before the player lets go, because every slot is a target.
+Shift-click to transfer, right-click to split a stack, merging, weight and rarity colours are the game's rules; the events above are enough to write them (a right-click is a [context menu](context-menus.md) trigger).

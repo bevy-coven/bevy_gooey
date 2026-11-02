@@ -12,15 +12,21 @@
 //! `GOOEY_SHOT_FROM` (default 30) there as `f_%04d.png`. `GOOEY_SKIN=parchment`,
 //! `GOOEY_TEXT_SCALE=<f>` and `GOOEY_SIZE=<w>x<h>` set the start. `GOOEY_KEYS=down,pickup,…` stages
 //! one input every `GOOEY_KEY_EVERY` (default 12) frames from frame 30: the keys `tab`, `up`,
-//! `down`, `left`, `right`, `enter`, `escape`, `home`, `end`, and `pickup` (Alt+M).
+//! `down`, `left`, `right`, `enter`, `escape`, `home`, `end`, and `pickup` (Alt+M), and
+//! `drag:b0>e1` (the pointer drags the item in slot 0 of the backpack `b`, the chest `c` or the
+//! equipment `e` onto slot 1 of another, taking three steps' time). The equipment slots take one
+//! kind of item each (`SlotRules`): over one that will not, the mark and ghost turn red.
 
 use bevy::asset::RenderAssetUsages;
+use bevy::camera::NormalizedRenderTarget;
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput};
+use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::render::view::screenshot::{Screenshot, save_to_disk};
-use bevy::window::{PrimaryWindow, WindowResolution};
+use bevy::ui::{ComputedNode, UiGlobalTransform};
+use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy_gooey::*;
 
 /// Capture mode's state, present only when `GOOEY_FRAMES` is set.
@@ -45,6 +51,43 @@ enum Staged {
     Key(KeyCode, Key),
     /// Alt held, then M.
     PickUp,
+    /// The pointer drags one slot's item onto another's, over three steps' time.
+    Drag(Pile, usize, Pile, usize),
+}
+
+/// Which grid a staged drag means.
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+enum Pile {
+    Backpack,
+    Chest,
+    Equipment,
+}
+
+impl Pile {
+    fn of(letter: char) -> Option<Self> {
+        match letter {
+            'b' => Some(Self::Backpack),
+            'c' => Some(Self::Chest),
+            'e' => Some(Self::Equipment),
+            _ => None,
+        }
+    }
+}
+
+/// The equipment slots: a weapon, a light and a charm, one kind each.
+fn fits_equipment(item: &Slot, slot: usize) -> bool {
+    item.kind.as_deref() == Some(["weapon", "light", "charm"][slot.min(2)])
+}
+
+/// `b0>e1`: slot 0 of the backpack onto slot 1 of the equipment.
+fn parse_drag(text: &str) -> Option<Staged> {
+    let (from, to) = text.split_once('>')?;
+    let slot = |end: &str| -> Option<(Pile, usize)> {
+        let mut chars = end.chars();
+        Some((Pile::of(chars.next()?)?, chars.as_str().parse().ok()?))
+    };
+    let (from, to) = (slot(from)?, slot(to)?);
+    Some(Staged::Drag(from.0, from.1, to.0, to.1))
 }
 
 /// The line that says what the player did.
@@ -114,6 +157,9 @@ fn main() {
                 .unwrap_or_default()
                 .split(',')
                 .filter_map(|k| {
+                    if let Some(drag) = k.trim().strip_prefix("drag:") {
+                        return parse_drag(drag);
+                    }
                     Some(match k.trim() {
                         "tab" => Staged::Key(KeyCode::Tab, Key::Tab),
                         "up" => Staged::Key(KeyCode::ArrowUp, Key::ArrowUp),
@@ -242,16 +288,18 @@ fn setup(
         Slot::new("Iron sword")
             .icon(glyph(0))
             .tooltip("Iron sword, +3 damage")
+            .kind("weapon")
     };
     let potion = |n| Slot::new("Health potion").icon(glyph(1)).count(n);
     let gem = || {
         Slot::new("Ruby")
             .icon(glyph(2))
             .tooltip("A flawless ruby, worth 400")
+            .kind("charm")
     };
     let key = || Slot::new("Cellar key").icon(glyph(3));
     let arrows = |n| Slot::new("Arrows").icon(glyph(4)).count(n);
-    let torch = |n| Slot::new("Torch").icon(glyph(5)).count(n);
+    let torch = |n| Slot::new("Torch").icon(glyph(5)).count(n).kind("light");
     let coin = |n| Slot::new("Gold").icon(glyph(6)).count(n);
     let scroll = || Slot::new("Old map").icon(glyph(7));
 
@@ -267,6 +315,8 @@ fn setup(
         Some(coin(850)), Some(potion(12)), None, Some(Slot::new("Lantern")),
         None, Some(torch(6)), None, None,
     ];
+
+    let equipment = vec![None, Some(torch(1)), None];
 
     commands.spawn(Camera2d);
     commands.spawn((
@@ -288,7 +338,7 @@ fn setup(
                                 row_gap: Val::Px(8.0),
                                 ..default()
                             },
-                            children![label("Backpack"), slot_grid(5, backpack)],
+                            children![label("Backpack"), (slot_grid(5, backpack), Pile::Backpack)],
                         ),
                         (
                             Node {
@@ -296,7 +346,16 @@ fn setup(
                                 row_gap: Val::Px(8.0),
                                 ..default()
                             },
-                            children![label("Chest"), slot_grid(4, chest)],
+                            children![
+                                label("Chest"),
+                                (slot_grid(4, chest), Pile::Chest),
+                                label("Equipment"),
+                                (
+                                    slot_grid(3, equipment),
+                                    Pile::Equipment,
+                                    SlotRules::new(fits_equipment)
+                                ),
+                            ],
                         ),
                     ],
                 ),
@@ -321,6 +380,18 @@ fn setup(
                     _ => "Nothing there".to_string(),
                 };
             }
+        },
+    );
+    commands.add_observer(
+        |refused: On<SlotRefused>,
+         grids: Query<&SlotItems>,
+         mut status: Single<&mut Text, With<Status>>| {
+            let name = grids
+                .get(refused.from.grid)
+                .ok()
+                .and_then(|items| items.0.get(refused.from.index).cloned().flatten())
+                .map_or_else(|| "That".into(), |item| item.name);
+            status.0 = format!("{name} does not fit there");
         },
     );
     commands.add_observer(
@@ -393,6 +464,10 @@ fn stage_keys(
     capture: Option<Res<Capture>>,
     window: Query<Entity, With<PrimaryWindow>>,
     mut keys: MessageWriter<KeyboardInput>,
+    mut pointer: MessageWriter<PointerInput>,
+    piles: Query<(&Pile, &Children)>,
+    nodes: Query<(&ComputedNode, &UiGlobalTransform)>,
+    scale: Res<UiScale>,
 ) {
     let (Some(c), Ok(window)) = (capture, window.single()) else {
         return;
@@ -401,10 +476,26 @@ fn stage_keys(
         return;
     };
     let every = c.step_every.max(8);
-    let Some(step) = c.steps.get((since / every) as usize) else {
+    // A drag takes three steps' time: the pointer needs the frames to be seen travelling.
+    let length = |step: &Staged| {
+        if matches!(step, Staged::Drag(..)) {
+            3 * every
+        } else {
+            every
+        }
+    };
+    let (mut start, mut found) = (0, None);
+    for step in &c.steps {
+        if since < start + length(step) {
+            found = Some(step);
+            break;
+        }
+        start += length(step);
+    }
+    let Some(step) = found else {
         return;
     };
-    let phase = since % every;
+    let phase = since - start;
     let mut key = |key_code: KeyCode, logical_key: Key, state: ButtonState| {
         keys.write(KeyboardInput {
             key_code,
@@ -421,6 +512,47 @@ fn stage_keys(
             n if n == every / 2 => key(*key_code, logical.clone(), ButtonState::Released),
             _ => {}
         },
+        Staged::Drag(from, from_slot, to, to_slot) => {
+            let centre = |pile: Pile, slot: usize| -> Option<Vec2> {
+                let (_, cells) = piles.iter().find(|(p, _)| **p == pile)?;
+                let (node, at) = nodes.get(*cells.get(slot)?).ok()?;
+                Some(at.translation * node.inverse_scale_factor() * scale.0)
+            };
+            let (Some(a), Some(b)) = (centre(*from, *from_slot), centre(*to, *to_slot)) else {
+                return;
+            };
+            let end = length(step);
+            let travel = (end - 8) as f32 - 4.0;
+            let Some(target) = WindowRef::Entity(window).normalize(None) else {
+                return;
+            };
+            let at = |position: Vec2, action: PointerAction| {
+                PointerInput::new(
+                    PointerId::Mouse,
+                    Location {
+                        target: NormalizedRenderTarget::Window(target.clone()),
+                        position,
+                    },
+                    action,
+                )
+            };
+            if phase == 0 {
+                pointer.write(at(a, PointerAction::Move { delta: Vec2::X }));
+            } else if phase == 2 {
+                pointer.write(at(a, PointerAction::Press(PointerButton::Primary)));
+            } else if (4..end - 4).contains(&phase) {
+                let t = ((phase - 4) as f32 / travel).clamp(0.0, 1.0);
+                let position = a.lerp(b, t);
+                pointer.write(at(
+                    position,
+                    PointerAction::Move {
+                        delta: (b - a) / travel,
+                    },
+                ));
+            } else if phase == end - 2 {
+                pointer.write(at(b, PointerAction::Release(PointerButton::Primary)));
+            }
+        }
         Staged::PickUp => match phase {
             0 => key(KeyCode::AltLeft, Key::Alt, ButtonState::Pressed),
             2 => key(

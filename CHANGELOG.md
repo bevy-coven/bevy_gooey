@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- `SlotRules::new(|item, index| ..)` on a `slot_grid`: which items its slots take (`Slot::kind("helmet")` is a free label for it to read). A slot that will not take the carried item is a refused drop target while the item is over it: the drop mark and ghost turn red before the player lets go, a release sends one `SlotRefused { entity, from, to }` and moves nothing, and the keyboard and pad carry skip it. A move needs both ends to agree (a filled target's item goes back to the origin under the origin grid's rules); a locked slot is a rule that takes nothing. `docs/guide/inventory.md` has a Rules section and `docs/media/slot-rules.gif` shows it; `examples/inventory` has an Equipment row and the staged step `GOOEY_KEYS=drag:b0>e1`.
+- Focus follows a moved item: a drop onto a slot moves focus to it when the slot the item came from had it (a keyboard or pad carry, or the click that began a drag), and the grid's cursor with it.
+
+### Changed
+
+- `Slot` has a new field, `kind: Option<String>`, and `SlotGrid` requires `SlotRules`.
+
+### Fixed
+
+- A `slot_grid` in a column wider than its slots spread them apart (its auto tracks stretched); the tracks now stand at the start, so the gap is always half the skin's gap.
+
 ## [0.29.0] - 2026-11-02
 
 The first publish since 0.27.0 (crates.io refused 0.27.1 and 0.28.0 with a 429): 0.29.0 carries 0.28.0 below.

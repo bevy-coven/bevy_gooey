@@ -40,7 +40,7 @@ The grid is `columns` slots wide and `ceil(len / columns)` high with every slot 
 
 ## Deviations
 
-No Shift-click or right-click split: they are the game's rules and a `Secondary` click is already a `context_menu` trigger (the log's drag work); the widget sends `Activate`-level events only. No per-slot acceptance rule (an equipment slot that takes only helmets): every slot is a `DropTarget<SlotRef>` that takes any `SlotRef`, so the game refuses by not applying the `SlotMoved` (the mark does not say no beforehand: `DropTarget::accepting` takes a plain `fn` with no state and a second `DropTarget<SlotRef>` on the slot would add a second handler, not replace the first). No stack merging, no weight, no rarity colour: tones are the host's (`IconTone`, `Role::Tone`). Design defaults, recorded in the log.
+No Shift-click or right-click split: they are the game's rules and a `Secondary` click is already a `context_menu` trigger (the log's drag work); the widget sends `Activate`-level events only. Per-slot acceptance was added in iteration 50 as `SlotRules` (`slot-rules.md`); at first there was none: every slot is a `DropTarget<SlotRef>` that takes any `SlotRef`, so the game refuses by not applying the `SlotMoved` (the mark does not say no beforehand: `DropTarget::accepting` takes a plain `fn` with no state and a second `DropTarget<SlotRef>` on the slot would add a second handler, not replace the first). No stack merging, no weight, no rarity colour: tones are the host's (`IconTone`, `Role::Tone`). Design defaults, recorded in the log.
 
 ## What great looks like
 

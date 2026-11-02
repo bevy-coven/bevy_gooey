@@ -1333,3 +1333,51 @@ fn the_keyboard_carry_skips_a_slot_that_says_no_and_focus_follows_the_item() {
         Some(&SlotCursor(target))
     );
 }
+
+#[test]
+fn a_grid_in_a_column_wider_than_itself_keeps_its_slots_together() {
+    let mut app = app();
+    let grid = app
+        .world_mut()
+        .spawn(slot_grid(3, vec![None, None, None]))
+        .id();
+    let wide = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(600.0),
+            height: Val::Px(20.0),
+            ..default()
+        })
+        .id();
+    let root = app
+        .world_mut()
+        .spawn(screen())
+        .insert(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::FlexStart,
+            padding: UiRect::all(Val::Px(20.0)),
+            ..default()
+        })
+        .id();
+    let column = app
+        .world_mut()
+        .spawn(Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        })
+        .add_children(&[wide, grid])
+        .id();
+    app.world_mut().entity_mut(root).add_child(column);
+    settle(&mut app);
+    let slots = cells(&app, grid);
+    let skin = skin(&app);
+    let (a, b) = (rect(&app, slots[0]), rect(&app, slots[1]));
+    let gap = b.min.x - a.max.x;
+    assert!(
+        (gap - skin.gap * 0.5).abs() < 1.5,
+        "slots {gap} px apart in a 600 px column, not the half gap {}",
+        skin.gap * 0.5
+    );
+}
