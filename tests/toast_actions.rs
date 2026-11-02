@@ -690,7 +690,13 @@ fn a_toast_with_no_button_is_its_mark_and_its_message_and_nothing_between() {
         part(Role::ToastMark),
         part(Role::ToastText),
     );
-    let line = app.world().get::<ComputedNode>(body).expect("body").border.min_inset.x;
+    let line = app
+        .world()
+        .get::<ComputedNode>(body)
+        .expect("body")
+        .border
+        .min_inset
+        .x;
     let inside = rect(&app, body).width() - 2.0 * line;
     let parts = rect(&app, mark).width() + rect(&app, text).width();
     assert!(

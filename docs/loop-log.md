@@ -1696,3 +1696,27 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release.** `cargo semver-checks`: no change needed (nothing public changed), so a patch bump: v0.24.1 committed (`release: v0.24.1`), tagged and pushed, but **`cargo publish` was refused with 429** ("too many versions of this crate in the last 24 hours"): logged once, not retried; the next pass publishes v0.24.1 (the tag `v0.24.1` already stands on the release commit) and its audit will say `missing: release` until then. #32 closed by `Fixes #32` on the merge; a verification comment is on it and a move-the-pin comment on bevy_grimoire#208.
 
 **Cleanup.** Removed this pass's own: `~/g42_bin` (before and after galleries, 2 binaries) and `/tmp/g42` (captures, tree dump, gate script and log, mutation backup); no baseline worktree was made (the baseline gallery was built into the loop's shared target). `df -h /home` 3.7T, 143 G free (97 %, no change at the GB level). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (1.8 MB each, clean, detached at old commits, no `-target` beside them), local branches `loop/iter-42` and `loop/iter-42b` (merged to main).
+
+## Iteration 43 — 2026-11-02 — Toast buttons keep their size (#34)
+
+**Triage.** 1 open issue, #34 G-30 (`grimoire-ui`, `consumer`, a layout bug), the pass's item. Last audit row (pass 70): `missing: demo?` (iteration 42 changed nothing visible; its log line says so). Pass 42's publish of v0.24.1 was retried first: **429 again** ("too many versions of this crate in the last 24 hours"); the next release covers it. Parked work: `wiggum/parked-pass-23-…` only (old, ignored). The one-test-binary job was done earlier (`tests/all.rs`). home-still and the corpus re-scan were not repeated: a flexbox fix in one skin arm needs no new source (the research note's toast sources stand).
+
+**What changed** (`7a70959`): `Role::ToastAction` in `apply_skin` is `flex_shrink: 0`, half a gap of margin each side and `align_self: Center`. Reproduced first: with the message "Could not write the save: the disk is full" (the example's alert, now that long) the body's `max_width` wraps it to four lines and "Show" was 60 px wide where its label and `pad() * 3` need 90, with "Dismiss" touching it ("ShowDismiss", `before/notif.png`). Now the buttons are full width, a gap apart, centred on the toast's height, and the last stands inside the frame (dark 1280x720, parchment at 1.5x text: `after/notif.png`, `after/notif-pl.png`). **Assumed decision** (design default, in the research note's Deviations): margin on the buttons, not the issue's `column_gap: skin.gap` on `Role::ToastBody`, because a gap would also widen every plain toast's mark-to-message space (the message has its own padding), which the issue's second acceptance item forbids; three or more actions are not wrapped onto a second row (the guide says prefer one button).
+
+**Tests** (`tests/toast_actions.rs`, failed first on "a button keeps its label and padding: 60 < 90"): a sticky alert with "Show" and a long message lays out both buttons at least label plus `pad() * 3` wide, at least `gap` apart, the words a gap from the first button and the last button inside the body's frame; a plain toast's body is exactly its mark plus its message.
+
+**Demo.** `docs/media/notifications.gif` regenerated from the example (5.3 s, 800x576, 79 frames; the crop widened to 1000x720 because the log row now holds the longer alert); its caption in `docs/media/README.md` and `docs/guide/toasts.md` describes the alert as it shows.
+
+**Critique and verdict.** Flaws at zoom: the message wraps to four lines at the 24-text-size measure because the two buttons take about half the body; a long alert still reads better with a shorter message or one button. The log row for the long message makes the Notifications panel wide in the example (a host's own list is its own width). Verdict: **GREAT** for the fix (buttons whole, a gap apart, ring complete on focus); the wrap is the measure's trade, not a defect.
+
+**mean_ms** (`notifications` example, 230 frames, 1280x720, three alternating pairs): before 22.18 / 22.46 / 22.34, after 21.67 / 22.28 / 21.87 (a style value in one `apply_skin` arm: no difference).
+
+**Release.** Nothing public changed, so a patch bump to v0.24.2 (`release: v0.24.2`), which also carries v0.24.1's accessibility tree (never published).
+
+### Ranked backlog
+
+1. AccessKit actions: `ActionRequest` Click, Focus, Increment, Decrement and SetValue from a reader acted on.
+2. Tree rows: `level`, `expanded`, `size_of_set` and `position_in_set`; a table's row and column counts and a header's sort direction.
+3. Drag and drop: a keyboard pick-up and drop mode, a snap-back for a refused drop, auto-scroll of a list under a drag.
+4. Shortcut overlay: badges for menu items and `icon_button`s, `keyboard_shortcut` on a widget's node.
+5. Toast: a measure that grows with the number of buttons, or a second row for three or more actions.
