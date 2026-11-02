@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-02
+
 ### Added
 
 - Focus regions (G-23, #27): `FocusRegion { arrows: ArrowPolicy }` (`FocusRegion::host()` and `::navigate()`) on any node. **F6 and Shift+F6** (`cycle_regions`, Navigate) move focus to the first widget of the next or previous region in UI-tree order, wrapping, skipping a region with nothing focusable; with `ArrowPolicy::Host` the arrow keys move no gooey focus and show no ring while focus is in the region (the D-pad, Tab and F6 still leave: no keyboard trap), and stay readable in `ButtonInput<KeyCode>`. An open dialog holds focus over every region. `viewport()` is a framed host region and a tab stop (`Role::Viewport`: the `outline` frame, the ring while focused). `examples/workspace`, `docs/research/focus-regions.md`, `docs/guide/focus-regions.md`, `docs/media/focus-regions.gif`, `tests/region.rs` (13 tests).

@@ -3,7 +3,7 @@
 An editor shows any component or resource as editable rows without a panel for each type. With the `reflect` feature, `inspector(InspectTarget)` builds the rows from the type's own reflection.
 
 ```toml
-bevy_gooey = { version = "0.22", features = ["reflect"] }
+bevy_gooey = { version = "0.23", features = ["reflect"] }
 ```
 
 ```rust
