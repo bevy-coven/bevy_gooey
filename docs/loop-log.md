@@ -1946,3 +1946,38 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 5. Tree rows: `level`, `expanded`, `size_of_set` and `position_in_set`; a table's row and column counts.
 
 **Cleanup.** Removed this pass's own: `/tmp/g49` (captures, frames, the gate script and log). No baseline worktree was made (the text path is unchanged and tested). `df -h /home` 148 G free. Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits, unchanged since iteration 17).
+
+
+## Iteration 50 — 2026-11-02 — Slot rules: a slot says no before the player lets go
+
+**Triage.** v0.29.0 (tagged, never published) was the first job: `cargo publish` refused with 429 again ("too many versions of this crate in the last 24 hours"; crates.io's newest is 0.27.0 at 06:52Z), logged once, not retried. No open issue on `bevy_gooey`, no `grimoire-ui` issue open, parked work only `wiggum/parked-pass-23-…` (old, ignored). home-still: `distill_search` answered but had nothing on drop feedback; `catalog_recent` not re-scanned.
+
+**Pick.** Ranked: (1) **slot rules** (backlog #3): the iteration-46 note deferred "no per-slot acceptance rule; the mark does not say no beforehand", and an equipment panel, a shop or a locked slot is in every inventory; (2) motion (a scrim fade needs group opacity Bevy lacks; a press pop); (3) AccessKit actions; (4) radial pointing arc; (5) tree row `level`/`expanded`. (1) beat (3) because the player sees it in every inventory drag, and the refused look, the `takes` filter for the keyboard carry and `DropZone` already existed, so the slice was the missing rule and its plumbing.
+
+**Sources** (`docs/research/slot-rules.md`, committed alone first): craft, Laubheimer (NN/g), *Drag–and–Drop: How to Design for Ease of Use* ("feedback previewing what will happen before the user 'drops' the object"); shipping game, Path of Exile's equipment slots ("slots turn red when the item is either over the wrong slot or the requirements are not met"); technical, MDN *Drag operations* (a conditional drop target; `dropEffect` `none`). **Gap:** home-still has no stem on inventory or drop feedback (`## Pending index`).
+
+**What changed.** `SlotRules { accepts: fn(&Slot, usize) -> bool }` (new, on the grid, required by `SlotGrid`, default takes everything; each cell carries a copy because a drop test sees only the two `EntityRef`s), `Slot::kind` (a free label for the rule), `SlotRefused { entity, from, to }`. `DropTarget` gained a private `judge` that `accepts::<T>` ANDs with `accepting`; a slot is `DropTarget::<SlotRef>::judged(slot_takes)`: the target's rule takes the carried item and a filled target's item must be taken at the origin (a swap needs both ends; across grids both grids' rules apply). A refusal reuses the crate's refused look (red mark and ghost) while the item is still in the hand, the keyboard and pad carry skip the slot, a release sends one `SlotRefused` and moves nothing. Focus follows a moved item (`slot_on_dropped` sets focus on the target when the source had it). Found while building the example: a `slot_grid` in a column wider than its slots spread them 120 px apart (its auto tracks stretched); `Role::SlotGrid` now sets `justify_content`/`align_content` `Start` (own test, failed before, passes after).
+
+**Tests** (`tests/slots.rs`, seven new, 29 in the file; mutation-checked: dropping the back rule fails the swap test, dropping the focus move fails two): the refusal shows while held and clears on moving to a slot that takes the item, a release sends one `SlotRefused` with nothing moved; a slot that takes it gets the move and focus and cursor follow; a swap refused by the origin's rule; both grids' rules across two grids; a locked slot, a rule written later governs the next drag, an item leaves a locked slot for an open one; the keyboard carry skips a refusing slot and focus follows the item; the stretched grid keeps half a gap. Doctest for `SlotRules`.
+
+**Demo.** `docs/media/slot-rules.gif` (2.8 s, 800×404, 42 frames, 161 KB) in `docs/guide/inventory.md`'s new Rules section, `docs/media/README.md` (recipe), CHANGELOG, README line (README still 250 lines), AGENTS.md. The example has an Equipment row and `GOOEY_KEYS=drag:b0>e1` (staged pointer drags, three steps' time).
+
+**Critique and verdict** (full frame 1280×720 and a 16-tile contact sheet of the GIF): flaws: the refused slot's brown fill with a red frame is the crate's existing refused look, so the icon under it loses some contrast (the torch stays legible); the ghost shows the item's whole tooltip line ("Iron sword, +3 damage"), wide and noisy while dragging (existing, not changed); the hover tooltip of the slot under the pointer ("Torch") opens under the ghost; no "valid slot" hint at pick-up (Path of Exile lights the matching slots; the crate marks only the one under the pointer, in Deviations). Verdict **GREAT** for the refusal itself (red before release, status line says why, the ring stays on the sword); **NOT YET** for lighting every valid slot at pick-up.
+
+**Checklist.** No new skin colour or size; `problems()` unchanged; existing slot look unchanged (28 earlier slot tests pass untouched); the equipment grid now sits flush (gap 5 px).
+
+**mean_ms** (`examples/inventory`, `GOOEY_KEYS=down,right,pickup,right,pickup`, 200 frames, software-rendered Xvfb, 8 alternating pairs): before min 22.829 median 24.9, after min 21.724 median 24.0; no regression (±1 ms noise).
+
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 797 tests in the `all` executable (790 before) plus 73 lib, 204 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green (first run after one clippy fix in the example, `clone_on_copy`). `cargo semver-checks --baseline-rev v0.27.0` again ran 0 checks ("no semver update required"); a new public field on `Slot` is breaking, so a minor by the pre-1.0 rule.
+
+**Release.** `release: v0.30.0` (also carries 0.28.0 and 0.29.0, never published), tag `v0.30.0`, `cargo publish --dry-run` green. `cargo publish` was refused with 429 at the start of this pass (for 0.29.0) and is not retried; the next pass publishes v0.30.0 first (the audit shows `missing: release` until then).
+
+### Ranked backlog
+
+1. Slot grid: a "valid slot" hint on every slot that takes the carried item at pick-up, a locked-slot look, a stack-merge helper.
+2. Motion: a scrim and card fade (needs group opacity), a dialog exit, a button press pop, a per-meter opt-out (`MeterSteady`).
+3. AccessKit actions: `ActionRequest` Click, Focus, Increment, Decrement and SetValue acted on.
+4. Radial: a pointing arc that follows the stick, an item showing picture and label together.
+5. Tree rows: `level`, `expanded`, `size_of_set`, `position_in_set`; a table's row and column counts.
+
+**Cleanup.** Removed this pass's own: worktree `~/g50_base` (plain `git worktree remove`), `~/g50_inventory_before` and `~/g50_inventory_after`, `/tmp/g50` (captures, frames, gate script and log). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits, unchanged since iteration 17).
