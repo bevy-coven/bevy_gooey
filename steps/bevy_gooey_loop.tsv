@@ -14126,3 +14126,242 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 74	399	release	tool	edit files	edit	2026-11-02T06:50:12Z	0.0	Log gate, ranked backlog, release and cleanup :: [docs/loop-log.md#645D] PUT >1826: + +**Gate.** `CARGO_BUILD_JOBS=4`, branch `loop/iter-46` (the merge into an unmoved `main` has the identical tree): fmt, clip
 74	400	log	tool	phase mark	bash	2026-11-02T06:50:12Z	1.6	cd ~/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; git add docs/loop-log.md && git commit -q -m "Loop log: iteration 46 gate, release and 
 74	401	log	model	model		2026-11-02T06:50:13Z	6.5	
+75	1	orient	model	model		2026-11-02T06:52:35Z	3.3	
+75	2	orient	tool	phase mark	bash	2026-11-02T06:52:38Z	0.8	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git branch --show-current; git log --oneline 
+75	3	orient	tool	github	bash	2026-11-02T06:52:38Z	0.8	cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+75	4	orient	model	model		2026-11-02T06:52:39Z	2.6	
+75	5	release	tool	phase mark	bash	2026-11-02T06:52:42Z	0.3	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; git tag | tail -3; git status --short | head -3; curl -s -A "gooey-loop
+75	6	release	model	model		2026-11-02T06:52:42Z	1.3	
+75	7	release	tool	cargo publish	bash	2026-11-02T06:52:43Z	6.8	cd /home/ladvien/bevy_gooey_loop && git tag | grep 0.27; git status -sb | head -3; CARGO_BUILD_JOBS=2 cargo publish 2>&1 | tail -8
+75	8	release	model	model		2026-11-02T06:52:50Z	11.8	
+75	9	choose	tool	phase mark	bash	2026-11-02T06:53:02Z	1.4	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; gh issue list -R bevy-coven/bevy_grimoire --label ui --state open --json
+75	10	choose	tool	github	bash	2026-11-02T06:53:02Z	60.0	[launched bg_2] mkdir -p /tmp/g47 && cd /tmp/g47 && (gh repo clone Ladvien/sanctuary sanctuary -- --depth 1 -q 2>&1|tail -2; gh repo clone bevy-coven/bevy_grimoire grim -- --de
+75	11	choose	model	model		2026-11-02T06:54:02Z	3.3	
+75	12	choose	tool	wait: other	wait	2026-11-02T06:54:05Z	9.7	{}
+75	13	choose	model	model		2026-11-02T06:54:15Z	1.2	
+75	14	choose	tool	shell	bash	2026-11-02T06:54:16Z	0.0	cd /tmp/g47 && grep -nE '^(pub )?(fn|struct|enum|const) ' sanctuary/src/ui/widgets.rs sanctuary/src/ui/juice.rs | cut -c1-150 | head -90; find grim -name chrome
+75	15	choose	model	model		2026-11-02T06:54:16Z	3.9	
+75	16	choose	tool	shell	bash	2026-11-02T06:54:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rniE 'slide_?in|fade_?in|\bPop\b|ease_out|Motion|animate|transition' src --include=*.rs -l | head; grep -n 'juice\|mot
+75	17	choose	model	model		2026-11-02T06:54:20Z	5.1	
+75	18	choose	tool	shell	bash	2026-11-02T06:54:25Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rniE 'reduce.?motion|reduced.?motion|Pop\b|FadeIn|SlideIn' src docs/research/*.md docs/guide/*.md README.md | cut -c1-
+75	19	choose	model	model		2026-11-02T06:54:25Z	9.5	
+75	20	choose	tool	shell	bash	2026-11-02T06:54:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'alpha' src/skin.rs | head -60; sed -n 30,40p docs/research/toast.md | cut -c1-900; wc -l src/skin.rs src/lib.rs
+75	21	choose	model	model		2026-11-02T06:54:35Z	6.1	
+75	22	choose	tool	shell	bash	2026-11-02T06:54:41Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1530,1600p src/skin.rs; sed -n 1740,1800p src/skin.rs; grep -n 'owner_of\|fn owner' src/skin.rs | head -20
+75	23	choose	model	model		2026-11-02T06:54:41Z	22.9	
+75	24	choose	tool	shell	bash	2026-11-02T06:55:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && ls tests | head -80; grep -c 'GooeyPlugins\|GooeyStylePlugin' tests/*.rs | grep -v ':0' | wc -l; grep -n 'mod ' tests/all.rs
+75	25	choose	model	model		2026-11-02T06:55:04Z	19.7	
+75	26	choose	tool	shell	bash	2026-11-02T06:55:24Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n 'Role::Scrim' src/skin.rs | head; sed -n 2110,2140p src/skin.rs; sed -n 3500,3520p src/skin.rs; grep -n 'reveal_popo
+75	27	choose	model	model		2026-11-02T06:55:24Z	9.4	
+75	28	choose	tool	shell	bash	2026-11-02T06:55:33Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1600,1740p src/skin.rs
+75	29	choose	model	model		2026-11-02T06:55:33Z	5.5	
+75	30	choose	tool	shell	bash	2026-11-02T06:55:39Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n 'UiTransform' src/*.rs | cut -c1-140 | head -30; sed -n 500,640p src/lib.rs
+75	31	choose	model	model		2026-11-02T06:55:39Z	18.1	
+75	32	research	tool	phase mark	bash	2026-11-02T06:55:57Z	4.8	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; for q in "juicy game design redundant feedback" "interface animation d
+75	33	research	model	model		2026-11-02T06:56:02Z	6.4	
+75	34	research	tool	homestill	bash	2026-11-02T06:56:08Z	0.7	cd /tmp/g47 && (timeout 60 hs distill search "juice feedback exaggerated animation squash stretch interface polish" --output json 2>&1 | python3 -c " import sys
+75	35	research	model	model		2026-11-02T06:56:09Z	3.6	
+75	36	research	tool	homestill	bash	2026-11-02T06:56:12Z	0.6	cd /tmp/g47 && curl -sL https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html | python3 -c " import sys,re,html t=sys.stdin.read();t=re.s
+75	37	research	model	model		2026-11-02T06:56:13Z	4.6	
+75	38	research	tool	homestill	bash	2026-11-02T06:56:17Z	2.6	cd /tmp/g47 && timeout 60 hs distill search "Are reactive elements exaggerated" --output json 2>&1 | python3 -c " import sys,json,re d=json.load(sys.stdin) for 
+75	39	research	tool	web	web_search	2026-11-02T06:56:17Z	10.4	Finding shipping-game UI motion source :: game UI menu transition animation duration milliseconds GDC talk shipped game interface feel
+75	40	research	model	model		2026-11-02T06:56:28Z	5.2	
+75	41	research	tool	shell	bash	2026-11-02T06:56:33Z	0.3	curl -sL https://www.nngroup.com/articles/animation-duration/ | python3 -c " import sys,re,html t=sys.stdin.read();t=re.sub(r'<script.*?</script>|<style.*?</sty
+75	42	research	model	model		2026-11-02T06:56:33Z	10.2	
+75	43	research	tool	shell	bash	2026-11-02T06:56:43Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'pub struct ToastSettings' -B6 -A30 src/toast.rs | head -80; grep -n 'ToastSettings\|toast::' src/lib.rs | head
+75	44	research	tool	shell	bash	2026-11-02T06:56:43Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 270,310p src/popover.rs; grep -n 'fn focus_opened_dialogs' -B3 -A40 src/nav.rs | head -80; grep -n 'pub fn dialog' -A
+75	45	research	model	model		2026-11-02T06:56:44Z	9.9	
+75	46	research	tool	shell	bash	2026-11-02T06:56:53Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 238,250p src/menu.rs; sed -n 270,282p src/menu.rs; sed -n 100,150p src/progress.rs; grep -n 'pub struct PopoverPanel'
+75	47	research	model	model		2026-11-02T06:56:53Z	19.6	
+75	48	research	tool	shell	bash	2026-11-02T06:57:13Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 318,470p src/lib.rs
+75	49	research	model	model		2026-11-02T06:57:13Z	6.8	
+75	50	research	tool	shell	bash	2026-11-02T06:57:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'ease\|pub fn toast_grow' -B1 -A12 src/model.rs | head -50; sed -n 1,40p src/toast.rs; grep -n '^mod \|^pub mod ' sr
+75	51	research	model	model		2026-11-02T06:57:20Z	3.4	
+75	52	research	tool	shell	bash	2026-11-02T06:57:23Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,30p docs/research/radial.md | cut -c1-300; grep -n '^## ' docs/research/radial.md
+75	53	research	model	model		2026-11-02T06:57:23Z	29.1	
+75	54	research	tool	edit files	write	2026-11-02T06:57:52Z	0.1	docs/research/motion.md
+75	55	build	tool	phase mark	bash	2026-11-02T06:57:52Z	0.8	cd /home/ladvien/bevy_gooey_loop && git checkout -b loop/iter-47 && git add docs/research/motion.md && git commit -qm "Research: motion (entrances and a reduced
+75	56	build	model	model		2026-11-02T06:57:53Z	2.7	
+75	57	build	tool	shell	bash	2026-11-02T06:57:56Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n 'pub fn spinner_angle' -B12 -A8 src/model.rs; grep -n 'fn spinner_angle\|spinner_angle' tests/*.rs src/model.rs | he
+75	58	build	model	model		2026-11-02T06:57:56Z	3.6	
+75	59	build	tool	edit files	edit	2026-11-02T06:58:00Z	0.0	Adding ease_out to model :: [src/model.rs#0000] PUT >1985: + +/// How far a motion that takes `seconds` has come `age` seconds in, from 0 to 1, on a cubic +/// ease-out (`1 − (1 − t)³`): i
+75	60	build	model	model		2026-11-02T06:58:00Z	3.3	
+75	61	build	tool	edit files	edit	2026-11-02T06:58:03Z	0.0	Adding ease_out to model :: [src/model.rs#81DD] PUT >1985: + +/// How far a motion that takes `seconds` has come `age` seconds in, from 0 to 1, on a cubic +/// ease-out (`1 − (1 − t)³`): i
+75	62	build	tool	read files	read	2026-11-02T06:58:03Z	0.0	Locate tests spot :: src/model.rs:3068-3076
+75	63	build	model	model		2026-11-02T06:58:03Z	2.6	
+75	64	build	tool	edit files	edit	2026-11-02T06:58:06Z	0.0	Unit test for ease_out :: [src/model.rs#1A90] PUT >3077: + + #[test] + fn an_ease_out_rises_monotonically_and_is_clamped() { + let mut last = -1.0; + for step in 0..=20 { + let now = eas
+75	65	build	model	model		2026-11-02T06:58:06Z	30.4	
+75	66	build	tool	shell	bash	2026-11-02T06:58:36Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='src/model.rs' s=open(p).read() s=s.replace(" if !(seconds > 0.0) || !seconds.is_finite() || a
+75	67	build	tool	edit files	write	2026-11-02T06:58:36Z	0.0	Writing motion module :: src/motion.rs
+75	68	build	model	model		2026-11-02T06:58:36Z	6.6	
+75	69	build	tool	cargo build	bash	2026-11-02T06:58:43Z	8.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/lib.rs' s=open(p).read() def rep(a,b,n=1): global s assert s.count(a)>=1,a s=s.replace(a,b,n) rep("
+75	70	build	model	model		2026-11-02T06:58:51Z	3.5	
+75	71	build	tool	read files	read	2026-11-02T06:58:55Z	0.0	Learn test harness pattern :: tests/popover.rs:1-160
+75	72	build	model	model		2026-11-02T06:58:55Z	6.3	
+75	73	build	tool	cargo test	bash	2026-11-02T06:59:01Z	0.0	[launched bg_4] cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo test --all-features --test all 2>&1 | tail -80 > /tmp/g47/suite1.log; tail -5 /tmp/g47/suite1.log
+75	74	build	model	model		2026-11-02T06:59:01Z	3.9	
+75	75	build	tool	shell	bash	2026-11-02T06:59:05Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'dialog()' -B3 -A12 tests/dialog_look.rs | head -60; grep -n 'TimeUpdateStrategy' tests/toast.rs | head -3; grep -n 
+75	76	build	model	model		2026-11-02T06:59:05Z	1.5	
+75	77	build	tool	shell	bash	2026-11-02T06:59:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 36,64p tests/toast.rs; grep -n 'menu_title\|menu_bar\|fn open_menu\|MenuItem::' tests/menu.rs | head -12
+75	78	build	model	model		2026-11-02T06:59:07Z	13.5	
+75	79	build	tool	shell	bash	2026-11-02T06:59:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'command_palette()' -B3 -A6 tests/palette.rs | head -30; grep -n 'fn open_palette\|fn spawn_palette' -A15 tests/pale
+75	80	build	model	model		2026-11-02T06:59:20Z	21.9	
+75	81	build	tool	edit files	write	2026-11-02T06:59:42Z	0.0	/tmp/g47/motion.rs
+75	82	build	model	model		2026-11-02T06:59:42Z	6.1	
+75	83	build	tool	shell	bash	2026-11-02T06:59:48Z	0.0	cd /tmp/g47 && python3 - <<'EOF' s=open('motion.rs').read() s=s.replace(""" app.world_mut().spawn(Camera2d); // The first""",""" app.init_resource::<Moves>().ad
+75	84	build	model	model		2026-11-02T06:59:48Z	4.6	
+75	85	build	tool	shell	bash	2026-11-02T06:59:53Z	0.0	cd /tmp/g47 && python3 - <<'EOF' s=open('motion.rs').read() s=s.replace(""" menu(), children![button("Leave")] """,""" (menu(), children![button("Leave")]) """)
+75	86	build	tool	wait: other	wait	2026-11-02T06:59:53Z	129.5	{}
+75	87	build	model	model		2026-11-02T07:02:03Z	9.1	
+75	88	build	tool	shell	bash	2026-11-02T07:02:12Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g47/motion.rs tests/motion.rs && sed -i 's/^mod menu;/mod menu;\nmod meter;/;' /dev/null; grep -n '^mod meter\|^mod 
+75	89	build	model	model		2026-11-02T07:02:12Z	1.6	
+75	90	build	tool	cargo test	bash	2026-11-02T07:02:13Z	27.4	cd /home/ladvien/bevy_gooey_loop && sed -i '29a mod motion;' tests/all.rs && cargo fmt && CARGO_BUILD_JOBS=4 cargo test --all-features --test all motion:: 2>&1 
+75	91	build	model	model		2026-11-02T07:02:41Z	10.1	
+75	92	build	tool	shell	bash	2026-11-02T07:02:51Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'Role::Popover' src/skin.rs | head; D=$(ls -d ~/.cargo/registry/src/*/bevy_ui_widgets-0.20.0 | head -1); grep -n 'Ui
+75	93	build	model	model		2026-11-02T07:02:51Z	1.5	
+75	94	build	tool	shell	bash	2026-11-02T07:02:52Z	0.0	cd /home/ladvien/bevy_gooey_loop && D=$(ls -d ~/.cargo/registry/src/*/bevy_ui_widgets-0.20.0 | head -1); sed -n 95,150p $D/src/popover.rs; sed -n 225,290p $D/sr
+75	95	build	model	model		2026-11-02T07:02:52Z	16.3	
+75	96	build	tool	shell	bash	2026-11-02T07:03:08Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'Popover {' -B3 -A12 src/*.rs | grep -v '^--$' | head -80; D=$(ls -d ~/.cargo/registry/src/*/bevy_ui_widgets-0.20.0 
+75	97	build	model	model		2026-11-02T07:03:08Z	10.7	
+75	98	build	tool	shell	bash	2026-11-02T07:03:19Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'placement_of\|tooltip_placement(' src/*.rs | grep -v '^src/popover.rs:146\|fn tooltip';
+75	99	build	model	model		2026-11-02T07:03:19Z	1.8	
+75	100	build	tool	shell	bash	2026-11-02T07:03:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 3440,3500p src/skin.rs; grep -n 'popover_placement\|fn.*-> Popover' src/skin.rs | head; grep -n 'Popover' src/skin.rs
+75	101	build	model	model		2026-11-02T07:03:21Z	28.3	
+75	102	build	tool	shell	bash	2026-11-02T07:03:49Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1470,1495p src/skin.rs; grep -n 'floating' src/skin.rs | head
+75	103	build	model	model		2026-11-02T07:03:49Z	4.7	
+75	104	build	tool	shell	bash	2026-11-02T07:03:54Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() def rep(a,b): global s assert s.count(a)==1,(a,s.count(a)) s=s.replace(a,
+75	105	build	model	model		2026-11-02T07:03:54Z	9.1	
+75	106	build	tool	cargo build	bash	2026-11-02T07:04:03Z	6.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/motion.rs' s=open(p).read() a=s.index("/// Where a popover on `placement` starts") b=s.index("/// G
+75	107	build	model	model		2026-11-02T07:04:09Z	4.5	
+75	108	build	tool	cargo build	bash	2026-11-02T07:04:14Z	2.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/motion.rs' s=open(p).read() s=s.replace("""/// panel that flips to the anchor's other side is moved
+75	109	build	model	model		2026-11-02T07:04:17Z	3.2	
+75	110	build	tool	shell	bash	2026-11-02T07:04:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'motion::' src/lib.rs; sed -n 234,238p src/lib.rs
+75	111	build	model	model		2026-11-02T07:04:20Z	1.8	
+75	112	build	tool	cargo build	bash	2026-11-02T07:04:22Z	2.9	cd /home/ladvien/bevy_gooey_loop && sed -i '236d' src/lib.rs && sed -i 's/^pub use motion::{MotionSettings, SlideIn, begin_entrances, update_motion};/pub use mo
+75	113	build	model	model		2026-11-02T07:04:24Z	13.5	
+75	114	build	tool	cargo test	bash	2026-11-02T07:04:38Z	36.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/motion.rs' s=open(p).read() a=s.index("#[test]\nfn a_popover_slides_out_of_its_anchor") b=s.index
+75	115	build	model	model		2026-11-02T07:05:14Z	5.5	
+75	116	build	tool	cargo test	bash	2026-11-02T07:05:20Z	13.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/motion.rs' s=open(p).read() s=s.replace(""" let anchor = app.world_mut().spawn(button("Menu")).id
+75	117	build	model	model		2026-11-02T07:05:34Z	2.7	
+75	118	build	tool	cargo test	bash	2026-11-02T07:05:36Z	16.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/motion.rs' s=open(p).read() a=s.index(" let anchor = app\n .world_mut()\n .spawn((\n button(\"Men
+75	119	build	model	model		2026-11-02T07:05:52Z	5.5	
+75	120	build	tool	cargo test	bash	2026-11-02T07:05:58Z	32.0	cd /home/ladvien/bevy_gooey_loop && cp src/motion.rs /tmp/g47/motion.rs.bak && python3 - <<'EOF' s=open('src/motion.rs').read() s=s.replace(" && roles.get(paren
+75	121	build	model	model		2026-11-02T07:06:30Z	6.6	
+75	122	prove	tool	phase mark	bash	2026-11-02T07:06:37Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; tail -12 docs/media/README.md | cut -c1-400; ls tools 2>/dev/null; grep -
+75	123	prove	model	model		2026-11-02T07:06:37Z	1.9	
+75	124	prove	tool	shell	bash	2026-11-02T07:06:39Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 20,34p examples/gallery.rs; sed -n 108,134p examples/gallery.rs; grep -n 'GOOEY_KEY_EVERY\|GOOEY_EVERY\|GOOEY_FROM' e
+75	125	prove	model	model		2026-11-02T07:06:39Z	7.6	
+75	126	prove	tool	shell	bash	2026-11-02T07:06:46Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'GOOEY_TEXT_SCALE\|GOOEY_HEALTH' examples/gallery.rs | head; ls examples; ls ~/target/gooey-loop/release/examples/ 2
+75	127	prove	model	model		2026-11-02T07:06:46Z	1.2	
+75	128	prove	tool	shell	bash	2026-11-02T07:06:48Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 196,240p examples/gallery.rs; sed -n 1,45p examples/menus.rs | cut -c1-200
+75	129	prove	model	model		2026-11-02T07:06:48Z	11.5	
+75	130	prove	tool	cargo build	bash	2026-11-02T07:06:59Z	0.0	[launched bg_5] cd /home/ladvien/bevy_gooey_loop && git worktree add -q --detach ~/g47_base c00e74f && cd ~/g47_base && (CARGO_BUILD_JOBS=4 cargo build --release --example gall
+75	131	prove	model	model		2026-11-02T07:06:59Z	3.7	
+75	132	prove	tool	git	bash	2026-11-02T07:07:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/gallery.rs' s=open(p).read() s=s.replace("//! `GOOEY_TEXT_SCALE=<f>` starts at that text scale
+75	133	prove	model	model		2026-11-02T07:07:03Z	3.7	
+75	134	prove	tool	shell	bash	2026-11-02T07:07:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l README.md; grep -n '^#' README.md; cut -c1-220 README.md | sed -n 100,125p; grep -n 'toasts.md\|accessibility.md' docs
+75	135	prove	model	model		2026-11-02T07:07:07Z	1.2	
+75	136	prove	tool	shell	bash	2026-11-02T07:07:08Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 124,140p README.md; sed -n 180,215p README.md | cut -c1-260; sed -n 80,92p docs/guide/README.md | cut -c1-200
+75	137	prove	model	model		2026-11-02T07:07:08Z	11.0	
+75	138	prove	tool	edit files	write	2026-11-02T07:07:19Z	0.0	Writing motion guide :: docs/guide/motion.md
+75	139	prove	model	model		2026-11-02T07:07:19Z	9.9	
+75	140	prove	tool	git	bash	2026-11-02T07:07:29Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='docs/guide/motion.md' s=open(p).read() a=s.index("Only the picture moves.") b=s.index("## The one setti
+75	141	prove	tool	wait: other	wait	2026-11-02T07:07:29Z	19.0	{}
+75	142	prove	model	model		2026-11-02T07:07:48Z	3.0	
+75	143	prove	tool	cargo build	bash	2026-11-02T07:07:51Z	60.0	[launched bg_6] cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example gallery --example menus 2>&1 | tail -3; cp $CARGO_TARGET_DIR/release/exam
+75	144	prove	model	model		2026-11-02T07:08:51Z	1.1	
+75	145	prove	tool	wait: other	wait	2026-11-02T07:08:52Z	20.3	{}
+75	146	prove	model	model		2026-11-02T07:09:12Z	5.1	
+75	147	prove	tool	shell	bash	2026-11-02T07:09:17Z	3.1	cd /tmp/g47 && export DISPLAY=:93 && rm -rf fr && mkdir fr && GOOEY_FRAMES=110 GOOEY_SHOT=/tmp/g47/fr/still.png GOOEY_SHOT_DIR=/tmp/g47/fr GOOEY_SHOT_FROM=44 GO
+75	148	prove	model	model		2026-11-02T07:09:20Z	3.7	
+75	149	prove	tool	shell	bash	2026-11-02T07:09:24Z	0.5	cd /tmp/g47/fr && magick montage f_00{06,07,08,09,10,11,12,13,14,15,16,17}.png -tile 4x3 -geometry 640x360+2+2 /tmp/g47/sheet.png && echo ok
+75	150	prove	tool	read files	read	2026-11-02T07:09:24Z	0.5	/tmp/g47/sheet.png
+75	151	prove	model	model		2026-11-02T07:09:25Z	1.5	
+75	152	prove	tool	shell	bash	2026-11-02T07:09:26Z	0.5	cd /tmp/g47/fr && ls | sed -n 1,12p; ls /tmp/g47 | head; magick montage f_0006.png f_0007.png f_0008.png f_0009.png f_0010.png f_0011.png f_0012.png f_0013.png 
+75	153	prove	model	model		2026-11-02T07:09:27Z	0.8	
+75	154	prove	tool	read files	read	2026-11-02T07:09:27Z	0.2	/tmp/g47/sheet.png
+75	155	prove	model	model		2026-11-02T07:09:28Z	6.6	
+75	156	prove	tool	shell	bash	2026-11-02T07:09:34Z	0.9	cd /tmp/g47/fr && for i in 07 08 09 10 11 12 13 14 16 18; do magick f_00$i.png -format "$i %wx%h " info:; magick f_00$i.png -crop 40x1+620+0 +repage -scale 1x1 
+75	157	prove	model	model		2026-11-02T07:09:35Z	3.0	
+75	158	prove	tool	shell	bash	2026-11-02T07:09:38Z	0.1	cd /tmp/g47/fr && python3 - <<'EOF' from PIL import Image, ImageChops prev=None for i in range(5,22): im=Image.open(f'f_{i:04d}.png').convert('RGB') if prev is 
+75	159	prove	model	model		2026-11-02T07:09:38Z	8.3	
+75	160	prove	tool	shell	bash	2026-11-02T07:09:46Z	0.1	cd /tmp/g47/fr && for i in 08 09 11 15; do magick f_00$i.png -crop 640x300+320+200 +repage c_$i.png; done; magick montage c_08.png c_09.png c_11.png c_15.png -t
+75	161	prove	tool	read files	read	2026-11-02T07:09:46Z	0.1	/tmp/g47/cards.png
+75	162	prove	model	model		2026-11-02T07:09:47Z	2.5	
+75	163	prove	tool	read files	read	2026-11-02T07:09:49Z	0.0	/tmp/g47/cards.png
+75	164	prove	model	model		2026-11-02T07:09:49Z	8.8	
+75	165	prove	tool	shell	bash	2026-11-02T07:09:58Z	2.9	cd /tmp/g47 && export DISPLAY=:93 && rm -rf fm && mkdir fm && GOOEY_FRAMES=90 GOOEY_SHOT=/tmp/g47/fm/still.png GOOEY_SHOT_DIR=/tmp/g47/fm GOOEY_SHOT_FROM=30 GOO
+75	166	prove	model	model		2026-11-02T07:10:01Z	3.8	
+75	167	prove	tool	shell	bash	2026-11-02T07:10:05Z	0.2	cd /tmp/g47/fm && for i in 12 13 14 15 16 18; do magick f_00$i.png -crop 300x360+0+0 +repage c_$i.png; done; magick montage c_12.png c_13.png c_14.png c_15.png 
+75	168	prove	tool	read files	read	2026-11-02T07:10:05Z	0.2	/tmp/g47/menus.png
+75	169	prove	model	model		2026-11-02T07:10:05Z	0.7	
+75	170	prove	tool	read files	read	2026-11-02T07:10:06Z	0.0	/tmp/g47/menus.png
+75	171	prove	model	model		2026-11-02T07:10:06Z	5.0	
+75	172	prove	tool	shell	bash	2026-11-02T07:10:11Z	0.1	cd /tmp/g47/fm && magick f_0013.png -crop 260x120+0+30 +repage -filter point -resize 300% /tmp/g47/m13.png; magick f_0018.png -crop 260x120+0+30 +repage -filter
+75	173	prove	tool	read files	read	2026-11-02T07:10:11Z	0.1	/tmp/g47/m.png
+75	174	prove	model	model		2026-11-02T07:10:11Z	0.8	
+75	175	prove	tool	read files	read	2026-11-02T07:10:12Z	0.0	/tmp/g47/m.png
+75	176	prove	model	model		2026-11-02T07:10:12Z	9.5	
+75	177	prove	tool	shell	bash	2026-11-02T07:10:21Z	5.7	cd /tmp/g47 && export DISPLAY=:93 && rm -rf fg && mkdir fg && GOOEY_MOTION=3 GOOEY_FRAMES=200 GOOEY_SHOT=/tmp/g47/fg/still.png GOOEY_SHOT_DIR=/tmp/g47/fg GOOEY_
+75	178	prove	model	model		2026-11-02T07:10:27Z	8.1	
+75	179	prove	tool	shell	bash	2026-11-02T07:10:35Z	1.7	cd /tmp/g47/fg && f(){ printf "f_%04d.png" $1; }; sel(){ for i in $(seq $1 $2); do echo -n "$(printf 'f_%04d.png' $i) "; done; }; magick -delay 4 $(sel 1 13) -d
+75	180	prove	model	model		2026-11-02T07:10:37Z	5.0	
+75	181	prove	tool	shell	bash	2026-11-02T07:10:42Z	1.5	cd /tmp/g47/fg && sel(){ for i in $(seq $1 $2); do echo -n "$(printf 'f_%04d.png' $i) "; done; }; magick -delay 30 $(sel 3 3) -delay 4 $(sel 4 13) -delay 60 $(s
+75	182	prove	tool	read files	read	2026-11-02T07:10:42Z	1.5	/tmp/g47/gifcheck.png
+75	183	prove	model	model		2026-11-02T07:10:43Z	0.8	
+75	184	prove	tool	read files	read	2026-11-02T07:10:44Z	0.0	/tmp/g47/gifcheck.png
+75	185	prove	model	model		2026-11-02T07:10:44Z	5.1	
+75	186	prove	tool	shell	bash	2026-11-02T07:10:49Z	0.9	cd /tmp/g47 && magick dialog-motion.gif -coalesce co_%02d.gif && magick co_00.gif co_01.gif co_03.gif co_06.gif co_10.gif co_12.gif +append -resize 60% gifcheck
+75	187	prove	tool	read files	read	2026-11-02T07:10:49Z	0.9	/tmp/g47/gifcheck2.png
+75	188	prove	model	model		2026-11-02T07:10:50Z	0.9	
+75	189	prove	tool	read files	read	2026-11-02T07:10:51Z	0.0	/tmp/g47/gifcheck2.png
+75	190	prove	model	model		2026-11-02T07:10:51Z	7.6	
+75	191	prove	tool	shell	bash	2026-11-02T07:10:59Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g47/dialog-motion.gif docs/media/motion.gif && grep -n 'inventory.gif\|docs/guide/menus.md);$\|guide/menus.md)\.' RE
+75	192	prove	model	model		2026-11-02T07:10:59Z	1.1	
+75	193	prove	tool	shell	bash	2026-11-02T07:11:00Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 146,152p README.md | cut -c1-400; sed -n 208,211p README.md | cut -c300-900
+75	194	prove	model	model		2026-11-02T07:11:00Z	6.1	
+75	195	prove	tool	shell	bash	2026-11-02T07:11:06Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='README.md' L=open(p).read().split('\n') assert L[207].startswith('![The inventory example') assert L[20
+75	196	prove	model	model		2026-11-02T07:11:06Z	3.8	
+75	197	prove	tool	shell	bash	2026-11-02T07:11:10Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='README.md' s=open(p).read() s=s.replace("menus.md);\n every dialog and menu eases","menus.md); every di
+75	198	prove	model	model		2026-11-02T07:11:10Z	8.5	
+75	199	prove	tool	git	bash	2026-11-02T07:11:18Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 59,61p docs/guide/README.md; sed -n 52,53p docs/media/README.md | cut -c1-200; python3 - <<'EOF' import re # changelo
+75	200	prove	model	model		2026-11-02T07:11:18Z	4.0	
+75	201	prove	tool	shell	bash	2026-11-02T07:11:22Z	0.1	cd /home/ladvien/bevy_gooey_loop && magick identify docs/media/motion.gif | wc -l; ls -la docs/media/motion.gif | awk '{print $5}'; sed -i 's/`motion.gif` | a d
+75	202	prove	model	model		2026-11-02T07:11:22Z	8.2	
+75	203	prove	tool	git	bash	2026-11-02T07:11:30Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='AGENTS.md' s=open(p).read() k=s.index("- `src/options.rs`") new="- `src/motion.rs` — `MotionSettings { 
+75	204	prove	model	model		2026-11-02T07:11:30Z	4.2	
+75	205	prove	tool	shell	bash	2026-11-02T07:11:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,30p tests/serde.rs; grep -n 'UiScaleSettings' tests/serde.rs | head -5
+75	206	prove	model	model		2026-11-02T07:11:35Z	2.5	
+75	207	gate	tool	phase mark	bash	2026-11-02T07:11:37Z	0.7	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/serde.rs' s=open(p).read() s=s.replace("GooeySkin, PadStyle,","GooeySkin, MotionSettings, PadStyl
+75	208	gate	model	model		2026-11-02T07:11:38Z	3.5	
+75	209	gate	tool	shell	bash	2026-11-02T07:11:41Z	60.0	[launched bg_7] cd /tmp/g47 && export DISPLAY=:93 && for i in $(seq 1 10); do for b in before after; do m=$(GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SHOT=/tmp/g47
+75	210	gate	model	model		2026-11-02T07:12:41Z	0.8	
+75	211	gate	tool	wait: other	wait	2026-11-02T07:12:42Z	66.4	{}
+75	212	gate	model	model		2026-11-02T07:13:49Z	4.7	
+75	213	gate	tool	cargo test	bash	2026-11-02T07:13:53Z	0.1	cd /home/ladvien/bevy_gooey_loop && git reset -q && git add src tests examples && git commit -qm "Add motion: a dialog's card rises and a popover opens out of i
+75	214	gate	model	model		2026-11-02T07:13:53Z	1.4	
+75	215	gate	tool	shell	bash	2026-11-02T07:13:55Z	0.0	[launched bg_8] /tmp/g47/gate.sh > /tmp/g47/gate.log 2>&1; grep -E '^===|^rc=|test result|GATE|error|warning: unused' /tmp/g47/gate.log | head -40
+75	216	gate	model	model		2026-11-02T07:13:55Z	8.3	
+75	217	gate	tool	edit files	write	2026-11-02T07:14:03Z	0.0	/tmp/g47/critique.md
+75	218	gate	tool	wait: other	wait	2026-11-02T07:14:03Z	179.4	{}
+75	219	gate	model	model		2026-11-02T07:17:03Z	1.7	
+75	220	gate	tool	shell	bash	2026-11-02T07:17:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'very complex' -B3 -A12 /tmp/g47/gate.log | head -30; grep -n 'FAILED\|panicked\|failures:' -A6 /tmp/g47/gate.log | 
+75	221	gate	model	model		2026-11-02T07:17:04Z	5.2	
+75	222	gate	tool	shell	bash	2026-11-02T07:17:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 790,845p tests/popover.rs
+75	223	gate	model	model		2026-11-02T07:17:09Z	5.3	
+75	224	gate	tool	cargo clippy	bash	2026-11-02T07:17:15Z	14.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/popover.rs' s=open(p).read() a=""" // as its padding, at the place its width moves it from. let m
+75	225	gate	model	model		2026-11-02T07:17:30Z	11.6	
+75	226	gate	tool	shell	bash	2026-11-02T07:17:41Z	0.0	[launched bg_9] /tmp/g47/gate.sh > /tmp/g47/gate2.log 2>&1; grep -E '^===|^rc=|test result|GATE|^error' /tmp/g47/gate2.log | head -40
+75	227	gate	model	model		2026-11-02T07:17:41Z	3.1	
+75	228	gate	tool	wait: other	wait	2026-11-02T07:17:44Z	169.1	{}
+75	229	gate	model	model		2026-11-02T07:20:33Z	25.3	
+75	230	log	tool	phase mark	bash	2026-11-02T07:20:59Z	13.8	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; python3 - <<'EOF' s=open('docs/loop-log.md').read() s=s.rstrip('\n')+''' ##
+75	231	log	model	model		2026-11-02T07:21:13Z	3.6	
+75	232	ship	tool	phase mark	bash	2026-11-02T07:21:16Z	3.8	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && git push -q -u origin loop/iter-47 2>&1 | tail -2; git checkout -q main 
+75	233	ship	model	model		2026-11-02T07:21:20Z	2.7	
+75	234	release	tool	phase mark	bash	2026-11-02T07:21:23Z	18.6	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release && sed -i '0,/^version = "0.27.0"/s//version = "0.27.1"/' Cargo.toml && 
+75	235	release	model	model		2026-11-02T07:21:41Z	1.7	
+75	236	release	tool	push gate	bash	2026-11-02T07:21:43Z	11.0	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo publish 2>&1 | tail -3; git tag -a v0.27.1 -m v0.27.1 && git push -q origin main v0.27.1 2>&1 | tai
+75	237	release	model	model		2026-11-02T07:21:54Z	5.7	
+75	238	log	tool	phase mark	bash	2026-11-02T07:22:00Z	2.0	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; git worktree remove ~/g47_base && rm -f ~/g47_gallery_before ~/g47_gallery_
+75	239	log	model	model		2026-11-02T07:22:02Z	6.1	
