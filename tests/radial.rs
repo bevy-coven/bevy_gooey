@@ -412,6 +412,35 @@ fn a_small_window_at_large_text_gets_a_whole_wheel_not_a_bigger_one() {
 }
 
 #[test]
+fn the_items_stand_on_a_quiet_track_round_the_middle_that_the_pointer_goes_through() {
+    let mut app = app();
+    let ui = wheel(&mut app);
+    let disc = rect(&app, ui.radial);
+    let track = descendants(app.world(), ui.radial)
+        .into_iter()
+        .find(|&e| app.world().get::<Role>(e) == Some(&Role::RadialTrack))
+        .expect("a track");
+    let track_rect = rect(&app, track);
+    assert!((track_rect.center() - disc.center()).length() < 1.0);
+    // Its line runs through the items' middles: a circle of the ring's radius.
+    let skin = app.world().resource::<GooeySkin>().clone();
+    let want = (disc.width() - 2.0 * skin.border) * 0.36 * 2.0;
+    assert!(
+        (track_rect.width() - want).abs() < 1.5,
+        "{track_rect:?} vs {want}"
+    );
+    assert_eq!(
+        app.world().get::<Pickable>(track),
+        Some(&Pickable::IGNORE),
+        "the pointer reaches the disc through it"
+    );
+    assert_eq!(
+        *app.world().get::<BorderColor>(track).expect("a border"),
+        BorderColor::all(skin.surface_raised)
+    );
+}
+
+#[test]
 fn ten_short_items_fit_the_ring_too() {
     let mut app = app_sized(1280, 1080);
     let labels = [

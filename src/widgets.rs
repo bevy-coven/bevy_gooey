@@ -897,6 +897,19 @@ pub fn radial<S: Into<String>>(items: impl IntoIterator<Item = S>, selected: usi
         observe(radial_on_pointer_move),
         observe(radial_on_press),
         Children::spawn((
+            Spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Percent(50.0),
+                    top: Val::Percent(50.0),
+                    width: Val::Percent(RADIAL_RING_FRACTION * 200.0),
+                    height: Val::Percent(RADIAL_RING_FRACTION * 200.0),
+                    ..default()
+                },
+                pull_back,
+                Role::RadialTrack,
+                Pickable::IGNORE,
+            )),
             SpawnIter(items.into_iter().enumerate().map(move |(index, text)| {
                 (
                     middle(RADIAL_RING_FRACTION, radial_place(index, count)),

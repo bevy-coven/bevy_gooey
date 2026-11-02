@@ -184,6 +184,7 @@ fn spec(role: Role) -> Spec {
         | Role::StatusMark
         | Role::MenuSeparator
         | Role::ToolbarSeparator
+        | Role::RadialTrack
         | Role::RadialSlot
         | Role::RadialText
         | Role::RadialCentre

@@ -1303,6 +1303,9 @@ pub enum Role {
     /// it, its border the focus ring. As wide as it is high, in text sizes, so it follows the
     /// player's text scale.
     Radial,
+    /// The quiet circle the items of a radial stand on: a line in [`GooeySkin::surface_raised`],
+    /// drawn behind them, so the ring reads as a ring and not as eight floating labels.
+    RadialTrack,
     /// One item of a radial: a button's fill and size, centred on its place on the ring, lit
     /// [`GooeySkin::accent`] while it is the highlighted one.
     RadialSlot,
@@ -2243,6 +2246,7 @@ fn restyle(
         | Role::TabText
         | Role::RadialText
         | Role::RadialCentre
+        | Role::RadialTrack
         | Role::TabPages
         | Role::TabPage
         | Role::TextInput
@@ -2350,6 +2354,7 @@ fn restyle(
                 skin.text
             },
         )),
+        Role::RadialTrack => Some(BorderColor::all(skin.surface_raised)),
         // The disc is framed like a panel and wears the ring while it has focus.
         Role::Radial => Some(BorderColor::all(if look.focused == Some(entity) {
             skin.focus_ring
@@ -2457,6 +2462,10 @@ fn restyle(
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = BorderRadius::MAX;
                 next.flex_shrink = 0.0;
+            }
+            Role::RadialTrack => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = BorderRadius::MAX;
             }
             // An item is a button's size and look, its middle on its place on the ring (the place
             // and the half-size pull back are the widget's own).
