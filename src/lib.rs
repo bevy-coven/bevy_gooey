@@ -277,7 +277,7 @@ pub use widgets::{
     prompt, prompts, radio_item, screen, section, select, separator, skin_preset, slider, spinner,
     split, status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs,
     text_area, text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar,
-    toolbar_separator, tree, vec_field,
+    toolbar_separator, tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;

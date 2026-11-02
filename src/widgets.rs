@@ -60,6 +60,7 @@ use crate::popover::{
 };
 use crate::progress::{Progress, Spinner};
 use crate::prompt::Prompt;
+use crate::region::FocusRegion;
 use crate::section::{SectionHeader, SectionOpen, header_on_activate, section_self_update};
 use crate::select::{SELECT_HINT, SELECT_NO_MATCH, Select, select_on_activate};
 use crate::skin::Role;
@@ -107,8 +108,8 @@ const SPLIT_GRIP_LENGTH: f32 = 40.0;
 /// size.
 const TEXT_INPUT_CHARS: f32 = 17.0;
 
-/// How many character advances wide a [`text_area`]'s field is: twice a text input's.
-const TEXT_AREA_CHARS: f32 = 33.0;
+/// How many character advances wide a [`text_area`]'s field is: a text input's and a half.
+const TEXT_AREA_CHARS: f32 = 26.0;
 
 /// A text field's caret, as a share of the font size: 2 px at the body size, a hair thinner than
 /// Bevy's 0.2 so it does not cover a letter's stem.
@@ -952,6 +953,38 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
 /// ```
 pub fn text_input(label: impl Into<String>, value: impl Into<String>) -> impl Bundle {
     text_row(Some(label.into()), value.into(), Some(TEXT_INPUT_CHARS))
+}
+
+/// A frame for what the host draws itself (a 3D view, a map, a canvas): it fills the room its
+/// parent leaves, is a tab stop, shows the focus ring while it has focus, and is a
+/// [`FocusRegion::host`]: with focus in it the arrow keys are the host's (read them from
+/// `ButtonInput<KeyCode>`), Tab and F6 still leave, so the keyboard is never trapped. Put what
+/// draws into it (a `ViewportNode`, an image) as children or on the entity itself, and
+/// `.insert(DropTarget::<T>::new())` makes it a place pieces are dropped.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn pan(keys: Res<ButtonInput<KeyCode>>, focus: Res<bevy::input_focus::InputFocus>, view: Single<Entity, With<Role>>) {
+///     // Read the arrows when the viewport has focus; gooey moves no focus meanwhile.
+///     if focus.get() == Some(*view) && keys.pressed(KeyCode::ArrowLeft) {
+///         // pan left
+///     }
+/// }
+/// # fn setup(mut commands: Commands) { commands.spawn(viewport()); }
+/// ```
+pub fn viewport() -> impl Bundle {
+    (
+        Node {
+            flex_grow: 1.0,
+            align_self: AlignSelf::Stretch,
+            ..default()
+        },
+        Role::Viewport,
+        FocusRegion::host(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+    )
 }
 
 /// A row with a text field several lines high: the label over a framed field that wraps its

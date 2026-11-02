@@ -6,6 +6,10 @@ per subject. The README links each bullet to its page.
 
 - [The widgets](widgets.md) — every widget, a meter, a tooltip, a dialog, and how a HUD lets the pointer
   through to the game under it.
+- [Focus regions](focus-regions.md) — `FocusRegion`, F6 and Shift+F6 between a tool's parts, `viewport()` and a
+  region that keeps the arrow keys for the host.
+- [Drag and drop](drag-drop.md) — `DragPayload<T>`, `DropTarget<T>`, `Dropped`, `DropRefused` and `DroppedOnWorld`: a
+  typed payload, a ghost, a mark that says yes or no before the pointer is let go, and Escape.
 - [Navigation](navigation.md) — what moves focus, what shows the ring, and what an open dialog holds.
 - [Settings controls](controls.md) — `toggle`, `choice` and `slider`: one bundle each, Bevy's own widget
   at the root, and `ValueChange` once per change.
@@ -19,6 +23,8 @@ per subject. The README links each bullet to its page.
 - [Text input](text-input.md) — `text_input(label, value)`: a row with a field the player types in, the
   edit and its end in `ValueChange<String>`, `TextEditing` for a game's hotkeys and a pad's keyboard, and
   why a field never traps focus.
+- [Text area](text-input.md#a-text-area) — `text_area(label, value, rows)`: the text input several lines high, Enter
+  for a line, Ctrl+Enter or Cmd+Enter to end the edit, the arrow keys the caret's.
 - [Numbers](numbers.md) — `number_field(label, value, step, range)` and `vec_field`: a number the player
   scrubs with a drag, types or steps with the keys and the D-pad, held to a range, `MixedValue` for a
   multi-selection, and the reason a typed expression is refused.
