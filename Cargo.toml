@@ -28,6 +28,9 @@ serde = ["dep:serde", "bevy/serialize"]
 # its type, written back through `ReflectMut`. Also turns on Bevy's `reflect_documentation`, so a field's
 # doc comment is its tooltip.
 reflect = ["bevy/reflect_documentation"]
+# `bevy_gooey::testing`: `find_by_label`, `click`, `press`, `type_text` and `focused` over a headless `App`,
+# so a host's UI tests drive widgets by what the player reads. Off by default: no test code in a game.
+testing = []
 # Nothing enables this in normal use. `tests/readme.rs` checks the README's quick start against the
 # crate-root doctest, so the two cannot drift.
 readme-example = []

@@ -127,6 +127,8 @@
 #![warn(missing_docs)]
 
 pub mod model;
+#[cfg(feature = "testing")]
+pub mod testing;
 
 mod binding;
 mod cancel;
