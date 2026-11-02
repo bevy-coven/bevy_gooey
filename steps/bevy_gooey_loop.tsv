@@ -14730,3 +14730,147 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 77	169	log	model	model		2026-11-02T08:06:49Z	28.9	
 77	170	log	tool	push gate	bash	2026-11-02T08:07:18Z	1.7	Write log, commit, push :: cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' ## Iteration 49 — 2026-11-02 — Radial items can draw pictures **Triage.** Audit row 76 had n
 77	171	log	model	model		2026-11-02T08:07:20Z	8.6	
+78	1	orient	model	model		2026-11-02T08:09:41Z	5.1	
+78	2	orient	tool	phase mark	bash	2026-11-02T08:09:46Z	0.8	python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git fetch -q origin loop-stats 2>&1|tail -1; 
+78	3	orient	tool	github	bash	2026-11-02T08:09:46Z	0.8	cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+78	4	orient	model	model		2026-11-02T08:09:47Z	5.0	
+78	5	orient	tool	github	bash	2026-11-02T08:09:52Z	1.8	cd /home/ladvien/bevy_gooey_loop && git show origin/loop-stats:steps/bevy_gooey_loop-audit.tsv | head -1; curl -s -A "gooey-loop" https://crates.io/api/v1/crate
+78	6	orient	model	model		2026-11-02T08:09:54Z	5.8	
+78	7	orient	tool	cargo publish	bash	2026-11-02T08:09:59Z	4.4	cd /home/ladvien/bevy_gooey_loop && git status --short | head -3; git describe --tags --exact-match HEAD 2>&1; git tag --points-at HEAD; cargo publish 2>&1 | ta
+78	8	orient	model	model		2026-11-02T08:10:04Z	10.4	
+78	9	choose	tool	phase mark	bash	2026-11-02T08:10:14Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; wc -l src/slots.rs src/drag.rs tests/slots.rs docs/research/slots.md 2>&
+78	10	choose	model	model		2026-11-02T08:10:14Z	2.0	
+78	11	choose	tool	shell	bash	2026-11-02T08:10:16Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 75,135p src/slots.rs; sed -n 160,335p src/slots.rs; cat docs/research/slots.md | head -60; grep -n 'accepting\|struct
+78	12	choose	model	model		2026-11-02T08:10:16Z	16.0	
+78	13	choose	tool	shell	bash	2026-11-02T08:10:32Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 60,215p src/drag.rs; grep -n 'accepts\|refused' src/drag.rs | sed -n 1,80p
+78	14	choose	model	model		2026-11-02T08:10:32Z	23.8	
+78	15	choose	tool	web	web_search	2026-11-02T08:10:56Z	8.0	Finding craft source on drop targets :: NN/g drag and drop design indicate valid drop targets highlight invalid
+78	16	choose	tool	web	web_search	2026-11-02T08:10:56Z	8.0	Finding shipping game source :: Path of Exile OR Diablo inventory dragging item highlights valid equipment slots green red
+78	17	research	tool	phase mark	bash	2026-11-02T08:10:56Z	8.0	cd /home/ladvien/bevy_gooey_loop && (timeout 60 hs distill search "drag and drop feedback valid drop target indication" --output json 2>&1 | head -c 1500); pyth
+78	18	research	model	model		2026-11-02T08:11:04Z	4.0	
+78	19	research	tool	shell	bash	2026-11-02T08:11:08Z	1.1	cd /tmp && mkdir -p g50 && curl -sL https://www.nngroup.com/articles/drag-drop/ | python3 -c " import sys,re t=re.sub(r'<[^>]+>',' ',sys.stdin.read());t=re.sub(
+78	20	research	model	model		2026-11-02T08:11:09Z	2.8	
+78	21	research	tool	read files	read	2026-11-02T08:11:12Z	1.7	Quoting NN/g on drop-target feedback :: https://www.nngroup.com/articles/drag-drop/
+78	22	research	tool	read files	read	2026-11-02T08:11:12Z	1.7	Quoting MDN on dropEffect none :: https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations
+78	23	research	model	model		2026-11-02T08:11:14Z	6.7	
+78	24	research	tool	shell	bash	2026-11-02T08:11:21Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 215,300p src/drag.rs; sed -n 470,600p src/drag.rs; grep -n 'fn takes\|fn release_on\|carried_by_key' src/*.rs | head
+78	25	research	model	model		2026-11-02T08:11:21Z	19.5	
+78	26	research	tool	shell	bash	2026-11-02T08:11:40Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 385,537p src/slots.rs; sed -n 1,32p src/slots.rs; sed -n 136,160p src/slots.rs
+78	27	research	model	model		2026-11-02T08:11:40Z	19.3	
+78	28	research	tool	shell	bash	2026-11-02T08:11:59Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,140p tests/slots.rs; grep -n '^fn \|^#\[test\]' tests/slots.rs | grep -n 'drag\|drop\|carry\|pick' | head -30
+78	29	research	model	model		2026-11-02T08:11:59Z	2.2	
+78	30	research	tool	shell	bash	2026-11-02T08:12:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 215,400p tests/slots.rs; sed -n 1050,1099p tests/slots.rs; sed -n 140,215p tests/slots.rs | grep -n 'fn '
+78	31	research	model	model		2026-11-02T08:12:02Z	21.1	
+78	32	build	tool	phase mark	bash	2026-11-02T08:12:23Z	0.1	cd /home/ladvien/bevy_gooey_loop && cat > docs/research/slot-rules.md <<'EOF' # Slot rules: a slot that says no before the player lets go Researched 2026-11-02 
+78	33	build	model	model		2026-11-02T08:12:23Z	6.7	
+78	34	build	tool	shell	bash	2026-11-02T08:12:30Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='src/drag.rs' s=open(p).read() s=s.replace("""pub struct DropTarget<T: Clone + Send + Sync + '
+78	35	build	model	model		2026-11-02T08:12:30Z	3.3	
+78	36	build	tool	shell	bash	2026-11-02T08:12:33Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 28,75p src/slots.rs; grep -rn 'Slot {' src tests examples docs --include=*.rs --include=*.md | grep -v 'pub struct\|i
+78	37	build	model	model		2026-11-02T08:12:33Z	35.9	
+78	38	build	tool	cargo clippy	bash	2026-11-02T08:13:09Z	14.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/slots.rs' s=open(p).read() def rep(a,b,count=1): global s assert a in s, a s=s.replace(a,b,count) r
+78	39	build	model	model		2026-11-02T08:13:24Z	15.2	
+78	40	build	tool	shell	bash	2026-11-02T08:13:39Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 140,215p tests/slots.rs; sed -n 875,915p tests/slots.rs; sed -n 976,1000p tests/slots.rs
+78	41	build	model	model		2026-11-02T08:13:39Z	32.6	
+78	42	build	tool	cargo test	bash	2026-11-02T08:14:12Z	46.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/slots.rs' s=open(p).read() s=s.replace("""fn app() -> App {""","""/// Every `SlotRefused` a game 
+78	43	build	model	model		2026-11-02T08:14:58Z	6.2	
+78	44	build	tool	cargo test	bash	2026-11-02T08:15:05Z	12.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/slots.rs' s=open(p).read() s=s.replace(''' assert_eq!(focused(&app), Some(slots[4]), "the ring we
+78	45	build	model	model		2026-11-02T08:15:17Z	2.1	
+78	46	build	tool	cargo test	bash	2026-11-02T08:15:19Z	1.4	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo test --all-features --test all keyboard_carry_skips -- --nocapture 2>&1 | grep -a 'DBG\|panicked\|l
+78	47	build	model	model		2026-11-02T08:15:21Z	3.1	
+78	48	build	tool	shell	bash	2026-11-02T08:15:24Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1318,1325p tests/slots.rs
+78	49	build	model	model		2026-11-02T08:15:24Z	5.3	
+78	50	build	tool	cargo test	bash	2026-11-02T08:15:29Z	9.7	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/slots.rs' s=open(p).read() s=s.replace(''' assert_eq!(over, Some(slots[4])); pick_up(&mut app); '
+78	51	build	model	model		2026-11-02T08:15:39Z	10.2	
+78	52	build	tool	cargo test	bash	2026-11-02T08:15:49Z	12.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/slots.rs' s=open(p).read() a=s.index(" tap(&mut app, KeyCode::ArrowRight);\n assert_eq!(app.world
+78	53	build	model	model		2026-11-02T08:16:02Z	6.4	
+78	54	build	tool	cargo test	bash	2026-11-02T08:16:08Z	36.3	cd /home/ladvien/bevy_gooey_loop && cp src/slots.rs /tmp/g50/slots.rs.bak && python3 - <<'EOF' p='src/slots.rs' s=open(p).read() s=s.replace("(Some(there), Some
+78	55	build	model	model		2026-11-02T08:16:44Z	3.5	
+78	56	prove	tool	phase mark	bash	2026-11-02T08:16:48Z	0.1	cd /home/ladvien/bevy_gooey_loop && git add -A && git commit -qm "Add SlotRules: a slot that will not take an item says so while it is held over it; SlotRefused
+78	57	prove	model	model		2026-11-02T08:16:48Z	2.0	
+78	58	prove	tool	shell	bash	2026-11-02T08:16:50Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,62p examples/inventory.rs; sed -n 100,138p examples/inventory.rs; sed -n 223,345p examples/inventory.rs; sed -n 388
+78	59	prove	model	model		2026-11-02T08:16:50Z	44.8	
+78	60	prove	tool	cargo clippy	bash	2026-11-02T08:17:35Z	7.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/inventory.rs' s=open(p).read() def rep(a,b): global s assert a in s, a s=s.replace(a,b,1) rep(
+78	61	prove	model	model		2026-11-02T08:17:43Z	8.3	
+78	62	prove	tool	shell	bash	2026-11-02T08:17:51Z	0.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/inventory.rs' s=open(p).read() a=s.index(" let at = |position: Vec2, action: PointerAction| {"
+78	63	prove	model	model		2026-11-02T08:17:52Z	3.2	
+78	64	prove	tool	cargo build	bash	2026-11-02T08:17:55Z	60.0	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && git worktree add --detach ~/g50_base f5c465b 2>&1 | tail -1; (cd ~/g50_base && CARGO_BUILD_JOBS=4 cargo build --release --ex
+78	65	prove	model	model		2026-11-02T08:18:55Z	1.2	
+78	66	prove	tool	wait: other	wait	2026-11-02T08:18:56Z	28.4	{}
+78	67	prove	model	model		2026-11-02T08:19:25Z	6.3	
+78	68	prove	tool	shell	bash	2026-11-02T08:19:31Z	4.3	mkdir -p /tmp/g50/after /tmp/g50/before && cd /tmp/g50 && for v in before after; do GOOEY_KEYS='drag:b0>e1,drag:b0>e0' GOOEY_FRAMES=58 GOOEY_SHOT=/tmp/g50/$v/re
+78	69	prove	model	model		2026-11-02T08:19:35Z	1.2	
+78	70	prove	tool	read files	read	2026-11-02T08:19:36Z	0.0	/tmp/g50/after/refused.png
+78	71	prove	model	model		2026-11-02T08:19:36Z	10.5	
+78	72	prove	tool	shell	bash	2026-11-02T08:19:47Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'Role::SlotGrid' -B2 -A18 src/skin.rs | head -60
+78	73	prove	model	model		2026-11-02T08:19:47Z	11.8	
+78	74	prove	tool	cargo test	bash	2026-11-02T08:19:59Z	36.3	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/skin.rs' s=open(p).read() s=s.replace(""" Role::SlotGrid => { next.column_gap = Val::Px(skin.gap * 
+78	75	prove	model	model		2026-11-02T08:20:35Z	5.7	
+78	76	prove	tool	cargo test	bash	2026-11-02T08:20:41Z	38.5	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/slots.rs' s=open(p).read() s=s.replace(''' .spawn(( screen(), Node { width: Val::Percent(100.0), 
+78	77	prove	model	model		2026-11-02T08:21:19Z	5.0	
+78	78	prove	tool	cargo build	bash	2026-11-02T08:21:24Z	10.4	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example inventory 2>&1 | tail -1; cp $CARGO_TARGET_DIR/release/examples/inventory
+78	79	prove	model	model		2026-11-02T08:21:34Z	2.9	
+78	80	prove	tool	shell	bash	2026-11-02T08:21:37Z	3.7	cd /home/ladvien/bevy_gooey_loop && sed -n 52p docs/media/README.md | cut -c760-1400; mkdir -p /tmp/g50/frames && rm -f /tmp/g50/frames/*; GOOEY_KEYS='drag:b0>e
+78	81	prove	model	model		2026-11-02T08:21:41Z	4.9	
+78	82	prove	tool	clip record/render	bash	2026-11-02T08:21:46Z	0.5	cd /tmp/g50 && ffmpeg -loglevel error -y -framerate 20 -pattern_type glob -i '/tmp/g50/frames/f_*.png' -vf "crop=900:520:190:100,scale=800:462:flags=lanczos,spl
+78	83	prove	tool	read files	read	2026-11-02T08:21:46Z	0.5	/tmp/g50/sheet.png
+78	84	prove	model	model		2026-11-02T08:21:47Z	1.8	
+78	85	prove	tool	clip record/render	bash	2026-11-02T08:21:48Z	0.1	cd /tmp/g50 && ffmpeg -y -i slot-rules.gif -vf "select='not(mod(n,3))',scale=400:-1,tile=4x4" -frames:v 1 sheet.png 2>&1 | tail -3; ls
+78	86	prove	model	model		2026-11-02T08:21:49Z	1.4	
+78	87	prove	tool	read files	read	2026-11-02T08:21:50Z	0.1	/tmp/g50/sheet.png
+78	88	prove	model	model		2026-11-02T08:21:50Z	14.2	
+78	89	prove	tool	clip record/render	bash	2026-11-02T08:22:04Z	0.4	cd /tmp/g50 && ffmpeg -loglevel error -y -framerate 20 -pattern_type glob -i '/tmp/g50/frames/f_*.png' -vf "crop=960:520:190:100,scale=800:434:flags=lanczos,spl
+78	90	prove	tool	read files	read	2026-11-02T08:22:04Z	0.4	/tmp/g50/f23.png
+78	91	prove	model	model		2026-11-02T08:22:05Z	6.5	
+78	92	prove	tool	clip record/render	bash	2026-11-02T08:22:11Z	0.4	cd /tmp/g50 && ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/tmp/g50/frames/f_*.png' -vf "trim=start_frame=2:end_frame=44,setpts=PTS-STARTPTS,
+78	93	prove	model	model		2026-11-02T08:22:12Z	1.4	
+78	94	prove	tool	read files	read	2026-11-02T08:22:13Z	0.0	/tmp/g50/gf/g_22.png
+78	95	prove	model	model		2026-11-02T08:22:13Z	8.6	
+78	96	prove	tool	clip record/render	bash	2026-11-02T08:22:22Z	0.3	cd /tmp/g50 && ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/tmp/g50/frames/f_*.png' -vf "trim=start_frame=2:end_frame=44,setpts=PTS-STARTPTS,
+78	97	prove	model	model		2026-11-02T08:22:22Z	1.4	
+78	98	prove	tool	read files	read	2026-11-02T08:22:23Z	0.1	/tmp/g50/chk.png
+78	99	prove	model	model		2026-11-02T08:22:23Z	12.7	
+78	100	prove	tool	clip record/render	bash	2026-11-02T08:22:36Z	0.2	cd /tmp/g50 && ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/tmp/g50/frames/f_*.png' -vf "trim=start_frame=2:end_frame=44,setpts=PTS-STARTPTS,
+78	101	prove	tool	read files	read	2026-11-02T08:22:36Z	0.2	/tmp/g50/chk.png
+78	102	prove	model	model		2026-11-02T08:22:36Z	6.0	
+78	103	prove	tool	clip record/render	bash	2026-11-02T08:22:42Z	0.2	cd /tmp/g50 && ffprobe -v error -show_entries stream=nb_frames,width,height -of csv=p=0 slot-rules.gif; rm -f chk.png; ffmpeg -loglevel error -y -i slot-rules.g
+78	104	prove	model	model		2026-11-02T08:22:42Z	1.5	
+78	105	prove	tool	read files	read	2026-11-02T08:22:44Z	0.1	/tmp/g50/chk2.png
+78	106	prove	model	model		2026-11-02T08:22:44Z	5.2	
+78	107	prove	tool	clip record/render	bash	2026-11-02T08:22:49Z	0.2	cd /tmp/g50 && ffmpeg -loglevel error -y -i slot-rules.gif -vf "select='eq(n,10)+eq(n,12)+eq(n,14)+eq(n,15)',tile=2x2" -frames:v 1 -update 1 chk3.png
+78	108	prove	tool	read files	read	2026-11-02T08:22:49Z	0.2	/tmp/g50/chk3.png
+78	109	prove	model	model		2026-11-02T08:22:49Z	2.1	
+78	110	prove	tool	clip record/render	bash	2026-11-02T08:22:52Z	0.2	cd /tmp/g50 && ls; ffmpeg -y -i slot-rules.gif -vf "select='eq(n,10)+eq(n,12)+eq(n,14)+eq(n,15)',tile=2x2" -frames:v 1 -update 1 chk3.png 2>&1 | tail -2; ls chk
+78	111	prove	model	model		2026-11-02T08:22:52Z	2.6	
+78	112	prove	tool	read files	read	2026-11-02T08:22:54Z	0.1	/tmp/g50/chk3.png
+78	113	prove	model	model		2026-11-02T08:22:54Z	6.8	
+78	114	prove	tool	phase mark	bash	2026-11-02T08:23:01Z	60.0	[launched bg_2] cd /tmp/g50 && python3 ~/.local/share/wiggum/steps.py mark prove >/dev/null; for i in 1 2 3 4 5 6 7 8; do for v in before after; do GOOEY_KEYS=down,right,pickup
+78	115	prove	model	model		2026-11-02T08:24:01Z	3.2	
+78	116	prove	tool	shell	bash	2026-11-02T08:24:04Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l README.md; grep -n -i 'inventory\|slot' README.md | cut -c1-260; ls docs/guide | head -50; grep -n -i 'slot' CHANGELOG
+78	117	prove	model	model		2026-11-02T08:24:04Z	1.8	
+78	118	prove	tool	shell	bash	2026-11-02T08:24:06Z	0.0	cd /home/ladvien/bevy_gooey_loop && cat docs/guide/inventory.md | cut -c1-400; sed -n 118,123p README.md | cut -c1-900
+78	119	prove	model	model		2026-11-02T08:24:06Z	6.8	
+78	120	prove	tool	shell	bash	2026-11-02T08:24:13Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n 'A game with rules does its own' docs/guide/inventory.md | cut -c1-20; python3 - <<'EOF' s=open('docs/guide/inventor
+78	121	prove	model	model		2026-11-02T08:24:13Z	12.9	
+78	122	prove	tool	shell	bash	2026-11-02T08:24:26Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g50/slot-rules.gif docs/media/slot-rules.gif && python3 - <<'EOF' import re def edit(p, pairs): s=open(p).read() for
+78	123	prove	model	model		2026-11-02T08:24:26Z	16.2	
+78	124	prove	tool	cargo build	bash	2026-11-02T08:24:42Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' def edit(p, pairs): s=open(p).read() for a,b in pairs: assert a in s, (p,a[:70]) s=s.replace(a,b,1) open(p
+78	125	prove	bg	phase mark	bash	2026-11-02T08:23:11Z	91.3	bg_2 completed: python3 ~/.local/share/wiggum/steps.py mark prove >/dev/null; for i in 1 2 3 4 5 6 7 8; do for v in before after; do ...
+78	126	prove	model	model		2026-11-02T08:24:42Z	11.2	
+78	127	gate	tool	phase mark	bash	2026-11-02T08:24:53Z	7.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' s=open('AGENTS.md').read().split('\n') i=[k for k,l in enumerate(s) if l.startswith('- `src/slots.rs`')][0
+78	128	gate	model	model		2026-11-02T08:25:00Z	2.3	
+78	129	gate	tool	cargo clippy	bash	2026-11-02T08:25:03Z	1.3	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -A12 '^error' | head -30
+78	130	gate	model	model		2026-11-02T08:25:04Z	5.2	
+78	131	gate	tool	cargo test	bash	2026-11-02T08:25:09Z	0.0	[launched bg_3] cd /home/ladvien/bevy_gooey_loop && sed -i 's/NormalizedRenderTarget::Window(target.clone())/NormalizedRenderTarget::Window(target)/' examples/inventory.rs && c
+78	132	gate	model	model		2026-11-02T08:25:09Z	4.0	
+78	133	gate	tool	wait: other	wait	2026-11-02T08:25:13Z	181.7	{}
+78	134	gate	model	model		2026-11-02T08:28:15Z	11.6	
+78	135	release	tool	phase mark	bash	2026-11-02T08:28:27Z	13.8	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; (timeout 900 cargo semver-checks check-release --baseline-rev v0.27.0 2
+78	136	release	model	model		2026-11-02T08:28:40Z	4.2	
+78	137	release	tool	cargo publish	bash	2026-11-02T08:28:45Z	1.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' s=open('CHANGELOG.md').read() s=s.replace("## [Unreleased]\n","## [Unreleased]\n\n## [0.30.0] - 2026-11-02
+78	138	release	model	model		2026-11-02T08:28:46Z	4.3	
+78	139	log	tool	phase mark	bash	2026-11-02T08:28:50Z	17.3	cd /home/ladvien/bevy_gooey_loop && sed -i '231s/0.1 – 0.29/0.1 – 0.30/' README.md && git add -A && git commit -qm "release: v0.30.0" && cargo publish --dry-run
+78	140	log	model	model		2026-11-02T08:29:07Z	24.6	
+78	141	log	tool	push gate	bash	2026-11-02T08:29:32Z	2.0	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' ## Iteration 50 — 2026-11-02 — Slot rules: a slot says no before the player lets go **Triage
+78	142	log	model	model		2026-11-02T08:29:34Z	3.0	
+78	143	ship	tool	phase mark	bash	2026-11-02T08:29:37Z	1.3	cd /home/ladvien/bevy_gooey_loop && git fetch -q origin && git rev-parse origin/main HEAD && git ls-remote --tags origin v0.30.0 | head -2; python3 ~/.local/sha
+78	144	ship	model	model		2026-11-02T08:29:38Z	9.9	
