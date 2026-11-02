@@ -27,6 +27,7 @@ mod lines;
 mod list;
 mod menu;
 mod meter;
+mod meter_motion;
 mod motion;
 mod nav;
 mod number;

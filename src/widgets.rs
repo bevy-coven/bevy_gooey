@@ -316,7 +316,9 @@ pub fn button(text: impl Into<String>) -> impl Bundle {
 /// A HUD meter (health, stamina, progress): a framed track with a fill `value / max` of its length.
 /// The frame marks the whole length against the panel; the fill sits one border inside it, with
 /// concentric rounded corners. It is [`crate::GooeySkin::meter_height`] high times the text scale,
-/// so it grows with the player's size option. Change its [`Meter`] component to move it.
+/// so it grows with the player's size option. Change its [`Meter`] component to move it: a loss
+/// drops the fill at once and leaves the lost length behind it, in the skin's danger colour, for
+/// a moment before it drains; a gain eases up ([`crate::MotionSettings::off`] makes both instant).
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -330,14 +332,26 @@ pub fn meter(value: f32, max: f32) -> impl Bundle {
         Node::default(),
         Role::Meter,
         Meter { value, max },
-        children![(
-            Node {
-                width: Val::Percent(meter_fraction(value, max) * 100.0),
-                height: Val::Percent(100.0),
-                ..default()
-            },
-            Role::MeterFill
-        )],
+        children![
+            (
+                Node {
+                    width: Val::Percent(meter_fraction(value, max) * 100.0),
+                    height: Val::Percent(100.0),
+                    ..default()
+                },
+                // Over the trail, which starts at the bar's left edge and shows only past the fill.
+                ZIndex(1),
+                Role::MeterFill
+            ),
+            (
+                Node {
+                    width: Val::Percent(0.0),
+                    height: Val::Percent(100.0),
+                    ..default()
+                },
+                Role::MeterTrail
+            )
+        ],
     )
 }
 

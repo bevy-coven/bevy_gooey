@@ -1131,6 +1131,9 @@ pub enum Role {
     Meter,
     /// A meter's fill, one border inside the track's frame.
     MeterFill,
+    /// A meter's trail: the length the fill just lost, behind it in [`GooeySkin::danger`] while it
+    /// holds and drains. Zero wide at rest.
+    MeterTrail,
     /// A tooltip's box.
     Tooltip,
     /// A [`crate::popover`]'s panel: a card floating beside its anchor, opaque and framed in
@@ -2135,6 +2138,7 @@ fn restyle(
             owner.alpha,
         )),
         Role::MeterFill => Some(skin.accent),
+        Role::MeterTrail => Some(skin.danger),
         Role::FieldMark => Some(problem_colour(skin, owner.problem)),
         Role::ListRail => Some(skin.surface_raised),
         // A row has no fill at rest but a quiet band on every second one (never the only mark of
@@ -2672,7 +2676,7 @@ fn restyle(
             // CSS's content-edge radius: the track's minus its frame and gap, so the corners are
             // concentric. Bevy clips a child to a rectangle, never to its parent's curve, so the
             // fill is rounded itself.
-            Role::MeterFill | Role::SliderFill => {
+            Role::MeterFill | Role::MeterTrail | Role::SliderFill => {
                 next.border_radius =
                     BorderRadius::all(Val::Px((skin.radius - 2.0 * line).max(0.0)));
             }
