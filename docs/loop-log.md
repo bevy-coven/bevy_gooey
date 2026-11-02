@@ -1758,3 +1758,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. Drag and drop: a snap-back for a refused drop, auto-scroll of a list under a drag, a carried-payload hint (`prompts()` row "Arrows choose, Alt+M drops").
 4. Shortcut overlay: badges for menu items and `icon_button`s, `keyboard_shortcut` on a widget's node.
 5. `testing`: `Enter` on a button and typed characters without a primary window (Bevy's `dispatch_focused_input` needs one), a drag helper.
+
+**Gate and ship.** The merged tree with both slices: fmt, clippy, `cargo test --all-features --lib --tests` (713 in the one `all` executable), `--doc` (188), `cargo check --lib`, wasm32 and `cargo doc -D warnings` green; pushed `main` (`71b5eb2`), `loop/iter-44` is merged, `loop/iter-44b` and tag `v0.25.1` pushed (`v0.25.0` too). #35 closed by `Fixes #35` with a comment, the `assumed-decision` label and a move-the-pin comment on bevy_grimoire#214. Publish of v0.25.1 not attempted a second time (429 earlier in the pass).
+
+**Cleanup.** Removed this pass's own: worktree `~/g44_base` (plain `git worktree remove`), `~/g44_bin` (two gallery binaries), `/tmp/g44` (captures, GIF frames, gate scripts and logs) and `/tmp/g44m` (mutation backups). `df -h /home` 178 G free (96 %). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits, unchanged since iteration 17).
