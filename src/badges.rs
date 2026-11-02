@@ -7,8 +7,8 @@ use bevy::prelude::*;
 use bevy::ui::{ComputedNode, InteractionDisabled, UiGlobalTransform};
 use bevy::window::PrimaryWindow;
 
-use crate::skin::Role;
 use crate::shortcut::{Modifiers, Shortcut};
+use crate::skin::Role;
 use crate::tooltip::Tooltip;
 
 /// Above a popover's panel (150), under a tooltip (200).
@@ -80,7 +80,20 @@ fn badge(label: String) -> impl Bundle {
 }
 
 /// A widget that can carry a badge: laid out, shown, on screen and not disabled.
-type Badgeable = (Or<(With<Shortcut>, With<Tooltip>)>, Without<InteractionDisabled>);
+type Badgeable = (
+    Or<(With<Shortcut>, With<Tooltip>)>,
+    Without<InteractionDisabled>,
+);
+
+/// What the overlay reads of a widget: its chord (either source), whether it is shown, its box.
+type BadgeItem = (
+    Entity,
+    Option<&'static Shortcut>,
+    Option<&'static Tooltip>,
+    &'static InheritedVisibility,
+    &'static ComputedNode,
+    &'static UiGlobalTransform,
+);
 
 /// Shows and hides the badges (see [`ShortcutBadges`]). Writes nothing while the modifier is not
 /// held and no badge stands. Runs in [`crate::GooeySystems::Style`].
@@ -91,17 +104,7 @@ pub fn update_shortcut_badges(
     time: Option<Res<Time<Real>>>,
     mut held_for: Local<f32>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    widgets: Query<
-        (
-            Entity,
-            Option<&Shortcut>,
-            Option<&Tooltip>,
-            &InheritedVisibility,
-            &ComputedNode,
-            &UiGlobalTransform,
-        ),
-        Badgeable,
-    >,
+    widgets: Query<BadgeItem, Badgeable>,
     badges: Query<(Entity, &ChildOf, &Text), With<ShortcutBadge>>,
     mut commands: Commands,
 ) {
@@ -128,7 +131,10 @@ pub fn update_shortcut_badges(
 
     let mut wanted: Vec<(Entity, String)> = Vec::new();
     for (entity, shortcut, tooltip, shown, node, at) in &widgets {
-        let Some(shortcut) = shortcut.copied().or_else(|| tooltip.and_then(|t| t.shortcut)) else {
+        let Some(shortcut) = shortcut
+            .copied()
+            .or_else(|| tooltip.and_then(|t| t.shortcut))
+        else {
             continue;
         };
         let size = node.size();

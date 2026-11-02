@@ -39,7 +39,10 @@ fn app_scaled(scale: f32) -> App {
     ))
     .init_resource::<Activated>()
     .add_observer(
-        |activate: On<Activate>, texts: Query<&Text>, kids: Query<&Children>, mut seen: ResMut<Activated>| {
+        |activate: On<Activate>,
+         texts: Query<&Text>,
+         kids: Query<&Children>,
+         mut seen: ResMut<Activated>| {
             let words = kids
                 .get(activate.entity)
                 .ok()
@@ -98,11 +101,7 @@ fn the_click_lands_where_the_widget_is_drawn_at_any_scale() {
         for label in ["Play", "Quit"] {
             let button = find_by_label(&mut app, label).expect("a button");
             click(&mut app, button);
-            assert_eq!(
-                focused_label(&app).as_deref(),
-                Some(label),
-                "scale {scale}"
-            );
+            assert_eq!(focused_label(&app).as_deref(), Some(label), "scale {scale}");
         }
         assert_eq!(app.world().resource::<Activated>().0, ["Play", "Quit"]);
     }
@@ -158,7 +157,10 @@ fn two_widgets_with_one_label_are_an_error_naming_both() {
     names.sort_unstable();
     assert_eq!(names, ["first Back", "second Back"]);
     let message = error.to_string();
-    assert!(message.contains("first Back") && message.contains("second Back"), "{message}");
+    assert!(
+        message.contains("first Back") && message.contains("second Back"),
+        "{message}"
+    );
     assert!(find_by_label(&mut app, "Next").is_ok());
 }
 
@@ -202,7 +204,10 @@ fn a_heading_is_found_as_itself_and_a_button_as_the_button_not_its_text() {
     let heading = find_by_label(&mut app, "Gallery").expect("a heading");
     assert!(app.world().get::<Text>(heading).is_some());
     let play = find_by_label(&mut app, "Play").expect("a button");
-    assert!(app.world().get::<Text>(play).is_none(), "the button, not its text");
+    assert!(
+        app.world().get::<Text>(play).is_none(),
+        "the button, not its text"
+    );
     assert_eq!(label_of(&app, play).as_deref(), Some("Play"));
 }
 
@@ -223,7 +228,10 @@ fn enter_activates_the_focused_button_and_space_flips_a_toggle() {
         "the click flipped it off"
     );
     press(&mut app, KeyCode::Space);
-    assert!(app.world().get::<Checked>(music).is_some(), "space flipped it on");
+    assert!(
+        app.world().get::<Checked>(music).is_some(),
+        "space flipped it on"
+    );
 }
 
 #[test]

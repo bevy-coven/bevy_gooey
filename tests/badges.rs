@@ -167,14 +167,23 @@ fn holding_the_modifier_shows_one_badge_per_widget_with_a_shortcut_and_releasing
         (t.open, Shortcut::primary(KeyCode::KeyO).label()),
     ];
     want.sort();
-    assert_eq!(shown(&mut app), want, "the component and the tooltip's chord; not the plain or the disabled one");
+    assert_eq!(
+        shown(&mut app),
+        want,
+        "the component and the tooltip's chord; not the plain or the disabled one"
+    );
     assert!(
-        shown(&mut app).iter().all(|(w, _)| *w != t.plain && *w != t.off),
+        shown(&mut app)
+            .iter()
+            .all(|(w, _)| *w != t.plain && *w != t.off),
         "a widget with no shortcut and a disabled one show none"
     );
 
     up(&mut app, KeyCode::AltLeft);
-    assert!(shown(&mut app).is_empty(), "released: gone in the same frame");
+    assert!(
+        shown(&mut app).is_empty(),
+        "released: gone in the same frame"
+    );
     // And again: the overlay is a mode the player holds.
     down(&mut app, KeyCode::AltRight);
     app.update();
@@ -290,10 +299,7 @@ fn a_hidden_a_folded_away_and_an_off_screen_widget_show_none() {
             Shortcut::primary(KeyCode::KeyA),
         ))
         .id();
-    let card = w
-        .spawn(panel())
-        .add_children(&[hidden, folded, away])
-        .id();
+    let card = w.spawn(panel()).add_children(&[hidden, folded, away]).id();
     w.spawn(screen()).add_child(card);
     settle(&mut app);
 
@@ -362,7 +368,9 @@ fn a_badge_stays_inside_its_widgets_frame_so_the_focus_ring_is_whole() {
             let t = tools(&mut app);
             // The focused widget wears its ring while the overlay is up.
             app.insert_resource(InputFocusVisible(true));
-            app.world_mut().resource_mut::<InputFocus>().set(t.save, FocusCause::Navigated);
+            app.world_mut()
+                .resource_mut::<InputFocus>()
+                .set(t.save, FocusCause::Navigated);
             down(&mut app, KeyCode::AltLeft);
             app.update();
             app.update();
@@ -376,7 +384,11 @@ fn a_badge_stays_inside_its_widgets_frame_so_the_focus_ring_is_whole() {
             };
             assert_eq!(badges.len(), 2, "{} at {text_scale}", preset.name());
             for (badge, widget) in badges {
-                let frame = app.world().get::<ComputedNode>(widget).expect("laid out").border();
+                let frame = app
+                    .world()
+                    .get::<ComputedNode>(widget)
+                    .expect("laid out")
+                    .border();
                 let outer = rect(&app, widget);
                 let inner = Rect {
                     min: outer.min + frame.min_inset,
@@ -437,10 +449,12 @@ fn a_frame_at_rest_writes_nothing_and_spawns_nothing() {
     // Count what changed over thirty idle frames.
     #[derive(Resource, Default)]
     struct Writes(u32);
+    type Written = Or<(Changed<Text>, Changed<Node>, Changed<BackgroundColor>)>;
     app.init_resource::<Writes>().add_systems(
         Update,
-        |changed: Query<(), Or<(Changed<Text>, Changed<Node>, Changed<BackgroundColor>)>>,
-         mut writes: ResMut<Writes>| writes.0 += changed.iter().count() as u32,
+        |changed: Query<(), Written>, mut writes: ResMut<Writes>| {
+            writes.0 += changed.iter().count() as u32
+        },
     );
     app.update();
     app.world_mut().resource_mut::<Writes>().0 = 0;

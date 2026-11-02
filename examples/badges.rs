@@ -125,9 +125,11 @@ fn command(name: &'static str, chord: Shortcut) -> impl Bundle {
     (
         button(name),
         chord,
-        observe(move |_: On<Activate>, mut ran: Single<&mut Text, With<Ran>>| {
-            ran.0 = format!("Ran: {name}");
-        }),
+        observe(
+            move |_: On<Activate>, mut ran: Single<&mut Text, With<Ran>>| {
+                ran.0 = format!("Ran: {name}");
+            },
+        ),
     )
 }
 

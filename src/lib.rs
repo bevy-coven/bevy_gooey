@@ -173,9 +173,9 @@ mod tooltip;
 mod tree;
 mod widgets;
 
+pub use badges::{ShortcutBadge, ShortcutBadges, update_shortcut_badges};
 pub use bevy::ui::Checked;
 pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
-pub use badges::{ShortcutBadge, ShortcutBadges, update_shortcut_badges};
 pub use binding::{
     Binding, BindingSettings, BindingValue, Capturing, bind_by_input, catch_pointer, not_capturing,
     update_bindings,

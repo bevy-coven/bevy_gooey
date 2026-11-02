@@ -12,7 +12,8 @@ fn with_tones() -> GooeySkin {
     let mut skin = GooeySkin::dark();
     skin.tones
         .insert("suggest".into(), Color::srgb(0.62, 0.86, 0.55));
-    skin.tones.insert("veil".into(), Color::srgb(0.02, 0.02, 0.03));
+    skin.tones
+        .insert("veil".into(), Color::srgb(0.02, 0.02, 0.03));
     skin.tones
         .insert("dim".into(), Color::srgb(0.30, 0.32, 0.36));
     skin
@@ -122,8 +123,8 @@ fn a_theme_step_keeps_the_hosts_tones() {
 
 #[cfg(feature = "serde")]
 #[test]
-fn a_skin_file_with_tones_reads_back_and_one_without_has_none() -> Result<(), Box<dyn std::error::Error>>
-{
+fn a_skin_file_with_tones_reads_back_and_one_without_has_none()
+-> Result<(), Box<dyn std::error::Error>> {
     let skin = with_tones();
     let text = ron::to_string(&skin)?;
     let back = ron::from_str::<GooeySkin>(&text)?;
@@ -131,9 +132,15 @@ fn a_skin_file_with_tones_reads_back_and_one_without_has_none() -> Result<(), Bo
     assert_eq!(back.tone("suggest"), skin.tone("suggest"));
     assert_eq!(back.tone("absent"), None);
     // A hand-written file.
-    let file = ron::from_str::<GooeySkin>(r#"(tones: {"suggest": Srgba((red: 0.6, green: 0.8, blue: 0.5, alpha: 1.0))})"#)?;
+    let file = ron::from_str::<GooeySkin>(
+        r#"(tones: {"suggest": Srgba((red: 0.6, green: 0.8, blue: 0.5, alpha: 1.0))})"#,
+    )?;
     assert_eq!(file.tone("suggest"), Some(Color::srgba(0.6, 0.8, 0.5, 1.0)));
-    assert!(ron::from_str::<GooeySkin>("(text_scale: 1.5)")?.tones.is_empty());
+    assert!(
+        ron::from_str::<GooeySkin>("(text_scale: 1.5)")?
+            .tones
+            .is_empty()
+    );
     Ok(())
 }
 
