@@ -1981,3 +1981,34 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 5. Tree rows: `level`, `expanded`, `size_of_set`, `position_in_set`; a table's row and column counts.
 
 **Cleanup.** Removed this pass's own: worktree `~/g50_base` (plain `git worktree remove`), `~/g50_inventory_before` and `~/g50_inventory_after`, `/tmp/g50` (captures, frames, gate script and log). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits, unchanged since iteration 17).
+
+
+## Iteration 51 — 2026-11-02 — A plain-key reveal, `BadgesShown` and the shortcut legend (#36, G-32)
+
+**Triage.** First job done: `cargo publish` of v0.30.0 succeeded (the 429 had cleared). Open issues: only #36 (`grimoire-ui`, `consumer:bevy_grimoire`), so it was the pass's item. Parked work only `wiggum/parked-pass-23-…` (old, ignored). Corpus not re-scanned (home-still not queried; the issue's design rests on the iteration-41 note's ExposeHK source, extended by an addendum in `docs/research/shortcut-overlay.md`).
+
+**What changed.** `ShortcutBadges::hold` is a `Reveal { Modifier(Modifiers), Key(KeyCode), Never }` (default `Modifier(ALT)`). A `Key` reveals only with no modifier down, no `TextEditing` and no `Capturing` row; `Never` holds no time; writing a new `ShortcutBadges` drops the badges in that frame. `BadgesShown(bool)` (a separate crate-written resource, only written on a change) is true once the reveal has been held for the delay, with or without any badge. `ShortcutLegend { rows: Vec<LegendRow> }` + `update_shortcut_legend` + `Role::ShortcutLegend` + `ShortcutLegendCard(rows)`: the issue's optional legend, a centred opaque card of keycaps and words while shown, rebuilt only when the rows differ. Assumed decision (on #36): the field changes type rather than a second `key` field (`Modifiers::ALT.into()` keeps old literals one call away); the legend sits at the window's centre.
+
+**Tests** (`tests/badges.rs`, 9 new, 17 in the file; mutation-checked: dropping the no-modifier test and dropping the typing/capturing gate each fail the one test that holds them): K after the delay and gone the frame it goes up; Ctrl+K in both orders, K then Shift, typing, a waiting row; focus moving while held; `Never` and a runtime switch; `BadgesShown` read with nothing to badge and written only on a change; the legend's rows, centre, columns, opacity, `Pickable::IGNORE`, redraw on a changed list, no writes while settled, inside the window at every `TEXT_SIZE_STEPS` step in all four looks, ink 4.5:1 on its fill. Existing struct literals in the file take `Reveal::Modifier(..)` (`assumed owner exception: the field's type`, no assertion changed).
+
+**Demo.** `docs/media/shortcut-legend.gif` (5.5 s, 688×432, 84 frames, 134 KB) in `docs/guide/shortcuts.md` and `docs/media/README.md`; `examples/badges` `GOOEY_LEGEND=1` with steps `k`/`unk`; README's shortcuts line names `Reveal::Key`, `BadgesShown` and `ShortcutLegend` (still 250 lines); CHANGELOG, `host-api.md`, AGENTS.md.
+
+**Critique and verdict** (full frames 1280×720 dark and parchment, 2560×1440 at 200% parchment, and the GIF's frames): flaws: the legend's keycaps (the prompts' outlined cap) are heavier than the badge chips, two vocabularies for a chord in one frame; the card is centred and not placeable, so at 200% text on a 720p-sized UI it covers the example's panel (it is above the badges, so nothing speckles through, but it is the host's job to leave the middle empty); a legend with a very long word column stops at 90% of the window and clips by `NoWrap`. Verdict **GREAT** for the plain-key reveal and the readable flag (tested, exact); **NOT YET** for the legend's placement (a host-chosen anchor is the follow-up).
+
+**Checklist.** No new skin colour; the legend's pair is `text` on `solid_surface` (already held by `problems()`); card frame `outline`; badges unchanged (the existing 8 badge tests pass with only the literal's type edited).
+
+**mean_ms** (`examples/badges`, 90 frames, software-rendered Xvfb): legend open 23.96, no legend 23.75 (same run-to-run noise as before); idle code is two resource reads and an empty query, tested to write nothing.
+
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 806 tests in the `all` executable (797 before) plus 73 lib, 205 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green first run (3.3 minutes). Merged `--no-ff` (e7fdd94).
+
+**Release.** `cargo semver-checks --baseline-rev v0.30.0`: 2 major checks failed (`update_shortcut_badges` takes 11 parameters, the field's type), so a minor: `release: v0.31.0`, published (https://crates.io/crates/bevy_gooey/0.31.0), tag `v0.31.0` pushed. #36 closed by `Fixes #36`; verification comments on #36 and bevy_grimoire#235.
+
+### Ranked backlog
+
+1. Legend placement: a host-chosen anchor (corner, or a parent entity) and one keycap vocabulary for badges and legend.
+2. Slot grid: a "valid slot" hint on every slot that takes the carried item at pick-up, a locked-slot look, a stack-merge helper.
+3. Motion: a scrim and card fade (needs group opacity), a dialog exit, a button press pop, a per-meter opt-out (`MeterSteady`).
+4. AccessKit actions: `ActionRequest` Click, Focus, Increment, Decrement and SetValue acted on.
+5. Radial: a pointing arc that follows the stick, an item showing picture and label together.
+
+**Cleanup.** Removed this pass's own: `/tmp/g51` (captures, frames, gate script and log). No baseline worktree was made. Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits).
