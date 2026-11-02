@@ -1683,7 +1683,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 
 **mean_ms** (gallery, `GOOEY_HEALTH=60`, `GOOEY_KEYS=down`, 240 frames, 1280x720, 12 alternating pairs): before min **22.63** median 23.25, after min **22.59** median 23.06, paired median difference **-0.11 ms**. With `GOOEY_A11Y=1` (a reader connected) five pairs showed no difference beyond noise (the system walks every `Role` entity, writing nothing when settled).
 
-**Gate.** `CARGO_BUILD_JOBS=4`, merged tree, see below.
+**Gate.** `CARGO_BUILD_JOBS=4`, merged tree: fmt, clippy `-D warnings`, `cargo test --all-features --lib --tests` (691 in the one `all` executable: 61 unit lib + 690, the one failure was `leaf::the_dependency_list_stays_closed`), `--doc` (185), `cargo check --lib` and wasm32, `cargo doc -D warnings` (with and without `--all-features`): green after one fix. **Assumed owner exception:** `accesskit` added to `ALLOWED_DEPS` in `tests/leaf.rs` (additive; `ed2170a`, commented on #32); nothing removed or loosened.
 
 ### Ranked backlog
 
@@ -1692,3 +1692,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. Drag and drop: a keyboard pick-up and drop mode, a snap-back animation for a refused drop, a drop that auto-scrolls a list.
 4. Shortcut overlay: `keyboard_shortcut` on a node from a widget's `Shortcut`; badges for menu items and `icon_button`s.
 5. Text area: a scroll bar past the rows, a character counter, a paste that truncates to the limit.
+
+**Release.** `cargo semver-checks`: no change needed (nothing public changed), so a patch bump: v0.24.1 committed (`release: v0.24.1`), tagged and pushed, but **`cargo publish` was refused with 429** ("too many versions of this crate in the last 24 hours"): logged once, not retried; the next pass publishes v0.24.1 (the tag `v0.24.1` already stands on the release commit) and its audit will say `missing: release` until then. #32 closed by `Fixes #32` on the merge; a verification comment is on it and a move-the-pin comment on bevy_grimoire#208.
+
+**Cleanup.** Removed this pass's own: `~/g42_bin` (before and after galleries, 2 binaries) and `/tmp/g42` (captures, tree dump, gate script and log, mutation backup); no baseline worktree was made (the baseline gallery was built into the loop's shared target). `df -h /home` 3.7T, 143 G free (97 %, no change at the GB level). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (1.8 MB each, clean, detached at old commits, no `-target` beside them), local branches `loop/iter-42` and `loop/iter-42b` (merged to main).
