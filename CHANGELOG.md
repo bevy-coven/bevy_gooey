@@ -15,11 +15,17 @@
 - Progress and spinner (G-17, #21): `progress(fraction)` with `Progress`, `ProgressText { step, eta_seconds }` ("3 of 7: Measuring meshes, about 20 s left") and `ProgressClamped`, and `spinner()` with `Spinner`, a ring that turns on real time. `update_progress` and `update_spinners` (Style). `model::{eta_words, progress_text, spinner_angle, SPINNER_PERIOD_SECS}`.
 - `Role::{Icon, FieldMessage, FieldMark, Progress, ProgressLine, Spinner}` (a minor bump: `Role` is exhaustive).
 - `examples/forms`, `docs/research/{icons, field-problem, progress}.md`, `docs/guide/{icons, field-problems, progress}.md`, `docs/media/forms.gif`, and `tests/{icon, field_problem, progress}.rs` (21 tests).
+- Toolbars (G-20, #24): `toolbar(items)`, `icon_button(IconSource, Tooltip)`, `toggle_group(options, selected)` with `GroupOption::{icon, text}`, `ToggleGroupValue` and `ToggleGroupCount` (radio behaviour: one `ValueChange<usize>` on the group, the option on lit in the accent, none for the one already on) and `toolbar_separator()`. When the items do not fit the bar's width the last ones hide (`Overflowed`) and a **More** button lists them; `fit_bars` (Style) does it for toolbars and status bars, `model::bar_fit` is the rule. `update_toggle_groups` (Style).
+- Status bar (G-19, #23): `status_bar(left, right)`, `status_item(text)` (Bevy's `Button`: `Activate`, a tooltip), `StatusKind::{Info, Warning, Error}` (a mark at the item's start, the words never change colour), `StatusPriority(u8)` (the lowest hides first, the right group's before the left's) and `status_progress(text, fraction)`.
+- Searchable select (G-16, #20): `select(label, options, selected)` is a `choice` with eight options or fewer (`SELECT_FILTER_ABOVE`) and opens a filtering list above that: the command palette's card over the select's own options (type to narrow it, "No option matches", Up and Down, Enter or a click chooses, Escape leaves the value), one `ValueChange<usize>` with the option's index in the list given. `Select`.
+- `Role::{Toolbar, ToolbarSeparator, ToggleGroup, GroupOption, StatusBar, StatusGroup, StatusItem, StatusMark}`; `CommandPalette` can hold a select's own list (the palette's own list and history are untouched).
+- `examples/tools`, `docs/research/{toolbar, status-bar, select}.md`, `docs/guide/{toolbars, status-bar, select}.md`, `docs/media/tools.gif`, and `tests/{toolbar, status_bar, select}.rs`.
 
 ### Changed
 
 - `Role` gains `ColorSwatch`, `ColorSwatchHalf`, `ColorArea`, `ColorAreaMarker`, `ColorAreaMarkerInner`, `ColorStripBox` and `ColorRail`: a `match` on it that has no wildcard needs them. `navigate_by_input` leaves the picker area's four arrow keys (not the D-pad's Up and Down) to it, `gamepad_adjust` steps its saturation. The README's numbers GIF moved to `docs/guide/numbers.md` (where it already was) to make room.
-- The README's colours GIF gives its place to `forms.gif` (the colours GIF is in `docs/guide/colors.md`), keeping the README at 250 lines.
+- The README's colours GIF gives its place to `forms.gif` (the colours GIF is in `docs/guide/colors.md`), keeping the README at 250 lines; `forms.gif` in turn gives it to `tools.gif` (it stays in `docs/guide/progress.md`).
+- A `choice` row that is a `select` with a list does not cycle on Enter, Space, South or a click: it opens the list (Left, Right, Home and End still step it).
 
 ## [0.21.0] - 2026-11-01
 
