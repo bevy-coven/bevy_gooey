@@ -16,7 +16,6 @@ use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::drag::{DropCandidate, DropRefusing};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
-use crate::prompt::PromptsAnchor;
 use crate::icon::{IconSize, IconTone};
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
@@ -26,6 +25,7 @@ use crate::model::{
     tree_indent,
 };
 use crate::popover::{PopoverPanel, placement_of};
+use crate::prompt::PromptsAnchor;
 use crate::status::StatusKind;
 use crate::table::TableRow;
 use crate::toast::{Toast, ToastKind};

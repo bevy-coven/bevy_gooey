@@ -761,10 +761,6 @@ fn capture(
     }
 }
 
-/// `GOOEY_KEYS`: one input every `GOOEY_KEY_EVERY` frames ([`KEY_EVERY`]), pressed and then released as the window's
-/// own keyboard or pointer input, so Bevy's input dispatch, picking, Tab navigation and buttons all
-/// see it.
-#[allow(clippy::too_many_arguments)]
 /// `GOOEY_KEYS` token `legend`: every legend to the next anchor, a live change of its component.
 fn stage_legend(capture: Option<Res<Capture>>, mut legends: Query<&mut PromptsAnchor>) {
     let Some(c) = capture else {
@@ -789,6 +785,10 @@ fn stage_legend(capture: Option<Res<Capture>>, mut legends: Query<&mut PromptsAn
     }
 }
 
+/// `GOOEY_KEYS`: one input every `GOOEY_KEY_EVERY` frames ([`KEY_EVERY`]), pressed and then released as the window's
+/// own keyboard or pointer input, so Bevy's input dispatch, picking, Tab navigation and buttons all
+/// see it.
+#[allow(clippy::too_many_arguments)]
 fn stage_keys(
     capture: Option<Res<Capture>>,
     window: Query<Entity, With<PrimaryWindow>>,
