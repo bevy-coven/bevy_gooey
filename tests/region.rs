@@ -415,3 +415,30 @@ fn nothing_is_written_while_idle() {
     assert!(!app.world().resource_ref::<InputFocus>().is_changed());
     assert!(!app.world().resource_ref::<InputFocusVisible>().is_changed());
 }
+
+#[test]
+fn a_viewport_is_a_host_region_that_wears_the_ring() {
+    let mut app = app();
+    let s = scene(&mut app);
+    let view = app.world_mut().spawn(viewport()).id();
+    let parent = app
+        .world()
+        .get::<ChildOf>(s.viewport)
+        .expect("a parent")
+        .parent();
+    app.world_mut().entity_mut(parent).add_child(view);
+    settle(&mut app);
+
+    let edge = |app: &App| app.world().get::<BorderColor>(view).expect("framed").top;
+    let skin = app.world().resource::<GooeySkin>().clone();
+    assert_eq!(edge(&app), skin.outline, "a quiet frame at rest");
+
+    set_focus(&mut app, view);
+    app.world_mut().resource_mut::<InputFocusVisible>().0 = true;
+    settle(&mut app);
+    assert_eq!(edge(&app), skin.focus_ring, "the ring while it has focus");
+
+    tap(&mut app, KeyCode::ArrowLeft);
+    assert_eq!(focus(&app), Some(view), "the arrows are the host's in it");
+    assert_eq!(saw(&app)[2], 1);
+}

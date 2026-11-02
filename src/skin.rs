@@ -127,6 +127,10 @@ const DIALOG_MAX_TEXT_SIZES: f32 = 36.0;
 const DIALOG_ROOM_FACTOR: f32 = 1.5;
 /// How much of the ring's colour the landing of a carried tab lets over the panels it covers.
 const DOCK_DROP_ALPHA: f32 = 0.22;
+
+/// How much of the ring's (or the danger's) colour a drop mark lets through: less than a dock's landing,
+/// because a target may be the whole viewport and what is under the mark must stay readable.
+const DROP_MARK_ALPHA: f32 = 0.12;
 /// How much of the raised fill a table's banded row has: half, so the band is a hint under the text
 /// and never a second look.
 const TABLE_BAND_ALPHA: f32 = 0.5;
@@ -1246,6 +1250,9 @@ pub enum Role {
     /// The picker's saturation and value area: a frame, a focus ring, and inside it the colour's
     /// own hue and its gradients (data, not a skin colour).
     ColorArea,
+    /// A [`crate::viewport`]: an unfilled frame in [`GooeySkin::outline`], [`GooeySkin::focus_ring`]
+    /// while it has focus; what it shows is the host's.
+    Viewport,
     /// The ring on the picker's area, outside: the panel's colour, so the ring shows on any fill.
     ColorAreaMarker,
     /// The ring on the picker's area, inside: the text colour.
@@ -1746,6 +1753,7 @@ pub fn apply_skin(
                             | Role::SplitDivider
                             | Role::ColorSwatch
                             | Role::ColorArea
+                            | Role::Viewport
                     )
                 })
                 .map(|item| item.0),
@@ -2021,8 +2029,9 @@ fn restyle(
         Role::PromptKey | Role::PromptButton => Some(skin.surface_raised),
         // The landing is the ring's colour let through to the panels under it, so fill and frame are one; the ghost is as opaque as
         // a dialog's card, so its title is read at the contrast of any panel's text.
-        Role::DockDrop | Role::DropMark => Some(skin.focus_ring.with_alpha(DOCK_DROP_ALPHA)),
-        Role::DropMarkRefused => Some(skin.danger.with_alpha(DOCK_DROP_ALPHA)),
+        Role::DockDrop => Some(skin.focus_ring.with_alpha(DOCK_DROP_ALPHA)),
+        Role::DropMark => Some(skin.focus_ring.with_alpha(DROP_MARK_ALPHA)),
+        Role::DropMarkRefused => Some(skin.danger.with_alpha(DROP_MARK_ALPHA)),
         Role::DockGhost | Role::DragGhost | Role::DragGhostRefused => Some(skin.solid_surface()),
         // The field is an outlined box in the panel's own colour, so the typed text and the hint
         // meet on it the contrast they are checked at on the panel.
@@ -2091,6 +2100,7 @@ fn restyle(
         | Role::ColorSwatchHalf
         | Role::ColorStripBox
         | Role::ColorArea
+        | Role::Viewport
         | Role::ColorAreaMarker
         | Role::ColorAreaMarkerInner
         | Role::ColorRail
@@ -2239,7 +2249,7 @@ fn restyle(
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         // The swatch and the area are framed in the outline and wear the ring when focused: what
         // they hold is any colour, so the frame is what a panel's 3:1 is measured on.
-        Role::ColorSwatch | Role::ColorArea => {
+        Role::ColorSwatch | Role::ColorArea | Role::Viewport => {
             Some(BorderColor::all(if look.focused == Some(entity) {
                 skin.focus_ring
             } else {
@@ -2632,6 +2642,10 @@ fn restyle(
             }
             // The plane fills the picker's width; the frame is the one line the pointer's position
             // is measured inside of.
+            Role::Viewport => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+            }
             Role::ColorArea => {
                 next.min_height = Val::Px(COLOR_AREA_HEIGHT_PX);
                 next.border = UiRect::all(Val::Px(line));

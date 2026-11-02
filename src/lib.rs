@@ -17,7 +17,10 @@
 //!   screen's row: the player's next key, mouse button or pad button is the new [`Binding`]),
 //!   [`text_input`] (a row with a field the player types in, kept in [`TextInputValue`]; the
 //!   field never traps focus, and [`TextEditing`] and [`is_text_editing`] tell a game when it
-//!   has the player's keys), [`number_field`] and [`vec_field`] (a number the player scrubs with a
+//!   has the player's keys; [`text_area`] is the same several lines high), [`viewport`] and
+//!   [`FocusRegion`] (a tool's parts F6 walks between, one keeping the arrow keys for the host),
+//!   [`DragPayload`] and [`DropTarget`] (typed drag and drop: [`Dropped`], [`DroppedOnWorld`]),
+//!   [`number_field`] and [`vec_field`] (a number the player scrubs with a
 //!   drag on its label, types, or steps with Up, Down and the D-pad, held to a [`NumberRange`];
 //!   kept in [`NumberValue`], with [`MixedValue`] for a multi-selection that differs),
 //!   [`text_size`], [`interface_size`], [`pad_style`] and [`skin_preset`]
@@ -277,7 +280,7 @@ pub use widgets::{
     prompt, prompts, radio_item, screen, section, select, separator, skin_preset, slider, spinner,
     split, status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs,
     text_area, text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar,
-    toolbar_separator, tree, vec_field,
+    toolbar_separator, tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
