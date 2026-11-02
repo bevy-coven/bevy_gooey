@@ -250,6 +250,32 @@ pub fn radial_step(value: usize, count: usize, delta: i32) -> usize {
     (at + i64::from(delta)).rem_euclid(count as i64) as usize
 }
 
+/// The slot Home or End moves a grid's cursor to, in a grid `columns` wide holding `len` slots in
+/// reading order: the first or last slot of `index`'s row (the last row may be short), or with
+/// `whole` the first or last slot of the grid. Never past the last slot, and `0` for an empty
+/// grid.
+///
+/// ```
+/// use bevy_gooey::slot_edge;
+/// // Seven slots, three wide: rows 0-2, 3-5, 6.
+/// assert_eq!(slot_edge(4, 3, 7, false, false), 3);
+/// assert_eq!(slot_edge(4, 3, 7, true, false), 5);
+/// assert_eq!(slot_edge(6, 3, 7, true, false), 6);
+/// assert_eq!(slot_edge(4, 3, 7, true, true), 6);
+/// ```
+pub fn slot_edge(index: usize, columns: usize, len: usize, end: bool, whole: bool) -> usize {
+    let Some(last) = len.checked_sub(1) else {
+        return 0;
+    };
+    let columns = columns.max(1);
+    match (end, whole) {
+        (false, true) => 0,
+        (true, true) => last,
+        (false, false) => index.min(last) / columns * columns,
+        (true, false) => (index.min(last) / columns * columns + columns - 1).min(last),
+    }
+}
+
 /// How far along its range a slider's thumb is, from 0 to 1. Never NaN: a value outside the range
 /// is clamped to an end, and a range that is not finite or has no length reads as the start.
 ///

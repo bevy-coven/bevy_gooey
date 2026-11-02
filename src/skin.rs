@@ -55,6 +55,13 @@ const CHOICE_MIN_TEXT_SIZES: f32 = 8.0;
 /// still a fraction of a 720p window at the default size (26 × 16 px = 416 px).
 const RADIAL_DIAMETER_TEXT_SIZES: f32 = 26.0;
 
+/// A [`crate::slot_grid`]'s slot is this many body text sizes square (4 × 16 px = 64 px by default,
+/// over the 44 px target), so the grid follows the player's text size.
+const SLOT_TEXT_SIZES: f32 = 4.0;
+
+/// The share of a slot's side its picture takes.
+const SLOT_ICON_SHARE: f32 = 0.6;
+
 /// The most of the window's shorter side a [`crate::radial`]'s disc takes: 92%, which at 720p is a
 /// 662 px wheel and caps its text at 25 px (125% of the default), so the wheel is whole on the
 /// screen at 150% and 200% text too.
@@ -1314,6 +1321,20 @@ pub enum Role {
     RadialText,
     /// The highlighted item's name, in the middle of the disc in the heading's size.
     RadialCentre,
+    /// A [`crate::slot_grid`]'s grid: its slots in a row-and-column grid half a
+    /// [`GooeySkin::gap`] apart; not drawn.
+    SlotGrid,
+    /// A slot that holds an item: a button's fill, [`GooeySkin::text_size`] times four square, the
+    /// focus ring while it has focus, the accent while pressed.
+    Slot,
+    /// An empty slot: the panel's fill with its quiet frame, the same size as a filled one.
+    SlotEmpty,
+    /// A slot's item name: drawn only while the slot has no picture.
+    SlotName,
+    /// A slot's count, a chip on the opaque surface in its bottom-right corner, drawn above one.
+    SlotCount,
+    /// A slot's picture, 60% of the slot's side, tinted like an [`Role::Icon`].
+    SlotIcon,
     /// The one grid cell every page stands in, so the widget is as large as its largest page; not
     /// drawn.
     TabPages,
@@ -1877,6 +1898,8 @@ pub fn apply_skin(
                             | Role::Choice
                             | Role::Binding
                             | Role::Radial
+                            | Role::Slot
+                            | Role::SlotEmpty
                             | Role::Tab
                             | Role::GroupOption
                             | Role::StatusItem
@@ -2009,6 +2032,22 @@ fn restyle(
         } else {
             skin.surface_raised
         }),
+        // A slot is a button's well: raised when it holds an item, the panel's own fill when it is
+        // empty (its quiet frame is the border), the hovered fill under the pointer and the
+        // accent while pressed. The count's chip is the opaque surface, whatever is under it.
+        Role::Slot => Some(if state.pressed {
+            skin.accent
+        } else if state.hovered {
+            skin.hovered()
+        } else {
+            skin.surface_raised
+        }),
+        Role::SlotEmpty => Some(if state.hovered {
+            skin.surface_raised
+        } else {
+            skin.surface
+        }),
+        Role::SlotCount => Some(skin.solid_surface()),
         // The selected tab is lit like everything that is on (a switch, a meter's fill): the
         // accent, with the text colour inverted on it, two cues by luminance and not by hue. The
         // others are a button's, full-contrast text on a visible fill, never faded.
@@ -2244,6 +2283,9 @@ fn restyle(
         | Role::Tabs
         | Role::TabList
         | Role::TabText
+        | Role::SlotGrid
+        | Role::SlotName
+        | Role::SlotIcon
         | Role::RadialText
         | Role::RadialCentre
         | Role::RadialTrack
@@ -2353,6 +2395,22 @@ fn restyle(
             } else {
                 skin.text
             },
+        )),
+        // The ring when focused. A filled slot's frame is its own fill (a fill is drawn inside the
+        // border, so a clear frame would draw the well a border's width smaller than an empty
+        // one beside it), an empty one's the quiet edge.
+        Role::Slot | Role::SlotEmpty if look.focused == Some(entity) => {
+            Some(BorderColor::all(skin.focus_ring))
+        }
+        Role::Slot => Some(BorderColor::all(if state.pressed {
+            skin.accent
+        } else if state.hovered {
+            skin.hovered()
+        } else {
+            skin.surface_raised
+        })),
+        Role::SlotEmpty => Some(BorderColor::all(
+            skin.surface_edge.unwrap_or(skin.surface_raised),
         )),
         Role::RadialTrack => Some(BorderColor::all(skin.surface_raised)),
         // The disc is framed like a panel and wears the ring while it has focus.
@@ -2477,6 +2535,35 @@ fn restyle(
                 next.min_height = Val::Px(skin.target());
                 next.justify_content = JustifyContent::Center;
                 next.align_items = AlignItems::Center;
+                next.flex_shrink = 0.0;
+            }
+            Role::SlotGrid => {
+                next.column_gap = Val::Px(skin.gap * 0.5);
+                next.row_gap = Val::Px(skin.gap * 0.5);
+            }
+            // A square well, a few text sizes on a side, that clips what it holds.
+            Role::Slot | Role::SlotEmpty => {
+                let side = Val::Px(text_px * SLOT_TEXT_SIZES);
+                next.width = side;
+                next.height = side;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.gap * 0.25));
+                next.justify_content = JustifyContent::Center;
+                next.align_items = AlignItems::Center;
+                next.overflow = Overflow::clip();
+                next.flex_shrink = 0.0;
+            }
+            Role::SlotCount => {
+                next.right = Val::Px(line + 1.0);
+                next.bottom = Val::Px(line + 1.0);
+                next.padding = UiRect::horizontal(Val::Px(skin.gap * 0.5));
+                next.border_radius = BorderRadius::all(Val::Px(skin.radius * 0.5));
+            }
+            Role::SlotIcon => {
+                let side = Val::Px(text_px * SLOT_TEXT_SIZES * SLOT_ICON_SHARE);
+                next.width = side;
+                next.height = side;
                 next.flex_shrink = 0.0;
             }
             Role::Menu | Role::TabPage | Role::Tabs | Role::Inspector => {
@@ -3200,7 +3287,7 @@ fn restyle(
 
     // An icon is its image times a colour of the skin: the text's, following the widget it stands
     // in (muted when disabled, the accent's text pressed), or a fixed tone.
-    if let (Role::Icon, Some(mut image)) = (role, image) {
+    if let (Role::Icon | Role::SlotIcon, Some(mut image)) = (role, image) {
         let tone = tone.copied().unwrap_or_default();
         let parent = parent.unwrap_or_default();
         let disabled = parent.disabled || owner.disabled;
@@ -3267,6 +3354,18 @@ fn restyle(
             &look.fonts.heading,
             skin.heading_size * wheel_px / text_px,
         )),
+        // A slot's name is a button's text, inverted on the accent while pressed.
+        Role::SlotName => {
+            let parent = parent.unwrap_or_default();
+            let color = if parent.pressed {
+                skin.accent_text
+            } else {
+                skin.text
+            };
+            Some((color, &look.fonts.body, skin.type_scale[1]))
+        }
+        // The count is read on the opaque surface's chip, never on the item.
+        Role::SlotCount => Some((skin.text, &look.fonts.body, skin.type_scale[2])),
         // The selected tab's label is drawn on the accent fill, so it takes the accent's text.
         Role::TabText => {
             let parent = parent.unwrap_or_default();

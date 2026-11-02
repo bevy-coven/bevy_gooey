@@ -105,7 +105,7 @@ impl Default for DragSettings {
 /// # }
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Eq)]
-#[component(on_add = payload_added::<T>)]
+#[component(on_add = payload_added::<T>, on_remove = payload_removed)]
 #[require(DragSource)]
 pub struct DragPayload<T: Clone + Send + Sync + 'static>(pub T);
 
@@ -227,6 +227,12 @@ fn payload_added<T: Clone + Send + Sync + 'static>(
         source.world_drop = Some(world_drop::<T>);
         source.refused = Some(refused::<T>);
     }
+}
+
+/// A node that loses its payload is no longer a source: pressing it lifts nothing (an emptied
+/// inventory slot).
+fn payload_removed(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    world.commands().entity(entity).try_remove::<DragSource>();
 }
 
 fn target_added<T: Clone + Send + Sync + 'static>(
