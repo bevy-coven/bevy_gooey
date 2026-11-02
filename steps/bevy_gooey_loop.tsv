@@ -15198,3 +15198,114 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 80	219	ship	model	model		2026-11-02T17:22:33Z	17.0	
 80	220	log	tool	phase mark	bash	2026-11-02T17:22:50Z	1.7	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log && cat >> docs/loop-log.md <<'E' ## Iteration 52 — 2026-11-02 — Drop candida
 80	221	log	model	model		2026-11-02T17:22:51Z	7.8	
+81	1	orient	model	model		2026-11-02T17:25:09Z	3.6	
+81	2	orient	tool	phase mark	bash	2026-11-02T17:25:12Z	0.8	Orienting: audit, parked, status :: python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git fetch -q origin loop-stats; git show orig
+81	3	orient	tool	github	bash	2026-11-02T17:25:12Z	0.8	Reading log and open issues :: cd /home/ladvien/bevy_gooey_loop && grep -n '^## Iteration' docs/loop-log.md | tail -3; gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --js
+81	4	orient	model	model		2026-11-02T17:25:13Z	3.0	
+81	5	orient	tool	github	bash	2026-11-02T17:25:16Z	0.5	Issue list and last log entry :: cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 2>&1 | head -30; echo ---; sed -n 2016,2080p docs/loop-l
+81	6	orient	model	model		2026-11-02T17:25:17Z	4.4	
+81	7	choose	tool	phase mark	bash	2026-11-02T17:25:21Z	0.1	Checking Bevy ActionRequest plumbing :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_a11y-0.20* ~/.car
+81	8	choose	model	model		2026-11-02T17:25:21Z	4.4	
+81	9	choose	tool	shell	bash	2026-11-02T17:25:26Z	0.0	Reading access.rs structure :: cd /home/ladvien/bevy_gooey_loop && wc -l src/access.rs tests/access.rs && grep -n "^pub fn\|^fn \|^struct\|^enum\|^pub struct\|^impl\|add_action\|Action" src/a
+81	10	choose	model	model		2026-11-02T17:25:26Z	1.8	
+81	11	choose	tool	read files	read	2026-11-02T17:25:28Z	0.0	Reading header :: src/access.rs:1,40
+81	12	choose	tool	read files	read	2026-11-02T17:25:28Z	0.0	Reading Wanted, Look :: src/access.rs:215,370
+81	13	choose	tool	read files	read	2026-11-02T17:25:28Z	0.0	Reading update/write :: src/access.rs:455,685
+81	14	choose	model	model		2026-11-02T17:25:28Z	2.3	
+81	15	choose	tool	read files	read	2026-11-02T17:25:30Z	0.0	Reading header raw :: src/access.rs:1-60:raw
+81	16	choose	tool	read files	read	2026-11-02T17:25:30Z	0.0	Reading Wanted and Look raw :: src/access.rs:215-370:raw
+81	17	choose	tool	read files	read	2026-11-02T17:25:30Z	0.0	Reading update system raw :: src/access.rs:546-685:raw
+81	18	choose	model	model		2026-11-02T17:25:30Z	9.7	
+81	19	choose	tool	shell	bash	2026-11-02T17:25:40Z	0.0	Checking where Bevy sets actions/NodeId :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ && grep -rn "add_action\|Action::\|NodeId" bevy_ui-0.20.1/src bevy_ui_widgets-0.20.1/src bevy_winit-0
+81	20	choose	model	model		2026-11-02T17:25:40Z	5.7	
+81	21	choose	tool	shell	bash	2026-11-02T17:25:45Z	0.0	Reading gamepad_select activation :: cd /home/ladvien/bevy_gooey_loop && grep -n "fn gamepad_select" -A70 src/nav.rs | head -120
+81	22	choose	model	model		2026-11-02T17:25:45Z	1.8	
+81	23	choose	tool	shell	bash	2026-11-02T17:25:47Z	0.0	See how stepping done and Bevy widget events :: cd /home/ladvien/bevy_gooey_loop && sed -n 797,860p src/nav.rs; grep -n "ToggleChecked\|SetChecked\|SetSliderValue\|SliderStep\|struct SetSliderValue" ~/.cargo/
+81	24	choose	model	model		2026-11-02T17:25:47Z	15.9	
+81	25	choose	tool	shell	bash	2026-11-02T17:26:03Z	0.0	Read number_on_text, text_self_update, ValueChange :: cd /home/ladvien/bevy_gooey_loop && grep -n "fn number_on_text" -B3 -A45 src/number.rs; grep -n "fn text_self_update" -A15 src/text.rs; grep -n "pub struct Valu
+81	26	choose	model	model		2026-11-02T17:26:03Z	3.5	
+81	27	choose	tool	read files	read	2026-11-02T17:26:07Z	0.0	Reading describe :: src/access.rs:368-546:raw
+81	28	choose	model	model		2026-11-02T17:26:07Z	15.7	
+81	29	choose	tool	shell	bash	2026-11-02T17:26:22Z	0.0	Check tab activation, Entity bits API :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.1/src && grep -n "Activate\|Button" tab*.rs | head -20; grep -n "pub fn try_from_
+81	30	choose	model	model		2026-11-02T17:26:22Z	1.9	
+81	31	choose	tool	shell	bash	2026-11-02T17:26:24Z	0.0	Tab activation and ActionRequest types :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.1/src && sed -n 110,175p tab.rs; sed -n 185,230p tab.rs; cd ../../accesskit-0.24.
+81	32	choose	model	model		2026-11-02T17:26:24Z	2.9	
+81	33	choose	tool	shell	bash	2026-11-02T17:26:27Z	0.0	Locate tabs and features :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.1/src && ls; grep -rln "TabList" . | head; grep -n "Tab\b" /home/ladvien/bevy_goo
+81	34	choose	model	model		2026-11-02T17:26:27Z	1.4	
+81	35	choose	tool	shell	bash	2026-11-02T17:26:29Z	0.0	Bevy tab click path :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.1/src && sed -n 1,200p tabs.rs | grep -n "PointerClick\|fn tab_\|Activate\|Select
+81	36	choose	model	model		2026-11-02T17:26:29Z	3.3	
+81	37	choose	tool	shell	bash	2026-11-02T17:26:32Z	0.0	Read tab click observer :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_ui_widgets-0.20.1/src && sed -n 78,166p tabs.rs
+81	38	choose	model	model		2026-11-02T17:26:32Z	7.4	
+81	39	choose	tool	shell	bash	2026-11-02T17:26:39Z	0.0	Read test harness for access :: cd /home/ladvien/bevy_gooey_loop && sed -n 1,120p tests/access.rs; grep -n "access" src/lib.rs
+81	40	choose	model	model		2026-11-02T17:26:39Z	3.6	
+81	41	choose	tool	shell	bash	2026-11-02T17:26:43Z	0.0	Read lib.rs plugin setup :: cd /home/ladvien/bevy_gooey_loop && sed -n 120,175p src/lib.rs; grep -n "impl Plugin for GooeyNavPlugin" -A75 src/lib.rs
+81	42	choose	model	model		2026-11-02T17:26:43Z	2.4	
+81	43	choose	tool	read files	read	2026-11-02T17:26:45Z	0.0	Raw nav plugin :: src/lib.rs:530-640:raw
+81	44	choose	model	model		2026-11-02T17:26:45Z	4.9	
+81	45	choose	tool	shell	bash	2026-11-02T17:26:50Z	0.0	Check visibility of events :: cd /home/ladvien/bevy_gooey_loop && grep -n "fn show_focus\|struct MoveChoice\|enum Move\b\|struct NumberStepBy\|struct AreaStepBy\|struct NumberInput\|struct C
+81	46	choose	model	model		2026-11-02T17:26:50Z	2.8	
+81	47	research	tool	phase mark	bash	2026-11-02T17:26:53Z	0.1	Focus API and existing a11y research note :: cd /home/ladvien/bevy_gooey_loop && grep -n "focus.set\|set_with_cause\|FocusCause::" src/nav.rs | head -8; sed -n 449,462p src/nav.rs; python3 ~/.local/share/w
+81	48	research	model	model		2026-11-02T17:26:53Z	5.5	
+81	49	research	tool	read files	read	2026-11-02T17:26:59Z	0.1	Fetch WCAG 4.1.2 quote :: https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html
+81	50	research	tool	shell	bash	2026-11-02T17:26:59Z	0.1	AccessKit Action docs :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/accesskit-0.24.1/src && sed -n 270,420p lib.rs; grep -n "supports_action\|fn add_action\|fn remove_act
+81	51	research	model	model		2026-11-02T17:26:59Z	28.1	
+81	52	research	tool	edit files	write	2026-11-02T17:27:27Z	0.0	Writing research note :: docs/research/access-actions.md
+81	53	research	model	model		2026-11-02T17:27:27Z	3.5	
+81	54	build	tool	phase mark	bash	2026-11-02T17:27:30Z	0.1	Fix note wording and commit research :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/research/access-actions.md' s=open(p).read() s=s.replace("A choice Increment wraps as Right does not
+81	55	build	model	model		2026-11-02T17:27:30Z	19.6	
+81	56	build	tool	shell	bash	2026-11-02T17:27:50Z	0.1	Check FocusCause, menu access, slider change enum :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_input_focus-0.20.1/src && grep -n "pub enum FocusCause" -A22 lib.rs; cd /home/ladvien/bevy_gooey_
+81	57	build	model	model		2026-11-02T17:27:50Z	2.4	
+81	58	build	tool	shell	bash	2026-11-02T17:27:52Z	0.0	FocusCause variants, format_number, tabs_on_select :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ && grep -rn "enum FocusCause" -A15 bevy_input_focus-0.20.*/src | head -30; grep -n "fn format_number"
+81	59	build	model	model		2026-11-02T17:27:52Z	19.1	
+81	60	build	tool	edit files	write	2026-11-02T17:28:12Z	0.0	Writing actions module :: /home/ladvien/bevy_gooey_loop/src/access_actions.rs
+81	61	build	model	model		2026-11-02T17:28:12Z	8.2	
+81	62	build	tool	shell	bash	2026-11-02T17:28:20Z	0.0	Fix field row lookup :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/access_actions.rs' s=open(p).read() s=s.replace(" field: Has<TextInputOf>,"," field: Option<&'static 
+81	63	build	model	model		2026-11-02T17:28:20Z	7.3	
+81	64	build	tool	cargo build	bash	2026-11-02T17:28:27Z	7.5	Wire into access.rs and lib.rs, check :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/access.rs' s=open(p).read() def rep(a,b,c=1): global s assert s.count(a)==c,(a,s.count(a)) s=s.replac
+81	65	build	model	model		2026-11-02T17:28:35Z	5.9	
+81	66	build	tool	shell	bash	2026-11-02T17:28:41Z	0.0	See event capture style in tests :: cd /home/ladvien/bevy_gooey_loop && grep -n "Resource.*Events\|struct Seen\|fn record\|observe(" tests/controls.rs | head -12; sed -n 1,60p tests/controls.rs | 
+81	67	build	model	model		2026-11-02T17:28:41Z	1.9	
+81	68	build	tool	shell	bash	2026-11-02T17:28:42Z	0.0	Read how tests build number field, tabs, record events :: cd /home/ladvien/bevy_gooey_loop && sed -n 100,135p tests/number.rs; sed -n 20,50p tests/number.rs; sed -n 950,975p tests/tabs.rs; grep -n "fn section\|pub fn t
+81	69	build	model	model		2026-11-02T17:28:42Z	5.4	
+81	70	build	tool	shell	bash	2026-11-02T17:28:48Z	0.0	TreeId, and end of test file :: cd ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/accesskit-0.24.1/src && grep -n "pub struct TreeId\|impl TreeId\|ROOT\|pub struct NodeId" -A3 lib.rs |
+81	71	build	model	model		2026-11-02T17:28:48Z	10.2	
+81	72	build	tool	shell	bash	2026-11-02T17:28:58Z	0.0	Slider step & test API details :: cd /home/ladvien/bevy_gooey_loop && grep -n "SliderStep" src/widgets.rs | head -3; grep -n "pub fn slider" -A12 src/widgets.rs | head -30; grep -n "SelectedTab\
+81	73	build	model	model		2026-11-02T17:28:58Z	31.4	
+81	74	build	tool	cargo test	bash	2026-11-02T17:29:29Z	53.7	Write tests and run :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/access.rs' s=open(p).read() s=s.replace("use bevy::ui::InteractionDisabled;","use bevy::ui::Interac
+81	75	build	model	model		2026-11-02T17:30:23Z	4.6	
+81	76	build	tool	shell	bash	2026-11-02T17:30:28Z	0.0	Locate failing label :: cd /home/ladvien/bevy_gooey_loop && grep -n "const SLIDER_STEPS" src/*.rs; sed -n 733,737p tests/access.rs; sed -n 90,100p tests/access.rs
+81	77	build	model	model		2026-11-02T17:30:28Z	5.6	
+81	78	build	tool	cargo test	bash	2026-11-02T17:30:33Z	16.3	Fix tests and rerun :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/access.rs' s=open(p).read() s=s.replace(''' assert!((value(&app) - 0.26).abs() < 1e-4, "one step up
+81	79	build	model	model		2026-11-02T17:30:50Z	4.1	
+81	80	build	tool	cargo test	bash	2026-11-02T17:30:54Z	34.4	Mutation checks :: cd /home/ladvien/bevy_gooey_loop && cp src/access_actions.rs /tmp/aa.rs && python3 - <<'E' p='src/access_actions.rs' s=open(p).read() s=s.replace(" if !actions_
+81	81	build	model	model		2026-11-02T17:31:28Z	6.0	
+81	82	ship	tool	phase mark	bash	2026-11-02T17:31:34Z	0.1	Find docs to update :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship; wc -l README.md; grep -n -i "accessib\|screen reader" README.md | cut -c1-
+81	83	ship	model	model		2026-11-02T17:31:34Z	1.3	
+81	84	ship	tool	shell	bash	2026-11-02T17:31:36Z	0.0	Read docs sections :: cd /home/ladvien/bevy_gooey_loop && sed -n 125,131p README.md | cut -c1-900; sed -n 45,76p docs/guide/accessibility.md; grep -n "Not done: AccessKit" AGENTS.md 
+81	85	ship	model	model		2026-11-02T17:31:36Z	14.4	
+81	86	ship	tool	shell	bash	2026-11-02T17:31:50Z	0.0	Update README, guide, changelog, AGENTS :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' def sub(p,a,b): s=open(p).read(); assert a in s,(p,a[:40]); open(p,'w').write(s.replace(a,b,1)) sub('README.
+81	87	ship	model	model		2026-11-02T17:31:50Z	3.1	
+81	88	ship	tool	shell	bash	2026-11-02T17:31:53Z	1.3	Module doc, fmt :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/access.rs' s=open(p).read() a="//! settled interface marks nothing changed.\n" assert a in s s=s.repl
+81	89	ship	model	model		2026-11-02T17:31:54Z	3.4	
+81	90	gate	tool	phase mark	bash	2026-11-02T17:31:58Z	8.6	Commit and run clippy :: cd /home/ladvien/bevy_gooey_loop && git add src tests && git commit -qm "Accessibility actions: a screen reader can press, focus, step and set the widgets it re
+81	91	gate	model	model		2026-11-02T17:32:06Z	5.8	
+81	92	gate	tool	cargo clippy	bash	2026-11-02T17:32:12Z	8.2	Fix clippy args :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/access_actions.rs' s=open(p).read() s=s.replace("use bevy::ecs::query::QueryData;","use bevy::ecs::qu
+81	93	gate	model	model		2026-11-02T17:32:20Z	1.4	
+81	94	gate	tool	shell	bash	2026-11-02T17:32:22Z	0.0	View select_tab :: cd /home/ladvien/bevy_gooey_loop && sed -n 230,260p src/access_actions.rs
+81	95	gate	model	model		2026-11-02T17:32:22Z	2.6	
+81	96	gate	tool	cargo clippy	bash	2026-11-02T17:32:24Z	15.9	Patch select_tab, clippy :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/access_actions.rs' s=open(p).read() s=s.replace("""fn select_tab( tab: Entity, parents: &Query<&Child
+81	97	gate	model	model		2026-11-02T17:32:40Z	2.7	
+81	98	gate	tool	cargo test	bash	2026-11-02T17:32:43Z	60.0	[launched bg_1] Run rest of the gate :: cd /home/ladvien/bevy_gooey_loop && git commit -qam "Accessibility actions: one SystemParam for what a request reads" && export CARGO_BUILD_JOBS=4 && cargo fmt 
+81	99	gate	model	model		2026-11-02T17:33:43Z	16.2	
+81	100	gate	tool	git	bash	2026-11-02T17:33:59Z	0.1	Write log entry :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' log=open('docs/loop-log.md').read() log=log.rstrip('\n')+''' ## Iteration 53 — 2026-11-02 — Accessibility ac
+81	101	gate	model	model		2026-11-02T17:33:59Z	0.8	
+81	102	gate	tool	wait: gate	wait	2026-11-02T17:34:00Z	124.7	Waiting for gate
+81	103	gate	model	model		2026-11-02T17:36:05Z	2.9	
+81	104	release	tool	phase mark	bash	2026-11-02T17:36:08Z	18.0	Merge, push, semver-check :: cd /home/ladvien/bevy_gooey_loop && git status --short; git push -q -u origin loop/iter-53 2>&1 | tail -2; git checkout -q main && git pull -q --ff-only && git 
+81	105	release	model	model		2026-11-02T17:36:26Z	3.5	
+81	106	release	tool	shell	bash	2026-11-02T17:36:29Z	0.0	Find version references :: cd /home/ladvien/bevy_gooey_loop && grep -n '^version' Cargo.toml | head -2; grep -n "0.31" README.md | head -5
+81	107	release	model	model		2026-11-02T17:36:29Z	2.1	
+81	108	release	tool	cargo publish	bash	2026-11-02T17:36:32Z	24.0	Bump version and publish :: cd /home/ladvien/bevy_gooey_loop && sed -i '3s/0.31.1/0.31.2/' Cargo.toml && sed -i 's/^## \[Unreleased\]$/## [Unreleased]\n\n## [0.31.2] - 2026-11-02/' CHANGEL
+81	109	release	model	model		2026-11-02T17:36:55Z	4.8	
+81	110	log	tool	phase mark	bash	2026-11-02T17:37:00Z	3.1	Tag, push, final log :: cd /home/ladvien/bevy_gooey_loop && git tag -a v0.31.2 -m v0.31.2 && git push -q origin main v0.31.2 2>&1 | tail -2; cargo info bevy_gooey@0.31.2 2>&1 | head -3
+81	111	log	model	model		2026-11-02T17:37:03Z	5.3	
