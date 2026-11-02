@@ -21,8 +21,8 @@ use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
-    TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height, snap_line_width,
-    tree_indent,
+    STATE_STEP, TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height,
+    snap_line_width, tree_indent,
 };
 use crate::popover::{PopoverPanel, placement_of};
 use crate::prompt::PromptsAnchor;
@@ -30,6 +30,11 @@ use crate::status::StatusKind;
 use crate::table::TableRow;
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
+
+/// How far a skin's held colours step back toward its background when it sets none: 0.6, so a
+/// world glyph left at two fifths of the way from the background still reads and no longer competes
+/// with an overlay. See [`GooeySkin::held_fade`].
+const HELD_FADE: f32 = 0.6;
 
 /// A meter's least length, in body text sizes: 8 × 20 px = 160 px at the default size, growing
 /// with [`GooeySkin::text_scale`].
@@ -314,6 +319,42 @@ pub struct GooeySkin {
     /// carries tones lists them in name order. Not checked by [`GooeySkin::problems`]: the crate
     /// cannot know which pairs a host draws.
     pub tones: BTreeMap<String, Color>,
+    /// The fill of a row, chip or field under the pointer; `None` draws
+    /// [`GooeySkin::surface_raised`] a third of the way to [`GooeySkin::accent`]. Read it with
+    /// [`GooeySkin::hovered`]: every hovered widget of the crate draws it, and [`Role::Hovered`]
+    /// draws it for a host's own.
+    pub hover: Option<Color>,
+    /// The fill of a host's own control with the pointer down on it, recessed against
+    /// [`GooeySkin::hovered`]; `None` draws [`GooeySkin::solid_surface`], the panel it sinks into.
+    /// Read it with [`GooeySkin::pressed`]; [`Role::Pressed`] draws it. The crate's own pressed
+    /// button is [`GooeySkin::accent`] and is not changed by this.
+    pub pressed: Option<Color>,
+    /// A world gizmo's or glyph's colour while the key that asks the world to step back is held;
+    /// `None` is [`GooeySkin::text`] faded toward [`GooeySkin::held_ground`] by
+    /// [`GooeySkin::held_fade`], so the glyph loses contrast with the ground it stands on in a dark
+    /// skin and a light one alike. Read it with [`GooeySkin::held`]; [`Role::Held`] draws it.
+    pub held: Option<Color>,
+    /// The ground that steps back with [`GooeySkin::held`]; `None` is
+    /// [`GooeySkin::solid_surface`] faded toward [`GooeySkin::background`] by
+    /// [`GooeySkin::held_fade`]. Read it with [`GooeySkin::held_ground`]; [`Role::HeldGround`]
+    /// draws it.
+    pub held_ground: Option<Color>,
+    /// How far [`GooeySkin::held`] and [`GooeySkin::held_ground`] step back when they are not set,
+    /// from 0 (no change) to 1 (the ground gone into the background, the glyph into the ground):
+    /// both come off this one fade, so a held ground and a held glyph compose. Outside 0 to 1 or not finite is [`SkinProblem::BadSize`].
+    pub held_fade: f32,
+    /// The mark of a thing that has not been judged yet (a check not run, a box not ticked by the
+    /// tool); `None` is [`GooeySkin::text_muted`]. Read it with [`GooeySkin::unchecked`];
+    /// [`Role::Unchecked`] draws it. Checked against the panel at the 3:1 graphic minimum.
+    pub unchecked: Option<Color>,
+    /// The ground of a card the scrim leaves lit while it holds the rest back; `None` is
+    /// [`GooeySkin::solid_surface`], the dialog panel's own fill. Read it with
+    /// [`GooeySkin::card`]; [`Role::Card`] draws it. Text is checked on it.
+    pub card: Option<Color>,
+    /// The edge of a row's preview box; `None` is [`GooeySkin::outline`]. Read it with
+    /// [`GooeySkin::preview_edge`]; [`Role::PreviewEdge`] draws it as a border. Checked against the
+    /// panel at the 3:1 graphic minimum.
+    pub preview_edge: Option<Color>,
 }
 
 impl GooeySkin {
@@ -468,6 +509,14 @@ impl GooeySkin {
             type_scale: [14.0, 16.0, 20.0, 26.0, 32.0],
             surfaces: vec![Color::BLACK],
             tones: BTreeMap::new(),
+            hover: None,
+            pressed: None,
+            held: None,
+            held_ground: None,
+            held_fade: HELD_FADE,
+            unchecked: None,
+            card: None,
+            preview_edge: None,
         }
     }
 
@@ -594,11 +643,79 @@ impl GooeySkin {
             .unwrap_or(self.surface)
     }
 
-    /// A hovered button's fill: [`GooeySkin::surface_raised`] a third of the way to
-    /// [`GooeySkin::accent`]. [`apply_skin`] and [`GooeySkin::problems`] both use it, so the colour
-    /// checked is the colour drawn.
+    /// A hovered button's fill: [`GooeySkin::hover`] when the skin sets it, else
+    /// [`GooeySkin::surface_raised`] a third of the way to [`GooeySkin::accent`].
+    /// [`apply_skin`] and [`GooeySkin::problems`] both use it, so the colour checked is the colour
+    /// drawn.
     pub fn hovered(&self) -> Color {
-        self.surface_raised.mix(&self.accent, 0.35)
+        self.hover
+            .unwrap_or_else(|| self.surface_raised.mix(&self.accent, 0.35))
+    }
+
+    /// The fill of a host's own control with the pointer down: [`GooeySkin::pressed`] (the field)
+    /// when the skin sets it, else [`GooeySkin::solid_surface`]. A skin that sets none still
+    /// answers.
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// let skin = GooeySkin::dark();
+    /// assert_eq!(skin.pressed, None);
+    /// assert_eq!(skin.pressed(), skin.solid_surface());
+    /// ```
+    pub fn pressed(&self) -> Color {
+        self.pressed.unwrap_or_else(|| self.solid_surface())
+    }
+
+    /// The colour of a world gizmo or glyph while the player holds the key that asks the world to
+    /// step back: [`GooeySkin::held`] (the field), else [`GooeySkin::text`] faded toward
+    /// [`GooeySkin::held_ground`] by [`GooeySkin::held_fade`].
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// let skin = GooeySkin { held_fade: 0.0, ..GooeySkin::dark() };
+    /// assert_eq!(skin.held(), skin.text);
+    /// let gone = GooeySkin { held_fade: 1.0, ..GooeySkin::dark() };
+    /// assert_eq!(gone.held(), gone.held_ground());
+    /// ```
+    pub fn held(&self) -> Color {
+        self.held
+            .unwrap_or_else(|| self.text.mix(&self.held_ground(), self.fade()))
+    }
+
+    /// The ground that steps back with [`GooeySkin::held`]: [`GooeySkin::held_ground`] (the
+    /// field), else [`GooeySkin::solid_surface`] faded toward [`GooeySkin::background`] by the same
+    /// [`GooeySkin::held_fade`], so the two compose.
+    pub fn held_ground(&self) -> Color {
+        self.held_ground
+            .unwrap_or_else(|| self.solid_surface().mix(&self.background, self.fade()))
+    }
+
+    /// The mark of a thing not judged yet: [`GooeySkin::unchecked`] (the field), else
+    /// [`GooeySkin::text_muted`].
+    pub fn unchecked(&self) -> Color {
+        self.unchecked.unwrap_or(self.text_muted)
+    }
+
+    /// The ground of a card the scrim leaves lit: [`GooeySkin::card`] (the field), else
+    /// [`GooeySkin::solid_surface`].
+    pub fn card(&self) -> Color {
+        self.card.unwrap_or_else(|| self.solid_surface())
+    }
+
+    /// The edge of a row's preview box: [`GooeySkin::preview_edge`] (the field), else
+    /// [`GooeySkin::outline`].
+    pub fn preview_edge(&self) -> Color {
+        self.preview_edge.unwrap_or(self.outline)
+    }
+
+    /// [`GooeySkin::held_fade`] held to 0 to 1 (a NaN is no fade), so a bad value never extrapolates
+    /// a colour; [`GooeySkin::problems`] reports it.
+    fn fade(&self) -> f32 {
+        if self.held_fade.is_nan() {
+            0.0
+        } else {
+            self.held_fade.clamp(0.0, 1.0)
+        }
     }
 
     /// [`GooeySkin::surface`] as it looks over [`GooeySkin::background`], made opaque: the fill of
@@ -704,6 +821,20 @@ impl GooeySkin {
                 surface,
                 NON_TEXT_CONTRAST,
             ),
+            ("text on pressed", text, rgb(self.pressed()), TEXT_CONTRAST),
+            ("text on card", text, rgb(self.card()), TEXT_CONTRAST),
+            (
+                "unchecked on surface",
+                rgb(self.unchecked()),
+                surface,
+                NON_TEXT_CONTRAST,
+            ),
+            (
+                "preview_edge on surface",
+                rgb(self.preview_edge()),
+                surface,
+                NON_TEXT_CONTRAST,
+            ),
         ];
         // A skin that draws its own edge answers for it: the frame is what a panel, a tooltip and
         // the legend are told apart by. The quiet default is not checked, as `surface_raised` on
@@ -728,6 +859,17 @@ impl GooeySkin {
                 });
             }
         }
+        // Pressed against hovered, the pair a recessed row relies on: not a contrast (WCAG 1.4.11
+        // asks none of two states that do not appear side by side) but a lightness step.
+        let delta = (cie_lightness(rgb(self.pressed())) - cie_lightness(rgb(self.hovered()))).abs();
+        // A NaN colour gives a NaN step, which is reported, not passed.
+        if delta.is_nan() || delta < STATE_STEP {
+            out.push(SkinProblem::Indistinguishable {
+                pair: "pressed and hovered",
+                delta_l: delta,
+                needed: STATE_STEP,
+            });
+        }
         let target = self.target();
         if target < MIN_TARGET_PX {
             out.push(SkinProblem::TargetTooSmall { px: target });
@@ -747,6 +889,10 @@ impl GooeySkin {
             ("min_target", self.min_target),
             ("meter_height", self.meter_height),
         ];
+        if !(0.0..=1.0).contains(&self.held_fade) {
+            // Out of range or NaN (a NaN is in no range).
+            out.push(SkinProblem::BadSize { field: "held_fade" });
+        }
         let non_negative = [
             ("gap", self.gap),
             ("padding", self.padding),
@@ -852,6 +998,13 @@ impl GooeySkin {
             surface_edge: look.surface_edge,
             scrim: look.scrim,
             surfaces: look.surfaces.clone(),
+            hover: look.hover,
+            pressed: look.pressed,
+            held: look.held,
+            held_ground: look.held_ground,
+            unchecked: look.unchecked,
+            card: look.card,
+            preview_edge: look.preview_edge,
             ..self
         }
     }
@@ -873,6 +1026,13 @@ impl GooeySkin {
                 skin.outline,
                 skin.surface_edge.unwrap_or(skin.surface_raised),
                 skin.scrim,
+                skin.hovered(),
+                skin.pressed(),
+                skin.held(),
+                skin.held_ground(),
+                skin.unchecked(),
+                skin.card(),
+                skin.preview_edge(),
             ]
         };
         colours(self)
@@ -987,7 +1147,8 @@ pub enum SkinProblem {
         /// The size the skin asks for.
         px: f32,
     },
-    /// A size field is not finite, or is at or below zero where it must be positive, or below zero.
+    /// A size field is not finite, or is at or below zero where it must be positive, or below zero;
+    /// [`GooeySkin::held_fade`] is outside 0 to 1.
     BadSize {
         /// The field's name.
         field: &'static str,
@@ -1018,6 +1179,17 @@ pub enum SkinProblem {
         /// The field's name.
         field: &'static str,
     },
+    /// Two state fills a reader must tell apart differ by less than `needed` in CIE L\*: the
+    /// skin's pressed fill and its hovered fill ([`STATE_STEP`]), so a recessed row would look the
+    /// same under the pointer as with it down.
+    Indistinguishable {
+        /// Which two, as "`<a>` and `<b>`".
+        pair: &'static str,
+        /// The lightness step they have.
+        delta_l: f32,
+        /// The step they need.
+        needed: f32,
+    },
     /// A pair given to [`GooeySkin::tone_problems`] names a colour the skin does not hold: neither
     /// one of its [`GooeySkin::tones`] nor one of its own colours. The pair is not checked.
     UnknownTone {
@@ -1045,7 +1217,7 @@ impl fmt::Display for SkinProblem {
             ),
             Self::BadSize { field } => write!(
                 f,
-                "{field} is not a usable size: it must be finite, and above zero for a text size, text_scale, min_target or meter_height, at least zero otherwise"
+                "{field} is not a usable size: it must be finite, and above zero for a text size, text_scale, min_target or meter_height, from 0 to 1 for held_fade, at least zero otherwise"
             ),
             Self::MeterTooThin { px, needed } => write!(
                 f,
@@ -1062,6 +1234,14 @@ impl fmt::Display for SkinProblem {
             Self::BadScale { field } => write!(
                 f,
                 "{field} is not a usable scale: it must have a step (surfaces), be finite and never fall (spacing, radii, type_scale), and be above zero (type_scale)"
+            ),
+            Self::Indistinguishable {
+                pair,
+                delta_l,
+                needed,
+            } => write!(
+                f,
+                "{pair} differ by ΔL* {delta_l:.2}; two states a player must tell apart need at least {needed}"
             ),
             Self::UnknownTone { name } => write!(
                 f,
@@ -1124,6 +1304,27 @@ pub enum Role {
     /// (give it its own `Node`): restyled in the frame the skin changes. A name the skin does not
     /// hold draws no fill at all, transparent, never a stand-in colour.
     Tone(&'static str),
+    /// A node filled with [`GooeySkin::hovered`], a host's own row, chip or field under the
+    /// pointer, and nothing else (give it its own `Node`). The host swaps it with [`Role::Pressed`]
+    /// as the pointer goes down and up; the frame after, it is restyled.
+    Hovered,
+    /// A node filled with [`GooeySkin::pressed`], a host's own control with the pointer down,
+    /// recessed against [`Role::Hovered`] (checked: [`SkinProblem::Indistinguishable`]).
+    Pressed,
+    /// A node filled with [`GooeySkin::held`]: a gizmo or glyph while the key that asks the world
+    /// to step back is held. It composes with [`Role::HeldGround`] by one
+    /// [`GooeySkin::held_fade`].
+    Held,
+    /// A node filled with [`GooeySkin::held_ground`]: the ground that steps back with
+    /// [`Role::Held`].
+    HeldGround,
+    /// A node filled with [`GooeySkin::unchecked`]: the mark of a thing not judged yet.
+    Unchecked,
+    /// A node filled with [`GooeySkin::card`]: the ground of a card the scrim leaves lit.
+    Card,
+    /// A node whose border is [`GooeySkin::preview_edge`] and that has no fill: the edge of a
+    /// row's preview box (give it its own `Node` with a border width).
+    PreviewEdge,
     /// A column of buttons.
     Menu,
     /// Heading text.
@@ -2228,6 +2429,14 @@ fn restyle(
         Role::Scrim => Some(skin.scrim),
         Role::Surface(level) => Some(skin.surface_at(*level)),
         Role::Tone(name) => Some(skin.tone(name).unwrap_or(Color::NONE)),
+        Role::Hovered => Some(skin.hovered()),
+        Role::Pressed => Some(skin.pressed()),
+        Role::Held => Some(skin.held()),
+        Role::HeldGround => Some(skin.held_ground()),
+        Role::Unchecked => Some(skin.unchecked()),
+        Role::Card => Some(skin.card()),
+        // An edge alone: a fill left by a role the node had before is cleared.
+        Role::PreviewEdge => Some(Color::NONE),
         // A switch is lit by the accent while on, and its knob's place says so a second way.
         Role::ToggleTrack => Some(if owner.disabled {
             skin.surface
@@ -2418,6 +2627,7 @@ fn restyle(
         | Role::PromptButton
         | Role::ShortcutLegend => Some(BorderColor::all(skin.outline)),
         Role::ShortcutBadge => Some(BorderColor::all(skin.text)),
+        Role::PreviewEdge => Some(BorderColor::all(skin.preview_edge())),
         Role::ToastAction => Some(BorderColor::all(if look.focused == Some(entity) {
             faded(skin.focus_ring, owner.alpha)
         } else {

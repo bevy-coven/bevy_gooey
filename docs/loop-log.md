@@ -2110,3 +2110,35 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 54).** `cargo semver-checks --baseline-rev v0.31.2`: no breaking checks (new public items only): patch. `release: v0.31.3`, published (https://crates.io/crates/bevy_gooey/0.31.3), tag `v0.31.3` pushed. Commits on `main`: research, `PromptsAnchor`, gallery fix, log, release.
 
 **Cleanup (iteration 54).** Removed this pass's own `/tmp/g54` (captures, frames, gate script) and `/tmp/prompt.rs.bak`; no baseline worktree was made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
+
+## Iteration 55 — 2026-11-02 — State roles: hover, pressed, held, card and preview edge on the skin
+
+**Triage.** Last audit row (pass 82): nothing missing. One open issue: #37 (G-33, `grimoire-ui`, `consumer:bevy_grimoire`), the only request, so the pass's item; bevy_grimoire#210 (UI-02) waits on it. No parked work for it (only `wiggum/parked-pass-23-…`, ignored). Corpus not re-scanned; home-still's MCP bridge answered 401 (refresh token expired), `hs distill search` worked but found nothing on interaction-state colour (Pending index).
+
+**Pick.** Ranked: (1) #37 (consumer, grimoire-ui); (2) tree row `level`/`expanded`/Expand, radial Increment; (3) one keycap vocabulary for badges and legend; (4) a stronger lone-slot cue; (5) motion. (1) outranks by rule.
+
+**Sources** (`docs/research/state-roles.md`, committed alone first): craft, W3C *Understanding SC 1.4.11 Non-text Contrast* ("does not require that changes in color that differentiate between states ... meet the 3:1 contrast ratio when they do not appear next to each other"); shipping, Material 3 *State layers* and VS Code *Themes* (hover, selection and widget background as named keys; no shipped-*game* source in the corpus); technical, Bevy `Mix`, this crate's `cie_lightness`.
+
+**What changed.** `GooeySkin::{hover, pressed, held, held_ground, unchecked, card, preview_edge}` (`Option<Color>`, `None` in every preset), accessors that answer from the nearest field (`pressed()` and `card()` = the panel's solid fill, `unchecked()` = `text_muted`, `preview_edge()` = `outline`, `held_ground()` = the panel faded toward the background, `held()` = `text` faded toward `held_ground()`), `held_fade` 0.6 (one fade for both), `Role::{Hovered, Pressed, Held, HeldGround, Unchecked, Card}` (fills) and `Role::PreviewEdge` (a border). `hover` is read by `hovered()`, so every hovered widget and `problems()` follow it. `problems()`: text on pressed and card, unchecked and preview_edge on the panel, **pressed vs hovered by `STATE_STEP` (ΔL\* 4) as the new `SkinProblem::Indistinguishable`**, `held_fade` outside 0 to 1 as `BadSize`. `with_colours_of` and `SkinPreset::of` carry the colours.
+
+**Assumed decisions (owner may override), also on #37:** (a) option 1 (roles), not reserved tones; (b) a `Hover` role and `hover` field added: the acceptance names "Pressed and Hover", the issue's table has `ROW_BG`; (c) `pressed` defaults to the panel's fill, not `accent` (a host's `text` cannot sit on accent); (d) `VOID` is `Role::Surface(0)`, `PANEL_BG` a ladder step or `surface_raised`, `DIM` a host tone: no new role; (e) `STATE_STEP` 4 is a design default (WCAG sets no number).
+
+**A first build was wrong:** `held()` faded `text` toward the *background*; in parchment (dark text, dark background) it stepped nothing back (the capture showed the same glyph twice). It now fades toward `held_ground()`, which also makes a host-set ground move the glyph.
+
+**Tests** (`tests/state_roles.rs`, 10; 842 in `all`, 832 before; mutation-checked: the step threshold, `hovered()` ignoring `hover`): every preset answers every role with its fields `None`, a node of each role is drawn with the skin's colour (and PreviewEdge is a border and no fill), pressed at hover's lightness is `Indistinguishable` and nothing else is wrong, text on pressed/card and the two marks are checked, `hover` is what a really-hovered button draws (real `PointerInput`: a hand-inserted `Hovered(true)` is reset by picking before `Update`), held and held ground come off one fade (0, 1, monotone, a set ground moves the glyph), a bad fade is `BadSize` and never extrapolates, roles follow a changed skin, a swapped role and a scope, a theme step carries them, a skin file round-trips (serde).
+
+**Demo.** `examples/states.rs` and `docs/media/states.gif` (36 frames, 3.6 s, 800×400; guide `docs/guide/skins.md`, `docs/media/README.md`, README line extended in place, still 250 lines, CHANGELOG, AGENTS).
+
+**Critique and verdict** (`/tmp/g55/dark.png`, `parchment.png`, `high_contrast.png`, `tool.png` at 1280×720, the GIF frames): swatches read as named states in every look; Hovered is a clear lifted fill (amber-brown, rose, blue in Tool), Unchecked a mark colour, Preview edge a 3 px frame, the held glyph dimmer on a darker ground in dark and parchment. Flaws: by default **Pressed and Card are the same colour** (both the panel's fill), so those two swatches look identical and nearly vanish on a black high-contrast panel; that is the honest default (a pressed row sinks into the panel it stands on, a card is the dialog's own fill) and a skin that wants them apart sets them; 2560×1440 and 150% text not captured (no layout change, only fills). Verdict **GREAT** for the contract and the demo of it; the identical defaults are the one thing a designer would set.
+
+**Checklist.** No existing widget's colour changed (`hover` is `None` in every preset: `tests/state_roles.rs` and the whole suite hold the default `hovered()`). **mean_ms:** `gooey: frames 60 mean_ms 22 to 26` on Xvfb software rendering for the new example; no existing drawing path changed (six fill arms and one border arm in `apply_skin`'s match), so no before/after.
+
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 842 tests + lib, 208 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green.
+
+### Ranked backlog
+
+1. Accessibility: a tree row's `level` and `expanded`, and its Expand/Collapse; a radial's Increment/Decrement; `ReplaceSelectedText`.
+2. One keycap vocabulary for the shortcut badges and legend.
+3. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
+4. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
+5. Radial: a pointing arc that follows the stick, an item showing picture and label together.

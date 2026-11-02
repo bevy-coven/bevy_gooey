@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- State roles for a host's own controls (#37): `GooeySkin::{hover, pressed, held, held_ground, unchecked, card, preview_edge}` (`Option<Color>`, `None` in every preset), their accessors (`hovered()`, `pressed()`, `held()`, `held_ground()`, `unchecked()`, `card()`, `preview_edge()`, each answering from the nearest field when unset) and `Role::{Hovered, Pressed, Held, HeldGround, Unchecked, Card, PreviewEdge}` (a fill on a node of your own; `PreviewEdge` a border). `GooeySkin::held_fade` (0.6) is the one fade both held colours come off. `problems()` checks text on pressed and card, `unchecked` and `preview_edge` on the panel, and pressed against hovered by `STATE_STEP` (ΔL\* 4): the new `SkinProblem::Indistinguishable`. `examples/states` shows them.
+
+### Changed
+
+- `GooeySkin::hovered()` reads the new `hover` field when it is set (every hovered widget of the crate draws it); `SkinProblem::BadSize` also reports a `held_fade` outside 0 to 1. `with_colours_of` and `SkinPreset::of` carry the new colours. New public enum variants (`Role`, `SkinProblem`) and struct fields (`GooeySkin`) are a minor bump.
+
 ## [0.31.3] - 2026-11-02
 
 ### Added
