@@ -9,6 +9,7 @@
 ### Changed
 
 - `Role` has a new variant, `MeterTrail` (a breaking change for an exhaustive `match`), and a `Meter` now requires the new `MeterMotion` state component.
+- A `Meter` that rises is no longer at its new value in the same frame: the fill eases up over about 0.24 s (`MotionSettings::off()` restores the jump). A fall is still at once.
 
 ## [0.27.1] - 2026-11-02
 ### Added
