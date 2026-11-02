@@ -49,6 +49,7 @@ mod shortcut;
 mod skin;
 mod slots;
 mod split;
+mod state_roles;
 mod status_bar;
 mod table;
 mod tabs;

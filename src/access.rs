@@ -57,6 +57,13 @@ fn spec(role: Role) -> Spec {
         | Role::Panel
         | Role::Surface(_)
         | Role::Tone(_)
+        | Role::Hovered
+        | Role::Pressed
+        | Role::Held
+        | Role::HeldGround
+        | Role::Unchecked
+        | Role::Card
+        | Role::PreviewEdge
         | Role::Menu
         | Role::Popover
         | Role::ToastStack

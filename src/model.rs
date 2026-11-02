@@ -57,6 +57,12 @@ pub fn contrast_ratio(a: [f32; 3], b: [f32; 3]) -> f32 {
 /// [`crate::GooeySkin::surfaces`].
 pub const ELEVATION_STEP: f32 = 2.0;
 
+/// The least CIE L\* a skin's pressed fill and its hovered fill may differ by, so a control with
+/// the pointer down is told apart from one under it: the comfortable step (4) of
+/// [`ELEVATION_STEP`]'s note, since WCAG 1.4.11 sets no number for two states that do not appear
+/// side by side. See [`crate::GooeySkin::pressed`].
+pub const STATE_STEP: f32 = 4.0;
+
 /// The CIE 1976 lightness L\* of an sRGB colour, from 0 (black) to 100 (white): a perceptually
 /// near-uniform scale, so equal differences look like equal steps (WCAG's contrast ratio, with its
 /// flare term, is the wrong instrument between two near-blacks).
