@@ -36,6 +36,7 @@ pub enum ArrowPolicy {
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_gooey::*;
+/// # use bevy::input_focus::tab_navigation::TabIndex;
 /// # fn setup(mut commands: Commands) {
 /// commands.spawn((
 ///     Node::default(),

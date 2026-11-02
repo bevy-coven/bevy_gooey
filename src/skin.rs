@@ -1302,7 +1302,7 @@ pub enum Role {
     Section,
     /// A section's body: the game's widgets, indented under the header; not drawn.
     SectionBody,
-    /// A [`crate::inspector`]'s root: a column of the rows built from a reflected value, a gap
+    /// A `inspector`'s root: a column of the rows built from a reflected value, a gap
     /// apart; not drawn.
     Inspector,
     /// A [`crate::notification_center`]'s root: a column holding the log's list; not drawn.
