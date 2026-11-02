@@ -1,16 +1,19 @@
-//! HUD meters: a value against a maximum, drawn as a fill.
+//! HUD meters: a value against a maximum, drawn as a fill, with a trail that shows what was lost.
 
 use bevy::prelude::*;
 
-use crate::model::meter_fraction;
+use crate::model::{MeterShown, meter_fraction, meter_motion};
+use crate::motion::MotionSettings;
 use crate::skin::Role;
 
-/// A meter's reading. Change it and [`update_meters`] moves the fill the same frame. Any value is
-/// safe: the fill is clamped to empty and full, and a non-finite or non-positive maximum reads as
-/// empty.
+/// A meter's reading. Change it and [`update_meters`] moves the fill: a loss drops it at once and
+/// leaves a [`Role::MeterTrail`] of the lost length that holds a moment and drains; a gain eases
+/// it up (see [`meter_motion`]; [`MotionSettings::off`] makes both instant). Any value is safe: the
+/// fill is clamped to empty and full, and a non-finite or non-positive maximum reads as empty.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
 #[reflect(Component, Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[require(MeterMotion)]
 pub struct Meter {
     /// The current value, e.g. health left.
     pub value: f32,
@@ -18,18 +21,71 @@ pub struct Meter {
     pub max: f32,
 }
 
-/// Sets each changed [`Meter`]'s fill width to its fraction. Runs in [`crate::GooeySystems::Style`].
+/// What a meter draws now: its fill and trail, and whether it has been drawn once (the first frame
+/// is the value, never a rise from empty). Internal; a game reads [`Meter`].
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+pub struct MeterMotion {
+    shown: MeterShown,
+    primed: bool,
+}
+
+/// Moves each [`Meter`]'s fill and trail toward its value: the fill's width, the trail's width and
+/// its negative start. A settled meter whose value did not change is skipped before any node is
+/// touched. Runs in [`crate::GooeySystems::Style`], on real time (a paused game's HUD still settles).
 pub fn update_meters(
-    meters: Query<(&Meter, &Children), Changed<Meter>>,
-    mut fills: Query<(&Role, &mut Node)>,
+    settings: Option<Res<MotionSettings>>,
+    time: Option<Res<Time<Real>>>,
+    mut meters: Query<(Ref<Meter>, &mut MeterMotion, &Children)>,
+    mut parts: Query<(&Role, &mut Node)>,
 ) {
-    for (meter, children) in &meters {
-        let width = Val::Percent(meter_fraction(meter.value, meter.max) * 100.0);
+    // With no clock the old jump: a zero scale is the target at once.
+    let scale = match (&settings, &time) {
+        (Some(settings), Some(_)) => settings.duration_scale,
+        (None, Some(_)) => 1.0,
+        _ => 0.0,
+    };
+    let dt = time.map_or(0.0, |time| time.delta_secs());
+    for (meter, mut motion, children) in &mut meters {
+        let target = meter_fraction(meter.value, meter.max);
+        let shown = motion.shown;
+        if motion.primed && !meter.is_changed() && shown.fill == target && shown.trail == target {
+            continue;
+        }
+        let next = if motion.primed {
+            meter_motion(shown, target, dt, scale)
+        } else {
+            meter_motion(shown, target, dt, 0.0)
+        };
+        if motion.primed && next == shown {
+            continue;
+        }
+        motion.shown = next;
+        motion.primed = true;
+        let fill = Val::Percent(next.fill * 100.0);
+        // Nothing at all while there is no trail: a node under the fill would still fringe its
+        // rounded corners in the trail's colour.
+        let (trail, back) = if next.trail > next.fill {
+            (
+                Val::Percent(next.trail * 100.0),
+                Val::Percent(-next.fill * 100.0),
+            )
+        } else {
+            (Val::ZERO, Val::ZERO)
+        };
         for child in children.iter() {
-            if let Ok((Role::MeterFill, mut node)) = fills.get_mut(child)
-                && node.width != width
-            {
-                node.width = width;
+            let Ok((role, mut node)) = parts.get_mut(child) else {
+                continue;
+            };
+            match role {
+                Role::MeterFill if node.width != fill => node.width = fill,
+                // A flex item after the fill, pulled back over it by the fill's own length (a
+                // percentage margin is of the container's width, as the width is): it starts at
+                // the bar's left edge and the row is as long as the trail.
+                Role::MeterTrail if node.width != trail || node.margin.left != back => {
+                    node.width = trail;
+                    node.margin.left = back;
+                }
+                _ => {}
             }
         }
     }
