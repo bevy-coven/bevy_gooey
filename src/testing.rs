@@ -6,9 +6,13 @@
 //! `KeyboardInput`), so a test cannot pass while a button is covered, hidden, unfocusable or
 //! mislabelled, which a test that triggers an entity directly can.
 //!
-//! The app needs a primary window (Bevy's `WindowPlugin`, with `WinitPlugin` and a renderer left
-//! out is enough), [`crate::GooeyPlugins`] and one `update` after the interface is spawned, so it
-//! has been laid out.
+//! The app needs [`crate::GooeyPlugins`], a camera that draws the interface and one `update` after
+//! the interface is spawned, so it has been laid out. A click goes to the render target of the camera
+//! that draws the widget, as the picking backend matches pointers to cameras: a primary window
+//! (Bevy's `WindowPlugin`, with `WinitPlugin` and a renderer left out is enough) or an `Image`, so
+//! a test of an interface drawn into a texture needs no window at all. Bevy's own key handling of
+//! a focused widget (Enter on a button, a character in a field) is dispatched only while a primary
+//! window exists, so a test that presses keys on such a widget wants one.
 //!
 //! ```no_run
 //! use bevy::prelude::*;
@@ -25,16 +29,17 @@
 
 use std::fmt;
 
-use bevy::camera::NormalizedRenderTarget;
+use bevy::camera::{NormalizedRenderTarget, RenderTarget};
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::mouse::MouseButtonInput;
-use bevy::input_focus::InputFocus;
 use bevy::input_focus::tab_navigation::TabIndex;
+use bevy::input_focus::{AcquireFocus, InputFocus, InputFocusVisible};
+use bevy::picking::events::PointerPress;
 use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
-use bevy::ui::{ComputedNode, UiGlobalTransform};
-use bevy::window::{PrimaryWindow, WindowRef};
+use bevy::ui::{ComputedNode, ComputedUiTargetCamera, UiGlobalTransform};
+use bevy::window::PrimaryWindow;
 
 use crate::skin::Role;
 use crate::text::TextInputOf;
@@ -133,11 +138,89 @@ pub fn find_by_label(app: &mut App, label: &str) -> Result<Entity, FindError> {
     }
 }
 
-fn window(app: &mut App) -> Entity {
+/// The window the keyboard's and the mouse's messages name: the primary window, or none when a
+/// test draws only into images (the messages' `window` is then a placeholder, which nothing reads).
+fn primary_window(app: &mut App) -> Option<Entity> {
     app.world_mut()
         .query_filtered::<Entity, With<PrimaryWindow>>()
         .single(app.world())
-        .expect("a test app has one primary window")
+        .ok()
+}
+
+/// What a pointer needs to land on a widget: the render target of the camera that draws it, that
+/// target's scale factor (a window's, an image's) and the window the input messages name.
+struct Surface {
+    target: NormalizedRenderTarget,
+    scale: f32,
+    window: Entity,
+}
+
+/// Marks an app whose clicks are given focus by [`windowless_click_to_focus`].
+#[derive(Resource)]
+struct WindowlessFocus;
+
+/// Bevy gives a clicked widget focus only while a primary window exists (`click_to_focus` looks the
+/// window up to name it in the request), so in an app that draws only into images a click would
+/// reach the widget and leave focus where it was. This is that observer without the window: the
+/// same hidden focus ring, the same bubbling `AcquireFocus` that the widgets' own resolvers answer.
+fn windowless_click_to_focus(
+    press: On<PointerPress>,
+    mut shown: ResMut<InputFocusVisible>,
+    windows: Query<(), With<PrimaryWindow>>,
+    mut commands: Commands,
+) {
+    if press.entity == press.original_event_target() && windows.is_empty() {
+        if shown.0 {
+            shown.0 = false;
+        }
+        commands.trigger(AcquireFocus {
+            focused_entity: press.entity,
+            window: Entity::PLACEHOLDER,
+        });
+    }
+}
+
+/// The surface `entity` is drawn on, found the way the picking backend matches pointers to
+/// cameras: its `ComputedUiTargetCamera` (a `UiTargetCamera`, or the default UI camera), then that
+/// camera's `RenderTarget`.
+fn surface_of(app: &mut App, entity: Entity) -> Surface {
+    let primary = primary_window(app);
+    let world = app.world();
+    let camera = world
+        .get::<ComputedUiTargetCamera>(entity)
+        .and_then(ComputedUiTargetCamera::get)
+        .unwrap_or_else(|| {
+            panic!(
+                "{entity} is drawn by no camera: spawn a camera for the interface (a `Camera2d`, or \
+                 a `UiTargetCamera` on its root) and update the app"
+            )
+        });
+    let target = world
+        .get::<RenderTarget>(camera)
+        .unwrap_or_else(|| panic!("the camera {camera} that draws {entity} has no `RenderTarget`"))
+        .normalize(primary)
+        .unwrap_or_else(|| {
+            panic!(
+                "the camera {camera} that draws {entity} renders to a window, and the app has none"
+            )
+        });
+    let (scale, window) = match &target {
+        NormalizedRenderTarget::Window(window) => (
+            world
+                .get::<Window>(window.entity())
+                .map_or(1.0, |w| w.scale_factor()),
+            window.entity(),
+        ),
+        NormalizedRenderTarget::Image(image) => {
+            (image.scale_factor, primary.unwrap_or(Entity::PLACEHOLDER))
+        }
+        _ => (1.0, primary.unwrap_or(Entity::PLACEHOLDER)),
+    };
+    Surface {
+        target,
+        scale,
+        window,
+    }
 }
 
 fn settle(app: &mut App) {
@@ -146,22 +229,13 @@ fn settle(app: &mut App) {
     }
 }
 
-fn location(app: &mut App, at: Vec2) -> Location {
-    let window = window(app);
-    Location {
-        target: NormalizedRenderTarget::Window(
-            WindowRef::Entity(window)
-                .normalize(None)
-                .expect("a window ref"),
-        ),
+fn pointer(app: &mut App, surface: &Surface, at: Vec2, action: PointerAction) {
+    let location = Location {
+        target: surface.target.clone(),
         position: at,
-    }
-}
-
-fn pointer(app: &mut App, at: Vec2, action: PointerAction) {
-    let at = location(app, at);
+    };
     app.world_mut()
-        .write_message(PointerInput::new(PointerId::Mouse, at, action));
+        .write_message(PointerInput::new(PointerId::Mouse, location, action));
     app.update();
 }
 
@@ -170,7 +244,9 @@ fn pointer(app: &mut App, at: Vec2, action: PointerAction) {
 ///
 /// # Panics
 ///
-/// When `entity` has not been laid out (no `ComputedNode`): update the app first.
+/// When `entity` has not been laid out (no `ComputedNode`): update the app first. When no camera
+/// draws it, or the camera renders to a window the app does not have, with a message that names
+/// which.
 pub fn click(app: &mut App, entity: Entity) {
     let centre = {
         let world = app.world();
@@ -182,28 +258,27 @@ pub fn click(app: &mut App, entity: Entity) {
             .expect("click needs a placed node: update the app after spawning it")
             .translation
     };
-    // Layout is in physical pixels, the pointer in the window's logical ones (the window's scale
+    // Layout is in physical pixels, the pointer in the target's logical ones (the target's scale
     // factor alone: `UiScale` is already in the layout).
-    let primary = window(app);
-    let scale = app
-        .world()
-        .get::<Window>(primary)
-        .map_or(1.0, |w| w.scale_factor());
-    let at = centre / scale;
-    pointer(app, at, PointerAction::Move { delta: Vec2::ONE });
+    let surface = surface_of(app, entity);
+    if primary_window(app).is_none() && !app.world().contains_resource::<WindowlessFocus>() {
+        app.world_mut().insert_resource(WindowlessFocus);
+        app.add_observer(windowless_click_to_focus);
+    }
+    let at = centre / surface.scale;
+    pointer(app, &surface, at, PointerAction::Move { delta: Vec2::ONE });
     settle(app);
-    let window = window(app);
     for state in [ButtonState::Pressed, ButtonState::Released] {
         app.world_mut().write_message(MouseButtonInput {
             button: MouseButton::Left,
             state,
-            window,
+            window: surface.window,
         });
         let action = match state {
             ButtonState::Pressed => PointerAction::Press(PointerButton::Primary),
             ButtonState::Released => PointerAction::Release(PointerButton::Primary),
         };
-        pointer(app, at, action);
+        pointer(app, &surface, at, action);
     }
     settle(app);
 }
@@ -247,7 +322,7 @@ fn logical_key(key: KeyCode) -> Key {
 
 /// Press and release `key`, as a keyboard does: focus's widget hears it as a real key press.
 pub fn press(app: &mut App, key: KeyCode) {
-    let window = window(app);
+    let window = primary_window(app).unwrap_or(Entity::PLACEHOLDER);
     for state in [ButtonState::Pressed, ButtonState::Released] {
         app.world_mut().write_message(KeyboardInput {
             key_code: key,
@@ -265,7 +340,7 @@ pub fn press(app: &mut App, key: KeyCode) {
 /// Type `text` into whatever has focus, one key press and release per character, each carrying the
 /// text it produces (as a platform reports it), so a text field takes it.
 pub fn type_text(app: &mut App, text: &str) {
-    let window = window(app);
+    let window = primary_window(app).unwrap_or(Entity::PLACEHOLDER);
     for c in text.chars() {
         let s = c.to_string();
         for state in [ButtonState::Pressed, ButtonState::Released] {
