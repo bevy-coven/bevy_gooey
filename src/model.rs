@@ -1846,6 +1846,90 @@ pub fn area_values(offset: [f32; 2], inner_origin: [f32; 2], inner_size: [f32; 2
     ]
 }
 
+/// One turn of a [`spinner`](crate::spinner), in seconds.
+pub const SPINNER_PERIOD_SECS: f32 = 0.9;
+
+/// How far a spinner has turned `elapsed` seconds into real time, radians in `0..TAU`. A pure
+/// function of the clock, so a stalled frame does not slow it and a pause does not stop it.
+///
+/// ```
+/// let quarter = bevy_gooey::model::SPINNER_PERIOD_SECS / 4.0;
+/// assert!((bevy_gooey::model::spinner_angle(quarter) - std::f32::consts::FRAC_PI_2).abs() < 1e-5);
+/// ```
+pub fn spinner_angle(elapsed: f32) -> f32 {
+    if !elapsed.is_finite() {
+        return 0.0;
+    }
+    let turns = (elapsed / SPINNER_PERIOD_SECS).rem_euclid(1.0);
+    turns * std::f32::consts::TAU
+}
+
+/// How long is left, in words: "about 20 s left", "about 3 min left", "about 1 h 5 min left". Under
+/// ten seconds it counts the seconds, to a minute it rounds to five, to an hour to the minute and
+/// past one to five minutes, because an estimate never has the precision it prints. A time that is
+/// not finite or below zero is empty; under a second it says so.
+///
+/// ```
+/// assert_eq!(bevy_gooey::model::eta_words(20.0), "about 20 s left");
+/// assert_eq!(bevy_gooey::model::eta_words(3900.0), "about 1 h 5 min left");
+/// ```
+pub fn eta_words(seconds: f32) -> String {
+    if !seconds.is_finite() || seconds < 0.0 {
+        return String::new();
+    }
+    if seconds < 1.0 {
+        return "less than a second left".to_string();
+    }
+    let whole = seconds.round() as u64;
+    if whole < 10 {
+        return format!("about {whole} s left");
+    }
+    if whole < 58 {
+        return format!("about {} s left", (whole + 2) / 5 * 5);
+    }
+    if whole < 3600 {
+        let minutes = (whole + 30) / 60;
+        if minutes < 60 {
+            return format!("about {minutes} min left");
+        }
+    }
+    // From an hour: whole hours and the minutes to the nearest five.
+    let total = (whole + 150) / 300 * 5;
+    let (hours, minutes) = (total / 60, total % 60);
+    if minutes == 0 {
+        format!("about {hours} h left")
+    } else {
+        format!("about {hours} h {minutes} min left")
+    }
+}
+
+/// The line under a progress bar: "3 of 7: Measuring meshes · about 20 s left". Either part may be
+/// missing, and with neither the line is empty.
+///
+/// ```
+/// use bevy_gooey::model::progress_text;
+/// assert_eq!(
+///     progress_text(Some((3, 7, "Measuring meshes")), Some(20.0)),
+///     "3 of 7: Measuring meshes · about 20 s left"
+/// );
+/// assert_eq!(progress_text(None, Some(4.0)), "about 4 s left");
+/// ```
+pub fn progress_text(step: Option<(u32, u32, &str)>, eta_seconds: Option<f32>) -> String {
+    let step = step.map(|(at, of, name)| {
+        if name.is_empty() {
+            format!("{at} of {of}")
+        } else {
+            format!("{at} of {of}: {name}")
+        }
+    });
+    let left = eta_seconds.map(eta_words).filter(|words| !words.is_empty());
+    match (step, left) {
+        (Some(step), Some(left)) => format!("{step} · {left}"),
+        (Some(only), None) | (None, Some(only)) => only,
+        (None, None) => String::new(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2632,5 +2716,40 @@ mod tests {
         assert_eq!(at(50.0, 25.0), [0.5, 0.5]);
         assert_eq!(at(-500.0, 900.0), [0.0, 0.0]);
         assert_eq!(area_values([5.0, 5.0], [0.0, 0.0], [0.0, 0.0]), [0.5, 0.5]);
+    }
+
+    #[test]
+    fn time_left_is_in_words_with_the_precision_an_estimate_has() {
+        assert_eq!(eta_words(0.4), "less than a second left");
+        assert_eq!(eta_words(4.0), "about 4 s left");
+        assert_eq!(eta_words(21.0), "about 20 s left");
+        assert_eq!(eta_words(57.0), "about 55 s left");
+        assert_eq!(eta_words(58.0), "about 1 min left");
+        assert_eq!(eta_words(150.0), "about 3 min left");
+        assert_eq!(eta_words(3570.0), "about 1 h left");
+        assert_eq!(eta_words(3900.0), "about 1 h 5 min left");
+        assert_eq!(eta_words(f32::NAN), "");
+        assert_eq!(eta_words(-3.0), "");
+    }
+
+    #[test]
+    fn the_progress_line_joins_a_step_and_the_time_left_and_drops_what_is_missing() {
+        assert_eq!(
+            progress_text(Some((3, 7, "Measuring meshes")), Some(20.0)),
+            "3 of 7: Measuring meshes · about 20 s left"
+        );
+        assert_eq!(progress_text(Some((3, 7, "")), None), "3 of 7");
+        assert_eq!(progress_text(None, Some(f32::INFINITY)), "");
+        assert_eq!(progress_text(None, None), "");
+    }
+
+    #[test]
+    fn a_spinner_turns_once_a_period_on_the_clock_and_never_leaves_its_range() {
+        assert_eq!(spinner_angle(0.0), 0.0);
+        let half = spinner_angle(SPINNER_PERIOD_SECS / 2.0);
+        assert!((half - std::f32::consts::PI).abs() < 1e-5);
+        assert!(spinner_angle(SPINNER_PERIOD_SECS * 7.25) < std::f32::consts::TAU);
+        assert!(spinner_angle(-0.1) >= 0.0);
+        assert_eq!(spinner_angle(f32::NAN), 0.0);
     }
 }
