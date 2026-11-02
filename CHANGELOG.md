@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.31.1] - 2026-11-02
+
 ### Added
 
 - `DropCandidate` and `DropRefusing` (public marker components): while a drag is lifted, by pointer, keyboard or pad, every enabled, visible `DropTarget` that takes the carried payload has the first and every one that refuses it the second (the source and a node that is no target neither); both come off when the drag ends. They use the same test the drop and the keyboard steering use. A host styles its own targets with `Has<DropCandidate>`.
