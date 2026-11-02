@@ -72,6 +72,11 @@ pub fn is_text_editing(editing: Query<(), With<TextEditing>>) -> bool {
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TextInputOf(pub Entity);
 
+/// On a [`crate::text_area`]'s field: Enter adds a line (Bevy's), Ctrl+Enter or Cmd+Enter ends the
+/// edit, and Up and Down are the caret's.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub(crate) struct AreaField;
+
 /// On a [`crate::text_input`] row whose text changed since the last time an edit ended: when
 /// focus leaves it, that is a final change. Put on and taken off by the row's own systems.
 #[derive(Component, Clone, Copy, Debug, Default)]
@@ -126,12 +131,14 @@ fn finish(commands: &mut Commands, row: Entity, value: String) {
 }
 
 /// Enter in a focused field is a submit: a final change with the text, whether or not it changed.
-/// The field stays focused (Up, Down and Tab leave it). Bevy's handler lets Enter bubble ("to allow
+/// In a [`crate::text_area`] plain Enter adds a line (Bevy's handler), so only Ctrl+Enter or
+/// Cmd+Enter (Super) submits. The field stays focused (Up, Down and Tab leave it). Bevy's handler lets Enter bubble ("to allow
 /// for tab navigation and submit actions"), and holds it back while an IME is composing, which this
 /// does too.
 pub(crate) fn text_on_key_input(
     input: On<FocusedInput<KeyboardInput>>,
-    fields: Query<(&EditableText, &TextInputOf), Without<InteractionDisabled>>,
+    fields: Query<(&EditableText, &TextInputOf, Has<AreaField>), Without<InteractionDisabled>>,
+    keys: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
 ) {
     if input.input.state != ButtonState::Pressed
@@ -140,10 +147,16 @@ pub(crate) fn text_on_key_input(
     {
         return;
     }
-    let Ok((text, &TextInputOf(row))) = fields.get(input.focused_entity) else {
+    let Ok((text, &TextInputOf(row), area)) = fields.get(input.focused_entity) else {
         return;
     };
-    if !text.is_composing() {
+    let chord = keys.any_pressed([
+        KeyCode::ControlLeft,
+        KeyCode::ControlRight,
+        KeyCode::SuperLeft,
+        KeyCode::SuperRight,
+    ]);
+    if (chord || !area) && !text.is_composing() {
         finish(&mut commands, row, text.value().to_string());
     }
 }

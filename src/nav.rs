@@ -35,6 +35,7 @@ use crate::skin::Role;
 use crate::split::{SplitAxis, SplitDivider};
 use crate::table::{TableCache, TableCursor, TableHeaderCell};
 use crate::tabs::{StopQuery, TabsCount, TabsValue, first_stop};
+use crate::text::AreaField;
 use crate::tree::TreeView;
 
 /// The widgets that take Left and Right themselves: an enabled slider or choice.
@@ -164,6 +165,8 @@ pub struct FocusScopes<'w, 's> {
     numbers: Query<'w, 's, (), Steppable>,
     /// The text fields, which take the keys Left and Right themselves.
     typing: Query<'w, 's, (), TypesText>,
+    /// The text areas, whose caret takes Up and Down too.
+    areas: Query<'w, 's, (), (With<AreaField>, Without<InteractionDisabled>)>,
     /// The lists, to tell a widget one has clipped away from one in view.
     lists: Query<'w, 's, (&'static ComputedNode, &'static UiGlobalTransform), With<ListView>>,
     /// A tab strip's tabs, and the tab widgets that hold them.
@@ -271,6 +274,11 @@ impl FocusScopes<'_, '_> {
     /// one takes nothing.
     fn types_text(&self, entity: Entity) -> bool {
         self.typing.contains(entity)
+    }
+
+    /// Whether `entity` is an enabled text area, whose caret takes every arrow key.
+    fn types_lines(&self, entity: Entity) -> bool {
+        self.areas.contains(entity)
     }
 
     /// Whether `entity` is one of a tab strip's tabs.
@@ -484,8 +492,9 @@ pub fn navigate_by_input(
         pressed(KeyCode::ArrowDown, GamepadButton::DPadDown),
     );
     let from = nav.focus.get().filter(|&f| scopes.holds(f));
-    // In a region that keeps the arrow keys for the host, only the D-pad moves focus.
-    let (net_x, net_y) = if from.is_some_and(|f| scopes.hosts_arrows(f)) {
+    // In a region that keeps the arrow keys for the host, or a text area whose caret takes them,
+    // only the D-pad moves focus.
+    let (net_x, net_y) = if from.is_some_and(|f| scopes.hosts_arrows(f) || scopes.types_lines(f)) {
         (
             axis(pad(GamepadButton::DPadRight), pad(GamepadButton::DPadLeft)),
             axis(pad(GamepadButton::DPadUp), pad(GamepadButton::DPadDown)),

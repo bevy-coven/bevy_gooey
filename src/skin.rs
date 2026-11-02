@@ -1184,6 +1184,8 @@ pub enum Role {
     TabPage,
     /// A [`crate::text_input`] row: a label and a field on no fill, laid out like a toggle's row.
     TextInput,
+    /// A [`crate::text_area`] row: a label over a field several lines high, on no fill.
+    TextArea,
     /// The cell a text input's field and hint stand in, so the hint can lie over the field; not
     /// drawn.
     TextCell,
@@ -1519,6 +1521,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
                 | Role::Binding
                 | Role::Toast
                 | Role::TextInput
+                | Role::TextArea
                 | Role::PaletteField
                 | Role::NumberPart
                 | Role::MenuItem
@@ -1654,6 +1657,7 @@ pub fn apply_skin(
                                 | Role::Choice
                                 | Role::Binding
                                 | Role::TextInput
+                                | Role::TextArea
                                 | Role::PaletteField
                                 | Role::NumberPart
                                 | Role::Toast
@@ -2079,6 +2083,7 @@ fn restyle(
         | Role::TabPages
         | Role::TabPage
         | Role::TextInput
+        | Role::TextArea
         | Role::PaletteField
         | Role::NumberPart
         | Role::NumberParts
@@ -2210,7 +2215,7 @@ fn restyle(
         // The row has no frame of its own: the field speaks. Its edge is the outline at rest, the
         // muted text colour under the pointer, and the ring while it holds focus, shown or not
         // (its caret already says who has the keys, and a pointer press hides every other ring).
-        Role::TextInput | Role::PaletteField | Role::NumberPart => {
+        Role::TextInput | Role::TextArea | Role::PaletteField | Role::NumberPart => {
             Some(BorderColor::all(Color::NONE))
         }
         Role::TextField => Some(BorderColor::all(if state.disabled {
@@ -2577,7 +2582,7 @@ fn restyle(
             // air the field needs round it, is a toggle's. A palette's field has no label to stand
             // under, so its row has no side padding and no frame: the field's own frame is as wide
             // as the rows' lit bars under it.
-            Role::TextInput | Role::PaletteField => {
+            Role::TextInput | Role::TextArea | Role::PaletteField => {
                 next.margin = UiRect::bottom(problem_room);
                 let palette = *role == Role::PaletteField;
                 next.border = if palette {
@@ -2592,6 +2597,12 @@ fn restyle(
                 );
                 next.min_height = Val::Px(skin.target());
                 next.column_gap = Val::Px(skin.gap);
+                // A text area's label stands over its field.
+                next.row_gap = Val::Px(if *role == Role::TextArea {
+                    skin.gap * 0.5
+                } else {
+                    0.0
+                });
             }
             // A vec field's component: the label is the scrub handle, so the row's own padding on
             // its left, a pad wide, makes the handle (padding, letter, gap) a target of at least 24 px

@@ -47,6 +47,7 @@ mod status_bar;
 mod table;
 mod tabs;
 mod text;
+mod text_area;
 mod toast;
 mod toast_actions;
 mod tokens;
