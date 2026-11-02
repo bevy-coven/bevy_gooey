@@ -2012,3 +2012,37 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 5. Radial: a pointing arc that follows the stick, an item showing picture and label together.
 
 **Cleanup.** Removed this pass's own: `/tmp/g51` (captures, frames, gate script and log). No baseline worktree was made. Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits).
+
+## Iteration 52 — 2026-11-02 — Drop candidates: the slots that take a lifted item say so at pick-up
+
+**Triage.** Last audit row (pass 79): nothing missing. No open issue on `bevy_gooey`, no open `grimoire-ui` request (bevy_grimoire's open `ui` issues name only closed `bevy_gooey#N`), parked work only `wiggum/parked-pass-23-…` (old, ignored). Corpus not re-scanned; home-still not queried (the sources were fetched).
+
+**Pick.** Ranked: (1) **valid-slot hint at pick-up** (backlog #2, deferred in the iteration-50 note's Deviations: a player with an equipment panel hunts for the slot that fits by sweeping the pointer); (2) legend placement (#1, small and host-facing); (3) motion; (4) AccessKit actions; (5) radial arc. (1) beat (2) because every inventory drag shows it and the `takes` test, `DropZone` and the refused look already existed.
+
+**Sources** (`docs/research/drop-candidates.md`, committed alone first): craft, Laubheimer (NN/g) *Drag–and–Drop* ("feedback previewing what will happen before the user 'drops' the object"); shipping game, Path of Exile's forum thread *Inventory Background Colors* (slots turn green or red under the item in the hand, and a player asks for more: the slot should highlight before it is hovered; this **corrects** the iteration-50 note, which said PoE lights matching slots at pick-up); technical, W3C *WAI-ARIA 1.1* `aria-dropeffect` ("authors SHOULD show a visual indication of potential drop targets", the effects being known once the object is grabbed). **Gap:** home-still has no stem on inventory or drop feedback.
+
+**What changed.** `DropCandidate` and `DropRefusing` (public `Reflect` markers) on every enabled, visible `DropZone` but the source while a drag is lifted (pointer, keyboard, pad), by the same `DropZone::takes` the drop uses; `update_drop_candidates` (Style, after `update_drag_visuals`) writes only a difference. A slot draws them in `apply_skin` (`State::{candidate, refusing}`): a taker's frame is `skin.outline`, a refusing filled slot is the panel's well with `text_muted` words and icon; the ring wins. **Measured and rejected:** the first build framed takers in `accent`; in the inventory example every one of ~35 slots took the sword and the screen lit amber (`/tmp/g52/sheet.png`), losing the one slot that mattered. The calm `outline` (already held 3:1 on `surface`) plus dimmed refusers reads by contrast in an equipment panel and stays quiet in an all-take backpack. Assumed decision (design default, no issue): framed not filled, slots only, markers public for a host's own targets.
+
+**Tests** (`tests/drag.rs` 4 new, `tests/slots.rs` 7 new; 817 in the `all` executable, 806 before; mutation-checked: dropping the `InteractionDisabled` filter fails the disabled-target test, dropping the source filter fails six slot tests): exactly the targets that take a payload (Piece 7, Piece 50 refused by "small pieces", a light), refusers, release/Escape/keyboard drop clears, a press that never lifts marks nothing, a disabled target is neither, a filled slot a candidate only when the swap back is taken, a rule changed mid-carry moves the set, two grids, the look in all four presets (taker `outline`, refuser `surface`/quiet frame/`text_muted`, ring wins), thirty carried frames write no component.
+
+**Demo.** `docs/media/slot-rules.gif` (regenerated, 42 frames, 201 KB) and `docs/media/inventory.gif` (regenerated, 92 frames, 162 KB; its old caption was stale since iteration 50: it said Left twice reaches the Cellar key, focus now follows the item so it reaches the Gold) in `docs/guide/inventory.md` and `docs/media/README.md`; README line (still 250 lines), `docs/guide/drag-drop.md`, CHANGELOG, AGENTS.md.
+
+**Critique and verdict** (`/tmp/g52/critique.md`; full frames and contact sheets of both GIFs, dark only; the other presets are asserted in tests, not looked at): flaws: in an all-take backpack the frames say little (honest); the one fitting empty equipment slot differs from empty refusers by frame brightness only, not a pop; ghost tooltip clutter (existing). Verdict **GREAT** for a calm, discriminating, correct hint; a stronger pop for a lone fitting slot is the follow-up.
+
+**Checklist.** No new skin colour: `outline on surface` (3:1) and `text_muted on surface` (4.5:1) already in `problems()`; slot size unchanged.
+
+**mean_ms** (`examples/inventory`, 200 frames, software Xvfb, 10 alternating pairs, no input): before avg 23.89 / min 23.05, after 23.84 / 22.96. With two staged drags (8 pairs): before avg 26.6, after 27.4 (±5 ms run noise; the extra work exists only while a drag is lifted).
+
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 817 tests + lib, 205 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green first run (3.2 minutes). Commits on `main` (research 357319d, code eda6bb6, docs 472c219), branch `loop/iter-52` at the same tip.
+
+**Release.** `cargo semver-checks --baseline-rev v0.31.0` ran 0 breaking checks (new public items only): patch. `release: v0.31.1`, published (https://crates.io/crates/bevy_gooey/0.31.1), tag `v0.31.1` pushed.
+
+### Ranked backlog
+
+1. Legend placement: a host-chosen anchor and one keycap vocabulary for badges and legend.
+2. A stronger cue for a lone fitting slot in a big grid (a lit fill for takers when the takers are the minority), a locked-slot look, a stack-merge helper.
+3. Motion: a scrim and card fade (needs group opacity), a dialog exit, a button press pop, a per-meter opt-out.
+4. AccessKit actions: `ActionRequest` Click, Focus, Increment, Decrement, SetValue.
+5. Radial: a pointing arc that follows the stick, an item showing picture and label together.
+
+**Cleanup.** Removed this pass's own: `/tmp/g52` (captures, frames, binaries `inv_before`/`inv_after`, gate script), `/tmp/g52_drag.rs`. No baseline worktree was made (the before binary was built from a `git stash` of the same tree). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits).
