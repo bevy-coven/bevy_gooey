@@ -635,3 +635,224 @@ fn a_host_reads_shown_while_the_badges_stand_even_with_nothing_to_show_and_it_is
     up(&mut app, KeyCode::AltLeft);
     assert!(!is_shown(&app));
 }
+
+fn legend_rows() -> ShortcutLegend {
+    ShortcutLegend {
+        rows: vec![
+            LegendRow::new(Shortcut::primary(KeyCode::KeyZ), "Undo"),
+            LegendRow::new(
+                Shortcut::new(Modifiers::SHIFT, KeyCode::KeyG),
+                "Snap to the grid",
+            ),
+            LegendRow::new(
+                Shortcut::new(Modifiers::CTRL | Modifiers::SHIFT, KeyCode::KeyS),
+                "Save every open document",
+            ),
+        ],
+    }
+}
+
+fn cards(app: &mut App) -> Vec<Entity> {
+    let world = app.world_mut();
+    world
+        .query_filtered::<Entity, With<ShortcutLegendCard>>()
+        .iter(world)
+        .collect()
+}
+
+/// The legend's keycaps and words, row by row: `(chord text, its rect, words text, its rect)`.
+fn legend_cells(app: &mut App, card: Entity) -> Vec<(String, Rect, String, Rect)> {
+    let kids: Vec<Entity> = app
+        .world()
+        .get::<Children>(card)
+        .expect("a card has rows")
+        .iter()
+        .collect();
+    kids.chunks(2)
+        .map(|pair| {
+            let text = |e: Entity| app.world().get::<Text>(e).expect("text").0.clone();
+            (
+                text(pair[0]),
+                rect(app, pair[0]),
+                text(pair[1]),
+                rect(app, pair[1]),
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn the_legend_stands_with_the_overlay_and_a_chord_with_no_widget_has_its_row() {
+    let mut app = app_with(GooeySkin::dark(), instant());
+    app.insert_resource(legend_rows());
+    tools(&mut app);
+    settle(&mut app);
+    assert!(cards(&mut app).is_empty(), "nothing before the reveal");
+    down(&mut app, KeyCode::AltLeft);
+    app.update();
+    let found = cards(&mut app);
+    assert_eq!(found.len(), 1);
+    let card = found[0];
+    let cells = legend_cells(&mut app, card);
+    let words: Vec<&str> = cells.iter().map(|c| c.2.as_str()).collect();
+    assert_eq!(
+        words,
+        ["Undo", "Snap to the grid", "Save every open document"]
+    );
+    for (i, row) in legend_rows().rows.iter().enumerate() {
+        assert_eq!(cells[i].0, row.chord.label());
+    }
+    assert_eq!(
+        shown(&mut app).len(),
+        2,
+        "the widgets' badges stand as well"
+    );
+    up(&mut app, KeyCode::AltLeft);
+    assert!(
+        cards(&mut app).is_empty(),
+        "gone with the overlay, in that frame"
+    );
+}
+
+#[test]
+fn the_legend_is_a_card_in_the_middle_of_the_window_with_keycaps_over_words_in_rows() {
+    let mut app = app_with(GooeySkin::dark(), instant());
+    app.insert_resource(legend_rows());
+    settle(&mut app);
+    down(&mut app, KeyCode::AltLeft);
+    settle(&mut app);
+    let card = cards(&mut app)[0];
+    let frame = rect(&app, card);
+    let window = Rect::new(0.0, 0.0, 1280.0, 720.0);
+    assert!(
+        window.contains(frame.min) && window.contains(frame.max),
+        "{frame:?}"
+    );
+    assert!(
+        (frame.center() - window.center()).abs().max_element() < 1.5,
+        "centred: {frame:?}"
+    );
+    let cells = legend_cells(&mut app, card);
+    let mut right_edge = f32::MIN;
+    for (i, (_, cap, _, words)) in cells.iter().enumerate() {
+        assert!(cap.max.x <= words.min.x + 0.5, "row {i}: cap then words");
+        assert!(
+            frame.contains(cap.min) && frame.contains(words.max),
+            "row {i} inside the card"
+        );
+        assert!(
+            words.min.x >= right_edge.min(words.min.x),
+            "one words column"
+        );
+        right_edge = cap.max.x;
+        if let Some(next) = cells.get(i + 1) {
+            assert!(next.1.min.y >= cap.max.y - 0.5, "rows do not overlap");
+            assert!(
+                (next.1.max.x - cap.max.x).abs() < 1.5,
+                "keycaps end in one column"
+            );
+            assert!(
+                (next.3.min.x - words.min.x).abs() < 1.5,
+                "words start in one column"
+            );
+        }
+    }
+    // The pointer goes through it and no one can focus it.
+    let world = app.world();
+    assert_eq!(world.get::<Pickable>(card), Some(&Pickable::IGNORE));
+    assert!(
+        world
+            .get::<bevy::input_focus::tab_navigation::TabIndex>(card)
+            .is_none()
+    );
+    // Opaque: every pixel of its fill is the skin's solid surface, so words read over any ground.
+    let fill = world.get::<BackgroundColor>(card).expect("filled").0;
+    assert_eq!(fill, GooeySkin::dark().solid_surface());
+    assert_eq!(fill.alpha(), 1.0);
+}
+
+#[test]
+fn the_legend_follows_the_rows_the_host_writes_and_a_settled_one_writes_nothing() {
+    let mut app = app_with(GooeySkin::dark(), instant());
+    app.insert_resource(legend_rows());
+    settle(&mut app);
+    down(&mut app, KeyCode::AltLeft);
+    settle(&mut app);
+    let card = cards(&mut app)[0];
+    #[derive(Resource, Default)]
+    struct Writes(u32);
+    type Written = Or<(Changed<Text>, Changed<Node>, Changed<BackgroundColor>)>;
+    app.init_resource::<Writes>().add_systems(
+        Update,
+        |changed: Query<(), Written>, mut writes: ResMut<Writes>| {
+            writes.0 += changed.iter().count() as u32
+        },
+    );
+    app.update();
+    app.world_mut().resource_mut::<Writes>().0 = 0;
+    for _ in 0..10 {
+        app.update();
+    }
+    assert_eq!(cards(&mut app), [card], "the same card, not rebuilt");
+    assert_eq!(app.world().resource::<Writes>().0, 0);
+
+    app.insert_resource(ShortcutLegend {
+        rows: vec![LegendRow::new(
+            Shortcut::new(Modifiers::NONE, KeyCode::KeyH),
+            "Help",
+        )],
+    });
+    app.update();
+    let found = cards(&mut app);
+    assert_eq!(found.len(), 1);
+    let cells = legend_cells(&mut app, found[0]);
+    assert_eq!(cells.len(), 1);
+    assert_eq!(cells[0].2, "Help");
+
+    // No rows: no card, though the overlay stands.
+    app.insert_resource(ShortcutLegend::default());
+    app.update();
+    assert!(cards(&mut app).is_empty() && is_shown(&app));
+}
+
+#[test]
+fn the_legend_stays_inside_the_window_at_every_text_size_and_reads_at_4_5_to_1_in_every_look() {
+    use bevy_gooey::model::TEXT_SIZE_STEPS;
+    for preset in SkinPreset::ALL {
+        for step in TEXT_SIZE_STEPS {
+            let mut skin = preset.skin();
+            skin.text_scale = step;
+            let mut app = app_with(skin.clone(), instant());
+            app.insert_resource(legend_rows());
+            settle(&mut app);
+            down(&mut app, KeyCode::AltLeft);
+            settle(&mut app);
+            let card = cards(&mut app)[0];
+            let frame = rect(&app, card);
+            let window = Rect::new(0.0, 0.0, 1280.0, 720.0);
+            assert!(
+                window.contains(frame.min) && window.contains(frame.max),
+                "{} at {step}: {frame:?}",
+                preset.name()
+            );
+            for (_, cap, _, words) in legend_cells(&mut app, card) {
+                assert!(cap.size().y >= 1.0 && words.max.x <= frame.max.x + 0.5);
+            }
+        }
+        // The words' ink against the card's fill, as drawn.
+        let mut app = app_with(preset.skin(), instant());
+        app.insert_resource(legend_rows());
+        settle(&mut app);
+        down(&mut app, KeyCode::AltLeft);
+        settle(&mut app);
+        let card = cards(&mut app)[0];
+        let fill = Srgba::from(app.world().get::<BackgroundColor>(card).expect("fill").0);
+        let words = app.world().get::<Children>(card).expect("rows")[1];
+        let ink = Srgba::from(app.world().get::<TextColor>(words).expect("ink").0);
+        let ratio = contrast_ratio(
+            [ink.red, ink.green, ink.blue],
+            [fill.red, fill.green, fill.blue],
+        );
+        assert!(ratio >= 4.5, "{}: {ratio}", preset.name());
+    }
+}

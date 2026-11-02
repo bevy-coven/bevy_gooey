@@ -5,8 +5,12 @@
 //! Capture mode, as the other examples: `GOOEY_FRAMES`, `GOOEY_SHOT`, `GOOEY_SHOT_DIR`,
 //! `GOOEY_SHOT_FROM`, `GOOEY_SHOT_EVERY`, `GOOEY_SKIN`, `GOOEY_TEXT_SCALE`, `GOOEY_SIZE` and
 //! `GOOEY_KEYS` (steps separated by `;`: `tab`, `enter`, `alt` (hold Alt down), `unalt` (let it go),
-//! `shift` and `unshift` (hold or release Shift: then Alt+Shift is not the hold)), one every
-//! `GOOEY_KEY_EVERY` frames.
+//! `shift` and `unshift` (hold or release Shift: then Alt+Shift is not the hold), `k` and `unk` (the
+//! plain-key reveal of `GOOEY_LEGEND=1`)), one every `GOOEY_KEY_EVERY` frames.
+//!
+//! `GOOEY_LEGEND=1`: the reveal is the plain key **K** (`Reveal::Key`) and the chords that act on
+//! nothing on screen are listed on a card in the middle of the window (`ShortcutLegend`), beside the
+//! panel, which stands at the left.
 
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
@@ -111,6 +115,8 @@ fn steps_of(text: &str) -> Vec<Step> {
                 "enter" => Step::Tap(KeyCode::Enter, Key::Enter),
                 "alt" => Step::Down(KeyCode::AltLeft),
                 "unalt" => Step::Up(KeyCode::AltLeft),
+                "k" => Step::Down(KeyCode::KeyK),
+                "unk" => Step::Up(KeyCode::KeyK),
                 "shift" => Step::Down(KeyCode::ShiftLeft),
                 "unshift" => Step::Up(KeyCode::ShiftLeft),
                 _ => return None,
@@ -142,6 +148,28 @@ struct Ran;
 /// nothing, so it shows no badge, and Help has no chord.
 fn setup(mut commands: Commands, skin: Res<GooeySkin>) {
     commands.spawn(Camera2d);
+    let legend = std::env::var("GOOEY_LEGEND").is_ok();
+    if legend {
+        let primary = Shortcut::primary;
+        commands.insert_resource(ShortcutBadges {
+            hold: Reveal::Key(KeyCode::KeyK),
+            ..default()
+        });
+        commands.insert_resource(ShortcutLegend {
+            rows: vec![
+                LegendRow::new(primary(KeyCode::KeyA), "Select all"),
+                LegendRow::new(
+                    Shortcut::new(Modifiers::SHIFT, KeyCode::KeyG),
+                    "Snap to the grid",
+                ),
+                LegendRow::new(
+                    Shortcut::new(Modifiers::NONE, KeyCode::Space),
+                    "Pan the view",
+                ),
+                LegendRow::new(primary(KeyCode::Digit0), "Zoom to fit"),
+            ],
+        });
+    }
     let primary = Shortcut::primary;
     let card = commands
         .spawn((
@@ -152,7 +180,7 @@ fn setup(mut commands: Commands, skin: Res<GooeySkin>) {
                     Node {
                         flex_direction: FlexDirection::Column,
                         row_gap: Val::Px(10.0),
-                        width: Val::Px(400.0 * skin.text_scale),
+                        width: Val::Px(if legend { 360.0 } else { 400.0 } * skin.text_scale),
                         ..default()
                     },
                     children![
@@ -174,7 +202,14 @@ fn setup(mut commands: Commands, skin: Res<GooeySkin>) {
                         button("Help"),
                     ],
                 ),
-                (label("Hold Alt to see the chords."), Ran),
+                (
+                    label(if legend {
+                        "Hold K to see the chords."
+                    } else {
+                        "Hold Alt to see the chords."
+                    }),
+                    Ran,
+                ),
             ],
         ))
         .id();
@@ -184,7 +219,12 @@ fn setup(mut commands: Commands, skin: Res<GooeySkin>) {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
             align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
+            justify_content: if legend {
+                JustifyContent::FlexStart
+            } else {
+                JustifyContent::Center
+            },
+            padding: UiRect::left(Val::Percent(if legend { 1.5 } else { 0.0 })),
             ..default()
         })
         .add_child(card);
