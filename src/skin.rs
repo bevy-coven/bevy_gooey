@@ -22,6 +22,7 @@ use crate::model::{
     tree_indent,
 };
 use crate::popover::{PopoverPanel, placement_of};
+use crate::status::StatusKind;
 use crate::table::TableRow;
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
@@ -33,6 +34,8 @@ const METER_MIN_TEXT_SIZES: f32 = 8.0;
 /// A progress bar's least length, in body text sizes, so its line of words (the longest is about
 /// 25 sizes) never widens it as the numbers change.
 const PROGRESS_MIN_TEXT_SIZES: f32 = 28.0;
+/// A progress inside a status item is a short bar: this many body text sizes wide at the least.
+const STATUS_PROGRESS_TEXT_SIZES: f32 = 8.0;
 
 /// A spinner's side, in body text sizes.
 const SPINNER_TEXT_SIZES: f32 = 1.5;
@@ -1254,6 +1257,26 @@ pub enum Role {
     /// A [`crate::spinner`]: a ring of [`GooeySkin::outline`] with one quarter in the
     /// [`GooeySkin::accent`].
     Spinner,
+    /// A [`crate::toolbar`]'s root: a full-width row of items on the menu bar's solid surface, one
+    /// quiet line under it.
+    Toolbar,
+    /// The line between two groups of a toolbar: a vertical rule of [`GooeySkin::outline`].
+    ToolbarSeparator,
+    /// A [`crate::toggle_group`]'s row of options; not drawn.
+    ToggleGroup,
+    /// One option of a toggle group: a tab's look, lit [`GooeySkin::accent`] while it is the one
+    /// on.
+    GroupOption,
+    /// A [`crate::status_bar`]'s root: a full-width row on the menu bar's surface, one quiet line
+    /// over it.
+    StatusBar,
+    /// One side of a status bar: a row of items; not drawn.
+    StatusGroup,
+    /// One [`crate::status_item`]: a button's states without its fill at rest, a target high.
+    StatusItem,
+    /// The mark at the start of a status item of a [`crate::StatusKind`] other than info: a bar
+    /// in [`GooeySkin::accent`] or [`GooeySkin::danger`].
+    StatusMark,
 }
 
 type Styled = (
@@ -1352,6 +1375,10 @@ struct State {
     problem: Option<FieldProblemKind>,
     /// How tall the problem's message stands, logical px.
     problem_room: f32,
+    /// The kind of a status item.
+    status: Option<StatusKind>,
+    /// The entity is a status item: a progress in it is a short bar.
+    status_item: bool,
 }
 
 impl Default for State {
@@ -1377,6 +1404,8 @@ impl Default for State {
             band: false,
             problem: None,
             problem_room: 0.0,
+            status: None,
+            status_item: false,
         }
     }
 }
@@ -1398,6 +1427,7 @@ type StateQuery = (
     (
         Has<MenuMarked>,
         Option<(&'static FieldProblem, &'static ProblemRoom)>,
+        Option<&'static StatusKind>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -1430,6 +1460,7 @@ type Restyle = (
             Changed<ProblemRoom>,
             Changed<IconTone>,
             Changed<IconSize>,
+            Changed<StatusKind>,
         )>,
     )>,
 );
@@ -1543,7 +1574,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    (marked, problem),
+                    (marked, problem, status),
                     row,
                     role,
                 )| {
@@ -1557,7 +1588,7 @@ pub fn apply_skin(
                         disabled,
                         hovered: hovered.is_some_and(|h| h.0),
                         checked,
-                        selected,
+                        selected: selected || (checked && role == Some(&Role::GroupOption)),
                         scrim: role == Some(&Role::Scrim),
                         alpha: toast.map_or(1.0, Toast::alpha),
                         alert: toast.is_some_and(|t| t.kind() == ToastKind::Alert),
@@ -1573,6 +1604,8 @@ pub fn apply_skin(
                         marked,
                         problem: problem.map(|(problem, _)| problem.kind),
                         problem_room: problem.map_or(0.0, |(_, room)| room.0),
+                        status: status.copied(),
+                        status_item: role == Some(&Role::StatusItem),
                         band: row.is_some_and(|r| r.index % 2 == 1),
                     }
                 },
@@ -1670,6 +1703,8 @@ pub fn apply_skin(
                             | Role::Choice
                             | Role::Binding
                             | Role::Tab
+                            | Role::GroupOption
+                            | Role::StatusItem
                             | Role::TextField
                             | Role::MenuItem
                             | Role::MenuTitle
@@ -1775,7 +1810,7 @@ fn restyle(
             skin.surface
         } else if state.pressed {
             skin.accent
-        } else if state.hovered {
+        } else if state.hovered || state.open {
             skin.hovered()
         } else {
             skin.surface_raised
@@ -1783,7 +1818,7 @@ fn restyle(
         // The selected tab is lit like everything that is on (a switch, a meter's fill): the
         // accent, with the text colour inverted on it, two cues by luminance and not by hue. The
         // others are a button's, full-contrast text on a visible fill, never faded.
-        Role::Tab => Some(if state.disabled {
+        Role::Tab | Role::GroupOption => Some(if state.disabled {
             skin.surface
         } else if state.selected || state.pressed {
             skin.accent
@@ -1792,10 +1827,29 @@ fn restyle(
         } else {
             skin.surface_raised
         }),
+        // A status item is lit like a menu title: no fill at rest, the hovered fill under the
+        // pointer or with focus, the accent while pressed.
+        Role::StatusItem => Some(if state.disabled {
+            Color::NONE
+        } else if state.pressed {
+            skin.accent
+        } else if state.hovered || state.focused {
+            skin.hovered()
+        } else {
+            Color::NONE
+        }),
+        // The mark says what kind the item is by a shape and a colour: none for plain state.
+        Role::StatusMark => Some(match parent.and_then(|p| p.status) {
+            Some(StatusKind::Warning) => skin.accent,
+            Some(StatusKind::Error) => skin.danger,
+            _ => Color::NONE,
+        }),
+        Role::ToolbarSeparator => Some(skin.outline),
         Role::Meter | Role::SliderRail => Some(skin.surface_raised),
         // A swatch's frame shows through its halves while the colour is mixed.
         Role::ColorSwatch => Some(skin.surface_raised),
-        Role::Tooltip | Role::Popover | Role::MenuPanel | Role::MenuBar | Role::Palette => {
+        Role::Tooltip | Role::Popover | Role::MenuPanel | Role::MenuBar | Role::Palette
+        | Role::Toolbar | Role::StatusBar => {
             Some(skin.solid_surface())
         }
         // A menu's rows have no fill at rest, so a card shows its own colour; one lights as a
@@ -1999,6 +2053,8 @@ fn restyle(
         | Role::Progress
         | Role::ProgressLine
         | Role::Spinner
+        | Role::ToggleGroup
+        | Role::StatusGroup
         | Role::PaletteCount => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
@@ -2011,7 +2067,7 @@ fn restyle(
         Role::Popover | Role::MenuPanel | Role::Palette => Some(BorderColor::all(skin.outline)),
         Role::DockDrop | Role::DockGhost => Some(BorderColor::all(skin.focus_ring)),
         // The bar's one frame is the line under it, the panel's own quiet edge.
-        Role::MenuBar => Some(BorderColor::all(
+        Role::MenuBar | Role::Toolbar | Role::StatusBar => Some(BorderColor::all(
             skin.surface_edge.unwrap_or(skin.surface_raised),
         )),
         Role::MenuTitle | Role::MenuItem if state.focused => {
@@ -2041,10 +2097,14 @@ fn restyle(
         | Role::BindingCap
         | Role::PromptKey
         | Role::PromptButton => Some(BorderColor::all(skin.outline)),
-        Role::Button | Role::Tab | Role::TableHeaderCell if look.focused == Some(entity) => {
+        Role::Button | Role::Tab | Role::GroupOption | Role::StatusItem | Role::TableHeaderCell
+            if look.focused == Some(entity) =>
+        {
             Some(BorderColor::all(skin.focus_ring))
         }
-        Role::Button | Role::Tab | Role::TableHeaderCell => Some(BorderColor::all(Color::NONE)),
+        Role::Button | Role::Tab | Role::GroupOption | Role::StatusItem | Role::TableHeaderCell => {
+            Some(BorderColor::all(Color::NONE))
+        }
         // The ring on the cursor's row; a sort mark is drawn in its header's ink.
         Role::TableRow => Some(BorderColor::all(if state.focused {
             skin.focus_ring
@@ -2156,7 +2216,7 @@ fn restyle(
                 next.column_gap = Val::Px(skin.gap);
                 next.row_gap = Val::Px(skin.gap);
             }
-            Role::Button | Role::Tab | Role::TableHeaderCell => {
+            Role::Button | Role::Tab | Role::GroupOption | Role::TableHeaderCell => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
@@ -2172,6 +2232,53 @@ fn restyle(
                     next.column_gap = Val::Px(skin.gap * 0.5);
                 }
                 next.min_height = Val::Px(skin.target());
+            }
+            // A bar is a row of items centred on its line, never squeezed, with one quiet line on
+            // the side that faces the rest of the screen.
+            Role::Toolbar | Role::StatusBar => {
+                next.border = if *role == Role::Toolbar {
+                    UiRect::bottom(Val::Px(line))
+                } else {
+                    UiRect::top(Val::Px(line))
+                };
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 0.5), Val::Px(skin.pad() * 0.3));
+                next.column_gap = Val::Px(skin.gap * 0.5);
+                next.align_items = AlignItems::Center;
+                next.flex_shrink = 0.0;
+            }
+            Role::StatusGroup | Role::ToggleGroup => {
+                next.column_gap = Val::Px(
+                    skin.gap
+                        * if *role == Role::ToggleGroup {
+                            0.25
+                        } else {
+                            0.5
+                        },
+                );
+                next.align_items = AlignItems::Center;
+            }
+            Role::ToolbarSeparator => {
+                next.width = Val::Px(line);
+                next.align_self = AlignSelf::Stretch;
+                next.margin = UiRect::axes(Val::Px(skin.gap * 0.25), Val::Px(skin.pad() * 0.3));
+                next.flex_shrink = 0.0;
+            }
+            Role::StatusItem => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.3));
+                next.column_gap = Val::Px(skin.gap * 0.5);
+                next.align_items = AlignItems::Center;
+                next.justify_content = JustifyContent::Center;
+                next.min_height = Val::Px(skin.target());
+            }
+            Role::StatusMark => {
+                next.width = Val::Px(line * 2.0);
+                next.align_self = AlignSelf::Stretch;
+                next.flex_shrink = 0.0;
+                next.border_radius = radius;
+                let shown = parent.is_some_and(|p| p.status.is_some_and(|k| k != StatusKind::Info));
+                next.display = if shown { Display::Flex } else { Display::None };
             }
             // A frame marks the whole length at 3:1 against the panel; the fill sits one line
             // inside it, on the track, because no one colour contrasts with both.
@@ -2728,7 +2835,14 @@ fn restyle(
             }
             Role::Progress => {
                 next.row_gap = Val::Px(skin.gap * 0.5);
-                next.min_width = Val::Px(text_px * PROGRESS_MIN_TEXT_SIZES);
+                next.min_width = Val::Px(
+                    text_px
+                        * if parent.is_some_and(|p| p.status_item) {
+                            STATUS_PROGRESS_TEXT_SIZES
+                        } else {
+                            PROGRESS_MIN_TEXT_SIZES
+                        },
+                );
             }
             Role::Spinner => {
                 let side = Val::Px(text_px * SPINNER_TEXT_SIZES);
@@ -2775,7 +2889,9 @@ fn restyle(
         let disabled = parent.disabled || owner.disabled;
         let color = match tone {
             IconTone::Text if disabled => skin.text_muted,
-            IconTone::Text if parent.pressed || owner.pressed => skin.accent_text,
+            IconTone::Text if parent.pressed || parent.selected || owner.pressed => {
+                skin.accent_text
+            }
             IconTone::Text => skin.text,
             IconTone::Muted => skin.text_muted,
             IconTone::Accent => skin.accent,
@@ -2987,13 +3103,21 @@ fn tooltip_placement(gap: f32, margin: f32, in_row: bool) -> Popover {
     } else {
         [Right, Left, Bottom, Top]
     };
+    // Centred on the widget first. Below or above a widget in a row, a box too wide to be centred
+    // inside the window (the first button of a bar, with a chord) slides along the widget's edge
+    // before the other side is tried: flipped beside the widget it would cover its neighbours.
+    let aligns: &[PopoverAlign] = if in_row {
+        &[PopoverAlign::Center, PopoverAlign::Start, PopoverAlign::End]
+    } else {
+        &[PopoverAlign::Center]
+    };
     Popover {
         positions: sides
             .into_iter()
-            .map(|side| PopoverPlacement {
-                side,
-                align: PopoverAlign::Center,
-                gap,
+            .flat_map(|side| {
+                aligns
+                    .iter()
+                    .map(move |&align| PopoverPlacement { side, align, gap })
             })
             .collect(),
         window_margin: margin,

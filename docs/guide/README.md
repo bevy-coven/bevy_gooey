@@ -32,6 +32,13 @@ per subject. The README links each bullet to its page.
   tinted by the skin (`IconTone`), following its button's state, an empty box of the right size when missing.
 - [Progress and spinner](progress.md) — `progress(fraction)` with `ProgressText` and `spinner()`: which to use
   by how long the work takes, "3 of 7: Measuring meshes, about 20 s left", and a ring on real time.
+- [Toolbars](toolbars.md) — `toolbar`, `icon_button(icon, tooltip)`, `toggle_group(options, selected)` and
+  `toolbar_separator()`: a tool's bar of glyph buttons and modes, and the last items going behind a **More**
+  button when the bar is too narrow.
+- [Status bar](status-bar.md) — `status_bar(left, right)`, `status_item(text)` with a `StatusKind` mark and a
+  `StatusPriority`, `status_progress`: workspace state left, context right, the lowest priority hiding first.
+- [Select](select.md) — `select(label, options, selected)`: a choice up to eight options, a searchable list
+  above, one `ValueChange<usize>` and "No option matches".
 - [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB

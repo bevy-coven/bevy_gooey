@@ -147,13 +147,16 @@ mod popover;
 mod progress;
 mod prompt;
 mod scale;
+mod select;
 mod shortcut;
 mod skin;
 mod split;
+mod status;
 mod table;
 mod tabs;
 mod text;
 mod toast;
+mod toolbar;
 mod tooltip;
 mod tree;
 mod widgets;
@@ -188,7 +191,7 @@ pub use model::{
     ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
     NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle,
     SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST,
-    TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, area_values, choice_next, choice_step,
+    TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, area_values, bar_fit, choice_next, choice_step,
     cie_lightness, column_resize, composite, contrast_ratio, dock_drop_rect, dock_edge_zone,
     dock_neighbour, dock_tab_slot, dock_zone, eta_words, format_number, fuzzy_score, hex_text,
     hsv_to_rgb, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, natural_cmp,
@@ -220,6 +223,7 @@ pub use progress::{
 };
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
+pub use select::{SELECT_FILTER_ABOVE, Select};
 pub use shortcut::{Modifiers, Platform, Shortcut};
 pub use skin::{
     Density, GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin,
@@ -228,6 +232,7 @@ pub use split::{
     Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, split_by_pad,
     update_splits,
 };
+pub use status::{StatusBar, StatusItem, StatusKind, StatusPriority};
 pub use table::{
     Column, RowActivated, RowSource, SelectMode, SortBy, Table, TableCursor, TableRow, TableRows,
     TableSelection, TableSort, TableWidths, table_by_input, update_tables,
@@ -238,14 +243,19 @@ pub use text::{
     track_text_editing, update_text_inputs,
 };
 pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
+pub use toolbar::{
+    GroupOption, Overflowed, ToggleGroupCount, ToggleGroupValue, Toolbar, fit_bars,
+    update_toggle_groups,
+};
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use widgets::{
     binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
-    heading, icon, interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter,
-    number_field, pad_style, panel, popover, popover_modal, progress, prompt, prompts, radio_item,
-    screen, separator, skin_preset, slider, spinner, split, submenu, surface, tab_page, table,
-    tabs, text_input, text_size, toast, toast_alert, toggle, tree, vec_field,
+    heading, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, menu_title,
+    meter, number_field, pad_style, panel, popover, popover_modal, progress, prompt, prompts,
+    radio_item, screen, select, separator, skin_preset, slider, spinner, split, status_bar,
+    status_item, status_progress, submenu, surface, tab_page, table, tabs, text_input, text_size,
+    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -307,6 +317,13 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ProgressText>()
             .register_type::<ProgressClamped>()
             .register_type::<Spinner>()
+            .register_type::<Toolbar>()
+            .register_type::<ToggleGroupValue>()
+            .register_type::<ToggleGroupCount>()
+            .register_type::<StatusBar>()
+            .register_type::<StatusItem>()
+            .register_type::<StatusKind>()
+            .register_type::<StatusPriority>()
             .register_type::<Binding>()
             .register_type::<Shortcut>()
             .register_type::<Modifiers>()
@@ -360,6 +377,7 @@ impl Plugin for GooeyStylePlugin {
             .add_observer(feedback::feedback_on_activate)
             .add_observer(feedback::feedback_on_toggle)
             .add_observer(feedback::feedback_on_choice)
+            .add_observer(toolbar::more_on_activate)
             .add_observer(text::text_on_edit)
             .add_observer(dock::dock_on_select)
             .add_observer(dock::dock_on_resize)
@@ -372,6 +390,7 @@ impl Plugin for GooeyStylePlugin {
                         update_field_problems,
                         update_progress,
                         update_spinners,
+                        (update_toggle_groups, fit_bars).chain(),
                     )
                         .chain(),
                     update_tooltip_text,
