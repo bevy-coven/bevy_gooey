@@ -10,6 +10,7 @@ use bevy::ui::InteractionDisabled;
 use bevy::ui_widgets::{Activate, ValueChange};
 
 use crate::model::{choice_next, choice_step};
+use crate::select::Select;
 use crate::skin::Role;
 
 /// Which option a [`crate::choice`] has selected: an index into its options, in the order they were
@@ -103,7 +104,15 @@ pub(crate) fn choice_self_update(
 
 /// Enter, Space, the pad's South button and a click on the row (Bevy's `Button` makes each an
 /// [`Activate`]) cycle to the next option, wrapping round.
-pub(crate) fn choice_on_activate(event: On<Activate>, mut commands: Commands) {
+pub(crate) fn choice_on_activate(
+    event: On<Activate>,
+    selects: Query<&Select>,
+    mut commands: Commands,
+) {
+    // A select with a list opens it instead (`select_on_activate`).
+    if selects.get(event.entity).is_ok_and(Select::filters) {
+        return;
+    }
     commands.trigger(MoveChoice {
         entity: event.entity,
         to: Move::Next,
