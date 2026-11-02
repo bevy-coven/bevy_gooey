@@ -534,6 +534,18 @@ pub(crate) struct GhostPart;
 #[derive(Component)]
 pub(crate) struct MarkPart;
 
+/// The ghost's parts and the mark's, as `update_drag_visuals` writes them.
+type GhostParts = (
+    Entity,
+    &'static mut Node,
+    &'static mut Role,
+    &'static mut Text,
+);
+type MarkParts = (Entity, &'static mut Node, &'static mut Role);
+type IsGhost = (With<GhostPart>, Without<MarkPart>);
+type IsMark = (With<MarkPart>, Without<GhostPart>);
+type Laid = (Without<GhostPart>, Without<MarkPart>);
+
 /// Draws a drag: spawns the ghost and the mark when a source is lifted, keeps them at the pointer
 /// and on the target under it, in the accept or the refuse look, and despawns them when it ends.
 /// Runs in [`crate::GooeySystems::Style`], before [`crate::apply_skin`]; costs nothing while
@@ -541,12 +553,9 @@ pub(crate) struct MarkPart;
 pub(crate) fn update_drag_visuals(
     state: Option<Res<DragState>>,
     ui_scale: Option<Res<UiScale>>,
-    mut ghosts: Query<
-        (Entity, &mut Node, &mut Role, &mut Text),
-        (With<GhostPart>, Without<MarkPart>),
-    >,
-    mut marks: Query<(Entity, &mut Node, &mut Role), (With<MarkPart>, Without<GhostPart>)>,
-    frames: Query<(&ComputedNode, &UiGlobalTransform), (Without<GhostPart>, Without<MarkPart>)>,
+    mut ghosts: Query<GhostParts, IsGhost>,
+    mut marks: Query<MarkParts, IsMark>,
+    frames: Query<(&ComputedNode, &UiGlobalTransform), Laid>,
     mut commands: Commands,
 ) {
     let held = state
