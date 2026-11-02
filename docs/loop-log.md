@@ -2106,3 +2106,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
 4. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
 5. Radial: a pointing arc that follows the stick, an item showing picture and label together.
+
+**Release (iteration 54).** `cargo semver-checks --baseline-rev v0.31.2`: no breaking checks (new public items only): patch. `release: v0.31.3`, published (https://crates.io/crates/bevy_gooey/0.31.3), tag `v0.31.3` pushed. Commits on `main`: research, `PromptsAnchor`, gallery fix, log, release.
+
+**Cleanup (iteration 54).** Removed this pass's own `/tmp/g54` (captures, frames, gate script) and `/tmp/prompt.rs.bak`; no baseline worktree was made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
