@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-11-02
+
 ### Added
 
 - Named tones (G-29, #33): `GooeySkin::tones: BTreeMap<String, Color>` (serde `default`, empty in every preset) carries a host's own semantic colours, `GooeySkin::tone(name) -> Option<Color>` reads one (an unknown name is `None`, never a stand-in), `Role::Tone(&'static str)` draws a node's fill with one (restyled in the frame the skin changes; a name the skin lacks draws no fill) and `GooeySkin::tone_problems(&[(label, ink, ground, needed)])` checks the pairs a host's chrome draws with the crate's own arithmetic (a tone or a skin colour by name; one `SkinProblem::LowContrast` named `label` per pair under its ratio, one `SkinProblem::UnknownTone` for a name that is neither). A theme step keeps the host's tones. `docs/research/tones.md`, a section of `docs/guide/skins.md`, `tests/tones.rs` (8 tests).

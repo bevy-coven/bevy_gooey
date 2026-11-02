@@ -1,6 +1,6 @@
 [package]
 name = "bevy_gooey"
-version = "0.23.0"
+version = "0.24.0"
 edition = "2024"
 rust-version = "1.97.1"
 description = "Game interfaces made easy for Bevy: a skin, ready-made game widgets (buttons, panels, menus, HUD meters, tooltips, modal dialogs) and keyboard and gamepad navigation, on Bevy's own headless widgets."
