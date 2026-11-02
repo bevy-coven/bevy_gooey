@@ -179,6 +179,77 @@ pub const PAD_REPEAT_RATE: f32 = 12.0;
 /// leaves a drifting or brushed stick alone. A design default.
 pub const STICK_PUSH: f32 = 0.5;
 
+/// How far a stick must be pushed, as a share of its travel, to point a [`crate::radial`] at an
+/// item: half, a deliberate push. Inside it the highlight stays where it is, so a stick drifting
+/// through the middle on its way back never flickers between items. A design default, the same
+/// half as [`STICK_PUSH`].
+pub const RADIAL_STICK_PUSH: f32 = 0.5;
+
+/// How far from the middle of a [`crate::radial`] the pointer must be to point at an item, as a
+/// share of the disc's radius. Inside it the highlight stays, which is the dead zone a pointer
+/// needs for the same reason a stick does. A design default.
+pub const RADIAL_DEAD_ZONE: f32 = 0.25;
+
+/// The item of `count` on a ring that the direction `(x, y)` points into, with `y` up: item 0 is at
+/// the top and the rest follow clockwise, each owning the wedge of `360 / count` degrees centred on
+/// it. The edge between two wedges belongs to the clockwise one. A direction of no length, or a
+/// non-finite one, and a ring of one, pick item 0; a ring of none picks nothing, so `None`.
+///
+/// ```
+/// use bevy_gooey::radial_pick;
+/// assert_eq!(radial_pick(0.0, 1.0, 4), Some(0)); // up
+/// assert_eq!(radial_pick(1.0, 0.0, 4), Some(1)); // right
+/// assert_eq!(radial_pick(0.0, -1.0, 4), Some(2)); // down
+/// assert_eq!(radial_pick(-1.0, 0.0, 4), Some(3)); // left
+/// assert_eq!(radial_pick(1.0, 1.0, 8), Some(1)); // up and right
+/// assert_eq!(radial_pick(1.0, 1.0, 0), None);
+/// ```
+pub fn radial_pick(x: f32, y: f32, count: usize) -> Option<usize> {
+    if count == 0 {
+        return None;
+    }
+    if !(x.is_finite() && y.is_finite()) || (x == 0.0 && y == 0.0) {
+        return Some(0);
+    }
+    let turns = (x.atan2(y) / std::f32::consts::TAU).rem_euclid(1.0);
+    // The half-wedge nudge puts a wedge's edge in the clockwise item; the epsilon keeps an angle
+    // that float error leaves a hair short of the edge (a diagonal of an even ring) on that side.
+    Some(((turns * count as f32 + 0.5 + 1e-4).floor() as usize) % count)
+}
+
+/// Where item `index` of `count` stands on a ring, as the offset from the middle in half-widths of
+/// the disc: `(x, y)` with `y` up, on a circle of radius 1. Item 0 is at the top, the rest clockwise
+/// (the same order as [`radial_pick`]). An `index` past the ring wraps.
+///
+/// ```
+/// let (x, y) = bevy_gooey::radial_place(1, 4);
+/// assert!((x - 1.0).abs() < 1e-6 && y.abs() < 1e-6); // the right
+/// ```
+pub fn radial_place(index: usize, count: usize) -> (f32, f32) {
+    if count == 0 {
+        return (0.0, 1.0);
+    }
+    let angle = (index % count) as f32 / count as f32 * std::f32::consts::TAU;
+    (angle.sin(), angle.cos())
+}
+
+/// The item a step of `delta` from `value` reaches on a ring of `count`: wrapping round both ways,
+/// as a ring has no end. A `value` past the ring counts as the last item. Zero for a ring of none.
+///
+/// ```
+/// use bevy_gooey::radial_step;
+/// assert_eq!(radial_step(3, 4, 1), 0);
+/// assert_eq!(radial_step(0, 4, -1), 3);
+/// assert_eq!(radial_step(1, 8, 10), 3);
+/// ```
+pub fn radial_step(value: usize, count: usize, delta: i32) -> usize {
+    if count == 0 {
+        return 0;
+    }
+    let at = value.min(count - 1) as i64;
+    (at + i64::from(delta)).rem_euclid(count as i64) as usize
+}
+
 /// How far along its range a slider's thumb is, from 0 to 1. Never NaN: a value outside the range
 /// is clamped to an end, and a range that is not finite or has no length reads as the start.
 ///
@@ -2084,6 +2155,53 @@ pub fn target_step(rects: &[[f32; 4]], current: Option<usize>, forward: bool) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_stick_points_into_the_wedge_of_the_item_it_faces() {
+        for count in 1..=12usize {
+            for item in 0..count {
+                let (x, y) = radial_place(item, count);
+                assert_eq!(radial_pick(x, y, count), Some(item), "{item} of {count}");
+                // Short of the wedge's edge on either side still picks it.
+                let half = std::f32::consts::TAU / count as f32 * 0.45;
+                let angle = item as f32 / count as f32 * std::f32::consts::TAU;
+                for off in [-half, half] {
+                    let (a, b) = ((angle + off).sin(), (angle + off).cos());
+                    assert_eq!(radial_pick(a, b, count), Some(item), "{item} of {count}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_edge_between_two_wedges_belongs_to_the_clockwise_one() {
+        // Four items: the diagonal up-right is the edge of 0 and 1.
+        assert_eq!(radial_pick(1.0, 1.0, 4), Some(1));
+        assert_eq!(radial_pick(1.0, -1.0, 4), Some(2));
+        assert_eq!(radial_pick(-1.0, -1.0, 4), Some(3));
+        assert_eq!(radial_pick(-1.0, 1.0, 4), Some(0));
+        // A length is no part of the direction.
+        assert_eq!(radial_pick(0.01, 0.0, 4), Some(1));
+        assert_eq!(radial_pick(500.0, 0.0, 4), Some(1));
+    }
+
+    #[test]
+    fn a_ring_of_nothing_picks_nothing_and_a_blank_direction_picks_the_first() {
+        assert_eq!(radial_pick(1.0, 0.0, 0), None);
+        assert_eq!(radial_pick(0.0, 0.0, 5), Some(0));
+        assert_eq!(radial_pick(f32::NAN, 1.0, 5), Some(0));
+        assert_eq!(radial_pick(1.0, 0.0, 1), Some(0));
+        assert_eq!(radial_step(0, 0, 1), 0);
+    }
+
+    #[test]
+    fn a_step_wraps_both_ways_and_a_value_past_the_ring_is_the_last_item() {
+        assert_eq!(radial_step(7, 8, 1), 0);
+        assert_eq!(radial_step(0, 8, -1), 7);
+        assert_eq!(radial_step(2, 8, -19), 7);
+        assert_eq!(radial_step(99, 8, 1), 0);
+        assert_eq!(radial_step(3, 8, 0), 3);
+    }
 
     #[test]
     fn a_carried_payload_steers_to_the_nearest_target_that_way() {
