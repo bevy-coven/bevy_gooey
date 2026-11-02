@@ -59,7 +59,7 @@ use crate::popover::{
     stop_release,
 };
 use crate::progress::{Progress, Spinner};
-use crate::prompt::Prompt;
+use crate::prompt::{Prompt, PromptsAnchor};
 use crate::radial::{
     RadialCount, RadialItem, RadialSlot, RadialValue, radial_on_activate, radial_on_key_input,
     radial_on_pointer_move, radial_on_press, radial_self_update,
@@ -1680,7 +1680,8 @@ pub fn prompt(label: impl Into<String>, keys: Prompt) -> impl Bundle {
     )
 }
 
-/// The legend of a screen: a slim bar of [`prompt`]s in its parent's bottom-left corner, 5% in from
+/// The legend of a screen: a slim bar of [`prompt`]s in its parent's bottom-left corner (see
+/// [`prompts_at`] for another), 5% in from
 /// the edges (the safe area of a television), where Xbox's guideline 112 puts "select" and "back"
 /// on every screen, in the same place and order. It is a bar on the skin's panel colour, so its
 /// words read over any game world. It is laid out apart from its parent's other children (absolute,
@@ -1704,6 +1705,15 @@ pub fn prompt(label: impl Into<String>, keys: Prompt) -> impl Bundle {
 /// # }
 /// ```
 pub fn prompts() -> impl Bundle {
+    prompts_at(PromptsAnchor::default())
+}
+
+/// A [`prompts`] legend in the corner or at the edge the game chooses: `prompts_at(
+/// PromptsAnchor::BottomRight)` for a game whose own HUD holds the bottom-left. Everything else
+/// is [`prompts`]'s: 5% in from the edges it touches, no wider than 90% of its parent, nothing
+/// else moves. Choose one anchor and use it on every screen and dialog, which is what Xbox's
+/// guideline 112 asks. The anchor is a component: insert another and the legend moves.
+pub fn prompts_at(anchor: PromptsAnchor) -> impl Bundle {
     (
         Node {
             position_type: PositionType::Absolute,
@@ -1711,6 +1721,7 @@ pub fn prompts() -> impl Bundle {
             ..default()
         },
         Role::Prompts,
+        anchor,
         Pickable::IGNORE,
     )
 }

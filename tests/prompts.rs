@@ -35,6 +35,7 @@ type Written = Or<(
     Changed<BackgroundColor>,
     Changed<BorderColor>,
     Changed<Node>,
+    Changed<UiTransform>,
 )>;
 
 /// A headless app with a `width` × `height` window, so UI layout and picking run.
@@ -491,6 +492,149 @@ fn a_legend_of_many_long_prompts_squeezes_and_stays_in_the_window() {
     assert!(bar.max.y <= 720.0 && bar.min.y >= 0.0);
 }
 
+/// A legend with the given anchor in a screen of its own.
+fn legend_at(app: &mut App, anchor: PromptsAnchor) -> Entity {
+    let world = app.world_mut();
+    let legend = world
+        .spawn((
+            prompts_at(anchor),
+            children![
+                prompt("Select", Prompt::SELECT),
+                prompt("Back", Prompt::BACK)
+            ],
+        ))
+        .id();
+    world.spawn(screen()).add_child(legend);
+    settle(app);
+    legend
+}
+
+const ANCHORS: [PromptsAnchor; 6] = [
+    PromptsAnchor::BottomLeft,
+    PromptsAnchor::BottomCenter,
+    PromptsAnchor::BottomRight,
+    PromptsAnchor::TopLeft,
+    PromptsAnchor::TopCenter,
+    PromptsAnchor::TopRight,
+];
+
+/// Checks that a legend stands 5% from the edges its anchor names, whole inside the window, and a
+/// centred one on the middle of the window.
+fn assert_anchored(app: &App, legend: Entity, anchor: PromptsAnchor, width: f32, height: f32) {
+    let bar = rect(app, legend);
+    let label = format!("{anchor:?} at {width}x{height}: {bar:?}");
+    assert!(bar.width() > 0.0 && bar.min.x >= 0.0 && bar.max.x <= width, "{label}");
+    if anchor.is_centred() {
+        assert!((bar.center().x - width / 2.0).abs() <= 1.0, "centred: {label}");
+    } else if anchor.at_right() {
+        assert!((width - bar.max.x - 0.05 * width).abs() <= 1.0, "right edge: {label}");
+    } else {
+        assert!((bar.min.x - 0.05 * width).abs() <= 1.0, "left edge: {label}");
+    }
+    if anchor.at_bottom() {
+        assert!((height - bar.max.y - 0.05 * height).abs() <= 1.0, "bottom edge: {label}");
+    } else {
+        assert!((bar.min.y - 0.05 * height).abs() <= 1.0, "top edge: {label}");
+    }
+}
+
+#[test]
+fn every_anchor_stands_in_its_safe_corner_or_edge_at_every_size() {
+    for (width, height) in [(1280, 720), (1920, 1080), (2560, 1440)] {
+        for anchor in ANCHORS {
+            let mut app = app_sized(width, height);
+            let legend = legend_at(&mut app, anchor);
+            assert_anchored(&app, legend, anchor, width as f32, height as f32);
+        }
+    }
+}
+
+#[test]
+fn the_default_legend_is_the_bottom_left_one() {
+    let mut app = app();
+    let ui = ui(&mut app);
+    assert_eq!(
+        app.world().get::<PromptsAnchor>(ui.legend),
+        Some(&PromptsAnchor::BottomLeft)
+    );
+    let other = legend_at(&mut app, PromptsAnchor::BottomLeft);
+    assert_eq!(rect(&app, other), rect(&app, ui.legend));
+}
+
+#[test]
+fn moving_the_anchor_of_a_live_legend_moves_it_at_once_and_leaves_no_old_inset() {
+    let mut app = app();
+    let legend = legend_at(&mut app, PromptsAnchor::BottomLeft);
+    for anchor in [
+        PromptsAnchor::TopRight,
+        PromptsAnchor::BottomCenter,
+        PromptsAnchor::TopLeft,
+        PromptsAnchor::BottomRight,
+        PromptsAnchor::BottomLeft,
+    ] {
+        app.world_mut().entity_mut(legend).insert(anchor);
+        settle(&mut app);
+        assert_anchored(&app, legend, anchor, 1280.0, 720.0);
+        let transform = *app.world().get::<UiTransform>(legend).expect("transform");
+        assert_eq!(
+            transform.translation == Val2::percent(-50.0, 0.0),
+            anchor.is_centred(),
+            "{anchor:?}: only a centred legend is pulled back by half its width"
+        );
+    }
+}
+
+#[test]
+fn a_long_legend_squeezes_inside_the_window_under_every_anchor() {
+    for anchor in ANCHORS {
+        let mut app = app();
+        let world = app.world_mut();
+        let legend = world
+            .spawn((
+                prompts_at(anchor),
+                children![
+                    prompt("Open the inventory", Prompt::SELECT),
+                    prompt("Close this menu and go back", Prompt::BACK),
+                    prompt("Compare with equipped gear", Prompt::SELECT),
+                    prompt("Drop the selected item", Prompt::BACK),
+                    prompt("Sort by weight, then value", Prompt::SELECT),
+                ],
+            ))
+            .id();
+        world.spawn(screen()).add_child(legend);
+        settle(&mut app);
+        let bar = rect(&app, legend);
+        assert!(
+            bar.min.x >= 0.05 * 1280.0 - 1.0 && bar.max.x <= 0.95 * 1280.0 + 1.0,
+            "{anchor:?}: the legend spans {} to {} of 1280",
+            bar.min.x,
+            bar.max.x
+        );
+        assert!(bar.min.y >= 0.0 && bar.max.y <= 720.0, "{anchor:?}");
+    }
+}
+
+#[test]
+fn a_dialog_legend_with_the_same_anchor_stands_where_the_screens_does() {
+    let mut app = app();
+    let screen_legend = legend_at(&mut app, PromptsAnchor::BottomRight);
+    let world = app.world_mut();
+    let legend = world
+        .spawn((
+            prompts_at(PromptsAnchor::BottomRight),
+            children![prompt("Select", Prompt::SELECT), prompt("Back", Prompt::BACK)],
+        ))
+        .id();
+    world
+        .spawn((
+            dialog(),
+            children![(panel(), children![heading("Leave?"), button("Stay")])],
+        ))
+        .add_child(legend);
+    settle(&mut app);
+    assert_eq!(rect(&app, legend), rect(&app, screen_legend));
+}
+
 // ---- the keycaps ----
 
 #[test]
@@ -634,6 +778,9 @@ fn the_pointer_goes_through_the_legend_and_no_prompt_is_a_stop() {
 fn idle_frames_write_nothing() {
     let mut app = app();
     let _ui = ui(&mut app);
+    for anchor in ANCHORS {
+        legend_at(&mut app, anchor);
+    }
     let pad = plug_in_pad(&mut app);
     press(&mut app, pad, GamepadButton::West);
     settle(&mut app);

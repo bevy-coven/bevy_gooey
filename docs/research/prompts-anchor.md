@@ -38,7 +38,7 @@ taffy gives an absolute node with a `left` and a `right` and an auto width the w
 
 ## Validation targets
 
-- At 720p, 1080p and 1440p each anchor's legend stands 5% (of the window's width, which is how taffy resolves a percentage inset on both axes... checked: a percentage of the containing block's height for top and bottom) from the edge(s) it names and is wholly inside the window; a centred one's middle is the window's middle to 1 px.
+- At 720p, 1080p and 1440p each anchor's legend stands 5% from the edge(s) it names (a percentage inset is of the containing block's width for `left` and `right` and of its height for `top` and `bottom`, which the test measures) and is wholly inside the window; a centred one's middle is the window's middle to 1 px.
 - A long legend squeezes inside 90% under every anchor.
 - Changing the anchor on a live legend moves it the frame after and no insets of the old anchor remain.
 - Contrast and the pointer going through are the legend's (`tests/prompts.rs`), unchanged; adding it moves no other widget.
@@ -50,7 +50,7 @@ A bottom-right legend that is the mirror of the bottom-left one: the same bar, t
 
 ## Deviations
 
-- **Percent insets on the vertical edges are of the container's height in taffy**; the default's `bottom: 5%` is therefore already a share of the height, not the width as the old docs said ("the 5% the scrim pads is a percentage of the window's width"; that sentence is about a scrim's padding, which really is a width percentage). The validation measures it instead of assuming.
+- **Percent insets on the vertical edges are of the container's height in taffy**, so `bottom: 5%` is a share of the height and `left: 5%` of the width; the existing `a_legend_in_a_dialog_stands_at_the_same_corner_over_the_scrim` already held 64 px and 36 px at 1280x720. Measured by `every_anchor_stands_in_its_safe_corner_or_edge_at_every_size`, not assumed.
 - **No free offset.** A game that wants another place spawns its own absolute node or puts the legend in a node of its own: one setting with six values, not a second coordinate system. A design default.
 - Assumed decisions (owner may override): the names `PromptsAnchor` and `prompts_at`; six values; the same 5% margin.
 

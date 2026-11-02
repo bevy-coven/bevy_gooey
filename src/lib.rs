@@ -259,7 +259,9 @@ pub use popover::{
 pub use progress::{
     Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
 };
-pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
+pub use prompt::{
+    InputDevice, Prompt, PromptsAnchor, place_prompts, track_input_device, update_prompts,
+};
 pub use radial::{RadialCount, RadialItem, RadialSlot, RadialValue, radial_by_pad, update_radials};
 pub use region::{ArrowPolicy, FocusRegion, cycle_regions};
 pub use scale::{UiScaleSettings, scale_with_window};
@@ -301,7 +303,7 @@ pub use widgets::{
     binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
     heading, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, menu_title,
     meter, notification_center, number_field, pad_style, panel, popover, popover_modal, progress,
-    prompt, prompts, radial, radio_item, screen, section, select, separator, skin_preset, slider,
+    prompt, prompts, prompts_at, radial, radio_item, screen, section, select, separator, skin_preset, slider,
     slot_grid, spinner, split, status_bar, status_item, status_progress, submenu, surface,
     tab_page, table, tabs, text_area, text_input, text_size, toast, toast_alert, toggle,
     toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
@@ -478,7 +480,7 @@ impl Plugin for GooeyStylePlugin {
                     update_tooltip_text,
                     show_tooltips,
                     update_bindings,
-                    update_prompts,
+                    (update_prompts, place_prompts).chain(),
                     (update_vecs, update_numbers, update_colors).chain(),
                     update_text_inputs,
                     update_palette,

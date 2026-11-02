@@ -39,6 +39,7 @@
 //! Options' `Tooltip` off and `retip` puts a new line on it, as a game does when a hint goes stale.
 //! `hover`, `grab`, `drag` and `drop` work Volume's thumb with the pointer: move onto it, press and
 //! hold, move 60 px right, let go.
+//! `GOOEY_KEYS` token `legend` moves the Select and Back legend to the next `PromptsAnchor`.
 //! `GOOEY_WORLD=1` puts a sprite under the interface, standing in for the game world: the
 //! interface lets the pointer through its empty part, so a click on it (`click` hits it, at the
 //! empty top-left corner) turns it warm and logs `gooey: world`.
@@ -176,6 +177,9 @@ enum Staged {
     PrevTab,
     /// A primary click on the tab at this place in the strip, from the left.
     Tab(usize),
+    /// Move every legend to the next `PromptsAnchor`: bottom-left, bottom-centre, bottom-right,
+    /// top-left, top-centre, top-right, and round again.
+    Legend,
     /// Plug in a gamepad.
     Plug,
     /// Press and release the plugged-in gamepad's West button (X on an Xbox pad), which no widget
@@ -256,6 +260,7 @@ fn main() {
             capture,
             dump_accessibility.after(capture),
             stage_keys.after(capture),
+            stage_legend.after(capture),
         ),
     );
     if let Some(at) = std::env::var("GOOEY_FRAMES")
@@ -327,6 +332,7 @@ fn main() {
                         "alert" => Some(Staged::Alert),
                         "long" => Some(Staged::Long),
                         "plug" => Some(Staged::Plug),
+                        "legend" => Some(Staged::Legend),
                         "name" => Some(Staged::Name),
                         "pad" => Some(Staged::Pad),
                         _ => None,
@@ -759,6 +765,30 @@ fn capture(
 /// own keyboard or pointer input, so Bevy's input dispatch, picking, Tab navigation and buttons all
 /// see it.
 #[allow(clippy::too_many_arguments)]
+/// `GOOEY_KEYS` token `legend`: every legend to the next anchor, a live change of its component.
+fn stage_legend(capture: Option<Res<Capture>>, mut legends: Query<&mut PromptsAnchor>) {
+    let Some(c) = capture else {
+        return;
+    };
+    let Some(since) = c.frame.checked_sub(KEY_FROM) else {
+        return;
+    };
+    let every = c.key_every.max(2);
+    if since % every != 0 || !matches!(c.keys.get((since / every) as usize), Some(Staged::Legend)) {
+        return;
+    }
+    for mut anchor in &mut legends {
+        *anchor = match *anchor {
+            PromptsAnchor::BottomLeft => PromptsAnchor::BottomCenter,
+            PromptsAnchor::BottomCenter => PromptsAnchor::BottomRight,
+            PromptsAnchor::BottomRight => PromptsAnchor::TopLeft,
+            PromptsAnchor::TopLeft => PromptsAnchor::TopCenter,
+            PromptsAnchor::TopCenter => PromptsAnchor::TopRight,
+            PromptsAnchor::TopRight => PromptsAnchor::BottomLeft,
+        };
+    }
+}
+
 fn stage_keys(
     capture: Option<Res<Capture>>,
     window: Query<Entity, With<PrimaryWindow>>,

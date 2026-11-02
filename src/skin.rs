@@ -16,6 +16,7 @@ use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::drag::{DropCandidate, DropRefusing};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
+use crate::prompt::PromptsAnchor;
 use crate::icon::{IconSize, IconTone};
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
@@ -1589,6 +1590,8 @@ struct State {
     problem_room: f32,
     /// The kind of a status item.
     status: Option<StatusKind>,
+    /// Where a prompts legend stands.
+    anchor: PromptsAnchor,
     /// The entity is a status item: a progress in it is a short bar.
     status_item: bool,
 }
@@ -1620,6 +1623,7 @@ impl Default for State {
             problem_room: 0.0,
             status: None,
             status_item: false,
+            anchor: PromptsAnchor::default(),
         }
     }
 }
@@ -1644,6 +1648,7 @@ type StateQuery = (
         Option<&'static StatusKind>,
         Has<DropCandidate>,
         Has<DropRefusing>,
+        Option<&'static PromptsAnchor>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -1680,6 +1685,7 @@ type Restyle = (
             Changed<StatusKind>,
             Added<DropCandidate>,
             Added<DropRefusing>,
+            Changed<PromptsAnchor>,
         )>,
     )>,
 );
@@ -1799,7 +1805,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    (marked, problem, status, candidate, refusing),
+                    (marked, problem, status, candidate, refusing, anchor),
                     row,
                     role,
                 )| {
@@ -1832,6 +1838,7 @@ pub fn apply_skin(
                         problem: problem.map(|(problem, _)| problem.kind),
                         problem_room: problem.map_or(0.0, |(_, room)| room.0),
                         status: status.copied(),
+                        anchor: anchor.copied().unwrap_or_default(),
                         status_item: role == Some(&Role::StatusItem),
                         band: row.is_some_and(|r| r.index % 2 == 1),
                     }
@@ -3034,12 +3041,24 @@ fn restyle(
                 next.right = Val::Px(line + x);
                 next.top = Val::Px(line + y);
             }
-            // The legend: a bar in its parent's bottom-left corner, inside the safe area, its
+            // The legend: a bar in its parent's corner or edge (its anchor), inside the safe area, its
             // prompts a pair of paddings apart. Absolute, so the screen's layout is the same with
             // or without it. A flex-wrap here would break a line a float's width early.
             Role::Prompts => {
-                next.left = Val::Percent(SAFE_EDGE_PERCENT);
-                next.bottom = Val::Percent(SAFE_EDGE_PERCENT);
+                let edge = Val::Percent(SAFE_EDGE_PERCENT);
+                let anchor = state.anchor;
+                // Only one inset on an axis, or taffy stretches the bar between the two; a
+                // centred bar is `left: 50%` pulled back by `place_prompts`' translation.
+                next.left = if anchor.is_centred() {
+                    Val::Percent(50.0)
+                } else if anchor.at_right() {
+                    Val::Auto
+                } else {
+                    edge
+                };
+                next.right = if anchor.at_right() { edge } else { Val::Auto };
+                next.bottom = if anchor.at_bottom() { edge } else { Val::Auto };
+                next.top = if anchor.at_bottom() { Val::Auto } else { edge };
                 next.max_width = Val::Percent(PROMPTS_MAX_WIDTH_PERCENT);
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;

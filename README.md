@@ -211,7 +211,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 ![The gallery's settings panel and the Quit dialog over it, with the legend in the bottom-left corner: it reads "Enter Select, Esc Back" in rounded keycaps, "A Select, B Back" in round ones after a pad button is pressed, and back to keys on the next key; the Quit dialog has its own legend above the dimmed screen, which turns to the pad's the same way](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/prompts.gif)
 
-*Prompts: `prompts()` holds `prompt("Select", Prompt::SELECT)` and `prompt("Back", Prompt::BACK)`; the keycaps follow the last device the player used, and the legend moves nothing on the screen.*
+*Prompts: `prompts()` holds `prompt("Select", Prompt::SELECT)` and `prompt("Back", Prompt::BACK)`; the keycaps follow the last device the player used, and the legend moves nothing on the screen. It stands bottom-left; `prompts_at(PromptsAnchor::BottomRight)` (or a centre or top anchor) puts it where your own HUD leaves room.*
 
 ![The Quit dialog in the dark and the parchment preset: the title "Leave the game?", a line of body, and the choices Leave and Stay in a framed panel over the dimmed screen, the ring on Stay](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dialog.png)
 
