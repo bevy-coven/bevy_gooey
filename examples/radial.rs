@@ -15,6 +15,7 @@
 //! `padleft`, `padright`; `stick:<degrees>` holds the left stick fully toward that angle (0 is up,
 //! 90 is right) and `rest` lets it go.
 
+use bevy::asset::RenderAssetUsages;
 use bevy::input::ButtonState;
 use bevy::input::gamepad::{
     GamepadConnection, GamepadConnectionEvent, RawGamepadAxisChangedEvent,
@@ -23,6 +24,7 @@ use bevy::input::gamepad::{
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input_focus::AutoFocus;
 use bevy::prelude::*;
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::render::view::screenshot::{Screenshot, save_to_disk};
 use bevy::window::{PrimaryWindow, WindowResolution};
 use bevy_gooey::*;
@@ -145,10 +147,181 @@ fn main() {
     app.run();
 }
 
+/// The weapons, in ring order.
+const NAMES: [&str; 8] = [
+    "Pistol", "Rifle", "Shotgun", "Grenade", "Knife", "Bow", "Torch", "Medkit",
+];
+
+/// The side of one glyph cell, px.
+const CELL: u32 = 48;
+
+/// A white-on-transparent atlas of eight glyphs, one per weapon, drawn with distance fields. A game
+/// ships its own art; the skin tints whatever is white.
+fn glyphs() -> Image {
+    type Lines = Vec<(Vec2, Vec2)>;
+    let line = |a: [f32; 2], b: [f32; 2]| (Vec2::from(a), Vec2::from(b));
+    let ring = |centre: [f32; 2], radius: f32, from: f32, to: f32| -> Lines {
+        let steps = 24;
+        (0..steps)
+            .map(|i| {
+                let at = |k: usize| {
+                    let angle = (from + (to - from) * k as f32 / steps as f32).to_radians();
+                    Vec2::new(
+                        centre[0] + radius * angle.cos(),
+                        centre[1] + radius * angle.sin(),
+                    )
+                };
+                (at(i), at(i + 1))
+            })
+            .collect()
+    };
+    let glyphs: [Lines; 8] = [
+        // Pistol: a slide and a grip.
+        vec![
+            line([6.0, 14.0], [42.0, 14.0]),
+            line([6.0, 14.0], [6.0, 24.0]),
+            line([6.0, 24.0], [42.0, 24.0]),
+            line([42.0, 14.0], [42.0, 24.0]),
+            line([10.0, 24.0], [6.0, 42.0]),
+            line([6.0, 42.0], [18.0, 42.0]),
+            line([18.0, 42.0], [22.0, 24.0]),
+            line([24.0, 24.0], [26.0, 32.0]),
+            line([26.0, 32.0], [32.0, 32.0]),
+            line([32.0, 32.0], [32.0, 24.0]),
+        ],
+        // Rifle: a long barrel, a stock and a magazine.
+        vec![
+            line([4.0, 22.0], [44.0, 22.0]),
+            line([4.0, 22.0], [4.0, 34.0]),
+            line([4.0, 34.0], [18.0, 28.0]),
+            line([18.0, 28.0], [26.0, 28.0]),
+            line([26.0, 28.0], [26.0, 40.0]),
+            line([26.0, 22.0], [26.0, 28.0]),
+        ],
+        // Shotgun: two barrels and a stock.
+        vec![
+            line([14.0, 17.0], [44.0, 17.0]),
+            line([14.0, 23.0], [44.0, 23.0]),
+            line([14.0, 17.0], [14.0, 23.0]),
+            line([14.0, 23.0], [6.0, 36.0]),
+            line([6.0, 36.0], [14.0, 36.0]),
+            line([14.0, 36.0], [20.0, 23.0]),
+        ],
+        // Grenade: a round body, a neck and a lever.
+        {
+            let mut lines = ring([24.0, 28.0], 13.0, 0.0, 360.0);
+            lines.push(line([20.0, 15.0], [28.0, 15.0]));
+            lines.push(line([24.0, 15.0], [24.0, 8.0]));
+            lines.push(line([24.0, 8.0], [34.0, 8.0]));
+            lines
+        },
+        // Knife: a blade and a handle.
+        vec![
+            line([8.0, 40.0], [30.0, 8.0]),
+            line([30.0, 8.0], [36.0, 26.0]),
+            line([36.0, 26.0], [18.0, 40.0]),
+            line([8.0, 40.0], [18.0, 40.0]),
+            line([32.0, 30.0], [44.0, 42.0]),
+        ],
+        // Bow: an arc and its string.
+        {
+            let mut lines = ring([16.0, 24.0], 18.0, -70.0, 70.0);
+            lines.push(line([22.0, 5.0], [22.0, 43.0]));
+            lines
+        },
+        // Torch: a handle and a flame.
+        vec![
+            line([20.0, 28.0], [28.0, 28.0]),
+            line([20.0, 28.0], [22.0, 46.0]),
+            line([28.0, 28.0], [26.0, 46.0]),
+            line([22.0, 46.0], [26.0, 46.0]),
+            line([24.0, 3.0], [31.0, 12.0]),
+            line([31.0, 12.0], [31.0, 20.0]),
+            line([31.0, 20.0], [24.0, 26.0]),
+            line([24.0, 26.0], [17.0, 20.0]),
+            line([17.0, 20.0], [17.0, 12.0]),
+            line([17.0, 12.0], [24.0, 3.0]),
+        ],
+        // Medkit: a case with a cross.
+        vec![
+            line([6.0, 14.0], [42.0, 14.0]),
+            line([42.0, 14.0], [42.0, 40.0]),
+            line([42.0, 40.0], [6.0, 40.0]),
+            line([6.0, 40.0], [6.0, 14.0]),
+            line([18.0, 14.0], [18.0, 8.0]),
+            line([18.0, 8.0], [30.0, 8.0]),
+            line([30.0, 8.0], [30.0, 14.0]),
+            line([24.0, 21.0], [24.0, 33.0]),
+            line([18.0, 27.0], [30.0, 27.0]),
+        ],
+    ];
+    let side = CELL as usize;
+    let mut data = vec![0u8; side * side * 4 * glyphs.len()];
+    for (cell, lines) in glyphs.iter().enumerate() {
+        for y in 0..side {
+            for x in 0..side {
+                let p = Vec2::new(x as f32 + 0.5, y as f32 + 0.5);
+                let distance = lines
+                    .iter()
+                    .map(|&(a, b)| {
+                        let ab = b - a;
+                        let t = ((p - a).dot(ab) / ab.length_squared()).clamp(0.0, 1.0);
+                        p.distance(a + ab * t)
+                    })
+                    .fold(f32::MAX, f32::min);
+                let alpha = (2.4 - distance).clamp(0.0, 1.0);
+                let at = (y * side * glyphs.len() + cell * side + x) * 4;
+                data[at..at + 4].copy_from_slice(&[255, 255, 255, (alpha * 255.0) as u8]);
+            }
+        }
+    }
+    Image::new(
+        Extent3d {
+            width: CELL * glyphs.len() as u32,
+            height: CELL,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+    )
+}
+
 /// The screen: the wheel in the middle of the window and a line over it saying what is equipped.
 /// A game opens its wheel when the player holds a button and gives it focus (`AutoFocus` here).
-fn setup(mut commands: Commands) {
+fn setup(
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
+    mut layouts: ResMut<Assets<TextureAtlasLayout>>,
+) {
     commands.spawn(Camera2d);
+    // `GOOEY_PICTURES=1` draws the weapons as pictures; the names are then read in the middle.
+    let pictures = std::env::var("GOOEY_PICTURES").is_ok_and(|v| v != "0");
+    let image = images.add(glyphs());
+    let layout = layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::splat(CELL),
+        NAMES.len() as u32,
+        1,
+        None,
+        None,
+    ));
+    let items: Vec<RadialItem> = NAMES
+        .iter()
+        .enumerate()
+        .map(|(index, name)| {
+            let item = RadialItem::new(*name);
+            if pictures {
+                item.icon(IconSource::Atlas {
+                    image: image.clone(),
+                    layout: layout.clone(),
+                    index,
+                })
+            } else {
+                item
+            }
+        })
+        .collect();
     commands.spawn((
         screen(),
         children![
@@ -167,21 +340,12 @@ fn setup(mut commands: Commands) {
                 )],
             ),
             (
-                radial(
-                    [
-                        "Pistol", "Rifle", "Shotgun", "Grenade", "Knife", "Bow", "Torch", "Medkit"
-                    ],
-                    0
-                ),
+                radial(items, 0),
                 AutoFocus,
                 observe(
                     |change: On<ValueChange<usize>>,
                      mut line: Single<&mut Text, With<Equipped>>| {
                         if change.is_final {
-                            const NAMES: [&str; 8] = [
-                                "Pistol", "Rifle", "Shotgun", "Grenade", "Knife", "Bow", "Torch",
-                                "Medkit",
-                            ];
                             line.0 = NAMES[change.value].to_string();
                         }
                     }

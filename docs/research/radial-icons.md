@@ -20,12 +20,12 @@ Gameface's radial menu takes "any content that should remain static and upright"
 
 - **I1. `RadialItem { label, icon: Option<IconSource> }`** is one item (`RadialItem::new(label)`, `.icon(source)`), and `radial` takes `impl IntoIterator<Item: Into<RadialItem>>`, so `radial(["Pistol", "Rifle"], 0)` and a `Vec<String>` keep compiling; `From<&str>` and `From<String>` make a text item. No second constructor: one widget.
 - **I2. An item with a picture draws the picture, not its label.** The label is the item's name: it is read in the middle of the disc when the item is lit (as for a text item), and it is the accessible name. The pairing the craft source asks for ("icons alongside labels") is the ring's picture plus the centre's words.
-- **I3. The picture is `Role::RadialIcon`**, a square of `RADIAL_ICON_TEXT_SIZES` (2.5) text sizes in the wheel's own scale (so it shrinks with the wheel in a short window), tinted like a button's icon: `skin.text`, `accent_text` on the lit item, `text_muted` disabled. The item is a button's size and look with the icon's room as its least size.
+- **I3. The picture is `Role::RadialIcon`**, a square of `RADIAL_ICON_TEXT_SIZES` (3) text sizes in the wheel's own scale (so it shrinks with the wheel in a short window), tinted like a button's icon: `skin.text`, `accent_text` on the lit item, `text_muted` disabled. The item is a button's size and look with the icon's room as its least size.
 - **I4. An item is data once.** The label lives in a private component on the item, so the centre never reads a drawn `Text` (an icon item has none) and the label and the picture cannot disagree.
 
 ## Parameters
 
-`RADIAL_ICON_TEXT_SIZES` = 2.5 (40 px at the default text size: a pill of text is 44 px tall at its minimum target, so a 40 px picture with padding stands on the same ring spacing; 8 of them on a 26-size disc do not touch). Design default.
+`RADIAL_ICON_TEXT_SIZES` = 3 (48 px at the default text size: the item is a square about 76 px across, eight of them on a 26-size disc do not touch). Design default.
 
 ## Validation targets
 

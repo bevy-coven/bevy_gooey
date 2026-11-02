@@ -61,7 +61,7 @@ use crate::popover::{
 use crate::progress::{Progress, Spinner};
 use crate::prompt::Prompt;
 use crate::radial::{
-    RadialCount, RadialSlot, RadialValue, radial_on_activate, radial_on_key_input,
+    RadialCount, RadialItem, RadialSlot, RadialValue, radial_on_activate, radial_on_key_input,
     radial_on_pointer_move, radial_on_press, radial_self_update,
 };
 use crate::region::FocusRegion;
@@ -867,7 +867,8 @@ const RADIAL_RING_FRACTION: f32 = 0.36;
 /// the final one. To choose when a hold button is let go ("release to select"), trigger `Activate`
 /// on the radial then. The disc is [`Role::Radial`] and 26 text sizes across, so it grows with
 /// [`GooeySkin::text_scale`](crate::GooeySkin::text_scale); three to eight short labels read best.
-/// Name it for a screen reader with `AccessibleLabel`.
+/// An item is a name, or a [`RadialItem`] with a picture to draw in its place (the name is then
+/// read in the middle). Name the wheel for a screen reader with `AccessibleLabel`.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -883,11 +884,17 @@ const RADIAL_RING_FRACTION: f32 = 0.36;
 /// ));
 /// # }
 /// ```
-pub fn radial<S: Into<String>>(items: impl IntoIterator<Item = S>, selected: usize) -> impl Bundle {
-    let items: Vec<String> = items.into_iter().map(Into::into).collect();
+pub fn radial<I: Into<RadialItem>>(
+    items: impl IntoIterator<Item = I>,
+    selected: usize,
+) -> impl Bundle {
+    let items: Vec<RadialItem> = items.into_iter().map(Into::into).collect();
     let count = items.len();
     let selected = selected.min(count.saturating_sub(1));
-    let name = items.get(selected).cloned().unwrap_or_default();
+    let name = items
+        .get(selected)
+        .map(|item| item.label.clone())
+        .unwrap_or_default();
     let middle = |ring: f32, (x, y): (f32, f32)| Node {
         position_type: PositionType::Absolute,
         left: Val::Percent(50.0 + x * ring * 100.0),
@@ -925,19 +932,30 @@ pub fn radial<S: Into<String>>(items: impl IntoIterator<Item = S>, selected: usi
                 Role::RadialTrack,
                 Pickable::IGNORE,
             )),
-            SpawnIter(items.into_iter().enumerate().map(move |(index, text)| {
+            SpawnIter(items.into_iter().enumerate().map(move |(index, item)| {
+                let RadialItem { label, icon } = item;
                 (
                     middle(RADIAL_RING_FRACTION, radial_place(index, count)),
                     pull_back,
                     Role::RadialSlot,
-                    RadialSlot(index),
+                    RadialSlot(index, label.clone()),
                     Pickable::IGNORE,
-                    children![(
-                        Text::new(text),
-                        ONE_LINE,
-                        Role::RadialText,
-                        Pickable::IGNORE
-                    )],
+                    Children::spawn(SpawnWith(move |slot: &mut RelatedSpawner<ChildOf>| {
+                        match icon {
+                            Some(source) => slot.spawn((
+                                Node::default(),
+                                Role::RadialIcon,
+                                Icon(source),
+                                Pickable::IGNORE,
+                            )),
+                            None => slot.spawn((
+                                Text::new(label),
+                                ONE_LINE,
+                                Role::RadialText,
+                                Pickable::IGNORE,
+                            )),
+                        };
+                    })),
                 )
             })),
             Spawn((

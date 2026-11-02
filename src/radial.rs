@@ -9,6 +9,7 @@ use bevy::prelude::*;
 use bevy::ui::{InteractionDisabled, Selected};
 use bevy::ui_widgets::{Activate, ValueChange};
 
+use crate::icon::IconSource;
 use crate::model::{RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH, radial_pick, radial_step};
 use crate::nav::show_focus;
 use crate::skin::Role;
@@ -38,16 +39,78 @@ pub struct RadialValue(pub usize);
 #[reflect(Component, Default, Debug, PartialEq, Clone)]
 pub struct RadialCount(pub usize);
 
-/// One item of a [`crate::radial`], by its place on the ring. Part of what `radial()` spawns; a
+/// One item of a [`crate::radial`]: its name and, optionally, a picture.
+///
+/// An item with a picture draws the picture on the ring (white on transparent, tinted by the
+/// skin like a [`crate::Slot`]'s) and no words; its name is read in the middle of the disc when it
+/// is lit and is its accessible name. An item without one draws its name. A `&str` or a `String`
+/// is a text item, so `radial(["Pistol", "Rifle"], 0)` needs no wrapping.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, pistol: Handle<Image>) {
+/// commands.spawn(radial(
+///     [
+///         RadialItem::new("Pistol").icon(IconSource::Image(pistol)),
+///         RadialItem::new("Unarmed"),
+///     ],
+///     0,
+/// ));
+/// # }
+/// ```
+#[derive(Clone, Debug, PartialEq, Reflect)]
+pub struct RadialItem {
+    /// The item's name: drawn on the ring for a text item, read in the middle when lit.
+    pub label: String,
+    /// The item's picture, when it has one.
+    pub icon: Option<IconSource>,
+}
+
+impl RadialItem {
+    /// A text item.
+    pub fn new(label: impl Into<String>) -> Self {
+        Self {
+            label: label.into(),
+            icon: None,
+        }
+    }
+
+    /// Draws `source` on the ring in place of the name.
+    pub fn icon(mut self, source: IconSource) -> Self {
+        self.icon = Some(source);
+        self
+    }
+}
+
+impl From<&str> for RadialItem {
+    fn from(label: &str) -> Self {
+        Self::new(label)
+    }
+}
+
+impl From<String> for RadialItem {
+    fn from(label: String) -> Self {
+        Self::new(label)
+    }
+}
+
+/// One item of a [`crate::radial`], by its place on the ring, and its name (so the middle of the
+/// disc can read it whether the item draws words or a picture). Part of what `radial()` spawns; a
 /// game never builds one.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[derive(Component, Clone, Debug, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, PartialEq, Clone)]
-pub struct RadialSlot(pub(crate) usize);
+pub struct RadialSlot(pub(crate) usize, pub(crate) String);
 
 impl RadialSlot {
     /// The item's place on the ring, from 0 at the top, clockwise.
     pub fn index(&self) -> usize {
         self.0
+    }
+
+    /// The item's name.
+    pub fn label(&self) -> &str {
+        &self.1
     }
 }
 
@@ -233,9 +296,7 @@ pub fn update_radials(
                 _ => {}
             }
             if here {
-                label = children
-                    .iter_descendants(kid)
-                    .find_map(|part| texts.get(part).ok().map(|text| text.0.clone()));
+                label = Some(slot.label());
             }
         }
         let centre = kids
@@ -245,7 +306,7 @@ pub fn update_radials(
             && let Ok(mut text) = texts.get_mut(centre)
             && text.0 != label
         {
-            text.0 = label;
+            text.0 = label.to_string();
         }
     }
 }
