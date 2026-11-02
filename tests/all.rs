@@ -33,6 +33,7 @@ mod popover;
 mod progress;
 mod prompts;
 mod readme;
+mod region;
 mod scale;
 mod scope;
 mod section;
