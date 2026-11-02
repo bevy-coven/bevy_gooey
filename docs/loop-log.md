@@ -1871,3 +1871,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 4. Radial: an icon per item (`RadialItem { label, icon }`) and a pointing arc that follows the stick.
 5. Tree rows: `level`, `expanded`, `size_of_set` and `position_in_set`; a table's row and column counts.
 
+**Release.** `cargo semver-checks` (baseline v0.27.0, published this pass): no breaking change, so a patch: `release: v0.27.1`, tag `v0.27.1` pushed, `cargo publish --dry-run` green. **`cargo publish` was refused with 429** ("You have published too many versions of this crate in the last 24 hours": v0.27.0 went out at the start of this pass), logged once and not retried; the next pass publishes v0.27.1 (the audit shows `missing: release` until then). Pushed `main`, `loop/iter-47` and the tag.
+
+**Cleanup.** Removed this pass's own: worktree `~/g47_base` (plain `git worktree remove`), `~/g47_gallery_before` and `~/g47_gallery_after` (the two gallery binaries), `/tmp/g47` (captures, frames, the Sanctuary and grimoire shallow clones, gate scripts and logs). `df -h /home` 159 G free. Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits, unchanged since iteration 17).
+
