@@ -98,7 +98,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   parchment, a high-contrast one held to 7:1 and a compact `Tool` one), a `problems()` check against the
   WCAG 2.2 contrast and target-size rules, `density: Density::Compact` for a desktop tool's rows (half
   the padding, a 24 px least target), design tokens (`spacing`, `radii`, `type_scale` and a `surfaces`
-  ladder of five fills whose every step `problems()` holds to at least ΔL\* 2, drawn by `surface(n)`; your own named colours go in `tones`, drawn by `Role::Tone` and checked pair by pair with `tone_problems`),
+  ladder of five fills whose every step `problems()` holds to at least ΔL\* 2, drawn by `surface(n)`; your own named colours go in `tones`, drawn by `Role::Tone` and checked pair by pair with `tone_problems`; `hover`, `pressed`, `held`, `card` and friends are the states your own controls draw by `Role::Pressed` and the like),
   and a `SkinScope(skin)` on any node restyles just that subtree (a preview of a theme, an editor's own
   chrome next to a game's skin):
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).

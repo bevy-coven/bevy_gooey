@@ -113,6 +113,55 @@ A theme step (`with_colours_of`) brings the ladder with the colours and keeps th
 
 *`examples/ladder`: the steps in dark are L\* 12.9, 18.3, 23.6 and 31.6 over a ground of 6.5; the labels are the ladder read back through `cie_lightness`.*
 
+## State roles: hover, pressed, held, card
+
+A host that builds its own rows, chips and overlays from the skin needs the interaction states too, so
+the skin owns them. Seven colours are `Option<Color>` fields of `GooeySkin` (`None` in every preset),
+each with an accessor that answers from the nearest field when the skin sets none, so a skin that sets
+none of them still answers every role:
+
+| field | accessor / `Role` | `None` is | what it is |
+|---|---|---|---|
+| `hover` | `hovered()` / `Role::Hovered` | `surface_raised` a third of the way to `accent` | a row, chip or field under the pointer; **every hovered button of the crate draws it too** |
+| `pressed` | `pressed()` / `Role::Pressed` | `solid_surface()` | a control with the pointer down, sunk below hover (the crate's own pressed button stays `accent`) |
+| `held` | `held()` / `Role::Held` | `text` faded toward `held_ground()` by `held_fade` | a world gizmo or glyph while the key that asks the world to step back is held |
+| `held_ground` | `held_ground()` / `Role::HeldGround` | `solid_surface()` faded by the same `held_fade` | the ground that steps back with it |
+| `unchecked` | `unchecked()` / `Role::Unchecked` | `text_muted` | the mark of a thing not judged yet |
+| `card` | `card()` / `Role::Card` | `solid_surface()` | the card the scrim leaves lit while it holds the rest back |
+| `preview_edge` | `preview_edge()` / `Role::PreviewEdge` | `outline` | the edge of a row's preview box (a border, no fill) |
+
+`held_fade` (0.6, from 0 to 1) is one number for both held colours, so a held ground and a held glyph
+"come off one fade" and compose. A role draws its colour on a node of your own (`(Role::Pressed,
+Node { .. })`) and nothing else; swap the role as the pointer goes down and the node is restyled the next
+frame. Where no role draws it (a gizmo, a sprite), read the accessor.
+
+```rust
+use bevy::prelude::*;
+use bevy_gooey::{GooeySkin, Role};
+
+fn row(mut commands: Commands) {
+    // A host's row: `Role::Hovered` under the pointer, `Role::Pressed` with it down.
+    commands.spawn((Role::Hovered, Node { height: Val::Px(44.0), ..default() }));
+}
+
+fn gizmo_colour(skin: &GooeySkin, key_held: bool) -> Color {
+    if key_held { skin.held() } else { skin.text }
+}
+```
+
+**What `problems()` checks.** `text` on `pressed` and on `card` at the text minimum, `unchecked` and
+`preview_edge` on the panel at the 3:1 graphic minimum (7:1 in `high_contrast_problems()`), and
+**pressed against hovered by a lightness step**, `STATE_STEP`, ΔL\* 4: WCAG 1.4.11 asks no contrast of two
+states that do not appear side by side, only that each keeps the contrast of what is drawn on it, so the
+check is whether a reader can tell them apart. A pressed fill at hover's lightness is
+`SkinProblem::Indistinguishable { pair, delta_l, needed }`. A `held_fade` outside 0 to 1 is
+`SkinProblem::BadSize`. Held colours are not contrast-checked: a held colour is stepped back on purpose.
+A theme step (`with_colours_of`) replaces them with the look's own, as it does every colour.
+
+![The states example: a panel "State roles" with five swatches (Hovered, Pressed, Card, Unchecked, a Preview edge) over a world glyph at rest beside the same glyph held, in dark, then the Theme row steps through Parchment, High contrast and Tool](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/states.gif)
+
+*`examples/states`: every swatch is a `Role` on a plain node; the glyphs are read from `text` and `held()`.*
+
 ## Your own named colours
 
 A tool has more semantic colours than a skin's fixed fields: a suggestion ink, a map's grid line, a problem banner's fill, a rarity. `GooeySkin::tones` carries them by name, so a skin file lists them, a theme can change them and "the UI's colours are the skin" holds:
