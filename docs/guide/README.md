@@ -25,6 +25,13 @@ per subject. The README links each bullet to its page.
 - [Colours](colors.md) — `color_field(label, colour)`: a swatch and a hex field the player types (`#ff8800`),
   and a picker the swatch opens (a saturation and value area, hue, brightness and alpha strips) that
   a pointer, the keys and a pad all drive, `MixedValue`, and the reason a typed word is refused.
+- [Field problems](field-problems.md) — `FieldProblem::error("A name is needed")` on a text row: the words under
+  it, a bar and (for an error) the field's frame in the kind's colour, the rows below making room, gone the
+  frame it is removed.
+- [Icons](icons.md) — `icon(IconSource)`: the host's own image or atlas cell, a step of the type scale square,
+  tinted by the skin (`IconTone`), following its button's state, an empty box of the right size when missing.
+- [Progress and spinner](progress.md) — `progress(fraction)` with `ProgressText` and `spinner()`: which to use
+  by how long the work takes, "3 of 7: Measuring meshes, about 20 s left", and a ring on real time.
 - [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB
