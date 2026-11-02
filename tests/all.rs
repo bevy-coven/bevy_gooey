@@ -46,6 +46,7 @@ mod split;
 mod status_bar;
 mod table;
 mod tabs;
+mod testing;
 mod text;
 mod text_area;
 mod toast;
