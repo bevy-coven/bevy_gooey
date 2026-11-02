@@ -52,6 +52,9 @@ bevy = { version = "0.20.0", default-features = false, features = [
     "std",
 ] }
 serde = { version = "1", features = ["derive"], optional = true }
+# The node type and roles Bevy's `AccessibilityNode` wraps; the same version as Bevy's, or its types do
+# not match. `bevy::a11y` does not re-export it.
+accesskit = "0.24"
 
 # **Tests and examples only.** The gallery needs a window, an event loop and a renderer, so it takes the
 # full umbrella here, where it cannot reach a consumer's dependency graph. `ron` round-trips the skin in
