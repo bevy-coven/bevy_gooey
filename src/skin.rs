@@ -1230,6 +1230,21 @@ pub enum Role {
     /// A colour strip's rail, like a slider's rail but with a gradient of the colour's own for its
     /// fill.
     ColorRail,
+    /// An [`crate::icon`]: a square a step of [`GooeySkin::type_scale`] on a side, its image
+    /// tinted by its [`crate::IconTone`].
+    Icon,
+    /// The message of a [`crate::FieldProblem`], under its row: absolute, so it takes no room of
+    /// its own (the row keeps the room below itself).
+    FieldMessage,
+    /// The bar at the start of a problem's message, in the problem's colour.
+    FieldMark,
+    /// A [`crate::progress`]'s root: a column of a meter's track and a line of words.
+    Progress,
+    /// The words under a progress bar: body text.
+    ProgressLine,
+    /// A [`crate::spinner`]: a ring of [`GooeySkin::outline`] with one quarter in the
+    /// [`GooeySkin::accent`].
+    Spinner,
 }
 
 type Styled = (
@@ -1248,6 +1263,9 @@ type Styled = (
     )>,
     Option<&'static ComputedUiRenderTargetInfo>,
     Option<&'static mut TextCursorStyle>,
+    Option<&'static mut ImageNode>,
+    Option<&'static IconTone>,
+    Option<&'static IconSize>,
 );
 
 /// Every input a widget's look depends on, read once per run of [`apply_skin`], except the skin,
@@ -1321,6 +1339,10 @@ struct State {
     marked: bool,
     /// A row of a table that is an odd one of the display, drawn with a quiet band.
     band: bool,
+    /// The kind of the [`crate::FieldProblem`] on a text row, if it has one.
+    problem: Option<FieldProblemKind>,
+    /// How tall the problem's message stands, logical px.
+    problem_room: f32,
 }
 
 impl Default for State {
@@ -1344,6 +1366,8 @@ impl Default for State {
             open: false,
             marked: false,
             band: false,
+            problem: None,
+            problem_room: 0.0,
         }
     }
 }
@@ -1362,7 +1386,10 @@ type StateQuery = (
     Option<&'static ListView>,
     Has<Capturing>,
     Has<MenuOpen>,
-    Has<MenuMarked>,
+    (
+        Has<MenuMarked>,
+        Option<(&'static FieldProblem, &'static ProblemRoom)>,
+    ),
     Option<&'static TableRow>,
     Option<&'static Role>,
 );
@@ -1390,6 +1417,10 @@ type Restyle = (
             Added<PopoverPanel>,
             Added<MenuMarked>,
             Changed<TableRow>,
+            Changed<FieldProblem>,
+            Changed<ProblemRoom>,
+            Changed<IconTone>,
+            Changed<IconSize>,
         )>,
     )>,
 );
@@ -1405,6 +1436,7 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, MenuMarked>,
     RemovedComponents<'w, 's, SkinScope>,
     RemovedComponents<'w, 's, ChildOf>,
+    RemovedComponents<'w, 's, FieldProblem>,
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
@@ -1466,7 +1498,18 @@ pub fn apply_skin(
             warn!("bevy_gooey: scoped skin: {problem}");
         }
     }
-    let (unpressed, enabled, unchecked, unselected, stopped, closed, unmarked, unscoped, orphaned) =
+    let (
+        unpressed,
+        enabled,
+        unchecked,
+        unselected,
+        stopped,
+        closed,
+        unmarked,
+        unscoped,
+        orphaned,
+        unproblemed,
+    ) =
         &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -1492,7 +1535,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    marked,
+                    (marked, problem),
                     row,
                     role,
                 )| {
@@ -1520,6 +1563,8 @@ pub fn apply_skin(
                             || row.is_some_and(|r| r.cursor && look.focused == Some(r.table)),
                         open,
                         marked,
+                        problem: problem.map(|(problem, _)| problem.kind),
+                        problem_room: problem.map_or(0.0, |(_, room)| room.0),
                         band: row.is_some_and(|r| r.index % 2 == 1),
                     }
                 },
