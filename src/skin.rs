@@ -55,6 +55,11 @@ const CHOICE_MIN_TEXT_SIZES: f32 = 8.0;
 /// still a fraction of a 720p window at the default size (26 × 16 px = 416 px).
 const RADIAL_DIAMETER_TEXT_SIZES: f32 = 26.0;
 
+/// The most of the window's shorter side a [`crate::radial`]'s disc takes: 92%, which at 720p is a
+/// 662 px wheel and caps its text at 25 px (125% of the default), so the wheel is whole on the
+/// screen at 150% and 200% text too.
+const RADIAL_WINDOW_SHARE: f32 = 0.92;
+
 /// A toggle's track is this many body text sizes high and twice as wide.
 const SWITCH_TEXT_SIZES: f32 = 1.5;
 
@@ -1957,6 +1962,13 @@ fn restyle(
     let line = snap_line_width(skin.border, target.map_or(1.0, |t| t.scale_factor()));
     // The settings controls' sizes grow with the player's text size, like the meter.
     let text_px = skin.text_size * skin.text_scale;
+    // A wheel is the player's text size until 26 of them would pass `RADIAL_WINDOW_SHARE` of the
+    // window's shorter side: past that the whole wheel (disc, labels and name) stops growing, so
+    // it is always whole on the screen, which 200% text on a 720p window would not be.
+    let wheel_px = target.map_or(text_px, |t| {
+        let size = t.logical_size();
+        text_px.min(RADIAL_WINDOW_SHARE * size.x.min(size.y) / RADIAL_DIAMETER_TEXT_SIZES)
+    });
     let rail = skin.meter_height * skin.text_scale;
     let thumb = Vec2::new(text_px * THUMB_TEXT_SIZES, rail * THUMB_RAIL_RATIO);
     let switch = text_px * SWITCH_TEXT_SIZES;
@@ -2439,7 +2451,7 @@ fn restyle(
             // A disc as wide as it is high, in text sizes, so it grows with the player's text scale;
             // the middle holds the highlighted item's name and the items stand on a ring round it.
             Role::Radial => {
-                let diameter = text_px * RADIAL_DIAMETER_TEXT_SIZES;
+                let diameter = wheel_px * RADIAL_DIAMETER_TEXT_SIZES;
                 next.width = Val::Px(diameter);
                 next.height = Val::Px(diameter);
                 next.border = UiRect::all(Val::Px(line));
@@ -3234,7 +3246,7 @@ fn restyle(
             } else {
                 skin.text
             };
-            Some((color, &look.fonts.body, skin.text_size))
+            Some((color, &look.fonts.body, wheel_px / skin.text_scale))
         }
         // The name in the middle is read under the thumb, so it is a heading's size.
         Role::RadialCentre => Some((
@@ -3244,7 +3256,7 @@ fn restyle(
                 skin.text
             },
             &look.fonts.heading,
-            skin.heading_size,
+            skin.heading_size * wheel_px / text_px,
         )),
         // The selected tab's label is drawn on the accent fill, so it takes the accent's text.
         Role::TabText => {

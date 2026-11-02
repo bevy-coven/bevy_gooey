@@ -336,55 +336,79 @@ fn the_lit_item_is_the_accent_with_inverted_text_and_the_others_a_buttons_fill()
     }
 }
 
-#[test]
-fn the_disc_is_round_and_its_items_stand_on_the_ring_clear_of_one_another() {
-    for step in TEXT_SIZE_STEPS {
-        let mut app = app_sized(1280, 1080);
-        app.world_mut().resource_mut::<GooeySkin>().text_scale = step;
-        let ui = wheel(&mut app);
-        let disc = rect(&app, ui.radial);
-        let skin = app.world().resource::<GooeySkin>().clone();
-        let across = skin.text_size * step * 26.0;
+/// Checks a wheel of `ITEMS` in a window `width` × `height` at text scale `step`: the disc is 26
+/// text sizes square, or the 92% of the window's shorter side it is capped to, the items stand on
+/// the ring, inside the round disc and a target high, and no two overlap.
+fn check_wheel(width: u32, height: u32, step: f32) {
+    let mut app = app_sized(width, height);
+    app.world_mut().resource_mut::<GooeySkin>().text_scale = step;
+    let ui = wheel(&mut app);
+    let disc = rect(&app, ui.radial);
+    let skin = app.world().resource::<GooeySkin>().clone();
+    let short = width.min(height) as f32;
+    let across = (skin.text_size * step * 26.0).min(short * 0.92);
+    let at = format!("{width}x{height} at {step}");
+    assert!(
+        (disc.width() - across).abs() < 1.0 && (disc.height() - across).abs() < 1.0,
+        "{at}: the disc is {across} square, {disc:?}"
+    );
+    assert!(
+        disc.width() <= short,
+        "{at}: the disc is whole on the screen"
+    );
+    let slots = slots(&app, ui.radial);
+    assert_eq!(slots.len(), 8);
+    let rects: Vec<Rect> = slots.iter().map(|&s| rect(&app, s)).collect();
+    for (index, item) in rects.iter().enumerate() {
+        let (x, y) = radial_place(index, 8);
+        let want = disc.center() + Vec2::new(x, -y) * across * 0.36;
+        // The ring is 36% of the padding box, which the frame trims from the disc's width.
         assert!(
-            (disc.width() - across).abs() < 1.0 && (disc.height() - across).abs() < 1.0,
-            "{step}: the disc is 26 text sizes square, {disc:?}"
+            (item.center() - want).length() < 0.36 * 2.0 * skin.border * 1.5 + 1.0,
+            "{at}: item {index} stands on the ring, {:?} vs {want:?}",
+            item.center()
         );
-        let slots = slots(&app, ui.radial);
-        assert_eq!(slots.len(), 8);
-        let rects: Vec<Rect> = slots.iter().map(|&s| rect(&app, s)).collect();
-        for (index, item) in rects.iter().enumerate() {
-            let (x, y) = radial_place(index, 8);
-            let want = disc.center() + Vec2::new(x, -y) * across * 0.36;
-            // The ring is 36% of the padding box, which the frame trims from the disc's width.
+        for corner in [
+            item.min,
+            item.max,
+            Vec2::new(item.min.x, item.max.y),
+            Vec2::new(item.max.x, item.min.y),
+        ] {
             assert!(
-                (item.center() - want).length() < 0.36 * 2.0 * skin.border * 1.5 + 1.0,
-                "{step}: item {index} stands on the ring, {:?} vs {want:?}",
-                item.center()
+                (corner - disc.center()).length() <= disc.width() * 0.5,
+                "{at}: item {index} is inside the round disc, corner {corner:?}"
             );
-            for corner in [
-                item.min,
-                item.max,
-                Vec2::new(item.min.x, item.max.y),
-                Vec2::new(item.max.x, item.min.y),
-            ] {
-                assert!(
-                    (corner - disc.center()).length() <= disc.width() * 0.5,
-                    "{step}: item {index} is inside the round disc, corner {corner:?}"
-                );
-            }
+        }
+        assert!(
+            item.height() + 0.5 >= skin.target(),
+            "{at}: item {index} is a target high"
+        );
+        for (other, rival) in rects.iter().enumerate().skip(index + 1) {
+            let overlap = item.intersect(*rival);
             assert!(
-                item.height() + 0.5 >= skin.target(),
-                "{step}: item {index} is a target high"
+                overlap.is_empty() || overlap.width().min(overlap.height()) < 1.0,
+                "{at}: items {index} and {other} overlap by {overlap:?}"
             );
-            for (other, rival) in rects.iter().enumerate().skip(index + 1) {
-                let overlap = item.intersect(*rival);
-                assert!(
-                    overlap.is_empty() || overlap.width().min(overlap.height()) < 1.0,
-                    "{step}: items {index} and {other} overlap by {overlap:?}"
-                );
-            }
         }
     }
+}
+
+#[test]
+fn the_disc_is_round_and_its_items_stand_on_the_ring_clear_of_one_another() {
+    // A window tall enough that the disc is never capped, at every text size.
+    for step in TEXT_SIZE_STEPS {
+        check_wheel(1280, 1080, step);
+    }
+}
+
+#[test]
+fn a_small_window_at_large_text_gets_a_whole_wheel_not_a_bigger_one() {
+    // 200% text would make a 1040 px disc in 720 px; it stops at 92% of the window and the labels
+    // stop growing with it, so nothing overlaps or leaves the disc.
+    for step in TEXT_SIZE_STEPS {
+        check_wheel(1280, 720, step);
+    }
+    check_wheel(960, 540, 2.0);
 }
 
 #[test]

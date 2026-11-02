@@ -152,38 +152,40 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         screen(),
         children![
+            // The status line is a HUD corner of its own, so the wheel has the middle to itself and
+            // is as large as the window allows at any text size.
             (
                 Node {
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    row_gap: Val::Px(16.0),
+                    position_type: PositionType::Absolute,
+                    top: Val::Percent(4.0),
+                    left: Val::Percent(4.0),
                     ..default()
                 },
-                children![
-                    (heading("Equipped: nothing"), Equipped),
-                    (
-                        radial(
-                            [
+                children![(
+                    panel(),
+                    children![label("Equipped"), (heading("Nothing"), Equipped)]
+                )],
+            ),
+            (
+                radial(
+                    [
+                        "Pistol", "Rifle", "Shotgun", "Grenade", "Knife", "Bow", "Torch", "Medkit"
+                    ],
+                    0
+                ),
+                AutoFocus,
+                observe(
+                    |change: On<ValueChange<usize>>,
+                     mut line: Single<&mut Text, With<Equipped>>| {
+                        if change.is_final {
+                            const NAMES: [&str; 8] = [
                                 "Pistol", "Rifle", "Shotgun", "Grenade", "Knife", "Bow", "Torch",
-                                "Medkit"
-                            ],
-                            0
-                        ),
-                        AutoFocus,
-                        observe(
-                            |change: On<ValueChange<usize>>,
-                             mut line: Single<&mut Text, With<Equipped>>| {
-                                if change.is_final {
-                                    const NAMES: [&str; 8] = [
-                                        "Pistol", "Rifle", "Shotgun", "Grenade", "Knife", "Bow",
-                                        "Torch", "Medkit",
-                                    ];
-                                    line.0 = format!("Equipped: {}", NAMES[change.value]);
-                                }
-                            }
-                        ),
-                    )
-                ],
+                                "Medkit",
+                            ];
+                            line.0 = NAMES[change.value].to_string();
+                        }
+                    }
+                ),
             ),
             (
                 prompts(),
