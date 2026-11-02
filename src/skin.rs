@@ -1,5 +1,6 @@
 //! The skin: the look of every widget, as data, and the one system that applies it.
 
+use std::collections::BTreeMap;
 use std::fmt;
 
 use bevy::input_focus::{InputFocus, InputFocusVisible};
@@ -282,6 +283,12 @@ pub struct GooeySkin {
     /// least [`ELEVATION_STEP`] in CIE L\* ([`SkinProblem::ElevationStep`]); a ladder of one is
     /// valid, an empty one is not.
     pub surfaces: Vec<Color>,
+    /// The host's own semantic colours, by name: a suggestion ink, a map's grid line, a rarity.
+    /// Read one with [`GooeySkin::tone`], draw a node with it by [`Role::Tone`], check the pairs a
+    /// host relies on with [`GooeySkin::tone_problems`]. Empty in every preset; a skin file that
+    /// carries tones lists them in name order. Not checked by [`GooeySkin::problems`]: the crate
+    /// cannot know which pairs a host draws.
+    pub tones: BTreeMap<String, Color>,
 }
 
 impl GooeySkin {
@@ -435,7 +442,88 @@ impl GooeySkin {
             radii: [4.0, 8.0, 16.0],
             type_scale: [14.0, 16.0, 20.0, 26.0, 32.0],
             surfaces: vec![Color::BLACK],
+            tones: BTreeMap::new(),
         }
+    }
+
+    /// The colour of the tone called `name` ([`GooeySkin::tones`]), or `None` when the skin holds
+    /// none by that name: never a default colour. Names are case-sensitive and not translated.
+    ///
+    /// ```
+    /// use bevy::prelude::*;
+    /// use bevy_gooey::GooeySkin;
+    /// let mut skin = GooeySkin::dark();
+    /// skin.tones.insert("suggest".into(), Color::srgb(0.6, 0.8, 0.5));
+    /// assert_eq!(skin.tone("suggest"), Some(Color::srgb(0.6, 0.8, 0.5)));
+    /// assert_eq!(skin.tone("Suggest"), None);
+    /// ```
+    pub fn tone(&self, name: &str) -> Option<Color> {
+        self.tones.get(name).copied()
+    }
+
+    /// The colour a [`GooeySkin::tone_problems`] pair names: a tone, else one of the skin's own
+    /// colours (`background`, `surface`, `surface_raised`, `text`, `text_muted`, `accent`,
+    /// `accent_text`, `danger`, `focus_ring`, `outline`). `surface` is the opaque surface a
+    /// panel's text is checked on.
+    fn colour_named(&self, name: &str) -> Option<Color> {
+        self.tone(name).or(match name {
+            "background" => Some(self.background),
+            "surface" => Some(self.solid_surface()),
+            "surface_raised" => Some(self.surface_raised),
+            "text" => Some(self.text),
+            "text_muted" => Some(self.text_muted),
+            "accent" => Some(self.accent),
+            "accent_text" => Some(self.accent_text),
+            "danger" => Some(self.danger),
+            "focus_ring" => Some(self.focus_ring),
+            "outline" => Some(self.outline),
+            _ => None,
+        })
+    }
+
+    /// Check the ink and ground pairs a host's own chrome draws, with the arithmetic
+    /// [`GooeySkin::problems`] uses for the crate's: each `(pair, ink, ground, needed)` names two
+    /// colours, each a tone of this skin or one of its own (`"text"`, `"surface"`, `"accent"`, ...,
+    /// see [`GooeySkin::tones`]), and the contrast `needed` between them (4.5 for text, 3.0 for a
+    /// graphic, [`ENHANCED_CONTRAST`] for a high-contrast look). One
+    /// [`SkinProblem::LowContrast`] named `pair` for each that falls short; one
+    /// [`SkinProblem::UnknownTone`] for each name that is neither, since a pair that cannot be read
+    /// must not pass. Alpha is ignored, as in [`GooeySkin::problems`].
+    ///
+    /// ```
+    /// use bevy::prelude::*;
+    /// use bevy_gooey::{GooeySkin, SkinProblem};
+    /// let mut skin = GooeySkin::dark();
+    /// skin.tones.insert("suggest".into(), Color::srgb(0.9, 0.9, 0.5));
+    /// let pairs = [("suggest on surface", "suggest", "surface", 4.5)];
+    /// assert!(skin.tone_problems(&pairs).is_empty());
+    /// let pairs = [("suggest on text", "suggest", "text", 4.5)];
+    /// assert!(matches!(skin.tone_problems(&pairs)[0], SkinProblem::LowContrast { .. }));
+    /// ```
+    pub fn tone_problems(&self, pairs: &[(&'static str, &str, &str, f32)]) -> Vec<SkinProblem> {
+        let mut out = Vec::new();
+        for &(pair, ink, ground, needed) in pairs {
+            let (Some(a), Some(b)) = (self.colour_named(ink), self.colour_named(ground)) else {
+                for name in [ink, ground] {
+                    if self.colour_named(name).is_none() {
+                        out.push(SkinProblem::UnknownTone {
+                            name: name.to_owned(),
+                        });
+                    }
+                }
+                continue;
+            };
+            let ratio = contrast_ratio(rgb(a), rgb(b));
+            // A NaN colour gives a NaN ratio, which is reported, not passed.
+            if ratio.is_nan() || ratio < needed {
+                out.push(SkinProblem::LowContrast {
+                    pair,
+                    ratio,
+                    needed,
+                });
+            }
+        }
+        out
     }
 
     /// Step `step` of the [`GooeySkin::spacing`] scale, logical px; a step past the end is the
@@ -905,6 +993,12 @@ pub enum SkinProblem {
         /// The field's name.
         field: &'static str,
     },
+    /// A pair given to [`GooeySkin::tone_problems`] names a colour the skin does not hold: neither
+    /// one of its [`GooeySkin::tones`] nor one of its own colours. The pair is not checked.
+    UnknownTone {
+        /// The name that matched nothing.
+        name: String,
+    },
 }
 
 impl fmt::Display for SkinProblem {
@@ -943,6 +1037,10 @@ impl fmt::Display for SkinProblem {
             Self::BadScale { field } => write!(
                 f,
                 "{field} is not a usable scale: it must have a step (surfaces), be finite and never fall (spacing, radii, type_scale), and be above zero (type_scale)"
+            ),
+            Self::UnknownTone { name } => write!(
+                f,
+                "\"{name}\" is neither a tone of the skin nor one of its own colours"
             ),
         }
     }
@@ -997,6 +1095,10 @@ pub enum Role {
     /// A column filled with one step of [`GooeySkin::surfaces`], lowest first; nothing else is
     /// drawn (see [`crate::surface`]).
     Surface(u8),
+    /// A node filled with the host's own tone of that name, [`GooeySkin::tone`], and nothing else
+    /// (give it its own `Node`): restyled in the frame the skin changes. A name the skin does not
+    /// hold draws no fill at all, transparent, never a stand-in colour.
+    Tone(&'static str),
     /// A column of buttons.
     Menu,
     /// Heading text.
@@ -1985,6 +2087,7 @@ fn restyle(
         }),
         Role::Scrim => Some(skin.scrim),
         Role::Surface(level) => Some(skin.surface_at(*level)),
+        Role::Tone(name) => Some(skin.tone(name).unwrap_or(Color::NONE)),
         // A switch is lit by the accent while on, and its knob's place says so a second way.
         Role::ToggleTrack => Some(if owner.disabled {
             skin.surface

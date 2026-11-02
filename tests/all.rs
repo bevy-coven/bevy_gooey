@@ -51,6 +51,7 @@ mod text_area;
 mod toast;
 mod toast_actions;
 mod tokens;
+mod tones;
 mod toolbar;
 mod tooltip;
 mod tree;
