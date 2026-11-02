@@ -124,6 +124,12 @@ impl PopoverSlide {
     }
 }
 
+/// What a new node's role and parent say about it.
+type NewCard = (Entity, &'static Role, &'static ChildOf);
+
+/// A node that has just got a role or a parent and no slide of its own yet.
+type NewCardFilter = (Or<(Added<Role>, Added<ChildOf>)>, Without<SlideIn>);
+
 /// Gives a dialog's card and each popover panel that appeared this frame its [`SlideIn`], unless
 /// motion is off or the panel already has one. A card is a `Panel` or `Palette` whose parent is a
 /// scrim. Runs in [`crate::GooeySystems::Style`], before [`update_motion`].
@@ -131,7 +137,7 @@ pub fn begin_entrances(
     settings: Res<MotionSettings>,
     mut commands: Commands,
     popovers: Query<Entity, (Added<PopoverPanel>, Without<PopoverSlide>)>,
-    cards: Query<(Entity, &Role, &ChildOf), (Or<(Added<Role>, Added<ChildOf>)>, Without<SlideIn>)>,
+    cards: Query<NewCard, NewCardFilter>,
     roles: Query<&Role>,
 ) {
     if settings.is_off() {
