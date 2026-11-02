@@ -2497,7 +2497,7 @@ pub fn separator() -> impl Bundle {
 
 /// A line of news at the edge of the screen: "Game saved", "Quest updated". Spawn it from any
 /// system, with no layout and nothing else to set up; it stands as long as its message takes to
-/// read, fades out and removes itself ([`Toast`], [`crate::ToastSettings`]).
+/// read, fades out and removes itself ([`crate::Toast`], [`crate::ToastSettings`]).
 ///
 /// ```
 /// # use bevy::prelude::*;
