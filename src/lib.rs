@@ -192,8 +192,8 @@ pub use controls::update_sliders;
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
 pub use dock_layout::{DockDropTarget, DockLayout, DockSkip};
 pub use drag::{
-    DRAG_LIFT_PX, DragLabel, DragPayload, DragState, Dragging, DropRefused, DropTarget, Dropped,
-    DroppedOnWorld, cancel_drags, is_dragging,
+    DRAG_LIFT_PX, DragLabel, DragPayload, DragSettings, DragState, Dragging, DropRefused,
+    DropTarget, Dropped, DroppedOnWorld, cancel_drags, is_dragging,
 };
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
@@ -214,16 +214,17 @@ pub use model::{
     ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
     NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle,
     SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST,
-    TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, area_values, bar_fit, choice_next, choice_step,
-    cie_lightness, clock_text, column_resize, composite, contrast_ratio, dock_drop_rect,
-    dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, eta_words, format_number,
-    fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key, key_name, list_height, meter_fraction,
-    mouse_name, natural_cmp, nearest_step, number_decimals, pad_name, page_target, parse_hex,
-    parse_number, progress_text, relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal,
-    scrub_value, shortcut_conflicts, shortcut_label, slider_fraction, slider_text, snap_line_width,
-    snap_to_row, spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step,
-    table_anchor, table_step, table_window, toast_alpha, toast_grow, toast_hold, toast_life,
-    tree_ends, tree_heir, tree_indent, tree_parent, tree_visible, type_ahead, window_ui_scale,
+    TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit, choice_next,
+    choice_step, cie_lightness, clock_text, column_resize, composite, contrast_ratio,
+    dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, eta_words,
+    format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key, key_name, list_height,
+    meter_fraction, mouse_name, natural_cmp, nearest_step, number_decimals, pad_name, page_target,
+    parse_hex, parse_number, progress_text, relative_luminance, repeat_steps, rgb_to_hsv,
+    scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label, slider_fraction,
+    slider_text, snap_line_width, snap_to_row, spinner_angle, split_clamp, split_drag, split_mins,
+    step_value, tab_step, table_anchor, table_step, table_window, target_step, target_toward,
+    toast_alpha, toast_grow, toast_hold, toast_life, tree_ends, tree_heir, tree_indent,
+    tree_parent, tree_visible, type_ahead, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -503,6 +504,8 @@ impl Plugin for GooeyNavPlugin {
             .register_type::<DragLabel>()
             .register_type::<Dragging>()
             .init_resource::<DragState>()
+            .init_resource::<DragSettings>()
+            .register_type::<DragSettings>()
             .add_observer(drag::drag_on_start)
             .add_observer(drag::drag_on_drag)
             .add_observer(drag::drag_on_end)
@@ -550,7 +553,8 @@ impl Plugin for GooeyNavPlugin {
                         .chain(),
                     gamepad_select.run_if(not_capturing),
                     (
-                        cancel_drags.run_if(not_capturing),
+                        drag::carry_by_input.run_if(binding::no_row_waits),
+                        cancel_drags.run_if(binding::no_row_waits),
                         cancel_by_input
                             .run_if(not_capturing)
                             .run_if(not(is_dragging)),

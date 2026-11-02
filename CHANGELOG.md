@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Drag and drop without a pointer (WCAG 2.2, 2.5.7): a focused `DragPayload` source is lifted by `DragSettings::pick_up` (Alt+M; a pad's West), the arrows or the D-pad mark the nearest target that takes the payload in that direction (`target_toward`), PageUp, PageDown, LB and RB step through the targets in reading order (`target_step`), the pick-up key again (a pad's South too) sends the one `Dropped<T>` on the marked target and Escape or East puts it down. The ghost, the mark, `Dragging` and the events are the pointer drag's; `DragState::carried_by_key()` says how it was lifted. `DragSettings` is a serde resource, `model::Toward` the direction.
+
+### Changed
+
+- `not_capturing` is also false while a payload is carried from the keyboard or a pad, so the arrow that steers it never also moves focus.
+
 ## [0.24.2] - 2026-11-02
 
 ### Fixed
