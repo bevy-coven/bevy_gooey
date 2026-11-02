@@ -939,3 +939,124 @@ fn a_pointer_drag_is_not_disturbed_by_the_keys() {
     release(&mut app, to);
     assert_eq!(heard(&app).dropped.len(), 1);
 }
+
+// ---- candidates: the places that take what is carried, from the moment it is lifted ----
+
+fn candidates(app: &mut App) -> Vec<Entity> {
+    let mut found: Vec<Entity> = app
+        .world_mut()
+        .query_filtered::<Entity, With<DropCandidate>>()
+        .iter(app.world())
+        .collect();
+    found.sort();
+    found
+}
+
+fn sorted(mut entities: Vec<Entity>) -> Vec<Entity> {
+    entities.sort();
+    entities
+}
+
+#[test]
+fn lifting_a_source_marks_exactly_the_targets_that_take_its_payload() {
+    let mut app = app();
+    let s = scene(&mut app);
+    assert!(candidates(&mut app).is_empty());
+
+    // The wall (Piece 7) is taken by "any piece", "small pieces" and "both", and by nothing else:
+    // not the lights, not the plain panel, not the wall itself.
+    let from = centre(&app, s.wall);
+    grab_and_move(&mut app, from, from + Vec2::new(0.0, 200.0));
+    assert!(app.world().resource::<DragState>().is_dragging());
+    assert_eq!(
+        candidates(&mut app),
+        sorted(vec![s.slot, s.small, s.both]),
+        "the pointer is over none of them yet"
+    );
+
+    // A target's own test counts: a piece of 50 is refused by "small pieces".
+    release(&mut app, from + Vec2::new(0.0, 200.0));
+    assert!(
+        candidates(&mut app).is_empty(),
+        "let go takes every mark off"
+    );
+    app.world_mut()
+        .entity_mut(s.wall)
+        .insert(DragPayload(Piece(50)));
+    grab_and_move(&mut app, from, from + Vec2::new(0.0, 200.0));
+    assert_eq!(candidates(&mut app), sorted(vec![s.slot, s.both]));
+    release(&mut app, from + Vec2::new(0.0, 200.0));
+
+    // A light goes to the two that take lights.
+    let from = centre(&app, s.lamp);
+    grab_and_move(&mut app, from, from + Vec2::new(0.0, 200.0));
+    assert_eq!(candidates(&mut app), sorted(vec![s.lights, s.both]));
+}
+
+#[test]
+fn escape_and_a_keyboard_carry_end_and_make_the_same_marks() {
+    let mut app = app();
+    let s = scene(&mut app);
+    focus(&mut app, s.wall);
+
+    pick_up(&mut app);
+    assert!(carried(&app));
+    assert_eq!(candidates(&mut app), sorted(vec![s.slot, s.small, s.both]));
+
+    key(&mut app, KeyCode::Escape, ButtonState::Pressed);
+    key(&mut app, KeyCode::Escape, ButtonState::Released);
+    settle(&mut app);
+    assert!(!carried(&app));
+    assert!(candidates(&mut app).is_empty());
+
+    // A drop from the keyboard ends them too.
+    pick_up(&mut app);
+    tap(&mut app, KeyCode::ArrowRight);
+    pick_up(&mut app);
+    assert!(candidates(&mut app).is_empty());
+    assert_eq!(heard(&app).dropped.len(), 1);
+}
+
+#[test]
+fn a_press_that_never_lifts_marks_nothing_and_a_disabled_target_is_no_candidate() {
+    let mut app = app();
+    let s = scene(&mut app);
+    let from = centre(&app, s.wall);
+    point_at(&mut app, from);
+    pointer(&mut app, from, PointerAction::Press(PointerButton::Primary));
+    pointer(
+        &mut app,
+        from + Vec2::new(2.0, 0.0),
+        PointerAction::Move {
+            delta: Vec2::X * 2.0,
+        },
+    );
+    settle(&mut app);
+    assert!(!app.world().resource::<DragState>().is_dragging());
+    assert!(candidates(&mut app).is_empty(), "a small move is a click");
+    release(&mut app, from);
+
+    app.world_mut()
+        .entity_mut(s.small)
+        .insert(bevy::ui::InteractionDisabled);
+    grab_and_move(&mut app, from, from + Vec2::new(0.0, 200.0));
+    assert_eq!(candidates(&mut app), sorted(vec![s.slot, s.both]));
+}
+
+#[test]
+fn candidates_write_nothing_while_the_carry_holds_still() {
+    let mut app = app();
+    let s = scene(&mut app);
+    let from = centre(&app, s.wall);
+    grab_and_move(&mut app, from, from + Vec2::new(0.0, 200.0));
+    settle(&mut app);
+    app.world_mut().clear_trackers();
+    for _ in 0..30 {
+        app.update();
+    }
+    for target in [s.slot, s.small, s.both] {
+        let e = app.world().entity(target);
+        assert!(!e.get_ref::<DropCandidate>().expect("marked").is_changed());
+        assert!(!e.get_ref::<BorderColor>().expect("border").is_changed());
+    }
+}

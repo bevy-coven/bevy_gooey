@@ -200,8 +200,8 @@ pub use controls::update_sliders;
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
 pub use dock_layout::{DockDropTarget, DockLayout, DockSkip};
 pub use drag::{
-    DRAG_LIFT_PX, DragLabel, DragPayload, DragSettings, DragState, Dragging, DropRefused,
-    DropTarget, Dropped, DroppedOnWorld, cancel_drags, is_dragging,
+    DRAG_LIFT_PX, DragLabel, DragPayload, DragSettings, DragState, Dragging, DropCandidate,
+    DropRefused, DropRefusing, DropTarget, Dropped, DroppedOnWorld, cancel_drags, is_dragging,
 };
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
@@ -471,7 +471,7 @@ impl Plugin for GooeyStylePlugin {
                         (update_toggle_groups, fit_bars).chain(),
                         update_sections,
                         (update_shortcut_badges, update_shortcut_legend).chain(),
-                        drag::update_drag_visuals,
+                        (drag::update_drag_visuals, drag::update_drop_candidates).chain(),
                     )
                         .chain(),
                     update_tooltip_text,
@@ -539,6 +539,8 @@ impl Plugin for GooeyNavPlugin {
             .register_type::<FocusRegion>()
             .register_type::<DragLabel>()
             .register_type::<Dragging>()
+            .register_type::<DropCandidate>()
+            .register_type::<DropRefusing>()
             .init_resource::<DragState>()
             .init_resource::<DragSettings>()
             .register_type::<DragSettings>()

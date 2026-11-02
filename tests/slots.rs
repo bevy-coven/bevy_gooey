@@ -1381,3 +1381,210 @@ fn a_grid_in_a_column_wider_than_itself_keeps_its_slots_together() {
         skin.gap * 0.5
     );
 }
+
+// ---- candidates: every slot that takes the carried item, from the moment it is lifted ----
+
+/// The indices of the slots of `grid` that carry `DropCandidate`.
+fn candidate_slots(app: &App, grid: Entity) -> Vec<usize> {
+    cells(app, grid)
+        .iter()
+        .enumerate()
+        .filter(|(_, cell)| app.world().get::<DropCandidate>(**cell).is_some())
+        .map(|(i, _)| i)
+        .collect()
+}
+
+/// Presses on a slot and moves a little way inside it: lifted, the pointer still over its own slot.
+fn lift(app: &mut App, slot: Entity) {
+    let at = centre(app, slot);
+    pointer(app, at, PointerAction::Move { delta: Vec2::X });
+    pointer(app, at, PointerAction::Press(PointerButton::Primary));
+    pointer(
+        app,
+        at + Vec2::Y * 20.0,
+        PointerAction::Move {
+            delta: Vec2::Y * 20.0,
+        },
+    );
+    settle(app);
+}
+
+fn edge(app: &App, slot: Entity) -> Color {
+    app.world().get::<BorderColor>(slot).expect("edge").top
+}
+
+#[test]
+fn lifting_an_item_marks_the_slots_that_take_it_and_none_that_refuse_it() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+    assert!(candidate_slots(&app, ui.grid).is_empty());
+
+    // The sword (slot 0): the helmet-only slot 2 refuses it; the helm's slot takes it because the
+    // helm may go back to slot 0; the rest are free. Not its own slot.
+    lift(&mut app, slots[0]);
+    assert_eq!(candidate_slots(&app, ui.grid), [1, 3, 4, 5]);
+    let at = centre(&app, slots[0]);
+    pointer(&mut app, at, PointerAction::Release(PointerButton::Primary));
+    settle(&mut app);
+    assert!(
+        candidate_slots(&app, ui.grid).is_empty(),
+        "let go ends them"
+    );
+
+    // The helm (slot 1) goes to the helmet slot too.
+    lift(&mut app, slots[1]);
+    assert_eq!(candidate_slots(&app, ui.grid), [0, 2, 3, 4, 5]);
+}
+
+#[test]
+fn a_filled_slot_is_a_candidate_only_if_the_swap_back_is_taken_too() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+    // The helm goes to the helmet slot; now the sword cannot swap with it and the helm cannot
+    // swap with the sword (the sword would land in the helmet slot).
+    drag_to(&mut app, slots[1], slots[2]);
+    assert_eq!(&names(&app, ui.grid)[..3], ["Sword", "", "Helm"]);
+
+    lift(&mut app, slots[0]);
+    assert_eq!(
+        candidate_slots(&app, ui.grid),
+        [1, 3, 4, 5],
+        "not the helm's slot"
+    );
+    let at = centre(&app, slots[0]);
+    pointer(&mut app, at, PointerAction::Release(PointerButton::Primary));
+    settle(&mut app);
+
+    lift(&mut app, slots[2]);
+    assert_eq!(
+        candidate_slots(&app, ui.grid),
+        [1, 3, 5],
+        "not the sword's slot, which would send the sword to the helmet slot, nor the potion's"
+    );
+}
+
+#[test]
+fn a_rule_that_changes_during_the_carry_moves_the_marks() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+    lift(&mut app, slots[0]);
+    assert!(!candidate_slots(&app, ui.grid).contains(&2));
+
+    app.world_mut()
+        .entity_mut(ui.grid)
+        .insert(SlotRules::new(|_, _| true));
+    settle(&mut app);
+    assert_eq!(candidate_slots(&app, ui.grid), [1, 2, 3, 4, 5]);
+}
+
+#[test]
+fn the_keyboard_carry_marks_the_same_slots_and_a_drop_or_escape_ends_them() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+    focus(&mut app, slots[0]);
+
+    pick_up(&mut app);
+    assert!(carried(&app));
+    assert_eq!(candidate_slots(&app, ui.grid), [1, 3, 4, 5]);
+    key(&mut app, KeyCode::Escape, ButtonState::Pressed);
+    key(&mut app, KeyCode::Escape, ButtonState::Released);
+    settle(&mut app);
+    assert!(candidate_slots(&app, ui.grid).is_empty());
+
+    pick_up(&mut app);
+    tap(&mut app, KeyCode::ArrowRight);
+    pick_up(&mut app);
+    assert!(candidate_slots(&app, ui.grid).is_empty());
+}
+
+#[test]
+fn a_drag_between_grids_marks_both_grids_slots() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let chest = app
+        .world_mut()
+        .spawn(slot_grid(3, vec![None, None, None]))
+        .id();
+    let root = app.world().get::<ChildOf>(ui.grid).expect("root").parent();
+    app.world_mut().entity_mut(root).add_child(chest);
+    settle(&mut app);
+    let slots = cells(&app, ui.grid);
+    lift(&mut app, slots[0]);
+    assert_eq!(candidate_slots(&app, chest), [0, 1, 2]);
+    assert_eq!(candidate_slots(&app, ui.grid), [1, 3, 4, 5]);
+}
+
+#[test]
+fn a_candidate_slot_is_framed_in_the_accent_and_the_ring_still_wins() {
+    for preset in SkinPreset::ALL {
+        let mut app = app();
+        app.insert_resource(preset.skin());
+        let ui = ruled(&mut app);
+        let skin = skin(&app);
+        let slots = cells(&app, ui.grid);
+        let quiet = skin.surface_edge.unwrap_or(skin.surface_raised);
+        assert_eq!(edge(&app, slots[1]), skin.surface_raised);
+        assert_eq!(edge(&app, slots[3]), quiet);
+
+        lift(&mut app, slots[0]);
+        let name = preset.name();
+        assert_eq!(
+            edge(&app, slots[1]),
+            skin.accent,
+            "{name}: a filled candidate"
+        );
+        assert_eq!(
+            edge(&app, slots[3]),
+            skin.accent,
+            "{name}: an empty candidate"
+        );
+        assert_eq!(
+            edge(&app, slots[2]),
+            quiet,
+            "{name}: a refusing slot keeps its frame"
+        );
+        assert!(
+            app.world().get::<DropCandidate>(slots[0]).is_none(),
+            "{name}: the source is no candidate"
+        );
+
+        // A candidate that has focus wears the ring.
+        focus(&mut app, slots[3]);
+        assert_eq!(edge(&app, slots[3]), skin.focus_ring, "{name}");
+
+        let at = centre(&app, slots[0]);
+        pointer(&mut app, at, PointerAction::Release(PointerButton::Primary));
+        settle(&mut app);
+        assert_eq!(
+            edge(&app, slots[1]),
+            skin.surface_raised,
+            "{name}: frames go with the drag"
+        );
+        assert_eq!(edge(&app, slots[4]), skin.surface_raised, "{name}");
+    }
+}
+
+#[test]
+fn candidates_write_nothing_while_the_carry_holds_still() {
+    let mut app = app();
+    let ui = ruled(&mut app);
+    let slots = cells(&app, ui.grid);
+    lift(&mut app, slots[0]);
+    settle(&mut app);
+    app.world_mut().clear_trackers();
+    for _ in 0..30 {
+        app.update();
+    }
+    for slot in cells(&app, ui.grid) {
+        let e = app.world().entity(slot);
+        assert!(!e.get_ref::<BorderColor>().expect("b").is_changed());
+        assert!(!e.get_ref::<Node>().expect("n").is_changed());
+        if let Some(mark) = e.get_ref::<DropCandidate>() {
+            assert!(!mark.is_changed());
+        }
+    }
+}
