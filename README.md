@@ -228,7 +228,7 @@ see [use it in the Cauldron](https://bevy-coven.github.io/crates/bevy_gooey.html
 
 | `bevy_gooey` | Bevy |
 |---|---|
-| 0.1 – 0.26 | 0.20 |
+| 0.1 – 0.27 | 0.20 |
 
 ## Learn more
 
