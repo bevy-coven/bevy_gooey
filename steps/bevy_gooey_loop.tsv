@@ -13066,3 +13066,310 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 71	140	release	tool	edit files	edit	2026-11-02T04:59:24Z	0.0	Log release and cleanup :: [docs/loop-log.md#03D5] PUT >$: + +**Gate and ship.** `CARGO_BUILD_JOBS=4`, merged tree (work was committed straight on `main`, no `loop/iter-43` branch): clipp
 71	141	release	tool	push gate	bash	2026-11-02T04:59:24Z	1.4	cd /home/ladvien/bevy_gooey_loop && git add -A && git commit -q -m "Loop log: iteration 43 gate, release (429) and cleanup" && git push origin main 2>&1 | tail 
 71	142	release	model	model		2026-11-02T04:59:25Z	8.7	
+72	1	orient	model	model		2026-11-02T04:59:57Z	2.4	
+72	2	orient	tool	phase mark	bash	2026-11-02T04:59:59Z	0.8	Orienting: state, audit, log :: python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git log --oneline | head -8; git fetch -q ori
+72	3	orient	model	model		2026-11-02T05:00:00Z	3.3	
+72	4	orient	tool	github	bash	2026-11-02T05:00:03Z	0.9	Triaging issues, publish state :: cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+72	5	orient	model	model		2026-11-02T05:00:04Z	3.0	
+72	6	release	tool	phase mark	bash	2026-11-02T05:00:07Z	5.4	Retrying pending v0.24.2 publish :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; git tag | grep 0.24; CARGO_BUILD_JOBS=4 timeout 900 cargo publish 2>&1 
+72	7	release	model	model		2026-11-02T05:00:13Z	7.0	
+72	8	choose	tool	phase mark	bash	2026-11-02T05:00:20Z	0.1	Choosing item; inspect drag files :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; ls docs/research docs/guide | head -80; wc -l src/drag.rs tests/drag.rs 
+72	9	choose	model	model		2026-11-02T05:00:20Z	1.6	
+72	10	choose	tool	shell	bash	2026-11-02T05:00:21Z	0.0	Reading drag-drop research and guide :: cd /home/ladvien/bevy_gooey_loop && cat docs/research/drag-drop.md | cut -c1-600; echo ======; cat docs/guide/drag-drop.md | cut -c1-400
+72	11	choose	tool	read files	read	2026-11-02T05:00:21Z	0.0	Reading drag implementation :: src/drag.rs
+72	12	choose	model	model		2026-11-02T05:00:21Z	13.1	
+72	13	choose	tool	read files	read	2026-11-02T05:00:34Z	0.0	Reading drag state and start :: src/drag.rs:254-330
+72	14	choose	tool	read files	read	2026-11-02T05:00:34Z	0.0	Reading track/end/cancel/visuals :: src/drag.rs:389-644
+72	15	choose	model	model		2026-11-02T05:00:34Z	3.4	
+72	16	choose	tool	shell	bash	2026-11-02T05:00:38Z	0.0	Finding drag hooks in nav :: cd /home/ladvien/bevy_gooey_loop && grep -n "is_dragging\|not_capturing\|cancel_drags\|track_drag\|DragState" src/lib.rs src/nav.rs src/*.rs | grep -v "^src/dra
+72	17	choose	model	model		2026-11-02T05:00:38Z	1.0	
+72	18	choose	tool	read files	read	2026-11-02T05:00:39Z	0.0	Reading plugin system chain :: src/lib.rs:495-600
+72	19	choose	model	model		2026-11-02T05:00:39Z	23.3	
+72	20	choose	tool	shell	bash	2026-11-02T05:01:02Z	0.0	Checking Bevy button key handling :: cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0/src && grep -n "Space\|Enter\|modif" button.rs | head -20; cd /home/ladvien/bevy_gooey_loop; s
+72	21	choose	model	model		2026-11-02T05:01:02Z	1.6	
+72	22	choose	tool	shell	bash	2026-11-02T05:01:04Z	0.0	Checking Bevy button key handling :: cd /home/ladvien/bevy_gooey_loop; D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0/src | head -1); echo $D; grep -n "Space\|Enter\|modif
+72	23	choose	model	model		2026-11-02T05:01:04Z	44.1	
+72	24	choose	tool	read files	read	2026-11-02T05:01:48Z	0.5	dnd-kit keyboard sensor docs :: https://docs.dndkit.com/api-documentation/sensors/keyboard
+72	25	choose	tool	read files	read	2026-11-02T05:01:48Z	0.5	Game Accessibility Guidelines item :: https://gameaccessibilityguidelines.com/ensure-that-all-key-actions-can-be-carried-out-by-using-a-keyboard-or-gamepad/
+72	26	choose	tool	web	web_search	2026-11-02T05:01:48Z	6.7	Shipping-game inventory pick-up source :: Resident Evil 4 remake inventory attaché case controller pick up item move rotate place button prompts
+72	27	research	tool	phase mark	bash	2026-11-02T05:01:48Z	6.7	Marking research; corpus search :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; hs distill search "keyboard accessible drag and drop alternative" --ou
+72	28	research	model	model		2026-11-02T05:01:55Z	7.2	
+72	29	research	tool	read files	read	2026-11-02T05:02:02Z	0.2	Game Accessibility Guidelines UI input :: https://gameaccessibilityguidelines.com/ensure-that-all-areas-of-the-user-interface-can-be-accessed-using-the-same-input-methods-as-the-gameplay/
+72	30	research	tool	read files	read	2026-11-02T05:02:02Z	0.9	RE4 manual page items :: https://game.capcom.com/manual/re4/en/ps5/page/15/7
+72	31	research	model	model		2026-11-02T05:02:03Z	2.5	
+72	32	research	tool	web	web_search	2026-11-02T05:02:05Z	8.7	GAG quote :: Game Accessibility Guidelines "Ensure that all areas of the user interface can be accessed using the same input method as the gameplay"
+72	33	research	model	model		2026-11-02T05:02:14Z	19.0	
+72	34	research	tool	edit files	write	2026-11-02T05:02:33Z	0.1	docs/research/drag-drop-keyboard.md
+72	35	research	tool	git	bash	2026-11-02T05:02:33Z	0.1	Commit research note, branch :: cd /home/ladvien/bevy_gooey_loop && git add docs/research/drag-drop-keyboard.md && git commit -qm "Research: drag and drop without a pointer" && echo ok; git ch
+72	36	research	model	model		2026-11-02T05:02:33Z	3.3	
+72	37	research	tool	shell	bash	2026-11-02T05:02:36Z	0.1	Looking at settings patterns :: cd /home/ladvien/bevy_gooey_loop && grep -n "pub struct BindingSettings" -B8 -A22 src/binding.rs; grep -n "BindingSettings" src/lib.rs | head; grep -n "GamepadB
+72	38	research	model	model		2026-11-02T05:02:37Z	5.0	
+72	39	research	tool	shell	bash	2026-11-02T05:02:42Z	0.0	Model enums and test area :: cd /home/ladvien/bevy_gooey_loop && grep -n "^pub enum\|^pub struct" src/model.rs | head -30; sed -n 280,300p src/model.rs; sed -n 1995,2012p src/model.rs
+72	40	research	model	model		2026-11-02T05:02:42Z	7.7	
+72	41	research	tool	edit files	edit	2026-11-02T05:02:49Z	0.0	Adding target-steering maths to model :: [src/model.rs#0000]
+72	42	research	model	model		2026-11-02T05:02:49Z	0.8	
+72	43	research	tool	read files	read	2026-11-02T05:02:50Z	0.0	Reading insertion point :: src/model.rs:1990-2002
+72	44	research	model	model		2026-11-02T05:02:50Z	13.8	
+72	45	research	tool	edit files	edit	2026-11-02T05:03:04Z	0.0	Adding target-steering maths and tests :: [src/model.rs#5D72] PUT >1997: + +/// A direction on the screen, `y` growing down, in which a carried payload's mark moves. +#[derive(Clone, Copy, Debug, Partia
+72	46	research	tool	search	grep	2026-11-02T05:03:04Z	0.0	Finding model re-export :: src/lib.rs
+72	47	research	model	model		2026-11-02T05:03:04Z	3.7	
+72	48	research	tool	edit files	edit	2026-11-02T05:03:08Z	0.0	Fixing blank lines in tests :: [src/model.rs#24A1] PUT >2112: +
+72	49	research	tool	read files	read	2026-11-02T05:03:08Z	0.0	Reading model re-export :: src/lib.rs:216-232
+72	50	research	model	model		2026-11-02T05:03:08Z	3.3	
+72	51	research	tool	edit files	edit	2026-11-02T05:03:11Z	0.0	Re-exporting new model items :: [src/lib.rs#985D] PUT 217.=217: + TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit, choice_next, choice_step, PUT 224.=224: + snap_to_r
+72	52	research	model	model		2026-11-02T05:03:11Z	31.4	
+72	53	research	tool	shell	bash	2026-11-02T05:03:42Z	0.1	Checking nav helpers and imports :: cd /home/ladvien/bevy_gooey_loop && grep -n "InputFocusVisible" src/nav.rs | head -8; sed -n 1,14p src/drag.rs; grep -rn "not_capturing" tests examples docs/gui
+72	54	research	model	model		2026-11-02T05:03:42Z	32.5	
+72	55	research	tool	edit files	edit	2026-11-02T05:04:15Z	0.0	Editing drag.rs: settings, state, release helper :: [src/drag.rs#A7B4] PUT 14.=14: +use crate::nav::show_focus; +use crate::shortcut::{Modifiers, Shortcut}; +use crate::skin::Role; PUT >31: + +/// The keys that c
+72	56	research	model	model		2026-11-02T05:04:15Z	3.4	
+72	57	research	tool	shell	bash	2026-11-02T05:04:18Z	0.0	Locating insertion lines :: cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn cancel_drags\|^/// The ghost: the carried\|let rect = held.over" src/drag.rs; sed -n 553,576p src/drag.rs
+72	58	research	model	model		2026-11-02T05:04:18Z	0.9	
+72	59	research	tool	read files	read	2026-11-02T05:04:19Z	0.0	Reading rect computation lines :: src/drag.rs:684-696
+72	60	research	model	model		2026-11-02T05:04:19Z	16.9	
+72	61	research	tool	edit files	edit	2026-11-02T05:04:36Z	0.0	Adding carry_by_input and rect helper :: [src/drag.rs#7AA7] PUT <610: +/// A node's rect in the interface's own logical pixels, the space `Node` positions are in. +fn rect_of(node: &ComputedNode, at: &
+72	62	research	model	model		2026-11-02T05:04:36Z	18.2	
+72	63	research	tool	edit files	edit	2026-11-02T05:04:54Z	0.0	Adding carry_by_input and rect helper (retry) :: [src/drag.rs#7AA7] PUT 12.=12: +use bevy::input_focus::{InputFocus, InputFocusVisible}; +use bevy::ui::{ComputedNode, InteractionDisabled, UiGlobalTransform, Ui
+72	64	research	model	model		2026-11-02T05:04:54Z	7.0	
+72	65	research	tool	edit files	edit	2026-11-02T05:05:01Z	0.0	Wiring DragSettings and carry system into plugin :: [src/lib.rs#8E21] PUT 195.=196: + DRAG_LIFT_PX, DragLabel, DragPayload, DragSettings, DragState, Dragging, DropRefused, DropTarget, + Dropped, DroppedOnWorld, c
+72	66	research	tool	shell	bash	2026-11-02T05:05:01Z	0.0	Check binding export lines :: cd /home/ladvien/bevy_gooey_loop && sed -n 178,184p src/lib.rs; grep -n "InputFocusVisible\|pub(crate) fn show_focus" -A6 src/nav.rs | sed -n 1,12p
+72	67	research	model	model		2026-11-02T05:05:01Z	4.4	
+72	68	research	tool	edit files	edit	2026-11-02T05:05:06Z	0.0	Wiring plugin (retry) :: [src/lib.rs#8E21] PUT 195.=196: + DRAG_LIFT_PX, DragLabel, DragPayload, DragSettings, DragState, Dragging, DropRefused, DropTarget, + Dropped, DroppedOnWorld, c
+72	69	research	model	model		2026-11-02T05:05:06Z	3.1	
+72	70	research	tool	edit files	edit	2026-11-02T05:05:09Z	0.0	Extending not_capturing for carried payloads :: [src/binding.rs#0000]
+72	71	research	model	model		2026-11-02T05:05:09Z	1.2	
+72	72	research	tool	read files	read	2026-11-02T05:05:10Z	0.0	Reading binding imports :: src/binding.rs:1-30
+72	73	research	tool	read files	read	2026-11-02T05:05:10Z	0.0	Reading not_capturing :: src/binding.rs:196-207
+72	74	research	model	model		2026-11-02T05:05:10Z	4.3	
+72	75	research	tool	edit files	edit	2026-11-02T05:05:15Z	0.0	Extending not_capturing :: [src/binding.rs#3739] PUT 13.=13: +use crate::drag::DragState; +use crate::feedback::{UiFeedback, UiFeedbackKind}; PUT 199.=206: +/// Run condition: no [`crate:
+72	76	research	tool	cargo clippy	bash	2026-11-02T05:05:15Z	8.9	Format and clippy the new code :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(error|warning)" -
+72	77	research	model	model		2026-11-02T05:05:23Z	1.3	
+72	78	research	tool	edit files	edit	2026-11-02T05:05:25Z	0.0	Fix clippy neg compare :: [src/model.rs#3E03] PUT 2042.=2042: + if along.is_nan() || along <= TOWARD_EPSILON || !across.is_finite() {
+72	79	research	model	model		2026-11-02T05:05:25Z	1.4	
+72	80	research	tool	cargo clippy	bash	2026-11-02T05:05:26Z	12.4	Clippy again :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | grep -E "^(error|warning)" -
+72	81	research	model	model		2026-11-02T05:05:39Z	2.9	
+72	82	research	tool	read files	read	2026-11-02T05:05:41Z	0.0	Reading drag test harness :: tests/drag.rs:1-175
+72	83	research	model	model		2026-11-02T05:05:42Z	3.4	
+72	84	research	tool	read files	read	2026-11-02T05:05:45Z	0.0	Reading test helpers :: tests/drag.rs:179-300
+72	85	research	tool	search	grep	2026-11-02T05:05:45Z	0.0	Finding gamepad/idle helper patterns :: tests/drag.rs
+72	86	research	model	model		2026-11-02T05:05:45Z	2.0	
+72	87	research	tool	read files	read	2026-11-02T05:05:47Z	0.0	Reading escape and idle tests :: tests/drag.rs:411,436-470,525-562
+72	88	research	tool	shell	bash	2026-11-02T05:05:47Z	0.0	Gamepad test pattern :: cd /home/ladvien/bevy_gooey_loop && grep -n "RawGamepad\|GamepadConnectionEvent" tests/tooltip.rs | head -12; grep -n "mod drag" tests/all.rs
+72	89	research	model	model		2026-11-02T05:05:47Z	1.3	
+72	90	research	tool	shell	bash	2026-11-02T05:05:48Z	0.0	Reading gamepad test helpers :: cd /home/ladvien/bevy_gooey_loop && sed -n 1,15p tests/tooltip.rs; sed -n 290,335p tests/tooltip.rs; sed -n 15,25p tests/all.rs
+72	91	research	model	model		2026-11-02T05:05:48Z	42.5	
+72	92	research	tool	shell	bash	2026-11-02T05:06:31Z	0.1	Appending keyboard-carry tests :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='tests/drag.rs' s=open(p).read() s=s.replace("use bevy::input::ButtonState;\n","use bevy::inpu
+72	93	research	model	model		2026-11-02T05:06:31Z	5.4	
+72	94	build	tool	phase mark	bash	2026-11-02T05:06:36Z	22.0	Run drag tests :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/drag.rs' s=open(p).read() s=s.replace(" assert!(((left + 14.0) * scale - marked.x).abs() > 1.0 ||
+72	95	build	model	model		2026-11-02T05:06:58Z	2.4	
+72	96	build	tool	cargo test	bash	2026-11-02T05:07:01Z	25.0	Rerun drag tests :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/drag.rs' s=open(p).read() s=s.replace(" grab_and_move(&mut app, centre(&app, s.wall), to);\n asse
+72	97	build	model	model		2026-11-02T05:07:26Z	6.5	
+72	98	build	tool	cargo test	bash	2026-11-02T05:07:32Z	52.7	Mutation checks on the carry code :: cd /home/ladvien/bevy_gooey_loop && mkdir -p /tmp/g44m && cp src/drag.rs src/binding.rs /tmp/g44m/ && run(){ CARGO_BUILD_JOBS=4 cargo test --all-features --test
+72	99	build	model	model		2026-11-02T05:08:25Z	4.3	
+72	100	prove	tool	phase mark	bash	2026-11-02T05:08:29Z	0.1	Inspect workspace example and media recipe :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove; grep -n "GOOEY_\|fn stage\|\"drag\|\"enter\"\|=> " examples/workspace.rs 
+72	101	prove	model	model		2026-11-02T05:08:29Z	4.3	
+72	102	prove	tool	read files	read	2026-11-02T05:08:34Z	0.0	Reading step parser :: examples/workspace.rs:140-200
+72	103	prove	tool	search	grep	2026-11-02T05:08:34Z	0.0	Find workspace targets :: examples/workspace.rs
+72	104	prove	model	model		2026-11-02T05:08:34Z	10.0	
+72	105	prove	tool	read files	read	2026-11-02T05:08:44Z	0.0	Read doc lines :: examples/workspace.rs:14-22
+72	106	prove	tool	read files	read	2026-11-02T05:08:44Z	0.0	Read Step enum :: examples/workspace.rs:56,168-171
+72	107	prove	model	model		2026-11-02T05:08:44Z	4.7	
+72	108	prove	tool	edit files	edit	2026-11-02T05:08:48Z	0.0	Add pickup and escape steps to workspace example :: [examples/workspace.rs#3D95] PUT 16.=16: +//! `f6`, `sf6` (Shift+F6), `center` (Ctrl+Enter), `escape`, `pickup` (Alt+M: lifts the focused piece, +//! and drops 
+72	109	prove	tool	cargo build	bash	2026-11-02T05:08:48Z	46.5	Build workspace example :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo build --release --example workspace 2>&1 | tail -5; echo $DISPLAY $CARGO_TARGET_DIR; x
+72	110	prove	model	model		2026-11-02T05:09:35Z	3.9	
+72	111	prove	tool	shell	bash	2026-11-02T05:09:39Z	7.3	Capture keyboard carry run :: mkdir -p /tmp/g44/f1 && cd /tmp/g44 && G=$CARGO_TARGET_DIR/release/examples/workspace; GOOEY_FRAMES=270 GOOEY_SHOT=/tmp/g44/a.png GOOEY_SHOT_DIR=/tmp/g44/f1 GOO
+72	112	prove	model	model		2026-11-02T05:09:46Z	3.4	
+72	113	prove	tool	shell	bash	2026-11-02T05:09:49Z	0.1	List frames, downscale some :: cd /tmp/g44/f1 && ls | sed -n '1,3p;30,34p'; magick f_0102.png -resize 50% /tmp/g44/v102.png; magick f_0126.png -resize 50% /tmp/g44/v126.png
+72	114	prove	model	model		2026-11-02T05:09:49Z	3.2	
+72	115	prove	tool	shell	bash	2026-11-02T05:09:53Z	0.7	Contact sheet :: cd /tmp/g44/f1 && magick montage $(ls | awk 'NR%8==1' | head -16) -tile 4x -geometry 640x360+2+2 /tmp/g44/sheet.png && echo done
+72	116	prove	tool	read files	read	2026-11-02T05:09:53Z	0.7	View contact sheet :: /tmp/g44/sheet.png
+72	117	prove	model	model		2026-11-02T05:09:53Z	1.6	
+72	118	prove	tool	shell	bash	2026-11-02T05:09:55Z	0.7	Retry montage :: ls -la /tmp/g44/ | head; cd /tmp/g44/f1 && magick montage $(ls | awk 'NR%8==1' | head -16) -tile 4x -geometry 640x360+2+2 /tmp/g44/sheet.png; ls -la /tmp/g44/sh
+72	119	prove	model	model		2026-11-02T05:09:56Z	0.9	
+72	120	prove	tool	read files	read	2026-11-02T05:09:57Z	0.2	View contact sheet :: /tmp/g44/sheet.png
+72	121	prove	model	model		2026-11-02T05:09:57Z	10.3	
+72	122	prove	tool	shell	bash	2026-11-02T05:10:07Z	0.0	Read media recipe :: cd /home/ladvien/bevy_gooey_loop && sed -n 1,30p docs/media/README.md | cut -c1-900; sed -n 46p docs/media/README.md; ls docs/media | head -50; grep -n "drag-dr
+72	123	prove	model	model		2026-11-02T05:10:07Z	6.3	
+72	124	prove	tool	shell	bash	2026-11-02T05:10:13Z	8.0	Capture GIF frames :: cd /home/ladvien/bevy_gooey_loop && grep -n "Dropped<Lamp>\|Lamp)" examples/workspace.rs | head; wc -l README.md; mkdir -p /tmp/g44/f2 && cd /tmp/g44 && G=$CARG
+72	125	prove	model	model		2026-11-02T05:10:21Z	4.6	
+72	126	prove	tool	shell	bash	2026-11-02T05:10:26Z	0.0	Find observer registration :: cd /home/ladvien/bevy_gooey_loop && grep -n "add_observer\|add_systems" examples/workspace.rs; sed -n 333,350p examples/workspace.rs
+72	127	prove	model	model		2026-11-02T05:10:26Z	2.1	
+72	128	prove	tool	edit files	edit	2026-11-02T05:10:28Z	0.0	Lamp slot reacts to a lamp :: [examples/workspace.rs#D215] PUT >335: + +/// A lamp dropped on the Lamp slot lights it: the slot's words say so. +fn lamp_in(dropped: On<Dropped<Lamp>>, kids: 
+72	129	prove	model	model		2026-11-02T05:10:28Z	5.7	
+72	130	prove	tool	edit files	edit	2026-11-02T05:10:34Z	0.0	Lamp slot reacts to a lamp (retry) :: [examples/workspace.rs#D215] PUT >345: + +/// A lamp dropped on the Lamp slot lights it: the slot's words say so. +fn lamp_in(dropped: On<Dropped<Lamp>>, kids: 
+72	131	prove	tool	cargo build	bash	2026-11-02T05:10:34Z	9.2	Rebuild and recapture :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo build --release --example workspace 2>&1 | grep -E "^(error|warning)" -A8 | head -30; 
+72	132	prove	model	model		2026-11-02T05:10:43Z	2.4	
+72	133	prove	tool	edit files	edit	2026-11-02T05:10:45Z	0.0	Lamp slot reacts to a lamp (retry 2) :: [examples/workspace.rs#D215] PUT >346: + +/// A lamp dropped on the Lamp slot lights it: the slot's words say so. +fn lamp_in(dropped: On<Dropped<Lamp>>, kids: 
+72	134	prove	model	model		2026-11-02T05:10:45Z	4.4	
+72	135	prove	tool	edit files	edit	2026-11-02T05:10:50Z	0.0	Lamp slot reacts to a lamp (straight retry) :: [examples/workspace.rs#D215] PUT >346: + +/// A lamp dropped on the Lamp slot lights it: the slot's words say so. +fn lamp_in(dropped: On<Dropped<Lamp>>, kids: 
+72	136	prove	tool	cargo build	bash	2026-11-02T05:10:50Z	14.0	Rebuild, recapture, sheet :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo build --release --example workspace 2>&1 | grep -E "^(error|warning)" -A8 | head -30; 
+72	137	prove	model	model		2026-11-02T05:11:04Z	1.0	
+72	138	prove	tool	read files	read	2026-11-02T05:11:05Z	0.2	View second contact sheet :: /tmp/g44/sheet2.png
+72	139	prove	model	model		2026-11-02T05:11:05Z	4.8	
+72	140	prove	tool	shell	bash	2026-11-02T05:11:10Z	0.1	Zoom crops for critique :: cd /tmp/g44/f2 && ls | awk 'NR%9==2' | sed -n 14p; magick $(ls | awk 'NR%9==2' | sed -n 14p) -crop 700x300+580+380 +repage -resize 200% /tmp/g44/z1.png; magick 
+72	141	prove	tool	read files	read	2026-11-02T05:11:10Z	0.1	View zoom :: /tmp/g44/z1.png
+72	142	prove	tool	read files	read	2026-11-02T05:11:10Z	0.1	View zoom of lifted source :: /tmp/g44/z2.png
+72	143	prove	model	model		2026-11-02T05:11:10Z	2.4	
+72	144	prove	tool	read files	read	2026-11-02T05:11:12Z	0.0	View zoom :: /tmp/g44/z1.png
+72	145	prove	tool	read files	read	2026-11-02T05:11:12Z	0.0	View zoom of lifted source :: /tmp/g44/z2.png
+72	146	prove	model	model		2026-11-02T05:11:12Z	5.7	
+72	147	prove	tool	clip record/render	bash	2026-11-02T05:11:18Z	0.6	Build the GIF :: cd /home/ladvien/bevy_gooey_loop && sed -n 46p docs/media/README.md | cut -c780-1500; ffmpeg -loglevel error -y -framerate 18 -pattern_type glob -i '/tmp/g44/f2
+72	148	prove	model	model		2026-11-02T05:11:19Z	4.5	
+72	149	prove	tool	shell	bash	2026-11-02T05:11:23Z	0.0	Find README drag mentions :: cd /home/ladvien/bevy_gooey_loop && grep -n -i "drag" README.md | cut -c1-1500
+72	150	prove	model	model		2026-11-02T05:11:23Z	4.5	
+72	151	prove	tool	read files	read	2026-11-02T05:11:28Z	0.0	Read README line 122 raw :: README.md:122:raw
+72	152	prove	tool	read files	read	2026-11-02T05:11:28Z	0.0	Read README gif block :: README.md:206-210
+72	153	prove	model	model		2026-11-02T05:11:28Z	8.2	
+72	154	prove	tool	edit files	edit	2026-11-02T05:11:36Z	0.0	README: keyboard drag mention and GIF :: [README.md#C348] PUT 208.=208: +![The workspace example with the keyboard only: F6 puts the ring on Wall, Alt+M lifts it (a ghost "Wall" beside the ring), Right
+72	155	prove	model	model		2026-11-02T05:11:36Z	5.8	
+72	156	prove	tool	edit files	edit	2026-11-02T05:11:42Z	0.0	Fix README GIF caption :: [README.md#0EA4] PUT 208.=208: +![The workspace example with the keyboard only: F6 puts the ring on Wall, Alt+M lifts it (a ghost "Wall" beside the ring), Right
+72	157	prove	tool	shell	bash	2026-11-02T05:11:42Z	0.0	Read guide, changelog :: cd /home/ladvien/bevy_gooey_loop && sed -n 22,40p docs/guide/drag-drop.md | cut -c1-200; head -30 CHANGELOG.md | cut -c1-240; grep -n "Deviations" -A3 docs/rese
+72	158	prove	model	model		2026-11-02T05:11:42Z	1.9	
+72	159	prove	tool	shell	bash	2026-11-02T05:11:43Z	0.0	Read raw snippets to edit :: cd /home/ladvien/bevy_gooey_loop && sed -n 194p docs/guide/host-api.md | cut -c1-900; sed -n 181,183p docs/guide/host-api.md | cut -c1-400; sed -n 29,30p docs/g
+72	160	prove	model	model		2026-11-02T05:11:43Z	4.2	
+72	161	prove	tool	read files	read	2026-11-02T05:11:48Z	0.0	Raw guide lines :: docs/guide/drag-drop.md:27:raw,31:raw,33:raw
+72	162	prove	model	model		2026-11-02T05:11:48Z	1.0	
+72	163	prove	tool	read files	read	2026-11-02T05:11:49Z	0.0	Guide bullets :: docs/guide/drag-drop.md:31-34
+72	164	prove	model	model		2026-11-02T05:11:49Z	8.8	
+72	165	prove	tool	edit files	edit	2026-11-02T05:11:58Z	0.0	Guide: keyboard and pad carry :: [docs/guide/drag-drop.md#4494] PUT 34.=34: +- **Dragging is never the only way** (WCAG 2.2, 2.5.7 Dragging Movements), so the crate carries a payload without a 
+72	166	prove	tool	edit files	edit	2026-11-02T05:11:58Z	0.0	Changelog entry :: [CHANGELOG.md#0000]
+72	167	prove	model	model		2026-11-02T05:11:58Z	4.5	
+72	168	prove	tool	edit files	edit	2026-11-02T05:12:02Z	0.0	Changelog entry :: [CHANGELOG.md#F053] PUT >3: + +### Added + +- Drag and drop without a pointer (WCAG 2.2, 2.5.7): a focused `DragPayload` source is lifted by `DragSettings::pick
+72	169	prove	tool	edit files	edit	2026-11-02T05:12:02Z	0.0	Research deviation update :: [docs/research/drag-drop.md#0000]
+72	170	prove	model	model		2026-11-02T05:12:02Z	5.5	
+72	171	prove	tool	read files	read	2026-11-02T05:12:08Z	0.0	Raw deviation line :: docs/research/drag-drop.md:40:raw
+72	172	prove	model	model		2026-11-02T05:12:08Z	3.2	
+72	173	prove	tool	edit files	edit	2026-11-02T05:12:11Z	0.0	Update deviation :: [docs/research/drag-drop.md#9E29] PUT 40.=40: +`Dropped` carries `pointer` besides `target` and `payload` (the issue's fields): a drop onto a viewport needs the
+72	174	prove	tool	shell	bash	2026-11-02T05:12:11Z	0.0	Locate more doc spots :: cd /home/ladvien/bevy_gooey_loop && grep -n "model::{" docs/guide/host-api.md | head -3; grep -n "target_toward\|tab_step" docs/guide/host-api.md | cut -c1-120;
+72	175	prove	model	model		2026-11-02T05:12:11Z	1.9	
+72	176	prove	tool	read files	read	2026-11-02T05:12:13Z	0.0	Raw host-api line :: docs/guide/host-api.md:192:raw
+72	177	prove	tool	read files	read	2026-11-02T05:12:13Z	0.0	Raw media row :: docs/media/README.md:46:raw
+72	178	prove	tool	read files	read	2026-11-02T05:12:13Z	0.0	Raw AGENTS drag entry :: AGENTS.md:41:raw
+72	179	prove	model	model		2026-11-02T05:12:13Z	1.2	
+72	180	prove	tool	edit files	edit	2026-11-02T05:12:14Z	0.0	AGENTS drag entry: add carry text :: [AGENTS.md#0000]
+72	181	prove	model	model		2026-11-02T05:12:14Z	6.9	
+72	182	prove	tool	edit files	edit	2026-11-02T05:12:21Z	0.0	AGENTS: add carry bullet :: [AGENTS.md#4612] PUT >41: +- `src/drag.rs`, carrying without a pointer (WCAG 2.5.7): `DragSettings { pick_up: Shortcut (Alt+M), pick_up_button: GamepadButton (W
+72	183	prove	tool	edit files	edit	2026-11-02T05:12:21Z	0.0	Host-api model list :: [docs/guide/host-api.md#0000]
+72	184	prove	model	model		2026-11-02T05:12:21Z	3.9	
+72	185	prove	tool	edit files	edit	2026-11-02T05:12:25Z	0.0	host-api list and media row :: [docs/guide/host-api.md#D7A5] PUT 192.=192: +`repeat_steps`, `choice_step`, `choice_next`, `nearest_step`, `tab_step`, `target_toward`, `target_step`, `key_name
+72	186	prove	model	model		2026-11-02T05:12:25Z	2.8	
+72	187	prove	tool	read files	read	2026-11-02T05:12:27Z	0.0	Get media README tag :: docs/media/README.md:46-47
+72	188	prove	model	model		2026-11-02T05:12:27Z	4.0	
+72	189	prove	tool	edit files	edit	2026-11-02T05:12:31Z	0.0	Media row for the new GIF :: [docs/media/README.md#A675] PUT >46: +| `drag-keys.gif` | drag and drop without a pointer (7.8 s, 800×450, the whole window of `examples/workspace`): F6 puts th
+72	190	prove	model	model		2026-11-02T05:12:31Z	8.6	
+72	191	gate	tool	phase mark	bash	2026-11-02T05:12:40Z	58.4	Build before/after galleries :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; git worktree add -q --detach ~/g44_base cb65e5b && cd ~/g44_base && CARGO_
+72	192	gate	model	model		2026-11-02T05:13:38Z	4.8	
+72	193	gate	tool	shell	bash	2026-11-02T05:13:43Z	60.0	[launched bg_1] Perf pairs and still identity :: cd /tmp/g44 && cat > pairs.sh <<'EOF' #!/bin/bash for i in $(seq 1 12); do for v in before after; do GOOEY_HEALTH=60 GOOEY_KEYS=down GOOEY_FRAMES=240 GOOEY_SHOT
+72	194	gate	model	model		2026-11-02T05:14:43Z	2.7	
+72	195	gate	tool	wait: other	wait	2026-11-02T05:14:46Z	94.4	Waiting for perf pairs
+72	196	gate	model	model		2026-11-02T05:16:20Z	4.3	
+72	197	gate	tool	git	bash	2026-11-02T05:16:25Z	0.1	Commit implementation and docs :: cd /home/ladvien/bevy_gooey_loop && git status --short; git add src/model.rs src/lib.rs src/drag.rs src/binding.rs tests/drag.rs examples/workspace.rs && git co
+72	198	gate	model	model		2026-11-02T05:16:25Z	4.4	
+72	199	gate	tool	cargo test	bash	2026-11-02T05:16:29Z	0.0	Merge and prepare gate :: cd /home/ladvien/bevy_gooey_loop && git checkout -q main && git merge --no-ff loop/iter-44 -m "Merge loop/iter-44: drag and drop without a pointer" 2>&1 | tail 
+72	200	gate	tool	shell	bash	2026-11-02T05:16:29Z	0.0	Run full gate :: /tmp/g44/gate.sh > /tmp/g44/gate.log 2>&1; grep -E "^==|rc=|test result|GATE|error" /tmp/g44/gate.log
+72	201	gate	model	model		2026-11-02T05:16:29Z	1.9	
+72	202	gate	tool	shell	bash	2026-11-02T05:16:31Z	60.0	[launched bg_2] Run full gate :: /tmp/g44/gate.sh > /tmp/g44/gate.log 2>&1; grep -E "^==|rc=|test result|GATE|error" /tmp/g44/gate.log
+72	203	gate	model	model		2026-11-02T05:17:31Z	5.6	
+72	204	gate	tool	wait: gate	wait	2026-11-02T05:17:37Z	93.6	Waiting for gate
+72	205	gate	model	model		2026-11-02T05:19:10Z	3.4	
+72	206	release	tool	phase mark	bash	2026-11-02T05:19:14Z	7.7	Semver check :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; CARGO_BUILD_JOBS=4 timeout 1500 cargo semver-checks check-release 2>&1 
+72	207	release	model	model		2026-11-02T05:19:21Z	4.4	
+72	208	release	tool	shell	bash	2026-11-02T05:19:26Z	0.0	Find version mentions :: cd /home/ladvien/bevy_gooey_loop && grep -n "0\.24" README.md Cargo.toml docs/guide/*.md src/lib.rs | cut -c1-160
+72	209	release	tool	read files	read	2026-11-02T05:19:26Z	0.0	Changelog head :: CHANGELOG.md:1-14
+72	210	release	model	model		2026-11-02T05:19:26Z	4.7	
+72	211	release	tool	edit files	edit	2026-11-02T05:19:30Z	0.0	Changelog release header :: [CHANGELOG.md#4C0D] PUT 3.=3: +## [Unreleased] + +## [0.25.0] - 2026-11-02 + +The first publish since 0.24.0: it also carries 0.24.1 (the accessibility tree) an
+72	212	release	tool	shell	bash	2026-11-02T05:19:30Z	0.7	Bump version in manifest and docs :: cd /home/ladvien/bevy_gooey_loop && sed -i 's/^version = "0.24.2"/version = "0.25.0"/' Cargo.toml && sed -i 's/^| 0.1 – 0.24 | 0.20 |/| 0.1 – 0.25 | 0.20 |/' RE
+72	213	release	model	model		2026-11-02T05:19:31Z	3.5	
+72	214	release	tool	cargo publish	bash	2026-11-02T05:19:35Z	19.4	Dry-run and publish v0.25.0 :: cd /home/ladvien/bevy_gooey_loop && git commit -qam "release: v0.25.0" && CARGO_BUILD_JOBS=4 cargo publish --dry-run 2>&1 | tail -3 && CARGO_BUILD_JOBS=4 cargo 
+72	215	release	model	model		2026-11-02T05:19:54Z	2.9	
+72	216	release	tool	push gate	bash	2026-11-02T05:19:57Z	3.5	Tag and push :: cd /home/ladvien/bevy_gooey_loop && git tag -a v0.25.0 -m v0.25.0 && git push -q origin main loop/iter-44 2>&1 | tail -2; git push -q origin v0.25.0 2>&1 | tail
+72	217	release	model	model		2026-11-02T05:20:00Z	2.3	
+72	218	release	tool	github	bash	2026-11-02T05:20:03Z	0.5	Read new issue :: cd /home/ladvien/bevy_gooey_loop && gh issue view 35 --repo bevy-coven/bevy_gooey --json title,labels,body,createdAt,comments | head -c 5000
+72	219	release	model	model		2026-11-02T05:20:03Z	6.0	
+72	220	release	tool	github	bash	2026-11-02T05:20:09Z	0.5	Read full issue 35 :: cd /home/ladvien/bevy_gooey_loop && gh issue view 35 --repo bevy-coven/bevy_gooey --json title,labels,body,comments --jq '.title, ([.labels[].name]|join(",")), 
+72	221	release	model	model		2026-11-02T05:20:10Z	2.7	
+72	222	build	tool	phase mark	bash	2026-11-02T05:20:12Z	0.1	Inspect testing module :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; git checkout -q -b loop/iter-44b; wc -l src/testing.rs tests/testing.rs; 
+72	223	build	model	model		2026-11-02T05:20:12Z	1.4	
+72	224	build	tool	read files	read	2026-11-02T05:20:14Z	0.0	Read testing head :: src/testing.rs:1-60
+72	225	build	tool	read files	read	2026-11-02T05:20:14Z	0.0	Read testing actions :: src/testing.rs:130-290
+72	226	build	model	model		2026-11-02T05:20:14Z	11.8	
+72	227	build	tool	shell	bash	2026-11-02T05:20:26Z	0.0	Inspect Bevy render target types :: B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_camera-0.20.0/src | head -1); grep -n "pub enum NormalizedRenderTarget" -A22 $B/camera.rs | head -40; gre
+72	228	build	model	model		2026-11-02T05:20:26Z	4.6	
+72	229	build	tool	shell	bash	2026-11-02T05:20:30Z	0.0	Check how UI picking resolves pointer target :: B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_camera-0.20.0/src | head -1); grep -n "pub enum RenderTarget" -B6 $B/camera.rs | head; U=$(ls -d ~/.cargo
+72	230	build	model	model		2026-11-02T05:20:30Z	21.5	
+72	231	build	tool	shell	bash	2026-11-02T05:20:52Z	0.0	Check keyboard dispatch and window ref :: F=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_input_focus-0.20.0/src | head -1); grep -n "fn dispatch_focused_input" -A40 $F/lib.rs | head -60; B=$(ls 
+72	232	build	model	model		2026-11-02T05:20:52Z	23.0	
+72	233	build	tool	edit files	edit	2026-11-02T05:21:15Z	0.0	Rewrite testing input helpers for render targets :: [src/testing.rs#7953] PUT 9.=11: +//! The app needs [`crate::GooeyPlugins`], a camera that draws the interface and one `update` after +//! the interface is spaw
+72	234	build	model	model		2026-11-02T05:21:15Z	4.6	
+72	235	build	tool	read files	read	2026-11-02T05:21:20Z	0.0	Re-read edited regions :: src/testing.rs:186-236
+72	236	build	model	model		2026-11-02T05:21:20Z	2.0	
+72	237	build	tool	edit files	edit	2026-11-02T05:21:22Z	0.0	Fix braces and duplicate comment :: [src/testing.rs#2808] PUT >195: +} PUT 230.=231: + // The panic names the missing camera before anything else is looked up. PUT 216.=218: +/// # Panics +/// +//
+72	238	build	model	model		2026-11-02T05:21:22Z	2.7	
+72	239	build	tool	edit files	edit	2026-11-02T05:21:24Z	0.0	Remove stray comment :: [src/testing.rs#CDF9] CUT 233.=233
+72	240	build	tool	read files	read	2026-11-02T05:21:24Z	0.0	Read testing tests harness :: tests/testing.rs:1-110
+72	241	build	model	model		2026-11-02T05:21:24Z	25.1	
+72	242	build	tool	cargo test	bash	2026-11-02T05:21:49Z	45.2	Write windowless tests and run :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/testing.rs' s=open(p).read() old=''' .add_observer( |activate: On<Activate>, texts: Query<&Text>,
+72	243	build	model	model		2026-11-02T05:22:35Z	3.3	
+72	244	build	tool	cargo test	bash	2026-11-02T05:22:38Z	3.5	See failure messages :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo test --all-features --test all testing:: 2>&1 | grep -E "panicked at" -A4 | grep -v "^--" | cut -c1
+72	245	build	model	model		2026-11-02T05:22:41Z	3.0	
+72	246	build	tool	shell	bash	2026-11-02T05:22:44Z	0.0	Read DefaultUiCamera :: U=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0/src | head -1); grep -n "pub struct DefaultUiCamera" -B5 -A40 $U/lib.rs $U/*.rs | head -90
+72	247	build	model	model		2026-11-02T05:22:44Z	9.3	
+72	248	build	tool	cargo test	bash	2026-11-02T05:22:54Z	12.3	Fix tests with default UI camera :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/testing.rs' s=open(p).read() s=s.replace("use bevy::ui::UiTargetCamera;","use bevy::ui::{IsDefaul
+72	249	build	model	model		2026-11-02T05:23:06Z	4.7	
+72	250	build	tool	shell	bash	2026-11-02T05:23:11Z	0.0	Read click_to_focus :: F=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_input_focus-0.20.0/src | head -1); grep -n "fn click_to_focus" -B3 -A45 $F/lib.rs
+72	251	build	model	model		2026-11-02T05:23:11Z	1.2	
+72	252	build	tool	shell	bash	2026-11-02T05:23:12Z	0.0	Find click_to_focus :: F=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_input_focus-0.20.0/src | head -1); grep -rn "click_to_focus" $F | head;
+72	253	build	model	model		2026-11-02T05:23:12Z	1.5	
+72	254	build	tool	read files	read	2026-11-02T05:23:13Z	0.0	Read pointer focus :: /home/ladvien/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_input_focus-0.20.0/src/pointer_focus.rs:20-95
+72	255	build	model	model		2026-11-02T05:23:13Z	11.1	
+72	256	build	tool	shell	bash	2026-11-02T05:23:25Z	0.0	Read AcquireFocus definitions :: F=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_input_focus-0.20.0/src | head -1); grep -n "pub struct AcquireFocus" -B12 -A14 $F/lib.rs; grep -n "fn on_
+72	257	build	model	model		2026-11-02T05:23:25Z	8.6	
+72	258	build	tool	shell	bash	2026-11-02T05:23:33Z	0.0	Locate edit points :: cd /home/ladvien/bevy_gooey_loop && grep -n "^use\|^fn surface_of" src/testing.rs | head -20; grep -n "let surface = surface_of(app, entity);" src/testing.rs
+72	259	build	model	model		2026-11-02T05:23:33Z	1.0	
+72	260	build	tool	read files	read	2026-11-02T05:23:34Z	0.0	Read click anchor lines :: src/testing.rs:232-240
+72	261	build	model	model		2026-11-02T05:23:34Z	5.7	
+72	262	build	tool	edit files	edit	2026-11-02T05:23:40Z	0.0	Windowless click-to-focus emulation :: [src/testing.rs#13C9] PUT 36.=36: +use bevy::input_focus::{AcquireFocus, InputFocus, InputFocusVisible}; PUT 38.=38: +use bevy::picking::events::PointerPress; +
+72	263	build	tool	cargo test	bash	2026-11-02T05:23:40Z	4.2	Run testing tests again :: cd /home/ladvien/bevy_gooey_loop && cargo fmt; CARGO_BUILD_JOBS=4 cargo test --all-features --test all testing:: 2>&1 | grep -E "^test |panicked at|test result|
+72	264	build	model	model		2026-11-02T05:23:44Z	5.2	
+72	265	build	tool	edit files	edit	2026-11-02T05:23:49Z	0.0	Windowless click-to-focus emulation (retry) :: [src/testing.rs#13C9] PUT 36.=36: +use bevy::input_focus::{AcquireFocus, InputFocus, InputFocusVisible}; PUT 38.=38: +use bevy::picking::events::PointerPress; +
+72	266	build	tool	cargo test	bash	2026-11-02T05:23:49Z	34.5	Run testing tests again :: cd /home/ladvien/bevy_gooey_loop && cargo fmt; CARGO_BUILD_JOBS=4 cargo test --all-features --test all testing:: 2>&1 | grep -E "^test |panicked at|test result|
+72	267	build	model	model		2026-11-02T05:24:24Z	3.6	
+72	268	build	tool	read files	read	2026-11-02T05:24:27Z	0.0	Fix doc ordering :: src/testing.rs:150-190
+72	269	build	model	model		2026-11-02T05:24:27Z	1.9	
+72	270	build	tool	edit files	edit	2026-11-02T05:24:29Z	0.0	Reorder doc comments :: [src/testing.rs#D8B4] PUT 158.=161: +/// Marks an app whose clicks are given focus by [`windowless_click_to_focus`]. PUT 185.=186: + +/// The surface `entity` i
+72	271	build	model	model		2026-11-02T05:24:29Z	5.6	
+72	272	build	tool	cargo test	bash	2026-11-02T05:24:35Z	32.8	Mutation check for scale; clippy :: cd /home/ladvien/bevy_gooey_loop && cargo fmt && cp src/testing.rs /tmp/g44m/testing.rs && python3 - <<'EOF' s=open('src/testing.rs').read() s=s.replace("(image
+72	273	build	model	model		2026-11-02T05:25:08Z	3.3	
+72	274	build	tool	shell	bash	2026-11-02T05:25:11Z	0.0	Find window mentions in testing guide :: cd /home/ladvien/bevy_gooey_loop && grep -n -i "window" docs/guide/testing.md | cut -c1-400; grep -n "testing.rs" AGENTS.md | cut -c1-60
+72	275	build	model	model		2026-11-02T05:25:11Z	2.0	
+72	276	build	tool	read files	read	2026-11-02T05:25:13Z	0.0	Read testing guide section :: docs/guide/testing.md:28-48
+72	277	build	tool	read files	read	2026-11-02T05:25:13Z	0.0	Raw AGENTS testing line :: AGENTS.md:59:raw
+72	278	build	model	model		2026-11-02T05:25:13Z	7.1	
+72	279	build	tool	edit files	edit	2026-11-02T05:25:20Z	0.0	Testing guide, changelog, AGENTS docs for G-31 :: [docs/guide/testing.md#604B] PUT >30: + +## A UI drawn into an image needs no window + +A tool or a game that shows its interface as a texture (an in-world scre
+72	280	build	model	model		2026-11-02T05:25:20Z	4.7	
+72	281	build	tool	shell	bash	2026-11-02T05:25:25Z	0.0	Check From impl and doc inclusion :: B=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_camera-0.20.0/src | head -1); grep -n "for ImageRenderTarget" $B/camera.rs; grep -n "RenderTarget::Image\
+72	282	build	model	model		2026-11-02T05:25:25Z	9.7	
+72	283	build	tool	read files	read	2026-11-02T05:25:35Z	0.0	Changelog top :: CHANGELOG.md:1-10
+72	284	build	model	model		2026-11-02T05:25:35Z	3.2	
+72	285	build	tool	edit files	edit	2026-11-02T05:25:38Z	0.0	Changelog 0.25.1 section; AGENTS testing note :: [CHANGELOG.md#AD27] PUT 3.=4: +## [Unreleased] + +## [0.25.1] - 2026-11-02 + +Also the first publish since 0.24.0 if 0.25.0 is still unpublished (crates.io refu
+72	286	build	model	model		2026-11-02T05:25:38Z	5.8	
+72	287	build	tool	edit files	edit	2026-11-02T05:25:44Z	0.0	AGENTS: testing G-31 bullet :: [AGENTS.md#6E86] PUT >59: +- `src/testing.rs`, windowless apps (G-31): `click` finds `surface_of(entity)`: the entity's `ComputedUiTargetCamera` (**a camera tha
+72	288	build	tool	shell	bash	2026-11-02T05:25:44Z	0.8	Bump version and stage :: cd /home/ladvien/bevy_gooey_loop && sed -i 's/^version = "0.25.0"/version = "0.25.1"/' Cargo.toml && sed -i 's/bevy_gooey = { version = "0.25", features/bevy_go
+72	289	build	model	model		2026-11-02T05:25:44Z	5.0	
+72	290	build	tool	git	bash	2026-11-02T05:25:49Z	0.1	Commit G-31 slices :: cd /home/ladvien/bevy_gooey_loop && git reset -q && git add src/testing.rs tests/testing.rs && git commit -qm "testing::click reaches a UI drawn into an image i
+72	291	build	model	model		2026-11-02T05:25:49Z	4.4	
+72	292	log	tool	phase mark	bash	2026-11-02T05:25:54Z	0.1	Prepare log entry :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log && tail -c 600 docs/loop-log.md; wc -l docs/loop-log.md
+72	293	log	model	model		2026-11-02T05:25:54Z	25.7	
+72	294	log	tool	cargo test	bash	2026-11-02T05:26:20Z	0.0	Write log, merge slice 2 :: cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' ## Iteration 44 — 2026-11-02 — Drag and drop without a pointer; testing::click into an image
+72	295	log	model	model		2026-11-02T05:26:20Z	2.3	
+72	296	gate	tool	phase mark	bash	2026-11-02T05:26:22Z	60.0	[launched bg_3] Re-run gate on merged tree :: python3 ~/.local/share/wiggum/steps.py mark gate; /tmp/g44/gate.sh > /tmp/g44/gate2.log 2>&1; grep -E "^==|rc=|test result|GATE|error" /tmp/g44/gate2.log
+72	297	gate	model	model		2026-11-02T05:27:22Z	1.3	
+72	298	gate	tool	wait: gate	wait	2026-11-02T05:27:23Z	135.0	Waiting for gate 2
+72	299	gate	model	model		2026-11-02T05:29:38Z	5.0	
+72	300	ship	tool	phase mark	bash	2026-11-02T05:29:43Z	4.2	Tag, push, check issue state :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && git tag -a v0.25.1 aaf1fa1 -m v0.25.1 && git push -q origin main loop/it
+72	301	ship	model	model		2026-11-02T05:29:48Z	7.2	
+72	302	ship	tool	cargo publish	bash	2026-11-02T05:29:55Z	4.5	Comment on issue and consumer :: cd /home/ladvien/bevy_gooey_loop && gh label create assumed-decision --color FBCA04 2>/dev/null; gh issue edit 35 --repo bevy-coven/bevy_gooey --add-label assum
+72	303	ship	model	model		2026-11-02T05:29:59Z	2.8	
+72	304	log	tool	phase mark	bash	2026-11-02T05:30:02Z	0.2	Cleanup own scratch and baseline :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log >/dev/null; df -h /home | tail -1; git worktree remove ~/g44_base && rm -rf 
+72	305	log	model	model		2026-11-02T05:30:02Z	4.6	
+72	306	log	tool	push gate	bash	2026-11-02T05:30:07Z	1.4	Log cleanup and push :: cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' **Gate and ship.** The merged tree with both slices: fmt, clippy, `cargo test --all-features
+72	307	log	model	model		2026-11-02T05:30:08Z	6.8	
