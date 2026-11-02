@@ -130,6 +130,7 @@ pub mod model;
 #[cfg(feature = "testing")]
 pub mod testing;
 
+mod badges;
 mod binding;
 mod cancel;
 mod choice;
@@ -174,6 +175,7 @@ mod widgets;
 
 pub use bevy::ui::Checked;
 pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
+pub use badges::{ShortcutBadge, ShortcutBadges, update_shortcut_badges};
 pub use binding::{
     Binding, BindingSettings, BindingValue, Capturing, bind_by_input, catch_pointer, not_capturing,
     update_bindings,
@@ -325,6 +327,7 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<GooeyFonts>()
             .init_resource::<PanelRegistry>()
             .init_resource::<ToastSettings>()
+            .init_resource::<ShortcutBadges>()
             .init_resource::<ToastLog>()
             .init_resource::<CommandList>()
             .init_resource::<PaletteHistory>()
@@ -357,6 +360,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<StatusPriority>()
             .register_type::<Binding>()
             .register_type::<Shortcut>()
+            .register_type::<ShortcutBadges>()
             .register_type::<Modifiers>()
             .register_type::<Platform>()
             .register_type::<InputDevice>()
@@ -428,6 +432,7 @@ impl Plugin for GooeyStylePlugin {
                         update_spinners,
                         (update_toggle_groups, fit_bars).chain(),
                         update_sections,
+                        update_shortcut_badges,
                         drag::update_drag_visuals,
                     )
                         .chain(),

@@ -1179,6 +1179,11 @@ pub enum Role {
     /// A prompt's keycap for a pad button: the same fill, frame and text, fully round (a circle
     /// for "A", a pill for "LB").
     PromptButton,
+    /// A [`crate::ShortcutBadges`] badge: a small keycap with a chord's words on the corner of the
+    /// widget it names, inside its frame; [`GooeySkin::surface`]'s fill in an [`GooeySkin::outline`]
+    /// frame, so it stands off a button's own fill, in the smallest step of
+    /// [`GooeySkin::type_scale`].
+    ShortcutBadge,
     /// The one full-window column the toasts stand in; not drawn, it pads the toasts.
     ToastStack,
     /// A [`crate::toast`]'s room: a clipped column whose height opens and closes, so the toasts
@@ -2130,6 +2135,7 @@ fn restyle(
         // world; a keycap is a binding keycap at rest: raised, framed in the outline.
         Role::Prompts => Some(skin.surface),
         Role::PromptKey | Role::PromptButton => Some(skin.surface_raised),
+        Role::ShortcutBadge => Some(skin.solid_surface()),
         // The landing is the ring's colour let through to the panels under it, so fill and frame are one; the ghost is as opaque as
         // a dialog's card, so its title is read at the contrast of any panel's text.
         Role::DockDrop => Some(skin.focus_ring.with_alpha(DOCK_DROP_ALPHA)),
@@ -2265,6 +2271,7 @@ fn restyle(
         | Role::SliderRail
         | Role::ColorRail
         | Role::BindingCap
+        | Role::ShortcutBadge
         | Role::PromptKey
         | Role::PromptButton => Some(BorderColor::all(skin.outline)),
         Role::ToastAction => Some(BorderColor::all(if look.focused == Some(entity) {
@@ -2812,6 +2819,19 @@ fn restyle(
                 next.min_width = Val::Px(cap);
                 next.flex_shrink = 0.0;
             }
+            // A badge sits in the widget's padding box, inside its frame, so the focus ring (the
+            // frame) is never covered; its text is the smallest of the type scale and its own
+            // frame one device pixel, so it is smaller than the least target it stands in.
+            Role::ShortcutBadge => {
+                let hair = snap_line_width(1.0, target.map_or(1.0, |t| t.scale_factor()));
+                next.position_type = PositionType::Absolute;
+                next.right = Val::Px(skin.pad() * 0.5);
+                next.align_self = AlignSelf::Center;
+                next.border = UiRect::all(Val::Px(hair));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(Val::Px(skin.pad() * 0.3), Val::Px(skin.pad() * 0.1));
+                next.flex_shrink = 0.0;
+            }
             // The rows stand `rows` of a button's height and a gap apart; to their right a lane the
             // rail's width and a gap of air, always, so rows never change width when others come
             // and go. The padding is inside the clip, so the content stops short of the rail and
@@ -3194,6 +3214,7 @@ fn restyle(
             Some((skin.text_muted, &look.fonts.body, skin.text_size))
         }
         Role::BindingPrompt => Some((skin.accent_text, &look.fonts.body, skin.text_size)),
+        Role::ShortcutBadge => Some((skin.text, &look.fonts.body, skin.type_scale[0])),
         Role::PromptKey
         | Role::PromptButton
         | Role::DockGhost
