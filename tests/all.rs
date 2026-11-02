@@ -34,6 +34,7 @@ mod prompts;
 mod readme;
 mod scale;
 mod scope;
+mod section;
 mod select;
 mod serde;
 mod shortcut;

@@ -147,6 +147,7 @@ mod popover;
 mod progress;
 mod prompt;
 mod scale;
+mod section;
 mod select;
 mod shortcut;
 mod skin;
@@ -223,6 +224,7 @@ pub use progress::{
 };
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
+pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_sections};
 pub use select::{SELECT_FILTER_ABOVE, Select};
 pub use shortcut::{Modifiers, Platform, Shortcut};
 pub use skin::{
@@ -253,9 +255,10 @@ pub use widgets::{
     binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
     heading, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, menu_title,
     meter, number_field, pad_style, panel, popover, popover_modal, progress, prompt, prompts,
-    radio_item, screen, select, separator, skin_preset, slider, spinner, split, status_bar,
-    status_item, status_progress, submenu, surface, tab_page, table, tabs, text_input, text_size,
-    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
+    radio_item, screen, section, select, separator, skin_preset, slider, spinner, split,
+    status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs, text_input,
+    text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree,
+    vec_field,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -301,6 +304,7 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<CommandList>()
             .init_resource::<PaletteHistory>()
             .init_resource::<BindingSettings>()
+            .init_resource::<SectionStates>()
             .init_resource::<InputFocus>()
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
@@ -320,6 +324,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Toolbar>()
             .register_type::<ToggleGroupValue>()
             .register_type::<ToggleGroupCount>()
+            .register_type::<SectionOpen>()
+            .register_type::<SectionId>()
             .register_type::<StatusBar>()
             .register_type::<StatusItem>()
             .register_type::<StatusKind>()
@@ -391,6 +397,7 @@ impl Plugin for GooeyStylePlugin {
                         update_progress,
                         update_spinners,
                         (update_toggle_groups, fit_bars).chain(),
+                        update_sections,
                     )
                         .chain(),
                     update_tooltip_text,
