@@ -2,13 +2,17 @@
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-11-02
+
+The first publish since 0.24.0: it also carries 0.24.1 (the accessibility tree) and 0.24.2 (toast buttons), which crates.io refused with a 429.
+
 ### Added
 
 - Drag and drop without a pointer (WCAG 2.2, 2.5.7): a focused `DragPayload` source is lifted by `DragSettings::pick_up` (Alt+M; a pad's West), the arrows or the D-pad mark the nearest target that takes the payload in that direction (`target_toward`), PageUp, PageDown, LB and RB step through the targets in reading order (`target_step`), the pick-up key again (a pad's South too) sends the one `Dropped<T>` on the marked target and Escape or East puts it down. The ghost, the mark, `Dragging` and the events are the pointer drag's; `DragState::carried_by_key()` says how it was lifted. `DragSettings` is a serde resource, `model::Toward` the direction.
 
 ### Changed
 
-- `not_capturing` is also false while a payload is carried from the keyboard or a pad, so the arrow that steers it never also moves focus.
+- **Breaking:** `not_capturing` takes a second system parameter (it is also false while a payload is carried from the keyboard or a pad, so the arrow that steers it never also moves focus); a host that registers it as a run condition is unchanged, one that calls it as a plain function needs the parameters.
 
 ## [0.24.2] - 2026-11-02
 
