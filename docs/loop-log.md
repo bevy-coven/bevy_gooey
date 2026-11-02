@@ -1824,3 +1824,17 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Checklist** (dark, 1280×720): slot 80 px square (target ≥ 44), count 4.5:1 or better in all four looks (test), the ring visible on the focused slot at 1× and 2560×1440, `problems()` unchanged (no new colour), gallery stills pixel-identical to the starting build (`magick compare` AE 0, `GOOEY_HEALTH=60`, 120 frames).
 
 **mean_ms** (gallery, `GOOEY_HEALTH=60`, `GOOEY_KEYS=down`, 240 frames, 10 alternating pairs): before min **21.625** median 22.94, after min **21.439** median 22.90, paired median difference **-0.21 ms** (no grid in the gallery: one extra system that finds nothing).
+
+**Gate.** `CARGO_BUILD_JOBS=4`, branch `loop/iter-46` (the merge into an unmoved `main` has the identical tree): fmt, clippy `-D warnings`, `cargo test --all-features --lib --tests` (760 in the one `all` executable: 737 before, 22 in `tests/slots.rs` and one in `tests/access.rs`), `--doc` (198), `cargo check --lib`, wasm32 and `cargo doc -D warnings`: green, 3 minutes (the incremental target).
+
+### Ranked backlog
+
+1. Slot grid: a per-slot acceptance rule the drop mark can show before the player lets go (needs `DropTarget` to take a closure or a per-node test), a locked slot, and the focus following an item to its new slot after a keyboard move.
+2. AccessKit actions: `ActionRequest` Click, Focus, Increment, Decrement and SetValue acted on.
+3. Radial: an icon per item (`RadialItem { label, icon }`) and a pointing arc that follows the stick.
+4. Tree rows: `level`, `expanded`, `size_of_set` and `position_in_set`; a table's row and column counts.
+5. Shortcut overlay: badges for menu items and `icon_button`s.
+
+**Release.** `cargo semver-checks` (baseline v0.26.0): `enum_variant_added` on `Role` (six variants), so a minor bump: `release: v0.27.0` (`ab02189`), tag `v0.27.0` pushed, `cargo publish --dry-run` green. **`cargo publish` was refused with 429** ("You have published too many versions of this crate in the last 24 hours"), logged once and not retried; the next pass publishes v0.27.0 (the audit shows `missing: release` until then). Pushed `main`, `loop/iter-46` and the tag.
+
+**Cleanup.** Removed this pass's own: `~/g46_gallery_before`, `~/g46_gallery_after` (the two gallery binaries) and `/tmp/g46` (captures, GIF frames, the Sanctuary shallow clone, gate script and log), `/tmp/g46m` (mutation backups); no worktree was made (the before gallery was a binary built from the starting commit). `df -h /home` 160 G free (96 %). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits, unchanged since iteration 17).
