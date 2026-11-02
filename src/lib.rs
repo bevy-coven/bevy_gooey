@@ -142,6 +142,7 @@ mod list;
 mod menu;
 mod meter;
 mod nav;
+mod notification;
 mod number;
 mod options;
 mod palette;
@@ -200,19 +201,20 @@ pub use model::{
     NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle,
     SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST,
     TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, area_values, bar_fit, choice_next, choice_step,
-    cie_lightness, column_resize, composite, contrast_ratio, dock_drop_rect, dock_edge_zone,
-    dock_neighbour, dock_tab_slot, dock_zone, eta_words, format_number, fuzzy_score, hex_text,
-    hsv_to_rgb, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, natural_cmp,
-    nearest_step, number_decimals, pad_name, page_target, parse_hex, parse_number, progress_text,
-    relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
-    shortcut_conflicts, shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row,
-    spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step, table_anchor,
-    table_step, table_window, toast_alpha, toast_grow, toast_hold, toast_life, tree_ends,
-    tree_heir, tree_indent, tree_parent, tree_visible, type_ahead, window_ui_scale,
+    cie_lightness, clock_text, column_resize, composite, contrast_ratio, dock_drop_rect,
+    dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, eta_words, format_number,
+    fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key, key_name, list_height, meter_fraction,
+    mouse_name, natural_cmp, nearest_step, number_decimals, pad_name, page_target, parse_hex,
+    parse_number, progress_text, relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal,
+    scrub_value, shortcut_conflicts, shortcut_label, slider_fraction, slider_text, snap_line_width,
+    snap_to_row, spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step,
+    table_anchor, table_step, table_window, toast_alpha, toast_grow, toast_hold, toast_life,
+    tree_ends, tree_heir, tree_indent, tree_parent, tree_visible, type_ahead, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
 };
+pub use notification::{NotificationCenter, NotificationRow, update_notification_centers};
 pub use number::{
     MIXED_HINT, MixedValue, NumberInput, NumberRange, NumberRefused, NumberStep, NumberValue,
     VecChange, VecMixed, VecPart, VecValue, update_numbers, update_vecs,
@@ -251,7 +253,10 @@ pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
     track_text_editing, update_text_inputs,
 };
-pub use toast::{Toast, ToastAnchor, ToastKind, ToastSettings, ToastStack, update_toasts};
+pub use toast::{
+    Toast, ToastAction, ToastAnchor, ToastBundle, ToastButton, ToastKind, ToastLog, ToastLogEntry,
+    ToastSettings, ToastStack, update_toasts,
+};
 pub use toolbar::{
     GroupOption, Overflowed, ToggleGroupCount, ToggleGroupValue, Toolbar, fit_bars,
     update_toggle_groups,
@@ -261,11 +266,11 @@ pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use widgets::{
     binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
     heading, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, menu_title,
-    meter, number_field, pad_style, panel, popover, popover_modal, progress, prompt, prompts,
-    radio_item, screen, section, select, separator, skin_preset, slider, spinner, split,
-    status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs, text_input,
-    text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree,
-    vec_field,
+    meter, notification_center, number_field, pad_style, panel, popover, popover_modal, progress,
+    prompt, prompts, radio_item, screen, section, select, separator, skin_preset, slider, spinner,
+    split, status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs,
+    text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator,
+    tree, vec_field,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -308,6 +313,7 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<GooeyFonts>()
             .init_resource::<PanelRegistry>()
             .init_resource::<ToastSettings>()
+            .init_resource::<ToastLog>()
             .init_resource::<CommandList>()
             .init_resource::<PaletteHistory>()
             .init_resource::<BindingSettings>()
@@ -385,12 +391,16 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ToastSettings>()
             .register_type::<ToastAnchor>()
             .register_type::<ToastKind>()
+            .register_type::<ToastLog>()
+            .register_type::<ToastLogEntry>()
             .register_type::<PaletteHistory>()
             .register_type::<UiFeedbackKind>()
             .add_observer(feedback::feedback_on_activate)
             .add_observer(feedback::feedback_on_toggle)
             .add_observer(feedback::feedback_on_choice)
             .add_observer(toolbar::more_on_activate)
+            .add_observer(toast::toast_on_activate)
+            .add_observer(toast::toast_button_removed)
             .add_observer(text::text_on_edit)
             .add_observer(dock::dock_on_select)
             .add_observer(dock::dock_on_resize)
@@ -399,6 +409,7 @@ impl Plugin for GooeyStylePlugin {
                 (
                     (
                         update_toasts,
+                        update_notification_centers,
                         update_icons,
                         update_field_problems,
                         update_progress,

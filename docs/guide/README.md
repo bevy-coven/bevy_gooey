@@ -69,7 +69,8 @@ per subject. The README links each bullet to its page.
 - [The command palette](command-palette.md) — `command_palette()` over a `CommandList`: a field and a fuzzy-ranked
   list of every command with its chord and why it is off, recents first, Up and Down while focus stays in the
   field, one `RunCommand` on Enter or a click.
-- [Toasts](toasts.md) — one spawn, the reading-time maths, `ToastSettings`, and the cap on the stack.
+- [Toasts](toasts.md) — one spawn, the reading-time maths, `ToastSettings`, and the cap on the stack; `.action(..)`,
+  `.sticky()`, merged repeats, the `ToastLog` and `notification_center()`.
 - [Skins](skins.md) — `GooeySkin`, its fields, the two presets, and every rule `problems()` checks.
 - [Screen size](scale.md) — `GooeyScalePlugin`, `UiScaleSettings`, and whole-device-pixel lines.
 - [The pointer](pointer.md) — which parts of the interface take the pointer and which let it through.

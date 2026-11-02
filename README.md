@@ -130,7 +130,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   [prompts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/prompts.md),
   [the dialog](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/widgets.md#a-dialog).
 - **Say something, or open a menu, without building a layout** — `commands.spawn(toast("Game saved"))`
-  stacks, times itself to its own length and ages on real time, and `popover(anchor, Placement::Below)`
+  stacks, times itself to its own length and ages on real time (`.action("Undo", id)` adds a button, `.sticky()` keeps an error until dismissed, repeats merge into "x3", and `notification_center()` lists the log), and `popover(anchor, Placement::Below)`
   opens a panel beside any widget or at the pointer, kept inside the window and closed by Escape or a
   press elsewhere:
   [toasts](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/toasts.md),

@@ -46,6 +46,7 @@ mod table;
 mod tabs;
 mod text;
 mod toast;
+mod toast_actions;
 mod tokens;
 mod toolbar;
 mod tooltip;

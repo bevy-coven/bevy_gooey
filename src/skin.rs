@@ -1284,6 +1284,13 @@ pub enum Role {
     /// A [`crate::inspector`]'s root: a column of the rows built from a reflected value, a gap
     /// apart; not drawn.
     Inspector,
+    /// A [`crate::notification_center`]'s root: a column holding the log's list; not drawn.
+    NotificationCenter,
+    /// A button in a toast: a button's look, fading with its toast. Part of a toast that was given
+    /// one with [`crate::ToastBundle::action`] or [`crate::ToastBundle::sticky`].
+    ToastAction,
+    /// The words of a toast's button.
+    ToastActionText,
     /// A section's "Empty": [`GooeySkin::text_muted`], in the body's place while it holds nothing.
     SectionNote,
 }
@@ -1714,6 +1721,7 @@ pub fn apply_skin(
                             | Role::Tab
                             | Role::GroupOption
                             | Role::StatusItem
+                            | Role::ToastAction
                             | Role::TextField
                             | Role::MenuItem
                             | Role::MenuTitle
@@ -1886,6 +1894,19 @@ fn restyle(
         }),
         Role::MenuSeparator => Some(skin.outline),
         Role::MenuDot => Some(menu_ink(owner, skin)),
+        // A toast's button is a button's fill, fading with its toast.
+        Role::ToastAction => Some(faded(
+            if state.disabled {
+                skin.surface
+            } else if state.pressed {
+                skin.accent
+            } else if state.hovered {
+                skin.hovered()
+            } else {
+                skin.surface_raised
+            },
+            owner.alpha,
+        )),
         Role::ToastBody => Some(faded(skin.solid_surface(), owner.alpha)),
         Role::ToastMark => Some(faded(
             if owner.alert {
@@ -2014,6 +2035,7 @@ fn restyle(
         | Role::Toast
         | Role::ToastStack
         | Role::ToastText
+        | Role::ToastActionText
         | Role::List
         | Role::ListView
         | Role::ListRows
@@ -2031,6 +2053,7 @@ fn restyle(
         | Role::SectionBody
         | Role::SectionNote
         | Role::Inspector
+        | Role::NotificationCenter
         | Role::TreeClosed
         | Role::TreeOpen
         | Role::Split
@@ -2110,6 +2133,11 @@ fn restyle(
         | Role::BindingCap
         | Role::PromptKey
         | Role::PromptButton => Some(BorderColor::all(skin.outline)),
+        Role::ToastAction => Some(BorderColor::all(if look.focused == Some(entity) {
+            faded(skin.focus_ring, owner.alpha)
+        } else {
+            Color::NONE
+        })),
         Role::Button | Role::Tab | Role::GroupOption | Role::StatusItem | Role::TableHeaderCell
             if look.focused == Some(entity) =>
         {
@@ -2244,7 +2272,11 @@ fn restyle(
                 next.column_gap = Val::Px(skin.gap);
                 next.row_gap = Val::Px(skin.gap);
             }
-            Role::Button | Role::Tab | Role::GroupOption | Role::TableHeaderCell => {
+            Role::Button
+            | Role::Tab
+            | Role::GroupOption
+            | Role::TableHeaderCell
+            | Role::ToastAction => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
@@ -2937,6 +2969,17 @@ fn restyle(
         Role::Heading => Some((skin.text, &look.fonts.heading, skin.heading_size)),
         Role::Label | Role::ProgressLine => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::SectionNote => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
+        // The label of a toast's button follows the button: inverted on the accent, faded with
+        // the toast.
+        Role::ToastActionText => {
+            let parent = parent.unwrap_or_default();
+            let color = if parent.pressed {
+                skin.accent_text
+            } else {
+                skin.text
+            };
+            Some((faded(color, owner.alpha), &look.fonts.body, skin.text_size))
+        }
         Role::ButtonText => {
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
