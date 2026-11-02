@@ -12924,3 +12924,145 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 70	204	log	model	model		2026-11-02T04:46:13Z	6.1	
 70	205	log	tool	phase mark	bash	2026-11-02T04:46:20Z	1.6	cd /home/ladvien/bevy_gooey_loop; python3 - <<'E' p='docs/loop-log.md' s=open(p).read() s=s.replace("**Gate.** `CARGO_BUILD_JOBS=4`, merged tree, see below.",""
 70	206	log	model	model		2026-11-02T04:46:21Z	6.1	
+71	1	orient	model	model		2026-11-02T04:46:50Z	3.8	
+71	2	orient	tool	phase mark	bash	2026-11-02T04:46:54Z	0.7	Orienting: status, log, audit :: python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop && git status --short | head; git log --oneline | head -8; git fetch -q ori
+71	3	orient	model	model		2026-11-02T04:46:54Z	4.6	
+71	4	orient	tool	github	bash	2026-11-02T04:46:59Z	1.6	Triage issues and check publish state :: cd /home/ladvien/bevy_gooey_loop && git show origin/loop-stats:steps/bevy_gooey_loop-audit.tsv | head -1; gh issue list --repo bevy-coven/bevy_gooey --state ope
+71	5	orient	model	model		2026-11-02T04:47:00Z	4.1	
+71	6	orient	tool	cargo publish	bash	2026-11-02T04:47:05Z	4.3	Publishing pending v0.24.1 :: cd /home/ladvien/bevy_gooey_loop && git status -sb | head -3; git describe --tags; grep -m1 '^version' Cargo.toml; cargo publish 2>&1 | tail -8
+71	7	orient	model	model		2026-11-02T04:47:09Z	2.7	
+71	8	choose	tool	phase mark	bash	2026-11-02T04:47:12Z	1.7	Reading issue #34 :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; gh issue view 34 --repo bevy-coven/bevy_gooey --comments; gh issue list 
+71	9	choose	model	model		2026-11-02T04:47:13Z	1.8	
+71	10	choose	tool	github	bash	2026-11-02T04:47:15Z	0.4	Reading issue #34 json :: cd /home/ladvien/bevy_gooey_loop && gh issue view 34 --repo bevy-coven/bevy_gooey --json title,body,comments,labels 2>&1 | head -80
+71	11	choose	model	model		2026-11-02T04:47:15Z	1.7	
+71	12	choose	tool	github	bash	2026-11-02T04:47:17Z	0.5	Full issue body :: cd /home/ladvien/bevy_gooey_loop && gh issue view 34 --repo bevy-coven/bevy_gooey --json body --jq .body | fold -w 200
+71	13	choose	model	model		2026-11-02T04:47:18Z	3.7	
+71	14	choose	tool	shell	bash	2026-11-02T04:47:21Z	0.0	Locating toast styling code :: cd /home/ladvien/bevy_gooey_loop && grep -n "ToastAction\|ToastBody\|ToastText\|ToastMark" src/skin.rs src/widgets.rs src/toast.rs | head -60; ls docs/research 
+71	15	choose	model	model		2026-11-02T04:47:21Z	1.8	
+71	16	choose	tool	shell	bash	2026-11-02T04:47:23Z	0.0	Reading toast layout code :: cd /home/ladvien/bevy_gooey_loop && sed -n 2410,2440p src/skin.rs; sed -n 2515,2560p src/skin.rs; sed -n 3135,3150p src/skin.rs; sed -n 545,610p src/toast.rs
+71	17	choose	model	model		2026-11-02T04:47:23Z	9.0	
+71	18	choose	tool	shell	bash	2026-11-02T04:47:32Z	0.0	Examining notifications example and research note :: cd /home/ladvien/bevy_gooey_loop && grep -n "toast\|GOOEY" examples/notifications.rs | head -50; sed -n 1,80p docs/research/toast-actions.md | cut -c1-200
+71	19	choose	model	model		2026-11-02T04:47:32Z	3.8	
+71	20	choose	tool	shell	bash	2026-11-02T04:47:36Z	0.0	Reading toast_actions test harness :: cd /home/ladvien/bevy_gooey_loop && sed -n 1,100p tests/toast_actions.rs; sed -n 150,200p tests/toast_actions.rs; sed -n 327,362p tests/toast_actions.rs
+71	21	choose	model	model		2026-11-02T04:47:36Z	4.9	
+71	22	build	tool	phase mark	bash	2026-11-02T04:47:41Z	0.0	Tail of tests and skin accessor lookup :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build && tail -20 tests/toast_actions.rs && grep -n "fn width\|fn pad\|fn target
+71	23	build	model	model		2026-11-02T04:47:41Z	13.4	
+71	24	build	tool	cargo test	bash	2026-11-02T04:47:54Z	23.8	Adding failing-first tests :: cd /home/ladvien/bevy_gooey_loop && cat >> tests/toast_actions.rs <<'EOF' /// The words of a toast's button, and the width of its label's own box. fn label_widt
+71	25	build	model	model		2026-11-02T04:48:18Z	2.4	
+71	26	build	tool	cargo test	bash	2026-11-02T04:48:20Z	26.6	Running failing-first tests :: cd /home/ladvien/bevy_gooey_loop && sed -i 's/\.expect("body")\.border\.left;/.expect("body").border.min_inset.x;/' tests/toast_actions.rs && CARGO_BUILD_JOBS=4
+71	27	build	model	model		2026-11-02T04:48:47Z	11.1	
+71	28	build	tool	shell	bash	2026-11-02T04:48:58Z	0.0	Checking default gap and padding :: cd /home/ladvien/bevy_gooey_loop && grep -n "gap:\|padding:" src/skin.rs | head -12; grep -n "ToastAction" docs/guide/*.md | head
+71	29	build	model	model		2026-11-02T04:48:58Z	14.2	
+71	30	build	tool	shell	bash	2026-11-02T04:49:12Z	0.0	Reading notifications example :: cd /home/ladvien/bevy_gooey_loop && sed -n 117,170p examples/notifications.rs; echo $CARGO_TARGET_DIR; echo $DISPLAY
+71	31	build	model	model		2026-11-02T04:49:12Z	5.3	
+71	32	build	tool	shell	bash	2026-11-02T04:49:18Z	0.0	Finding existing media for notifications :: cd /home/ladvien/bevy_gooey_loop && grep -n "notif" docs/media/README.md README.md docs/guide/toasts.md | cut -c1-260
+71	33	build	model	model		2026-11-02T04:49:18Z	2.1	
+71	34	build	tool	shell	bash	2026-11-02T04:49:20Z	0.0	Reading media recipe :: cd /home/ladvien/bevy_gooey_loop && sed -n 49p docs/media/README.md; sed -n 41p docs/guide/toasts.md; sed -n 1,30p docs/media/README.md | cut -c1-300; grep -rn 
+71	35	build	model	model		2026-11-02T04:49:20Z	3.0	
+71	36	build	tool	shell	bash	2026-11-02T04:49:23Z	0.0	Reading the gif recipe :: cd /home/ladvien/bevy_gooey_loop && sed -n 49p docs/media/README.md | cut -c760-2400
+71	37	build	model	model		2026-11-02T04:49:23Z	6.4	
+71	38	prove	tool	phase mark	bash	2026-11-02T04:49:29Z	51.4	Build and capture before state :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark prove >/dev/null; sed -i 's/toast_alert("Could not write the save")/toast_alert(
+71	39	prove	model	model		2026-11-02T04:50:21Z	3.6	
+71	40	prove	tool	shell	bash	2026-11-02T04:50:24Z	0.1	Cropping before shot :: cd /tmp/g43 && magick before/notif.png -crop 640x260+0+0 +repage before/notif_crop.png; magick before/notif.png -format "%wx%h" info:
+71	41	prove	tool	read files	read	2026-11-02T04:50:24Z	0.1	/tmp/g43/before/notif.png
+71	42	prove	model	model		2026-11-02T04:50:24Z	6.1	
+71	43	prove	tool	shell	bash	2026-11-02T04:50:30Z	4.8	Capturing before with sticky toast :: cd /tmp/g43 && cat > cap.sh <<'EOF' #!/bin/bash # usage: cap.sh binary out GOOEY_FRAMES=170 GOOEY_KEY_EVERY=16 GOOEY_KEYS="tab;enter;down;enter;enter;enter;down
+71	44	prove	tool	read files	read	2026-11-02T04:50:30Z	4.8	/tmp/g43/before/notif.png
+71	45	prove	model	model		2026-11-02T04:50:35Z	4.9	
+71	46	prove	tool	shell	bash	2026-11-02T04:50:40Z	6.2	Recapture with more frames :: cd /tmp/g43 && sed -i 's/FRAMES=170/FRAMES=${F:-230}/; s/enter;down;enter"/enter;down;enter;toast"/' cap.sh && ./cap.sh ./notif_before /tmp/g43/before/notif.png
+71	47	prove	tool	read files	read	2026-11-02T04:50:40Z	6.2	/tmp/g43/before/notif.png
+71	48	prove	model	model		2026-11-02T04:50:46Z	10.0	
+71	49	prove	tool	shell	bash	2026-11-02T04:50:56Z	0.0	Checking other ToastAction layout code :: cd /home/ladvien/bevy_gooey_loop && sed -n 1845,1860p src/skin.rs; grep -n "TOAST_" src/skin.rs | head
+71	50	prove	model	model		2026-11-02T04:50:56Z	12.3	
+71	51	build	tool	phase mark	bash	2026-11-02T04:51:08Z	0.1	Locate edit point :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build >/dev/null; grep -n "next.min_height = Val::Px(skin.target());" src/skin.r
+71	52	build	tool	read files	read	2026-11-02T04:51:08Z	0.1	src/skin.rs:2432-2434
+71	53	build	model	model		2026-11-02T04:51:09Z	5.1	
+71	54	build	tool	edit files	edit	2026-11-02T04:51:14Z	0.0	Style toast action buttons :: [src/skin.rs#154A] PUT >2436: + // A toast's button never gives up its padded label to a long message (which + // shrinks and wraps), stands a gap from its neig
+71	55	build	tool	cargo test	bash	2026-11-02T04:51:14Z	22.0	cd /home/ladvien/bevy_gooey_loop && sed -i 's/toast_alert("Could not write the save: the disk is full, so the game kept your last good copy")/toast_alert("Could
+71	56	build	model	model		2026-11-02T04:51:36Z	3.2	
+71	57	build	tool	cargo test	bash	2026-11-02T04:51:39Z	1.1	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo test --all-features --test all toast_actions::a_long 2>&1 | grep -B2 -A3 panicked
+71	58	build	model	model		2026-11-02T04:51:40Z	7.9	
+71	59	build	tool	cargo test	bash	2026-11-02T04:51:48Z	12.7	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/toast_actions.rs' s=open(p).read() s=s.replace(""" let gap_to_text = rect(&app, show).min.x - rec
+71	60	build	model	model		2026-11-02T04:52:01Z	4.4	
+71	61	build	tool	cargo build	bash	2026-11-02T04:52:05Z	22.2	Build after and capture :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example notifications 2>&1 | tail -1 && cp $CARGO_TARGET_DIR/release/examples/not
+71	62	build	tool	read files	read	2026-11-02T04:52:05Z	22.2	/tmp/g43/after/notif.png
+71	63	build	model	model		2026-11-02T04:52:27Z	3.3	
+71	64	build	tool	shell	bash	2026-11-02T04:52:30Z	6.2	ls -la /tmp/g43/after /tmp/g43/before; cd /tmp/g43; ./cap.sh ./notif_after /tmp/g43/after/notif.png; ls after
+71	65	build	model	model		2026-11-02T04:52:37Z	1.5	
+71	66	build	tool	read files	read	2026-11-02T04:52:38Z	0.0	/tmp/g43/after/notif.png
+71	67	build	model	model		2026-11-02T04:52:38Z	5.4	
+71	68	build	tool	read files	read	2026-11-02T04:52:43Z	0.0	/tmp/g43/after/notif-pl.png
+71	69	build	model	model		2026-11-02T04:52:43Z	3.9	
+71	70	ship	tool	phase mark	bash	2026-11-02T04:52:47Z	0.1	Read GIF recipe command :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship >/dev/null; sed -n 49p docs/media/README.md | grep -o 'GOOEY_FRAMES=260[^`]
+71	71	ship	model	model		2026-11-02T04:52:47Z	7.8	
+71	72	ship	tool	clip record/render	bash	2026-11-02T04:52:55Z	8.0	Regenerate notifications.gif :: rm -rf /tmp/gooey-notifications; mkdir -p /tmp/gooey-notifications && cd /tmp/g43 && GOOEY_FRAMES=260 GOOEY_KEY_EVERY=16 GOOEY_KEYS="tab;enter;down;enter;enter;
+71	73	ship	model	model		2026-11-02T04:53:03Z	2.9	
+71	74	ship	tool	shell	bash	2026-11-02T04:53:06Z	0.1	cd /tmp/g43 && magick '/home/ladvien/bevy_gooey_loop/docs/media/notifications.gif[70]' f70.png && magick 'docs' 2>/dev/null; magick '/home/ladvien/bevy_gooey_lo
+71	75	ship	tool	read files	read	2026-11-02T04:53:06Z	0.1	/tmp/g43/both.png
+71	76	ship	model	model		2026-11-02T04:53:06Z	2.9	
+71	77	ship	tool	shell	bash	2026-11-02T04:53:09Z	0.1	cd /tmp/g43 && magick '/home/ladvien/bevy_gooey_loop/docs/media/notifications.gif[40]' f40.png && magick '/home/ladvien/bevy_gooey_loop/docs/media/notifications
+71	78	ship	tool	read files	read	2026-11-02T04:53:09Z	0.1	/tmp/g43/both.png
+71	79	ship	model	model		2026-11-02T04:53:09Z	3.6	
+71	80	ship	tool	shell	bash	2026-11-02T04:53:13Z	1.7	cd /tmp/g43 && magick /home/ladvien/bevy_gooey_loop/docs/media/notifications.gif -coalesce c_%03d.png && magick c_070.png c_078.png -append both.png && magick i
+71	81	ship	tool	read files	read	2026-11-02T04:53:13Z	1.7	/tmp/g43/both.png
+71	82	ship	model	model		2026-11-02T04:53:15Z	2.9	
+71	83	ship	tool	shell	bash	2026-11-02T04:53:17Z	0.1	cd /tmp/g43 && magick c_060.png c_078.png -append pair.png
+71	84	ship	tool	read files	read	2026-11-02T04:53:17Z	0.1	/tmp/g43/pair.png
+71	85	ship	model	model		2026-11-02T04:53:18Z	2.8	
+71	86	ship	tool	read files	read	2026-11-02T04:53:20Z	0.0	/tmp/g43/pair.png
+71	87	ship	model	model		2026-11-02T04:53:20Z	6.3	
+71	88	ship	tool	read files	read	2026-11-02T04:53:27Z	0.0	docs/media/README.md:49:raw
+71	89	ship	tool	read files	read	2026-11-02T04:53:27Z	0.0	docs/guide/toasts.md:41-45:raw
+71	90	ship	model	model		2026-11-02T04:53:27Z	3.4	
+71	91	ship	tool	read files	read	2026-11-02T04:53:30Z	0.0	docs/media/README.md:49
+71	92	ship	tool	read files	read	2026-11-02T04:53:30Z	0.0	docs/guide/toasts.md:41-44
+71	93	ship	model	model		2026-11-02T04:53:30Z	10.6	
+71	94	ship	tool	edit files	edit	2026-11-02T04:53:41Z	0.0	Update media README row and toast guide caption :: [docs/media/README.md#3CD5] PUT 49.=49: +| `notifications.gif` | toast actions and the log (5.3 s, 800×576, a crop of `examples/notifications`, 1280×720): an In
+71	95	ship	model	model		2026-11-02T04:53:41Z	6.8	
+71	96	ship	tool	shell	bash	2026-11-02T04:53:47Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,25p CHANGELOG.md | cut -c1-200; grep -n "Deviations" docs/research/toast-actions.md
+71	97	ship	model	model		2026-11-02T04:53:47Z	2.8	
+71	98	ship	tool	edit files	edit	2026-11-02T04:53:50Z	0.0	Changelog and research deviation :: [CHANGELOG.md#TAG] PUT >3: + +### Fixed + +- A toast's buttons are never squeezed or touching (G-30, #34): `Role::ToastAction` is `flex_shrink: 0`, half a gap o
+71	99	ship	model	model		2026-11-02T04:53:50Z	3.0	
+71	100	ship	tool	edit files	edit	2026-11-02T04:53:53Z	0.0	Changelog and research deviation :: [CHANGELOG.md#A5DD] PUT >3: + +### Fixed + +- A toast's buttons are never squeezed or touching (G-30, #34): `Role::ToastAction` is `flex_shrink: 0`, half a gap 
+71	101	ship	tool	read files	read	2026-11-02T04:53:53Z	0.0	docs/research/toast-actions.md:54-62
+71	102	ship	model	model		2026-11-02T04:53:53Z	5.0	
+71	103	ship	tool	edit files	edit	2026-11-02T04:53:58Z	0.0	Research deviation for #34 :: [docs/research/toast-actions.md#3DB4] PUT >60: +- #34 (G-30) proposed `column_gap: skin.gap` on `Role::ToastBody`; that would also widen the mark-to-message spa
+71	104	ship	tool	shell	bash	2026-11-02T04:53:58Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Only a toast's buttons take input" AGENTS.md | cut -c1-20; wc -l README.md
+71	105	ship	model	model		2026-11-02T04:53:58Z	4.4	
+71	106	ship	tool	edit files	edit	2026-11-02T04:54:03Z	0.0	Remove unverified claim :: [docs/research/toast-actions.md#B372] PUT 61.=61: +- #34 (G-30) proposed `column_gap: skin.gap` on `Role::ToastBody`; that would also widen the mark-to-message 
+71	107	ship	tool	shell	bash	2026-11-02T04:54:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 60p AGENTS.md | grep -o "Only a toast's buttons take input[^.]*\." | head -2; sed -n 60p AGENTS.md | grep -o "toast_b
+71	108	ship	model	model		2026-11-02T04:54:03Z	5.0	
+71	109	ship	tool	read files	read	2026-11-02T04:54:08Z	0.0	AGENTS.md:60-61
+71	110	ship	model	model		2026-11-02T04:54:08Z	5.0	
+71	111	ship	tool	edit files	edit	2026-11-02T04:54:13Z	0.0	Add AGENTS.md note on toast buttons :: [AGENTS.md#B746] PUT >60: +- A toast's button (`Role::ToastAction`, in `apply_skin`) is `flex_shrink: 0`, has half a gap of margin on each side and is `align_se
+71	112	gate	tool	phase mark	bash	2026-11-02T04:54:13Z	0.1	cd /home/ladvien/bevy_gooey_loop && git add -A && git commit -q -m "Toast buttons keep their size and stand a gap apart beside a wrapped message (#34) Role::Toa
+71	113	gate	model	model		2026-11-02T04:54:13Z	3.6	
+71	114	gate	tool	edit files	edit	2026-11-02T04:54:16Z	0.0	Add AGENTS.md note on toast buttons :: [AGENTS.md#B746] PUT >59: +- A toast's button (`Role::ToastAction`, in `apply_skin`) is `flex_shrink: 0`, has half a gap of margin on each side and is `align_se
+71	115	gate	model	model		2026-11-02T04:54:16Z	8.3	
+71	116	gate	tool	edit files	edit	2026-11-02T04:54:25Z	0.0	Move changelog to 0.24.2 :: [CHANGELOG.md#93DB] PUT 3.=3: +## [Unreleased] + +## [0.24.2] - 2026-11-02
+71	117	gate	tool	cargo test	bash	2026-11-02T04:54:25Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -i '0,/^version = "0.24.1"/s//version = "0.24.2"/' Cargo.toml && grep -n "0\.24" README.md Cargo.toml | head; sed -n 1,1
+71	118	gate	model	model		2026-11-02T04:54:25Z	2.8	
+71	119	gate	tool	shell	bash	2026-11-02T04:54:28Z	35.3	Frame-time pairs before/after :: cd /home/ladvien/bevy_gooey_loop && (cd /tmp/g43 && for i in 1 2 3; do ./cap.sh ./notif_before /tmp/g43/b$i.png; ./cap.sh ./notif_after /tmp/g43/a$i.png; done) 
+71	120	gate	model	model		2026-11-02T04:55:03Z	3.3	
+71	121	gate	tool	git	bash	2026-11-02T04:55:06Z	1.0	Commit release prep and start gate :: cd /home/ladvien/bevy_gooey_loop && git add -A && git commit -q -m "release: v0.24.2" && git log --oneline | head -3; (nohup /tmp/g43/gate.sh > /tmp/g43/gate.lo
+71	122	gate	model	model		2026-11-02T04:55:07Z	2.7	
+71	123	gate	tool	read files	read	2026-11-02T04:55:10Z	0.1	docs/loop-log.md:-3
+71	124	gate	model	model		2026-11-02T04:55:10Z	14.3	
+71	125	gate	tool	edit files	edit	2026-11-02T04:55:24Z	0.1	Append iteration 43 log entry :: [docs/loop-log.md#43B9] PUT >$: + +## Iteration 43 — 2026-11-02 — Toast buttons keep their size (#34) + +**Triage.** 1 open issue, #34 G-30 (`grimoire-ui`, `con
+71	126	gate	model	model		2026-11-02T04:55:24Z	3.2	
+71	127	gate	tool	shell	bash	2026-11-02T04:55:28Z	60.0	[launched bg_1] Waiting for gate :: timeout 1700 bash -c 'until grep -q "GATE DONE" /tmp/g43/gate.log; do sleep 10; done'; cat /tmp/g43/gate.log
+71	128	gate	model	model		2026-11-02T04:56:28Z	1.1	
+71	129	gate	tool	wait: other	wait	2026-11-02T04:56:29Z	109.0	{}
+71	130	gate	model	model		2026-11-02T04:58:18Z	2.6	
+71	131	gate	tool	cargo test	bash	2026-11-02T04:58:20Z	15.9	cd /home/ladvien/bevy_gooey_loop && cargo fmt && cargo fmt --check && git status --short && CARGO_BUILD_JOBS=4 cargo test --all-features --test all toast_action
+71	132	gate	model	model		2026-11-02T04:58:36Z	5.0	
+71	133	release	tool	phase mark	bash	2026-11-02T04:58:41Z	19.2	Push main and publish :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release >/dev/null; git add -A && git commit -q -m "Loop log: iteration 43, toas
+71	134	release	model	model		2026-11-02T04:59:00Z	7.0	
+71	135	release	tool	push gate	bash	2026-11-02T04:59:07Z	6.9	Tag, push tag, comment issues :: cd /home/ladvien/bevy_gooey_loop && git tag -a v0.24.2 -m v0.24.2 && git push origin v0.24.2 2>&1 | tail -1; SHA=$(git rev-parse --short 7a70959); gh issue comm
+71	136	release	model	model		2026-11-02T04:59:14Z	3.1	
+71	137	release	tool	shell	bash	2026-11-02T04:59:17Z	0.1	rm -rf /tmp/g43 /tmp/gooey-notifications /tmp/notifications.png; cd /home/ladvien/bevy_gooey_loop && df -h /home | tail -1; tail -c 300 docs/loop-log.md | tail 
+71	138	release	tool	read files	read	2026-11-02T04:59:17Z	0.1	docs/loop-log.md:-2
+71	139	release	model	model		2026-11-02T04:59:17Z	6.6	
+71	140	release	tool	edit files	edit	2026-11-02T04:59:24Z	0.0	Log release and cleanup :: [docs/loop-log.md#03D5] PUT >$: + +**Gate and ship.** `CARGO_BUILD_JOBS=4`, merged tree (work was committed straight on `main`, no `loop/iter-43` branch): clipp
+71	141	release	tool	push gate	bash	2026-11-02T04:59:24Z	1.4	cd /home/ladvien/bevy_gooey_loop && git add -A && git commit -q -m "Loop log: iteration 43 gate, release (429) and cleanup" && git push origin main 2>&1 | tail 
+71	142	release	model	model		2026-11-02T04:59:25Z	8.7	
