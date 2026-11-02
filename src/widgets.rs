@@ -35,6 +35,7 @@ use crate::color::{
 };
 use crate::dock::Dock;
 use crate::dock_layout::DockLayout;
+use crate::icon::{Icon, IconSource};
 use crate::list::ListView;
 use crate::menu::{MenuBar, MenuItem, MenuTitle, bar_on_cancel, menu_panel};
 use crate::meter::Meter;
@@ -57,6 +58,7 @@ use crate::popover::{
     Placement, PopoverPanel, placement_of, popover_on_cancel, stop_acquire, stop_click, stop_press,
     stop_release,
 };
+use crate::progress::{Progress, Spinner};
 use crate::prompt::Prompt;
 use crate::skin::Role;
 use crate::split::{
@@ -319,6 +321,110 @@ pub fn meter(value: f32, max: f32) -> impl Bundle {
             Role::MeterFill
         )],
     )
+}
+
+/// Work that takes ten seconds or more (a save, a bake, a download): a track like a meter's with
+/// its fill `fraction` of the length (clamped to `0.0..=1.0`; anything else is reported once, see
+/// [`crate::ProgressClamped`]) and, under it, the words of its [`crate::ProgressText`]: which step
+/// of how many and about how long is left, "3 of 7: Measuring meshes, about 20 s left". Change its
+/// [`crate::Progress`] to move it; edit the `ProgressText` in place.
+///
+/// Pick the indicator by how long the work takes (Nielsen's response-time limits): under about a
+/// second nothing, a [`spinner`] for two to ten seconds, this for ten and more. There is no static
+/// variant.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     progress(3.0 / 7.0),
+///     ProgressText {
+///         step: Some((3, 7, "Measuring meshes".into())),
+///         eta_seconds: Some(20.0),
+///     },
+/// ));
+/// # }
+/// ```
+pub fn progress(fraction: f32) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Progress,
+        Progress(fraction),
+        children![
+            (
+                Node::default(),
+                Role::Meter,
+                children![(
+                    Node {
+                        width: Val::Percent(meter_fraction(fraction, 1.0) * 100.0),
+                        height: Val::Percent(100.0),
+                        ..default()
+                    },
+                    Role::MeterFill
+                )],
+            ),
+            (
+                // No width of its own and the bar's width as its least: the words never decide
+                // how wide the bar is, so it keeps its size as they change, and a long line
+                // wraps inside it.
+                Node {
+                    display: Display::None,
+                    width: Val::Px(0.0),
+                    min_width: Val::Percent(100.0),
+                    ..default()
+                },
+                Text::new(String::new()),
+                Role::ProgressLine,
+            ),
+        ],
+    )
+}
+
+/// Work whose length is not known, or that takes two to ten seconds: a ring with one lit quarter
+/// turning once every [`crate::model::SPINNER_PERIOD_SECS`] on real time, so it keeps turning
+/// while the game is paused. For ten seconds and more use a [`progress`]; there is no static
+/// variant.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn(spinner());
+/// # }
+/// ```
+pub fn spinner() -> impl Bundle {
+    (Node::default(), Role::Spinner, Spinner)
+}
+
+/// A small image the skin sizes and tints: `source` is the host's own art, a whole image or one
+/// cell of an atlas. It is a step of the skin's [`crate::GooeySkin::type_scale`] square (the
+/// body's line by default, [`crate::IconSize`]), so it is as tall as the text beside it at any text
+/// size, and tinted by its [`crate::IconTone`]: the image is multiplied by a colour of the skin,
+/// so draw it white on transparent. Inside a [`button`] it follows the button's state as the text
+/// does. An image that is missing draws an empty box of the right size and reports once
+/// ([`crate::IconMissing`]).
+///
+/// An icon takes no input and no focus, so a click on one lands on the button it is in. Put a
+/// visible label beside it: an icon alone is a guess.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, assets: Res<AssetServer>) {
+/// let delete = commands.spawn(button("Delete")).id();
+/// commands.spawn((
+///     icon(IconSource::Image(assets.load("trash.png"))),
+///     IconTone::Danger,
+///     ChildOf(delete),
+/// ));
+/// # }
+/// ```
+pub fn icon(source: IconSource) -> impl Bundle {
+    (Node::default(), Role::Icon, Icon(source), Pickable::IGNORE)
 }
 
 /// A switch for an option that takes effect the moment it flips (Fullscreen, Subtitles): a row with

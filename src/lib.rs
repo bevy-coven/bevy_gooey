@@ -134,6 +134,8 @@ mod controls;
 mod dock;
 mod dock_layout;
 mod feedback;
+mod field;
+mod icon;
 mod list;
 mod menu;
 mod meter;
@@ -142,6 +144,7 @@ mod number;
 mod options;
 mod palette;
 mod popover;
+mod progress;
 mod prompt;
 mod scale;
 mod shortcut;
@@ -172,6 +175,8 @@ pub use controls::update_sliders;
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
 pub use dock_layout::{DockLayout, DockSkip, DropTarget};
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
+pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
+pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use menu::{
     Disabled, MenuBar, MenuItem, MenuMarked, MenuOpen, MenuPanel, MenuTitle, fit_menus,
@@ -182,17 +187,17 @@ pub use model::{
     COMFORT_TARGET_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
     ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS, MIN_TARGET_PX,
     NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, PadStyle,
-    SPLIT_KEY_STEP_PX, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS,
-    TYPE_AHEAD_SECS, TableStep, area_values, choice_next, choice_step, cie_lightness,
-    column_resize, composite, contrast_ratio, dock_drop_rect, dock_edge_zone, dock_neighbour,
-    dock_tab_slot, dock_zone, format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key,
-    key_name, list_height, meter_fraction, mouse_name, natural_cmp, nearest_step, number_decimals,
-    pad_name, page_target, parse_hex, parse_number, relative_luminance, repeat_steps, rgb_to_hsv,
-    scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label, slider_fraction,
-    slider_text, snap_line_width, snap_to_row, split_clamp, split_drag, split_mins, step_value,
-    tab_step, table_anchor, table_step, table_window, toast_alpha, toast_grow, toast_hold,
-    toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible, type_ahead,
-    window_ui_scale,
+    SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST,
+    TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, area_values, choice_next, choice_step,
+    cie_lightness, column_resize, composite, contrast_ratio, dock_drop_rect, dock_edge_zone,
+    dock_neighbour, dock_tab_slot, dock_zone, eta_words, format_number, fuzzy_score, hex_text,
+    hsv_to_rgb, is_modifier_key, key_name, list_height, meter_fraction, mouse_name, natural_cmp,
+    nearest_step, number_decimals, pad_name, page_target, parse_hex, parse_number, progress_text,
+    relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
+    shortcut_conflicts, shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row,
+    spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step, table_anchor,
+    table_step, table_window, toast_alpha, toast_grow, toast_hold, toast_life, tree_ends,
+    tree_heir, tree_indent, tree_parent, tree_visible, type_ahead, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -209,6 +214,9 @@ pub use palette::{
 pub use popover::{
     CloseReason, Placement, PopoverClosed, PopoverPanel, PopoverPoint, anchor_pointer_popovers,
     close_popovers_on_press, drop_pointer_anchors, reveal_popovers,
+};
+pub use progress::{
+    Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
 };
 pub use prompt::{InputDevice, Prompt, track_input_device, update_prompts};
 pub use scale::{UiScaleSettings, scale_with_window};
@@ -234,10 +242,10 @@ pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use widgets::{
     binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
-    heading, interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter,
-    number_field, pad_style, panel, popover, popover_modal, prompt, prompts, radio_item, screen,
-    separator, skin_preset, slider, split, submenu, surface, tab_page, table, tabs, text_input,
-    text_size, toast, toast_alert, toggle, tree, vec_field,
+    heading, icon, interface_size, label, list, menu, menu_bar, menu_item, menu_title, meter,
+    number_field, pad_style, panel, popover, popover_modal, progress, prompt, prompts, radio_item,
+    screen, separator, skin_preset, slider, spinner, split, submenu, surface, tab_page, table,
+    tabs, text_input, text_size, toast, toast_alert, toggle, tree, vec_field,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -290,6 +298,15 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<SkinScope>()
             .register_type::<Role>()
             .register_type::<Meter>()
+            .register_type::<Icon>()
+            .register_type::<IconTone>()
+            .register_type::<IconSize>()
+            .register_type::<IconMissing>()
+            .register_type::<FieldProblem>()
+            .register_type::<Progress>()
+            .register_type::<ProgressText>()
+            .register_type::<ProgressClamped>()
+            .register_type::<Spinner>()
             .register_type::<Binding>()
             .register_type::<Shortcut>()
             .register_type::<Modifiers>()
@@ -349,7 +366,14 @@ impl Plugin for GooeyStylePlugin {
             .add_systems(
                 Update,
                 (
-                    update_toasts,
+                    (
+                        update_toasts,
+                        update_icons,
+                        update_field_problems,
+                        update_progress,
+                        update_spinners,
+                    )
+                        .chain(),
                     update_tooltip_text,
                     show_tooltips,
                     update_bindings,

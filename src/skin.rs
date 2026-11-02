@@ -12,6 +12,8 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
+use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
+use crate::icon::{IconSize, IconTone};
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
@@ -27,6 +29,13 @@ use crate::tooltip::TooltipBox;
 /// A meter's least length, in body text sizes: 8 × 20 px = 160 px at the default size, growing
 /// with [`GooeySkin::text_scale`].
 const METER_MIN_TEXT_SIZES: f32 = 8.0;
+
+/// A progress bar's least length, in body text sizes, so its line of words (the longest is about
+/// 25 sizes) never widens it as the numbers change.
+const PROGRESS_MIN_TEXT_SIZES: f32 = 28.0;
+
+/// A spinner's side, in body text sizes.
+const SPINNER_TEXT_SIZES: f32 = 1.5;
 
 /// A slider's least width, in body text sizes: 10 × 20 px = 200 px at the default size.
 const SLIDER_MIN_TEXT_SIZES: f32 = 10.0;
@@ -1230,6 +1239,21 @@ pub enum Role {
     /// A colour strip's rail, like a slider's rail but with a gradient of the colour's own for its
     /// fill.
     ColorRail,
+    /// An [`crate::icon`]: a square a step of [`GooeySkin::type_scale`] on a side, its image
+    /// tinted by its [`crate::IconTone`].
+    Icon,
+    /// The message of a [`crate::FieldProblem`], under its row: absolute, so it takes no room of
+    /// its own (the row keeps the room below itself).
+    FieldMessage,
+    /// The bar at the start of a problem's message, in the problem's colour.
+    FieldMark,
+    /// A [`crate::progress`]'s root: a column of a meter's track and a line of words.
+    Progress,
+    /// The words under a progress bar: body text.
+    ProgressLine,
+    /// A [`crate::spinner`]: a ring of [`GooeySkin::outline`] with one quarter in the
+    /// [`GooeySkin::accent`].
+    Spinner,
 }
 
 type Styled = (
@@ -1248,6 +1272,9 @@ type Styled = (
     )>,
     Option<&'static ComputedUiRenderTargetInfo>,
     Option<&'static mut TextCursorStyle>,
+    Option<&'static mut ImageNode>,
+    Option<&'static IconTone>,
+    Option<&'static IconSize>,
 );
 
 /// Every input a widget's look depends on, read once per run of [`apply_skin`], except the skin,
@@ -1321,6 +1348,10 @@ struct State {
     marked: bool,
     /// A row of a table that is an odd one of the display, drawn with a quiet band.
     band: bool,
+    /// The kind of the [`crate::FieldProblem`] on a text row, if it has one.
+    problem: Option<FieldProblemKind>,
+    /// How tall the problem's message stands, logical px.
+    problem_room: f32,
 }
 
 impl Default for State {
@@ -1344,6 +1375,8 @@ impl Default for State {
             open: false,
             marked: false,
             band: false,
+            problem: None,
+            problem_room: 0.0,
         }
     }
 }
@@ -1362,7 +1395,10 @@ type StateQuery = (
     Option<&'static ListView>,
     Has<Capturing>,
     Has<MenuOpen>,
-    Has<MenuMarked>,
+    (
+        Has<MenuMarked>,
+        Option<(&'static FieldProblem, &'static ProblemRoom)>,
+    ),
     Option<&'static TableRow>,
     Option<&'static Role>,
 );
@@ -1390,6 +1426,10 @@ type Restyle = (
             Added<PopoverPanel>,
             Added<MenuMarked>,
             Changed<TableRow>,
+            Changed<FieldProblem>,
+            Changed<ProblemRoom>,
+            Changed<IconTone>,
+            Changed<IconSize>,
         )>,
     )>,
 );
@@ -1405,6 +1445,7 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, MenuMarked>,
     RemovedComponents<'w, 's, SkinScope>,
     RemovedComponents<'w, 's, ChildOf>,
+    RemovedComponents<'w, 's, FieldProblem>,
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
@@ -1466,8 +1507,18 @@ pub fn apply_skin(
             warn!("bevy_gooey: scoped skin: {problem}");
         }
     }
-    let (unpressed, enabled, unchecked, unselected, stopped, closed, unmarked, unscoped, orphaned) =
-        &mut removed;
+    let (
+        unpressed,
+        enabled,
+        unchecked,
+        unselected,
+        stopped,
+        closed,
+        unmarked,
+        unscoped,
+        orphaned,
+        unproblemed,
+    ) = &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
         skin: &skin,
@@ -1492,7 +1543,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    marked,
+                    (marked, problem),
                     row,
                     role,
                 )| {
@@ -1520,6 +1571,8 @@ pub fn apply_skin(
                             || row.is_some_and(|r| r.cursor && look.focused == Some(r.table)),
                         open,
                         marked,
+                        problem: problem.map(|(problem, _)| problem.kind),
+                        problem_room: problem.map_or(0.0, |(_, room)| room.0),
                         band: row.is_some_and(|r| r.index % 2 == 1),
                     }
                 },
@@ -1565,6 +1618,7 @@ pub fn apply_skin(
         stopped.clear();
         closed.clear();
         unmarked.clear();
+        unproblemed.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -1602,6 +1656,7 @@ pub fn apply_skin(
     dirty.extend(stopped.read());
     dirty.extend(closed.read());
     dirty.extend(unmarked.read());
+    dirty.extend(unproblemed.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -1659,6 +1714,16 @@ pub fn apply_skin(
     }
 }
 
+/// The colour a [`crate::FieldProblem`] of `kind` is drawn in: the bar beside its message and the
+/// field's frame.
+fn problem_colour(skin: &GooeySkin, kind: Option<FieldProblemKind>) -> Color {
+    match kind {
+        Some(FieldProblemKind::Error) => skin.danger,
+        Some(FieldProblemKind::Warning) => skin.accent,
+        None => Color::NONE,
+    }
+}
+
 fn restyle(
     (
         entity,
@@ -1671,6 +1736,9 @@ fn restyle(
         floating,
         target,
         cursor,
+        image,
+        tone,
+        icon_size,
     ): bevy::ecs::query::QueryItem<'_, '_, Styled>,
     look: &Look,
     state: State,
@@ -1693,6 +1761,13 @@ fn restyle(
     // A choice's arrow: a button's width, or the chevron's own if the text has outgrown it.
     let arrow = skin.target().max(chevron * CHEVRON_ARROW_FIT);
     let in_dialog = parent.is_some_and(|p| p.scrim);
+    // The room a row keeps under itself for its problem's message: the message, the line its top
+    // overlaps (it is placed from the padding box) and a quarter gap of air.
+    let problem_room = Val::Px(if state.problem.is_some() {
+        state.problem_room + line + skin.gap * 0.25
+    } else {
+        0.0
+    });
     let fill = match role {
         Role::Panel if in_dialog => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
@@ -1758,6 +1833,7 @@ fn restyle(
             owner.alpha,
         )),
         Role::MeterFill => Some(skin.accent),
+        Role::FieldMark => Some(problem_colour(skin, owner.problem)),
         Role::ListRail => Some(skin.surface_raised),
         // A row has no fill at rest but a quiet band on every second one (never the only mark of
         // anything): lit by the pointer like a button, and by the accent while selected, with
@@ -1918,6 +1994,11 @@ fn restyle(
         | Role::MenuShortcut
         | Role::MenuChevron
         | Role::MenuNote
+        | Role::Icon
+        | Role::FieldMessage
+        | Role::Progress
+        | Role::ProgressLine
+        | Role::Spinner
         | Role::PaletteCount => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
@@ -2014,11 +2095,20 @@ fn restyle(
             skin.outline
         } else if look.editing == Some(entity) {
             skin.focus_ring
+        } else if owner.problem == Some(FieldProblemKind::Error) {
+            skin.danger
         } else if state.hovered {
             skin.text_muted
         } else {
             skin.outline
         })),
+        // A quarter of the ring is lit; the others are the outline, 3:1 on the panel.
+        Role::Spinner => Some(BorderColor {
+            top: skin.accent,
+            right: skin.outline,
+            bottom: skin.outline,
+            left: skin.outline,
+        }),
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         // The swatch and the area are framed in the outline and wear the ring when focused: what
         // they hold is any colour, so the frame is what a panel's 3:1 is measured on.
@@ -2077,6 +2167,10 @@ fn restyle(
                 } else {
                     Val::Px(skin.target())
                 };
+                // An icon beside the label stands half a gap from it; a lone label has no use for it.
+                if *role == Role::Button {
+                    next.column_gap = Val::Px(skin.gap * 0.5);
+                }
                 next.min_height = Val::Px(skin.target());
             }
             // A frame marks the whole length at 3:1 against the panel; the fill sits one line
@@ -2301,6 +2395,7 @@ fn restyle(
             // under, so its row has no side padding and no frame: the field's own frame is as wide
             // as the rows' lit bars under it.
             Role::TextInput | Role::PaletteField => {
+                next.margin = UiRect::bottom(problem_room);
                 let palette = *role == Role::PaletteField;
                 next.border = if palette {
                     UiRect::ZERO
@@ -2319,6 +2414,7 @@ fn restyle(
             // its left, a pad wide, makes the handle (padding, letter, gap) a target of at least 24 px
             // (WCAG 2.5.8); no frame, and none on the right, so the three fields stand a gap apart.
             Role::NumberPart => {
+                next.margin = UiRect::bottom(problem_room);
                 next.border = UiRect::ZERO;
                 next.padding = UiRect {
                     left: Val::Px(skin.pad()),
@@ -2610,6 +2706,38 @@ fn restyle(
                 next.flex_shrink = 0.0;
             }
             Role::MenuText => next.flex_grow = 1.0,
+            // A step of the type scale square, as tall as the text of the same step.
+            Role::Icon => {
+                let side = Val::Px(skin.type_size(icon_size.map_or(2, |size| size.0)));
+                next.width = side;
+                next.height = side;
+                next.flex_shrink = 0.0;
+            }
+            // Under its row, from the row's left edge to its right, its top a line and a quarter
+            // gap below the padding box so it clears the field's frame.
+            Role::FieldMessage => {
+                // Indented as the row's label is, so the bar and the words start under it.
+                next.padding = UiRect::horizontal(Val::Px(skin.pad() * 1.5));
+                next.column_gap = Val::Px(skin.gap * 0.5);
+                next.margin = UiRect::top(Val::Px(line + skin.gap * 0.25));
+            }
+            Role::FieldMark => {
+                next.width = Val::Px(line * 2.0);
+                next.flex_shrink = 0.0;
+                next.border_radius = radius;
+            }
+            Role::Progress => {
+                next.row_gap = Val::Px(skin.gap * 0.5);
+                next.min_width = Val::Px(text_px * PROGRESS_MIN_TEXT_SIZES);
+            }
+            Role::Spinner => {
+                let side = Val::Px(text_px * SPINNER_TEXT_SIZES);
+                next.width = side;
+                next.height = side;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = BorderRadius::MAX;
+                next.flex_shrink = 0.0;
+            }
             // Two gaps from the label at the least, never squeezed.
             Role::MenuShortcut => {
                 next.margin = UiRect::left(Val::Px(skin.gap + text_px * MENU_CHORD_TEXT_SIZES));
@@ -2639,9 +2767,28 @@ fn restyle(
         node.set_if_neq(next);
     }
 
+    // An icon is its image times a colour of the skin: the text's, following the widget it stands
+    // in (muted when disabled, the accent's text pressed), or a fixed tone.
+    if let (Role::Icon, Some(mut image)) = (role, image) {
+        let tone = tone.copied().unwrap_or_default();
+        let parent = parent.unwrap_or_default();
+        let disabled = parent.disabled || owner.disabled;
+        let color = match tone {
+            IconTone::Text if disabled => skin.text_muted,
+            IconTone::Text if parent.pressed || owner.pressed => skin.accent_text,
+            IconTone::Text => skin.text,
+            IconTone::Muted => skin.text_muted,
+            IconTone::Accent => skin.accent,
+            IconTone::Danger => skin.danger,
+        };
+        if image.color != color {
+            image.color = color;
+        }
+    }
+
     let text = match role {
         Role::Heading => Some((skin.text, &look.fonts.heading, skin.heading_size)),
-        Role::Label => Some((skin.text, &look.fonts.body, skin.text_size)),
+        Role::Label | Role::ProgressLine => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::ButtonText => {
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
