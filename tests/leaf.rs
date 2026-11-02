@@ -13,7 +13,7 @@
 use std::path::{Path, PathBuf};
 
 /// Everything this crate is allowed to depend on.
-const ALLOWED_DEPS: &[&str] = &["bevy", "serde"];
+const ALLOWED_DEPS: &[&str] = &["bevy", "serde", "accesskit"];
 
 /// Crate and type names that would mean the boundary has been crossed: a physics engine, the
 /// editor, a particular game, or a particular game's camera.
