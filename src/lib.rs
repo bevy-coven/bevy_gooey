@@ -179,7 +179,7 @@ mod tooltip;
 mod tree;
 mod widgets;
 
-pub use badges::{ShortcutBadge, ShortcutBadges, update_shortcut_badges};
+pub use badges::{BadgesShown, Reveal, ShortcutBadge, ShortcutBadges, update_shortcut_badges};
 pub use bevy::ui::Checked;
 pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, ValueChange, observe};
 pub use binding::{
@@ -345,6 +345,7 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<ToastSettings>()
             .init_resource::<MotionSettings>()
             .init_resource::<ShortcutBadges>()
+            .init_resource::<BadgesShown>()
             .init_resource::<ToastLog>()
             .init_resource::<CommandList>()
             .init_resource::<PaletteHistory>()
@@ -378,6 +379,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Binding>()
             .register_type::<Shortcut>()
             .register_type::<ShortcutBadges>()
+            .register_type::<Reveal>()
+            .register_type::<BadgesShown>()
             .register_type::<Modifiers>()
             .register_type::<Platform>()
             .register_type::<InputDevice>()

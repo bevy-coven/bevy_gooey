@@ -50,7 +50,7 @@ A tooltip teaches a chord to the player who waits for it. `ShortcutBadges` teach
 ```rust
 fn setup(mut commands: Commands) {
     // The defaults: Alt, held for 0.3 s. `Modifiers::default()` turns it off.
-    commands.insert_resource(ShortcutBadges { hold: Modifiers::ALT, delay_seconds: 0.3 });
+    commands.insert_resource(ShortcutBadges { hold: Reveal::Modifier(Modifiers::ALT), delay_seconds: 0.3 });
 
     commands.spawn((panel(), children![
         // The chord is a component on the widget.

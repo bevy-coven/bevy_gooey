@@ -51,7 +51,7 @@ fn app_with(skin: GooeySkin, badges: ShortcutBadges) -> App {
 
 fn instant() -> ShortcutBadges {
     ShortcutBadges {
-        hold: Modifiers::ALT,
+        hold: Reveal::Modifier(Modifiers::ALT),
         delay_seconds: 0.0,
     }
 }
@@ -195,7 +195,7 @@ fn the_badge_waits_for_the_delay_and_a_quick_tap_never_shows_it() {
     let mut app = app_with(
         GooeySkin::dark(),
         ShortcutBadges {
-            hold: Modifiers::ALT,
+            hold: Reveal::Modifier(Modifiers::ALT),
             delay_seconds: 0.35,
         },
     );
@@ -241,7 +241,7 @@ fn only_exactly_the_configured_modifiers_reveal_them() {
 
     // A chord of two.
     app.insert_resource(ShortcutBadges {
-        hold: Modifiers::CTRL | Modifiers::SHIFT,
+        hold: (Modifiers::CTRL | Modifiers::SHIFT).into(),
         delay_seconds: 0.0,
     });
     down(&mut app, KeyCode::ControlLeft);
@@ -255,7 +255,7 @@ fn only_exactly_the_configured_modifiers_reveal_them() {
 
     // None configured: the overlay is off.
     app.insert_resource(ShortcutBadges {
-        hold: Modifiers::NONE,
+        hold: Modifiers::NONE.into(),
         delay_seconds: 0.0,
     });
     down(&mut app, KeyCode::AltLeft);
@@ -463,4 +463,175 @@ fn a_frame_at_rest_writes_nothing_and_spawns_nothing() {
     }
     assert_eq!(app.world().resource::<Writes>().0, 0);
     assert_eq!(app.world().entities().len(), before);
+}
+
+fn on_key(key: KeyCode) -> ShortcutBadges {
+    ShortcutBadges {
+        hold: Reveal::Key(key),
+        delay_seconds: 0.0,
+    }
+}
+
+fn is_shown(app: &App) -> bool {
+    app.world().resource::<BadgesShown>().0
+}
+
+#[test]
+fn a_plain_key_reveals_the_badges_after_the_delay_and_letting_go_hides_them() {
+    let mut app = app_with(
+        GooeySkin::dark(),
+        ShortcutBadges {
+            hold: Reveal::Key(KeyCode::KeyK),
+            delay_seconds: 0.25,
+        },
+    );
+    let t = tools(&mut app);
+    down(&mut app, KeyCode::KeyK);
+    assert!(shown(&mut app).is_empty(), "0.1 s held");
+    assert!(!is_shown(&app));
+    app.update();
+    app.update();
+    let on_show = shown(&mut app);
+    assert_eq!(on_show.len(), 2, "0.3 s held: {on_show:?}");
+    assert!(on_show.iter().any(|(w, _)| *w == t.save));
+    assert!(is_shown(&app));
+    up(&mut app, KeyCode::KeyK);
+    assert!(shown(&mut app).is_empty(), "gone the frame the key goes up");
+    assert!(!is_shown(&app));
+    // Another key is not the reveal.
+    down(&mut app, KeyCode::KeyJ);
+    app.update();
+    assert!(shown(&mut app).is_empty() && !is_shown(&app));
+}
+
+#[test]
+fn a_plain_key_never_reveals_with_a_modifier_down_a_field_typing_or_a_row_waiting() {
+    let mut app = app_with(GooeySkin::dark(), on_key(KeyCode::KeyK));
+    tools(&mut app);
+    // Ctrl+K is the game's own chord, in either order.
+    down(&mut app, KeyCode::ControlLeft);
+    down(&mut app, KeyCode::KeyK);
+    app.update();
+    assert!(shown(&mut app).is_empty() && !is_shown(&app), "Ctrl then K");
+    up(&mut app, KeyCode::KeyK);
+    up(&mut app, KeyCode::ControlLeft);
+    down(&mut app, KeyCode::KeyK);
+    assert!(is_shown(&app));
+    down(&mut app, KeyCode::ShiftLeft);
+    assert!(
+        shown(&mut app).is_empty() && !is_shown(&app),
+        "K then Shift"
+    );
+    up(&mut app, KeyCode::ShiftLeft);
+    assert!(is_shown(&app), "Shift let go: K alone again");
+    up(&mut app, KeyCode::KeyK);
+
+    // A field that has focus is being typed in: the "k" is a letter.
+    let field = app.world_mut().spawn(TextEditing).id();
+    down(&mut app, KeyCode::KeyK);
+    app.update();
+    assert!(shown(&mut app).is_empty() && !is_shown(&app), "typing");
+    up(&mut app, KeyCode::KeyK);
+    app.world_mut().entity_mut(field).despawn();
+
+    // A row waiting for a press binds the key; it is no overlay.
+    let row = app.world_mut().spawn(Capturing).id();
+    down(&mut app, KeyCode::KeyK);
+    app.update();
+    assert!(shown(&mut app).is_empty() && !is_shown(&app), "waiting");
+    up(&mut app, KeyCode::KeyK);
+    app.world_mut().entity_mut(row).despawn();
+
+    // The same key held while typing stops, starts the overlay.
+    down(&mut app, KeyCode::KeyK);
+    let field = app.world_mut().spawn(TextEditing).id();
+    app.update();
+    assert!(!is_shown(&app), "typing began with the key down");
+    app.world_mut().entity_mut(field).despawn();
+    app.update();
+    assert!(is_shown(&app) && shown(&mut app).len() == 2);
+}
+
+#[test]
+fn a_released_key_hides_the_badges_wherever_focus_went() {
+    let mut app = app_with(GooeySkin::dark(), on_key(KeyCode::KeyK));
+    let t = tools(&mut app);
+    down(&mut app, KeyCode::KeyK);
+    assert!(is_shown(&app));
+    // Focus moves to another widget while the key is down.
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(t.open, FocusCause::Navigated);
+    app.world_mut().insert_resource(InputFocusVisible(true));
+    app.update();
+    assert!(is_shown(&app), "focus does not matter");
+    up(&mut app, KeyCode::KeyK);
+    assert!(shown(&mut app).is_empty() && !is_shown(&app));
+}
+
+#[test]
+fn never_shows_nothing_holds_no_time_and_switching_the_reveal_drops_the_badges_at_once() {
+    let mut app = app_with(
+        GooeySkin::dark(),
+        ShortcutBadges {
+            hold: Reveal::Never,
+            delay_seconds: 0.35,
+        },
+    );
+    tools(&mut app);
+    for code in [KeyCode::AltLeft, KeyCode::KeyK, KeyCode::ControlLeft] {
+        down(&mut app, code);
+    }
+    for _ in 0..6 {
+        app.update();
+    }
+    assert!(shown(&mut app).is_empty() && !is_shown(&app));
+    for code in [KeyCode::AltLeft, KeyCode::KeyK, KeyCode::ControlLeft] {
+        up(&mut app, code);
+    }
+
+    // Switch to the key with it already held: the time held under `Never` is not counted.
+    app.insert_resource(ShortcutBadges {
+        hold: Reveal::Key(KeyCode::KeyK),
+        delay_seconds: 0.35,
+    });
+    down(&mut app, KeyCode::KeyK);
+    assert!(
+        !is_shown(&app),
+        "the clock starts at the key, not at the switch"
+    );
+    app.update();
+    app.update();
+    app.update();
+    assert!(is_shown(&app));
+
+    // Back to Never while it is held: the badges go in that frame.
+    app.insert_resource(ShortcutBadges {
+        hold: Reveal::Never,
+        delay_seconds: 0.0,
+    });
+    app.update();
+    assert!(shown(&mut app).is_empty() && !is_shown(&app));
+}
+
+#[test]
+fn a_host_reads_shown_while_the_badges_stand_even_with_nothing_to_show_and_it_is_written_only_on_a_change()
+ {
+    let mut app = app_with(GooeySkin::dark(), instant());
+    // No widget has a chord: the overlay is still open, for a host's legend.
+    assert!(!is_shown(&app));
+    down(&mut app, KeyCode::AltLeft);
+    assert!(shown(&mut app).is_empty());
+    assert!(is_shown(&app), "up with nothing to label");
+    app.update();
+    app.world_mut().clear_trackers();
+    for _ in 0..5 {
+        app.update();
+        assert!(
+            !app.world().resource_ref::<BadgesShown>().is_changed(),
+            "a steady overlay writes nothing"
+        );
+    }
+    up(&mut app, KeyCode::AltLeft);
+    assert!(!is_shown(&app));
 }
