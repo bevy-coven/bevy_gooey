@@ -45,6 +45,7 @@ mod select;
 mod serde;
 mod shortcut;
 mod skin;
+mod slots;
 mod split;
 mod status_bar;
 mod table;

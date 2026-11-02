@@ -86,6 +86,9 @@ impl Default for DragSettings {
 /// Escape). A source that is also a [`bevy_ui_widgets::Button`](bevy::ui_widgets::Button) is
 /// activated by a click as before, and by a drag that ends on itself.
 ///
+/// Removing the `DragPayload` makes the node a source no more: pressing it lifts nothing (an
+/// inventory slot that was emptied). A node carries one payload type at a time.
+///
 /// Dragging is a shortcut and never the only way in (WCAG 2.2, 2.5.7): offer the same move as a
 /// command, a [`crate::context_menu`] item for instance.
 ///
@@ -105,7 +108,7 @@ impl Default for DragSettings {
 /// # }
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Eq)]
-#[component(on_add = payload_added::<T>)]
+#[component(on_add = payload_added::<T>, on_remove = payload_removed)]
 #[require(DragSource)]
 pub struct DragPayload<T: Clone + Send + Sync + 'static>(pub T);
 
@@ -227,6 +230,12 @@ fn payload_added<T: Clone + Send + Sync + 'static>(
         source.world_drop = Some(world_drop::<T>);
         source.refused = Some(refused::<T>);
     }
+}
+
+/// A node that loses its payload is no longer a source: pressing it lifts nothing (an emptied
+/// inventory slot).
+fn payload_removed(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    world.commands().entity(entity).try_remove::<DragSource>();
 }
 
 fn target_added<T: Clone + Send + Sync + 'static>(

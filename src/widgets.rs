@@ -68,6 +68,7 @@ use crate::region::FocusRegion;
 use crate::section::{SectionHeader, SectionOpen, header_on_activate, section_self_update};
 use crate::select::{SELECT_HINT, SELECT_NO_MATCH, Select, select_on_activate};
 use crate::skin::Role;
+use crate::slots::{Slot, SlotGrid, SlotItems};
 use crate::split::{
     Split, SplitAxis, SplitDivider, divider_on_cancel, divider_on_click, divider_on_drag,
     divider_on_drag_end, divider_on_drag_start, divider_on_key_input, divider_on_press,
@@ -934,6 +935,66 @@ pub fn radial<S: Into<String>>(items: impl IntoIterator<Item = S>, selected: usi
                 Pickable::IGNORE,
             )),
         )),
+    )
+}
+
+/// An inventory: a grid of square slots, `columns` to a row, each holding an item or empty
+/// (`None`), in reading order. A backpack, a hotbar, a chest, a shop shelf. The contents are data,
+/// [`SlotItems`] on the root: change it and the grid follows in the same frame, however many
+/// slots it has. A [`Slot`] is an item's name, its picture, its count and a tooltip line; a slot
+/// with a picture draws it (tinted by the skin, so draw it white on transparent) and one without
+/// draws its name, and a count above one sits in the corner.
+///
+/// Every slot is a real widget: Bevy's headless [`bevy::ui_widgets::Button`] with a focus ring and
+/// a tooltip. The grid is one tab stop ([`SlotCursor`](crate::SlotCursor): Tab enters on the slot the player last had
+/// and leaves on the next press), the arrows and the D-pad walk it, Home and End go to the ends of
+/// the row and with Ctrl of the grid. Choosing a slot (Enter, Space, South or a click) sends one
+/// `ValueChange<usize>` with `is_final: true` on the grid, empty or not; moving focus onto a slot
+/// sends one with `is_final: false`.
+///
+/// Moving an item is the crate's own drag and drop: the pointer drags a filled slot onto any
+/// slot (of this grid or another), and the keyboard and gamepad lift, steer and drop it
+/// ([`DragSettings`](crate::DragSettings)). The drop is one [`SlotMoved`](crate::SlotMoved) on the target grid; [`SlotMoved::apply`](crate::SlotMoved::apply)
+/// swaps the two slots, which is all a game with no rules needs. A slot is
+/// [`GooeySkin::text_size`](crate::GooeySkin::text_size) times four square, so it follows the
+/// player's text size. Wrap it in a [`list`] to scroll a long one.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands
+///     .spawn(slot_grid(
+///         5,
+///         [
+///             Some(Slot::new("Sword")),
+///             Some(Slot::new("Arrows").count(24)),
+///             None,
+///             None,
+///             None,
+///         ],
+///     ))
+///     .observe(|moved: On<SlotMoved>, mut grids: Query<&mut SlotItems>| {
+///         moved.apply(&mut grids);
+///     })
+///     .observe(|chosen: On<ValueChange<usize>>| {
+///         if chosen.is_final {
+///             info!("use slot {}", chosen.value);
+///         }
+///     });
+/// # }
+/// ```
+pub fn slot_grid(columns: usize, items: impl IntoIterator<Item = Option<Slot>>) -> impl Bundle {
+    let columns = columns.max(1);
+    (
+        Node {
+            display: Display::Grid,
+            grid_template_columns: RepeatedGridTrack::auto(columns as u16),
+            ..default()
+        },
+        Role::SlotGrid,
+        SlotGrid { columns },
+        SlotItems(items.into_iter().collect()),
     )
 }
 

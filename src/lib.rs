@@ -20,6 +20,8 @@
 //!   has the player's keys; [`text_area`] is the same several lines high), [`viewport`] and
 //!   [`FocusRegion`] (a tool's parts F6 walks between, one keeping the arrow keys for the host),
 //!   [`DragPayload`] and [`DropTarget`] (typed drag and drop: [`Dropped`], [`DroppedOnWorld`]),
+//!   [`slot_grid`] (an inventory of [`Slot`]s kept in [`SlotItems`], moved by that drag and drop:
+//!   [`SlotMoved`]),
 //!   [`number_field`] and [`vec_field`] (a number the player scrubs with a
 //!   drag on its label, types, or steps with Up, Down and the D-pad, held to a [`NumberRange`];
 //!   kept in [`NumberValue`], with [`MixedValue`] for a multi-selection that differs),
@@ -164,6 +166,7 @@ mod section;
 mod select;
 mod shortcut;
 mod skin;
+mod slots;
 mod split;
 mod status;
 mod table;
@@ -222,11 +225,11 @@ pub use model::{
     key_name, list_height, meter_fraction, mouse_name, natural_cmp, nearest_step, number_decimals,
     pad_name, page_target, parse_hex, parse_number, progress_text, radial_pick, radial_place,
     radial_step, relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
-    shortcut_conflicts, shortcut_label, slider_fraction, slider_text, snap_line_width, snap_to_row,
-    spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step, table_anchor,
-    table_step, table_window, target_step, target_toward, toast_alpha, toast_grow, toast_hold,
-    toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible, type_ahead,
-    window_ui_scale,
+    shortcut_conflicts, shortcut_label, slider_fraction, slider_text, slot_edge, snap_line_width,
+    snap_to_row, spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step,
+    table_anchor, table_step, table_window, target_step, target_toward, toast_alpha, toast_grow,
+    toast_hold, toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible,
+    type_ahead, window_ui_scale,
 };
 pub use nav::{
     Dialog, FocusScopes, focus_opened_dialogs, gamepad_adjust, gamepad_select, navigate_by_input,
@@ -258,6 +261,7 @@ pub use shortcut::{Modifiers, Platform, Shortcut};
 pub use skin::{
     Density, GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin,
 };
+pub use slots::{Slot, SlotCursor, SlotGrid, SlotItems, SlotMoved, SlotRef, update_slot_grids};
 pub use split::{
     Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, split_by_pad,
     update_splits,
@@ -287,9 +291,9 @@ pub use widgets::{
     heading, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, menu_title,
     meter, notification_center, number_field, pad_style, panel, popover, popover_modal, progress,
     prompt, prompts, radial, radio_item, screen, section, select, separator, skin_preset, slider,
-    spinner, split, status_bar, status_item, status_progress, submenu, surface, tab_page, table,
-    tabs, text_area, text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar,
-    toolbar_separator, tree, vec_field, viewport,
+    slot_grid, spinner, split, status_bar, status_item, status_progress, submenu, surface,
+    tab_page, table, tabs, text_area, text_input, text_size, toast, toast_alert, toggle,
+    toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -390,6 +394,11 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<RadialValue>()
             .register_type::<RadialCount>()
             .register_type::<RadialSlot>()
+            .register_type::<Slot>()
+            .register_type::<SlotItems>()
+            .register_type::<SlotGrid>()
+            .register_type::<SlotCursor>()
+            .register_type::<SlotRef>()
             .register_type::<ListView>()
             .register_type::<Split>()
             .register_type::<SplitAxis>()
@@ -434,6 +443,7 @@ impl Plugin for GooeyStylePlugin {
                     (
                         update_toasts,
                         update_notification_centers,
+                        update_slot_grids,
                         update_icons,
                         update_field_problems,
                         update_progress,
