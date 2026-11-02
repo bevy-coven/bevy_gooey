@@ -87,6 +87,7 @@ fn spec(role: Role) -> Spec {
         | Role::NotificationCenter
         | Role::Palette
         | Role::PaletteField
+        | Role::SlotGrid
         | Role::FieldMessage => Spec::Group,
         Role::Heading
         | Role::Label
@@ -126,6 +127,8 @@ fn spec(role: Role) -> Spec {
         | Role::Spinner
         | Role::Toolbar
         | Role::GroupOption
+        | Role::Slot
+        | Role::SlotEmpty
         | Role::Radial
         | Role::SectionNote => Spec::Node,
         Role::ButtonText
@@ -185,6 +188,9 @@ fn spec(role: Role) -> Spec {
         | Role::MenuSeparator
         | Role::ToolbarSeparator
         | Role::RadialTrack
+        | Role::SlotName
+        | Role::SlotCount
+        | Role::SlotIcon
         | Role::RadialSlot
         | Role::RadialText
         | Role::RadialCentre
@@ -227,6 +233,7 @@ struct Wanted {
 /// ("Dismiss", "More"); a host's own [`AccessibleLabel`] replaces it.
 const DIVIDER: &str = "Divider";
 const COLUMN_EDGE: &str = "Resize column";
+const EMPTY_SLOT: &str = "Empty slot";
 const COLOUR_AREA: &str = "Saturation and brightness";
 const COMMAND_FIELD: &str = "Command";
 
@@ -415,6 +422,13 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.role = Some(Ak::SpinButton);
             wanted.value = look.words(entity, |role| role == Role::RadialCentre);
         }
+        // A slot is its item's name, and its count where there is more than one; an empty one
+        // says so.
+        Role::Slot => {
+            wanted.name = look.words(entity, |role| role == Role::SlotName);
+            wanted.value = look.words(entity, |role| role == Role::SlotCount);
+        }
+        Role::SlotEmpty => wanted.name = Some(EMPTY_SLOT.to_owned()),
         Role::Binding => {
             wanted.name = look.control_text(entity);
             wanted.value = if facts.capturing {
