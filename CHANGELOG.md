@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.24.2] - 2026-11-02
+
 ### Fixed
 
 - A toast's buttons are never squeezed or touching (G-30, #34): `Role::ToastAction` is `flex_shrink: 0`, half a gap of margin on each side (two stand a gap apart) and `align_self: Center`, so a message that wraps over several lines no longer takes the room of "Show" and "Dismiss", which read "ShowDismiss" with no padding. A toast with no button is laid out as before.
