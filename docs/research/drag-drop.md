@@ -37,7 +37,7 @@ Drag a source onto an accepting target: one `Dropped`, none other. Release over 
 
 ## Deviations
 
-`Dropped` carries `pointer` besides `target` and `payload` (the issue's fields): a drop onto a viewport needs the position. Design default. `DropRefused` and `Dragging` are additions. The keyboard alternative is the host's (WCAG 2.5.7 asks for a single-pointer one; a context menu is one): assumed decision, recorded on the issue.
+`Dropped` carries `pointer` besides `target` and `payload` (the issue's fields): a drop onto a viewport needs the position. Design default. `DropRefused` and `Dragging` are additions. The keyboard alternative was left to the host (WCAG 2.5.7 asks for a single-pointer one; a context menu is one): assumed decision, recorded on the issue; **superseded in iteration 44**: the crate carries a payload from the keyboard and a pad itself, see `drag-drop-keyboard.md`.
 
 ## What great looks like
 
