@@ -530,7 +530,7 @@ fn stage_keys(
                 PointerInput::new(
                     PointerId::Mouse,
                     Location {
-                        target: NormalizedRenderTarget::Window(target.clone()),
+                        target: NormalizedRenderTarget::Window(target),
                         position,
                     },
                     action,

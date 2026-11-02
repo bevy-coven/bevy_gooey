@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-11-02
+
+The first publish since 0.27.0 (crates.io refuses with a 429): 0.30.0 also carries 0.28.0 and 0.29.0 below.
+
 ### Added
 
 - `SlotRules::new(|item, index| ..)` on a `slot_grid`: which items its slots take (`Slot::kind("helmet")` is a free label for it to read). A slot that will not take the carried item is a refused drop target while the item is over it: the drop mark and ghost turn red before the player lets go, a release sends one `SlotRefused { entity, from, to }` and moves nothing, and the keyboard and pad carry skip it. A move needs both ends to agree (a filled target's item goes back to the origin under the origin grid's rules); a locked slot is a rule that takes nothing. `docs/guide/inventory.md` has a Rules section and `docs/media/slot-rules.gif` shows it; `examples/inventory` has an Equipment row and the staged step `GOOEY_KEYS=drag:b0>e1`.
