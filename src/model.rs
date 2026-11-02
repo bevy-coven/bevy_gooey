@@ -1996,9 +1996,123 @@ pub fn bar_fit(widths: &[f32], ranks: &[u32], gap: f32, room: f32, reserve: f32)
     shown
 }
 
+/// A direction on the screen, `y` growing down, in which a carried payload's mark moves.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Toward {
+    /// Towards the top of the screen.
+    Up,
+    /// Towards the bottom.
+    Down,
+    /// Towards the left.
+    Left,
+    /// Towards the right.
+    Right,
+}
+
+/// The least distance along a direction, in logical pixels, for a target to lie "that way".
+const TOWARD_EPSILON: f32 = 0.5;
+
+/// Which of `rects` (`[x0, y0, x1, y1]`, `y` down) a payload carried by key moves to from `from`
+/// when the player presses `toward`: the nearest whose centre lies strictly that way. The score is
+/// the distance along the direction plus twice the distance across it, the usual weight of spatial
+/// navigation, so a target straight ahead beats a nearer one far to the side; the lowest wins and a
+/// tie goes to the lower index. `None` when nothing lies that way (the mark stays where it is).
+///
+/// ```
+/// use bevy_gooey::{Toward, target_toward};
+/// let from = [0., 0., 10., 10.];
+/// let rects = [[20., 0., 30., 10.], [20., 40., 30., 50.], [-30., 0., -20., 10.]];
+/// assert_eq!(target_toward(from, &rects, Toward::Right), Some(0));
+/// assert_eq!(target_toward(from, &rects, Toward::Left), Some(2));
+/// assert_eq!(target_toward(from, &rects, Toward::Up), None);
+/// ```
+pub fn target_toward(from: [f32; 4], rects: &[[f32; 4]], toward: Toward) -> Option<usize> {
+    let centre = |r: &[f32; 4]| [(r[0] + r[2]) / 2.0, (r[1] + r[3]) / 2.0];
+    let origin = centre(&from);
+    let mut best: Option<(usize, f32)> = None;
+    for (index, rect) in rects.iter().enumerate() {
+        let at = centre(rect);
+        let (dx, dy) = (at[0] - origin[0], at[1] - origin[1]);
+        let (along, across) = match toward {
+            Toward::Right => (dx, dy.abs()),
+            Toward::Left => (-dx, dy.abs()),
+            Toward::Down => (dy, dx.abs()),
+            Toward::Up => (-dy, dx.abs()),
+        };
+        if along.is_nan() || along <= TOWARD_EPSILON || !across.is_finite() {
+            continue;
+        }
+        let score = along + 2.0 * across;
+        if best.is_none_or(|(_, lowest)| score < lowest) {
+            best = Some((index, score));
+        }
+    }
+    best.map(|(index, _)| index)
+}
+
+/// The next (or previous) of `rects` in reading order (top to bottom by the top edge, left to right
+/// by the left edge, ties by index), wrapping at the ends: the step of a payload carried by key
+/// that is not a direction (PageDown, a bumper). With no `current` the first is next and the last
+/// is previous. `None` only when there are no rects.
+///
+/// ```
+/// use bevy_gooey::target_step;
+/// let rects = [[0., 50., 10., 60.], [0., 0., 10., 10.], [20., 0., 30., 10.]];
+/// assert_eq!(target_step(&rects, None, true), Some(1));
+/// assert_eq!(target_step(&rects, Some(1), true), Some(2));
+/// assert_eq!(target_step(&rects, Some(0), true), Some(1));
+/// ```
+pub fn target_step(rects: &[[f32; 4]], current: Option<usize>, forward: bool) -> Option<usize> {
+    let mut order: Vec<usize> = (0..rects.len()).collect();
+    order.sort_by(|&a, &b| {
+        rects[a][1]
+            .total_cmp(&rects[b][1])
+            .then(rects[a][0].total_cmp(&rects[b][0]))
+            .then(a.cmp(&b))
+    });
+    let last = order.len().checked_sub(1)?;
+    let at = current.and_then(|c| order.iter().position(|&i| i == c));
+    let next = match (at, forward) {
+        (None, true) => 0,
+        (None, false) => last,
+        (Some(at), true) => (at + 1) % order.len(),
+        (Some(at), false) => (at + last) % order.len(),
+    };
+    Some(order[next])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_carried_payload_steers_to_the_nearest_target_that_way() {
+        let from = [0., 0., 10., 10.];
+        // Straight ahead and far beats near and far to the side.
+        let rects = [
+            [30., 0., 40., 10.],
+            [12., 30., 22., 40.],
+            [-30., 0., -20., 10.],
+        ];
+        assert_eq!(target_toward(from, &rects, Toward::Right), Some(0));
+        assert_eq!(target_toward(from, &rects, Toward::Left), Some(2));
+        assert_eq!(target_toward(from, &rects, Toward::Down), Some(1));
+        assert_eq!(target_toward(from, &rects, Toward::Up), None);
+        // A target on the same centre (the one the mark is on) is no step, and nothing is None.
+        assert_eq!(target_toward(from, &[from], Toward::Right), None);
+        assert_eq!(target_toward(from, &[], Toward::Right), None);
+    }
+
+    #[test]
+    fn stepping_through_targets_goes_in_reading_order_and_wraps() {
+        let rects = [[0., 50., 10., 60.], [0., 0., 10., 10.], [20., 0., 30., 10.]];
+        assert_eq!(target_step(&rects, Some(2), true), Some(0));
+        assert_eq!(target_step(&rects, Some(0), true), Some(1));
+        assert_eq!(target_step(&rects, Some(1), false), Some(0));
+        assert_eq!(target_step(&rects, None, false), Some(0));
+        assert_eq!(target_step(&rects, Some(7), true), Some(1));
+        assert_eq!(target_step(&[], None, true), None);
+    }
 
     #[test]
     fn white_on_black_is_21_to_1() {
