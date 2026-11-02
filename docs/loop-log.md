@@ -1796,3 +1796,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. An inventory grid (slots with an item, a count and a lit state over a two-dimensional spatial walk, drag and drop already there).
 4. Tree rows: `level`, `expanded`, `size_of_set` and `position_in_set`; a table's row and column counts.
 5. Shortcut overlay: badges for menu items and `icon_button`s.
+
+**Release.** `cargo semver-checks` (baseline v0.24.0, the last published): 0.24.0 to 0.25.1 is already a major step, so it required nothing more, but 0.25.1 was tagged on an older commit and the new `Role` variants are breaking against it, so the version is **v0.26.0** (`release: v0.26.0`, tag `v0.26.0`). **`cargo publish` succeeded** after the 429s of the last three passes: https://crates.io/crates/bevy_gooey/0.26.0 (it carries 0.24.1 to 0.25.1). The release commit went out with the CHANGELOG's `[Unreleased]` header not yet renamed (a script slip); the next commit renames it, so the published package's CHANGELOG shows the radial entry under `[Unreleased]`. Pushed `main` (`6baaba4`), `loop/iter-45` and tag `v0.26.0`.
+
+**Cleanup.** Removed this pass's own: worktree `~/g45_base` (plain `git worktree remove`), `~/g45_gallery_before` and `~/g45_gallery_after` (the two gallery binaries) and `/tmp/g45` (captures, GIF frames, gate script and log, mutation backups). Leftovers listed, not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base` (detached at old commits, unchanged since iteration 17).
