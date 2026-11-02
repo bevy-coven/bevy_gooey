@@ -22,7 +22,7 @@ fn backpack(mut commands: Commands) {
 }
 ```
 
-![The inventory example: a Backpack of five columns and a Chest of four in one panel, slots with white-on-transparent icons (a sword, a potion with a count of 3, arrows with 24, a ruby, a key, a torch, gold, a map), empty slots as dark wells with a hairline, two text-only slots (Bread, Rope); the ring walks the backpack and tooltips open (Health potion, Arrows, Torch); Enter reads "Used Torch"; Alt+M lifts the torch, the arrows steer the mark through the backpack into the chest, Alt+M drops it and the panel reads "Moved Torch"; the ring is back in the backpack on the Cellar key](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/inventory.gif)
+![The inventory example: a Backpack of five columns, a Chest of four and an Equipment row of three in one panel, slots with white-on-transparent icons (a sword, a potion with a count of 3, arrows with 24, a ruby, a key, a torch, gold, a map), empty slots as dark wells with a hairline, two text-only slots (Bread, Rope); the ring walks the backpack and tooltips open (Health potion, Arrows, Torch); Enter reads "Used Torch"; Alt+M lifts the torch, the slots that take it get a light frame (the Equipment row's weapon and charm slots, which refuse it, stay dark), the arrows steer the mark through the backpack into the chest, Alt+M drops it and the panel reads "Moved Torch"; the ring went with the torch and two Lefts put it on the gold](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/inventory.gif)
 
 *`examples/inventory`: Tab enters the backpack, the arrows walk it (tooltips follow the ring), Enter uses the torch, Alt+M lifts it, the arrows steer it across to the chest and Alt+M drops it.*
 
@@ -93,11 +93,12 @@ commands.spawn((
 .observe(|refused: On<SlotRefused>| warn!("slot {} will not take that", refused.to));
 ```
 
-![The inventory example with an Equipment row: the pointer lifts the Iron sword and moves it over the torch slot, where the landing mark and the ghost turn red and the line below reads "Iron sword does not fit there"; it is let go there and nothing moves; the second drag puts the sword in the weapon slot, "Moved Iron sword".](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/slot-rules.gif)
+![The inventory example with an Equipment row: the pointer lifts the Iron sword, every slot that takes it is framed in a light outline and the torch slot, which refuses it, is dimmed; over the torch slot the landing mark and the ghost turn red and the line below reads "Iron sword does not fit there"; it is let go there and nothing moves; the second drag puts the sword in the weapon slot, "Moved Iron sword" and the frames are gone.](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/slot-rules.gif)
 
-*`examples/inventory` with `GOOEY_KEYS=drag:b0>e1,drag:b0>e0`: the sword over the torch slot is refused while it is still in the hand, then it goes to the weapon slot.*
+*`examples/inventory` with `GOOEY_KEYS=drag:b0>e1,drag:b0>e0`: the sword is lifted and the slots that take it are framed; over the torch slot it is refused while it is still in the hand, then it goes to the weapon slot.*
 
 - **The slot says no before the player lets go.** Over a slot that will not take the carried item the drop mark and the ghost take their refused look (red), as over any refusing [drop target](drag-drop.md); a release sends one `SlotRefused { entity: the grid, from, to }` (play your "no" sound there) and moves nothing. A keyboard or pad carry never lands on such a slot: the mark skips it.
+- **The slots that take the item say so at pick-up.** The moment an item is lifted (pointer, Alt+M or a pad) every slot that would take it, in any grid, is framed in the skin's `outline` (the frame the hover outline uses, held 3:1 against the panel in every preset), and a slot that refuses it is dimmed: a filled one becomes the panel's well with `text_muted` words and icon, an empty one keeps its quiet frame beside the lit ones. With no rule everything takes the item and the backpack only gets a calm frame; in an equipment panel the one slot that fits is the one that stands out. They are [`DropCandidate` and `DropRefusing`](drag-drop.md) on each slot while the drag lasts, and they come off the frame it ends.
 - **A move is allowed when both ends are.** A filled target's item goes back to where the carried one came from, so that slot's grid must take it there too (a helmet cannot be swapped for a sword). A drop across two grids obeys both grids' rules.
 - **A locked slot is a rule that takes nothing** (`|_, i| i != 3`); its item can still be taken out into a slot that takes it.
 - **Change the rule by writing the component again**; the next drag uses it. Do not remove it.
@@ -106,7 +107,7 @@ After a drop the focus follows the item: if the slot it came from had focus (a k
 
 ## Looks
 
-A filled slot is a button's fill; an empty one is the panel's own fill with its quiet frame, so the grid reads as wells. The focused slot wears the focus ring; the pressed one the accent. Every colour is the skin's and the count's words are held to 4.5:1 on its chip in every preset.
+A filled slot is a button's fill; an empty one is the panel's own fill with its quiet frame, so the grid reads as wells. The focused slot wears the focus ring; the pressed one the accent; while an item is carried a slot that takes it wears the `outline` and one that refuses it is dimmed. Every colour is the skin's and the count's words are held to 4.5:1 on its chip in every preset.
 
 ## Accessibility
 

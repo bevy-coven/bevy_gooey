@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- `DropCandidate` and `DropRefusing` (public marker components): while a drag is lifted, by pointer, keyboard or pad, every enabled, visible `DropTarget` that takes the carried payload has the first and every one that refuses it the second (the source and a node that is no target neither); both come off when the drag ends. They use the same test the drop and the keyboard steering use. A host styles its own targets with `Has<DropCandidate>`.
+- An inventory slot shows them: a slot that takes the lifted item is framed in the skin's `outline` (held 3:1 against `surface` by `problems()` in every preset), one that refuses it is dimmed (a filled one becomes the panel's well with `text_muted` words and icon). With no `SlotRules` everything takes the item and only a calm frame appears; in an equipment panel the slot that fits stands out. `docs/media/slot-rules.gif` and `inventory.gif` show it.
+
 ## [0.31.0] - 2026-11-02
 
 ### Added

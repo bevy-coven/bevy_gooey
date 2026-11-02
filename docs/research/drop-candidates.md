@@ -22,26 +22,26 @@ WAI-ARIA 1.1, `aria-dropeffect`: "Typically, drop effect functions can only be p
 
 ## Model adopted
 
-- **C1. `DropCandidate`** (public marker component, `Component + Reflect`): on every [`DropTarget`] node that takes the payload being carried, exactly while a drag is lifted. Not on the source itself (a drop there is a no-op), not on a target that refuses (a `DropTarget::accepting` test, a slot's rule on either end). It is the same test the drop and the keyboard steering use (`DropZone::takes`), so a candidate is exactly a place the carry can land.
-- **C2. One system, one rule.** `update_drop_candidates` (Style, first chain) puts and takes the marker on a difference only, for pointer, keyboard and pad carries; it runs its test only while a drag is lifted, and while none is it only takes the marker off whatever still has it.
-- **C3. The crate's look for slots**: a `Role::Slot` or `SlotEmpty` that is a candidate takes the skin's `accent` as its frame (the slot's frame is its own fill or the quiet edge otherwise), under the focus ring and over hover. `accent` is already held against `surface` and `surface_raised` at 3:1 by `problems()`, in every preset. Other targets get the marker and no look: a host styles its own with `Has<DropCandidate>`.
-- **C4. The look says "here", not "there".** Non-candidates are not dimmed: dimming every refused slot makes a full screen flicker at each pick-up, and the refusal under the pointer is already the red mark (R3).
+- **C1. `DropCandidate`** (public marker component, `Component + Reflect`): on every enabled, visible [`DropTarget`] node that takes the payload being carried, exactly while a drag is lifted. Not on the source itself (a drop there is a no-op). It is the same test the drop and the keyboard steering use (`DropZone::takes`), so a candidate is exactly a place the carry can land.
+- **C2. `DropRefusing`**: the opposite, on every enabled, visible target that refuses (a `DropTarget::accepting` test, a slot's rule on either end). One system, `update_drop_candidates` (Style, first chain), puts and takes both on a difference only, for pointer, keyboard and pad carries; it runs its test only while a drag is lifted, and while none is it only takes the marks off whatever still has them.
+- **C3. The crate's look, slots only**: a `Role::Slot` or `SlotEmpty` that is a candidate takes the skin's `outline` as its frame (the hover outline's colour, held 3:1 against `surface` by `problems()` in every preset); a refusing filled slot becomes the panel's well (`surface` fill, quiet frame, `text_muted` name and icon); the focus ring still wins. Other targets get the markers and no look: a host styles its own with `Has<DropCandidate>`.
+- **C4. The look says "here" calmly.** A first build framed takers in `accent` (amber). In the inventory example, with 40 slots mostly empty and every one taking the sword, the whole screen lit amber and the one slot that mattered, the weapon slot, was lost in it (capture `/tmp/g52/sheet.png`, iteration 52). The frame is the neutral `outline` instead, so a backpack where everything takes the item gets a calm frame and an equipment panel, where the takers are few, reads by contrast with the dimmed refusers; the red landing mark under the pointer is unchanged (R3).
 
 ## Parameters
 
-None new: `accent` and the slot's existing border width.
+None new: `outline`, `text_muted`, `surface` and the slot's existing border width.
 
 ## Validation targets
 
-Lifting the helm: the helmet slot and the empty backpack slots carry `DropCandidate`, the weapon-only slot (a rule that refuses it) does not, the source does not; let go, Escape or a cancelled drag removes it from all in the next frame; a keyboard carry marks the same set; a rule changed during the carry moves the set; a filled slot is a candidate only when it would also take the swap back (the back-rule of R2); a plain `DropTarget` with `accepting` follows its test; the candidate slot's frame is `accent` in all four looks at 3:1 against the slot's inside fill and the panel, the focus ring still wins on a focused candidate; thirty idle frames and thirty carried frames write no component.
+Lifting the sword: the helm's slot (it may go back), the free slots and the slots of a second grid carry `DropCandidate`, the helmet-only slot carries `DropRefusing`, the source neither; let go, Escape or a cancelled drag removes them in the next frame; a keyboard carry marks the same set; a rule changed during the carry moves the set; a filled slot is a candidate only when it would also take the swap back (the back-rule of R2); a plain `DropTarget` with `accepting` follows its test and a disabled one is neither; the taker's frame is `outline` and a refusing filled slot's fill, frame and words are `surface`, the quiet frame and `text_muted` in all four looks, the focus ring still wins on a focused taker; thirty carried frames write no component.
 
 ## Deviations
 
-A design default: candidates are framed, not filled, so a filled slot's icon is never tinted. No "locked slot" look (a locked slot is a rule that takes nothing; it shows no frame, which is the absence of a candidate frame). Not in scope: a hint for a stack merge.
+A design default: takers are framed in `outline`, not filled, so a filled slot's icon is never tinted; non-takers are dimmed only when filled (an empty slot refusing keeps the panel's well and its quiet frame, and is told apart by its neighbours' frames). No "locked slot" look beyond that. Not in scope: a hint for a stack merge.
 
 ## What great looks like
 
-An equipment panel beside a backpack: lift the helmet and, at once, the helmet slot and the free slots light with a thin accent frame while the weapon slot stays quiet; the pointer, still over the helmet's own slot, has the landing mark already on a quiet frame; moving across the weapon slot turns the mark red as before; the frames vanish the frame the item lands.
+An equipment panel beside a backpack: lift the sword and, at once, the weapon slot and the free slots take a clear light frame while the torch slot's icon turns grey; the pointer over the torch slot has the red landing mark as before; the frames vanish the frame the item lands.
 
 ## Pending index
 
