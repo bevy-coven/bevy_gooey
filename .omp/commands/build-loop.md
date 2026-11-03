@@ -330,7 +330,9 @@ proud of.
   hypothesis, and revert to the last GREAT state.
 - **Performance gate**, equal in weight: `mean_ms` from the gallery capture before and after, same
   machine and load. No regression over 0.5 ms without a logged trade.
-- While iterating, run only `cargo test --all-features --test <each test file you touched>` and `cargo clippy --all-targets --all-features -- -D warnings`. **The full gate (the `AGENTS.md` set) runs once, in section 8 step 6, on the merged tree.** Measured 2026-11-01: passes ran it about 2.25 times each at 13 minutes a run, 34% of pass time.
+- While iterating, run only `cargo nextest run --all-features -E 'binary(<each test file you touched>)'` and `cargo clippy --all-targets --all-features -- -D warnings`. **The full gate (the `AGENTS.md` set) runs once, in section 8 step 6, on the merged tree.** Measured 2026-11-01: passes ran it about 2.25 times each at 13 minutes a run, 34% of pass time.
+
+Fast testing across the home cloud — the host matrix, mold, sccache and the measured numbers — is `agents/TESTING.md` in the codex_fs depot: `/mnt/codex_fs/agents/TESTING.md`, or `ssh three cat /mnt/codex_fs/agents/TESTING.md` from a host that does not mount it.
 
 ## 8. Ship
 
