@@ -8,6 +8,10 @@
 //! action is declared only when it is handled, and a request for one that is not declared is
 //! ignored.
 
+use crate::model::radial_step;
+use crate::radial::{RadialCount, RadialValue, point_at};
+use crate::table::{Table, TableRow};
+use crate::tree::{TreeView, toggle};
 use accesskit::{Action, ActionData};
 use bevy::a11y::ActionRequest;
 use bevy::ecs::query::QueryData;
@@ -64,6 +68,10 @@ const FOLD: &[Action] = &[
     Action::Collapse,
 ];
 
+/// A tree row that has children: it opens and shuts, and is no button (Left and Right are the
+/// tree's, `tree_by_input`).
+pub(crate) const TREE_BRANCH: &[Action] = &[Action::Expand, Action::Collapse];
+
 /// The components that decide what a widget can be asked to do.
 #[derive(QueryData)]
 pub(crate) struct Handles {
@@ -75,6 +83,7 @@ pub(crate) struct Handles {
     number: Has<NumberInput>,
     area: Has<ColorArea>,
     choice: Has<ChoiceValue>,
+    radial: Option<(&'static RadialValue, &'static RadialCount)>,
     field: Option<&'static TextInputOf>,
     header: Has<SectionHeader>,
     title: Has<MenuTitle>,
@@ -94,7 +103,7 @@ pub(crate) fn actions_of(handles: &HandlesItem) -> &'static [Action] {
         STEP
     } else if handles.field.is_some() {
         TYPE
-    } else if handles.choice {
+    } else if handles.choice || handles.radial.is_some() {
         SPIN
     } else if folds(handles) {
         FOLD
@@ -119,6 +128,8 @@ pub(crate) struct Around<'w, 's> {
     parents: Query<'w, 's, &'static ChildOf>,
     lists: Query<'w, 's, &'static SelectedTab, With<TabList>>,
     sections: Query<'w, 's, &'static SectionOpen>,
+    rows: Query<'w, 's, &'static TableRow>,
+    trees: Query<'w, 's, &'static mut Table, (With<TreeView>, Without<InteractionDisabled>)>,
 }
 
 /// Does what an assistive technology asked of a widget, through the widget's own event. A request
@@ -129,7 +140,7 @@ pub(crate) fn act_on_requests(
     mut focus: ResMut<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     widgets: Query<Handles>,
-    around: Around,
+    mut around: Around,
     mut commands: Commands,
 ) {
     for request in requests.read() {
@@ -140,6 +151,23 @@ pub(crate) fn act_on_requests(
             continue;
         };
         let action = request.action;
+        // A tree row is a pooled entity with no widget behind it: Expand and Collapse go to the
+        // table's own toggle, which does nothing for an end node or a state already held.
+        if matches!(action, Action::Expand | Action::Collapse)
+            && let Ok(row) = around.rows.get(entity)
+        {
+            let (table, key) = (row.table, row.key);
+            if let Ok(mut tree) = around.trees.get_mut(table) {
+                toggle(
+                    table,
+                    &mut tree,
+                    key,
+                    Some(action == Action::Expand),
+                    &mut commands,
+                );
+            }
+            continue;
+        }
         if !actions_of(&handles).contains(&action) {
             continue;
         }
@@ -179,6 +207,9 @@ pub(crate) fn act_on_requests(
                         entity,
                         to: Move::Step(direction),
                     });
+                } else if let Some((value, count)) = handles.radial {
+                    let to = radial_step(value.0, count.0, direction);
+                    point_at(&mut commands, entity, value.0, to);
                 }
             }
             Action::SetValue => match &request.data {

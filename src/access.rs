@@ -21,7 +21,7 @@ use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy::ui::{Checked, InteractionDisabled, Selected};
 
-use crate::access_actions::{Handles, MANAGED, actions_of};
+use crate::access_actions::{Handles, MANAGED, TREE_BRANCH, actions_of};
 use crate::binding::Capturing;
 use crate::choice::ChoiceValue;
 use crate::color::ColorSwatch;
@@ -31,11 +31,11 @@ use crate::progress::Progress;
 use crate::section::{SectionHeader, SectionOpen};
 use crate::skin::Role;
 use crate::split::{SplitDivider, SplitFraction};
-use crate::table::TableRow;
+use crate::table::{Table, TableRow};
 use crate::text::{AreaField, TextInputOf, TextInputValue};
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::Tooltip;
-use crate::tree::TreeView;
+use crate::tree::{Tree, TreeView};
 
 /// What a role is to an assistive technology.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -237,6 +237,21 @@ struct Wanted {
     toggled: Option<bool>,
     selected: Option<bool>,
     expanded: Option<bool>,
+    /// A tree row that can be opened and shut: it declares Expand and Collapse.
+    tree_branch: bool,
+    /// A tree row with no children: it is not expandable, so a state its pooled entity said while
+    /// it was another node's must go.
+    end_node: bool,
+    /// A tree row's depth, from 0 as AccessKit counts (the platform adapters add the 1).
+    level: Option<usize>,
+    /// A tree row's place among the rows shown, from 0.
+    position_in_set: Option<usize>,
+    /// A tree's rows shown: the platform reads a row's set size from its container.
+    size_of_set: Option<usize>,
+    /// A table row's index among all rows, from 0.
+    row_index: Option<usize>,
+    row_count: Option<usize>,
+    column_count: Option<usize>,
     popup: bool,
     modal: bool,
     hidden: bool,
@@ -289,6 +304,7 @@ pub(crate) struct Look<'w, 's> {
     sections: Query<'w, 's, &'static SectionOpen>,
     fractions: Query<'w, 's, &'static SplitFraction>,
     trees: Query<'w, 's, (), With<TreeView>>,
+    tables: Query<'w, 's, (&'static Table, Has<InteractionDisabled>)>,
     tooltips: Query<'w, 's, &'static Tooltip>,
 }
 
@@ -462,17 +478,36 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.name = look.words(entity, |role| role == Role::ToastText);
         }
         Role::ToastAction => wanted.name = look.words(entity, names),
+        // A table's rows are a pool of a dozen entities rebound while scrolling, so the whole
+        // set's size and each row's place are said here: a reader announces "row 5 of 10,000",
+        // never "row 5 of 12".
         Role::Table => {
-            wanted.role = Some(if look.trees.contains(entity) {
-                Ak::Tree
+            let rows = look.tables.get(entity).ok().map(|(table, _)| table.len());
+            if look.trees.contains(entity) {
+                wanted.role = Some(Ak::Tree);
+                wanted.size_of_set = rows;
             } else {
-                Ak::Table
-            });
+                wanted.role = Some(Ak::Table);
+                wanted.row_count = rows;
+                wanted.column_count = look
+                    .tables
+                    .get(entity)
+                    .ok()
+                    .map(|(table, _)| table.columns().len());
+            }
         }
         Role::TableRow => {
             let tree = facts.row.is_some_and(|row| look.trees.contains(row.table));
             wanted.role = Some(if tree { Ak::TreeItem } else { Ak::Row });
             wanted.selected = Some(facts.selected);
+            if let Some(row) = facts.row {
+                if tree {
+                    wanted.position_in_set = Some(row.index);
+                    tree_place(&mut wanted, row, look);
+                } else {
+                    wanted.row_index = Some(row.index);
+                }
+            }
         }
         Role::TableCell => {
             wanted.role = Some(Ak::Cell);
@@ -562,10 +597,39 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
         wanted.name = Some(label.0.clone());
     }
     wanted.disabled = facts.disabled;
-    wanted.actions = actions_of(&facts.handles);
+    wanted.actions = if wanted.tree_branch {
+        TREE_BRANCH
+    } else {
+        actions_of(&facts.handles)
+    };
     wanted.hidden = facts.seen.is_some_and(|seen| !seen.get())
         || facts.node.is_some_and(|node| node.display == Display::None);
     Some(wanted)
+}
+
+/// A tree row's depth and whether it opens, read from the [`Tree`] by the row's key: a row is a
+/// pooled entity, so the node it shows changes under it. A branch that cannot be opened (the
+/// tree is disabled) still says its state, and declares no action.
+fn tree_place(wanted: &mut Wanted, row: &TableRow, look: &Look) {
+    let Ok((table, disabled)) = look.tables.get(row.table) else {
+        return;
+    };
+    let Some(outline) = table
+        .source::<Tree>()
+        .and_then(|tree| tree.outline_of(row.key))
+    else {
+        return;
+    };
+    wanted.level = Some(outline.depth);
+    match outline.open {
+        Some(open) => {
+            wanted.expanded = Some(open);
+            if !disabled {
+                wanted.tree_branch = true;
+            }
+        }
+        None => wanted.end_node = true,
+    }
 }
 
 /// Whether `node` already says everything `wanted` asks.
@@ -587,6 +651,23 @@ fn says(node: &Node_, wanted: &Wanted) -> bool {
         && wanted
             .expanded
             .is_none_or(|expanded| node.is_expanded() == Some(expanded))
+        && (!wanted.end_node || node.is_expanded().is_none())
+        && wanted.level.is_none_or(|level| node.level() == Some(level))
+        && wanted
+            .position_in_set
+            .is_none_or(|at| node.position_in_set() == Some(at))
+        && wanted
+            .size_of_set
+            .is_none_or(|size| node.size_of_set() == Some(size))
+        && wanted
+            .row_index
+            .is_none_or(|at| node.row_index() == Some(at))
+        && wanted
+            .row_count
+            .is_none_or(|count| node.row_count() == Some(count))
+        && wanted
+            .column_count
+            .is_none_or(|count| node.column_count() == Some(count))
         && (!wanted.popup || node.has_popup() == Some(HasPopup::Menu))
         && node.is_modal() == wanted.modal
         && node.is_hidden() == wanted.hidden
@@ -622,6 +703,27 @@ fn write(node: &mut Node_, wanted: &Wanted) {
     }
     if let Some(expanded) = wanted.expanded {
         node.set_expanded(expanded);
+    }
+    if wanted.end_node {
+        node.clear_expanded();
+    }
+    if let Some(level) = wanted.level {
+        node.set_level(level);
+    }
+    if let Some(at) = wanted.position_in_set {
+        node.set_position_in_set(at);
+    }
+    if let Some(size) = wanted.size_of_set {
+        node.set_size_of_set(size);
+    }
+    if let Some(at) = wanted.row_index {
+        node.set_row_index(at);
+    }
+    if let Some(count) = wanted.row_count {
+        node.set_row_count(count);
+    }
+    if let Some(count) = wanted.column_count {
+        node.set_column_count(count);
     }
     if wanted.popup {
         node.set_has_popup(HasPopup::Menu);

@@ -115,7 +115,7 @@ impl RadialSlot {
 }
 
 /// Points a radial at item `to`: one non-final [`ValueChange`], or nothing when it is already there.
-fn point_at(commands: &mut Commands, radial: Entity, now: usize, to: usize) {
+pub(crate) fn point_at(commands: &mut Commands, radial: Entity, now: usize, to: usize) {
     if to != now {
         commands.trigger(ValueChange {
             source: radial,

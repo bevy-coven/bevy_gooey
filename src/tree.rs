@@ -275,7 +275,15 @@ impl Tree {
     }
 
     pub(crate) fn outline(&self, row: usize) -> Outline {
-        let i = self.shown[row];
+        self.node_outline(self.shown[row])
+    }
+
+    /// The outline of the node `key`, shown or not.
+    pub(crate) fn outline_of(&self, key: u64) -> Option<Outline> {
+        self.by_key.get(&key).map(|&i| self.node_outline(i))
+    }
+
+    fn node_outline(&self, i: usize) -> Outline {
         Outline {
             depth: self.depths[i] as usize,
             open: (self.ends[i] > i + 1).then_some(self.open[i]),
@@ -460,7 +468,7 @@ pub(crate) fn bind_lead(lead: &Lead, outline: Outline, indent: f32, nodes: &mut 
 
 /// Opens or closes `key` for the player and says so; nothing for a node with no children or that
 /// is already so.
-fn toggle(
+pub(crate) fn toggle(
     entity: Entity,
     table: &mut Mut<Table>,
     key: u64,
