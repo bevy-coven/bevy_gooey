@@ -53,6 +53,7 @@ A health bar riding above a moving enemy with no lag against its sprite at any s
 
 - Hiding writes `Visibility`, which the anchor owns while it is present. A design default (the alternative, a `Display` flip, collides with a game that collapses the same node).
 - `Pin` keeps the ray toward the point rather than clamping each axis separately: the position says the direction. A design default.
+- A pinned node is also pinned while its point is in the viewport but inside the 5% safe edge (the box would be cut by the edge otherwise), so a beacon never half-leaves the screen; shipped in `world`'s capture. A design default.
 - No fade by distance, no scale by distance, no occlusion test (a thing behind a wall is still anchored): all are the game's, because each needs its own world data (a design default).
 
 ## Pending index

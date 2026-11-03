@@ -46,8 +46,9 @@
 //!   [`context_menu`] that any entity opens with [`ContextMenu`] on a right-click or Shift+F10. Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
-//!   to the game under a HUD, while every widget on it takes the pointer. A toast takes no input
-//!   and no focus.
+//!   to the game under a HUD, while every widget on it takes the pointer. A [`WorldAnchor`] on a
+//!   root node makes it follow a point in the world (a health bar, a prompt, a beacon pinned to the
+//!   screen's edge). A toast takes no input and no focus.
 //! - Navigation — [`GooeyNavPlugin`]: arrows and the D-pad move focus to the nearest widget
 //!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles.
 //!   Keys and the pad show the focus ring; a pointer press hides it. With nothing focused (a click
