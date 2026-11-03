@@ -69,6 +69,27 @@ widget inside a clipped container (a row of a `list`) draws over the clip rather
 
 ## A dialog
 
+**A question with choices is one line: `confirm(title, body, choices)`.** It spawns the dialog, its
+panel, the title, the line of body (none when it is empty) and a button for each choice, and answers
+with one `ConfirmChosen { entity, index, cancelled }` before it despawns itself. The last choice is
+the safe one: it has focus when the dialog opens, and Escape or the pad's B answers with it
+(`cancelled: true`); `.safe(0)` moves it when the safe choice comes first. Enter, Space, South and a
+click answer with the button's own index. Focus goes back to the opener, as for any dialog.
+
+```rust
+commands.spawn((
+    confirm("Leave the game?", "Progress since the last autosave is lost.", ["Leave", "Stay"]),
+    observe(|chosen: On<ConfirmChosen>, mut exit: MessageWriter<AppExit>| {
+        if chosen.index == 0 {
+            exit.write(AppExit::Success);
+        }
+    }),
+));
+```
+
+Use the `dialog()` form below when the dialog holds something of its own (a slider, a text field).
+Research: `docs/research/confirm.md`.
+
 `dialog()` is the modal wrapper; spawn the dialog's own `panel()` inside it. Focus moves to its first
 button when it opens, Tab, the arrows and the D-pad cannot leave it, and closing it puts focus back on
 the button that opened it. Put `AutoFocus` on the dialog's safest choice ("Stay", "Cancel") to start
