@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `WorldAnchor` (`docs/research/world-anchor.md`, `docs/guide/world-anchor.md`, `examples/world`): a root UI node that follows a world point, in one component (`commands.spawn((meter(0.8, 1.0), WorldAnchor::above(enemy, 1.2)))`). It is a relationship (`WorldAnchors` on the target, `linked_spawn`: the node is despawned with its target), placed in `PostUpdate` after transform propagation and before UI layout so it is never a frame behind, with a `pivot`, an optional named `camera`, `OffScreen::Hide` (hidden while none of the node is in the viewport or the point is behind the camera) or `OffScreen::Pin` (kept whole inside the 5% safe edge on the line toward the point, with `AnchorPinned { direction }` for an arrow), and `Pickable::IGNORE` required so a nameplate never blocks a click. `model::{pin_to_edge, box_outside}`. `tests/anchor.rs`, 10 tests (mutation-checked: `PostUpdate` ordering, the `UiScale` division, the behind-camera direction).
+
 ## [0.32.3] - 2026-11-03
 
 ### Added

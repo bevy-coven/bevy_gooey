@@ -2236,3 +2236,29 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 58).** Additive (`cargo semver-checks --baseline-rev v0.32.2`: 202 pass, no update required): `release: v0.32.3`, published (https://crates.io/crates/bevy_gooey/0.32.3), tag `v0.32.3` pushed.
 
 **Cleanup (iteration 58).** Removed this pass's own `/tmp/g58` (baseline gallery binary, captures, gate script, critique) and the Xvfb `:93` it started; no baseline worktree was made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
+
+## Iteration 59 — 2026-11-03 — `WorldAnchor`: an interface that follows a thing in the world
+
+**Triage.** Last audit row (pass 86): `demo?` only (iterations 56 to 58, "no visible change"). One open issue, #38 (`consumer:bevy_grimoire`): the host has not replied to the debug-logging release (no comment, nothing in `git log`), so skipped, waiting on the host's `RUST_LOG=bevy_gooey::split=debug` output. Every other `G-NN` request is closed; no open bevy_grimoire `ui` issue names an unbuilt gooey issue. Parked work: only `wiggum/parked-pass-23-…` (old, unrelated). home-still: `hs distill search` 500 `gpu busy`; corpus scan skipped, listed under the note's `Pending index`.
+
+**Pick.** Ranked: (1) `WorldAnchor`: a health bar over an enemy, a "Press E" over a door and a beacon for an off-screen objective are in nearly every shipped game, and a game hand-writes `world_to_viewport`, the `UiScale` division, the behind-camera case and the cleanup each time (the crate had nothing: `grep world_to_viewport src` empty); (2) accessibility `ReplaceSelectedText` and a table cell's `column_index`; (3) one keycap vocabulary for badges and legend; (4) lone-slot cue; (5) motion (dialog exit, scrim fade). (1) wins: "a widget that needs more than a few lines to use is not done" and a HUD is the crate's stated first use.
+
+**Sources** (`docs/research/world-anchor.md`, committed alone first): craft, Fagerholt and Lorentzon, *Beyond the HUD* (Chalmers / EA DICE, 2009; downloaded and searched: "Geometric elements are UI elements presented in the 3D geometry without being an entity of the fictional game world"); shipping games, the same thesis's game study (Mirror's Edge checkpoint beacons, Left 4 Dead outlines, Heavy Rain's spatial elements); technical, Bevy 0.20's `Camera::world_to_viewport` (fails past the planes) and `bevy_ecs::relationship` (`linked_spawn`).
+
+**What changed.** `src/anchor.rs`: `WorldAnchor { target, offset, pivot, off_screen, camera }` (a Bevy relationship: `WorldAnchors` on the target with `linked_spawn`, so the node is despawned with the thing; requires `Node`, `Pickable::IGNORE`, `Visibility::Hidden`), `OffScreen::{Hide, Pin}`, `AnchorPinned { direction }` and `update_world_anchors`, the crate's one system outside `Update`: `PostUpdate` after `TransformSystems::Propagate` and `CameraUpdateSystems`, before `UiSystems::Prepare` (bevy_ui 0.20 does not order layout against transform propagation any more, so the node is on the point in the frame it is drawn; in `Update` it trails a moving target by a frame, which a test shows). `model::{pin_to_edge, box_outside}`. `examples/world.rs`, `docs/guide/world-anchor.md`, README line, `docs/media/world-anchor.gif`.
+
+**Tests** (`tests/anchor.rs`, 10, plus two in `model`; 871 in `all` after the gate; mutation-checked: the system moved to `Update` fails two, dropping the `/ UiScale` fails the 2x test, mirroring the behind-camera direction fails the perspective test): a meter stands at the exact pixel in the frame it spawns and in the frame it moves, at window scale 2 with a player UI scale 1.25, pivot, hide and return (a half-visible node still draws), pin inside the 5% edge with the direction and the marker gone on return, a point behind a perspective camera (hidden / pinned the way it lies), despawn of the target despawns its nodes at once and not another thing's, `Pickable::IGNORE` required and a game's own kept, a named world camera under a different UI camera, thirty idle frames writing nothing.
+
+**Demo.** `docs/media/world-anchor.gif` (800×450, 120 frames, 911 KB, `examples/world`, the sweep run by frame count so it is reproducible): five nameplates riding wandering enemies; "Camp  >" pinned inside the right edge, then "Camp" over the camp as the camera sweeps, then back to the edge.
+
+**Critique and verdict** (`/tmp/g59/after/w120.png`, `w330.png`, a six-frame montage): nameplates sit exactly above their sprite (name, bar), the beacon holds the 5% margin (right edge at 1216 of 1280) and its arrow text turns; the bar fills are proportional (0.85, 0.40, 0.62, 0.20, 1.0). Flaws: a nameplate half past the edge is cut by it until none of it is in view (by design, "a bar whose body is half in view still draws"); the beacon is a plain `panel()` with an ASCII arrow, a game would draw its own art; no fade by distance. Verdict **GREAT** for the API and the follow; the beacon's look is the game's.
+
+**Checklist.** No existing widget changed: nothing to compare. **mean_ms** gallery (1280×720, `GOOEY_HEALTH=60`, same machine, load 3.7): 22.63, 22.56, 24.47 against iteration 58's 22.9 to 24.4; the new system walks an empty query when no anchor exists. The world example: 22.7 to 23.7 ms with five nameplates.
+
+### Ranked backlog
+
+1. Whatever the host's debug output on #38 shows.
+2. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
+3. One keycap vocabulary for the shortcut badges and legend.
+4. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
+5. Motion: a scrim and card fade, a dialog exit (`Confirm` owns its despawn), a button press pop; a nameplate fade by distance hook for `WorldAnchor`.

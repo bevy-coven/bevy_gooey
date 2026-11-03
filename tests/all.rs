@@ -6,6 +6,7 @@
 //! `every_test_file_is_a_module` fails: an undeclared file is never compiled and its tests never run.
 
 mod access;
+mod anchor;
 mod badges;
 mod binding;
 mod cancel;

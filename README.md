@@ -147,7 +147,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
 - **Keep the interface's share of the screen at every resolution, and let the pointer through a HUD** — the
   skin's sizes scale with the window, every border stays a whole number of device pixels, and the empty part
   of a `screen` is `Pickable::IGNORE`: [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md),
-  [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md).
+  [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md); and `(meter(0.8, 1.0), WorldAnchor::above(enemy, 44.0))` is a health bar that rides a thing in the world (`.pinned()` keeps a beacon on the screen's edge toward it), gone with the thing: [world anchors](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/world-anchor.md).
 
 ![The gallery's settings panel: the ring moves from Quit onto the lit Audio tab, Right turns to Display (two choices), Right to Controls (two rebinding rows, Jump and Use) and Right wraps back to Audio, Down enters the page on the Volume slider, and Ctrl+PageDown turns to Display and then Controls with the ring landing on each new page's first widget](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tabs.gif)
 

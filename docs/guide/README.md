@@ -54,6 +54,8 @@ per subject. The README links each bullet to its page.
 - [Inspector](inspector.md) — `inspector(InspectTarget)` (feature `reflect`): the rows of a reflected component or
   resource, one widget per field, doc comments as tooltips, ranges from attributes, edits written back through
   `ReflectMut` as `InspectorChange`.
+- [World anchors](world-anchor.md) — `WorldAnchor::above(enemy, 1.2)` on any root node: a health bar, a prompt or a beacon that
+  follows a point in the world, hides or pins to the screen's edge off view (`AnchorPinned`), and is gone with its target.
 - [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Inventory](inventory.md) — `slot_grid(columns, items)`: a backpack or a chest of slots a game fills with
