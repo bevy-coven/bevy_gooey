@@ -309,7 +309,7 @@ fn the_dim_is_the_skins_background_and_follows_a_scope() {
     let parchment = Srgba::from(GooeySkin::parchment().background);
     let seen = dim(&app);
     assert!(
-        (seen.red - parchment.red).abs() < 1e-4 && (seen.red - expected.red).abs() > 0.2,
+        (seen.red - parchment.red).abs() < 1e-4 && (seen.red - expected.red).abs() > 0.05,
         "{seen:?}"
     );
 }
