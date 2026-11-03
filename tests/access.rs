@@ -646,6 +646,12 @@ fn a_settled_interface_marks_no_node_changed() {
         p.spawn(slider("Music", 0.5, 0.0..=1.0));
         p.spawn(choice("Quality", ["Low", "High"], 0));
         p.spawn(meter(5.0, 10.0));
+        p.spawn(outline());
+        p.spawn(table(
+            [Column::new("Name")],
+            vec![vec!["Rope".to_string()], vec!["Lamp".to_string()]],
+        ));
+        p.spawn(radial(["Sword", "Bow"], 0));
     });
     for _ in 0..30 {
         app.update();
@@ -981,4 +987,183 @@ fn a_request_for_a_node_that_is_gone_or_never_a_widget_does_nothing() {
     }
     assert_eq!(seen(&app).activations, 0);
     assert!(app.world().resource::<InputFocus>().get() != Some(title));
+}
+
+// --- A virtualized table and tree: a row knows its place and level -----------------------------
+
+/// The shown row of `table` for `key`, once the pool has bound it.
+fn row_of(app: &mut App, key: u64) -> Entity {
+    let world = app.world_mut();
+    let rows: Vec<(Entity, u64)> = world
+        .query::<(Entity, &TableRow)>()
+        .iter(world)
+        .map(|(entity, row)| (entity, row.key))
+        .collect();
+    let (entity, _) = rows
+        .into_iter()
+        .filter(|(entity, _)| {
+            world
+                .get::<AccessibilityNode>(*entity)
+                .is_some_and(|node| !node.0.is_hidden())
+        })
+        .find(|(_, k)| *k == key)
+        .unwrap_or_else(|| panic!("no shown row for key {key}"));
+    entity
+}
+
+/// A tree of A { B { D }, C } and E, with B shut: A, B, C and E are shown.
+fn outline() -> impl Bundle {
+    tree([
+        TreeNode::new(1, "A")
+            .expanded()
+            .child(TreeNode::new(2, "B").child(TreeNode::new(4, "D")))
+            .child(TreeNode::new(3, "C")),
+        TreeNode::new(5, "E"),
+    ])
+}
+
+#[derive(Resource, Default)]
+struct Toggles(Vec<(u64, bool)>);
+
+#[test]
+fn a_tree_row_says_its_level_whether_it_is_open_and_its_place_among_the_rows_shown() {
+    let mut app = app();
+    screen_with(&mut app, outline());
+    let tree = only::<Table>(&mut app);
+    assert_eq!(node(&app, tree).role(), Ak::Tree);
+    assert_eq!(node(&app, tree).size_of_set(), Some(4), "the rows shown");
+    // (key, level, expanded, position): AccessKit counts both from 0.
+    for (key, level, open, at) in [
+        (1, 0, Some(true), 0),
+        (2, 1, Some(false), 1),
+        (3, 1, None, 2),
+        (5, 0, None, 3),
+    ] {
+        let row = row_of(&mut app, key);
+        let n = node(&app, row);
+        assert_eq!(n.role(), Ak::TreeItem, "key {key}");
+        assert_eq!(n.level(), Some(level), "level of {key}");
+        assert_eq!(n.is_expanded(), open, "expanded of {key}");
+        assert_eq!(n.position_in_set(), Some(at), "position of {key}");
+    }
+}
+
+#[test]
+fn a_row_the_pool_rebinds_from_a_branch_to_an_end_node_drops_its_expanded_state() {
+    let mut app = app();
+    screen_with(&mut app, outline());
+    let tree = only::<Table>(&mut app);
+    // Closing A leaves A and E: the pool's rows are rebound, B's row is now E's.
+    if let Some(mut table) = app.world_mut().get_mut::<Table>(tree)
+        && let Some(rows) = table.source_mut::<Tree>()
+    {
+        rows.set_open(1, false);
+    }
+    settle(&mut app);
+    assert_eq!(node(&app, tree).size_of_set(), Some(2));
+    let e = row_of(&mut app, 5);
+    assert_eq!(
+        node(&app, e).is_expanded(),
+        None,
+        "an end node is not expandable"
+    );
+    assert_eq!(node(&app, e).position_in_set(), Some(1));
+    let a = row_of(&mut app, 1);
+    assert_eq!(node(&app, a).is_expanded(), Some(false));
+}
+
+#[test]
+fn an_assistive_technology_opens_and_closes_a_tree_node_through_the_trees_own_event() {
+    use accesskit::Action as A;
+    let mut app = app();
+    app.init_resource::<Toggles>()
+        .add_observer(|t: On<TreeToggled>, mut log: ResMut<Toggles>| {
+            log.0.push((t.key, t.open));
+        });
+    screen_with(&mut app, outline());
+    let tree = only::<Table>(&mut app);
+    let supports = |app: &App, row: Entity| {
+        [A::Expand, A::Collapse, A::Click, A::Focus]
+            .into_iter()
+            .filter(|a| node(app, row).supports_action(*a))
+            .collect::<Vec<_>>()
+    };
+    let b = row_of(&mut app, 2);
+    let c = row_of(&mut app, 3);
+    assert_eq!(supports(&app, b), [A::Expand, A::Collapse]);
+    assert_eq!(supports(&app, c), [], "an end node has nothing to open");
+
+    act(&mut app, b, A::Expand, None);
+    assert_eq!(app.world().resource::<Toggles>().0, [(2, true)]);
+    assert_eq!(node(&app, tree).size_of_set(), Some(5), "D is shown");
+    let d = row_of(&mut app, 4);
+    assert_eq!(node(&app, d).level(), Some(2));
+    assert_eq!(node(&app, d).position_in_set(), Some(2));
+
+    let b = row_of(&mut app, 2);
+    act(&mut app, b, A::Expand, None);
+    assert_eq!(app.world().resource::<Toggles>().0.len(), 1, "already open");
+    let c = row_of(&mut app, 3);
+    act(&mut app, c, A::Collapse, None);
+    assert_eq!(app.world().resource::<Toggles>().0.len(), 1, "an end node");
+    let b = row_of(&mut app, 2);
+    act(&mut app, b, A::Collapse, None);
+    assert_eq!(app.world().resource::<Toggles>().0, [(2, true), (2, false)]);
+    assert_eq!(node(&app, tree).size_of_set(), Some(4));
+}
+
+#[test]
+fn a_disabled_tree_declares_and_takes_no_expand() {
+    use accesskit::Action as A;
+    let mut app = app();
+    app.init_resource::<Toggles>()
+        .add_observer(|t: On<TreeToggled>, mut log: ResMut<Toggles>| {
+            log.0.push((t.key, t.open));
+        });
+    screen_with(&mut app, (outline(), InteractionDisabled));
+    let b = row_of(&mut app, 2);
+    assert!(!node(&app, b).supports_action(A::Expand));
+    act(&mut app, b, A::Expand, None);
+    assert!(app.world().resource::<Toggles>().0.is_empty());
+}
+
+#[test]
+fn a_table_says_how_many_rows_and_columns_it_has_and_each_row_its_index() {
+    let mut app = app();
+    let rows: Vec<Vec<String>> = (0..40)
+        .map(|i| vec![format!("item {i}"), i.to_string()])
+        .collect();
+    screen_with(
+        &mut app,
+        table([Column::new("Name"), Column::new("Qty")], rows),
+    );
+    let table = only::<Table>(&mut app);
+    assert_eq!(
+        node(&app, table).row_count(),
+        Some(40),
+        "all of them, not the pool"
+    );
+    assert_eq!(node(&app, table).column_count(), Some(2));
+    for key in [0, 1, 5] {
+        let row = row_of(&mut app, key);
+        assert_eq!(node(&app, row).row_index(), Some(key as usize), "row {key}");
+    }
+}
+
+#[test]
+fn a_radial_declares_and_takes_increment_and_decrement_and_wraps_like_the_arrow_keys() {
+    use accesskit::Action as A;
+    let mut app = app();
+    screen_with(&mut app, radial(["Sword", "Bow", "Staff"], 0));
+    let wheel = only::<RadialValue>(&mut app);
+    for a in [A::Increment, A::Decrement, A::Focus, A::Click] {
+        assert!(node(&app, wheel).supports_action(a), "{a:?}");
+    }
+    act(&mut app, wheel, A::Decrement, None);
+    assert_eq!(app.world().get::<RadialValue>(wheel), Some(&RadialValue(2)));
+    act(&mut app, wheel, A::Increment, None);
+    assert_eq!(app.world().get::<RadialValue>(wheel), Some(&RadialValue(0)));
+    act(&mut app, wheel, A::Increment, None);
+    assert_eq!(app.world().get::<RadialValue>(wheel), Some(&RadialValue(1)));
+    assert_eq!(seen(&app).indices, [2, 0, 1], "one report a step");
 }

@@ -2174,3 +2174,29 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 56).** Patch (logging and tests only, no API change): `release: v0.32.1`, published (https://crates.io/crates/bevy_gooey/0.32.1), tag `v0.32.1` pushed. Comment on #38 asks the host for `RUST_LOG=bevy_gooey::split=debug` output.
 
 **Cleanup (iteration 56).** Removed this pass's own `/tmp/gate56.sh`; no baseline worktree or captures were made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
+
+## Iteration 57 — 2026-11-03 — Accessibility of virtualized rows: tree level, place and Expand; table counts; radial steps
+
+**Triage.** Last audit row (pass 84): `demo?` only, answered by iteration 56's "no visible change" line. One open issue, #38 (`consumer:bevy_grimoire`): the host has not replied with `RUST_LOG=bevy_gooey::split=debug` output, nothing in `git log` fixes it, and no open bevy_grimoire `ui` issue names it, so it is skipped (waiting on the host, not blocked on a decision). Parked work: only `wiggum/parked-pass-23-20261030-162214` (old, unrelated). No bug in the backlog.
+
+**Pick.** Ranked: (1) tree row `level`/`expanded`/Expand, table counts, radial Increment/Decrement (accessibility of the two virtualized widgets: a screen reader walking a 10,000-node outliner heard "tree item, Rope", with no depth, no "closed", no "row 5 of 10,110", and could not open a node it focused); (2) one keycap vocabulary for badges and legend; (3) lone-slot cue; (4) motion (scrim fade, dialog exit); (5) radial pointing arc. (1) wins: a shipped promise (WCAG 4.1.2, APG "required when the set is not fully present") with a concrete gap listed as "Not done" since iteration 42, small and fully testable; the visual items are larger and (4) needs a decision on exit animations of a host-despawned dialog.
+
+**Sources** (`docs/research/access-rows.md`, committed alone first): craft, W3C WAI-ARIA APG *Tree View Pattern* ("If the complete set of available nodes is not present in the DOM due to dynamic loading as the user moves focus in or scrolls the tree, each node has aria-level, aria-setsize, and aria-posinset specified"; end nodes carry no aria-expanded); shipping, Naughty Dog *The Last of Us Part II: Accessibility Features Detailed* (every menu voiced); technical, `accesskit` 0.24.1 and its consumers `accesskit_consumer` 0.38 / `accesskit_windows` 0.34 (read from source: `level` and `position_in_set` are 0-based and the adapter adds 1; **`size_of_set` is read from the nearest ancestor that has one, never from the item**, so the set announced is the tree's rows shown, "row 5 of 10,110", with `level` and `expanded` giving depth).
+
+**What changed.** `src/access.rs`: `Wanted` gains `level`, `position_in_set`, `size_of_set`, `row_index`, `row_count`, `column_count`, `end_node`, `tree_branch`; the `Table` arm says a tree's rows shown or a table's row and column counts, the `TableRow` arm reads the row's place from `TableRow::index` and `Tree::outline_of(key)` (`tree_place`); an end node clears `expanded` (a pooled row rebound from a branch must lose it). `src/access_actions.rs`: Expand/Collapse on a tree row go to `tree::toggle` (before the declared-action gate; only a branch of an enabled tree declares `TREE_BRANCH`), a radial joins the choice's declared set and Increment/Decrement are `radial_step` + `point_at` (the arrow keys). `src/tree.rs`: `Tree::outline_of`, `outline` shares `node_outline`, `toggle` is `pub(crate)`. No public item changed.
+
+**Tests** (`tests/access.rs`, 6 new, 850 in `all`, 844 before; mutation-checked: dropping the end-node clear fails the rebind test, a fixed radial direction fails the radial test): a tree's level, expanded and place (A, B closed, C end, E), a pooled row rebound to an end node, Expand/Collapse on a tree (one `TreeToggled`, none for an open node or an end node, D appears at level 2 and the set grows to 5), a disabled tree declaring and taking nothing, a 40-row table's counts and indexes (the set, not the pool), a radial's Increment/Decrement; and `a_settled_interface_marks_no_node_changed` now holds a tree, a table and a radial.
+
+**Demo.** None: no visible change (the accessibility tree only), per the audit's `demo?` rule. **Verdict.** n/a. **mean_ms:** not measured; `update_accessibility` returns at once without a screen reader, and with one it reads the new fields only for table and tree rows.
+
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 850 tests + 73 lib, 208 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green.
+
+**Process slip.** I applied the first `access.rs` edit with a one-off script instead of the `edit` tool; its diff is the committed one.
+
+### Ranked backlog
+
+1. Whatever the host's debug output on #38 shows.
+2. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`; per-parent sibling counts for a tree (blocked by AccessKit reading `size_of_set` from the container).
+3. One keycap vocabulary for the shortcut badges and legend.
+4. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
+5. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.

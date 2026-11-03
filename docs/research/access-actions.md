@@ -44,7 +44,7 @@ None numeric. Which widget advertises which actions: Button, Checkbox, Tab: Focu
 
 ## Deviations
 
-None from a source. Design defaults: ReplaceSelectedText, SetTextSelection, Scroll* and ShowContextMenu are not offered (no widget owns a caret or a scroll a platform could drive without the keyboard path); `Collapse`/`Expand` for a tree row is not offered either (the row is not a `Button`; Left and Right are `tree_by_input`'s).
+None from a source. Design defaults: ReplaceSelectedText, SetTextSelection, Scroll* and ShowContextMenu are not offered (no widget owns a caret or a scroll a platform could drive without the keyboard path). `Collapse`/`Expand` for a tree row was not offered here; `access-rows.md` (iteration 57) adds it, as the table's own toggle, and a radial's Increment and Decrement.
 
 ## What great looks like
 

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Accessibility of a virtualized table and tree (`docs/research/access-rows.md`): a tree row tells a screen reader its `level`, whether it is open (cleared for an end node, so a pooled row rebound from a branch loses it) and its place among the rows shown, the tree says how many rows are shown; a table says its row and column counts (all rows, not the pool's dozen) and each row its index. A screen reader's Expand and Collapse open and shut a tree node through the table's own toggle (one `TreeToggled`, nothing for an end node, a state already held or a disabled tree), and a radial answers Increment and Decrement like its arrow keys (wrapping, one `ValueChange<usize>` a step).
+
 ## [0.32.1] - 2026-11-03
 
 ### Changed
