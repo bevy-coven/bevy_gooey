@@ -559,52 +559,29 @@ fn open_quit_dialog(_: On<Activate>, open: Query<(), With<QuitDialog>>, mut comm
         return;
     }
     commands.spawn((
-        dialog(),
+        confirm(
+            "Leave the game?",
+            "Progress since the last autosave is lost.",
+            ["Leave", "Stay"],
+        ),
         QuitDialog,
-        observe(|cancel: On<Cancel>, mut commands: Commands| {
-            info!("cancel: the Quit dialog is closed");
-            commands.entity(cancel.entity).despawn();
-        }),
-        children![
-            (
-                panel(),
-                children![
-                    heading("Leave the game?"),
-                    label("Progress since the last autosave is lost."),
-                    (
-                        menu(),
-                        children![
-                            (
-                                button("Leave"),
-                                observe(|_: On<Activate>, mut exit: MessageWriter<AppExit>| {
-                                    exit.write(AppExit::Success);
-                                }),
-                            ),
-                            (button("Stay"), AutoFocus, observe(close_quit_dialog)),
-                        ]
-                    ),
-                ]
-            ),
-            (
-                prompts(),
-                children![
-                    prompt("Select", Prompt::SELECT),
-                    prompt("Back", Prompt::BACK)
-                ],
-            )
-        ],
+        observe(
+            |chosen: On<ConfirmChosen>, mut exit: MessageWriter<AppExit>| {
+                if chosen.cancelled {
+                    info!("cancel: the Quit dialog is closed");
+                } else if chosen.index == 0 {
+                    exit.write(AppExit::Success);
+                }
+            },
+        ),
+        children![(
+            prompts(),
+            children![
+                prompt("Select", Prompt::SELECT),
+                prompt("Back", Prompt::BACK)
+            ],
+        )],
     ));
-}
-
-/// Stay: closing the dialog is all it takes; focus goes back to Quit on its own.
-fn close_quit_dialog(
-    _: On<Activate>,
-    dialogs: Query<Entity, With<QuitDialog>>,
-    mut commands: Commands,
-) {
-    for dialog in &dialogs {
-        commands.entity(dialog).despawn();
-    }
 }
 
 /// The meter drains by 10 a second and refills when empty, or holds `GOOEY_HEALTH`.

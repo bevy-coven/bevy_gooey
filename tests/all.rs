@@ -11,6 +11,7 @@ mod binding;
 mod cancel;
 mod choice;
 mod color;
+mod confirm;
 mod context_menu;
 mod controls;
 mod density;
