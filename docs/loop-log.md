@@ -2296,3 +2296,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 5. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper; motion for a scrim and card fade and a dialog exit.
 
 **Gate (iteration 60).** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 885 tests in `all` + 75 lib, 218 doctests, check lib, wasm32, `cargo doc -D warnings`: green.
+
+**Release (iteration 60).** `cargo semver-checks --baseline-rev v0.32.4`: one major lint (`enum_variant_added`: `Role::Cooldown`, `Role::CooldownText`), so a minor bump pre-1.0: `release: v0.33.0` (README compatibility row `0.1 – 0.33`), published (https://crates.io/crates/bevy_gooey/0.33.0), tag `v0.33.0` pushed.
+
+**Cleanup (iteration 60).** Removed this pass's own `/tmp/g60` (captures, frames, GIF crops, gallery binaries, gate and mutation scripts, logs) and the baseline worktree `~/g60_base` (`git worktree remove`, no `*-target` of its own: it built into the loop's shared `CARGO_TARGET_DIR`). The loop's Xvfb is `:99` (my `:93` start failed, nothing left running). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`; `/home` at 126 GB free, under the loop's 150 GB floor.
