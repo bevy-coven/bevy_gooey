@@ -2262,3 +2262,9 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. One keycap vocabulary for the shortcut badges and legend.
 4. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
 5. Motion: a scrim and card fade, a dialog exit (`Confirm` owns its despawn), a button press pop; a nameplate fade by distance hook for `WorldAnchor`.
+
+**Gate (iteration 59).** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 869 tests in `all` + lib, check lib, wasm32, `cargo doc -D warnings` green; the doctests failed once (the new crate-doc example called `meter` with one argument), fixed in its own commit and re-run (`anchor` doctests, fmt, doc).
+
+**Release (iteration 59).** Additive (`cargo semver-checks --baseline-rev v0.32.3`: 202 pass, no update required): `release: v0.32.4`, published (https://crates.io/crates/bevy_gooey/0.32.4), tag `v0.32.4` pushed.
+
+**Cleanup (iteration 59).** Removed this pass's own `/tmp/g59` (captures, frames, gate script and log, the thesis PDF) and the Xvfb `:93` it started; no baseline worktree was made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`; `/home` at 131 GB free, under the loop's 150 GB floor.
