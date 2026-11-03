@@ -213,8 +213,21 @@ impl SplitGeometry<'_, '_> {
     }
 
     fn read(&self, divider: Entity) -> Option<Reading> {
-        let (parent, divider_axis, node, disabled) = self.dividers.get(divider).ok()?;
-        let (fraction, min, root_node) = self.roots.get(parent.parent()).ok()?;
+        let Ok((parent, divider_axis, node, disabled)) = self.dividers.get(divider) else {
+            debug!(
+                "split divider {divider} is not read: it lacks a `ChildOf`, `SplitDivider` or \
+                 `ComputedNode` (a node that has not been laid out has no `ComputedNode`)"
+            );
+            return None;
+        };
+        let Ok((fraction, min, root_node)) = self.roots.get(parent.parent()) else {
+            debug!(
+                "split divider {divider} is not read: its parent {} lacks a `SplitFraction`, \
+                 `SplitMin` or `ComputedNode`",
+                parent.parent()
+            );
+            return None;
+        };
         let along = |size: Vec2, axis: SplitAxis| match axis {
             SplitAxis::Horizontal => size.x,
             SplitAxis::Vertical => size.y,
@@ -286,11 +299,20 @@ pub(crate) fn divider_on_drag_start(
 ) {
     start.propagate(false);
     if start.button != PointerButton::Primary {
+        debug!(
+            "split divider {} is not dragged: the drag is by {:?}, not the primary button",
+            start.entity, start.button
+        );
         return;
     }
-    if let Some(reading) = geometry.read(start.entity)
-        && !reading.disabled
-    {
+    if let Some(reading) = geometry.read(start.entity) {
+        if reading.disabled {
+            debug!(
+                "split divider {} is not dragged: it is `InteractionDisabled`",
+                start.entity
+            );
+            return;
+        }
         commands
             .entity(start.entity)
             .insert((Pressed, SplitGrab(reading.fraction)));
@@ -308,6 +330,10 @@ pub(crate) fn divider_on_drag(
 ) {
     drag.propagate(false);
     let Ok(grab) = grabs.get(drag.entity) else {
+        debug!(
+            "split divider {} ignores a drag: no drag began on it (no `SplitGrab`)",
+            drag.entity
+        );
         return;
     };
     let Some(reading) = geometry.read(drag.entity) else {
@@ -323,6 +349,10 @@ pub(crate) fn divider_on_drag(
         reading.extent,
         reading.min.first,
         reading.min.second,
+    );
+    debug!(
+        "split divider {} dragged {along} layout px (pointer distance {}) of room {}: fraction {} to {to}",
+        drag.entity, drag.distance, reading.extent, reading.fraction
     );
     report(&mut commands, &reading, to, false);
 }

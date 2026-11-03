@@ -2,7 +2,7 @@
 //! minimum. Laid out for real in a headless window, driven by real keyboard, pointer and gamepad
 //! input.
 
-use bevy::camera::NormalizedRenderTarget;
+use bevy::camera::{ImageRenderTarget, NormalizedRenderTarget, RenderTarget};
 use bevy::input::ButtonState;
 use bevy::input::gamepad::{
     GamepadConnection, GamepadConnectionEvent, RawGamepadButtonChangedEvent, RawGamepadEvent,
@@ -13,8 +13,11 @@ use bevy::picking::hover::Hovered;
 use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
+use bevy::render::render_resource::TextureFormat;
 use bevy::render::settings::WgpuSettings;
-use bevy::ui::{ComputedNode, InteractionDisabled, UiGlobalTransform};
+use bevy::ui::{
+    ComputedNode, ComputedUiTargetCamera, InteractionDisabled, IsDefaultUiCamera, UiGlobalTransform,
+};
 use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
 use bevy_gooey::*;
@@ -197,7 +200,17 @@ fn at(app: &App, layout: Vec2) -> Vec2 {
     layout * app.world().resource::<UiScale>().0
 }
 
+/// Where the pointer is: the window unless the test draws the interface into an image.
+#[derive(Resource)]
+struct PointerOn(NormalizedRenderTarget);
+
 fn location(app: &mut App, at: Vec2) -> Location {
+    if let Some(on) = app.world().get_resource::<PointerOn>() {
+        return Location {
+            target: on.0.clone(),
+            position: at,
+        };
+    }
     let window = window(app);
     Location {
         target: NormalizedRenderTarget::Window(
@@ -447,6 +460,85 @@ fn a_smaller_split_keeps_its_ratio_and_its_state() {
 }
 
 // ---- the drag ----
+
+/// Draws the interface into an image of the window's size, as a host that renders its whole
+/// interface to a surface does, and puts the pointer on that image.
+fn draw_into_an_image(app: &mut App, scale_factor: f32) {
+    let handle = app
+        .world_mut()
+        .resource_mut::<Assets<Image>>()
+        .add(Image::new_target_texture(
+            1280,
+            720,
+            TextureFormat::Bgra8UnormSrgb,
+            None,
+        ));
+    let target = RenderTarget::Image(ImageRenderTarget {
+        handle,
+        scale_factor,
+    });
+    let normalized = target.normalize(None).expect("an image target");
+    app.world_mut().spawn((Camera2d, target, IsDefaultUiCamera));
+    app.world_mut().insert_resource(PointerOn(normalized));
+}
+
+#[test]
+fn a_drag_in_an_interface_drawn_into_an_image_moves_the_divider() {
+    let mut app = app();
+    draw_into_an_image(&mut app, 1.0);
+    let ui = rig(&mut app, H, 0.5, SplitMin::default());
+    let camera = app
+        .world()
+        .get::<ComputedUiTargetCamera>(ui.divider)
+        .and_then(ComputedUiTargetCamera::get)
+        .expect("a camera draws the divider");
+    assert!(
+        matches!(
+            app.world().get::<RenderTarget>(camera),
+            Some(RenderTarget::Image(_))
+        ),
+        "the interface is drawn into the image"
+    );
+    let room = room(&app, &ui, H);
+    drag(&mut app, ui.divider, Vec2::new(100.0, 0.0));
+    let want = 0.5 + 100.0 / room;
+    assert!(
+        (fraction(&app, ui.split) - want).abs() < 0.002,
+        "dragged 100 px of {room}: {} of {want}; changes {:?}",
+        fraction(&app, ui.split),
+        changes(&app)
+    );
+}
+
+#[test]
+fn a_drag_of_one_move_a_frame_in_an_image_at_a_scale_with_minimums_moves_the_divider() {
+    // The shape a host that draws into an image at 1.5x, under a UI scale of 1.2, with minimums of
+    // 96 px, sees: the pointer moves a few pixels a frame.
+    let mut app = app_sized(1536, 864);
+    settle(&mut app);
+    assert!((app.world().resource::<UiScale>().0 - 1.2).abs() < 1e-3);
+    draw_into_an_image(&mut app, 1.5);
+    let ui = rig(&mut app, H, 0.22, SplitMin::new(96.0, 96.0));
+    let room = room(&app, &ui, H);
+    let from = at(&app, rect(&app, ui.divider).center());
+    point_at(&mut app, from);
+    pointer(&mut app, from, PointerAction::Press(PointerButton::Primary));
+    let mut now = from;
+    for _ in 0..10 {
+        let next = now + Vec2::new(12.0, 0.0);
+        pointer(&mut app, next, PointerAction::Move { delta: next - now });
+        now = next;
+    }
+    release(&mut app, now);
+    let want = 0.22 + (now.x - from.x) / 1.2 / room;
+    assert!(
+        (fraction(&app, ui.split) - want).abs() < 0.002,
+        "dragged {} px of {room}: {} of {want}; changes {:?}",
+        now.x - from.x,
+        fraction(&app, ui.split),
+        changes(&app)
+    );
+}
 
 #[test]
 fn dragging_the_divider_100_px_changes_the_fraction_by_100_over_the_room() {

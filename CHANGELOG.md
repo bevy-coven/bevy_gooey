@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- A split's divider logs why it stands still (#38): at `debug` level, target `bevy_gooey::split`, it names a missing `ChildOf`, `SplitDivider`, `ComputedNode`, `SplitFraction` or `SplitMin`, a drag by a non-primary button, a disabled divider, a drag that never began on it, and each move's pointer distance, room and fraction before and after. Two tests prove a drag moves the divider when the interface is drawn into an image (at 1.5x, under a UI scale of 1.2, one move a frame, minimums of 96 px).
+
 ## [0.32.0] - 2026-11-02
 
 ### Added
