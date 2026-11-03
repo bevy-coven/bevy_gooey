@@ -120,7 +120,10 @@ fn main() {
     .insert_resource(skin)
     .add_observer(on_ready)
     .add_systems(Startup, setup)
-    .add_systems(Update, (arm_cells, cast_by_key, follow_background, capture).chain());
+    .add_systems(
+        Update,
+        (arm_cells, cast_by_key, follow_background, capture).chain(),
+    );
     if let Some(at) = env("GOOEY_FRAMES") {
         app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_micros(
             33_333,

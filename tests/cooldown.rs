@@ -111,7 +111,10 @@ fn visibility(app: &App, entity: Entity) -> Visibility {
 /// The angle the clear wedge has opened to, read off the cover's gradient.
 fn clear_angle(app: &App, owner: Entity) -> f32 {
     let cover = cover_of(app, owner).expect("a cover");
-    let gradient = app.world().get::<BackgroundGradient>(cover).expect("gradient");
+    let gradient = app
+        .world()
+        .get::<BackgroundGradient>(cover)
+        .expect("gradient");
     let Some(Gradient::Conic(conic)) = gradient.0.first() else {
         panic!("the cover is not a conic gradient: {gradient:?}");
     };
@@ -119,7 +122,10 @@ fn clear_angle(app: &App, owner: Entity) -> f32 {
 }
 
 fn remaining(app: &App, owner: Entity) -> f32 {
-    app.world().get::<Cooldown>(owner).expect("cooldown").remaining
+    app.world()
+        .get::<Cooldown>(owner)
+        .expect("cooldown")
+        .remaining
 }
 
 #[test]
@@ -130,9 +136,10 @@ fn a_ready_widget_has_a_hidden_cover_and_no_words() {
     assert_eq!(visibility(&app, cover), Visibility::Hidden);
     assert_eq!(chip_text(&app, owner), "");
     assert_eq!(
-        app.world()
-            .get::<Children>(owner)
-            .map(|c| c.iter().filter(|c| cover_of(&app, owner) == Some(*c)).count()),
+        app.world().get::<Children>(owner).map(|c| c
+            .iter()
+            .filter(|c| cover_of(&app, owner) == Some(*c))
+            .count()),
         Some(1)
     );
 }
@@ -141,7 +148,10 @@ fn a_ready_widget_has_a_hidden_cover_and_no_words() {
 fn starting_one_dims_the_whole_widget_and_counts_in_whole_seconds() {
     let mut app = app();
     let owner = hotbar(&mut app, Cooldown::default());
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().start(8.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .start(8.0);
     frames(&mut app, 1);
     let cover = cover_of(&app, owner).unwrap();
     assert_eq!(visibility(&app, cover), Visibility::Inherited);
@@ -153,7 +163,10 @@ fn starting_one_dims_the_whole_widget_and_counts_in_whole_seconds() {
 fn the_clear_wedge_opens_clockwise_in_step_with_the_time_left() {
     let mut app = app();
     let owner = hotbar(&mut app, Cooldown::default());
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().start(8.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .start(8.0);
     // One frame to see it, twenty more: two seconds of game time.
     frames(&mut app, 21);
     let left = remaining(&app, owner);
@@ -168,7 +181,10 @@ fn the_clear_wedge_opens_clockwise_in_step_with_the_time_left() {
 fn it_ends_hidden_and_sends_one_ready_on_the_widget() {
     let mut app = app();
     let owner = hotbar(&mut app, Cooldown::default());
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().start(1.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .start(1.0);
     frames(&mut app, 25);
     assert!(app.world().get::<Cooldown>(owner).unwrap().is_ready());
     assert_eq!(app.world().resource::<Ready>().0, vec![owner]);
@@ -176,16 +192,26 @@ fn it_ends_hidden_and_sends_one_ready_on_the_widget() {
     assert_eq!(visibility(&app, cover), Visibility::Hidden);
     assert_eq!(chip_text(&app, owner), "");
     frames(&mut app, 10);
-    assert_eq!(app.world().resource::<Ready>().0.len(), 1, "once, not every frame");
+    assert_eq!(
+        app.world().resource::<Ready>().0.len(),
+        1,
+        "once, not every frame"
+    );
 }
 
 #[test]
 fn a_game_that_sets_zero_itself_sends_nothing() {
     let mut app = app();
     let owner = hotbar(&mut app, Cooldown::default());
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().start(5.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .start(5.0);
     frames(&mut app, 3);
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().remaining = 0.0;
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .remaining = 0.0;
     frames(&mut app, 3);
     let cover = cover_of(&app, owner).unwrap();
     assert_eq!(visibility(&app, cover), Visibility::Hidden);
@@ -196,7 +222,10 @@ fn a_game_that_sets_zero_itself_sends_nothing() {
 fn a_paused_game_holds_its_cooldowns() {
     let mut app = app();
     let owner = hotbar(&mut app, Cooldown::default());
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().start(8.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .start(8.0);
     frames(&mut app, 3);
     let before = remaining(&app, owner);
     app.world_mut().resource_mut::<Time<Virtual>>().pause();
@@ -213,7 +242,10 @@ fn starting_again_restarts_the_sweep() {
     let owner = hotbar(&mut app, Cooldown::new(4.0));
     frames(&mut app, 20);
     assert!(remaining(&app, owner) < 2.5);
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().start(10.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .start(10.0);
     frames(&mut app, 1);
     assert_eq!(chip_text(&app, owner), "10");
     assert!(clear_angle(&app, owner) < 0.15);
@@ -249,7 +281,10 @@ fn a_running_cooldown_moves_nothing() {
     let idle = hotbar(&mut app, Cooldown::default());
     let size = |app: &App| app.world().get::<ComputedNode>(idle).unwrap().size();
     let before = size(&app);
-    app.world_mut().get_mut::<Cooldown>(idle).unwrap().start(99.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(idle)
+        .unwrap()
+        .start(99.0);
     frames(&mut app, 5);
     assert_eq!(size(&app), before, "an absolute cover takes no room");
 }
@@ -268,7 +303,10 @@ fn the_cover_fills_the_widgets_box_and_the_chip_sits_in_its_middle() {
         owner_box.x - border.min_inset.x - border.max_inset.x,
         owner_box.y - border.min_inset.y - border.max_inset.y,
     );
-    assert!((cover_box - inside).abs().max_element() <= 1.0, "{cover_box} in {inside}");
+    assert!(
+        (cover_box - inside).abs().max_element() <= 1.0,
+        "{cover_box} in {inside}"
+    );
     let chip = world.get::<Children>(cover).unwrap()[0];
     let chip_box = world.get::<ComputedNode>(chip).unwrap().size();
     assert!(chip_box.x > 0.0 && chip_box.x < cover_box.x, "{chip_box}");
@@ -327,11 +365,17 @@ fn the_accessible_name_carries_the_seconds_and_goes_back() {
             .map(str::to_owned)
     };
     assert_eq!(name(&app).as_deref(), Some("Fireball"));
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().start(8.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .start(8.0);
     frames(&mut app, 3);
     let words = cooldown_words(remaining(&app, owner));
     assert_eq!(name(&app), Some(format!("Fireball, {words}")));
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().remaining = 0.0;
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .remaining = 0.0;
     frames(&mut app, 3);
     assert_eq!(name(&app).as_deref(), Some("Fireball"));
 }
@@ -349,13 +393,19 @@ fn a_ready_widget_writes_nothing_and_a_running_one_only_what_changed() {
     frames(&mut app, 30);
     assert_eq!(written(&app), before, "a ready widget writes nothing");
     // A sixty-second cooldown: the sweep moves every frame, the words once a second.
-    app.world_mut().get_mut::<Cooldown>(owner).unwrap().start(60.0);
+    app.world_mut()
+        .get_mut::<Cooldown>(owner)
+        .unwrap()
+        .start(60.0);
     frames(&mut app, 2);
     let before = written(&app);
     frames(&mut app, 8);
     let (gradient, chip) = written(&app);
     assert!(gradient - before.0 >= 6, "the sweep follows the time");
-    assert!(chip - before.1 <= 1, "the chip's words stand while the second does");
+    assert!(
+        chip - before.1 <= 1,
+        "the chip's words stand while the second does"
+    );
 }
 
 #[test]
@@ -368,14 +418,21 @@ fn every_preset_reads_the_chip_and_a_bad_text_colour_is_reported() {
     ] {
         assert!(skin.problems().is_empty(), "{:?}", skin.problems());
     }
-    assert!(GooeySkin::high_contrast().high_contrast_problems().is_empty());
+    assert!(
+        GooeySkin::high_contrast()
+            .high_contrast_problems()
+            .is_empty()
+    );
     // Text as light as the chip over a white icon: the chip is no longer readable.
     let mut skin = GooeySkin::dark();
     skin.text = skin.solid_surface();
     assert!(
         skin.problems().iter().any(|p| matches!(
             p,
-            SkinProblem::LowContrast { pair: "text on cooldown chip", .. }
+            SkinProblem::LowContrast {
+                pair: "text on cooldown chip",
+                ..
+            }
         )),
         "{:?}",
         skin.problems()
