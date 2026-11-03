@@ -15631,3 +15631,69 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 83	166	release	model	model		2026-11-02T18:55:28Z	6.2	
 83	167	release	tool	push gate	bash	2026-11-02T18:55:34Z	1.6	cd /home/ladvien/bevy_gooey_loop && pkill -f "Xvfb :93" ; rm -rf /tmp/g55; cat >> docs/loop-log.md <<'EOF' **Release (iteration 55).** `cargo semver-checks --ba
 83	168	release	model	model		2026-11-02T18:55:36Z	10.6	
+84	1	orient	model	model		2026-11-03T11:42:18Z	3.4	
+84	2	orient	tool	phase mark	bash	2026-11-03T11:42:22Z	0.8	Orienting: status, audit, log :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; git status --short | head; git fetch -q origin loop-stats 2>&1 | tail -1
+84	3	orient	model	model		2026-11-03T11:42:22Z	2.6	
+84	4	orient	tool	github	bash	2026-11-03T11:42:25Z	0.5	Triaging issues and parked work :: cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+84	5	orient	model	model		2026-11-03T11:42:25Z	1.2	
+84	6	bugs	tool	phase mark	bash	2026-11-03T11:42:27Z	0.9	Reading issue 38 :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark bugs; gh issue view 38 --repo bevy-coven/bevy_gooey --comments
+84	7	bugs	model	model		2026-11-03T11:42:28Z	1.4	
+84	8	bugs	tool	github	bash	2026-11-03T11:42:29Z	0.8	Reading issue 38 via api :: cd /home/ladvien/bevy_gooey_loop && gh api repos/bevy-coven/bevy_gooey/issues/38 --jq '.body, (.comments|tostring)'; gh api repos/bevy-coven/bevy_gooey/issues/3
+84	9	bugs	model	model		2026-11-03T11:42:30Z	2.4	
+84	10	research	tool	phase mark	bash	2026-11-03T11:42:32Z	0.1	Inspecting split drag code :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; grep -n "fn divider_on\|fn \|SplitGrab\|Reading" src/split.rs | head -
+84	11	research	tool	git	bash	2026-11-03T11:42:32Z	0.1	History of split.rs :: cd /home/ladvien/bevy_gooey_loop && git log --oneline -8 -- src/split.rs; git log origin/main --oneline -3; ls ~/.cargo/registry/src/*/ | grep -i "bevy_picking\
+84	12	research	model	model		2026-11-03T11:42:32Z	0.8	
+84	13	research	tool	read files	read	2026-11-03T11:42:33Z	0.0	src/split.rs:136-360
+84	14	research	model	model		2026-11-03T11:42:33Z	4.7	
+84	15	research	tool	shell	bash	2026-11-03T11:42:38Z	0.0	Reading bevy_picking drag logic :: cd ~/.cargo/registry/src/*/bevy_picking-0.20.1/src && grep -n "DragStart\|dragging\|drag_map\|drag_start\|PointerDrag\b" events.rs | head -60
+84	16	research	model	model		2026-11-03T11:42:38Z	1.3	
+84	17	research	tool	shell	bash	2026-11-03T11:42:39Z	0.0	Reading bevy_picking drag logic :: cd $(echo ~/.cargo/registry/src/*/bevy_picking-0.20.1/src) && grep -n "DragStart\|dragging\|drag_map\|PointerDrag\b" events.rs | head -60
+84	18	research	model	model		2026-11-03T11:42:39Z	1.3	
+84	19	research	tool	read files	read	2026-11-03T11:42:40Z	0.0	~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bevy_picking-0.20.1/src/events.rs:1160-1260
+84	20	research	model	model		2026-11-03T11:42:40Z	22.3	
+84	21	research	tool	shell	bash	2026-11-03T11:43:03Z	0.0	Reading split tests harness :: cd /home/ladvien/bevy_gooey_loop && sed -n 1,140p tests/split.rs; grep -n "^fn \|^#\[test\]" tests/split.rs | wc -l; grep -n "fn drag\|fn press\|fn move" tests/
+84	22	research	model	model		2026-11-03T11:43:03Z	1.1	
+84	23	research	tool	shell	bash	2026-11-03T11:43:04Z	0.0	Reading drag helper :: cd /home/ladvien/bevy_gooey_loop && sed -n 185,300p tests/split.rs
+84	24	research	model	model		2026-11-03T11:43:04Z	7.4	
+84	25	research	tool	shell	bash	2026-11-03T11:43:11Z	0.0	Reading split widget spawn :: cd /home/ladvien/bevy_gooey_loop && grep -n "SplitGrip\|SplitDivider" src/widgets.rs | head -20; grep -n "pub fn split_in" -A70 src/widgets.rs | head -130
+84	26	research	model	model		2026-11-03T11:43:11Z	0.8	
+84	27	research	tool	read files	read	2026-11-03T11:43:12Z	0.0	src/widgets.rs:2150-2260
+84	28	research	model	model		2026-11-03T11:43:12Z	5.7	
+84	29	research	tool	shell	bash	2026-11-03T11:43:18Z	0.0	How tests build an image-target camera :: cd /home/ladvien/bevy_gooey_loop && grep -n "Image\|RenderTarget\|IsDefaultUiCamera" tests/testing.rs | head -40; sed -n 1,30p tests/testing.rs
+84	30	research	model	model		2026-11-03T11:43:18Z	1.4	
+84	31	research	tool	shell	bash	2026-11-03T11:43:19Z	0.0	Reading windowless test setup and surface_of :: cd /home/ladvien/bevy_gooey_loop && sed -n 28,70p tests/testing.rs; sed -n 295,335p tests/testing.rs; grep -n "fn surface_of" -A40 src/testing.rs | head -70
+84	32	research	model	model		2026-11-03T11:43:19Z	7.3	
+84	33	research	tool	shell	bash	2026-11-03T11:43:27Z	0.0	Reading rig helpers and first drag test :: cd /home/ladvien/bevy_gooey_loop && sed -n 140,186p tests/split.rs; sed -n 440,500p tests/split.rs
+84	34	research	model	model		2026-11-03T11:43:27Z	12.0	
+84	35	research	tool	cargo test	bash	2026-11-03T11:43:39Z	48.1	Writing image-target drag test and running :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/split.rs' s=open(p).read() s=s.replace('''use bevy::camera::NormalizedRenderTarget; ''','''use be
+84	36	research	model	model		2026-11-03T11:44:27Z	27.3	
+84	37	research	tool	shell	bash	2026-11-03T11:44:54Z	0.0	Reading room helper :: cd /home/ladvien/bevy_gooey_loop && sed -n 318,352p tests/split.rs; grep -n "ComputedUiTargetCamera" tests/split.rs | head -3
+84	38	research	model	model		2026-11-03T11:44:54Z	10.5	
+84	39	research	tool	cargo test	bash	2026-11-03T11:45:04Z	19.4	Adding edge-case tests, running split tests :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/split.rs' s=open(p).read() marker=''' #[test] fn a_drag_in_an_interface_drawn_into_an_image_moves
+84	40	research	model	model		2026-11-03T11:45:24Z	4.4	
+84	41	research	tool	cargo test	bash	2026-11-03T11:45:28Z	1.7	First failure detail :: cd /home/ladvien/bevy_gooey_loop && (CARGO_BUILD_JOBS=4 cargo test --all-features --test all split::a_drag_of_one 2>&1 | grep -B2 -A6 "panicked")
+84	42	research	model	model		2026-11-03T11:45:30Z	16.1	
+84	43	research	tool	cargo test	bash	2026-11-03T11:45:46Z	17.2	Fix scale test, add hover before press :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/split.rs' s=open(p).read() s=s.replace(''' let mut app = app(); draw_into_an_image(&mut app, 1.5)
+84	44	research	model	model		2026-11-03T11:46:03Z	16.9	
+84	45	research	tool	shell	bash	2026-11-03T11:46:20Z	0.0	Checking imports and log usage :: cd /home/ladvien/bevy_gooey_loop && grep -n "^use\|debug!\|warn!" src/split.rs | head -30; grep -rn "debug!" src | head -3
+84	46	research	model	model		2026-11-03T11:46:20Z	8.8	
+84	47	research	tool	git	bash	2026-11-03T11:46:29Z	0.0	Adding debug logging to refusals :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/split.rs' s=open(p).read() s=s.replace(''' let (parent, divider_axis, node, disabled) = self.divide
+84	48	research	model	model		2026-11-03T11:46:29Z	3.7	
+84	49	research	tool	cargo test	bash	2026-11-03T11:46:33Z	50.8	Remove artifact test, clippy, rerun :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='tests/split.rs' s=open(p).read() i=s.index('#[test]\nfn a_press_before_the_split_is_laid_out_
+84	50	research	model	model		2026-11-03T11:47:24Z	15.1	
+84	51	build	tool	phase mark	bash	2026-11-03T11:47:39Z	0.1	Looking at docs to update :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; ls docs/guide | head -30; tail -20 docs/guide/splits.md; sed -n 1,25p CHA
+84	52	build	model	model		2026-11-03T11:47:39Z	10.4	
+84	53	build	tool	git	bash	2026-11-03T11:47:49Z	0.1	Update docs, changelog, AGENTS :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='docs/guide/splits.md' s=open(p).read() s=s.rstrip('\n')+''' - **A drag that does nothing says why.** Th
+84	54	build	model	model		2026-11-03T11:47:49Z	4.1	
+84	55	gate	tool	phase mark	bash	2026-11-03T11:47:53Z	60.0	[launched bg_2] Committing and running the gate :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; git checkout -q -b loop/iter-56 && git add -A src tests docs AGENTS.md CHA
+84	56	gate	model	model		2026-11-03T11:48:53Z	0.7	
+84	57	gate	tool	wait: other	wait	2026-11-03T11:48:54Z	155.2	{}
+84	58	gate	model	model		2026-11-03T11:51:29Z	10.1	
+84	59	log	tool	phase mark	bash	2026-11-03T11:51:39Z	3.9	Log, push branch, merge, push main :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; cat >> docs/loop-log.md <<'EOF' ## Iteration 56 — 2026-11-03 — Split drag: 
+84	60	log	model	model		2026-11-03T11:51:43Z	2.9	
+84	61	release	tool	phase mark	bash	2026-11-03T11:51:46Z	19.8	Bump to 0.32.1 and dry-run publish :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release; python3 - <<'EOF' import re s=open('Cargo.toml').read(); s=s.replace('v
+84	62	release	model	model		2026-11-03T11:52:06Z	1.6	
+84	63	release	tool	push gate	bash	2026-11-03T11:52:07Z	9.3	Publish, tag, push :: cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo publish 2>&1 | tail -4; git tag -a v0.32.1 -m v0.32.1 && git push -q origin main && git push -q ori
+84	64	release	model	model		2026-11-03T11:52:17Z	7.3	
+84	65	release	tool	push gate	bash	2026-11-03T11:52:24Z	2.9	Comment on issue, log release, push :: cd /home/ladvien/bevy_gooey_loop && gh issue comment 38 --repo bevy-coven/bevy_gooey --body "Not reproduced here, so this stays open. Fixed in b73e9e1 (merged e
+84	66	release	model	model		2026-11-03T11:52:27Z	5.0	
