@@ -2204,3 +2204,31 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 57).** Patch (no public item changed; `cargo semver-checks --baseline-rev v0.32.1`: 202 pass, no update required): `release: v0.32.2`, published (https://crates.io/crates/bevy_gooey/0.32.2), tag `v0.32.2` pushed.
 
 **Cleanup (iteration 57).** Removed this pass's own `/tmp/gate57.sh`, `/tmp/edit1.py`, `/tmp/access.rs.bak`, `/tmp/aa.rs.bak`; no baseline worktree or captures were made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
+
+## Iteration 58 — 2026-11-03 — `confirm`: a modal question in one line
+
+**Triage.** Last audit row (pass 85): `demo?` only, answered by iterations 56 and 57's "no visible change" lines. One open issue, #38 (`consumer:bevy_grimoire`): the host has not replied since the debug-logging release (no new comment, nothing in `git log`), so it is skipped (waiting on the host's `RUST_LOG=bevy_gooey::split=debug` output, not blocked on a decision). No bug in the backlog; parked work only `wiggum/parked-pass-23-…` (old, unrelated). home-still: `hs status` 401 (token expired), `hs distill search` 500 `gpu busy`; corpus scan skipped, listed under the note's `Pending index`. The "one test binary" job from the command is long done (`tests/all.rs`).
+
+**Pick.** Ranked: (1) `confirm(title, body, choices)`: a game's most common dialog took a 14-line `dialog()` + `panel()` + `menu()` + three observers, and the three things games get wrong by hand (which choice has focus, what Escape does, closing it) are the crate's to get right; (2) accessibility `ReplaceSelectedText` / cell `column_index`; (3) one keycap vocabulary for badges and legend; (4) lone-slot cue; (5) motion (scrim fade, dialog exit). (1) wins: "a widget that needs more than a few lines to use is not done" applies to the dialog the gallery itself uses, and it is small and fully testable.
+
+**Sources** (`docs/research/confirm.md`, committed alone first): craft, Microsoft *Command Buttons in Windows 7* ("Select the safest (to prevent loss of data or system access) and most secure command to be the default … Don't make a destructive action the default command button", fetched this pass); shipping, XAG 112 (Halo Infinite / Forza Horizon 4, focus "should always be predictable"; no corpus source names the confirm dialog itself); technical, the W3C APG modal dialog pattern and this crate's `dialog()`, `Cancel` and `return_focus`.
+
+**What changed.** `src/confirm.rs`: `Confirm { title, body, choices, safe }` (a component that requires the scrim `Node`, `Role::Scrim`, `Dialog`, `GlobalZIndex(100)` and a modal `TabGroup`, so it is a `dialog()` with no wrapper; its `on_add` hook queues one command that spawns the panel, title, a body line only when the body is not empty, and a `button` per choice with `ConfirmButton`, `AutoFocus` on the safe one: the last by default, `.safe(i)`), `confirm()` (the free function the crate's widgets are), `ConfirmChosen { entity, index, cancelled }` (an `EntityEvent` sent right before the despawn, so an observer on the dialog still reads it) and two global observers in `GooeyNavPlugin` (`confirm_on_activate`, `confirm_on_cancel`: a `Cancel` that reaches the dialog answers with the safe choice and stops). The gallery's Quit dialog is now one `confirm` plus its legend as a child.
+
+**Tests** (`tests/confirm.rs`, 9; 859 in `all`, 850 before; mutation-checked: `AutoFocus` on the first button instead of the safe one fails three): opens with focus on the safe choice and the words drawn, Enter on it answers `(1, false)` once with the dialog alive for the observer and gone after, a click answers the clicked index, Escape answers `(safe, true)` once, `.safe(0)` focuses and answers the first, an empty body draws no label and one choice is its own safe choice, no choices answers index 0 on Escape and breaks nothing, focus returns to the opener, arrows and Tab never reach the screen behind.
+
+**Demo.** None new: the dialog is the existing one. Pixel check, gallery `GOOEY_KEYS=down,down,enter` at 1280×720, 2560×1440 and parchment, before (the v0.32.2 binary) against after: `magick compare -metric AE` = 0 at all three; Escape logs `cancel: the Quit dialog is closed` and puts the ring back on Quit; Enter on Stay closes it. `docs/media/dialog.png` stays true.
+
+**Critique and verdict** (`/tmp/g58/critique.md`, `before/quit-*.png`, `after/quit-*.png`): the card, its 3:1 frame, the ring on Stay and the legend are unchanged. Open flaws: no dialog legend built in (the game adds one as a child, as the gallery does), no exit animation, nothing marks a destructive choice but its order. Verdict **GREAT** (API; look unchanged).
+
+**Checklist.** Dialog unchanged: measured identical pixels, so every earlier number holds. **mean_ms** (gallery with the dialog open, same machine, load 4 to 8): 1280×720 24.63 → 24.37, 2560×1440 100.57 → 94.43, parchment 27.06 → 22.90 (noise; no drawing path changed).
+
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 859 tests + 73 lib, 211 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green.
+
+### Ranked backlog
+
+1. Whatever the host's debug output on #38 shows.
+2. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
+3. One keycap vocabulary for the shortcut badges and legend.
+4. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
+5. Motion: a scrim and card fade, a dialog exit (now a natural fit for `Confirm`, which owns its despawn), a button press pop, a per-meter opt-out.
