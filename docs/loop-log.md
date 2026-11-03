@@ -2146,3 +2146,27 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 55).** `cargo semver-checks --baseline-rev v0.31.3`: 3 major checks (new `Role` and `SkinProblem` variants, new `GooeySkin` fields): minor bump pre-1.0. `release: v0.32.0`, published (https://crates.io/crates/bevy_gooey/0.32.0), tag `v0.32.0` pushed. #37 closed by the merge's `Fixes #37`; comments on #37 (assumed decisions, `assumed-decision` label) and bevy_grimoire#210 (move the pin to 86caae7).
 
 **Cleanup (iteration 55).** Removed this pass's own `/tmp/g55` (captures, frames, gate script and log) and the Xvfb `:93` it started; no baseline worktree was made. The release example `states` left in `/home/ladvien/target/gooey-loop` (the loop's shared target, 197 GB before this pass). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
+
+## Iteration 56 — 2026-11-03 — Split drag: refusals observable, image-target drags proven (#38)
+
+**Triage.** Last audit row (pass 83): nothing missing. One open issue: #38 (G-34, `consumer:bevy_grimoire`, `grimoire-ui`): a divider does not move under a drag that `bevy_picking` reports as in progress. It is the pass's item (bug-shaped consumer issue). No parked work for it.
+
+**Finding.** Not reproduced. Tests added to `tests/split.rs` for every shape the issue names: the interface drawn into an image (`draw_into_an_image`, the pointer's target is the image), at an image scale factor of 1.5 under a UI scale of 1.2, ten moves one a frame, minimums of 96. All pass: `divider_on_drag_start`, `divider_on_drag` and `ValueChange` move `SplitFraction` by exactly `d` over the room. The code path has silent `return`s only for: a non-primary button, a divider with no `ComputedNode`/`ChildOf`, a split root without `SplitFraction`/`SplitMin`/`ComputedNode`, `InteractionDisabled`, no `SplitGrab`, and a computed fraction equal to the old one (e.g. a pointer whose position never changes between press and move: distance zero, which would also read `pressing 1, dragging 1`). A press in the same frame as the pointer's first appearance is no drag either (picking has no hover yet; a harness shape, not a bug). Another possibility outside this crate: the host rewrites `SplitFraction` every frame.
+
+**What changed.** Each of those silent returns is now a `debug!` (target `bevy_gooey::split`) naming the condition, and every move logs the pointer distance, layout px, room and fraction before and after. Guide `docs/guide/splits.md`, CHANGELOG, AGENTS.md. Asked the host on #38 to run with `RUST_LOG=bevy_gooey::split=debug`; the issue stays open until the host's output names a cause.
+
+**Tests** (`tests/split.rs`, 2 new; 844 in `all`, 842 before): the image-target drag asserts the divider's camera renders to an image; the second is the host's shape. Not mutation-checked: they guard behaviour that already held.
+
+**Demo.** None: no visible change (logging only), per the audit's `demo?` rule.
+
+**Verdict.** n/a (no visual change). **mean_ms:** not measured; the added `debug!` calls compile to a level check per drag event.
+
+**Gate.** `CARGO_BUILD_JOBS=4`: fmt, clippy `-D warnings`, 844 tests + 73 lib, 208 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`: green.
+
+### Ranked backlog
+
+1. Whatever the host's debug output on #38 shows.
+2. Accessibility: a tree row's `level` and `expanded`, and its Expand/Collapse; a radial's Increment/Decrement; `ReplaceSelectedText`.
+3. One keycap vocabulary for the shortcut badges and legend.
+4. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
+5. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
