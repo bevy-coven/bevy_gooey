@@ -29,16 +29,16 @@ The conventional look (the radial sweep of every action RPG's hotbar): the whole
 A **component on any node**, like `Tooltip`: `Cooldown { duration, remaining }`. Its `on_add` hook queues a sync that spawns one overlay child, `Role::Cooldown`, holding one `Role::CooldownText` chip; `on_remove` despawns it (exactly the `Tooltip` box pattern, idempotent).
 
 - **K1. The game starts it, the crate runs it.** `Cooldown::default()` is ready (`remaining` 0, nothing drawn). `cooldown.start(seconds)` sets `duration` and `remaining`. `update_cooldowns` (Style) subtracts `Time::delta` (game time: a paused game pauses its cooldowns) and sends one `CooldownReady { entity }` (`EntityEvent`) in the frame `remaining` reaches 0. The game that wants its own clock writes `remaining` itself.
-- **K2. The look.** The overlay covers the owner's padding box with the owner's corner radius. Its `BackgroundGradient` is a hard-stop `ConicGradient`: clear from 12 o'clock to the elapsed angle, `solid_surface` at `COOLDOWN_DIM_ALPHA` (0.78) from there round to 12 o'clock. It is hidden (`Visibility::Hidden`) at 0, so a ready widget draws nothing extra and costs no layout (an absolute child).
+- **K2. The look.** The overlay covers the owner's padding box with the owner's corner radius. Its `BackgroundGradient` is a hard-stop `ConicGradient`: clear from 12 o'clock to the elapsed angle, `solid_surface` at `COOLDOWN_DIM_ALPHA` (0.66) from there round to 12 o'clock. It is hidden (`Visibility::Hidden`) at 0, so a ready widget draws nothing extra and costs no layout (an absolute child).
 - **K3. The seconds.** A chip centred on the overlay, `solid_surface` at 0.92 alpha, `skin.text`, `type_scale[1]`. `model::cooldown_text`: at least 60 s is `m:ss`, at least 3 s whole seconds rounded up, below 3 s tenths rounded up ("2.4", ending "0.1"), so the last second is not a long "1". Text is written only when the string differs. The chip, not the icon, is what the text's 4.5:1 is measured on (a sweep boundary runs through the middle, so text straight on it would sit half on a clear wedge).
-- **K4. Not by hue.** The dimmed wedge is the skin's surface colour, so in `high_contrast()` it is black or white and the edge between dim and clear is 7:1 against the icon's worst case by `problems()`.
+- **K4. Not by hue.** The dimmed wedge is the skin's own surface colour, so it follows every preset, `SkinScope` included, and in `high_contrast()` it is black. The step between dim and clear is a value step, never a hue.
 - **K5. Accessible name.** A `Button` or slot with an active `Cooldown` is named "<name>, <n> seconds remaining" (`model::cooldown_words`), settled in the same `says` check as every other name. Overlay and chip are `Spec::Hidden`.
 - **K6. Motion.** The sweep is the value drawn, not an animation: `MotionSettings::duration_scale` does not apply (WCAG 2.3.3 is about motion that is not essential; a timer is information). No flash: a cooldown ending is `CooldownReady` for the game's sound, and the overlay is gone.
 - Input is not touched: a pressed button on a cooldown still sends `Activate`; the game decides (`Cooldown::is_ready`). The overlay and chip are `Pickable::IGNORE`.
 
 ## Parameters
 
-`COOLDOWN_DIM_ALPHA` 0.78 (the unrecovered part's cover), `COOLDOWN_CHIP_ALPHA` 0.92, `COOLDOWN_WHOLE_SECONDS_FROM` 3 s, the chip's `type_scale[1]`. None in the serialised skin: they are the crate's look, like `SLOT_ICON_SHARE`.
+`COOLDOWN_DIM_ALPHA` 0.66 (the unrecovered part's cover), `COOLDOWN_CHIP_ALPHA` 0.92, `COOLDOWN_WHOLE_SECONDS_FROM` 3 s, the chip's `type_scale[1]`. None in the serialised skin: they are the crate's look, like `SLOT_ICON_SHARE`.
 
 ## Validation targets
 

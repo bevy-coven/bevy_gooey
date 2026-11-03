@@ -285,7 +285,7 @@ fn a_cover_and_its_chip_let_the_pointer_through() {
 }
 
 #[test]
-fn the_sweep_is_the_skins_own_surface_and_follows_a_scope() {
+fn the_dim_is_the_skins_background_and_follows_a_scope() {
     let mut app = app();
     let owner = hotbar(&mut app, Cooldown::new(30.0));
     frames(&mut app, 2);
@@ -295,10 +295,10 @@ fn the_sweep_is_the_skins_own_surface_and_follows_a_scope() {
         let Some(Gradient::Conic(conic)) = gradient.0.first() else {
             panic!("not conic");
         };
-        Srgba::from(conic.stops[3].color)
+        Srgba::from(conic.stops[4].color)
     };
     let dark = GooeySkin::dark();
-    let expected = Srgba::from(dark.solid_surface());
+    let expected = Srgba::from(dark.background);
     let seen = dim(&app);
     assert!((seen.red - expected.red).abs() < 1e-4 && (seen.blue - expected.blue).abs() < 1e-4);
     assert!(seen.alpha > 0.6 && seen.alpha < 0.95, "{}", seen.alpha);
@@ -306,7 +306,7 @@ fn the_sweep_is_the_skins_own_surface_and_follows_a_scope() {
         .entity_mut(owner)
         .insert(SkinScope(GooeySkin::parchment()));
     frames(&mut app, 2);
-    let parchment = Srgba::from(GooeySkin::parchment().solid_surface());
+    let parchment = Srgba::from(GooeySkin::parchment().background);
     let seen = dim(&app);
     assert!(
         (seen.red - parchment.red).abs() < 1e-4 && (seen.red - expected.red).abs() > 0.2,

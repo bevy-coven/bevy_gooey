@@ -75,9 +75,12 @@ const SLOT_TEXT_SIZES: f32 = 4.0;
 /// The share of a slot's side its picture takes.
 const SLOT_ICON_SHARE: f32 = 0.6;
 
-/// How much of the icon a [`crate::Cooldown`]'s unrecovered wedge covers: the skin's opaque
-/// surface at this alpha, so the icon is dimmed and still recognisable.
-const COOLDOWN_DIM_ALPHA: f32 = 0.78;
+/// How much of the icon a [`crate::Cooldown`]'s unrecovered wedge covers: the skin's background at
+/// this alpha, so the icon is dimmed and still recognisable.
+const COOLDOWN_DIM_ALPHA: f32 = 0.66;
+
+/// The alpha of the hand at the sweep's edge.
+const COOLDOWN_EDGE_ALPHA: f32 = 0.7;
 
 /// The alpha of the chip the cooldown's seconds are drawn on. Not 1: the icon shows faintly
 /// through, so the chip reads as part of the cover; [`GooeySkin::problems`] measures the words
@@ -740,10 +743,26 @@ impl GooeySkin {
         Color::srgb(r, g, b)
     }
 
-    /// The cover of a [`crate::Cooldown`]'s unrecovered wedge: [`GooeySkin::solid_surface`] at
-    /// `COOLDOWN_DIM_ALPHA`.
+    /// The cover of a [`crate::Cooldown`]'s unrecovered wedge: [`GooeySkin::background`], the
+    /// colour of the screen behind the interface, at `COOLDOWN_DIM_ALPHA`: the widget sinks back
+    /// into the screen. A cover in the widget's own surface would be the same value as the widget.
     pub(crate) fn cooldown_dim(&self) -> Color {
-        self.solid_surface().with_alpha(COOLDOWN_DIM_ALPHA)
+        let [r, g, b] = rgb(self.background);
+        Color::srgba(r, g, b, COOLDOWN_DIM_ALPHA)
+    }
+
+    /// The thin hand at the sweep's leading edge, at `COOLDOWN_EDGE_ALPHA`: whichever of
+    /// [`GooeySkin::text`] and [`GooeySkin::solid_surface`] stands further from the dim, so it is
+    /// light in a dark skin and in a parchment one, where the text is dark like the dim.
+    pub(crate) fn cooldown_edge(&self) -> Color {
+        let dim = rgb(self.background);
+        let [text, surface] = [rgb(self.text), rgb(self.solid_surface())];
+        let [r, g, b] = if contrast_ratio(text, dim) >= contrast_ratio(surface, dim) {
+            text
+        } else {
+            surface
+        };
+        Color::srgba(r, g, b, COOLDOWN_EDGE_ALPHA)
     }
 
     /// The chip a [`crate::Cooldown`]'s seconds are drawn on: [`GooeySkin::solid_surface`] at

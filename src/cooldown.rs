@@ -150,16 +150,22 @@ fn sync_cover(world: &mut World, entity: Entity) {
     }
 }
 
-/// The sweep as a gradient: clear up to `angle` clockwise from twelve o'clock, the skin's dim from
-/// there round to twelve o'clock again (hard stops).
-fn sweep_gradient(dim: Color, angle: f32) -> Gradient {
+/// How wide the hand at the sweep's leading edge is, radians: a thin wedge, finer near the middle
+/// of the widget, like the hand of a clock.
+const EDGE_ANGLE: f32 = 0.05;
+
+/// The sweep as a gradient: clear up to `angle` clockwise from twelve o'clock, then a thin hand,
+/// then the skin's dim round to twelve o'clock again (hard stops).
+fn sweep_gradient(dim: Color, edge: Color, angle: f32) -> Gradient {
     let clear = dim.with_alpha(0.0);
     Gradient::Conic(ConicGradient::new(
         UiPosition::CENTER,
         vec![
             AngularColorStop::new(clear, 0.0),
             AngularColorStop::new(clear, angle),
-            AngularColorStop::new(dim, angle),
+            AngularColorStop::new(edge, angle),
+            AngularColorStop::new(edge, angle + EDGE_ANGLE),
+            AngularColorStop::new(dim, angle + EDGE_ANGLE),
             AngularColorStop::new(dim, TAU),
         ],
     ))
@@ -210,9 +216,10 @@ pub fn update_cooldowns(
             Visibility::Hidden
         });
         if running {
-            let dim = skin_of(&skin, entity, &scopes, &parents).cooldown_dim();
+            let look = skin_of(&skin, entity, &scopes, &parents);
             let wanted = [sweep_gradient(
-                dim,
+                look.cooldown_dim(),
+                look.cooldown_edge(),
                 cooldown_sweep(cooldown.remaining, cooldown.duration),
             )];
             if gradient.0.as_slice() != wanted {
