@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.32.3] - 2026-11-03
+
 ### Added
 
 - `confirm(title, body, choices)` and its component `Confirm` (`docs/research/confirm.md`): a whole modal question in one line. It builds the dialog, its panel, a title, a line of body and a button per choice; the last choice is the safe one (focused when it opens, answered by Escape and a pad's East; `Confirm::safe(i)` moves it); any answer sends one `ConfirmChosen { entity, index, cancelled }` and despawns the dialog, so focus returns to the opener. New public items `Confirm`, `ConfirmChosen`, `ConfirmButton`, `confirm`. The gallery's Quit dialog is now one `confirm` (its legend a child).
