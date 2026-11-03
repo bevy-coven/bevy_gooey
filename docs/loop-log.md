@@ -2200,3 +2200,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. One keycap vocabulary for the shortcut badges and legend.
 4. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
 5. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
+
+**Release (iteration 57).** Patch (no public item changed; `cargo semver-checks --baseline-rev v0.32.1`: 202 pass, no update required): `release: v0.32.2`, published (https://crates.io/crates/bevy_gooey/0.32.2), tag `v0.32.2` pushed.
+
+**Cleanup (iteration 57).** Removed this pass's own `/tmp/gate57.sh`, `/tmp/edit1.py`, `/tmp/access.rs.bak`, `/tmp/aa.rs.bak`; no baseline worktree or captures were made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
