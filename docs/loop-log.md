@@ -2232,3 +2232,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. One keycap vocabulary for the shortcut badges and legend.
 4. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
 5. Motion: a scrim and card fade, a dialog exit (now a natural fit for `Confirm`, which owns its despawn), a button press pop, a per-meter opt-out.
+
+**Release (iteration 58).** Additive (`cargo semver-checks --baseline-rev v0.32.2`: 202 pass, no update required): `release: v0.32.3`, published (https://crates.io/crates/bevy_gooey/0.32.3), tag `v0.32.3` pushed.
+
+**Cleanup (iteration 58).** Removed this pass's own `/tmp/g58` (baseline gallery binary, captures, gate script, critique) and the Xvfb `:93` it started; no baseline worktree was made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
