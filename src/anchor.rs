@@ -36,7 +36,7 @@ pub enum OffScreen {
 /// # use bevy_gooey::*;
 /// fn health_bar(mut commands: Commands, enemy: Entity) {
 ///     // A bar 1.2 world units above the enemy, gone with it when it is despawned.
-///     commands.spawn((meter(0.8), WorldAnchor::above(enemy, 1.2)));
+///     commands.spawn((meter(0.8, 1.0), WorldAnchor::above(enemy, 1.2)));
 /// }
 /// ```
 ///
