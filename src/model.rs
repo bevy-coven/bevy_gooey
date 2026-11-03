@@ -2301,6 +2301,65 @@ pub fn target_step(rects: &[[f32; 4]], current: Option<usize>, forward: bool) ->
     Some(order[next])
 }
 
+/// Whether the box `[min, max]` lies wholly outside the rectangle `[view_min, view_max]`: no
+/// overlap at all, so nothing of it would be drawn. Touching edges count as inside.
+///
+/// ```
+/// use bevy_gooey::box_outside;
+/// assert!(box_outside((1300.0, 10.0), (1340.0, 40.0), (0.0, 0.0), (1280.0, 720.0)));
+/// assert!(!box_outside((1270.0, 10.0), (1310.0, 40.0), (0.0, 0.0), (1280.0, 720.0)));
+/// ```
+pub fn box_outside(
+    min: (f32, f32),
+    max: (f32, f32),
+    view_min: (f32, f32),
+    view_max: (f32, f32),
+) -> bool {
+    max.0 < view_min.0 || min.0 > view_max.0 || max.1 < view_min.1 || min.1 > view_max.1
+}
+
+/// Where a point outside the rectangle `[min, max]` is pinned to its edge: on the ray from
+/// `centre` toward `point`, so the pinned position still says which way the point lies. A point
+/// inside is returned as it is. The result is never outside the rectangle (an empty one, `min`
+/// past `max`, gives `centre`).
+///
+/// ```
+/// use bevy_gooey::pin_to_edge;
+/// // Far to the right of a 1280 x 720 viewport, level with its middle: on the right edge.
+/// assert_eq!(pin_to_edge((5000.0, 360.0), (640.0, 360.0), (64.0, 36.0), (1216.0, 684.0)), (1216.0, 360.0));
+/// // Inside: unchanged.
+/// assert_eq!(pin_to_edge((100.0, 100.0), (640.0, 360.0), (64.0, 36.0), (1216.0, 684.0)), (100.0, 100.0));
+/// ```
+pub fn pin_to_edge(
+    point: (f32, f32),
+    centre: (f32, f32),
+    min: (f32, f32),
+    max: (f32, f32),
+) -> (f32, f32) {
+    if min.0 > max.0 || min.1 > max.1 || !point.0.is_finite() || !point.1.is_finite() {
+        return centre;
+    }
+    if point.0 >= min.0 && point.0 <= max.0 && point.1 >= min.1 && point.1 <= max.1 {
+        return point;
+    }
+    let (dx, dy) = (point.0 - centre.0, point.1 - centre.1);
+    let reach = |d: f32, from: f32, lo: f32, hi: f32| {
+        if d > 0.0 {
+            (hi - from) / d
+        } else if d < 0.0 {
+            (lo - from) / d
+        } else {
+            f32::INFINITY
+        }
+    };
+    let s = reach(dx, centre.0, min.0, max.0).min(reach(dy, centre.1, min.1, max.1));
+    let s = if s.is_finite() { s.max(0.0) } else { 0.0 };
+    (
+        (centre.0 + dx * s).clamp(min.0, max.0),
+        (centre.1 + dy * s).clamp(min.1, max.1),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3373,5 +3432,43 @@ mod tests {
             bar_fit(&[50.0; 3], &[1], 0.0, 100.0, 0.0),
             [true, true, false]
         );
+    }
+
+    #[test]
+    fn a_pinned_point_keeps_its_direction_and_never_leaves_the_rectangle() {
+        let (centre, min, max) = ((640.0, 360.0), (64.0, 36.0), (1216.0, 684.0));
+        // Up and to the right, steeper than the corner: it hits the top edge, on the same ray.
+        let (x, y) = pin_to_edge((740.0, -3000.0), centre, min, max);
+        assert!((y - 36.0).abs() < 1e-3, "{y}");
+        let (rx, ry) = (x - centre.0, y - centre.1);
+        let (ox, oy) = (740.0 - centre.0, -3000.0 - centre.1);
+        assert!((rx * oy - ry * ox).abs() < 1.0, "off the ray: {rx} {ry}");
+        // Every direction lands inside the rectangle.
+        for i in 0..360 {
+            let a = (i as f32).to_radians();
+            let (px, py) = pin_to_edge(
+                (centre.0 + a.cos() * 9000.0, centre.1 + a.sin() * 9000.0),
+                centre,
+                min,
+                max,
+            );
+            assert!(
+                (min.0..=max.0).contains(&px) && (min.1..=max.1).contains(&py),
+                "{i}"
+            );
+        }
+        // The centre itself, an empty rectangle and a NaN are safe.
+        assert_eq!(pin_to_edge(centre, centre, min, max), centre);
+        assert_eq!(pin_to_edge((9.0, 9.0), centre, max, min), centre);
+        assert_eq!(pin_to_edge((f32::NAN, 0.0), centre, min, max), centre);
+    }
+
+    #[test]
+    fn a_box_is_outside_only_when_none_of_it_overlaps_the_view() {
+        let view = ((0.0, 0.0), (100.0, 100.0));
+        assert!(box_outside((101.0, 0.0), (120.0, 10.0), view.0, view.1));
+        assert!(box_outside((0.0, -30.0), (10.0, -1.0), view.0, view.1));
+        assert!(!box_outside((90.0, 90.0), (130.0, 130.0), view.0, view.1));
+        assert!(!box_outside((100.0, 0.0), (120.0, 10.0), view.0, view.1));
     }
 }
