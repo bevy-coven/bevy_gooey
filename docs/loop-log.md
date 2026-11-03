@@ -2170,3 +2170,7 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. One keycap vocabulary for the shortcut badges and legend.
 4. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper.
 5. Motion: a scrim and card fade, a dialog exit, a button press pop, a per-meter opt-out.
+
+**Release (iteration 56).** Patch (logging and tests only, no API change): `release: v0.32.1`, published (https://crates.io/crates/bevy_gooey/0.32.1), tag `v0.32.1` pushed. Comment on #38 asks the host for `RUST_LOG=bevy_gooey::split=debug` output.
+
+**Cleanup (iteration 56).** Removed this pass's own `/tmp/gate56.sh`; no baseline worktree or captures were made. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
