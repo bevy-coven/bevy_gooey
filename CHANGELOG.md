@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `Cooldown` (`docs/research/cooldown.md`, `docs/guide/cooldowns.md`, `examples/hotbar`): a timer on any widget. `Cooldown { duration, remaining }` (`new`, `start`, `is_ready`, `fraction`) keeps one hidden cover child exactly while it exists (`Role::Cooldown`, a hard-stop conic gradient dimmed toward the skin's `background`, a thin hand at the sweep's edge, and a `Role::CooldownText` chip of the seconds left), `update_cooldowns` counts it down on game time and sends `CooldownReady { entity }` the frame it ends, and the widget's accessible name carries the seconds ("Fireball, 6 seconds remaining"). `GooeySkin::problems()` checks the chip's words at 4.5:1 over the brightest and the darkest icon (`"text on cooldown chip"`). `model::{cooldown_text, cooldown_words, cooldown_sweep, COOLDOWN_WHOLE_SECONDS_FROM}`. A new `Role` variant pair, so a minor release.
+
 ## [0.32.4] - 2026-11-03
 
 ### Added

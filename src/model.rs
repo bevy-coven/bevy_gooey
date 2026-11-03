@@ -2078,6 +2078,84 @@ pub fn spinner_angle(elapsed: f32) -> f32 {
     turns * std::f32::consts::TAU
 }
 
+/// From this many seconds left a cooldown is read in whole seconds; under it, in tenths.
+pub const COOLDOWN_WHOLE_SECONDS_FROM: f32 = 3.0;
+
+/// Float noise (0.3 * 10 is 3.0000001) must not push a round number up a step.
+const COOLDOWN_ROUND_SLACK: f32 = 1e-3;
+
+/// The words on a cooldown's chip for `remaining` seconds: `m:ss` from a minute, whole seconds
+/// rounded up from [`COOLDOWN_WHOLE_SECONDS_FROM`], tenths rounded up below it, so a second that
+/// is not over does not read as the next one down and the last tenth is "0.1", never "0.0".
+/// Empty at zero, below it, or when not finite (a ready widget draws no chip).
+///
+/// ```
+/// use bevy_gooey::model::cooldown_text;
+/// assert_eq!(cooldown_text(65.2), "1:06");
+/// assert_eq!(cooldown_text(12.0), "12");
+/// assert_eq!(cooldown_text(5.01), "6");
+/// assert_eq!(cooldown_text(2.31), "2.4");
+/// assert_eq!(cooldown_text(0.0), "");
+/// ```
+pub fn cooldown_text(remaining: f32) -> String {
+    if !remaining.is_finite() || remaining <= 0.0 {
+        return String::new();
+    }
+    if remaining < COOLDOWN_WHOLE_SECONDS_FROM {
+        let tenths = ((remaining * 10.0 - COOLDOWN_ROUND_SLACK).ceil() as u32).max(1);
+        return format!("{}.{}", tenths / 10, tenths % 10);
+    }
+    let seconds = (remaining - COOLDOWN_ROUND_SLACK).ceil() as u32;
+    if seconds >= 60 {
+        format!("{}:{:02}", seconds / 60, seconds % 60)
+    } else {
+        seconds.to_string()
+    }
+}
+
+/// The same time as a screen reader should say it: "1 second remaining", "6 seconds remaining",
+/// "1 minute 5 seconds remaining". Empty when `remaining` is zero, below it or not finite.
+///
+/// ```
+/// use bevy_gooey::model::cooldown_words;
+/// assert_eq!(cooldown_words(5.01), "6 seconds remaining");
+/// assert_eq!(cooldown_words(0.4), "1 second remaining");
+/// assert_eq!(cooldown_words(65.0), "1 minute 5 seconds remaining");
+/// ```
+pub fn cooldown_words(remaining: f32) -> String {
+    if !remaining.is_finite() || remaining <= 0.0 {
+        return String::new();
+    }
+    let seconds = ((remaining - COOLDOWN_ROUND_SLACK).ceil() as u32).max(1);
+    let (minutes, rest) = (seconds / 60, seconds % 60);
+    let plural = |n: u32, unit: &str| format!("{n} {unit}{}", if n == 1 { "" } else { "s" });
+    match (minutes, rest) {
+        (0, s) => format!("{} remaining", plural(s, "second")),
+        (m, 0) => format!("{} remaining", plural(m, "minute")),
+        (m, s) => format!("{} {} remaining", plural(m, "minute"), plural(s, "second")),
+    }
+}
+
+/// The angle, clockwise from twelve o'clock, that a cooldown's clear wedge has opened to: `0` the
+/// moment it starts (all dimmed) to `TAU` when `remaining` reaches zero. A duration that is not
+/// positive or not finite counts as fully dimmed while any time remains, and `remaining` outside
+/// `0..=duration` is held to the nearest end.
+///
+/// ```
+/// use bevy_gooey::model::cooldown_sweep;
+/// assert!((cooldown_sweep(6.0, 8.0) - std::f32::consts::FRAC_PI_2).abs() < 1e-5);
+/// assert_eq!(cooldown_sweep(8.0, 8.0), 0.0);
+/// ```
+pub fn cooldown_sweep(remaining: f32, duration: f32) -> f32 {
+    if !remaining.is_finite() || remaining <= 0.0 {
+        return std::f32::consts::TAU;
+    }
+    if !duration.is_finite() || duration <= 0.0 {
+        return 0.0;
+    }
+    (1.0 - (remaining / duration).clamp(0.0, 1.0)) * std::f32::consts::TAU
+}
+
 /// How far a dialog's card rises into place, logical px.
 pub const DIALOG_SLIDE_PX: f32 = 12.0;
 /// How long a dialog's card takes to rise into place, seconds.

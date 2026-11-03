@@ -75,6 +75,18 @@ const SLOT_TEXT_SIZES: f32 = 4.0;
 /// The share of a slot's side its picture takes.
 const SLOT_ICON_SHARE: f32 = 0.6;
 
+/// How much of the icon a [`crate::Cooldown`]'s unrecovered wedge covers: the skin's background at
+/// this alpha, so the icon is dimmed and still recognisable.
+const COOLDOWN_DIM_ALPHA: f32 = 0.66;
+
+/// The alpha of the hand at the sweep's edge.
+const COOLDOWN_EDGE_ALPHA: f32 = 0.7;
+
+/// The alpha of the chip the cooldown's seconds are drawn on. Not 1: the icon shows faintly
+/// through, so the chip reads as part of the cover; [`GooeySkin::problems`] measures the words
+/// against the chip over the worst icon.
+const COOLDOWN_CHIP_ALPHA: f32 = 0.92;
+
 /// The most of the window's shorter side a [`crate::radial`]'s disc takes: 92%, which at 720p is a
 /// 662 px wheel and caps its text at 25 px (125% of the default), so the wheel is whole on the
 /// screen at 150% and 200% text too.
@@ -731,6 +743,34 @@ impl GooeySkin {
         Color::srgb(r, g, b)
     }
 
+    /// The cover of a [`crate::Cooldown`]'s unrecovered wedge: [`GooeySkin::background`], the
+    /// colour of the screen behind the interface, at `COOLDOWN_DIM_ALPHA`: the widget sinks back
+    /// into the screen. A cover in the widget's own surface would be the same value as the widget.
+    pub(crate) fn cooldown_dim(&self) -> Color {
+        let [r, g, b] = rgb(self.background);
+        Color::srgba(r, g, b, COOLDOWN_DIM_ALPHA)
+    }
+
+    /// The thin hand at the sweep's leading edge, at `COOLDOWN_EDGE_ALPHA`: whichever of
+    /// [`GooeySkin::text`] and [`GooeySkin::solid_surface`] stands further from the dim, so it is
+    /// light in a dark skin and in a parchment one, where the text is dark like the dim.
+    pub(crate) fn cooldown_edge(&self) -> Color {
+        let dim = rgb(self.background);
+        let [text, surface] = [rgb(self.text), rgb(self.solid_surface())];
+        let [r, g, b] = if contrast_ratio(text, dim) >= contrast_ratio(surface, dim) {
+            text
+        } else {
+            surface
+        };
+        Color::srgba(r, g, b, COOLDOWN_EDGE_ALPHA)
+    }
+
+    /// The chip a [`crate::Cooldown`]'s seconds are drawn on: [`GooeySkin::solid_surface`] at
+    /// `COOLDOWN_CHIP_ALPHA`.
+    fn cooldown_chip(&self) -> Color {
+        self.solid_surface().with_alpha(COOLDOWN_CHIP_ALPHA)
+    }
+
     /// Everything about this skin that breaks the contrast, target-size or size rules, in a fixed
     /// order: low contrast pairs, then a too-small target, then a meter too thin for its fill,
     /// then unusable sizes, then the surface ladder's steps and the token scales. Empty for a good
@@ -834,6 +874,17 @@ impl GooeySkin {
                 rgb(self.preview_edge()),
                 surface,
                 NON_TEXT_CONTRAST,
+            ),
+            // The chip over an icon as dark, and as light, as an icon can be: the worse of the two.
+            (
+                "text on cooldown chip",
+                text,
+                [[0.0; 3], [1.0; 3]]
+                    .map(|icon| composite(surface, COOLDOWN_CHIP_ALPHA, icon))
+                    .into_iter()
+                    .min_by(|a, b| contrast_ratio(text, *a).total_cmp(&contrast_ratio(text, *b)))
+                    .unwrap_or(surface),
+                TEXT_CONTRAST,
             ),
         ];
         // A skin that draws its own edge answers for it: the frame is what a panel, a tooltip and
@@ -1554,6 +1605,12 @@ pub enum Role {
     SlotCount,
     /// A slot's picture, 60% of the slot's side, tinted like an [`Role::Icon`].
     SlotIcon,
+    /// A [`crate::Cooldown`]'s cover: the owner's whole padding box, dimmed from twelve o'clock
+    /// round to where the clear wedge has opened; the sweep is data, written by
+    /// [`crate::update_cooldowns`].
+    Cooldown,
+    /// The seconds left on a [`Role::Cooldown`], on a chip of the opaque surface in its middle.
+    CooldownText,
     /// The one grid cell every page stands in, so the widget is as large as its largest page; not
     /// drawn.
     TabPages,
@@ -1742,6 +1799,20 @@ fn look_of<'a>(
         skin: scope.map_or(look.skin, |scope| &scope.0),
         ..look
     }
+}
+
+/// The skin `entity` is styled from: its own [`SkinScope`], else the nearest one above it, else
+/// `skin`. For a system outside [`apply_skin`] that writes a colour as data.
+pub(crate) fn skin_of<'a>(
+    skin: &'a GooeySkin,
+    entity: Entity,
+    scopes: &'a Query<&SkinScope>,
+    parents: &Query<&ChildOf>,
+) -> &'a GooeySkin {
+    std::iter::once(entity)
+        .chain(parents.iter_ancestors(entity))
+        .find_map(|e| scopes.get(e).ok())
+        .map_or(skin, |scope| &scope.0)
 }
 
 /// The widget state a look depends on.
@@ -2298,6 +2369,7 @@ fn restyle(
             skin.surface
         }),
         Role::SlotCount => Some(skin.solid_surface()),
+        Role::CooldownText => Some(skin.cooldown_chip()),
         // The selected tab is lit like everything that is on (a switch, a meter's fill): the
         // accent, with the text colour inverted on it, two cues by luminance and not by hue. The
         // others are a button's, full-contrast text on a visible fill, never faded.
@@ -2546,6 +2618,7 @@ fn restyle(
         | Role::SlotGrid
         | Role::SlotName
         | Role::SlotIcon
+        | Role::Cooldown
         | Role::RadialIcon
         | Role::RadialText
         | Role::RadialCentre
@@ -2831,6 +2904,21 @@ fn restyle(
                 next.right = Val::Px(line + 1.0);
                 next.bottom = Val::Px(line + 1.0);
                 next.padding = UiRect::horizontal(Val::Px(skin.gap * 0.5));
+                next.border_radius = BorderRadius::all(Val::Px(skin.radius * 0.5));
+            }
+            // The cover is the owner's whole padding box, the chip centred in it.
+            Role::Cooldown => {
+                next.position_type = PositionType::Absolute;
+                next.left = Val::Px(0.0);
+                next.top = Val::Px(0.0);
+                next.right = Val::Px(0.0);
+                next.bottom = Val::Px(0.0);
+                next.align_items = AlignItems::Center;
+                next.justify_content = JustifyContent::Center;
+                next.border_radius = radius;
+            }
+            Role::CooldownText => {
+                next.padding = UiRect::axes(Val::Px(skin.gap * 0.5), Val::Px(skin.gap * 0.25));
                 next.border_radius = BorderRadius::all(Val::Px(skin.radius * 0.5));
             }
             Role::SlotIcon => {
@@ -3672,6 +3760,8 @@ fn restyle(
         }
         // The count is read on the opaque surface's chip, never on the item.
         Role::SlotCount => Some((skin.text, &look.fonts.body, skin.type_scale[2])),
+        // The seconds are read on the chip, never on the icon the sweep dims.
+        Role::CooldownText => Some((skin.text, &look.fonts.body, skin.type_scale[1])),
         // The selected tab's label is drawn on the accent fill, so it takes the accent's text.
         Role::TabText => {
             let parent = parent.unwrap_or_default();
