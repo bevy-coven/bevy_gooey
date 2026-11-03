@@ -15697,3 +15697,143 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 84	64	release	model	model		2026-11-03T11:52:17Z	7.3	
 84	65	release	tool	push gate	bash	2026-11-03T11:52:24Z	2.9	Comment on issue, log release, push :: cd /home/ladvien/bevy_gooey_loop && gh issue comment 38 --repo bevy-coven/bevy_gooey --body "Not reproduced here, so this stays open. Fixed in b73e9e1 (merged e
 84	66	release	model	model		2026-11-03T11:52:27Z	5.0	
+85	1	orient	model	model		2026-11-03T11:52:54Z	4.9	
+85	2	orient	tool	phase mark	bash	2026-11-03T11:52:59Z	0.9	Orienting: audit, parked, log :: python3 ~/.local/share/wiggum/steps.py mark orient; git status --short | head; git branch --show-current; git fetch -q origin loop-stats 2>&1|tail -1; git show 
+85	3	orient	tool	github	bash	2026-11-03T11:52:59Z	0.9	Listing open issues :: gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.number) \(.title) [\(.labels|map(.name
+85	4	orient	model	model		2026-11-03T11:53:00Z	3.3	
+85	5	orient	tool	github	bash	2026-11-03T11:53:03Z	1.4	Reading #38 thread :: gh issue view 38 --repo bevy-coven/bevy_gooey --json comments,state,updatedAt --jq '{state,updatedAt,comments:[.comments[]|{author:.author.login,createdAt,body:
+85	6	orient	model	model		2026-11-03T11:53:04Z	8.9	
+85	7	choose	tool	phase mark	bash	2026-11-03T11:53:13Z	0.1	Sizing accessibility tree work :: python3 ~/.local/share/wiggum/steps.py mark choose; ls docs/research | head -80; grep -n "Tree\|level\|expanded" src/access.rs | head -60; wc -l src/access.rs s
+85	8	choose	model	model		2026-11-03T11:53:13Z	2.1	
+85	9	choose	tool	read files	read	2026-11-03T11:53:15Z	0.0	Reading access core :: src/access.rs:225
+85	10	choose	tool	shell	bash	2026-11-03T11:53:15Z	0.0	Reading prior research notes :: cat docs/research/access-actions.md | head -80; grep -n "tree\|Tree" docs/research/accessibility.md | head -20
+85	11	choose	model	model		2026-11-03T11:53:15Z	4.4	
+85	12	choose	tool	shell	bash	2026-11-03T11:53:20Z	0.0	Reading tree API and rest of access :: grep -n "pub fn\|pub struct\|pub(crate) fn\|fn " src/tree.rs | head -80; grep -n "pub struct TableRow" -A 14 src/table.rs; sed -n 525,640p src/access.rs
+85	13	choose	model	model		2026-11-03T11:53:20Z	4.4	
+85	14	choose	tool	read files	read	2026-11-03T11:53:24Z	0.0	Reading Tree struct :: src/tree.rs:100-135
+85	15	choose	tool	read files	read	2026-11-03T11:53:24Z	0.0	Reading Tree helpers :: src/tree.rs:240-335
+85	16	choose	tool	read files	read	2026-11-03T11:53:24Z	0.0	Reading toggle fn :: src/tree.rs:455-520
+85	17	choose	model	model		2026-11-03T11:53:24Z	11.1	
+85	18	choose	tool	read files	read	2026-11-03T11:53:35Z	0.0	Reading actions table :: src/access_actions.rs
+85	19	choose	tool	shell	bash	2026-11-03T11:53:35Z	0.0	Outline and radial stepping :: grep -n "struct Outline" -B3 -A8 src/*.rs; grep -n "enum MoveRadial\|struct MoveRadial\|fn radial_on_key_input" -A25 src/radial.rs | head -90
+85	20	choose	model	model		2026-11-03T11:53:35Z	2.3	
+85	21	choose	tool	read files	read	2026-11-03T11:53:38Z	0.0	Reading actions body :: src/access_actions.rs:11-232
+85	22	choose	tool	shell	bash	2026-11-03T11:53:38Z	0.0	Reading radial point_at :: grep -n "fn point_at" -B2 -A22 src/radial.rs; grep -n "enum Fold\|fn expand\|Expand" src/access_actions.rs | head
+85	23	choose	model	model		2026-11-03T11:53:38Z	16.0	
+85	24	choose	tool	shell	bash	2026-11-03T11:53:54Z	0.0	Checking tests and accesskit API :: grep -n "tree\|Tree" tests/access.rs | head -30; grep -n "^fn \|^#\[test\]" tests/access.rs | head -70; ls ~/.cargo/registry/src/*/ | grep accesskit; grep -n "p
+85	25	choose	model	model		2026-11-03T11:53:54Z	2.3	
+85	26	choose	tool	shell	bash	2026-11-03T11:53:56Z	0.0	Reading test harness and accesskit API :: cd ~/.cargo/registry/src/*/accesskit-0.24.1/src; grep -rn "level\b\|position_in_set\|size_of_set" *.rs | grep -n "fn \|property_methods\|(Level\|PositionInSet\|
+85	27	choose	model	model		2026-11-03T11:53:56Z	4.6	
+85	28	research	tool	phase mark	bash	2026-11-03T11:54:00Z	0.1	Fetching APG tree view quotes :: python3 ~/.local/share/wiggum/steps.py mark research; curl -sL https://www.w3.org/WAI/ARIA/apg/patterns/treeview/ | python3 -c " import sys,re,html t=re.sub(r'<
+85	29	research	model	model		2026-11-03T11:54:01Z	2.7	
+85	30	research	tool	shell	bash	2026-11-03T11:54:03Z	0.1	More APG quotes :: curl -sL https://www.w3.org/WAI/ARIA/apg/patterns/treeview/ | python3 -c " import sys,re,html t=re.sub(r'<script.*?</script>|<style.*?</style>','',sys.stdin.rea
+85	31	research	model	model		2026-11-03T11:54:03Z	4.1	
+85	32	research	tool	shell	bash	2026-11-03T11:54:08Z	0.3	Quote ARIA setsize definition :: curl -sL https://www.w3.org/WAI/ARIA/apg/patterns/treeview/ | python3 -c " import sys,re,html t=re.sub(r'<script.*?</script>|<style.*?</style>','',sys.stdin.rea
+85	33	research	model	model		2026-11-03T11:54:08Z	6.0	
+85	34	research	tool	shell	bash	2026-11-03T11:54:14Z	0.0	Reading accesskit docs for level/set :: cd ~/.cargo/registry/src/*/accesskit-0.24.1/src; grep -n "Level\b\|SizeOfSet\|PositionInSet\|TreeItem" lib.rs | head -20; sed -n '/^ TreeItem,/,+2p' lib.rs | he
+85	35	research	model	model		2026-11-03T11:54:14Z	1.8	
+85	36	research	tool	shell	bash	2026-11-03T11:54:16Z	0.0	AccessKit comments :: cd ~/.cargo/registry/src/*/accesskit-0.24.1/src; sed -n 1990,2010p lib.rs; grep -n "hierarchical level\|number of items in the current\|1-based\|position of an 
+85	37	research	model	model		2026-11-03T11:54:16Z	4.6	
+85	38	research	tool	shell	bash	2026-11-03T11:54:20Z	0.0	Checking 0/1-based position :: cd ~/.cargo/registry/src/*/; grep -rn "position_in_set" accesskit_consumer-0.38.0/src/node.rs | head; grep -rn "position_in_set\|size_of_set" accesskit_windows-
+85	39	research	model	model		2026-11-03T11:54:20Z	1.7	
+85	40	research	tool	shell	bash	2026-11-03T11:54:22Z	0.0	Reading consumer set logic :: cd ~/.cargo/registry/src/*/; sed -n 620,720p accesskit_consumer-0.38.0/src/node.rs; sed -n 678,695p accesskit_windows-0.34.0/src/node.rs
+85	41	research	model	model		2026-11-03T11:54:22Z	3.3	
+85	42	research	tool	shell	bash	2026-11-03T11:54:25Z	0.0	Read size_of_set_from_container :: cd ~/.cargo/registry/src/*/; grep -n "fn size_of_set_from_container" -B2 -A30 accesskit_consumer-0.38.0/src/node.rs; sed -n 695,705p accesskit_windows-0.34.0/sr
+85	43	research	model	model		2026-11-03T11:54:25Z	11.4	
+85	44	research	tool	shell	bash	2026-11-03T11:54:37Z	0.0	Table API :: grep -n "impl Table\b" -A60 src/table.rs | grep -n "fn \|pub" | head -20; grep -n "pub struct Table " -B2 -A12 src/table.rs
+85	45	research	model	model		2026-11-03T11:54:37Z	27.2	
+85	46	research	tool	shell	bash	2026-11-03T11:55:04Z	0.0	Tree test construction :: sed -n 1,80p tests/tree.rs; grep -n "pub fn tree\b" -B6 -A12 src/widgets.rs | head -40; grep -n "fn radial_step" -A8 src/radial.rs; grep -n "pub fn radial\b" -A
+85	47	research	model	model		2026-11-03T11:55:04Z	3.2	
+85	48	research	tool	shell	bash	2026-11-03T11:55:07Z	0.0	radial_step and spec table :: grep -rn "fn radial_step\|radial_step" src/*.rs | head -4; grep -n "pub(crate) fn point_at\|fn point_at" src/radial.rs; grep -rn "Role::TableView\|Role::ListRow
+85	49	research	model	model		2026-11-03T11:55:07Z	21.3	
+85	50	research	tool	shell	bash	2026-11-03T11:55:28Z	0.0	Write failing tests first :: cat >> tests/access.rs <<'EOF' // --- A virtualized table and tree: a row knows its place and level ----------------------------- /// The shown row of `table` f
+85	51	research	model	model		2026-11-03T11:55:28Z	3.0	
+85	52	build	tool	phase mark	bash	2026-11-03T11:55:32Z	0.1	Imports in access.rs :: python3 ~/.local/share/wiggum/steps.py mark build; grep -n "^use\|^ [a-z_]*::{" src/access.rs | head -40; sed -n 1,60p src/access.rs | grep -n "table\|tree\|Tre
+85	53	build	model	model		2026-11-03T11:55:32Z	13.8	
+85	54	build	tool	homestill	bash	2026-11-03T11:55:45Z	0.1	Apply access.rs changes via one-off script :: cat > /tmp/edit1.py <<'EOF' import re p='src/access.rs' s=open(p).read() def rep(a,b,count=1): global s assert s.count(a)==count,(a,s.count(a)) s=s.replace(a,b)
+85	55	build	model	model		2026-11-03T11:55:45Z	5.7	
+85	56	build	tool	edit files	edit	2026-11-03T11:55:51Z	0.0	Add Tree::outline_of :: [src/tree.rs#3F42] PUT >283: + + /// The outline of the node `key`, shown or not. + pub(crate) fn outline_of(&self, key: u64) -> Option<Outline> { + let &i = se
+85	57	build	tool	shell	bash	2026-11-03T11:55:51Z	0.0	Verify edit, radial imports :: sed -n 275,296p src/tree.rs; grep -n "^use" src/radial.rs | head -20
+85	58	build	model	model		2026-11-03T11:55:51Z	3.2	
+85	59	build	tool	edit files	edit	2026-11-03T11:55:54Z	0.0	outline delegates to the shared builder :: [src/tree.rs#7F60] PUT 277.=292: + pub(crate) fn outline(&self, row: usize) -> Outline { + self.node_outline(self.shown[row]) + } + + /// The outline of the nod
+85	60	build	tool	edit files	edit	2026-11-03T11:55:54Z	0.0	Make radial point_at crate-visible :: [src/radial.rs#0000]
+85	61	build	model	model		2026-11-03T11:55:54Z	2.9	
+85	62	build	tool	edit files	edit	2026-11-03T11:55:57Z	0.0	outline delegates to shared builder :: [src/tree.rs#7F60] PUT 277.=292: + pub(crate) fn outline(&self, row: usize) -> Outline { + self.node_outline(self.shown[row]) + } + + /// The outline of the nod
+85	63	build	tool	edit files	edit	2026-11-03T11:55:57Z	0.0	point_at crate visibility :: [src/radial.rs#D31B] PUT 118.=118: +pub(crate) fn point_at(commands: &mut Commands, radial: Entity, now: usize, to: usize) {
+85	64	build	model	model		2026-11-03T11:55:57Z	3.1	
+85	65	build	tool	shell	bash	2026-11-03T11:56:00Z	0.0	Locate toggle :: grep -n "^fn toggle" src/tree.rs
+85	66	build	model	model		2026-11-03T11:56:00Z	1.9	
+85	67	build	tool	edit files	edit	2026-11-03T11:56:02Z	0.0	toggle crate-visible :: [src/tree.rs#05BC] PUT 471.=471: +pub(crate) fn toggle(
+85	68	build	tool	read files	read	2026-11-03T11:56:02Z	0.0	Get tag for actions edits :: src/access_actions.rs:60-125
+85	69	build	model	model		2026-11-03T11:56:02Z	4.7	
+85	70	build	tool	edit files	edit	2026-11-03T11:56:07Z	0.0	Actions: tree branch, radial, around, handler :: [src/access_actions.rs#CAA3] PUT >65: +/// A tree row that has children: it opens and shuts, and is no button (Left and Right are the +/// tree's, `tree_by_inpu
+85	71	build	tool	read files	read	2026-11-03T11:56:07Z	0.0	Re-read handler for tag :: src/access_actions.rs:132-200
+85	72	build	model	model		2026-11-03T11:56:07Z	6.2	
+85	73	build	tool	edit files	edit	2026-11-03T11:56:13Z	0.0	Handler edits :: [src/access_actions.rs#6B87] PUT 138.=138: + mut around: Around, PUT >148: + // A tree row is a pooled entity with no widget behind it: Expand and Collapse go t
+85	74	build	tool	cargo clippy	bash	2026-11-03T11:56:13Z	20.9	fmt and clippy :: cargo fmt && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -40
+85	75	build	model	model		2026-11-03T11:56:34Z	3.9	
+85	76	build	tool	shell	bash	2026-11-03T11:56:38Z	0.1	Fix test type (sed on my own new test code) :: sed -i 's/only::<TreeView>(&mut app)/only::<Table>(\&mut app)/' tests/access.rs && grep -n "let _ = root\|\.map(|_| ())" tests/access.rs
+85	77	build	model	model		2026-11-03T11:56:38Z	1.3	
+85	78	build	tool	read files	read	2026-11-03T11:56:40Z	0.0	Tidy tests :: tests/access.rs:1022-1058
+85	79	build	model	model		2026-11-03T11:56:40Z	3.2	
+85	80	build	tool	edit files	edit	2026-11-03T11:56:43Z	0.0	Tidy tests :: [tests/access.rs#1E42] PUT 1052.=1055: + if let Some(mut table) = app.world_mut().get_mut::<Table>(tree) + && let Some(rows) = table.source_mut::<Tree>() + { + 
+85	81	build	tool	cargo test	bash	2026-11-03T11:56:43Z	40.6	Clippy then access tests :: cargo fmt && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -30 && CARGO_BUILD_JOBS=4 cargo test --all-features --test 
+85	82	build	model	model		2026-11-03T11:57:23Z	1.5	
+85	83	build	tool	read files	read	2026-11-03T11:57:25Z	0.0	Fix borrow lines :: tests/access.rs:1094-1104
+85	84	build	model	model		2026-11-03T11:57:25Z	3.9	
+85	85	build	tool	edit files	edit	2026-11-03T11:57:29Z	0.0	Fix borrows :: [tests/access.rs#FF83] PUT 1097.=1101: + let b = row_of(&mut app, 2); + act(&mut app, b, A::Expand, None); + assert_eq!(app.world().resource::<Toggles>().0.len(
+85	86	build	tool	cargo test	bash	2026-11-03T11:57:29Z	35.5	Clippy then access tests :: cargo fmt && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -30 && CARGO_BUILD_JOBS=4 cargo test --all-features --test 
+85	87	build	model	model		2026-11-03T11:58:04Z	5.4	
+85	88	build	tool	cargo test	bash	2026-11-03T11:58:10Z	38.0	Mutation-check the new guards :: cp src/access.rs /tmp/access.rs.bak; cp src/access_actions.rs /tmp/aa.rs.bak sed -i 's/ if wanted.end_node {\n node.clear_expanded();/X/' src/access.rs perl -0p
+85	89	build	model	model		2026-11-03T11:58:48Z	4.0	
+85	90	build	tool	shell	bash	2026-11-03T11:58:52Z	0.0	Read settled test :: sed -n 637,660p tests/access.rs
+85	91	build	model	model		2026-11-03T11:58:52Z	2.6	
+85	92	build	tool	edit files	edit	2026-11-03T11:58:54Z	0.0	Add tree and table to settled test :: [tests/access.rs#9C57] PUT >647: + p.spawn(outline()); + p.spawn(table( + [Column::new("Name")], + vec![vec!["Rope".to_string()], vec!["Lamp".to_string()]], + )
+85	93	build	tool	cargo test	bash	2026-11-03T11:58:54Z	20.4	Run access tests :: cargo fmt; CARGO_BUILD_JOBS=4 cargo test --all-features --test all access:: 2>&1 | grep -E "^test .*FAILED|test result|panicked"
+85	94	build	model	model		2026-11-03T11:59:15Z	2.8	
+85	95	build	tool	edit files	edit	2026-11-03T11:59:17Z	0.0	Add tree/table/radial to settled test :: [tests/access.rs#9C57] PUT >648: + p.spawn(outline()); + p.spawn(table( + [Column::new("Name")], + vec![vec!["Rope".to_string()], vec!["Lamp".to_string()]], + )
+85	96	build	tool	cargo test	bash	2026-11-03T11:59:17Z	6.4	Run access tests :: cargo fmt; CARGO_BUILD_JOBS=4 cargo test --all-features --test all access:: 2>&1 | grep -E "^test .*FAILED|test result|panicked"
+85	97	build	model	model		2026-11-03T11:59:24Z	2.6	
+85	98	build	tool	edit files	edit	2026-11-03T11:59:26Z	0.0	Retry insertion :: [tests/access.rs#9C57] PUT >648: + p.spawn(outline()); + p.spawn(table( + [Column::new("Name")], + vec![vec!["Rope".to_string()], vec!["Lamp".to_string()]], + )
+85	99	build	tool	cargo test	bash	2026-11-03T11:59:26Z	27.7	Run access tests :: cargo fmt; CARGO_BUILD_JOBS=4 cargo test --all-features --test all access:: 2>&1 | grep -E "^test .*FAILED|test result|panicked"
+85	100	build	model	model		2026-11-03T11:59:54Z	22.4	
+85	101	build	tool	edit files	write	2026-11-03T12:00:17Z	0.0	Research note for virtualized rows :: docs/research/access-rows.md
+85	102	build	tool	git	bash	2026-11-03T12:00:17Z	0.1	Commit research; find doc spots :: git checkout -q -b loop/iter-57 && git add docs/research/access-rows.md && git commit -q -m "Research: accessibility of virtualized rows (tree level, expanded, 
+85	103	build	model	model		2026-11-03T12:00:17Z	5.4	
+85	104	build	tool	shell	bash	2026-11-03T12:00:22Z	0.0	Find doc text to update :: grep -o "Not done: a tree row[^.]*\.[^.]*\." AGENTS.md; grep -n "Not done\|Collapse.*tree\|tree row" src/access.rs src/access_actions.rs | head; sed -n 44,48p d
+85	105	build	model	model		2026-11-03T12:00:22Z	4.7	
+85	106	build	tool	read files	read	2026-11-03T12:00:27Z	0.0	Raw access line :: AGENTS.md:62:raw
+85	107	build	model	model		2026-11-03T12:00:27Z	1.5	
+85	108	build	tool	edit files	edit	2026-11-03T12:00:28Z	0.0	Update AGENTS access paragraph :: [AGENTS.md#0000]
+85	109	build	model	model		2026-11-03T12:00:28Z	11.1	
+85	110	build	tool	edit files	edit	2026-11-03T12:00:39Z	0.1	Update AGENTS access paragraph :: [AGENTS.md#8226] PUT 62.=62: +- `src/access.rs` — the accessibility tree. `update_accessibility` (Style, last: `(update_lists, update_accessibility).chain()`; r
+85	111	build	model	model		2026-11-03T12:00:40Z	7.0	
+85	112	build	tool	shell	bash	2026-11-03T12:00:46Z	0.0	Correct test count token in AGENTS.md :: grep -c "(45 tests: each widget" AGENTS.md; sed -i 's/`tests\/access.rs` holds it (45 tests: each widget/`tests\/access.rs` holds it (34 tests: each widget/' AG
+85	113	build	model	model		2026-11-03T12:00:46Z	2.0	
+85	114	build	tool	shell	bash	2026-11-03T12:00:48Z	0.0	View doc spots :: sed -n 1,16p src/access.rs; sed -n 44,48p docs/research/accessibility.md | cut -c1-80; sed -n 47p docs/research/access-actions.md
+85	115	build	model	model		2026-11-03T12:00:48Z	1.8	
+85	116	build	tool	edit files	edit	2026-11-03T12:00:50Z	0.0	Update superseded deviation notes and changelog :: [docs/research/access-actions.md#0000]
+85	117	build	model	model		2026-11-03T12:00:50Z	2.8	
+85	118	build	tool	edit files	edit	2026-11-03T12:00:53Z	0.0	Update superseded deviation notes :: [docs/research/access-actions.md#D181] PUT 47.=47: +None from a source. Design defaults: ReplaceSelectedText, SetTextSelection, Scroll* and ShowContextMenu are 
+85	119	build	tool	read files	read	2026-11-03T12:00:53Z	0.0	tag for accessibility.md :: docs/research/accessibility.md:46
+85	120	build	tool	read files	read	2026-11-03T12:00:53Z	0.0	changelog tag :: CHANGELOG.md:1-5
+85	121	build	model	model		2026-11-03T12:00:53Z	7.6	
+85	122	build	tool	edit files	edit	2026-11-03T12:01:01Z	0.0	Changelog and note update :: [CHANGELOG.md#F17A] PUT >3: + +### Added + +- Accessibility of a virtualized table and tree (`docs/research/access-rows.md`): a tree row tells a screen reader i
+85	123	gate	tool	phase mark	bash	2026-11-03T12:01:01Z	60.0	[launched bg_1] Run full gate :: python3 ~/.local/share/wiggum/steps.py mark gate; cat > /tmp/gate57.sh <<'EOF' #!/bin/bash cd /home/ladvien/bevy_gooey_loop export CARGO_BUILD_JOBS=4 set -e car
+85	124	gate	model	model		2026-11-03T12:02:01Z	3.5	
+85	125	gate	tool	git	bash	2026-11-03T12:02:04Z	0.1	Commit implementation and docs :: git add src tests && git commit -q -m "Accessibility: a virtualized tree and table row says its level, place and open state; Expand and Collapse open a tree nod
+85	126	gate	tool	wait: other	wait	2026-11-03T12:02:04Z	138.6	{}
+85	127	gate	model	model		2026-11-03T12:04:23Z	14.7	
+85	128	log	tool	phase mark	bash	2026-11-03T12:04:38Z	2.5	Log, merge, push :: python3 ~/.local/share/wiggum/steps.py mark log; cat >> docs/loop-log.md <<'EOF' ## Iteration 57 — 2026-11-03 — Accessibility of virtualized rows: tree level, p
+85	129	log	model	model		2026-11-03T12:04:40Z	3.0	
+85	130	release	tool	phase mark	bash	2026-11-03T12:04:43Z	14.3	semver check :: python3 ~/.local/share/wiggum/steps.py mark release; CARGO_BUILD_JOBS=4 cargo semver-checks check-release --baseline-rev v0.32.1 2>&1 | tail -6; grep -n '^versi
+85	131	release	model	model		2026-11-03T12:04:58Z	1.7	
+85	132	release	tool	shell	bash	2026-11-03T12:04:59Z	0.0	Bump version in Cargo.toml :: sed -i '0,/^version = "0.32.1"/s//version = "0.32.2"/' Cargo.toml && sed -n 1,5p CHANGELOG.md && grep -n "Unreleased" CHANGELOG.md | head -2
+85	133	release	model	model		2026-11-03T12:04:59Z	2.2	
+85	134	release	tool	edit files	edit	2026-11-03T12:05:01Z	0.0	Changelog release heading :: [CHANGELOG.md#2F62] PUT >3: + +## [0.32.2] - 2026-11-03
+85	135	release	tool	cargo publish	bash	2026-11-03T12:05:01Z	1.1	Dry-run publish :: cargo update -p bevy_gooey --offline 2>&1 | tail -1; git status --short; cargo publish --dry-run 2>&1 | tail -3
+85	136	release	model	model		2026-11-03T12:05:03Z	1.7	
+85	137	release	tool	cargo publish	bash	2026-11-03T12:05:04Z	27.7	Commit release and publish :: git add Cargo.toml CHANGELOG.md && git commit -q -m "release: v0.32.2" && cargo publish --dry-run 2>&1 | tail -3 && cargo publish 2>&1 | tail -4
+85	138	release	model	model		2026-11-03T12:05:32Z	9.2	
+85	139	release	tool	push gate	bash	2026-11-03T12:05:41Z	3.2	Tag, push, log release :: git tag -a v0.32.2 -m v0.32.2 && git push -q origin main v0.32.2 2>&1 | tail -2; cargo info bevy_gooey@0.32.2 2>&1 | head -3 cat >> docs/loop-log.md <<'EOF' **R
+85	140	release	model	model		2026-11-03T12:05:44Z	7.0	
