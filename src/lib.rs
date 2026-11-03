@@ -144,6 +144,7 @@ mod color;
 mod confirm;
 mod context;
 mod controls;
+mod cooldown;
 mod dock;
 mod dock_layout;
 mod drag;
@@ -203,6 +204,7 @@ pub use color::{
 pub use confirm::{Confirm, ConfirmButton, ConfirmChosen, confirm};
 pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use controls::update_sliders;
+pub use cooldown::{Cooldown, CooldownReady, update_cooldowns};
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
 pub use dock_layout::{DockDropTarget, DockLayout, DockSkip};
 pub use drag::{
@@ -224,7 +226,7 @@ pub use menu::{
 };
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, DIALOG_SLIDE_PX, DIALOG_SLIDE_SECONDS, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE,
+    COMFORT_TARGET_PX, COOLDOWN_WHOLE_SECONDS_FROM, DIALOG_SLIDE_PX, DIALOG_SLIDE_SECONDS, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE,
     DOCK_PANE_MIN_PX, DockZone, ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS,
     METER_GAIN_TAU_SECONDS, METER_SNAP, METER_TRAIL_HOLD_SECONDS, METER_TRAIL_RATE, MIN_TARGET_PX,
     MeterShown, NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES,
@@ -232,7 +234,7 @@ pub use model::{
     SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STATE_STEP, STICK_PUSH, TABLE_LEAST_COLUMN,
     TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit,
     box_outside, choice_next, choice_step, cie_lightness, clock_text, column_resize, composite,
-    contrast_ratio, dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone,
+    contrast_ratio, cooldown_sweep, cooldown_text, cooldown_words, dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone,
     ease_out, eta_words, format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key,
     key_name, list_height, meter_fraction, meter_motion, mouse_name, natural_cmp, nearest_step,
     number_decimals, pad_name, page_target, parse_hex, parse_number, pin_to_edge, progress_text,
@@ -447,6 +449,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ContextTarget>()
             .register_type::<CloseReason>()
             .register_type::<PopoverClosed>()
+            .register_type::<Cooldown>()
+            .register_type::<CooldownReady>()
             .register_type::<Toast>()
             .register_type::<ToastStack>()
             .register_type::<ToastSettings>()
@@ -479,6 +483,7 @@ impl Plugin for GooeyStylePlugin {
                         update_field_problems,
                         update_progress,
                         update_spinners,
+                        update_cooldowns,
                         (update_toggle_groups, fit_bars).chain(),
                         update_sections,
                         (update_shortcut_badges, update_shortcut_legend).chain(),

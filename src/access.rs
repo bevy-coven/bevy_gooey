@@ -25,7 +25,9 @@ use crate::access_actions::{Handles, MANAGED, TREE_BRANCH, actions_of};
 use crate::binding::Capturing;
 use crate::choice::ChoiceValue;
 use crate::color::ColorSwatch;
+use crate::cooldown::Cooldown;
 use crate::menu::{MenuItem, MenuOpen};
+use crate::model::cooldown_words;
 use crate::meter::Meter;
 use crate::progress::Progress;
 use crate::section::{SectionHeader, SectionOpen};
@@ -204,6 +206,8 @@ fn spec(role: Role) -> Spec {
         | Role::SlotName
         | Role::SlotCount
         | Role::SlotIcon
+        | Role::Cooldown
+        | Role::CooldownText
         | Role::RadialIcon
         | Role::RadialSlot
         | Role::RadialText
@@ -290,6 +294,7 @@ pub(crate) struct Facts {
     swatch: Option<&'static ColorSwatch>,
     choice: Option<&'static ChoiceValue>,
     divider: Option<&'static SplitDivider>,
+    cooldown: Option<&'static Cooldown>,
     handles: Handles,
 }
 
@@ -595,6 +600,15 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
     }
     if let Some(label) = facts.label {
         wanted.name = Some(label.0.clone());
+    }
+    // A cooldown running is part of what the widget is: its seconds follow the name, the host's
+    // own label included.
+    if let Some(cooldown) = facts.cooldown
+        && !cooldown.is_ready()
+        && let Some(name) = wanted.name.as_mut()
+    {
+        name.push_str(", ");
+        name.push_str(&cooldown_words(cooldown.remaining));
     }
     wanted.disabled = facts.disabled;
     wanted.actions = if wanted.tree_branch {

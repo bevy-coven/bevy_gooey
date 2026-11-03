@@ -15,6 +15,7 @@ mod color;
 mod confirm;
 mod context_menu;
 mod controls;
+mod cooldown;
 mod density;
 mod dialog;
 mod dialog_look;
