@@ -139,6 +139,7 @@ mod binding;
 mod cancel;
 mod choice;
 mod color;
+mod confirm;
 mod context;
 mod controls;
 mod dock;
@@ -196,6 +197,7 @@ pub use color::{
     AreaMarker, ColorArea, ColorPicker, ColorRail, ColorRefused, ColorStrip, ColorSwatch,
     ColorValue, SwatchHalf, update_colors,
 };
+pub use confirm::{Confirm, ConfirmButton, ConfirmChosen, confirm};
 pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use controls::update_sliders;
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
@@ -554,6 +556,11 @@ impl Plugin for GooeyNavPlugin {
             .add_observer(drag::drag_on_pointer_cancel)
             .register_type::<ArrowPolicy>()
             .register_type::<Cancel>()
+            .register_type::<Confirm>()
+            .register_type::<ConfirmButton>()
+            .register_type::<ConfirmChosen>()
+            .add_observer(confirm::confirm_on_activate)
+            .add_observer(confirm::confirm_on_cancel)
             .add_observer(menu::menu_on_activate)
             .add_observer(context::context_on_click)
             .add_observer(nav::remember_opener)
