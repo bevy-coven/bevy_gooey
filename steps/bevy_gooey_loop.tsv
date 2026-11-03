@@ -15969,3 +15969,178 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 86	130	release	model	model		2026-11-03T12:17:45Z	3.2	
 86	131	release	tool	push gate	bash	2026-11-03T12:17:48Z	4.0	Tag, push, log release, clean up :: cd /home/ladvien/bevy_gooey_loop && git tag -a v0.32.3 -m v0.32.3 && git push -q origin main v0.32.3 2>&1 | tail -2; cargo info bevy_gooey@0.32.3 2>&1 | head -3
 86	132	release	model	model		2026-11-03T12:17:52Z	7.3	
+87	1	orient	model	model		2026-11-03T12:18:24Z	3.3	
+87	2	orient	tool	phase mark	bash	2026-11-03T12:18:27Z	0.8	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; git status --short | head; git fetch -q origin loop-stats; git show orig
+87	3	orient	tool	github	bash	2026-11-03T12:18:27Z	0.8	cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+87	4	orient	model	model		2026-11-03T12:18:28Z	1.3	
+87	5	orient	tool	github	bash	2026-11-03T12:18:29Z	0.9	cd /home/ladvien/bevy_gooey_loop && gh issue view 38 --repo bevy-coven/bevy_gooey --comments | tail -40; git log -5 --format='%h %ad %s' --date=iso origin/main
+87	6	orient	model	model		2026-11-03T12:18:30Z	4.6	
+87	7	choose	tool	phase mark	bash	2026-11-03T12:18:35Z	1.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark choose; gh issue list -R bevy-coven/bevy_grimoire --label ui --state open --limi
+87	8	choose	model	model		2026-11-03T12:18:36Z	5.7	
+87	9	choose	tool	shell	bash	2026-11-03T12:18:42Z	0.0	cd /home/ladvien/bevy_gooey_loop && ls src docs/guide examples; grep -rniE "world_to_viewport|nameplate|follow" src --include=*.rs -l; sed -n 1,80p README.md | 
+87	10	choose	model	model		2026-11-03T12:18:42Z	2.8	
+87	11	choose	tool	shell	bash	2026-11-03T12:18:45Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rniE "world_to_viewport|nameplate|floating|health bar|cooldown|damage number|anchored to" src docs/research/gooey.md R
+87	12	choose	model	model		2026-11-03T12:18:45Z	13.8	
+87	13	choose	tool	homestill	bash	2026-11-03T12:18:58Z	0.3	cd /home/ladvien/bevy_gooey_loop && (timeout 60 hs distill search "world-space UI health bar over enemy nameplate off-screen indicator game design" --output jso
+87	14	choose	model	model		2026-11-03T12:18:59Z	5.1	
+87	15	research	tool	phase mark	bash	2026-11-03T12:19:04Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; grep -n "world_to_viewport" -B12 -A30 ~/.cargo/registry/src/index.crat
+87	16	research	tool	web	web_search	2026-11-03T12:19:04Z	9.9	Finding craft source on world-anchored UI :: Fagerholt Lorentzon "Beyond the HUD" user interfaces for increased player immersion in FPS games spatial UI
+87	17	research	model	model		2026-11-03T12:19:14Z	4.0	
+87	18	research	tool	shell	bash	2026-11-03T12:19:18Z	2.2	cd /tmp && mkdir -p g59 && cd g59 && curl -sL -m 60 -o bth.pdf https://publications.lib.chalmers.se/records/fulltext/111921.pdf; ls -la bth.pdf; file bth.pdf; (
+87	19	research	model	model		2026-11-03T12:19:20Z	1.3	
+87	20	research	tool	shell	bash	2026-11-03T12:19:21Z	0.0	cd /tmp/g59 && sed -n 1690,1712p bth.txt; sed -n 1908,1920p bth.txt; grep -n -i -E "enemy|nameplate|waypoint|marker|floating|health bar" bth.txt | head -30
+87	21	research	model	model		2026-11-03T12:19:21Z	1.3	
+87	22	research	tool	shell	bash	2026-11-03T12:19:22Z	0.0	cd /tmp/g59 && sed -n 1920,1932p bth.txt; sed -n 1775,1790p bth.txt; grep -n -i -E "Mirror.s Edge" bth.txt | head -5; grep -n -i -E "Dead Space" bth.txt | head 
+87	23	research	model	model		2026-11-03T12:19:22Z	25.8	
+87	24	research	tool	shell	bash	2026-11-03T12:19:48Z	0.0	cd ~/.cargo/registry/src/index.crates.io-*/ && ls | grep -E "^bevy_ui-0.20|^bevy_transform-0.20"; grep -n -B3 -A12 "ui_layout_system" bevy_ui-0.20.0/src/lib.rs 
+87	25	research	model	model		2026-11-03T12:19:48Z	1.4	
+87	26	research	tool	shell	bash	2026-11-03T12:19:50Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); echo $D; grep -n "ui_layout_system\|UiSystems::\|TransformSystems" $D/src/lib.rs | head -40; 
+87	27	research	model	model		2026-11-03T12:19:50Z	1.6	
+87	28	research	tool	shell	bash	2026-11-03T12:19:51Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ui-0.20.0); sed -n 150,170p $D/src/lib.rs; sed -n 195,205p $D/src/lib.rs; grep -n "fn .*position\|UiTrans
+87	29	research	model	model		2026-11-03T12:19:51Z	10.8	
+87	30	research	tool	shell	bash	2026-11-03T12:20:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "PostUpdate" src/*.rs | head; grep -n "GooeySystems" src/lib.rs | head -30; wc -l src/lib.rs src/confirm.rs; grep -n
+87	31	research	model	model		2026-11-03T12:20:02Z	1.2	
+87	32	research	tool	shell	bash	2026-11-03T12:20:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 300,345p src/lib.rs; sed -n 480,520p src/lib.rs; sed -n 630,658p src/lib.rs; sed -n 1,60p src/confirm.rs; sed -n 180,
+87	33	research	model	model		2026-11-03T12:20:03Z	33.0	
+87	34	research	tool	shell	bash	2026-11-03T12:20:36Z	0.0	D=$(ls -d ~/.cargo/registry/src/index.crates.io-*/bevy_ecs-0.20.0); grep -n "relationship\b\|Default" $D/src/relationship/mod.rs | head -40; grep -n "other fiel
+87	35	research	model	model		2026-11-03T12:20:36Z	23.3	
+87	36	research	tool	shell	bash	2026-11-03T12:21:00Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l examples/*.rs; sed -n 1,140p examples/scope.rs; grep -n "scope" docs/media/README.md | head; grep -n "SAFE_EDGE" src/*
+87	37	research	model	model		2026-11-03T12:21:00Z	25.2	
+87	38	research	tool	git	bash	2026-11-03T12:21:25Z	0.0	cd /home/ladvien/bevy_gooey_loop && git checkout -q -b loop/iter-59 && cat > docs/research/world-anchor.md <<'EOF' # Interface that follows a thing in the world
+87	39	research	model	model		2026-11-03T12:21:25Z	4.6	
+87	40	research	tool	shell	bash	2026-11-03T12:21:29Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,40p src/model.rs; grep -n "^pub fn radial_place" -B6 -A14 src/model.rs; grep -n "mod tests" src/model.rs
+87	41	research	model	model		2026-11-03T12:21:29Z	26.5	
+87	42	research	tool	shell	bash	2026-11-03T12:21:56Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Val2" src/*.rs | head -8; grep -n "UiTransform" src/radial.rs | head; D=$(ls -d ~/.cargo/registry/src/index.crates.
+87	43	research	model	model		2026-11-03T12:21:56Z	1.9	
+87	44	research	tool	shell	bash	2026-11-03T12:21:58Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn "CameraUpdateSystems" ~/.cargo/registry/src/index.crates.io-*/bevy_camera-0.20.0/src/*.rs ~/.cargo/registry/src/ind
+87	45	research	model	model		2026-11-03T12:21:58Z	4.3	
+87	46	research	tool	shell	bash	2026-11-03T12:22:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 2296,2325p src/model.rs; tail -15 src/model.rs
+87	47	research	model	model		2026-11-03T12:22:02Z	7.7	
+87	48	research	tool	edit files	edit	2026-11-03T12:22:10Z	0.0	Adding engine-free anchor maths :: [src/model.rs#0000] PUT <2304: +/// Whether the box `[min, max]` lies wholly outside the rectangle `[view_min, view_max]`: no +/// overlap at all, so nothing of
+87	49	research	model	model		2026-11-03T12:22:10Z	6.6	
+87	50	research	tool	edit files	edit	2026-11-03T12:22:16Z	0.0	Adding engine-free anchor maths :: [src/model.rs#5F73] PUT <2304: +/// Whether the box `[min, max]` lies wholly outside the rectangle `[view_min, view_max]`: no +/// overlap at all, so nothing of
+87	51	research	model	model		2026-11-03T12:22:16Z	5.8	
+87	52	research	tool	edit files	edit	2026-11-03T12:22:22Z	0.0	Model tests for anchor maths :: [src/model.rs#7C9C] PUT <3436: + + #[test] + fn a_pinned_point_keeps_its_direction_and_never_leaves_the_rectangle() { + let (centre, min, max) = ((640.0, 360.0)
+87	53	research	model	model		2026-11-03T12:22:22Z	29.9	
+87	54	research	tool	edit files	write	2026-11-03T12:22:52Z	0.0	/home/ladvien/bevy_gooey_loop/src/anchor.rs
+87	55	research	model	model		2026-11-03T12:22:52Z	6.8	
+87	56	research	tool	shell	bash	2026-11-03T12:22:59Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^mod access;" src/lib.rs; grep -n "pub use access" -B1 -A3 src/lib.rs; grep -n "register_type::<Confirm" -B3 -A3 sr
+87	57	research	model	model		2026-11-03T12:22:59Z	1.0	
+87	58	research	tool	shell	bash	2026-11-03T12:23:00Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 358,380p src/lib.rs; grep -n "^pub use badges\|^pub use binding" src/lib.rs
+87	59	research	model	model		2026-11-03T12:23:00Z	3.5	
+87	60	research	tool	shell	bash	2026-11-03T12:23:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' import re p='src/lib.rs' s=open(p).read() s=s.replace("mod access;\n","mod access;\n",1) s=s.replace("mod 
+87	61	research	model	model		2026-11-03T12:23:03Z	2.2	
+87	62	research	tool	cargo build	bash	2026-11-03T12:23:06Z	7.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='src/lib.rs' s=open(p).read() old=""" .in_set(GooeySystems::Style), ); #[cfg(feature = "reflect")] app.a
+87	63	research	model	model		2026-11-03T12:23:13Z	17.2	
+87	64	research	tool	shell	bash	2026-11-03T12:23:30Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,60p tests/all.rs; grep -n "fn app\|scale_factor" tests/scale.rs | head
+87	65	research	model	model		2026-11-03T12:23:30Z	1.4	
+87	66	research	tool	shell	bash	2026-11-03T12:23:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='tests/all.rs' s=open(p).read() s=s.replace("mod access;\n","mod access;\nmod anchor;\n",1) open(p,'w').
+87	67	research	model	model		2026-11-03T12:23:31Z	29.9	
+87	68	research	tool	edit files	write	2026-11-03T12:24:01Z	0.0	/home/ladvien/bevy_gooey_loop/tests/anchor.rs
+87	69	research	model	model		2026-11-03T12:24:01Z	1.6	
+87	70	build	tool	phase mark	bash	2026-11-03T12:24:03Z	0.0	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark build; (CARGO_BUILD_JOBS=4 timeout 3000 cargo test --all-features --test all anc
+87	71	build	model	model		2026-11-03T12:24:03Z	6.0	
+87	72	build	tool	shell	bash	2026-11-03T12:24:09Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "Meter" examples/gallery.rs | head; grep -n "pub fn prompt\b\|pub fn prompt(" -B12 src/widgets.rs | head -40; sed -n
+87	73	build	model	model		2026-11-03T12:24:09Z	25.1	
+87	74	build	tool	cargo build	bash	2026-11-03T12:24:34Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' src=open('examples/scope.rs').read() # take the capture fn from scope.rs cap_start=src.index("fn capture("
+87	75	build	bg	phase mark	bash	2026-11-03T12:24:06Z	28.2	bg_1 completed: python3 ~/.local/share/wiggum/steps.py mark build; (CARGO_BUILD_JOBS=4 timeout 3000 cargo test --all-features --test ...
+87	76	build	model	model		2026-11-03T12:24:34Z	3.3	
+87	77	build	tool	cargo test	bash	2026-11-03T12:24:37Z	6.8	cd /home/ladvien/bevy_gooey_loop && ls examples/world.rs && sed -i -E 's/meter\((0\.[0-9]+)\)/meter(\1, 1.0)/' tests/anchor.rs && sed -i -E 's/meter\(health\)/m
+87	78	build	model	model		2026-11-03T12:24:44Z	1.1	
+87	79	build	tool	shell	bash	2026-11-03T12:24:45Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn "IsDefaultUiCamera" tests src | head -3
+87	80	build	model	model		2026-11-03T12:24:45Z	2.1	
+87	81	build	tool	cargo test	bash	2026-11-03T12:24:47Z	26.3	cd /home/ladvien/bevy_gooey_loop && sed -i 's/^use bevy::camera::IsDefaultUiCamera;\n//; /^use bevy::camera::IsDefaultUiCamera;$/d; s/use bevy::ui::{ComputedNod
+87	82	build	model	model		2026-11-03T12:25:13Z	3.5	
+87	83	build	tool	cargo test	bash	2026-11-03T12:25:17Z	23.5	cd /home/ladvien/bevy_gooey_loop && cp src/anchor.rs /tmp/g59/anchor.rs.bak && python3 - <<'EOF' p='src/anchor.rs' s=open(p).read() s=s.replace(""" PostUpdate, 
+87	84	build	model	model		2026-11-03T12:25:40Z	3.9	
+87	85	build	tool	cargo test	bash	2026-11-03T12:25:44Z	29.7	cd /home/ladvien/bevy_gooey_loop && for m in "s|Val::Px(at.x / scale), Val::Px(at.y / scale)|Val::Px(at.x), Val::Px(at.y)|" "s|Vec2::new(local.x, -local.y)|Vec2
+87	86	build	model	model		2026-11-03T12:26:14Z	3.1	
+87	87	build	tool	cargo clippy	bash	2026-11-03T12:26:17Z	16.6	cd /home/ladvien/bevy_gooey_loop && cargo fmt && CARGO_BUILD_JOBS=4 cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tail -30
+87	88	build	model	model		2026-11-03T12:26:34Z	3.6	
+87	89	prove	tool	phase mark	bash	2026-11-03T12:26:37Z	0.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'EOF' p='examples/world.rs' s=open(p).read() s=s.replace("""fn point_arrow( pinned: Query<&AnchorPinned>, mut ar
+87	90	prove	model	model		2026-11-03T12:26:38Z	1.7	
+87	91	prove	tool	cargo build	bash	2026-11-03T12:26:40Z	50.5	cd /home/ladvien/bevy_gooey_loop && (xdpyinfo -display :93 >/dev/null 2>&1 && echo up || (Xvfb :93 -screen 0 1920x1080x24 >/dev/null 2>&1 & sleep 2; echo starte
+87	92	prove	model	model		2026-11-03T12:27:30Z	1.7	
+87	93	prove	tool	shell	bash	2026-11-03T12:27:32Z	0.1	cd /tmp/g59 && G=$CARGO_TARGET_DIR/release/examples/world; for f in 120 330; do GOOEY_FRAMES=$f GOOEY_SHOT=/tmp/g59/after/w$f.png timeout 100 $G 2>&1 | grep "go
+87	94	prove	model	model		2026-11-03T12:27:32Z	1.5	
+87	95	prove	tool	shell	bash	2026-11-03T12:27:33Z	0.0	cd /tmp/g59 && G=$CARGO_TARGET_DIR/release/examples/world; GOOEY_FRAMES=120 GOOEY_SHOT=/tmp/g59/after/w120.png timeout 100 $G 2>&1 | grep -v "^ \+[0-9]*:" | hea
+87	96	prove	model	model		2026-11-03T12:27:33Z	2.9	
+87	97	prove	tool	shell	bash	2026-11-03T12:27:36Z	3.0	pgrep -a Xvfb; which Xvfb; setsid nohup Xvfb :93 -screen 0 1920x1080x24 > /tmp/g59/xvfb.log 2>&1 & sleep 3; xdpyinfo -display :93 | head -3; cat /tmp/g59/xvfb.l
+87	98	prove	model	model		2026-11-03T12:27:39Z	2.4	
+87	99	prove	tool	shell	bash	2026-11-03T12:27:42Z	12.2	cd /tmp/g59 && G=$CARGO_TARGET_DIR/release/examples/world; for f in 120 330; do GOOEY_FRAMES=$f GOOEY_SHOT=/tmp/g59/after/w$f.png timeout 100 $G 2>&1 | grep "go
+87	100	prove	model	model		2026-11-03T12:27:54Z	1.0	
+87	101	prove	tool	read files	read	2026-11-03T12:27:55Z	0.0	/tmp/g59/after/w120.png
+87	102	prove	tool	read files	read	2026-11-03T12:27:55Z	0.0	/tmp/g59/after/w330.png
+87	103	prove	model	model		2026-11-03T12:27:55Z	7.7	
+87	104	prove	tool	shell	bash	2026-11-03T12:28:03Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,20p docs/media/README.md | cut -c1-1200; grep -n "split.gif" docs/media/README.md | cut -c1-1500; ls -la docs/media
+87	105	prove	model	model		2026-11-03T12:28:03Z	6.4	
+87	106	prove	tool	clip record/render	bash	2026-11-03T12:28:09Z	13.4	cd /tmp/g59 && rm -rf frames && mkdir frames && G=$CARGO_TARGET_DIR/release/examples/world; GOOEY_FRAMES=506 GOOEY_SHOT=/tmp/g59/after/world.png GOOEY_SHOT_DIR=
+87	107	prove	model	model		2026-11-03T12:28:22Z	4.3	
+87	108	prove	tool	clip record/render	bash	2026-11-03T12:28:27Z	0.9	cd /tmp/g59 && ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i '/tmp/g59/frames/f_*.png' -vf "fps=15,scale=800:-1:flags=lanczos,split[a][b];[a]pal
+87	109	prove	model	model		2026-11-03T12:28:28Z	0.8	
+87	110	prove	tool	read files	read	2026-11-03T12:28:28Z	0.1	/tmp/g59/m.png
+87	111	prove	model	model		2026-11-03T12:28:28Z	7.2	
+87	112	prove	tool	cargo build	bash	2026-11-03T12:28:36Z	21.4	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo build --release --example gallery 2>&1 | tail -1; G=$CARGO_TARGET_DIR/release/examples/gallery; for
+87	113	prove	model	model		2026-11-03T12:28:57Z	5.0	
+87	114	prove	tool	shell	bash	2026-11-03T12:29:02Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l README.md; grep -n "confirm\|prompts-anchor\|slot-rules" README.md | cut -c1-260; cat docs/guide/README.md | cut -c1-2
+87	115	prove	model	model		2026-11-03T12:29:02Z	3.5	
+87	116	prove	tool	shell	bash	2026-11-03T12:29:06Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^- \|^## \|^### " README.md | cut -c1-170 | sed -n 1,90p
+87	117	prove	model	model		2026-11-03T12:29:06Z	1.2	
+87	118	prove	tool	shell	bash	2026-11-03T12:29:07Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 147,160p README.md | cut -c1-400; sed -n 81,94p README.md | cut -c1-300; sed -n 130,146p README.md | cut -c1-300
+87	119	prove	model	model		2026-11-03T12:29:07Z	4.7	
+87	120	prove	tool	read files	read	2026-11-03T12:29:12Z	0.0	README.md:147-150:raw
+87	121	prove	model	model		2026-11-03T12:29:12Z	2.3	
+87	122	prove	tool	edit files	edit	2026-11-03T12:29:14Z	0.0	README bullet for WorldAnchor :: [README.md#0000] PUT 150.=150: + [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md); and `(meter(0.8, 1.0), WorldAnch
+87	123	prove	model	model		2026-11-03T12:29:14Z	3.6	
+87	124	prove	tool	edit files	edit	2026-11-03T12:29:17Z	0.0	README bullet for WorldAnchor :: [README.md#77AB] PUT 150.=150: + [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md); and `(meter(0.8, 1.0), WorldAnch
+87	125	prove	model	model		2026-11-03T12:29:17Z	13.8	
+87	126	prove	tool	shell	bash	2026-11-03T12:29:31Z	0.0	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g59/world.gif docs/media/world-anchor.gif && cat > docs/guide/world-anchor.md <<'EOF' # World anchors A health bar o
+87	127	prove	model	model		2026-11-03T12:29:31Z	3.5	
+87	128	prove	tool	shell	bash	2026-11-03T12:29:35Z	0.0	cd /home/ladvien/bevy_gooey_loop && wc -l docs/media/README.md; tail -3 docs/media/README.md | cut -c1-200
+87	129	prove	model	model		2026-11-03T12:29:35Z	0.9	
+87	130	prove	tool	read files	read	2026-11-03T12:29:36Z	0.0	docs/media/README.md:56-57
+87	131	prove	model	model		2026-11-03T12:29:36Z	4.0	
+87	132	prove	tool	edit files	edit	2026-11-03T12:29:40Z	0.0	Media README row :: [docs/media/README.md#89BF] PUT >59: +| `world-anchor.gif` | world anchors (8.0 s, 800×450, 120 frames, 911 KB, the whole 1280×720 window of `examples/world`): 
+87	133	prove	model	model		2026-11-03T12:29:40Z	4.0	
+87	134	prove	tool	cargo build	bash	2026-11-03T12:29:44Z	0.0	cd /home/ladvien/bevy_gooey_loop && cat >> /tmp/g59/row.txt <<'EOF' | `world-anchor.gif` | world anchors (8.0 s, 800×450, 120 frames, 911 KB, the whole 1280×720
+87	135	prove	model	model		2026-11-03T12:29:44Z	5.7	
+87	136	prove	tool	shell	bash	2026-11-03T12:29:49Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "^- \`src/confirm.rs\`" AGENTS.md | cut -c1-30; grep -n "^## \[Unreleased\]" CHANGELOG.md; grep -n "\`split.gif\` fr
+87	137	prove	model	model		2026-11-03T12:29:49Z	1.1	
+87	138	prove	tool	read files	read	2026-11-03T12:29:51Z	0.0	AGENTS.md:71:raw
+87	139	prove	tool	read files	read	2026-11-03T12:29:51Z	0.0	CHANGELOG.md:1-5
+87	140	prove	model	model		2026-11-03T12:29:51Z	9.8	
+87	141	prove	tool	edit files	edit	2026-11-03T12:30:00Z	0.0	CHANGELOG entry :: [CHANGELOG.md#02B0] PUT >3: + +### Added + +- `WorldAnchor` (`docs/research/world-anchor.md`, `docs/guide/world-anchor.md`, `examples/world`): a root UI node th
+87	142	prove	tool	edit files	edit	2026-11-03T12:30:00Z	0.0	AGENTS layout bullet :: [AGENTS.md#0000] PUT >71: +- `src/anchor.rs` — `WorldAnchor { target (private, the `#[relationship]`), offset: Vec3, pivot: Vec2 (default `(0.5, 1.0)`, the foot
+87	143	prove	model	model		2026-11-03T12:30:00Z	5.2	
+87	144	prove	tool	edit files	edit	2026-11-03T12:30:06Z	0.0	AGENTS layout bullet :: [AGENTS.md#E92F] PUT >71: +- `src/anchor.rs` — `WorldAnchor { target (private, the `#[relationship]`), offset: Vec3, pivot: Vec2 (default `(0.5, 1.0)`, the foot
+87	145	prove	model	model		2026-11-03T12:30:06Z	6.0	
+87	146	prove	tool	shell	bash	2026-11-03T12:30:12Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 40,62p src/lib.rs
+87	147	prove	model	model		2026-11-03T12:30:12Z	1.8	
+87	148	prove	tool	edit files	edit	2026-11-03T12:30:13Z	0.0	crate docs mention :: [src/lib.rs#0000] PUT 49.=50: +//! [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through +//! to the game under a HUD, wh
+87	149	prove	model	model		2026-11-03T12:30:13Z	1.5	
+87	150	prove	tool	edit files	edit	2026-11-03T12:30:15Z	0.0	crate docs mention :: [src/lib.rs#D653] PUT 49.=50: +//! to the game under a HUD, while every widget on it takes the pointer. A [`WorldAnchor`] on a +//! root node makes it follow a 
+87	151	prove	model	model		2026-11-03T12:30:15Z	5.2	
+87	152	prove	tool	git	bash	2026-11-03T12:30:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -i 's|`split.gif` from `examples/split`, which have|`split.gif` from `examples/split`, `world-anchor.gif` from `examples
+87	153	prove	model	model		2026-11-03T12:30:20Z	16.0	
+87	154	prove	tool	git	bash	2026-11-03T12:30:36Z	0.1	cd /home/ladvien/bevy_gooey_loop && git add -A && git commit -qm "Docs: WorldAnchor (README line, guide page, world example and GIF, changelog, AGENTS)" && cat 
+87	155	prove	model	model		2026-11-03T12:30:36Z	4.9	
+87	156	gate	tool	phase mark	bash	2026-11-03T12:30:41Z	0.0	[launched bg_2] cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate && git push -q -u origin loop/iter-59 2>&1 | tail -2; git checkout -q main 
+87	157	gate	model	model		2026-11-03T12:30:41Z	0.8	
+87	158	gate	tool	wait: other	wait	2026-11-03T12:30:42Z	731.5	{}
+87	159	gate	model	model		2026-11-03T12:42:53Z	3.5	
+87	160	gate	tool	cargo test	bash	2026-11-03T12:42:57Z	7.9	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo test --all-features --doc anchor 2>&1 | grep -v "^test .* ok" | tail -40
+87	161	gate	model	model		2026-11-03T12:43:05Z	3.0	
+87	162	gate	tool	cargo test	bash	2026-11-03T12:43:08Z	23.4	cd /home/ladvien/bevy_gooey_loop && sed -i 's|commands.spawn((meter(0.8), WorldAnchor::above(enemy, 1.2)));|commands.spawn((meter(0.8, 1.0), WorldAnchor::above(
+87	163	gate	model	model		2026-11-03T12:43:31Z	2.8	
+87	164	release	tool	phase mark	bash	2026-11-03T12:43:34Z	29.4	cd /home/ladvien/bevy_gooey_loop && sed -i 's|meter(0.8), WorldAnchor::above(enemy, 1.2)|meter(0.8, 1.0), WorldAnchor::above(enemy, 1.2)|' docs/research/world-a
+87	165	release	model	model		2026-11-03T12:44:03Z	2.9	
+87	166	release	tool	shell	bash	2026-11-03T12:44:06Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -rn "0\.32\.3" --include=*.md --include=*.toml . 2>/dev/null | grep -v "^./target\|CHANGELOG\|loop-log\|docs/media/READ
+87	167	release	model	model		2026-11-03T12:44:06Z	1.9	
+87	168	release	tool	shell	bash	2026-11-03T12:44:08Z	1.3	cd /home/ladvien/bevy_gooey_loop && sed -i '3s/0.32.3/0.32.4/' Cargo.toml && sed -i 's/^## \[Unreleased\]$/## [Unreleased]\n\n## [0.32.4] - 2026-11-03/' CHANGEL
+87	169	release	model	model		2026-11-03T12:44:09Z	2.4	
+87	170	release	tool	cargo publish	bash	2026-11-03T12:44:12Z	19.4	cd /home/ladvien/bevy_gooey_loop && git add -A && git commit -qm "release: v0.32.4" && CARGO_BUILD_JOBS=4 cargo publish --dry-run 2>&1 | tail -4
+87	171	release	model	model		2026-11-03T12:44:31Z	1.6	
+87	172	release	tool	push gate	bash	2026-11-03T12:44:33Z	15.4	cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 cargo publish 2>&1 | tail -4 && git tag -a v0.32.4 -m v0.32.4 && git push -q origin main && git push -q o
+87	173	release	model	model		2026-11-03T12:44:48Z	4.2	
+87	174	log	tool	phase mark	bash	2026-11-03T12:44:52Z	1.7	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; pkill -f "Xvfb :93" ; rm -rf /tmp/g59; cat >> docs/loop-log.md <<'EOF' **Ga
+87	175	log	model	model		2026-11-03T12:44:54Z	7.4	
