@@ -209,6 +209,8 @@ fn spec(role: Role) -> Spec {
         | Role::SlotIcon
         | Role::Cooldown
         | Role::CooldownText
+        | Role::HoldTrack
+        | Role::HoldFill
         | Role::RadialIcon
         | Role::RadialSlot
         | Role::RadialText

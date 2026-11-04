@@ -58,6 +58,8 @@ per subject. The README links each bullet to its page.
   follows a point in the world, hides or pins to the screen's edge off view (`AnchorPinned`), and is gone with its target.
 - [Cooldowns](cooldowns.md) — `Cooldown` on any widget: a dimmed cover that sweeps clear clockwise with the seconds left on a
   chip, counted on game time, `CooldownReady` when it ends, the seconds in the accessible name, a hotbar on a `slot_grid`.
+- [Hold buttons](hold-buttons.md) — `hold_button("Hold to delete", 1.2)`: a button that confirms only when held (key, pad or
+  pointer), a bar under its label, one `HoldConfirmed`, and `HoldSettings` to shorten the hold or make it a tap.
 - [Prompts](prompts.md) — `prompts()` and `prompt(label, Prompt::BACK)`: the Select and Back hints in the
   bottom-left corner, the keyboard's or the pad's by `InputDevice`, and what they do not draw.
 - [Inventory](inventory.md) — `slot_grid(columns, items)`: a backpack or a chest of slots a game fills with
