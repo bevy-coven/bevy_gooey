@@ -150,6 +150,7 @@ mod dock_layout;
 mod drag;
 mod feedback;
 mod field;
+mod hold;
 mod icon;
 #[cfg(feature = "reflect")]
 mod inspector;
@@ -213,6 +214,9 @@ pub use drag::{
 };
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
+pub use hold::{
+    HoldConfirmed, HoldProgress, HoldSettings, HoldToConfirm, hold_by_input, update_hold_bars,
+};
 pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
 #[cfg(feature = "reflect")]
 pub use inspector::{
@@ -309,12 +313,13 @@ pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use widgets::{
     binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
-    heading, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, menu_title,
-    meter, notification_center, number_field, pad_style, panel, popover, popover_modal, progress,
-    prompt, prompts, prompts_at, radial, radio_item, screen, section, select, separator,
-    skin_preset, slider, slot_grid, spinner, split, status_bar, status_item, status_progress,
-    submenu, surface, tab_page, table, tabs, text_area, text_input, text_size, toast, toast_alert,
-    toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
+    heading, hold_button, icon, icon_button, interface_size, label, list, menu, menu_bar,
+    menu_item, menu_title, meter, notification_center, number_field, pad_style, panel, popover,
+    popover_modal, progress, prompt, prompts, prompts_at, radial, radio_item, screen, section,
+    select, separator, skin_preset, slider, slot_grid, spinner, split, status_bar, status_item,
+    status_progress, submenu, surface, tab_page, table, tabs, text_area, text_input, text_size,
+    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
+    viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -456,6 +461,10 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ToastStack>()
             .register_type::<ToastSettings>()
             .register_type::<MotionSettings>()
+            .register_type::<HoldToConfirm>()
+            .register_type::<HoldProgress>()
+            .register_type::<HoldConfirmed>()
+            .register_type::<HoldSettings>()
             .register_type::<SlideIn>()
             .register_type::<ToastAnchor>()
             .register_type::<ToastKind>()
@@ -464,6 +473,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<PaletteHistory>()
             .register_type::<UiFeedbackKind>()
             .add_observer(feedback::feedback_on_activate)
+            .add_observer(hold::feedback_on_hold)
             .add_observer(feedback::feedback_on_toggle)
             .add_observer(feedback::feedback_on_choice)
             .add_observer(toolbar::more_on_activate)
@@ -485,6 +495,7 @@ impl Plugin for GooeyStylePlugin {
                         update_progress,
                         update_spinners,
                         update_cooldowns,
+                        update_hold_bars,
                         (update_toggle_groups, fit_bars).chain(),
                         update_sections,
                         (update_shortcut_badges, update_shortcut_legend).chain(),
@@ -548,6 +559,7 @@ impl Plugin for GooeyNavPlugin {
             app.add_plugins(DirectionalNavigationPlugin);
         }
         app.init_resource::<InputFocus>()
+            .init_resource::<HoldSettings>()
             .init_resource::<InputDevice>()
             .init_resource::<BindingSettings>()
             .init_resource::<CommandList>()
@@ -617,6 +629,7 @@ impl Plugin for GooeyNavPlugin {
                         .chain(),
                     (
                         gamepad_select.run_if(not_capturing),
+                        hold_by_input.run_if(not_capturing),
                         access_actions::act_on_requests,
                     )
                         .chain(),
