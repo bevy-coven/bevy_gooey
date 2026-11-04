@@ -1393,6 +1393,11 @@ pub enum Role {
     /// A meter's trail: the length the fill just lost, behind it in [`GooeySkin::danger`] while it
     /// holds and drains. Zero wide at rest.
     MeterTrail,
+    /// The track under a [`crate::hold_button`]'s label: a [`Role::Meter`]'s frame and height with
+    /// no least width, so the button is as wide as its label.
+    HoldTrack,
+    /// The fill of a [`Role::HoldTrack`], as wide as the hold has come, one border inside it.
+    HoldFill,
     /// A tooltip's box.
     Tooltip,
     /// A [`crate::popover`]'s panel: a card floating beside its anchor, opaque and framed in
@@ -2404,7 +2409,7 @@ fn restyle(
             _ => Color::NONE,
         }),
         Role::ToolbarSeparator => Some(skin.outline),
-        Role::Meter | Role::SliderRail => Some(skin.surface_raised),
+        Role::Meter | Role::HoldTrack | Role::SliderRail => Some(skin.surface_raised),
         // A swatch's frame shows through its halves while the colour is mixed.
         Role::ColorSwatch => Some(skin.surface_raised),
         Role::Tooltip | Role::Popover | Role::MenuPanel | Role::MenuBar | Role::Palette
@@ -2458,7 +2463,7 @@ fn restyle(
             },
             owner.alpha,
         )),
-        Role::MeterFill => Some(skin.accent),
+        Role::MeterFill | Role::HoldFill => Some(skin.accent),
         Role::MeterTrail => Some(skin.danger),
         Role::FieldMark => Some(problem_colour(skin, owner.problem)),
         Role::ListRail => Some(skin.surface_raised),
@@ -2697,6 +2702,7 @@ fn restyle(
         // The keycap is framed in the outline at rest and lit, as a switch's track is framed
         // whether it is on or off: the accent fills a frame the panel can always see at 3:1.
         Role::Meter
+        | Role::HoldTrack
         | Role::ToggleTrack
         | Role::SliderRail
         | Role::ColorRail
@@ -3042,10 +3048,21 @@ fn restyle(
                 next.padding = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
             }
+            // A hold button's bar: the meter's height and frame, no least width, a gap under the
+            // label and the label's width across.
+            Role::HoldTrack => {
+                next.height = Val::Px(skin.meter_height * skin.text_scale);
+                next.border = UiRect::all(Val::Px(line));
+                next.padding = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.align_self = AlignSelf::Stretch;
+                next.flex_shrink = 0.0;
+                next.margin = UiRect::top(Val::Px(skin.gap * 0.5));
+            }
             // CSS's content-edge radius: the track's minus its frame and gap, so the corners are
             // concentric. Bevy clips a child to a rectangle, never to its parent's curve, so the
             // fill is rounded itself.
-            Role::MeterFill | Role::MeterTrail | Role::SliderFill => {
+            Role::MeterFill | Role::MeterTrail | Role::HoldFill | Role::SliderFill => {
                 next.border_radius =
                     BorderRadius::all(Val::Px((skin.radius - 2.0 * line).max(0.0)));
             }
