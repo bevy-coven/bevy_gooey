@@ -1634,6 +1634,10 @@ pub enum Role {
     /// A [`crate::menu_title`]: a button's size with no frame at rest, the hovered fill under the
     /// pointer or while its menu is open, and the focus ring while it has focus.
     MenuTitle,
+    /// A menu bar title's words: a button's text colour (at rest, pressed, disabled) on the
+    /// title's own fill, under a role of its own so that a host counting [`Role::ButtonText`] to
+    /// find a dialog's answers does not count the bar.
+    MenuTitleText,
     /// The card a title or a [`crate::submenu`] opens: a [`Role::Popover`]'s look, shown while open.
     MenuPanel,
     /// One command of a menu: a mark, a label, a shortcut and a chevron on a row that lights as a
@@ -2567,6 +2571,7 @@ fn restyle(
         | Role::Heading
         | Role::Label
         | Role::ButtonText
+        | Role::MenuTitleText
         | Role::Toggle
         | Role::Slider
         | Role::Choice
@@ -3713,7 +3718,7 @@ fn restyle(
             };
             Some((faded(color, owner.alpha), &look.fonts.body, skin.text_size))
         }
-        Role::ButtonText => {
+        Role::ButtonText | Role::MenuTitleText => {
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted

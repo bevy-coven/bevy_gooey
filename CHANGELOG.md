@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- A menu bar title's words are `Role::MenuTitleText`, not `Role::ButtonText` (#39). `apply_skin` styles it exactly as a button's text (colour, size, font, also in a `SkinScope`), so nothing moves on screen; a host that counts `ButtonText` to find a dialog's answers no longer counts the bar. A host that looked for its titles by `Role::ButtonText` reads the `MenuTitle` component instead. New public variant `Role::MenuTitleText`.
+
 ## [0.33.0] - 2026-11-03
 
 ### Added

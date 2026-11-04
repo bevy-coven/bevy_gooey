@@ -2300,3 +2300,23 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 60).** `cargo semver-checks --baseline-rev v0.32.4`: one major lint (`enum_variant_added`: `Role::Cooldown`, `Role::CooldownText`), so a minor bump pre-1.0: `release: v0.33.0` (README compatibility row `0.1 – 0.33`), published (https://crates.io/crates/bevy_gooey/0.33.0), tag `v0.33.0` pushed.
 
 **Cleanup (iteration 60).** Removed this pass's own `/tmp/g60` (captures, frames, GIF crops, gallery binaries, gate and mutation scripts, logs) and the baseline worktree `~/g60_base` (`git worktree remove`, no `*-target` of its own: it built into the loop's shared `CARGO_TARGET_DIR`). The loop's Xvfb is `:99` (my `:93` start failed, nothing left running). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`; `/home` at 126 GB free, under the loop's 150 GB floor.
+
+## Iteration 61 — 2026-11-04 — `Role::MenuTitleText`: a bar title's words are not a button's
+
+**Triage.** Last audit row (pass 88): nothing missing (`-`). One open issue, #39 (`G-35`, `consumer:bevy_grimoire`, `grimoire-ui`): `menu_title` spawned its words as `Role::ButtonText`, so a host counting `ButtonText` for a dialog's answers counted a menu bar's titles too. A request, not a bug of look; it outranks any candidate of my own. #38 is closed or absent from the open list. Parked branches: only the old `wiggum/parked-pass-23-…`, stale, ignored. home-still and the research step skipped: the change is a role rename with identical styling, and the issue's design (`Role::MenuTitleText` styled as `ButtonText`) is the decided form, so no new research note.
+
+**What changed.** `Role::MenuTitleText` (new variant, after `MenuTitle`); `menu_title` uses it; `apply_skin` styles it in the same arm as `ButtonText` (`Role::ButtonText | Role::MenuTitleText`, so colour, size, font and the `SkinScope` path are one code path), plus the fill list; `access.rs` classifies it `Spec::Hidden` and counts it in `names`, so a title's accessible name is unchanged. A submenu row was never a title (it stays a `MenuText` row).
+
+**Tests** (`tests/menu.rs`, one new, mutation-checked: `menu_title` back on `ButtonText` fails it with "a bar holds a ButtonText"): `a_bar_titles_words_are_not_a_buttons_but_look_like_one`, in all four presets: a bar with a title and a loose `button("Answer")` has exactly one `ButtonText` in the world (the button's), none under the bar, and the title's `TextColor` and `TextFont::font_size` equal the button's. The menu tests' `title()` helper and the contrast test now look the text up by the new role (`assumed owner exception`, no assertion changed). The access tests (names of every focus stop) and toolbar tests (the "More" title) pass unchanged.
+
+**Demo.** None: the change is not visible by construction (the same match arm), and the test above compares the ink and size.
+
+**Checklist and mean_ms.** Nothing on screen moved, so no capture comparison; no system or draw path changed.
+
+### Ranked backlog
+
+1. Whatever the host's debug output on #38 shows.
+2. A "ready" cue for `Cooldown` (a one-frame flash under `MotionSettings`), and a charges variant.
+3. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
+4. One keycap vocabulary for the shortcut badges and legend.
+5. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper; motion for a scrim and card fade and a dialog exit.

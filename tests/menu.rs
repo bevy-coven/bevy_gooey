@@ -226,7 +226,7 @@ fn item(app: &mut App, text: &str) -> Entity {
 }
 
 fn title(app: &mut App, text: &str) -> Entity {
-    let label = text_with(app, Role::ButtonText, text);
+    let label = text_with(app, Role::MenuTitleText, text);
     app.world()
         .get::<ChildOf>(label)
         .map(ChildOf::parent)
@@ -850,6 +850,52 @@ fn contrast_of(app: &App, text: Entity) -> f32 {
 }
 
 #[test]
+fn a_bar_titles_words_are_not_a_buttons_but_look_like_one() {
+    for (name, skin) in [
+        ("dark", GooeySkin::dark()),
+        ("parchment", GooeySkin::parchment()),
+        ("high contrast", GooeySkin::high_contrast()),
+        ("tool", GooeySkin::tool()),
+    ] {
+        let mut app = app_with(skin);
+        let bar = spawn_bar(&mut app);
+        app.world_mut().spawn(button("Answer"));
+        app.update();
+        app.update();
+        // Nothing under the bar is a button's text: a host counting `ButtonText` finds the
+        // dialog's answers only.
+        assert!(
+            texts_under(&app, bar, Role::ButtonText).is_empty(),
+            "{name}: a bar holds a ButtonText"
+        );
+        let answers: Vec<Entity> = {
+            let world = app.world_mut();
+            world
+                .query::<(Entity, &Role)>()
+                .iter(world)
+                .filter(|(_, role)| **role == Role::ButtonText)
+                .map(|(e, _)| e)
+                .collect()
+        };
+        assert_eq!(answers.len(), 1, "{name}: only the button's text");
+        // The look is the same: colour, size and font.
+        let file = text_with(&mut app, Role::MenuTitleText, "File");
+        let world = app.world();
+        let (a, b) = (file, answers[0]);
+        assert_eq!(
+            world.get::<TextColor>(a),
+            world.get::<TextColor>(b),
+            "{name}: the ink"
+        );
+        assert_eq!(
+            world.get::<TextFont>(a).map(|f| f.font_size),
+            world.get::<TextFont>(b).map(|f| f.font_size),
+            "{name}: the size"
+        );
+    }
+}
+
+#[test]
 fn every_word_of_a_menu_reads_in_every_preset_and_state() {
     for (name, skin) in [
         ("dark", GooeySkin::dark()),
@@ -865,7 +911,7 @@ fn every_word_of_a_menu_reads_in_every_preset_and_state() {
         let mut app = app_with(skin.clone());
         spawn_bar(&mut app);
         // A bar title at rest, on the bar.
-        let file_text = text_with(&mut app, Role::ButtonText, "File");
+        let file_text = text_with(&mut app, Role::MenuTitleText, "File");
         assert!(
             contrast_of(&app, file_text) >= bar,
             "{name}: a title at rest"

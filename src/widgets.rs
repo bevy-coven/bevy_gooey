@@ -2693,7 +2693,7 @@ pub fn menu_title(label: impl Into<String>, items: impl Bundle) -> impl Bundle {
         Hovered::default(),
         TabIndex(0),
         AutoDirectionalNavigation::default(),
-        children![(Text::new(label), Role::ButtonText), menu_panel(items)],
+        children![(Text::new(label), Role::MenuTitleText), menu_panel(items)],
     )
 }
 
