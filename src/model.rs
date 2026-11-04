@@ -2156,6 +2156,68 @@ pub fn cooldown_sweep(remaining: f32, duration: f32) -> f32 {
     (1.0 - (remaining / duration).clamp(0.0, 1.0)) * std::f32::consts::TAU
 }
 
+/// How many times faster a hold's bar unwinds than it filled: committing is deliberate, backing out
+/// is free. A design default (`docs/research/hold-button.md`).
+pub const HOLD_UNWIND_RATE: f32 = 4.0;
+/// The most a hold's duration is stretched by the player's setting, a factor on the game's seconds.
+pub const HOLD_SCALE_MAX: f32 = 4.0;
+
+/// The seconds a hold takes: the game's `seconds` times the player's `scale` (held to `0.0` to
+/// [`HOLD_SCALE_MAX`], NaN read as `1.0`). Zero, or a `seconds` that is not a positive finite
+/// number, is a tap: the hold is replaced by a press that confirms when it is let go.
+///
+/// ```
+/// use bevy_gooey::model::hold_seconds;
+/// assert_eq!(hold_seconds(1.2, 1.0), 1.2);
+/// assert_eq!(hold_seconds(1.2, 0.5), 0.6);
+/// assert_eq!(hold_seconds(1.2, 0.0), 0.0);
+/// assert_eq!(hold_seconds(f32::NAN, 1.0), 0.0);
+/// ```
+pub fn hold_seconds(seconds: f32, scale: f32) -> f32 {
+    if !seconds.is_finite() || seconds <= 0.0 {
+        return 0.0;
+    }
+    let scale = if scale.is_nan() {
+        1.0
+    } else {
+        scale.clamp(0.0, HOLD_SCALE_MAX)
+    };
+    seconds * scale
+}
+
+/// A hold's progress, `0.0` to `1.0`, after `dt` seconds. Held, it rises by `dt / seconds` (a tap,
+/// `seconds` of zero, is full at once); let go, it unwinds [`HOLD_UNWIND_RATE`] times as fast as it
+/// rose, never taking more than half a second to empty, or at once when `instant` (the player's
+/// reduced motion).
+///
+/// ```
+/// use bevy_gooey::model::hold_step;
+/// assert_eq!(hold_step(0.0, 0.3, 1.2, true, false), 0.25);
+/// assert_eq!(hold_step(0.5, 0.1, 1.2, true, false), 0.5 + 0.1 / 1.2);
+/// assert_eq!(hold_step(0.5, 10.0, 1.2, false, false), 0.0);
+/// assert_eq!(hold_step(0.5, 0.01, 1.2, false, true), 0.0);
+/// assert_eq!(hold_step(0.0, 0.0, 0.0, true, false), 1.0);
+/// ```
+pub fn hold_step(progress: f32, dt: f32, seconds: f32, held: bool, instant: bool) -> f32 {
+    let progress = if progress.is_finite() {
+        progress.clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    let dt = if dt.is_finite() { dt.max(0.0) } else { 0.0 };
+    if held {
+        if seconds <= 0.0 {
+            return 1.0;
+        }
+        return (progress + dt / seconds).min(1.0);
+    }
+    if instant {
+        return 0.0;
+    }
+    let unwind = seconds.clamp(0.4, 2.0) / HOLD_UNWIND_RATE;
+    (progress - dt / unwind).max(0.0)
+}
+
 /// How far a dialog's card rises into place, logical px.
 pub const DIALOG_SLIDE_PX: f32 = 12.0;
 /// How long a dialog's card takes to rise into place, seconds.
