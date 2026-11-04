@@ -2320,3 +2320,9 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
 4. One keycap vocabulary for the shortcut badges and legend.
 5. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper; motion for a scrim and card fade and a dialog exit.
+
+**Gate (iteration 61).** `CARGO_BUILD_JOBS=4` (sccache disabled with `CARGO_BUILD_RUSTC_WRAPPER=`, because the unit's `CARGO_INCREMENTAL=1` makes sccache refuse): fmt, clippy `-D warnings` (one `clone_on_copy` in the new test, fixed), 961 tests in `all` + lib, 218 doctests, check lib, wasm32, `cargo doc -D warnings`: green.
+
+**Release (iteration 61).** `cargo semver-checks --baseline-rev v0.33.0`: one major lint (`enum_variant_added`: `Role::MenuTitleText`), so a minor bump pre-1.0: `release: v0.34.0` (README compatibility row `0.1 – 0.34`), published (https://crates.io/crates/bevy_gooey/0.34.0), tag `v0.34.0` pushed. #39 closed by `Fixes #39`; commented on bevy_grimoire#208 (the only open `ui` issue naming it).
+
+**Cleanup (iteration 61).** No baseline worktree, captures or `/tmp/g61` made; removed `/tmp/widgets.rs.bak` (the mutation backup). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
