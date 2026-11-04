@@ -2078,6 +2078,84 @@ pub fn spinner_angle(elapsed: f32) -> f32 {
     turns * std::f32::consts::TAU
 }
 
+/// From this many seconds left a cooldown is read in whole seconds; under it, in tenths.
+pub const COOLDOWN_WHOLE_SECONDS_FROM: f32 = 3.0;
+
+/// Float noise (0.3 * 10 is 3.0000001) must not push a round number up a step.
+const COOLDOWN_ROUND_SLACK: f32 = 1e-3;
+
+/// The words on a cooldown's chip for `remaining` seconds: `m:ss` from a minute, whole seconds
+/// rounded up from [`COOLDOWN_WHOLE_SECONDS_FROM`], tenths rounded up below it, so a second that
+/// is not over does not read as the next one down and the last tenth is "0.1", never "0.0".
+/// Empty at zero, below it, or when not finite (a ready widget draws no chip).
+///
+/// ```
+/// use bevy_gooey::model::cooldown_text;
+/// assert_eq!(cooldown_text(65.2), "1:06");
+/// assert_eq!(cooldown_text(12.0), "12");
+/// assert_eq!(cooldown_text(5.01), "6");
+/// assert_eq!(cooldown_text(2.31), "2.4");
+/// assert_eq!(cooldown_text(0.0), "");
+/// ```
+pub fn cooldown_text(remaining: f32) -> String {
+    if !remaining.is_finite() || remaining <= 0.0 {
+        return String::new();
+    }
+    if remaining < COOLDOWN_WHOLE_SECONDS_FROM {
+        let tenths = ((remaining * 10.0 - COOLDOWN_ROUND_SLACK).ceil() as u32).max(1);
+        return format!("{}.{}", tenths / 10, tenths % 10);
+    }
+    let seconds = (remaining - COOLDOWN_ROUND_SLACK).ceil() as u32;
+    if seconds >= 60 {
+        format!("{}:{:02}", seconds / 60, seconds % 60)
+    } else {
+        seconds.to_string()
+    }
+}
+
+/// The same time as a screen reader should say it: "1 second remaining", "6 seconds remaining",
+/// "1 minute 5 seconds remaining". Empty when `remaining` is zero, below it or not finite.
+///
+/// ```
+/// use bevy_gooey::model::cooldown_words;
+/// assert_eq!(cooldown_words(5.01), "6 seconds remaining");
+/// assert_eq!(cooldown_words(0.4), "1 second remaining");
+/// assert_eq!(cooldown_words(65.0), "1 minute 5 seconds remaining");
+/// ```
+pub fn cooldown_words(remaining: f32) -> String {
+    if !remaining.is_finite() || remaining <= 0.0 {
+        return String::new();
+    }
+    let seconds = ((remaining - COOLDOWN_ROUND_SLACK).ceil() as u32).max(1);
+    let (minutes, rest) = (seconds / 60, seconds % 60);
+    let plural = |n: u32, unit: &str| format!("{n} {unit}{}", if n == 1 { "" } else { "s" });
+    match (minutes, rest) {
+        (0, s) => format!("{} remaining", plural(s, "second")),
+        (m, 0) => format!("{} remaining", plural(m, "minute")),
+        (m, s) => format!("{} {} remaining", plural(m, "minute"), plural(s, "second")),
+    }
+}
+
+/// The angle, clockwise from twelve o'clock, that a cooldown's clear wedge has opened to: `0` the
+/// moment it starts (all dimmed) to `TAU` when `remaining` reaches zero. A duration that is not
+/// positive or not finite counts as fully dimmed while any time remains, and `remaining` outside
+/// `0..=duration` is held to the nearest end.
+///
+/// ```
+/// use bevy_gooey::model::cooldown_sweep;
+/// assert!((cooldown_sweep(6.0, 8.0) - std::f32::consts::FRAC_PI_2).abs() < 1e-5);
+/// assert_eq!(cooldown_sweep(8.0, 8.0), 0.0);
+/// ```
+pub fn cooldown_sweep(remaining: f32, duration: f32) -> f32 {
+    if !remaining.is_finite() || remaining <= 0.0 {
+        return std::f32::consts::TAU;
+    }
+    if !duration.is_finite() || duration <= 0.0 {
+        return 0.0;
+    }
+    (1.0 - (remaining / duration).clamp(0.0, 1.0)) * std::f32::consts::TAU
+}
+
 /// How far a dialog's card rises into place, logical px.
 pub const DIALOG_SLIDE_PX: f32 = 12.0;
 /// How long a dialog's card takes to rise into place, seconds.
@@ -2299,6 +2377,65 @@ pub fn target_step(rects: &[[f32; 4]], current: Option<usize>, forward: bool) ->
         (Some(at), false) => (at + last) % order.len(),
     };
     Some(order[next])
+}
+
+/// Whether the box `[min, max]` lies wholly outside the rectangle `[view_min, view_max]`: no
+/// overlap at all, so nothing of it would be drawn. Touching edges count as inside.
+///
+/// ```
+/// use bevy_gooey::box_outside;
+/// assert!(box_outside((1300.0, 10.0), (1340.0, 40.0), (0.0, 0.0), (1280.0, 720.0)));
+/// assert!(!box_outside((1270.0, 10.0), (1310.0, 40.0), (0.0, 0.0), (1280.0, 720.0)));
+/// ```
+pub fn box_outside(
+    min: (f32, f32),
+    max: (f32, f32),
+    view_min: (f32, f32),
+    view_max: (f32, f32),
+) -> bool {
+    max.0 < view_min.0 || min.0 > view_max.0 || max.1 < view_min.1 || min.1 > view_max.1
+}
+
+/// Where a point outside the rectangle `[min, max]` is pinned to its edge: on the ray from
+/// `centre` toward `point`, so the pinned position still says which way the point lies. A point
+/// inside is returned as it is. The result is never outside the rectangle (an empty one, `min`
+/// past `max`, gives `centre`).
+///
+/// ```
+/// use bevy_gooey::pin_to_edge;
+/// // Far to the right of a 1280 x 720 viewport, level with its middle: on the right edge.
+/// assert_eq!(pin_to_edge((5000.0, 360.0), (640.0, 360.0), (64.0, 36.0), (1216.0, 684.0)), (1216.0, 360.0));
+/// // Inside: unchanged.
+/// assert_eq!(pin_to_edge((100.0, 100.0), (640.0, 360.0), (64.0, 36.0), (1216.0, 684.0)), (100.0, 100.0));
+/// ```
+pub fn pin_to_edge(
+    point: (f32, f32),
+    centre: (f32, f32),
+    min: (f32, f32),
+    max: (f32, f32),
+) -> (f32, f32) {
+    if min.0 > max.0 || min.1 > max.1 || !point.0.is_finite() || !point.1.is_finite() {
+        return centre;
+    }
+    if point.0 >= min.0 && point.0 <= max.0 && point.1 >= min.1 && point.1 <= max.1 {
+        return point;
+    }
+    let (dx, dy) = (point.0 - centre.0, point.1 - centre.1);
+    let reach = |d: f32, from: f32, lo: f32, hi: f32| {
+        if d > 0.0 {
+            (hi - from) / d
+        } else if d < 0.0 {
+            (lo - from) / d
+        } else {
+            f32::INFINITY
+        }
+    };
+    let s = reach(dx, centre.0, min.0, max.0).min(reach(dy, centre.1, min.1, max.1));
+    let s = if s.is_finite() { s.max(0.0) } else { 0.0 };
+    (
+        (centre.0 + dx * s).clamp(min.0, max.0),
+        (centre.1 + dy * s).clamp(min.1, max.1),
+    )
 }
 
 #[cfg(test)]
@@ -3373,5 +3510,43 @@ mod tests {
             bar_fit(&[50.0; 3], &[1], 0.0, 100.0, 0.0),
             [true, true, false]
         );
+    }
+
+    #[test]
+    fn a_pinned_point_keeps_its_direction_and_never_leaves_the_rectangle() {
+        let (centre, min, max) = ((640.0, 360.0), (64.0, 36.0), (1216.0, 684.0));
+        // Up and to the right, steeper than the corner: it hits the top edge, on the same ray.
+        let (x, y) = pin_to_edge((740.0, -3000.0), centre, min, max);
+        assert!((y - 36.0).abs() < 1e-3, "{y}");
+        let (rx, ry) = (x - centre.0, y - centre.1);
+        let (ox, oy) = (740.0 - centre.0, -3000.0 - centre.1);
+        assert!((rx * oy - ry * ox).abs() < 1.0, "off the ray: {rx} {ry}");
+        // Every direction lands inside the rectangle.
+        for i in 0..360 {
+            let a = (i as f32).to_radians();
+            let (px, py) = pin_to_edge(
+                (centre.0 + a.cos() * 9000.0, centre.1 + a.sin() * 9000.0),
+                centre,
+                min,
+                max,
+            );
+            assert!(
+                (min.0..=max.0).contains(&px) && (min.1..=max.1).contains(&py),
+                "{i}"
+            );
+        }
+        // The centre itself, an empty rectangle and a NaN are safe.
+        assert_eq!(pin_to_edge(centre, centre, min, max), centre);
+        assert_eq!(pin_to_edge((9.0, 9.0), centre, max, min), centre);
+        assert_eq!(pin_to_edge((f32::NAN, 0.0), centre, min, max), centre);
+    }
+
+    #[test]
+    fn a_box_is_outside_only_when_none_of_it_overlaps_the_view() {
+        let view = ((0.0, 0.0), (100.0, 100.0));
+        assert!(box_outside((101.0, 0.0), (120.0, 10.0), view.0, view.1));
+        assert!(box_outside((0.0, -30.0), (10.0, -1.0), view.0, view.1));
+        assert!(!box_outside((90.0, 90.0), (130.0, 130.0), view.0, view.1));
+        assert!(!box_outside((100.0, 0.0), (120.0, 10.0), view.0, view.1));
     }
 }

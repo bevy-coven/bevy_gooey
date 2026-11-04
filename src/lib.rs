@@ -46,8 +46,9 @@
 //!   [`context_menu`] that any entity opens with [`ContextMenu`] on a right-click or Shift+F10. Each is a free function returning a bundle, so they
 //!   compose inside `children![]` and with [`observe`]; each carries a [`Role`] that
 //!   [`apply_skin`] styles it by. A [`screen`] is layout: its empty part lets the pointer through
-//!   to the game under a HUD, while every widget on it takes the pointer. A toast takes no input
-//!   and no focus.
+//!   to the game under a HUD, while every widget on it takes the pointer. A [`WorldAnchor`] on a
+//!   root node makes it follow a point in the world (a health bar, a prompt, a beacon pinned to the
+//!   screen's edge). A toast takes no input and no focus.
 //! - Navigation — [`GooeyNavPlugin`]: arrows and the D-pad move focus to the nearest widget
 //!   ([`navigate_by_input`]), the pad's South button activates it ([`gamepad_select`]), Tab cycles.
 //!   Keys and the pad show the focus ring; a pointer press hides it. With nothing focused (a click
@@ -134,6 +135,7 @@ pub mod testing;
 
 mod access;
 mod access_actions;
+mod anchor;
 mod badges;
 mod binding;
 mod cancel;
@@ -142,6 +144,7 @@ mod color;
 mod confirm;
 mod context;
 mod controls;
+mod cooldown;
 mod dock;
 mod dock_layout;
 mod drag;
@@ -181,6 +184,7 @@ mod tooltip;
 mod tree;
 mod widgets;
 
+pub use anchor::{AnchorPinned, OffScreen, WorldAnchor, WorldAnchors, update_world_anchors};
 pub use badges::{
     BadgesShown, LegendRow, Reveal, ShortcutBadge, ShortcutBadges, ShortcutLegend,
     ShortcutLegendCard, update_shortcut_badges, update_shortcut_legend,
@@ -200,6 +204,7 @@ pub use color::{
 pub use confirm::{Confirm, ConfirmButton, ConfirmChosen, confirm};
 pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use controls::update_sliders;
+pub use cooldown::{Cooldown, CooldownReady, update_cooldowns};
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
 pub use dock_layout::{DockDropTarget, DockLayout, DockSkip};
 pub use drag::{
@@ -221,24 +226,25 @@ pub use menu::{
 };
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, DIALOG_SLIDE_PX, DIALOG_SLIDE_SECONDS, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE,
-    DOCK_PANE_MIN_PX, DockZone, ELEVATION_STEP, ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS,
-    METER_GAIN_TAU_SECONDS, METER_SNAP, METER_TRAIL_HOLD_SECONDS, METER_TRAIL_RATE, MIN_TARGET_PX,
-    MeterShown, NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES,
-    POPOVER_SLIDE_PX, POPOVER_SLIDE_SECONDS, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH,
-    SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STATE_STEP, STICK_PUSH, TABLE_LEAST_COLUMN,
-    TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit,
-    choice_next, choice_step, cie_lightness, clock_text, column_resize, composite, contrast_ratio,
-    dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, ease_out, eta_words,
-    format_number, fuzzy_score, hex_text, hsv_to_rgb, is_modifier_key, key_name, list_height,
-    meter_fraction, meter_motion, mouse_name, natural_cmp, nearest_step, number_decimals, pad_name,
-    page_target, parse_hex, parse_number, progress_text, radial_pick, radial_place, radial_step,
-    relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
-    shortcut_conflicts, shortcut_label, slider_fraction, slider_text, slot_edge, snap_line_width,
-    snap_to_row, spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step,
-    table_anchor, table_step, table_window, target_step, target_toward, toast_alpha, toast_grow,
-    toast_hold, toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible,
-    type_ahead, window_ui_scale,
+    COMFORT_TARGET_PX, COOLDOWN_WHOLE_SECONDS_FROM, DIALOG_SLIDE_PX, DIALOG_SLIDE_SECONDS,
+    DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone, ELEVATION_STEP,
+    ENHANCED_CONTRAST, HexError, INTERFACE_SIZE_STEPS, METER_GAIN_TAU_SECONDS, METER_SNAP,
+    METER_TRAIL_HOLD_SECONDS, METER_TRAIL_RATE, MIN_TARGET_PX, MeterShown, NON_TEXT_CONTRAST,
+    NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES, POPOVER_SLIDE_PX,
+    POPOVER_SLIDE_SECONDS, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH, SPINNER_PERIOD_SECS,
+    SPLIT_KEY_STEP_PX, STATE_STEP, STICK_PUSH, TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS,
+    TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit, box_outside, choice_next,
+    choice_step, cie_lightness, clock_text, column_resize, composite, contrast_ratio,
+    cooldown_sweep, cooldown_text, cooldown_words, dock_drop_rect, dock_edge_zone, dock_neighbour,
+    dock_tab_slot, dock_zone, ease_out, eta_words, format_number, fuzzy_score, hex_text,
+    hsv_to_rgb, is_modifier_key, key_name, list_height, meter_fraction, meter_motion, mouse_name,
+    natural_cmp, nearest_step, number_decimals, pad_name, page_target, parse_hex, parse_number,
+    pin_to_edge, progress_text, radial_pick, radial_place, radial_step, relative_luminance,
+    repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label,
+    slider_fraction, slider_text, slot_edge, snap_line_width, snap_to_row, spinner_angle,
+    split_clamp, split_drag, split_mins, step_value, tab_step, table_anchor, table_step,
+    table_window, target_step, target_toward, toast_alpha, toast_grow, toast_hold, toast_life,
+    tree_ends, tree_heir, tree_indent, tree_parent, tree_visible, type_ahead, window_ui_scale,
 };
 pub use motion::{MotionSettings, PopoverSlide, SlideIn, begin_entrances, update_motion};
 pub use nav::{
@@ -367,6 +373,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<SkinScope>()
             .register_type::<Role>()
             .register_type::<Meter>()
+            .register_type::<WorldAnchor>()
+            .register_type::<AnchorPinned>()
+            .register_type::<OffScreen>()
             .register_type::<Icon>()
             .register_type::<IconTone>()
             .register_type::<IconSize>()
@@ -441,6 +450,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ContextTarget>()
             .register_type::<CloseReason>()
             .register_type::<PopoverClosed>()
+            .register_type::<Cooldown>()
+            .register_type::<CooldownReady>()
             .register_type::<Toast>()
             .register_type::<ToastStack>()
             .register_type::<ToastSettings>()
@@ -473,6 +484,7 @@ impl Plugin for GooeyStylePlugin {
                         update_field_problems,
                         update_progress,
                         update_spinners,
+                        update_cooldowns,
                         (update_toggle_groups, fit_bars).chain(),
                         update_sections,
                         (update_shortcut_badges, update_shortcut_legend).chain(),
@@ -502,6 +514,8 @@ impl Plugin for GooeyStylePlugin {
                     .chain()
                     .in_set(GooeySystems::Style),
             );
+        // The one system that is not in `Update`: it needs this frame's transforms.
+        anchor::add_systems(app);
         #[cfg(feature = "reflect")]
         app.add_systems(
             Update,
