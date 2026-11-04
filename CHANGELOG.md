@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-11-04
+
 ### Added
 
 - `hold_button(label, seconds)` (`docs/research/hold-button.md`, `docs/guide/hold-buttons.md`, `examples/hold`): a button that confirms only when it is held, for an act the player cannot take back. It is a `Role::Button` to the skin (look, size, ring, hover) over a column of its label and a meter-shaped bar (`Role::HoldTrack`, `Role::HoldFill`), and it is not a `bevy_ui_widgets::Button`: it sends no `Activate`, only one `HoldConfirmed` (an `EntityEvent`) the frame the bar is full, and one `UiFeedbackKind::Activate` with it. Enter, Space or the pad's South while it has focus, or the primary pointer button while the pointer is over it, hold it (a hold needs a fresh press); the progress (`HoldProgress`, 0 to 1) rises on real time, unwinds four times as fast when let go and resumes from where it stands; the pointer leaving, focus leaving or a disabled button ends a hold without confirming; a hold still down confirms once. `HoldSettings { duration_scale }` (a serde resource, `GooeyNavPlugin` inits it; `tap()`, `is_tap()`) shortens every hold or, at 0, makes it a tap that confirms on the up event (XAG 107: "a single input press instead of an input hold"). The AccessKit Click action of a hold button confirms at once. `HoldToConfirm { seconds }` is the component, `hold_by_input` (Navigate, after `gamepad_select`) and `update_hold_bars` (Style) are the systems, and the maths is `model::{hold_seconds, hold_step, HOLD_UNWIND_RATE, HOLD_SCALE_MAX}`. `tests/hold.rs` holds it (20 tests, mutation-checked: the fresh-press rule, the pointer-leaving cancel, the confirm-once guard).
