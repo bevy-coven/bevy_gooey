@@ -888,8 +888,8 @@ fn a_bar_titles_words_are_not_a_buttons_but_look_like_one() {
             "{name}: the ink"
         );
         assert_eq!(
-            world.get::<TextFont>(a).map(|f| f.font_size.clone()),
-            world.get::<TextFont>(b).map(|f| f.font_size.clone()),
+            world.get::<TextFont>(a).map(|f| f.font_size),
+            world.get::<TextFont>(b).map(|f| f.font_size),
             "{name}: the size"
         );
     }
