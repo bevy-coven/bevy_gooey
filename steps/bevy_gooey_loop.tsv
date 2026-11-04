@@ -16381,3 +16381,96 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 88	235	log	model	model		2026-11-03T13:17:10Z	5.8	
 88	236	log	tool	learn	learn	2026-11-03T13:17:16Z	0.0	Recording lessons
 88	237	log	model	model		2026-11-03T13:17:16Z	7.1	
+89	1	orient	model	model		2026-11-04T11:59:09Z	2.5	
+89	2	orient	tool	phase mark	bash	2026-11-04T11:59:11Z	1.2	python3 ~/.local/share/wiggum/steps.py mark orient; git fetch -q origin loop-stats 2>&1 | tail -2; git show origin/loop-stats:steps/bevy_gooey_loop-audit.tsv | 
+89	3	orient	model	model		2026-11-04T11:59:13Z	1.8	
+89	4	orient	tool	github	bash	2026-11-04T11:59:14Z	2.4	gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.number) \(.title) [\([.labels[].name]|
+89	5	orient	tool	shell	bash	2026-11-04T11:59:14Z	2.4	tail -80 docs/loop-log.md
+89	6	orient	model	model		2026-11-04T11:59:17Z	2.5	
+89	7	choose	tool	phase mark	bash	2026-11-04T11:59:19Z	1.7	gh issue view 39 --repo bevy-coven/bevy_gooey --json body,comments,createdAt --jq '.createdAt, .body, (.comments[]|.body)'; git log --oneline -5 --since=2026-11
+89	8	choose	model	model		2026-11-04T11:59:21Z	1.2	
+89	9	choose	tool	search	grep	2026-11-04T11:59:22Z	0.3	Finding all ButtonText uses :: src;tests;examples;docs/guide;README.md
+89	10	choose	model	model		2026-11-04T11:59:23Z	3.2	
+89	11	choose	tool	read files	read	2026-11-04T11:59:26Z	0.3	Reading owner_of region :: src/skin.rs:2540-2620
+89	12	choose	tool	read files	read	2026-11-04T11:59:26Z	0.3	Reading ButtonText arm :: src/skin.rs:3700-3760
+89	13	choose	model	model		2026-11-04T11:59:26Z	3.8	
+89	14	choose	tool	search	grep	2026-11-04T11:59:30Z	0.0	Locating text-role enumerations :: src
+89	15	choose	model	model		2026-11-04T11:59:30Z	7.8	
+89	16	choose	tool	search	grep	2026-11-04T11:59:38Z	0.0	Finding enum variant :: src/skin.rs
+89	17	choose	tool	read files	read	2026-11-04T11:59:38Z	0.1	Reading menu_title :: src/widgets.rs:2670-2700
+89	18	choose	tool	read files	read	2026-11-04T11:59:38Z	0.1	Reading spec region :: src/access.rs:140-150
+89	19	choose	model	model		2026-11-04T11:59:38Z	3.5	
+89	20	choose	tool	edit files	edit	2026-11-04T11:59:41Z	0.2	Adding MenuTitleText role and arms :: [src/skin.rs#E3E3] PUT >1636: + /// A menu bar title's words: a button's text colour (at rest, pressed, disabled) on the + /// title's own fill, under a role of
+89	21	choose	model	model		2026-11-04T11:59:41Z	3.7	
+89	22	choose	tool	read files	read	2026-11-04T11:59:45Z	0.0	Reading large_text role list :: tests/large_text.rs:305-335
+89	23	choose	tool	read files	read	2026-11-04T11:59:45Z	0.0	Reading title helper :: tests/menu.rs:200-250
+89	24	choose	model	model		2026-11-04T11:59:45Z	2.2	
+89	25	choose	tool	read files	read	2026-11-04T11:59:47Z	0.0	Reading title contrast test :: tests/menu.rs:840-900
+89	26	choose	model	model		2026-11-04T11:59:47Z	3.0	
+89	27	choose	tool	shell	bash	2026-11-04T11:59:50Z	0.0	grep -n "fn spawn_bar\|fn app_with\|^use\|fn texts_under" -A12 tests/menu.rs | head -90; grep -n "pub fn button" -B2 -A3 src/widgets.rs | head
+89	28	choose	model	model		2026-11-04T11:59:50Z	6.4	
+89	29	choose	tool	edit files	edit	2026-11-04T11:59:57Z	0.0	Update menu tests and add role test :: [tests/menu.rs#AA5D] PUT 229.=229: + let label = text_with(app, Role::MenuTitleText, text); PUT 868.=868: + let file_text = text_with(&mut app, Role::MenuTitleT
+89	30	choose	model	model		2026-11-04T11:59:57Z	2.5	
+89	31	build	tool	phase mark	bash	2026-11-04T11:59:59Z	0.8	python3 ~/.local/share/wiggum/steps.py mark build; cd /home/ladvien/bevy_gooey_loop && CARGO_BUILD_JOBS=4 timeout 3000 cargo nextest run --all-features -E 'test
+89	32	build	model	model		2026-11-04T12:00:00Z	0.9	
+89	33	build	tool	shell	bash	2026-11-04T12:00:01Z	0.0	env | grep -i 'cargo\|sccache\|RUSTC' ; cat .cargo/config.toml 2>/dev/null | head -20
+89	34	build	model	model		2026-11-04T12:00:01Z	2.1	
+89	35	build	tool	cargo test	bash	2026-11-04T12:00:03Z	0.1	cd /home/ladvien/bevy_gooey_loop && unset CARGO_INCREMENTAL && CARGO_BUILD_JOBS=4 timeout 3000 cargo nextest run --all-features -E 'test(menu::) | test(access::
+89	36	build	model	model		2026-11-04T12:00:03Z	2.3	
+89	37	build	tool	shell	bash	2026-11-04T12:00:05Z	0.0	cat ~/.cargo/config.toml | head -30; grep -n incremental Cargo.toml
+89	38	build	model	model		2026-11-04T12:00:05Z	2.4	
+89	39	build	tool	cargo test	bash	2026-11-04T12:00:08Z	60.0	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && export CARGO_INCREMENTAL=1 CARGO_BUILD_RUSTC_WRAPPER= && CARGO_BUILD_JOBS=4 timeout 3000 cargo nextest run --all-features -E
+89	40	build	model	model		2026-11-04T12:01:08Z	2.8	
+89	41	build	tool	shell	bash	2026-11-04T12:01:11Z	0.1	sed -n 1,25p CHANGELOG.md; grep -n "G-35\|MenuTitle" docs/guide/*.md README.md | head
+89	42	build	model	model		2026-11-04T12:01:11Z	2.1	
+89	43	build	tool	edit files	edit	2026-11-04T12:01:13Z	0.0	Changelog entry :: [CHANGELOG.md#TAG] PUT >3: + +### Changed + +- A menu bar title's words are `Role::MenuTitleText`, not `Role::ButtonText` (#39). `apply_skin` styles it exactly 
+89	44	build	model	model		2026-11-04T12:01:13Z	1.8	
+89	45	build	tool	edit files	edit	2026-11-04T12:01:15Z	0.1	Changelog entry :: [CHANGELOG.md#A4A0] PUT >3: + +### Changed + +- A menu bar title's words are `Role::MenuTitleText`, not `Role::ButtonText` (#39). `apply_skin` styles it exactly
+89	46	build	model	model		2026-11-04T12:01:15Z	2.5	
+89	47	build	tool	wait: other	wait	2026-11-04T12:01:17Z	258.0	{}
+89	48	build	model	model		2026-11-04T12:05:35Z	2.3	
+89	49	build	tool	cargo test	bash	2026-11-04T12:05:38Z	60.1	[launched bg_2] cd /home/ladvien/bevy_gooey_loop && export CARGO_INCREMENTAL=1 CARGO_BUILD_RUSTC_WRAPPER= CARGO_BUILD_JOBS=4 && cp src/widgets.rs /tmp/widgets.rs.bak && sed -i 
+89	50	build	model	model		2026-11-04T12:06:38Z	1.9	
+89	51	build	tool	shell	bash	2026-11-04T12:06:39Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n "A menu's rows are modal-popover rows" AGENTS.md | head -2; grep -c "" AGENTS.md; grep -n '`src/menu.rs` — `MenuBar`
+89	52	build	model	model		2026-11-04T12:06:40Z	2.5	
+89	53	build	tool	shell	bash	2026-11-04T12:06:42Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 75p AGENTS.md | tail -c 300
+89	54	build	model	model		2026-11-04T12:06:42Z	1.2	
+89	55	build	tool	read files	read	2026-11-04T12:06:44Z	0.2	Getting tag for AGENTS line 75 :: AGENTS.md:75:raw
+89	56	build	model	model		2026-11-04T12:06:44Z	7.3	
+89	57	build	tool	edit files	edit	2026-11-04T12:06:51Z	0.0	AGENTS note on title role :: [AGENTS.md#TAG] PUT 75.=75: +- `src/menu.rs` — `MenuBar` (remembers the focus F10 or Alt took into it), `MenuTitle` (the stable handle for a bar title; **its wo
+89	58	build	model	model		2026-11-04T12:06:51Z	3.4	
+89	59	build	tool	edit files	edit	2026-11-04T12:06:55Z	0.3	AGENTS note, new bullet after menu :: [AGENTS.md#6BD6] PUT >75: +- A menu bar title's words are `Role::MenuTitleText` (#39), styled in `apply_skin` exactly as `ButtonText` (one match arm) but never 
+89	60	build	model	model		2026-11-04T12:06:55Z	0.7	
+89	61	build	tool	wait: other	wait	2026-11-04T12:06:56Z	50.9	{}
+89	62	build	model	model		2026-11-04T12:07:46Z	4.1	
+89	63	gate	tool	phase mark	bash	2026-11-04T12:07:51Z	60.1	[launched bg_3] cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate && git checkout -q -b loop/iter-61 && git add -A src tests CHANGELOG.md AGE
+89	64	gate	model	model		2026-11-04T12:08:51Z	8.3	
+89	65	gate	tool	git	bash	2026-11-04T12:08:59Z	0.1	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'EOF' ## Iteration 61 — 2026-11-04 — `Role::MenuTitleText`: a bar title's words are not a button's
+89	66	gate	tool	wait: other	wait	2026-11-04T12:08:59Z	17.6	{}
+89	67	gate	model	model		2026-11-04T12:09:17Z	2.5	
+89	68	gate	tool	search	grep	2026-11-04T12:09:19Z	0.0	Locating clone calls :: tests/menu.rs
+89	69	gate	model	model		2026-11-04T12:09:19Z	1.2	
+89	70	gate	tool	edit files	edit	2026-11-04T12:09:20Z	0.0	Remove clone on Copy :: [tests/menu.rs#67DB] PUT 891.=892: + world.get::<TextFont>(a).map(|f| f.font_size), + world.get::<TextFont>(b).map(|f| f.font_size),
+89	71	gate	model	model		2026-11-04T12:09:20Z	3.3	
+89	72	gate	tool	cargo test	bash	2026-11-04T12:09:24Z	60.1	[launched bg_4] cd /home/ladvien/bevy_gooey_loop && git commit -qam "tests/menu: font_size is Copy" && export CARGO_INCREMENTAL=1 CARGO_BUILD_RUSTC_WRAPPER= CARGO_BUILD_JOBS=4 
+89	73	gate	model	model		2026-11-04T12:10:24Z	1.8	
+89	74	gate	tool	wait: other	wait	2026-11-04T12:10:26Z	251.3	{}
+89	75	gate	model	model		2026-11-04T12:14:37Z	3.5	
+89	76	ship	tool	phase mark	bash	2026-11-04T12:14:40Z	4.9	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && git push -q -u origin loop/iter-61 2>&1 | tail -2; git fetch -q origin &
+89	77	ship	model	model		2026-11-04T12:14:45Z	2.0	
+89	78	release	tool	phase mark	bash	2026-11-04T12:14:47Z	60.1	[launched bg_5] cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark release && export CARGO_INCREMENTAL=1 CARGO_BUILD_RUSTC_WRAPPER= CARGO_BUILD_JOB
+89	79	release	model	model		2026-11-04T12:15:47Z	0.7	
+89	80	release	tool	wait: other	wait	2026-11-04T12:15:48Z	23.2	{}
+89	81	release	model	model		2026-11-04T12:16:11Z	1.2	
+89	82	release	tool	shell	bash	2026-11-04T12:16:13Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "0\.33" README.md Cargo.toml | head; grep -n '^version' Cargo.toml
+89	83	release	model	model		2026-11-04T12:16:13Z	2.5	
+89	84	release	tool	cargo publish	bash	2026-11-04T12:16:15Z	60.3	[launched bg_6] cd /home/ladvien/bevy_gooey_loop && sed -i '3s/0.33.0/0.34.0/' Cargo.toml && sed -i '231s/0.33/0.34/' README.md && sed -i 's/^## \[Unreleased\]$/## [Unreleased]
+89	85	release	model	model		2026-11-04T12:17:15Z	3.0	
+89	86	release	tool	wait: other	wait	2026-11-04T12:17:18Z	46.7	{}
+89	87	release	model	model		2026-11-04T12:18:05Z	1.3	
+89	88	release	tool	cargo publish	bash	2026-11-04T12:18:06Z	9.7	cd /home/ladvien/bevy_gooey_loop && export CARGO_INCREMENTAL=1 CARGO_BUILD_RUSTC_WRAPPER= && git commit -qam "release: v0.34.0" && cargo publish 2>&1 | tail -4
+89	89	release	model	model		2026-11-04T12:18:16Z	3.2	
+89	90	release	tool	push gate	bash	2026-11-04T12:18:19Z	4.6	cd /home/ladvien/bevy_gooey_loop && git tag -a v0.34.0 -m v0.34.0 && git push -q origin main v0.34.0 2>&1 | tail -2; cargo info bevy_gooey@0.34.0 2>&1 | head -3
+89	91	release	model	model		2026-11-04T12:18:24Z	5.5	
+89	92	log	tool	phase mark	bash	2026-11-04T12:18:29Z	3.1	cd /home/ladvien/bevy_gooey_loop && gh issue comment 208 -R bevy-coven/bevy_grimoire -b "bevy_gooey#39 fixed in ef4a603, released as v0.34.0; move the pin to $(
+89	93	log	model	model		2026-11-04T12:18:33Z	5.6	
