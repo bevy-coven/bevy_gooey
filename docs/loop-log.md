@@ -2352,3 +2352,9 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. A "ready" cue for `Cooldown` (a one-frame flash under `MotionSettings`), and a charges variant.
 4. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
 5. One keycap vocabulary for the shortcut badges and legend.
+
+**Gate (iteration 62).** `CARGO_BUILD_JOBS=4`, sccache off (`CARGO_BUILD_RUSTC_WRAPPER=`): fmt, clippy `-D warnings`, 981 tests in `all` + lib (961 + the 20 new), 222 doctests, check lib, wasm32, `cargo doc -D warnings`: green. `main` had not moved, so the merged tree is the gated tree.
+
+**Release (iteration 62).** `cargo semver-checks --baseline-rev v0.34.0`: one major lint (`enum_variant_added`: `Role::HoldTrack`, `Role::HoldFill`), so a minor bump pre-1.0: `release: v0.35.0` (README compatibility row `0.1 – 0.35`), published (https://crates.io/crates/bevy_gooey/0.35.0), tag `v0.35.0` pushed.
+
+**Cleanup (iteration 62).** Removed worktree `~/g62_base` (built into the shared `CARGO_TARGET_DIR`, no `-target` of its own), `/tmp/g62` (captures, frames, gate log, built binaries) and `/tmp/hold.rs.orig` (the mutation backup). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
