@@ -22,6 +22,7 @@ mod dialog_look;
 mod dock;
 mod drag;
 mod field_problem;
+mod hold;
 mod icon;
 mod inspector;
 mod large_text;
