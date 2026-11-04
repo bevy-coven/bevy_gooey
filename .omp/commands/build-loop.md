@@ -95,7 +95,7 @@ the baseline under `/tmp/gN/before/`. Keep a worktree of the starting commit for
 Section 9 says how to name, build and remove that baseline. A baseline left behind costs the next pass
 a build cache's worth of disk, and one with `main` checked out stops anything else checking `main` out.
 
-On **sib** (the loop's host: 16 cores, RTX 3060), capture on the loop's own display (the unit starts an Xvfb on `:93` and sets `DISPLAY=:93`). The unit sets `CARGO_TARGET_DIR`, so the binary is under it, not under `./target`:
+On **big** (the loop's host — `wiggum@gooey.service` lives there, and this file's own section 8 says so; `sib` is recorded as unavailable for days at line 382), capture on the loop's own display (the unit starts an Xvfb on `:93` and sets `DISPLAY=:93`). The unit sets `CARGO_TARGET_DIR`, so the binary is under it, not under `./target`:
 
 ```sh
 G="$CARGO_TARGET_DIR/release/examples/gallery"
@@ -155,11 +155,13 @@ region, not an impression:
 
 Measured 2026-11-01 on big: every file in `tests/` links its own copy of Bevy into a debug executable of 650 to 790 MB, so one full relink writes about 24 GB, the loop wrote about 48 GB an hour, and big's disk fell under this loop's 150 GB floor. bevy_grimoire hit the same wall with 150 test binaries and fixed it with one (`autotests = false`, one `[[test]]`, one `tests/all.rs`): build 276 s plus run 539 s became 108 s plus 24 s.
 
-**First job of the next pass, ahead of the `G-NN` item:** do the same here.
+**DONE (verified 2026-11-04): `Cargo.toml:16` has `autotests = false`, `[[test]] name = "all"` is declared, and
+`tests/all.rs:70` holds the `every_test_file_is_a_module` guard. Do not redo it.** The recipe below is the one
+a *new* test file follows.
 
 - In `Cargo.toml` set `autotests = false` under `[package]` and declare `[[test]] name = "all"`, `path = "tests/all.rs"`. `tests/all.rs` declares every other file in `tests/` as `mod <stem>;` (a crate-root `mod x;` in `tests/all.rs` resolves to `tests/x.rs`). A file's inner `#![cfg(...)]` and `#![allow(...)]` attributes stay at the top of its file, which is valid for a module file; a shared helper module is declared once and imported with `use crate::<helper>;`, never redeclared inside a module file.
 - A guard test, `every_test_file_is_a_module`, fails when a `tests/*.rs` file is not declared in `all.rs`, because an undeclared file is never compiled and its tests never run. Put the same check in the gate's list in `AGENTS.md` if the gate is a script.
-- Protected checks: moving a test file into the one binary is the owner's exception. Not one assertion, golden or threshold changes; the commit message says so. Run `cargo test --all-features -- --list` before and after and compare the sorted test names: the lists must be identical except for the module prefix, so a test that quietly stopped running is caught.
+- Protected checks: moving a test file into the one binary is the owner's exception. Not one assertion, golden or threshold changes; the commit message says so. Run `cargo nextest list --all-features` before and after and compare the sorted test names: the lists must be identical except for the module prefix, so a test that quietly stopped running is caught.
 - Keep the doctests and the README test (`tests/readme.rs`) running: `cargo test --all-features --doc` is its own step in the gate.
 - Also set `CARGO_PROFILE_DEV_DEBUG=0` for the gate's builds only if `target` is still over 100 GB after this, and say so in the log.
 - **Done when:** `ls target/debug/deps` holds one `all-*` test executable, the full gate is green, and the log line quotes the sorted test count before and after.
@@ -169,7 +171,7 @@ Measured 2026-11-01 on big: every file in `tests/` links its own copy of Bevy in
 While any issue labelled `grimoire-ui` is open, **the pass's item is a cluster of up to three ready `G-NN` issues** (owner, 2026-11-01: 17 requests are open and 42 of bevy_grimoire's 43 open UI issues wait on them, so one request a pass is the whole project's bottleneck), ahead of everything below except a broken gate and a `bug` issue. A `G-NN` is **ready** when every issue on its Depends on line is closed. **Order the ready ones by how many open bevy_grimoire `ui` issues name each on their Needs line** (`gh issue list -R bevy-coven/bevy_grimoire --label ui --state open --json number,body`, count `bevy_gooey#<n>`), most first, ties by lowest number, and take the first three that sit together (the same module, or one building on another's types). Fewer than three when fewer are ready. bevy_grimoire is rebuilding its whole interface on this crate (tracking issue linked in each request), so each request is a feature the editor is waiting on.
 
 - Build the general form: any game or tool could use it, the editor is the example, and the editor's name never appears in the API.
-- **One verified slice per issue** with its failing-first test, one commit each; close each with `Fixes #N` in the commit that meets its last acceptance item. **One gate and one push for the pass, and one release** that covers every issue the pass closed ("Every pass ships"): the budget is 2½ hours, a pass stops starting issues at 125 minutes, and an issue past its 40-minute share is committed as the slice it reached with a comment on what remains. Never leave a half-done issue in the tree.
+- **One verified slice per issue** with its failing-first test, one commit each; close each with `Fixes #N` in the commit that meets its last acceptance item. **One gate and one push for the pass, and one release** that covers every issue the pass closed ("Every pass ships"): the budget is 150 minutes (checkpoints at 45/90/125), a pass stops starting issues at 125 minutes, and an issue past its 40-minute share is committed as the slice it reached with a comment on what remains. Never leave a half-done issue in the tree.
 - When it closes, comment on each bevy_grimoire issue whose **Needs** line names it: "Fixed in <sha>, released as v<version>; move the pin to <sha>."
 - A request that would break the crate's rules (WCAG checks, the scope in docs/guide/scope.md) is answered on the issue with what it needs and why, labelled `blocked`, and skipped.
 - This loop runs only while such issues are open: a timer on big (`gooey-grimoire-watch`) stops it at a pass boundary when none is left, and starts it again when bevy_grimoire files a new one.
@@ -330,7 +332,9 @@ proud of.
   hypothesis, and revert to the last GREAT state.
 - **Performance gate**, equal in weight: `mean_ms` from the gallery capture before and after, same
   machine and load. No regression over 0.5 ms without a logged trade.
-- While iterating, run only `cargo test --all-features --test <each test file you touched>` and `cargo clippy --all-targets --all-features -- -D warnings`. **The full gate (the `AGENTS.md` set) runs once, in section 8 step 6, on the merged tree.** Measured 2026-11-01: passes ran it about 2.25 times each at 13 minutes a run, 34% of pass time.
+- While iterating, run only `cargo nextest run --all-features -E 'binary(all)'` and `cargo clippy --all-targets --all-features -- -D warnings`. **The full gate (the `AGENTS.md` set) runs once, in section 8 step 6, on the merged tree.** Measured 2026-11-01: passes ran it about 2.25 times each at 13 minutes a run, 34% of pass time.
+
+Fast testing across the home cloud — the host matrix, mold, sccache and the measured numbers — is `agents/TESTING.md` in the codex_fs depot: `/mnt/codex_fs/agents/TESTING.md`, or `ssh three cat /mnt/codex_fs/agents/TESTING.md` from a host that does not mount it.
 
 ## 8. Ship
 
