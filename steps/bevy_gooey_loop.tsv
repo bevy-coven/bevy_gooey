@@ -16474,3 +16474,278 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 89	91	release	model	model		2026-11-04T12:18:24Z	5.5	
 89	92	log	tool	phase mark	bash	2026-11-04T12:18:29Z	3.1	cd /home/ladvien/bevy_gooey_loop && gh issue comment 208 -R bevy-coven/bevy_grimoire -b "bevy_gooey#39 fixed in ef4a603, released as v0.34.0; move the pin to $(
 89	93	log	model	model		2026-11-04T12:18:33Z	5.6	
+90	1	orient	model	model		2026-11-04T12:19:02Z	8.7	
+90	2	orient	tool	phase mark	bash	2026-11-04T12:19:11Z	0.8	Orienting: audit, log, git state :: python3 ~/.local/share/wiggum/steps.py mark orient; cd /home/ladvien/bevy_gooey_loop; git status --short | head; git branch --show-current; git fetch -q origin 
+90	3	orient	tool	github	bash	2026-11-04T12:19:11Z	0.8	Triage issues and parked work :: cd /home/ladvien/bevy_gooey_loop; gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.numb
+90	4	orient	model	model		2026-11-04T12:19:11Z	3.0	
+90	5	orient	tool	shell	bash	2026-11-04T12:19:14Z	0.0	Reading latest log entry :: cd /home/ladvien/bevy_gooey_loop; sed -n 2304,2400p docs/loop-log.md
+90	6	orient	model	model		2026-11-04T12:19:14Z	5.2	
+90	7	orient	tool	github	bash	2026-11-04T12:19:20Z	1.6	Checking consumer needs :: cd /home/ladvien/bevy_gooey_loop; gh issue list -R bevy-coven/bevy_grimoire --label ui --state open --limit 100 --json number,title,body --jq '.[] | "#\(.number
+90	8	orient	model	model		2026-11-04T12:19:21Z	6.0	
+90	9	orient	tool	shell	bash	2026-11-04T12:19:27Z	0.1	Looking for gaps in the widget set :: cd /home/ladvien/bevy_gooey_loop; grep -rniE "hold.to|ring meter|radial meter|circular|charges|damage number|floating text|rating|stepper|carousel|key hint|marq
+90	10	orient	model	model		2026-11-04T12:19:27Z	11.8	
+90	11	orient	tool	shell	bash	2026-11-04T12:19:39Z	0.0	Reading Bevy headless Button :: cd ~/.cargo/registry/src/index.crates.io-*/bevy_ui_widgets-0.20.0/src; ls; sed -n 1,200p button.rs
+90	12	orient	model	model		2026-11-04T12:19:39Z	9.4	
+90	13	orient	tool	search	grep	2026-11-04T12:19:49Z	0.1	Locating button builders and consumers :: src
+90	14	orient	model	model		2026-11-04T12:19:49Z	1.7	
+90	15	orient	tool	shell	bash	2026-11-04T12:19:51Z	0.0	Reading button, gamepad_select, cooldown head :: cd /home/ladvien/bevy_gooey_loop; sed -n 280,330p src/widgets.rs; sed -n 700,800p src/nav.rs; sed -n 1,140p src/cooldown.rs
+90	16	orient	model	model		2026-11-04T12:19:51Z	20.6	
+90	17	orient	tool	shell	bash	2026-11-04T12:20:11Z	0.0	Reading Button layout arm and cooldown role usage :: cd /home/ladvien/bevy_gooey_loop; sed -n 2950,3010p src/skin.rs; grep -n "Role::Cooldown" src/*.rs | head -30
+90	18	orient	model	model		2026-11-04T12:20:11Z	70.1	
+90	19	orient	tool	shell	bash	2026-11-04T12:21:21Z	0.1	Seeing how meters and progress are styled :: cd /home/ladvien/bevy_gooey_loop; grep -n "Role::Meter\b\|Role::MeterFill\|Role::MeterTrail\|Role::Progress\b\|Role::ProgressLine" src/skin.rs src/access.rs src
+90	20	orient	model	model		2026-11-04T12:21:21Z	2.3	
+90	21	orient	tool	shell	bash	2026-11-04T12:21:24Z	0.0	Reading meter/progress builders and skin arms :: cd /home/ladvien/bevy_gooey_loop; sed -n 322,430p src/widgets.rs; sed -n 3030,3075p src/skin.rs; sed -n 2695,2712p src/skin.rs; sed -n 2650,2660p src/skin.rs
+90	22	orient	model	model		2026-11-04T12:21:24Z	5.2	
+90	23	orient	tool	shell	bash	2026-11-04T12:21:29Z	0.0	Checking meter constants, system registration, a11y Wanted :: cd /home/ladvien/bevy_gooey_loop; grep -n "METER_MIN_TEXT_SIZES\|meter_height" src/skin.rs | head; grep -n "fn update_progress\|update_progress\|update_cooldown
+90	24	orient	model	model		2026-11-04T12:21:29Z	26.0	
+90	25	orient	tool	shell	bash	2026-11-04T12:21:55Z	0.0	Reading access actions, feedback and observe helper :: cd /home/ladvien/bevy_gooey_loop; grep -n "Click\|struct Handles\|button\b" src/access_actions.rs | head -40; sed -n 36,64p src/feedback.rs; grep -n "pub fn obs
+90	26	orient	model	model		2026-11-04T12:21:55Z	1.6	
+90	27	orient	tool	shell	bash	2026-11-04T12:21:57Z	0.0	Reading access_actions :: cd /home/ladvien/bevy_gooey_loop; sed -n 30,240p src/access_actions.rs; grep -rn "fn observe" src | head
+90	28	orient	model	model		2026-11-04T12:21:57Z	4.5	
+90	29	research	tool	phase mark	bash	2026-11-04T12:22:01Z	0.2	Preflight home-still :: cd /home/ladvien/bevy_gooey_loop; timeout 60 hs status 2>&1 | head -15; python3 ~/.local/share/wiggum/steps.py mark research
+90	30	research	model	model		2026-11-04T12:22:01Z	5.0	
+90	31	research	tool	shell	bash	2026-11-04T12:22:06Z	0.0	noop :: echo
+90	32	research	tool	web	web_search	2026-11-04T12:22:06Z	11.0	Finding hold-input accessibility source :: Game Accessibility Guidelines "button holds" avoid or allow toggle instead of holding down buttons
+90	33	research	tool	web	web_search	2026-11-04T12:22:06Z	12.2	Finding XAG / WCAG pointer cancellation source :: Xbox Accessibility Guideline 107 input "hold" alternatives; Understanding SC 2.5.2 Pointer Cancellation w3.org
+90	34	research	model	model		2026-11-04T12:22:18Z	6.6	
+90	35	research	tool	read files	read	2026-11-04T12:22:25Z	0.4	Read GAG quote :: https://gameaccessibilityguidelines.com/avoid-provide-alternatives-to-requiring-buttons-to-be-held-down/
+90	36	research	tool	read files	read	2026-11-04T12:22:25Z	0.5	Read XAG 107 quote :: https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/107
+90	37	research	tool	web	web_search	2026-11-04T12:22:25Z	16.5	Finding shipping-game hold prompt source :: "hold to confirm" game UI design destructive action press and hold button pattern fill feedback shipped games Hades Resident Evil prompt
+90	38	research	model	model		2026-11-04T12:22:42Z	5.8	
+90	39	research	tool	shell	bash	2026-11-04T12:22:47Z	0.1	Checking research note format :: cd /home/ladvien/bevy_gooey_loop; grep -n "^## \|^### " docs/research/cooldown.md; sed -n 1,25p docs/research/cooldown.md | cut -c1-300
+90	40	research	model	model		2026-11-04T12:22:47Z	26.9	
+90	41	research	tool	edit files	write	2026-11-04T12:23:14Z	0.0	docs/research/hold-button.md
+90	42	build	tool	phase mark	bash	2026-11-04T12:23:14Z	0.2	Commit research; look at plugin registration :: cd /home/ladvien/bevy_gooey_loop; git checkout -q -b loop/iter-62 && git add docs/research/hold-button.md && git commit -qm "Research: hold-to-confirm button" &
+90	43	build	model	model		2026-11-04T12:23:14Z	6.1	
+90	44	build	tool	shell	bash	2026-11-04T12:23:21Z	0.0	Reading Nav plugin build :: cd /home/ladvien/bevy_gooey_loop; grep -n "GooeyNavPlugin" src/lib.rs | head; grep -n "impl Plugin for GooeyNavPlugin" -A90 src/lib.rs | head -130
+90	45	build	model	model		2026-11-04T12:23:21Z	5.3	
+90	46	build	tool	shell	bash	2026-11-04T12:23:26Z	0.0	Reading pointer observer patterns :: cd /home/ladvien/bevy_gooey_loop; grep -n "fn divider_on_press" -B2 -A16 src/split.rs; grep -n "fn divider_on_release\|fn divider_on_cancel" -A12 src/split.rs |
+90	47	build	model	model		2026-11-04T12:23:26Z	39.4	
+90	48	build	tool	shell	bash	2026-11-04T12:24:05Z	0.0	Locating Role enum variants and meter arms :: cd /home/ladvien/bevy_gooey_loop; grep -n "MeterTrail\|Cooldown\b" src/skin.rs | head -30; grep -n "let line\b\|let line =" src/skin.rs | head -5
+90	49	build	model	model		2026-11-04T12:24:05Z	2.4	
+90	50	build	tool	shell	bash	2026-11-04T12:24:08Z	0.0	Reading skin role enum and arms :: cd /home/ladvien/bevy_gooey_loop; sed -n 1385,1400p src/skin.rs; sed -n 1600,1620p src/skin.rs; sed -n 2400,2412p src/skin.rs; sed -n 2455,2465p src/skin.rs; se
+90	51	build	model	model		2026-11-04T12:24:08Z	5.5	
+90	52	build	tool	read files	read	2026-11-04T12:24:13Z	0.0	Fresh tag for skin edits :: src/skin.rs:1393-1396,2407-2407,2461-2462,2699-2706,3038-3052
+90	53	build	model	model		2026-11-04T12:24:13Z	6.3	
+90	54	build	tool	edit files	edit	2026-11-04T12:24:20Z	0.3	Adding HoldTrack/HoldFill roles to skin arms :: [src/skin.rs#F573] PUT >1395: + /// The track under a [`crate::hold_button`]'s label: a [`Role::Meter`]'s frame and height with + /// no least width, so the but
+90	55	build	model	model		2026-11-04T12:24:20Z	4.9	
+90	56	build	tool	edit files	edit	2026-11-04T12:24:25Z	0.1	Adding HoldTrack/HoldFill roles to skin arms :: [src/skin.rs#F573] PUT >1395: + /// The track under a [`crate::hold_button`]'s label: a [`Role::Meter`]'s frame and height with + /// no least width, so the but
+90	57	build	model	model		2026-11-04T12:24:25Z	4.3	
+90	58	build	tool	shell	bash	2026-11-04T12:24:29Z	0.0	Reading model cooldown placement and lib mods :: cd /home/ladvien/bevy_gooey_loop; grep -n "pub fn cooldown_sweep" -B6 -A12 src/model.rs; grep -n "^pub const COOLDOWN" src/model.rs; sed -n 196,215p src/access.
+90	59	build	model	model		2026-11-04T12:24:29Z	3.3	
+90	60	build	tool	shell	bash	2026-11-04T12:24:33Z	0.0	Locating insertion point :: cd /home/ladvien/bevy_gooey_loop; grep -n "^\[src" /dev/null; sed -n 2158,2159p src/model.rs; grep -n "mod tests" src/model.rs | head -2
+90	61	build	tool	read files	read	2026-11-04T12:24:33Z	0.1	Get model tag :: src/model.rs:2157-2159
+90	62	build	tool	read files	read	2026-11-04T12:24:33Z	0.1	Get access tag :: src/access.rs:208-211
+90	63	build	model	model		2026-11-04T12:24:33Z	4.6	
+90	64	build	tool	shell	bash	2026-11-04T12:24:37Z	0.0	Verify list is Hidden :: cd /home/ladvien/bevy_gooey_loop; sed -n 214,226p src/access.rs
+90	65	build	model	model		2026-11-04T12:24:37Z	8.6	
+90	66	build	tool	edit files	edit	2026-11-04T12:24:46Z	0.0	Add hold maths and access spec :: [src/model.rs#36BE] PUT >2158: +/// How many times faster a hold's bar unwinds than it filled: committing is deliberate, backing out +/// is free. A design defa
+90	67	build	model	model		2026-11-04T12:24:46Z	5.2	
+90	68	build	tool	shell	bash	2026-11-04T12:24:51Z	0.0	Reading MotionSettings pattern :: cd /home/ladvien/bevy_gooey_loop; sed -n 1,70p src/motion.rs; grep -n "MotionSettings" src/lib.rs | head
+90	69	build	model	model		2026-11-04T12:24:51Z	8.1	
+90	70	build	tool	shell	bash	2026-11-04T12:24:59Z	0.0	Checking private required component visibility :: cd /home/ladvien/bevy_gooey_loop; grep -n "struct MeterMotion\|struct ProblemRoom\|struct TableCache" -B4 src/meter.rs src/field.rs src/table.rs | head -30; gre
+90	71	build	model	model		2026-11-04T12:24:59Z	27.0	
+90	72	build	tool	edit files	write	2026-11-04T12:25:26Z	0.0	Writing hold.rs :: src/hold.rs
+90	73	build	model	model		2026-11-04T12:25:26Z	10.2	
+90	74	build	tool	shell	bash	2026-11-04T12:25:36Z	0.1	Fix hold.rs structure with a scripted rewrite of my own new file :: cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' import re p='src/hold.rs' s=open(p).read() # remove tail note i=s.index("/// Shows focus when a hold starts 
+90	75	build	model	model		2026-11-04T12:25:36Z	4.8	
+90	76	build	tool	read files	read	2026-11-04T12:25:41Z	0.0	Tag for widgets edit :: src/widgets.rs:300-315
+90	77	build	model	model		2026-11-04T12:25:41Z	9.3	
+90	78	build	tool	edit files	edit	2026-11-04T12:25:51Z	0.0	Add hold_button builder :: [src/widgets.rs#8923] PUT >315: +/// A button that confirms only when it is held, for an act the player cannot take back (delete a +/// save, quit without savin
+90	79	build	tool	shell	bash	2026-11-04T12:25:51Z	0.0	Check import sites :: cd /home/ladvien/bevy_gooey_loop; sed -n 24,28p src/widgets.rs; grep -n "^use crate::meter\|^use crate::icon" src/widgets.rs; sed -n 200,215p src/lib.rs; sed -n
+90	80	build	model	model		2026-11-04T12:25:51Z	2.6	
+90	81	build	tool	shell	bash	2026-11-04T12:25:53Z	0.0	Anchor lines for lib edits :: cd /home/ladvien/bevy_gooey_loop; grep -n "pub use icon\|pub use list\|^pub use choice\|pub use feedback" src/lib.rs; grep -n "^use crate::dock::Dock;" src/widg
+90	82	build	tool	read files	read	2026-11-04T12:25:53Z	0.0	lib tags :: src/lib.rs:146-148,213-214,218-221,364-364,562-563,619-622
+90	83	build	model	model		2026-11-04T12:25:53Z	6.1	
+90	84	build	tool	read files	read	2026-11-04T12:25:59Z	0.0	lib tags for style plugin :: src/lib.rs:455-459,466-470,487-488
+90	85	build	model	model		2026-11-04T12:25:59Z	2.9	
+90	86	build	tool	edit files	edit	2026-11-04T12:26:02Z	0.0	Wire hold into lib :: [src/lib.rs#F40C] PUT >147: +mod hold; PUT >214: +pub use hold::{ + HoldConfirmed, HoldProgress, HoldSettings, HoldToConfirm, hold_by_input, update_hold_bars, +
+90	87	build	model	model		2026-11-04T12:26:02Z	6.6	
+90	88	build	tool	cargo build	bash	2026-11-04T12:26:09Z	0.9	Wire access and imports, then check :: cd /home/ladvien/bevy_gooey_loop; python3 - <<'EOF' p='src/access_actions.rs' s=open(p).read() s=s.replace(" button: Has<Button>,\n"," button: Has<Button>,\n ho
+90	89	build	model	model		2026-11-04T12:26:10Z	3.5	
+90	90	build	tool	cargo build	bash	2026-11-04T12:26:13Z	36.6	Check lib compile :: cd /home/ladvien/bevy_gooey_loop; env | grep -i "CARGO\|RUSTC" ; export CARGO_BUILD_RUSTC_WRAPPER= ; CARGO_BUILD_JOBS=4 cargo check --all-features --lib 2>&1 | 
+90	91	build	model	model		2026-11-04T12:26:50Z	3.2	
+90	92	build	tool	read files	read	2026-11-04T12:26:53Z	0.1	Tag for fix :: src/widgets.rs:353-357
+90	93	build	model	model		2026-11-04T12:26:53Z	2.6	
+90	94	build	tool	edit files	edit	2026-11-04T12:26:56Z	0.0	Use accesskit crate directly :: [src/widgets.rs#1931] PUT 354.=356: + bevy::a11y::AccessibilityNode(accesskit::Node::new(accesskit::Role::Button)),
+90	95	build	tool	cargo build	bash	2026-11-04T12:26:56Z	12.6	Re-check :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; CARGO_BUILD_JOBS=4 cargo check --all-features --lib 2>&1 | tail -40
+90	96	build	model	model		2026-11-04T12:27:08Z	4.6	
+90	97	build	tool	shell	bash	2026-11-04T12:27:13Z	0.0	Find widgets re-export :: cd /home/ladvien/bevy_gooey_loop; grep -n "pub use widgets::" -A12 src/lib.rs | head -30
+90	98	build	model	model		2026-11-04T12:27:13Z	1.8	
+90	99	build	tool	edit files	edit	2026-11-04T12:27:15Z	0.0	Re-export hold_button :: [src/lib.rs#F1FB] PUT 316.=316: + heading, hold_button, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, + menu_title,
+90	100	build	model	model		2026-11-04T12:27:15Z	3.0	
+90	101	build	tool	edit files	edit	2026-11-04T12:27:18Z	0.0	Re-export hold_button :: [src/lib.rs#F1FB] PUT 316.=316: + heading, hold_button, icon, icon_button, interface_size, label, list, menu, menu_bar, menu_item, + menu_title,
+90	102	build	tool	cargo build	bash	2026-11-04T12:27:18Z	4.2	Check and view test template :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; cargo fmt; CARGO_BUILD_JOBS=4 cargo check --all-features --lib 2>&1 | tail -20; ls tests |
+90	103	build	model	model		2026-11-04T12:27:22Z	5.1	
+90	104	build	tool	shell	bash	2026-11-04T12:27:27Z	0.0	Study test helpers :: cd /home/ladvien/bevy_gooey_loop; sed -n 60,140p tests/cooldown.rs; grep -n "fn press_key\|fn release_key\|fn plug\|fn pad_press\|fn pad_release\|fn move_pointe
+90	105	build	model	model		2026-11-04T12:27:27Z	1.9	
+90	106	build	tool	shell	bash	2026-11-04T12:27:29Z	0.0	Study pointer/gamepad test helpers :: cd /home/ladvien/bevy_gooey_loop; sed -n 180,330p tests/split.rs; grep -n "fn key\|fn press\|KeyboardInput" tests/split.rs | head
+90	107	build	model	model		2026-11-04T12:27:29Z	3.2	
+90	108	build	tool	shell	bash	2026-11-04T12:27:32Z	0.0	More helper detail :: cd /home/ladvien/bevy_gooey_loop; sed -n 1,40p tests/split.rs; grep -n "^fn rect" -A14 tests/split.rs; grep -n "InteractionDisabled" tests/choice.rs | head -3; 
+90	109	build	model	model		2026-11-04T12:27:32Z	14.0	
+90	110	build	tool	shell	bash	2026-11-04T12:27:46Z	0.0	See how access tests send actions; app builder :: cd /home/ladvien/bevy_gooey_loop; grep -n "ActionRequest" tests/access.rs | head -5; grep -n "fn request" -A22 tests/access.rs | head -40; sed -n 40,100p tests/
+90	111	build	model	model		2026-11-04T12:27:46Z	1.6	
+90	112	build	tool	shell	bash	2026-11-04T12:27:48Z	0.0	Read access action send :: cd /home/ladvien/bevy_gooey_loop; sed -n 675,710p tests/access.rs
+90	113	build	model	model		2026-11-04T12:27:48Z	44.9	
+90	114	build	tool	edit files	write	2026-11-04T12:28:33Z	0.0	Writing hold tests :: tests/hold.rs
+90	115	build	tool	cargo test	bash	2026-11-04T12:28:33Z	60.0	[launched bg_1] Register tests and run them :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; sed -i 's/^mod icon;$/mod hold;\nmod icon;/' tests/all.rs && grep -n "mod hold\|mod icon" 
+90	116	build	model	model		2026-11-04T12:29:33Z	3.7	
+90	117	build	tool	shell	bash	2026-11-04T12:29:37Z	0.1	Read options example as capture template :: cd /home/ladvien/bevy_gooey_loop; wc -l examples/hotbar.rs examples/options.rs examples/states.rs; sed -n 1,200p examples/options.rs
+90	118	build	model	model		2026-11-04T12:29:37Z	2.1	
+90	119	build	tool	shell	bash	2026-11-04T12:29:39Z	0.0	Read rest of example template and media listing :: cd /home/ladvien/bevy_gooey_loop; sed -n 200,286p examples/options.rs; ls docs/media | head -60; grep -n "cooldown\|hotbar" docs/media/README.md | head
+90	120	build	model	model		2026-11-04T12:29:39Z	17.4	
+90	121	build	tool	shell	bash	2026-11-04T12:29:56Z	0.0	Look at choice signature and hotbar clock :: cd /home/ladvien/bevy_gooey_loop; grep -n "pub fn choice" -B22 -A3 src/widgets.rs | head -50; grep -n "TimeUpdateStrategy" examples/hotbar.rs
+90	122	build	model	model		2026-11-04T12:29:56Z	20.8	
+90	123	build	tool	edit files	write	2026-11-04T12:30:17Z	0.0	Writing hold example :: examples/hold.rs
+90	124	build	model	model		2026-11-04T12:30:17Z	3.7	
+90	125	build	tool	shell	bash	2026-11-04T12:30:21Z	0.2	Check example registration :: cd /home/ladvien/bevy_gooey_loop; grep -n "example" Cargo.toml | head
+90	126	build	tool	wait: tests	wait	2026-11-04T12:30:21Z	78.1	Waiting for test run
+90	127	build	model	model		2026-11-04T12:31:39Z	5.1	
+90	128	build	tool	search	grep	2026-11-04T12:31:44Z	0.0	Locate feedback counter :: tests/hold.rs
+90	129	build	model	model		2026-11-04T12:31:44Z	2.8	
+90	130	build	tool	edit files	edit	2026-11-04T12:31:47Z	0.0	Count only Activate feedback :: [tests/hold.rs#C6E4] PUT 73.=73: + heard.feedback += feedback + .read() + .filter(|f| f.kind == UiFeedbackKind::Activate) + .count();
+90	131	build	tool	cargo test	bash	2026-11-04T12:31:47Z	20.3	Rerun hold tests :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; cargo fmt; CARGO_BUILD_JOBS=4 cargo nextest run --all-features -E 'test(hold::)' 2>&1 | gr
+90	132	build	model	model		2026-11-04T12:32:07Z	6.0	
+90	133	build	tool	cargo test	bash	2026-11-04T12:32:13Z	60.1	[launched bg_2] Mutation checks on hold logic :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; cp src/hold.rs /tmp/hold.rs.orig run() { CARGO_BUILD_JOBS=4 cargo nextest run --all-featur
+90	134	build	model	model		2026-11-04T12:33:13Z	4.7	
+90	135	build	tool	shell	bash	2026-11-04T12:33:18Z	0.1	Check doc places :: cd /home/ladvien/bevy_gooey_loop; wc -l README.md; grep -n -i "cooldown" README.md CHANGELOG.md docs/guide/*.md | cut -c1-260 | head -20; ls docs/guide; sed -n 
+90	136	build	model	model		2026-11-04T12:33:18Z	3.4	
+90	137	build	tool	shell	bash	2026-11-04T12:33:21Z	0.1	README gif blocks and the cooldown bullet :: cd /home/ladvien/bevy_gooey_loop; grep -n "gif" README.md | cut -c1-160; sed -n 146,152p README.md | cut -c1-900
+90	138	build	tool	wait: other	wait	2026-11-04T12:33:21Z	416.7	Waiting for mutation run
+90	139	build	model	model		2026-11-04T12:40:18Z	4.8	
+90	140	build	tool	shell	bash	2026-11-04T12:40:23Z	0.1	Check baseline gallery binary and display :: cd /home/ladvien/bevy_gooey_loop; mkdir -p /tmp/g62/before /tmp/g62/after; ls -la $CARGO_TARGET_DIR/release/examples/gallery 2>&1 | head -2; git log -1 --format
+90	141	build	model	model		2026-11-04T12:40:23Z	6.1	
+90	142	prove	tool	phase mark	bash	2026-11-04T12:40:29Z	0.0	[launched bg_3] Build baseline and new examples :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; python3 ~/.local/share/wiggum/steps.py mark prove; SHA=$(git rev-parse main); git worktree
+90	143	prove	model	model		2026-11-04T12:40:29Z	4.5	
+90	144	prove	tool	shell	bash	2026-11-04T12:40:34Z	0.0	Read guide template :: cd /home/ladvien/bevy_gooey_loop; cat docs/guide/cooldowns.md | cut -c1-400; sed -n 55,62p docs/guide/README.md
+90	145	prove	model	model		2026-11-04T12:40:34Z	2.8	
+90	146	prove	tool	wait: build	wait	2026-11-04T12:40:36Z	909.8	Waiting for example builds
+90	147	prove	model	model		2026-11-04T12:55:46Z	12.0	
+90	148	prove	tool	shell	bash	2026-11-04T12:55:58Z	7.4	Capture the hold example frames :: cd /tmp/g62; export DISPLAY=:93; mkdir -p frames; rm -f frames/*; cd /tmp/g62; GOOEY_FRAMES=215 GOOEY_SHOT=/tmp/g62/after/hold-end.png GOOEY_SHOT_DIR=/tmp/g62/f
+90	149	prove	model	model		2026-11-04T12:56:05Z	4.0	
+90	150	prove	tool	shell	bash	2026-11-04T12:56:09Z	0.5	Build contact sheet :: cd /tmp/g62/frames; ls | head -3; magick f_0001.png -format "%wx%h" info:; magick montage f_0001.png f_0010.png f_0014.png f_0020.png f_0030.png f_0040.png f_00
+90	151	prove	tool	read files	read	2026-11-04T12:56:09Z	0.5	View contact sheet :: /tmp/g62/after/sheet.png
+90	152	prove	model	model		2026-11-04T12:56:10Z	2.0	
+90	153	prove	tool	shell	bash	2026-11-04T12:56:12Z	0.4	Retry montage :: cd /tmp/g62/frames; magick montage f_0001.png f_0010.png f_0014.png f_0020.png f_0030.png f_0040.png f_0060.png f_0075.png f_0092.png -tile 3x3 -geometry 640x36
+90	154	prove	model	model		2026-11-04T12:56:12Z	1.4	
+90	155	prove	tool	read files	read	2026-11-04T12:56:14Z	0.2	View contact sheet :: /tmp/g62/after/sheet.png
+90	156	prove	model	model		2026-11-04T12:56:14Z	6.1	
+90	157	prove	tool	shell	bash	2026-11-04T12:56:20Z	0.2	Zoom crops :: cd /tmp/g62/frames; magick f_0030.png -crop 420x230+430+20 +repage -filter point -resize 300% /tmp/g62/after/zoom30.png; magick f_0001.png -crop 420x230+430+20 
+90	158	prove	tool	read files	read	2026-11-04T12:56:20Z	0.2	View zoom of holding state :: /tmp/g62/after/zoom30.png
+90	159	prove	model	model		2026-11-04T12:56:20Z	4.2	
+90	160	prove	tool	read files	read	2026-11-04T12:56:24Z	0.0	View zoom of holding state :: /tmp/g62/after/zoom30.png
+90	161	prove	model	model		2026-11-04T12:56:24Z	4.7	
+90	162	prove	tool	shell	bash	2026-11-04T12:56:29Z	0.1	Zoom crop panel :: cd /tmp/g62/frames; magick f_0030.png -crop 500x330+390+25 +repage -filter point -resize 200% /tmp/g62/after/zoom30b.png; ls -la /tmp/g62/after/zoom30b.png
+90	163	prove	tool	read files	read	2026-11-04T12:56:29Z	0.1	View zoom :: /tmp/g62/after/zoom30b.png
+90	164	prove	model	model		2026-11-04T12:56:29Z	3.5	
+90	165	prove	tool	read files	read	2026-11-04T12:56:33Z	0.0	View zoom :: /tmp/g62/after/zoom30b.png
+90	166	prove	model	model		2026-11-04T12:56:33Z	6.6	
+90	167	prove	tool	shell	bash	2026-11-04T12:56:39Z	10.5	Capture across skins and large text :: cd /tmp/g62; export DISPLAY=:93; for v in "dark 1.0" "parchment 1.0" "high_contrast 1.0" "tool 1.0" "dark 2.0"; do set -- $v; GOOEY_SKIN=$1 GOOEY_TEXT_SCALE=$2 
+90	168	prove	model	model		2026-11-04T12:56:50Z	2.2	
+90	169	prove	tool	read files	read	2026-11-04T12:56:52Z	0.0	View skins :: /tmp/g62/after/skins.png
+90	170	prove	tool	read files	read	2026-11-04T12:56:52Z	0.0	View 200% text :: /tmp/g62/after/large.png
+90	171	prove	model	model		2026-11-04T12:56:52Z	6.9	
+90	172	prove	tool	edit files	edit	2026-11-04T12:56:59Z	0.0	Fix status wording :: [examples/hold.rs#225A] PUT 183.=183: + status.0 = format!("Deleted: {}", deleted.0);
+90	173	prove	tool	shell	bash	2026-11-04T12:56:59Z	50.7	Frame time comparison, alternating :: cd /tmp/g62; export DISPLAY=:93; for i in 1 2 3; do for w in before after; do printf "$w "; GOOEY_FRAMES=240 GOOEY_HEALTH=60 GOOEY_SHOT=/tmp/g62/$w/gal-$i.png t
+90	174	prove	model	model		2026-11-04T12:57:50Z	3.9	
+90	175	prove	tool	read files	read	2026-11-04T12:57:54Z	0.1	Repair damaged lines :: examples/hold.rs:176-194
+90	176	prove	model	model		2026-11-04T12:57:54Z	2.1	
+90	177	prove	tool	edit files	edit	2026-11-04T12:57:56Z	0.0	Repair observer closure and wording :: [examples/hold.rs#08AE] PUT 183.=187: + |_: On<HoldConfirmed>, + mut deleted: ResMut<Deleted>, + mut status: Single<&mut Text, With<Status>>| { + deleted.0 += 1
+90	178	prove	model	model		2026-11-04T12:57:56Z	5.3	
+90	179	prove	tool	cargo build	bash	2026-11-04T12:58:01Z	0.0	[launched bg_4] Rebuild hold example :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; CARGO_BUILD_JOBS=4 cargo build --release --example hold 2>&1 | tail -2 && cp $CARGO_TARGET
+90	180	prove	tool	shell	bash	2026-11-04T12:58:01Z	0.0	Study media README row :: cd /home/ladvien/bevy_gooey_loop; grep -n "cooldown.gif" docs/media/README.md | cut -c1-40; sed -n 5,10p docs/media/README.md | cut -c1-200; sed -n 61p docs/med
+90	181	prove	model	model		2026-11-04T12:58:01Z	5.1	
+90	182	prove	tool	wait: build	wait	2026-11-04T12:58:06Z	0.0	Wait for example rebuild
+90	183	prove	model	model		2026-11-04T12:58:06Z	5.7	
+90	184	prove	tool	clip record/render	bash	2026-11-04T12:58:12Z	12.5	Record GIF frames and encode :: cd /tmp/g62; export DISPLAY=:93; rm -rf frames crop; mkdir -p frames crop; GOOEY_FRAMES=200 GOOEY_SHOT=/tmp/g62/after/hold-end.png GOOEY_SHOT_DIR=/tmp/g62/frame
+90	185	prove	model	model		2026-11-04T12:58:24Z	3.6	
+90	186	prove	tool	shell	bash	2026-11-04T12:58:28Z	1.2	Contact sheet of GIF frames :: cd /tmp/g62/crop; magick montage f_0012.png f_0034.png f_0045.png f_0060.png f_0070.png f_0086.png -tile 3x2 -geometry +4+4 ../after/gifsheet.png; sleep 1; ls -
+90	187	prove	model	model		2026-11-04T12:58:29Z	1.5	
+90	188	prove	tool	read files	read	2026-11-04T12:58:31Z	0.2	View gif frames :: /tmp/g62/after/gifsheet.png
+90	189	prove	model	model		2026-11-04T12:58:31Z	6.5	
+90	190	prove	tool	clip record/render	bash	2026-11-04T12:58:38Z	24.5	Re-record GIF with taller crop :: cd /tmp/g62; export DISPLAY=:93; rm -rf frames crop; mkdir -p frames crop; GOOEY_FRAMES=215 GOOEY_SHOT=/tmp/g62/after/hold-end.png GOOEY_SHOT_DIR=/tmp/g62/frame
+90	191	prove	model	model		2026-11-04T12:59:02Z	2.9	
+90	192	prove	tool	read files	read	2026-11-04T12:59:05Z	0.0	View last frame :: /tmp/g62/crop/f_0093.png
+90	193	prove	model	model		2026-11-04T12:59:05Z	8.2	
+90	194	prove	tool	shell	bash	2026-11-04T12:59:13Z	0.0	Copy GIF, write critique, find lib docs :: cd /home/ladvien/bevy_gooey_loop; cp /tmp/g62/after/hold.gif docs/media/hold.gif; cat > /tmp/g62/critique.md <<'EOF' # Critique, iteration 62: hold_button At zo
+90	195	prove	model	model		2026-11-04T12:59:13Z	2.2	
+90	196	prove	tool	shell	bash	2026-11-04T12:59:15Z	0.0	Read crate docs widget list and model re-exports :: cd /home/ladvien/bevy_gooey_loop; sed -n 14,30p src/lib.rs; sed -n 236,252p src/lib.rs
+90	197	prove	model	model		2026-11-04T12:59:15Z	5.9	
+90	198	prove	tool	read files	read	2026-11-04T12:59:21Z	0.0	Tag for lib docs edit :: src/lib.rs:14-15,236-236
+90	199	prove	model	model		2026-11-04T12:59:21Z	2.3	
+90	200	prove	tool	edit files	edit	2026-11-04T12:59:24Z	0.0	Document and export hold maths :: [src/lib.rs#47AE] PUT 14.=14: +//! - The widgets — [`screen`], [`panel`], [`menu`], [`heading`], [`label`], [`button`], +//! [`hold_button`] (a button confirmed
+90	201	prove	model	model		2026-11-04T12:59:24Z	12.7	
+90	202	prove	tool	edit files	write	2026-11-04T12:59:36Z	0.0	docs/guide/hold-buttons.md
+90	203	prove	tool	shell	bash	2026-11-04T12:59:36Z	0.0	Anchor lines for doc inserts :: cd /home/ladvien/bevy_gooey_loop; sed -n 59,61p docs/guide/README.md | cut -c1-80; head -c 300 docs/media/README.md | head -4; sed -n 61p docs/media/README.md |
+90	204	prove	model	model		2026-11-04T12:59:36Z	5.0	
+90	205	prove	tool	shell	bash	2026-11-04T12:59:41Z	0.0	Check media README tail :: cd /home/ladvien/bevy_gooey_loop; sed -i 's/Enter held for two thirds of a second fills the bar to about a third and letting go empties it/Enter held for two th
+90	206	prove	model	model		2026-11-04T12:59:41Z	2.2	
+90	207	prove	tool	shell	bash	2026-11-04T12:59:44Z	0.0	Locate row insertion point :: cd /home/ladvien/bevy_gooey_loop; sed -n 62,64p docs/media/README.md | cut -c1-80; grep -n "^| \`world-anchor.gif\`" docs/media/README.md | cut -c1-30
+90	208	prove	tool	read files	read	2026-11-04T12:59:44Z	0.0	Tag for media README :: docs/media/README.md:61-61
+90	209	prove	model	model		2026-11-04T12:59:44Z	3.2	
+90	210	prove	tool	shell	bash	2026-11-04T12:59:47Z	0.0	See row tail :: cd /home/ladvien/bevy_gooey_loop; sed -n 61p docs/media/README.md | cut -c768-2200; sed -n 13p docs/media/README.md
+90	211	prove	model	model		2026-11-04T12:59:47Z	6.7	
+90	212	prove	tool	clip record/render	bash	2026-11-04T12:59:53Z	0.6	Re-encode GIF with -loop 0 :: cd /tmp/g62; ffmpeg -loglevel error -y -framerate 15 -pattern_type glob -i 'crop/f_*.png' -vf "fps=15,scale=780:-1:flags=lanczos,split[a][b];[a]palettegen=stats
+90	213	prove	tool	edit files	edit	2026-11-04T12:59:54Z	0.0	Add media README row :: [docs/media/README.md#17AA] PUT >61: +| `hold.gif` | hold buttons (6.5 s, 780×558, 97 frames, 92 KB, a 520×372 crop of `examples/hold` at 1.5x): a "Save slot 2"
+90	214	prove	model	model		2026-11-04T12:59:54Z	2.8	
+90	215	prove	tool	read files	read	2026-11-04T12:59:57Z	0.0	Raw read to enable anchored edit :: docs/media/README.md:61:raw
+90	216	prove	model	model		2026-11-04T12:59:57Z	4.3	
+90	217	prove	tool	edit files	edit	2026-11-04T13:00:01Z	0.0	Add media README row :: [docs/media/README.md#17AA] PUT >61: +| `hold.gif` | hold buttons (6.5 s, 780×558, 97 frames, 92 KB, a 520×372 crop of `examples/hold` at 1.5x): a "Save slot 2"
+90	218	prove	model	model		2026-11-04T13:00:01Z	4.5	
+90	219	prove	tool	read files	read	2026-11-04T13:00:06Z	0.0	tag for guide index :: docs/guide/README.md:59-61
+90	220	prove	tool	read files	read	2026-11-04T13:00:06Z	0.0	tag for changelog :: CHANGELOG.md:3-4
+90	221	prove	model	model		2026-11-04T13:00:06Z	5.8	
+90	222	prove	tool	edit files	edit	2026-11-04T13:00:12Z	0.0	Guide index entry and changelog :: [docs/guide/README.md#8240] PUT >60: +- [Hold buttons](hold-buttons.md) — `hold_button("Hold to delete", 1.2)`: a button that confirms only when held (key, pad 
+90	223	prove	model	model		2026-11-04T13:00:12Z	3.8	
+90	224	prove	tool	edit files	edit	2026-11-04T13:00:15Z	0.0	Blank line before next release heading :: [CHANGELOG.md#E1CA] PUT >7: +
+90	225	prove	tool	read files	read	2026-11-04T13:00:15Z	0.0	raw README line :: README.md:150:raw
+90	226	prove	model	model		2026-11-04T13:00:15Z	1.4	
+90	227	prove	tool	read files	read	2026-11-04T13:00:17Z	0.0	tag for README edit :: README.md:150-150
+90	228	prove	model	model		2026-11-04T13:00:17Z	4.2	
+90	229	prove	tool	shell	bash	2026-11-04T13:00:21Z	0.0	Find a better README section :: cd /home/ladvien/bevy_gooey_loop; grep -n "confirm(" README.md | cut -c1-200
+90	230	prove	model	model		2026-11-04T13:00:21Z	1.6	
+90	231	prove	tool	read files	read	2026-11-04T13:00:23Z	0.0	Read confirm bullet :: README.md:125-127
+90	232	prove	model	model		2026-11-04T13:00:23Z	4.9	
+90	233	prove	tool	edit files	edit	2026-11-04T13:00:28Z	0.0	README mention of hold_button :: [README.md#0FCE] PUT 125.=125: + nearest widget, an open dialog holds it (`confirm("Leave?", "Progress is lost.", ["Leave", "Stay"])` is a whole one: the safe c
+90	234	prove	tool	shell	bash	2026-11-04T13:00:28Z	0.0	Check README length; find AGENTS anchor :: cd /home/ladvien/bevy_gooey_loop; wc -l README.md; grep -n "src/cooldown.rs" AGENTS.md | cut -c1-60; grep -n "^- \`src/popover.rs\`" AGENTS.md | cut -c1-40
+90	235	prove	model	model		2026-11-04T13:00:28Z	4.9	
+90	236	prove	tool	read files	read	2026-11-04T13:00:33Z	0.0	raw AGENTS line to anchor :: AGENTS.md:74:raw
+90	237	prove	model	model		2026-11-04T13:00:33Z	9.2	
+90	238	prove	tool	edit files	edit	2026-11-04T13:00:42Z	0.0	AGENTS.md hold entry :: [AGENTS.md#C3F4] PUT <74: +- `src/hold.rs` — `hold_button(label, seconds)` (`src/widgets.rs`): a `Role::Button` root (a column: `Role::ButtonText`, then a `Role
+90	239	prove	model	model		2026-11-04T13:00:42Z	6.5	
+90	240	prove	tool	edit files	edit	2026-11-04T13:00:48Z	0.1	AGENTS.md hold entry :: [AGENTS.md#F8FB] PUT <74: +- `src/hold.rs` — `hold_button(label, seconds)` (`src/widgets.rs`): a `Role::Button` root (a column: `Role::ButtonText`, then a `Role
+90	241	prove	model	model		2026-11-04T13:00:48Z	6.1	
+90	242	gate	tool	phase mark	bash	2026-11-04T13:00:54Z	0.0	[launched bg_5] Commit and run the full gate :: cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark gate; export CARGO_BUILD_RUSTC_WRAPPER= ; cargo fmt; git add src tests examples &&
+90	243	gate	model	model		2026-11-04T13:00:54Z	3.4	
+90	244	gate	tool	shell	bash	2026-11-04T13:00:58Z	0.0	Log length :: cd /home/ladvien/bevy_gooey_loop; wc -l docs/loop-log.md
+90	245	gate	model	model		2026-11-04T13:00:58Z	1.4	
+90	246	gate	tool	read files	read	2026-11-04T13:00:59Z	0.2	Tag for log append :: docs/loop-log.md:2326-2328
+90	247	gate	model	model		2026-11-04T13:00:59Z	2.9	
+90	248	gate	tool	wait: gate	wait	2026-11-04T13:01:02Z	189.2	Waiting for gate
+90	249	gate	model	model		2026-11-04T13:04:12Z	1.7	
+90	250	gate	tool	shell	bash	2026-11-04T13:04:13Z	0.0	Confirm gate results :: grep -E "^== |Summary|passed|FAILED|GATE|warning: unused|test result" /tmp/g62/gate.log | head -30
+90	251	gate	model	model		2026-11-04T13:04:13Z	5.1	
+90	252	ship	tool	phase mark	bash	2026-11-04T13:04:18Z	0.0	[launched bg_6] Semver check against v0.34.0 :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; python3 ~/.local/share/wiggum/steps.py mark ship; CARGO_BUILD_JOBS=4 cargo semver-checks -
+90	253	ship	model	model		2026-11-04T13:04:18Z	16.5	
+90	254	ship	tool	edit files	edit	2026-11-04T13:04:35Z	0.3	Append iteration 62 log entry :: [docs/loop-log.md#C6D9] PUT >2328: + +## Iteration 62 — 2026-11-04 — `hold_button`: a button that confirms only when held, and the setting that makes it a tap +
+90	255	ship	bg	phase mark	bash	2026-11-04T13:04:21Z	14.1	bg_6 completed: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; python3 ~/.local/share/wiggum/steps.py mark shi...
+90	256	ship	model	model		2026-11-04T13:04:35Z	5.0	
+90	257	ship	tool	push gate	bash	2026-11-04T13:04:40Z	2.5	Push branch and merge into main :: cd /home/ladvien/bevy_gooey_loop; git add docs/loop-log.md && git commit -qm "Loop log: iteration 62, hold_button" && git push -q -u origin loop/iter-62 2>&1 | 
+90	258	ship	model	model		2026-11-04T13:04:43Z	3.3	
+90	259	ship	tool	shell	bash	2026-11-04T13:04:46Z	0.0	Locate version strings :: cd /home/ladvien/bevy_gooey_loop; sed -n 3p Cargo.toml; sed -n 231p README.md; sed -n 3,6p CHANGELOG.md | cut -c1-60; grep -n 'name = "bevy_gooey"' -A1 Cargo.lo
+90	260	ship	model	model		2026-11-04T13:04:46Z	1.8	
+90	261	ship	tool	read files	read	2026-11-04T13:04:48Z	0.0	tag :: Cargo.toml:3-3
+90	262	ship	tool	read files	read	2026-11-04T13:04:48Z	0.0	tag :: README.md:231-231
+90	263	ship	tool	read files	read	2026-11-04T13:04:48Z	0.0	tag :: CHANGELOG.md:3-4
+90	264	ship	model	model		2026-11-04T13:04:48Z	3.4	
+90	265	ship	tool	edit files	edit	2026-11-04T13:04:51Z	0.0	Version bump edits :: [Cargo.toml#3BEE] PUT 3.=3: +version = "0.35.0" [README.md#5CB3] PUT 231.=231: +| 0.1 – 0.35 | 0.20 | [CHANGELOG.md#0063] PUT >4: +## [0.35.0] - 2026-11-04 +
+90	266	release	tool	phase mark	bash	2026-11-04T13:04:51Z	0.9	Check changelog shape, update lockfile :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; sed -n 3,9p CHANGELOG.md | cut -c1-70; python3 ~/.local/share/wiggum/steps.py mark release
+90	267	release	model	model		2026-11-04T13:04:52Z	2.8	
+90	268	release	tool	push gate	bash	2026-11-04T13:04:55Z	23.0	Commit release, push main, dry-run publish :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; git add Cargo.toml README.md CHANGELOG.md && git commit -qm "release: v0.35.0" && git push
+90	269	release	model	model		2026-11-04T13:05:18Z	2.1	
+90	270	release	tool	push gate	bash	2026-11-04T13:05:20Z	14.0	Publish, tag, verify :: cd /home/ladvien/bevy_gooey_loop; export CARGO_BUILD_RUSTC_WRAPPER= ; CARGO_BUILD_JOBS=4 cargo publish 2>&1 | tail -4; git tag -a v0.35.0 -m v0.35.0 && git push
+90	271	release	model	model		2026-11-04T13:05:34Z	3.4	
+90	272	log	tool	phase mark	bash	2026-11-04T13:05:37Z	0.4	Clean up my worktree and scratch :: cd /home/ladvien/bevy_gooey_loop; python3 ~/.local/share/wiggum/steps.py mark log; git worktree remove ~/g62_base 2>&1 | tail -1; rm -rf /tmp/g62 /tmp/hold.rs.o
+90	273	log	model	model		2026-11-04T13:05:38Z	4.2	
+90	274	log	tool	push gate	bash	2026-11-04T13:05:42Z	1.7	Log release and cleanup, push :: cd /home/ladvien/bevy_gooey_loop; cat >> docs/loop-log.md <<'EOF' **Gate (iteration 62).** `CARGO_BUILD_JOBS=4`, sccache off (`CARGO_BUILD_RUSTC_WRAPPER=`): fmt
+90	275	log	model	model		2026-11-04T13:05:44Z	7.6	
