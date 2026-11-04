@@ -35,6 +35,9 @@ use crate::color::{
 };
 use crate::dock::Dock;
 use crate::dock_layout::DockLayout;
+use crate::hold::{
+    HoldToConfirm, hold_on_cancel, hold_on_drag_end, hold_on_press, hold_on_release,
+};
 use crate::icon::{Icon, IconSource};
 use crate::list::ListView;
 use crate::menu::{MenuBar, MenuItem, MenuTitle, bar_on_cancel, menu_panel};
@@ -310,6 +313,57 @@ pub fn button(text: impl Into<String>) -> impl Bundle {
         TabIndex(0),
         AutoDirectionalNavigation::default(),
         children![(Text::new(text), Role::ButtonText)],
+    )
+}
+
+/// A button that confirms only when it is held, for an act the player cannot take back (delete a
+/// save, quit without saving, abandon a run). Hold Enter, Space or the pad's South while it has
+/// focus, or the primary pointer button while the pointer is over it, for `seconds`: a bar under
+/// the label fills at an even rate and, at the end, one [`crate::HoldConfirmed`] is sent. Letting
+/// go early (or the pointer leaving, or focus moving) confirms nothing and the bar unwinds four
+/// times as fast as it filled; a new press resumes from where it stands.
+///
+/// It is a [`button`] to the skin and sends no [`crate::Activate`]: observe
+/// [`crate::HoldConfirmed`]. A hold is a motor barrier (XAG 107), so the player can shorten it or
+/// replace it with a tap through [`crate::HoldSettings`], and a screen reader's Click confirms at
+/// once. Put what the button does in its label ("Hold to delete"): the bar is the only sign.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     hold_button("Hold to delete save", 1.2),
+///     observe(|_: On<HoldConfirmed>| info!("deleted")),
+/// ));
+/// # }
+/// ```
+pub fn hold_button(text: impl Into<String>, seconds: f32) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        HoldToConfirm { seconds },
+        Role::Button,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        bevy::a11y::AccessibilityNode(accesskit::Node::new(accesskit::Role::Button)),
+        observe(hold_on_press),
+        observe(hold_on_release),
+        observe(hold_on_drag_end),
+        observe(hold_on_cancel),
+        children![
+            (Text::new(text), Role::ButtonText),
+            (
+                Node::default(),
+                Role::HoldTrack,
+                children![(Node::default(), Role::HoldFill)]
+            )
+        ],
     )
 }
 
@@ -2693,7 +2747,7 @@ pub fn menu_title(label: impl Into<String>, items: impl Bundle) -> impl Bundle {
         Hovered::default(),
         TabIndex(0),
         AutoDirectionalNavigation::default(),
-        children![(Text::new(label), Role::ButtonText), menu_panel(items)],
+        children![(Text::new(label), Role::MenuTitleText), menu_panel(items)],
     )
 }
 

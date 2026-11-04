@@ -27,6 +27,7 @@ use bevy::ui_widgets::{
 
 use crate::choice::{ChoiceValue, Move, MoveChoice};
 use crate::color::{AreaStepBy, ColorArea};
+use crate::hold::{HoldConfirmed, HoldToConfirm};
 use crate::menu::{MenuItem, MenuOpen, MenuTitle};
 use crate::nav::show_focus;
 use crate::number::{NumberInput, NumberStepBy};
@@ -77,6 +78,7 @@ pub(crate) const TREE_BRANCH: &[Action] = &[Action::Expand, Action::Collapse];
 pub(crate) struct Handles {
     disabled: Has<InteractionDisabled>,
     button: Has<Button>,
+    hold: Has<HoldToConfirm>,
     checkbox: Has<Checkbox>,
     tab: Has<Tab>,
     slider: Has<Slider>,
@@ -107,7 +109,7 @@ pub(crate) fn actions_of(handles: &HandlesItem) -> &'static [Action] {
         SPIN
     } else if folds(handles) {
         FOLD
-    } else if handles.button || handles.checkbox || handles.tab {
+    } else if handles.button || handles.hold || handles.checkbox || handles.tab {
         PRESS
     } else if handles.stop {
         FOCUS
@@ -181,6 +183,9 @@ pub(crate) fn act_on_requests(
                     commands.trigger(ToggleChecked { entity });
                 } else if handles.tab {
                     select_tab(entity, &around, &mut commands);
+                } else if handles.hold {
+                    // A screen reader cannot hold: its Click is the deliberate act.
+                    commands.trigger(HoldConfirmed { entity });
                 } else {
                     commands.trigger(Activate { entity });
                 }

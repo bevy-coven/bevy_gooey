@@ -2300,3 +2300,61 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 60).** `cargo semver-checks --baseline-rev v0.32.4`: one major lint (`enum_variant_added`: `Role::Cooldown`, `Role::CooldownText`), so a minor bump pre-1.0: `release: v0.33.0` (README compatibility row `0.1 – 0.33`), published (https://crates.io/crates/bevy_gooey/0.33.0), tag `v0.33.0` pushed.
 
 **Cleanup (iteration 60).** Removed this pass's own `/tmp/g60` (captures, frames, GIF crops, gallery binaries, gate and mutation scripts, logs) and the baseline worktree `~/g60_base` (`git worktree remove`, no `*-target` of its own: it built into the loop's shared `CARGO_TARGET_DIR`). The loop's Xvfb is `:99` (my `:93` start failed, nothing left running). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`; `/home` at 126 GB free, under the loop's 150 GB floor.
+
+## Iteration 61 — 2026-11-04 — `Role::MenuTitleText`: a bar title's words are not a button's
+
+**Triage.** Last audit row (pass 88): nothing missing (`-`). One open issue, #39 (`G-35`, `consumer:bevy_grimoire`, `grimoire-ui`): `menu_title` spawned its words as `Role::ButtonText`, so a host counting `ButtonText` for a dialog's answers counted a menu bar's titles too. A request, not a bug of look; it outranks any candidate of my own. #38 is closed or absent from the open list. Parked branches: only the old `wiggum/parked-pass-23-…`, stale, ignored. home-still and the research step skipped: the change is a role rename with identical styling, and the issue's design (`Role::MenuTitleText` styled as `ButtonText`) is the decided form, so no new research note.
+
+**What changed.** `Role::MenuTitleText` (new variant, after `MenuTitle`); `menu_title` uses it; `apply_skin` styles it in the same arm as `ButtonText` (`Role::ButtonText | Role::MenuTitleText`, so colour, size, font and the `SkinScope` path are one code path), plus the fill list; `access.rs` classifies it `Spec::Hidden` and counts it in `names`, so a title's accessible name is unchanged. A submenu row was never a title (it stays a `MenuText` row).
+
+**Tests** (`tests/menu.rs`, one new, mutation-checked: `menu_title` back on `ButtonText` fails it with "a bar holds a ButtonText"): `a_bar_titles_words_are_not_a_buttons_but_look_like_one`, in all four presets: a bar with a title and a loose `button("Answer")` has exactly one `ButtonText` in the world (the button's), none under the bar, and the title's `TextColor` and `TextFont::font_size` equal the button's. The menu tests' `title()` helper and the contrast test now look the text up by the new role (`assumed owner exception`, no assertion changed). The access tests (names of every focus stop) and toolbar tests (the "More" title) pass unchanged.
+
+**Demo.** None: the change is not visible by construction (the same match arm), and the test above compares the ink and size.
+
+**Checklist and mean_ms.** Nothing on screen moved, so no capture comparison; no system or draw path changed.
+
+### Ranked backlog
+
+1. Whatever the host's debug output on #38 shows.
+2. A "ready" cue for `Cooldown` (a one-frame flash under `MotionSettings`), and a charges variant.
+3. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
+4. One keycap vocabulary for the shortcut badges and legend.
+5. A stronger cue for a lone fitting slot in a big grid, a locked-slot look, a stack-merge helper; motion for a scrim and card fade and a dialog exit.
+
+**Gate (iteration 61).** `CARGO_BUILD_JOBS=4` (sccache disabled with `CARGO_BUILD_RUSTC_WRAPPER=`, because the unit's `CARGO_INCREMENTAL=1` makes sccache refuse): fmt, clippy `-D warnings` (one `clone_on_copy` in the new test, fixed), 961 tests in `all` + lib, 218 doctests, check lib, wasm32, `cargo doc -D warnings`: green.
+
+**Release (iteration 61).** `cargo semver-checks --baseline-rev v0.33.0`: one major lint (`enum_variant_added`: `Role::MenuTitleText`), so a minor bump pre-1.0: `release: v0.34.0` (README compatibility row `0.1 – 0.34`), published (https://crates.io/crates/bevy_gooey/0.34.0), tag `v0.34.0` pushed. #39 closed by `Fixes #39`; commented on bevy_grimoire#208 (the only open `ui` issue naming it).
+
+**Cleanup (iteration 61).** No baseline worktree, captures or `/tmp/g61` made; removed `/tmp/widgets.rs.bak` (the mutation backup). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
+
+## Iteration 62 — 2026-11-04 — `hold_button`: a button that confirms only when held, and the setting that makes it a tap
+
+**Triage.** Last audit row (pass 89): `demo?` missing, met by the iteration-61 log line ("Demo. None: the change is not visible by construction"). No open issue in `bevy-coven/bevy_gooey` (#38 is closed: the host's own fixes), no open `grimoire-ui` request, no `bug` issue; parked branches: only the stale `wiggum/parked-pass-23-…`, ignored. home-still was down (`hs status`: refresh token expired), so the three source kinds were read directly (listed in the note's `Pending index`).
+
+**Ranked candidates.** (1) `hold_button`: hold-to-confirm is the standard guard for delete, quit-without-saving and abandon-run, and the crate had only `confirm()` (a dialog, one more screen) and a plain button. (2) A "ready" flash for `Cooldown`. (3) An option row for `HoldSettings`/`MotionSettings`. (4) Accessibility: `ReplaceSelectedText`. (5) One keycap vocabulary for badges and legend. (1) beats (2) because it is a missing widget a shipping game's menu has, and it carries an accessibility obligation (XAG 107) no host would build right by hand.
+
+**What changed.** `hold_button(label, seconds)` (`src/hold.rs`, `src/widgets.rs`): a `Role::Button` root over a column of its label and a meter-shaped bar (`Role::HoldTrack`, `Role::HoldFill`, styled in `apply_skin` as the meter's frame and fill). **Not a `bevy_ui_widgets::Button`**: Bevy's `Button` sends `Activate` on a key's down edge and on a click, so a hold on it would confirm on a tap; the widget sends only `HoldConfirmed` (and one `UiFeedbackKind::Activate`). `hold_by_input` (Navigate, after `gamepad_select`) holds by Enter/Space/South on a focused button (a fresh press: Enter still down from opening a dialog never holds) and by the primary pointer button over it (entity observers; leaving the button ends it). `model::hold_step` rises on `Time<Real>`, unwinds 4x faster, resumes from where it stands, confirms once. `HoldSettings { duration_scale }` (`tap()` at 0: the confirm is on the UP event, XAG 107's "single input press instead of an input hold" and its up-event rule). AccessKit Click confirms at once (a screen reader cannot hold). `model::{hold_seconds, hold_step, HOLD_UNWIND_RATE, HOLD_SCALE_MAX}`.
+
+**Sources.** Craft: Microsoft XAG 107 *Input* (holds, up-event activation, "a single input press instead of an input hold") and Game Accessibility Guidelines *Avoid / provide alternatives to requiring buttons to be held down*. Shipping games: XAG 107's examples The Long Dark ("converts all press and hold actions into press actions") and Gears 5 (press and hold or quick taps), Capcom's Resident Evil 4 manual (a gauge that fills while the button is down). Technical: Bevy 0.20 `bevy_ui_widgets::Button` source (why it cannot be one), `bevy_picking` pointer events. Note `docs/research/hold-button.md`.
+
+**Tests** (`tests/hold.rs`, 20, on a 0.1 s clock; real keyboard, pointer and gamepad messages): key held the whole time confirms once and the bar stays full until let go, early release unwinds and confirms nothing, unwind 4x and resume, a stale Enter never holds, focus leaving ends a key hold, another widget's Enter does not hold it, South holds and sends no `Activate`, a pointer holds while over the button, a click is not a hold, the pointer leaving cancels, key plus pointer survive one letting go, a half scale halves the time, tap mode on the up event of a key, of a click (and not of one the pointer left), a tap cancelled by focus leaving, disabled never starts and one disabled mid-hold ends, AccessKit Click confirms at once and the node is a named button, one Activate feedback at the confirm and none at the press, the bar's width follows the progress and thirty idle frames write nothing, the button is at least 44 px with the track inside it. Mutation-checked: the fresh-press rule (`enter_already_down…` fails), the hover cancel (`the_pointer_leaving…` fails), the `spent` guard (5 fail).
+
+**Critique and verdict** (`/tmp/g62/critique.md`, `/tmp/g62/after/{sheet,skins,large,gifsheet}.png`). Zoomed 2x at the dark skin: label centred over a full-width bar, the amber fill's left end flat against the track's rounded frame (the meter's own look), ring and bar coexist with the label about 8 px clear. Parchment (dark red fill), high contrast and 200% text read; the Tool look's blue fill on its grey track has the least contrast of the four and is the meter's pair. The hold button is 1.36x a plain button's height (the bar's room). Flaws left: no "ready" flash at the confirm; no cursor change. Verdict: GREAT.
+
+**Checklist and mean_ms.** Hold button 44+ px high at 1280x720 (test); bar 10 px (the skin's `meter_height`); no new colour. Gallery `mean_ms`, three alternating runs before/after (the gallery draws no hold button; the new systems are one query each): before 26.03, 26.10, 39.80; after 25.91, 31.60, 35.21 (the host was noisy; the minimum is 26.03 against 25.91). `examples/hold` runs on a 1/30 s clock so its `mean_ms` prints 33.333.
+
+**Demo and docs.** `docs/media/hold.gif` (6.5 s, 780x558, 97 frames, 92 KB) in `docs/guide/hold-buttons.md` and `docs/media/README.md`; README line in the navigation bullet; CHANGELOG, AGENTS.md, research note, rustdoc.
+
+### Ranked backlog
+
+1. Whatever a host reports on `hold_button` (a cursor change while held; a "ready" cue on the confirm).
+2. An `OptionRow` for `HoldSettings` ("Hold to confirm: Normal, Short, Tap") next to the text-size and theme rows, so a game wires the setting with one line.
+3. A "ready" cue for `Cooldown` (a one-frame flash under `MotionSettings`), and a charges variant.
+4. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
+5. One keycap vocabulary for the shortcut badges and legend.
+
+**Gate (iteration 62).** `CARGO_BUILD_JOBS=4`, sccache off (`CARGO_BUILD_RUSTC_WRAPPER=`): fmt, clippy `-D warnings`, 981 tests in `all` + lib (961 + the 20 new), 222 doctests, check lib, wasm32, `cargo doc -D warnings`: green. `main` had not moved, so the merged tree is the gated tree.
+
+**Release (iteration 62).** `cargo semver-checks --baseline-rev v0.34.0`: one major lint (`enum_variant_added`: `Role::HoldTrack`, `Role::HoldFill`), so a minor bump pre-1.0: `release: v0.35.0` (README compatibility row `0.1 – 0.35`), published (https://crates.io/crates/bevy_gooey/0.35.0), tag `v0.35.0` pushed.
+
+**Cleanup (iteration 62).** Removed worktree `~/g62_base` (built into the shared `CARGO_TARGET_DIR`, no `-target` of its own), `/tmp/g62` (captures, frames, gate log, built binaries) and `/tmp/hold.rs.orig` (the mutation backup). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.

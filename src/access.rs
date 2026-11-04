@@ -146,6 +146,7 @@ fn spec(role: Role) -> Spec {
         | Role::Radial
         | Role::SectionNote => Spec::Node,
         Role::ButtonText
+        | Role::MenuTitleText
         | Role::MeterFill
         | Role::MeterTrail
         | Role::ToggleTrack
@@ -208,6 +209,8 @@ fn spec(role: Role) -> Spec {
         | Role::SlotIcon
         | Role::Cooldown
         | Role::CooldownText
+        | Role::HoldTrack
+        | Role::HoldFill
         | Role::RadialIcon
         | Role::RadialSlot
         | Role::RadialText
@@ -222,6 +225,7 @@ fn names(role: Role) -> bool {
     matches!(
         role,
         Role::ButtonText
+            | Role::MenuTitleText
             | Role::TabText
             | Role::MenuText
             | Role::TableCellText
