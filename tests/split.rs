@@ -1090,3 +1090,64 @@ fn an_idle_split_writes_nothing() {
     }
     assert_eq!(app.world().resource::<Writes>().0, 0);
 }
+
+/// **The frame a split is spawned in already has its panes in their ratio.**
+///
+/// Measured by a caller of this crate (bevy_grimoire's Cauldron): entering the project page showed one
+/// frame with the body across the whole window and the sidebar a few pixels wide, then the right
+/// layout. `update_splits` runs in `GooeySystems::Style`, which is after layout, and a split spawned
+/// this frame has no `ComputedNode` size yet — so `extent` is 0, `split_clamp` returns the fraction
+/// unchanged, and the panes are laid out with `flex_grow: 0` and `0` before the first corrected write.
+///
+/// The ratio is read from the panes the frame the split exists, with **no** `settle` between.
+#[test]
+fn the_frame_a_split_is_spawned_in_has_its_panes_in_their_ratio() {
+    let mut app = app_sized(800, 400);
+    let container = app
+        .world_mut()
+        .spawn((
+            Node { width: Val::Px(800.0), height: Val::Px(400.0), ..default() },
+            children![(
+                split(
+                    SplitAxis::Horizontal,
+                    (panel(), children![label("A")]),
+                    (panel(), children![label("B")]),
+                ),
+                SplitFraction(0.0),
+                SplitMin::new(240.0, 400.0),
+            )],
+        ))
+        .id();
+
+    // One frame: the spawn, its layout, and `Style`.
+    app.update();
+    let split = child_of(&app, container);
+    let parts: Vec<Entity> = app.world().get::<Children>(split).expect("the split's children").iter().collect();
+    let (first, second) = (parts[0], parts[2]);
+    let a = rect(&app, first);
+    let b = rect(&app, second);
+
+    assert!(
+        a.width() >= 240.0 - 1.0,
+        "on the frame it was spawned the first pane is {} px wide, under its own 240 px minimum: \
+         `update_splits` had no extent to clamp against and wrote `flex_grow: 0`. The second pane is \
+         {} px wide where the split is 800 px (panes {a:?} and {b:?})",
+        a.width(),
+        b.width()
+    );
+    assert!(
+        b.width() > 0.0,
+        "on the frame it was spawned the second pane is {} px wide: one pane cannot be nothing \
+         (panes {a:?} and {b:?})",
+        b.width()
+    );
+    // **The panes and the divider account for the split**, measured from the divider's own rect rather
+    // than from `BAR`: the grip is `MIN_TARGET_PX` wide but the divider node is laid out inside that,
+    // and a nominal constant would make this assertion about the constant.
+    let divider = rect(&app, parts[1]);
+    assert!(
+        (a.width() + b.width() + divider.width() - 800.0).abs() < 2.0,
+        "the two panes and the divider take {} px of an 800 px split on its first frame ({a:?}, {b:?}, divider {divider:?})",
+        a.width() + b.width() + divider.width()
+    );
+}

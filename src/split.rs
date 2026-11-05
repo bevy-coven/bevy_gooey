@@ -560,7 +560,19 @@ pub fn update_splits(
             .map_or(0.0, |d| along(d.size()) * d.inverse_scale_factor());
         let extent = (along(node.size()) * node.inverse_scale_factor() - bar).max(0.0);
         let first = split_clamp(fraction.0, extent, min.first, min.second);
-        let (min_first, min_second) = split_mins(extent, min.first, min.second);
+        // **A split that has not been laid out yet still says what its panes may not go under.**
+        //
+        // `split_mins` folds each minimum into the room that is there, so with no room it answers
+        // `(0, 0)` — and this system runs in `Style`, which is *before* `ui_layout_system`, so the
+        // frame a split is spawned is laid out with `flex_grow: 0` on the first pane and no minimum
+        // on either. Measured by a caller (Cauldron): entering a page showed one frame of the body
+        // across the whole window, the sidebar 24 px wide, then the right layout. So an extent of
+        // zero keeps the minimums as asked for; the first real extent clamps them from there.
+        let (min_first, min_second) = if extent > 0.0 {
+            split_mins(extent, min.first, min.second)
+        } else {
+            (min.first.max(0.0), min.second.max(0.0))
+        };
         let panes: Vec<Entity> = children
             .iter()
             .filter(|&c| parts.get(c).is_ok_and(|(role, _)| *role == Role::SplitPane))
