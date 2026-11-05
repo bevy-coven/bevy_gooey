@@ -115,7 +115,7 @@ The gate, every item green before a push, run in this order and stopped at the f
 
 1. `cargo fmt --check`
 2. `cargo clippy --all-targets --all-features -- -D warnings`
-3. `cargo nextest run --all-features --lib --tests` (every test, including the README test), then `cargo test --all-features --doc` (the doctests — nextest does not run them). **Never a bare `cargo test --all-features`:** it also links all 26 examples into 700 MB debug executables (about 9 GB each time the crate changes, 34 GB an hour measured 2026-11-01 in `target/debug/examples`, which filled big's disk). Step 2 compiles every example in check mode, which is all a test needs from them; the capture step builds and runs the ones that make a clip.
+3. `cargo nextest run --all-features --lib --tests` (every test, including the README test), then `cargo test --all-features --doc` (the doctests — nextest does not run them). **Never a bare `cargo test --all-features`:** it also links all 29 examples into 700 MB debug executables (about 9 GB each time the crate changes, 34 GB an hour measured 2026-11-01 in `target/debug/examples`, which filled big's disk). Step 2 compiles every example in check mode, which is all a test needs from them; the capture step builds and runs the ones that make a clip.
 4. `cargo check --lib` and `cargo check --lib --target wasm32-unknown-unknown`
 5. `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps`
 
