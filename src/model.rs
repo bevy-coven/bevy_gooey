@@ -82,6 +82,44 @@ pub fn cie_lightness(srgb: [f32; 3]) -> f32 {
     }
 }
 
+/// How many points of CIE L\* a primary button's fill moves from the accent toward the text under
+/// the pointer: half again [`STATE_STEP`], so the lift is seen in any skin. Pressed moves twice as
+/// far. See [`crate::GooeySkin::primary_hovered`].
+pub const PRIMARY_LIFT_L: f32 = 6.0;
+
+/// How finely [`lift_toward`] walks the line between its two colours: 256 steps, finer than an
+/// 8-bit channel.
+const LIFT_STEPS: u16 = 256;
+
+/// `from` moved along the straight sRGB line toward `toward` until its CIE L\* differs from
+/// `from`'s by at least `step_l`, or `toward` itself when the whole line does not reach the step.
+/// The first such point is taken, walking the line in 256 steps, because lightness along an sRGB line
+/// need not be monotonic between two hues.
+///
+/// ```
+/// use bevy_gooey::{cie_lightness, lift_toward};
+/// let blue = [0.25, 0.5, 0.9];
+/// let lifted = lift_toward(blue, [1.0; 3], 6.0);
+/// let step = cie_lightness(lifted) - cie_lightness(blue);
+/// assert!((6.0..6.5).contains(&step));
+/// // Toward a colour of the same lightness there is no step to take: the far end.
+/// assert_eq!(lift_toward(blue, blue, 6.0), blue);
+/// ```
+pub fn lift_toward(from: [f32; 3], toward: [f32; 3], step_l: f32) -> [f32; 3] {
+    let start = cie_lightness(from);
+    let at = |t: f32| {
+        [
+            from[0] + (toward[0] - from[0]) * t,
+            from[1] + (toward[1] - from[1]) * t,
+            from[2] + (toward[2] - from[2]) * t,
+        ]
+    };
+    (1..=LIFT_STEPS)
+        .map(|i| at(f32::from(i) / f32::from(LIFT_STEPS)))
+        .find(|c| (cie_lightness(*c) - start).abs() >= step_l)
+        .unwrap_or(toward)
+}
+
 /// `fg` at `alpha` laid over an opaque `bg`, per channel: what the eye sees of a translucent panel.
 /// `alpha` is clamped to `0..=1`.
 ///

@@ -77,9 +77,38 @@ page. Each change a player makes is one `ValueChange<usize>` on the entity and o
 focus onto a tab is one `UiFeedback::Focus`. Set the page back to the first when a menu opens again if
 you want it to.
 
+## A vertical strip, a sidebar
+
+`side_tabs(tabs, selected)` is the same state on a strip that stands up: a sidebar's navigation
+(Projects, Learn, What's new). Each tab is a `SideTab`, its label left-aligned and an optional badge
+at its end (`SideTab::new("What's new").badge("3")`, a pill read in the tab's name); a `&str` or a
+`String` is a tab with no badge. The tabs are as wide as the strip, so give it the sidebar's width.
+
+```rust
+let nav = commands
+    .spawn(side_tabs(["Projects".into(), "Learn".into(), SideTab::new("What's new").badge("3")], 0))
+    .id();
+// The pages stand wherever the host puts them, here in the pane beside the sidebar.
+commands.entity(pane).with_children(|pane| {
+    pane.spawn(side_tab_page(nav, 0, children![label("Your projects")]));
+    pane.spawn(side_tab_page(nav, 1, children![label("Tutorials")]));
+});
+```
+
+- **Keys.** Up and Down on a focused tab move focus and select (Bevy's `TabList` with
+  `ControlOrientation::Vertical`); the D-pad's Up and Down step it; Left and Right move focus on,
+  into the page beside, and from there back to the *selected* tab. LB, RB, Ctrl+PageUp and
+  Ctrl+PageDown turn it from anywhere inside the strip.
+- **Pages.** A `side_tab_page(strip, index, widgets)` carries `TabPageOf { tabs, index }` and is
+  shown while the strip's `TabsValue` is its index (`update_tab_pages`), hidden otherwise, also
+  when it is spawned after the strip. Focus on a page the strip turns away from (the game set
+  `TabsValue`) moves to the shown page's first widget, or to the selected tab.
+- **State.** `TabsValue` and `ValueChange<usize>` on the entity `side_tabs` returns, exactly as for
+  `tabs`.
+
 ## What it does not do yet
 
-A vertical strip, a tab that is disabled or closable, a strip that scrolls (NN/g: "The fewer tabs, the
+A tab that is disabled or closable, a strip that scrolls (NN/g: "The fewer tabs, the
 better"; a game that needs more takes a `choice` or a `list`), icons in tabs, and a "Tab, 1 of 3,
 selected" narration for screen readers (Bevy's `TabList` and `Tab` carry their accessibility roles; the
 position in the set is on the backlog with the slider's and the list's). Activation is automatic (focus

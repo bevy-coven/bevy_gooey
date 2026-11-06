@@ -21,8 +21,8 @@ use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
-    STATE_STEP, TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height,
-    snap_line_width, tree_indent,
+    PRIMARY_LIFT_L, STATE_STEP, TEXT_CONTRAST, cie_lightness, composite, contrast_ratio,
+    lift_toward, list_height, snap_line_width, tree_indent,
 };
 use crate::popover::{PopoverPanel, placement_of};
 use crate::prompt::PromptsAnchor;
@@ -74,6 +74,16 @@ const SLOT_TEXT_SIZES: f32 = 4.0;
 
 /// The share of a slot's side its picture takes.
 const SLOT_ICON_SHARE: f32 = 0.6;
+
+/// A card's width, in body text sizes: room for a name of about 25 characters on a line and a
+/// picture large enough to recognise.
+const CARD_TEXT_SIZES: f32 = 14.0;
+
+/// A card's picture's width over its height: 16:9, a screen's shape, as a thumbnail of a scene is.
+const CARD_IMAGE_ASPECT: f32 = 16.0 / 9.0;
+
+/// How much of a disabled card's picture shows: half, dimmed with its words.
+const CARD_DIM_ALPHA: f32 = 0.5;
 
 /// How much of the icon a [`crate::Cooldown`]'s unrecovered wedge covers: the skin's background at
 /// this alpha, so the icon is dimmed and still recognisable.
@@ -678,6 +688,34 @@ impl GooeySkin {
         self.pressed.unwrap_or_else(|| self.solid_surface())
     }
 
+    /// A [`crate::primary_button`]'s fill under the pointer: [`GooeySkin::accent`] moved toward
+    /// [`GooeySkin::text`] by [`crate::PRIMARY_LIFT_L`] of CIE L\* ([`crate::lift_toward`]). A step
+    /// in lightness, not a fixed mix, so the lift is seen in a skin whose accent is already near
+    /// its text; the text is the ink furthest from the accent's own words, so
+    /// [`GooeySkin::accent_text`] stays readable, and [`GooeySkin::problems`] checks both.
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// let skin = GooeySkin::dark();
+    /// assert_ne!(skin.primary_hovered(), skin.accent);
+    /// ```
+    pub fn primary_hovered(&self) -> Color {
+        self.lifted(PRIMARY_LIFT_L)
+    }
+
+    /// A [`crate::primary_button`]'s fill held down: [`GooeySkin::accent`] moved twice
+    /// [`crate::PRIMARY_LIFT_L`] toward [`GooeySkin::text`], a step past
+    /// [`GooeySkin::primary_hovered`].
+    pub fn primary_pressed(&self) -> Color {
+        self.lifted(PRIMARY_LIFT_L * 2.0)
+    }
+
+    /// The accent moved `step_l` of CIE L\* toward the text, at the accent's own alpha.
+    fn lifted(&self, step_l: f32) -> Color {
+        let [red, green, blue] = lift_toward(rgb(self.accent), rgb(self.text), step_l);
+        Color::srgba(red, green, blue, self.accent.alpha())
+    }
+
     /// The colour of a world gizmo or glyph while the player holds the key that asks the world to
     /// step back: [`GooeySkin::held`] (the field), else [`GooeySkin::text`] faded toward
     /// [`GooeySkin::held_ground`] by [`GooeySkin::held_fade`].
@@ -814,6 +852,18 @@ impl GooeySkin {
                 TEXT_CONTRAST,
             ),
             (
+                "accent_text on primary hovered",
+                rgb(self.accent_text),
+                rgb(self.primary_hovered()),
+                TEXT_CONTRAST,
+            ),
+            (
+                "accent_text on primary pressed",
+                rgb(self.accent_text),
+                rgb(self.primary_pressed()),
+                TEXT_CONTRAST,
+            ),
+            (
                 "focus_ring on surface_raised",
                 rgb(self.focus_ring),
                 rgb(self.surface_raised),
@@ -920,6 +970,30 @@ impl GooeySkin {
                 delta_l: delta,
                 needed: STATE_STEP,
             });
+        }
+        // A primary button's three fills, each a step from the next: the lift under the pointer and
+        // the press are how the player sees the button answer.
+        let lightness = |c: Color| cie_lightness(rgb(c));
+        for (pair, a, b) in [
+            (
+                "primary at rest and hovered",
+                self.accent,
+                self.primary_hovered(),
+            ),
+            (
+                "primary hovered and pressed",
+                self.primary_hovered(),
+                self.primary_pressed(),
+            ),
+        ] {
+            let delta = (lightness(a) - lightness(b)).abs();
+            if delta.is_nan() || delta < STATE_STEP {
+                out.push(SkinProblem::Indistinguishable {
+                    pair,
+                    delta_l: delta,
+                    needed: STATE_STEP,
+                });
+            }
         }
         let target = self.target();
         if target < MIN_TARGET_PX {
@@ -1326,6 +1400,15 @@ impl fmt::Display for SkinProblem {
 #[reflect(Component, Debug, PartialEq, Clone)]
 pub struct SkinScope(pub GooeySkin);
 
+/// Marks a [`crate::button`] as the screen's main action: [`apply_skin`] fills it with
+/// [`GooeySkin::accent`] and labels it in [`GooeySkin::accent_text`] at rest,
+/// [`GooeySkin::primary_hovered`] under the pointer and [`GooeySkin::primary_pressed`] held down; a
+/// disabled one is dimmed like any button. [`crate::primary_button`] spawns a button with it;
+/// inserting or removing it restyles the button, so the main action can move.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct PrimaryButton;
+
 /// The fonts widgets draw with. A separate resource from [`GooeySkin`] because a font is an asset
 /// handle the host loads, not data a project saves.
 ///
@@ -1610,6 +1693,24 @@ pub enum Role {
     SlotCount,
     /// A slot's picture, 60% of the slot's side, tinted like an [`Role::Icon`].
     SlotIcon,
+    /// A [`crate::card_grid`]: its cards in a row a [`GooeySkin::gap`] apart that wraps to fill its
+    /// width; not drawn.
+    CardGrid,
+    /// A card: a column 14 body text sizes wide on the opaque surface in an
+    /// [`GooeySkin::outline`] frame; [`GooeySkin::hovered`] under the pointer, the accent when
+    /// chosen or pressed, the panel's fill when disabled, the focus ring while it has focus.
+    CardCell,
+    /// A [`crate::side_tabs`] tab's badge at its end ("3"): a pill of the opaque surface with the
+    /// text's ink in the skin's small size, the same on a lit tab.
+    TabBadge,
+    /// A card's picture across its width at 16:9, on a [`GooeySkin::surface_raised`] placeholder;
+    /// half transparent on a disabled card.
+    CardImage,
+    /// A card's name, in the body's size and [`GooeySkin::text`].
+    CardName,
+    /// A card's quiet line, in the skin's small size and [`GooeySkin::text_muted`] (the text on a
+    /// hovered card, the accent's text on a chosen one).
+    CardLine,
     /// A [`crate::Cooldown`]'s cover: the owner's whole padding box, dimmed from twelve o'clock
     /// round to where the clear wedge has opened; the sweep is data, written by
     /// [`crate::update_cooldowns`].
@@ -1875,6 +1976,8 @@ struct State {
     anchor: PromptsAnchor,
     /// The entity is a status item: a progress in it is a short bar.
     status_item: bool,
+    /// A button that is the screen's main action ([`PrimaryButton`]).
+    primary: bool,
 }
 
 impl Default for State {
@@ -1905,6 +2008,7 @@ impl Default for State {
             status: None,
             status_item: false,
             anchor: PromptsAnchor::default(),
+            primary: false,
         }
     }
 }
@@ -1930,6 +2034,7 @@ type StateQuery = (
         Has<DropCandidate>,
         Has<DropRefusing>,
         Option<&'static PromptsAnchor>,
+        Has<PrimaryButton>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -1967,6 +2072,7 @@ type Restyle = (
             Added<DropCandidate>,
             Added<DropRefusing>,
             Changed<PromptsAnchor>,
+            Added<PrimaryButton>,
         )>,
     )>,
 );
@@ -1985,6 +2091,7 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, FieldProblem>,
     RemovedComponents<'w, 's, DropCandidate>,
     RemovedComponents<'w, 's, DropRefusing>,
+    RemovedComponents<'w, 's, PrimaryButton>,
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
@@ -1993,6 +2100,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
         role,
         Some(
             Role::Button
+                | Role::CardCell
                 | Role::Toggle
                 | Role::Slider
                 | Role::Choice
@@ -2061,6 +2169,7 @@ pub fn apply_skin(
         unproblemed,
         undropped,
         unrefused,
+        unprimed,
     ) = &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -2086,7 +2195,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    (marked, problem, status, candidate, refusing, anchor),
+                    (marked, problem, status, candidate, refusing, anchor, primary),
                     row,
                     role,
                 )| {
@@ -2122,6 +2231,7 @@ pub fn apply_skin(
                         anchor: anchor.copied().unwrap_or_default(),
                         status_item: role == Some(&Role::StatusItem),
                         band: row.is_some_and(|r| r.index % 2 == 1),
+                        primary,
                     }
                 },
             )
@@ -2171,6 +2281,7 @@ pub fn apply_skin(
         unproblemed.clear();
         undropped.clear();
         unrefused.clear();
+        unprimed.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -2211,6 +2322,7 @@ pub fn apply_skin(
     dirty.extend(unproblemed.read());
     dirty.extend(undropped.read());
     dirty.extend(unrefused.read());
+    dirty.extend(unprimed.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -2226,6 +2338,7 @@ pub fn apply_skin(
                             | Role::Radial
                             | Role::Slot
                             | Role::SlotEmpty
+                            | Role::CardCell
                             | Role::Tab
                             | Role::GroupOption
                             | Role::StatusItem
@@ -2297,7 +2410,7 @@ fn restyle(
         floating,
         target,
         cursor,
-        image,
+        mut image,
         tone,
         icon_size,
     ): bevy::ecs::query::QueryItem<'_, '_, Styled>,
@@ -2341,6 +2454,16 @@ fn restyle(
         Role::Panel => Some(skin.surface),
         Role::Button | Role::TableHeaderCell => Some(if state.disabled {
             skin.surface
+        } else if state.primary {
+            // The main action is the accent at rest and lifts from it, where a plain button
+            // rests quiet and turns to the accent when pressed.
+            if state.pressed {
+                skin.primary_pressed()
+            } else if state.hovered || state.open {
+                skin.primary_hovered()
+            } else {
+                skin.accent
+            }
         } else if state.pressed {
             skin.accent
         } else if state.hovered || state.open {
@@ -2363,6 +2486,19 @@ fn restyle(
         // accent while pressed. The count's chip is the opaque surface, whatever is under it.
         // A slot that refuses what is carried is the panel's well, items and all: only the
         // places that take it stay raised.
+        // A card rests on the opaque surface so its quiet lines read at 4.5:1, lifts under the
+        // pointer, and is the accent when chosen, like a selected tab.
+        Role::CardCell => Some(if state.disabled {
+            skin.surface
+        } else if state.pressed || state.selected {
+            skin.accent
+        } else if state.hovered {
+            skin.hovered()
+        } else {
+            skin.solid_surface()
+        }),
+        Role::CardImage => Some(skin.surface_raised),
+        Role::TabBadge => Some(skin.solid_surface()),
         Role::Slot => Some(if state.refusing {
             skin.surface
         } else if state.pressed {
@@ -2628,6 +2764,9 @@ fn restyle(
         | Role::SlotGrid
         | Role::SlotName
         | Role::SlotIcon
+        | Role::CardGrid
+        | Role::CardName
+        | Role::CardLine
         | Role::Cooldown
         | Role::RadialIcon
         | Role::RadialText
@@ -2746,9 +2885,10 @@ fn restyle(
         // The ring when focused. A filled slot's frame is its own fill (a fill is drawn inside the
         // border, so a clear frame would draw the well a border's width smaller than an empty
         // one beside it), an empty one's the quiet edge.
-        Role::Slot | Role::SlotEmpty if look.focused == Some(entity) => {
+        Role::Slot | Role::SlotEmpty | Role::CardCell if look.focused == Some(entity) => {
             Some(BorderColor::all(skin.focus_ring))
         }
+        Role::CardCell => Some(BorderColor::all(skin.outline)),
         Role::Slot => Some(BorderColor::all(if state.refusing {
             skin.surface_edge.unwrap_or(skin.surface_raised)
         } else if state.candidate {
@@ -2889,6 +3029,35 @@ fn restyle(
                 next.justify_content = JustifyContent::Center;
                 next.align_items = AlignItems::Center;
                 next.flex_shrink = 0.0;
+            }
+            Role::CardGrid => {
+                next.flex_direction = FlexDirection::Row;
+                next.flex_wrap = FlexWrap::Wrap;
+                next.width = Val::Percent(100.0);
+                next.align_items = AlignItems::FlexStart;
+                next.column_gap = Val::Px(skin.gap);
+                next.row_gap = Val::Px(skin.gap);
+            }
+            Role::CardCell => {
+                next.flex_direction = FlexDirection::Column;
+                next.width = Val::Px(text_px * CARD_TEXT_SIZES);
+                next.flex_shrink = 0.0;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad()));
+                next.row_gap = Val::Px(skin.gap * 0.25);
+                next.overflow = Overflow::clip();
+            }
+            Role::TabBadge => {
+                next.padding = UiRect::horizontal(Val::Px(skin.pad() * 0.5));
+                next.margin = UiRect::left(Val::Px(skin.gap));
+                next.border_radius = BorderRadius::MAX;
+            }
+            Role::CardImage => {
+                next.width = Val::Percent(100.0);
+                next.aspect_ratio = Some(CARD_IMAGE_ASPECT);
+                next.margin = UiRect::bottom(Val::Px(skin.gap * 0.25));
+                next.border_radius = BorderRadius::all(Val::Px(skin.radius * 0.5));
             }
             Role::SlotGrid => {
                 // Tracks stand at the start and are never stretched: a grid in a column wider than
@@ -3699,6 +3868,18 @@ fn restyle(
         node.set_if_neq(next);
     }
 
+    // A card's picture is drawn as it is, and let half through on a disabled card.
+    if let (Role::CardImage, Some(image)) = (role, image.as_mut()) {
+        let color = if parent.is_some_and(|p| p.disabled) {
+            Color::WHITE.with_alpha(CARD_DIM_ALPHA)
+        } else {
+            Color::WHITE
+        };
+        if image.color != color {
+            image.color = color;
+        }
+    }
+
     // An icon is its image times a colour of the skin: the text's, following the widget it stands
     // in (muted when disabled, the accent's text pressed), or a fixed tone.
     if let (Role::Icon | Role::SlotIcon | Role::RadialIcon, Some(mut image)) = (role, image) {
@@ -3707,7 +3888,9 @@ fn restyle(
         let disabled = parent.disabled || owner.disabled || parent.refusing;
         let color = match tone {
             IconTone::Text if disabled => skin.text_muted,
-            IconTone::Text if parent.pressed || parent.selected || owner.pressed => {
+            IconTone::Text
+                if parent.pressed || parent.selected || parent.primary || owner.pressed =>
+            {
                 skin.accent_text
             }
             IconTone::Text => skin.text,
@@ -3739,7 +3922,7 @@ fn restyle(
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted
-            } else if parent.pressed {
+            } else if parent.pressed || parent.primary {
                 skin.accent_text
             } else {
                 skin.text
@@ -3768,6 +3951,29 @@ fn restyle(
             &look.fonts.heading,
             skin.heading_size * wheel_px / text_px,
         )),
+        // A badge's count is read on its own pill, lit tab or not.
+        Role::TabBadge => Some((skin.text, &look.fonts.body, skin.type_scale[1])),
+        // A card's words follow the card: muted when disabled, the accent's text when chosen or
+        // pressed; a line is quiet at rest and the text under the pointer, where the muted ink
+        // is not held to the hovered fill.
+        Role::CardName | Role::CardLine => {
+            let parent = parent.unwrap_or_default();
+            let color = if parent.disabled {
+                skin.text_muted
+            } else if parent.pressed || parent.selected {
+                skin.accent_text
+            } else if *role == Role::CardName || parent.hovered {
+                skin.text
+            } else {
+                skin.text_muted
+            };
+            let size = if *role == Role::CardName {
+                skin.text_size
+            } else {
+                skin.type_scale[1]
+            };
+            Some((color, &look.fonts.body, size))
+        }
         // A slot's name is a button's text, inverted on the accent while pressed.
         Role::SlotName => {
             let parent = parent.unwrap_or_default();

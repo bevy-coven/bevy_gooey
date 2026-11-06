@@ -54,6 +54,91 @@ impl ToastAnchor {
     }
 }
 
+/// The window's edges the toast stack keeps clear of, logical px on each side: a menu bar along the
+/// top, a status band along the bottom, a side panel. The stack stands in the window less these, so
+/// a toast anchored to the top stands under the bar with the stack's own padding below it.
+///
+/// Logical px are scaled by `UiScale` like every other size, so a host sets the bar's height as it
+/// laid the bar out, and rewrites [`ToastSettings::inset`] when that height changes (a skin with
+/// bigger text). A side that is negative or not finite keeps no room.
+///
+/// ```
+/// use bevy_gooey::{ToastAnchor, ToastInset, ToastSettings};
+/// // Refusals at the top centre, under a 34 px menu bar.
+/// let settings = ToastSettings {
+///     anchor: ToastAnchor::TopCenter,
+///     inset: ToastInset::top(34.0),
+///     ..ToastSettings::default()
+/// };
+/// assert_eq!(settings.inset.bottom, 0.0);
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Debug, Default, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(default)
+)]
+pub struct ToastInset {
+    /// Room kept along the window's top edge, logical px.
+    pub top: f32,
+    /// Room kept along the window's right edge, logical px.
+    pub right: f32,
+    /// Room kept along the window's bottom edge, logical px.
+    pub bottom: f32,
+    /// Room kept along the window's left edge, logical px.
+    pub left: f32,
+}
+
+impl ToastInset {
+    /// Room along the top edge only: the height of a menu bar.
+    pub fn top(px: f32) -> Self {
+        Self {
+            top: px,
+            ..Self::default()
+        }
+    }
+
+    /// Room along the bottom edge only: the height of a status band.
+    pub fn bottom(px: f32) -> Self {
+        Self {
+            bottom: px,
+            ..Self::default()
+        }
+    }
+
+    /// One side as the stack's position: a negative or non-finite side keeps no room.
+    fn side(px: f32) -> Val {
+        Val::Px(if px.is_finite() { px.max(0.0) } else { 0.0 })
+    }
+
+    /// The stack's `(left, top, right, bottom)` at this inset: it is absolute, its four sides this
+    /// far in from the window's, so it is the window less the inset.
+    fn sides(self) -> [Val; 4] {
+        [
+            Self::side(self.left),
+            Self::side(self.top),
+            Self::side(self.right),
+            Self::side(self.bottom),
+        ]
+    }
+
+    /// Whether `node` stands at this inset.
+    fn holds(self, node: &Node) -> bool {
+        [node.left, node.top, node.right, node.bottom] == self.sides()
+    }
+
+    /// Puts `node` at this inset.
+    fn place(self, node: &mut Node) {
+        let [left, top, right, bottom] = self.sides();
+        node.position_type = PositionType::Absolute;
+        node.left = left;
+        node.top = top;
+        node.right = right;
+        node.bottom = bottom;
+    }
+}
+
 /// How long toasts stand, how many, how they fade and where: the timing a player may change.
 ///
 /// A toast stands `(base_seconds + characters ÷ chars_per_second) × duration_scale` fully shown
@@ -82,6 +167,9 @@ impl ToastAnchor {
 pub struct ToastSettings {
     /// Where the stack stands. Default: bottom centre.
     pub anchor: ToastAnchor,
+    /// The window's edges the stack keeps clear of, such as an app's menu bar under a top anchor.
+    /// Default: none, the stack is the whole window.
+    pub inset: ToastInset,
     /// How many toasts stand at once, at least one: a spawn beyond it sends the oldest into its fade
     /// out at once. Default: 3.
     pub max_visible: usize,
@@ -107,6 +195,7 @@ impl Default for ToastSettings {
     fn default() -> Self {
         Self {
             anchor: ToastAnchor::default(),
+            inset: ToastInset::default(),
             max_visible: 3,
             base_seconds: 2.0,
             chars_per_second: 20.0,
@@ -248,8 +337,9 @@ impl Toast {
     }
 }
 
-/// The one column every [`Toast`] stands in: a full-window, pointer-transparent node the first
-/// toast spawns, aligned by [`ToastSettings::anchor`] and kept above a dialog (`GlobalZIndex` 150).
+/// The one column every [`Toast`] stands in: a pointer-transparent node the first toast spawns, the
+/// window less [`ToastSettings::inset`], aligned by [`ToastSettings::anchor`] and kept above a
+/// dialog (`GlobalZIndex` 150).
 /// Query it to hide the toasts (a cutscene) by setting its `Visibility`.
 #[derive(Component, Clone, Copy, Debug, Default, Reflect)]
 #[reflect(Component, Debug, Default, Clone)]
@@ -444,9 +534,11 @@ fn queue_join(mut world: DeferredWorld, HookContext { entity, .. }: HookContext)
             .query_filtered::<Entity, With<ToastStack>>()
             .iter(world)
             .next();
-        let window = world
+        let (window, inset) = world
             .get_resource::<ToastSettings>()
-            .map_or(0.0, |settings| settings.merge_seconds);
+            .map_or((0.0, ToastInset::default()), |settings| {
+                (settings.merge_seconds, settings.inset)
+            });
         if let Some(stack) = existing
             && window > 0.0
             && merge_into_standing(world, stack, entity, &toast, window)
@@ -455,14 +547,12 @@ fn queue_join(mut world: DeferredWorld, HookContext { entity, .. }: HookContext)
             return;
         }
         let stack = existing.unwrap_or_else(|| {
+            let mut node = Node::default();
+            inset.place(&mut node);
             world
                 .spawn((
                     Name::new("ToastStack"),
-                    Node {
-                        width: Val::Percent(100.0),
-                        height: Val::Percent(100.0),
-                        ..default()
-                    },
+                    node,
                     Role::ToastStack,
                     ToastStack,
                     Pickable::IGNORE,
@@ -694,6 +784,9 @@ pub fn update_toasts(
         }
         if node.align_items != across {
             node.align_items = across;
+        }
+        if !settings.inset.holds(&node) || node.position_type != PositionType::Absolute {
+            settings.inset.place(&mut node);
         }
 
         // The clock, and who is still fully shown (not yet fading out). A node under the stack
