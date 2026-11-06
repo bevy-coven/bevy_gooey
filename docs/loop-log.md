@@ -2446,3 +2446,5 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 3. One keycap vocabulary for the shortcut badges and legend (the legend and a badge draw the same chord two ways today).
 4. Automatic `Words` when the face lacks the glyph (needs the shaper's cmap; `bevy_text` exposes none to a game system).
 5. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
+
+**Release (iteration 64, hand-driven, host big).** The first session was OOM-killed at 14:32 and its successor at about 15:13, both inside the gate. The orchestrator finished the gate on the merged tree: fmt, clippy, nextest 1013/1013 (`/tmp/g64gate`), `cargo test --all-features --doc` 233/233 after `00790d4` (the new `BindingSettings::chord` example lacked `bevy::prelude::*` for `KeyCode`), `cargo check --lib` and wasm32, rustdoc `-D warnings`. `cargo semver-checks`: 2 major checks failed (the new `shortcut_label` argument, the new `BindingSettings` fields), so `release: v0.37.0` (`ca2c782`), published (https://crates.io/crates/bevy_gooey/0.37.0), tag `v0.37.0` pushed. #45 closed by `76485a5`.
