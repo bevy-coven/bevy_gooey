@@ -2391,6 +2391,6 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 
 **Gate (iteration 63).** `CARGO_BUILD_JOBS=4`, sccache off (`CARGO_BUILD_RUSTC_WRAPPER=`): fmt, clippy `-D warnings`, 984 tests in `all` + lib (982 + 2 new), 222 doctests, check lib, wasm32, `cargo doc -D warnings`: green. **`main` had a broken `cargo fmt --check` before this pass** — `tests/split.rs` from iteration 62's split work was committed unformatted (`cargo fmt --check` fails on `main` at `1cc4c7d`), so this pass's `cargo fmt` reformatted it; that is the only change to a file this pass did not otherwise touch.
 
-**Release (iteration 63).** See below.
+**Release (iteration 63).** `cargo semver-checks --baseline-rev v0.35.0`: 202 checks pass, no semver update required (only a new public fn), so a PATCH bump: `release: v0.35.1` (README compatibility row `0.1 – 0.35.1`), published (https://crates.io/crates/bevy_gooey/0.35.1), tag `v0.35.1` pushed, `cargo info bevy_gooey@0.35.1` resolves. #44 closed with the merged sha and the version.
 
 **Cleanup (iteration 63).** Removed worktree `~/g63_base` and its `~/g63_base-target` (the before-baseline), `/tmp/g63` (captures, GIF frames, probe tests, mutation backups), the `Xvfb :99` this pass started. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
