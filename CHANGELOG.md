@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- `ChordGlyphs { Glyphs, Words }` and `BindingSettings::{chord_glyphs, platform}` (#45, `docs/research/chord-glyphs.md`, `docs/guide/shortcuts.md`): a mac spells a chord with Apple's symbols (`⇧⌘P`), and a symbol is only a glyph — a face that does not map the codepoint draws a tofu box. Bevy's own bundled default font (FiraMono's 95-codepoint subset) maps **none** of the thirteen a mac chord can wear, and the tool that filed the issue ships a monospace face missing seven, so its Undo tooltip drew `?Z` where its accessible text read `⌘Z`. `ChordGlyphs::Words` spells the same chords in ASCII (`Cmd+Z`, `Shift+Cmd+P`, `Opt+Enter`, `Ctrl+Esc`, the key named by `model::key_name`), in Apple's order and names; outside a mac the two spellings agree, so a host sets it once. The setting reaches every chord the crate draws — a tooltip's keycap, a menu row, a prompt, a shortcut badge, the legend and the command palette. `BindingSettings::platform` (`None` is this build's) names the platform a chord is spelled for. New public items `ChordGlyphs`, `ChordText`, `update_chord_texts`, `Shortcut::label_with`, `BindingSettings::{chord, input_label, platform}`.
+
+### Changed
+
+- **Breaking:** `model::shortcut_label` takes a fourth argument, `ChordGlyphs` (pass `ChordGlyphs::Glyphs` for the old result), and `BindingSettings` has two new public fields (`chord_glyphs`, `platform`; use `..default()`). `Shortcut::label()`, `label_on(platform)` and `Binding::label(PadStyle)` are unchanged. `Platform` now derives serde's `Serialize` and `Deserialize` under the `serde` feature.
+
 ## [0.35.1] - 2026-11-06
 
 ### Fixed

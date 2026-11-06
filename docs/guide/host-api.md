@@ -193,7 +193,7 @@ use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `met
 `repeat_steps`, `choice_step`, `choice_next`, `nearest_step`, `tab_step`, `target_toward`, `target_step`, `key_name`, `mouse_name`,
 `shortcut_label`, `shortcut_conflicts`, `is_modifier_key`, `fuzzy_score`, `split_mins`, `split_clamp`,
 `split_drag`, `natural_cmp`, `table_window`, `table_step`, `table_anchor`, `column_resize`, `tree_indent`, `tree_ends`, `tree_visible`, `tree_parent`, `tree_heir`, `type_ahead`, `dock_zone`, `dock_edge_zone`, `dock_drop_rect`, `dock_tab_slot`, `dock_neighbour`,
-`pad_name` and `PadStyle` (with `PadStyle::name`), and the constants `TEXT_CONTRAST`,
+`pad_name` and `PadStyle` (with `PadStyle::name`), `ChordGlyphs` (with `ChordGlyphs::name`, the spelling `shortcut_label` takes), and the constants `TEXT_CONTRAST`,
 `NON_TEXT_CONTRAST`, `MIN_TARGET_PX`, `COMFORT_TARGET_PX`, `PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`,
 `STICK_PUSH`, `SPLIT_KEY_STEP_PX`, and the steps the option rows offer: `TEXT_SIZE_STEPS`, `INTERFACE_SIZE_STEPS` and
 `PAD_STYLES`.
