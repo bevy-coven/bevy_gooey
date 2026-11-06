@@ -275,7 +275,8 @@ pub use progress::{
     Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
 };
 pub use prompt::{
-    InputDevice, Prompt, PromptsAnchor, place_prompts, track_input_device, update_prompts,
+    InputDevice, Prompt, PromptsAnchor, centre_keycaps, place_prompts, track_input_device,
+    update_prompts,
 };
 pub use radial::{RadialCount, RadialItem, RadialSlot, RadialValue, radial_by_pad, update_radials};
 pub use region::{ArrowPolicy, FocusRegion, cycle_regions};
@@ -330,6 +331,7 @@ use bevy::input_focus::directional_navigation::DirectionalNavigationPlugin;
 use bevy::input_focus::tab_navigation::TabNavigationPlugin;
 use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::prelude::*;
+use bevy::ui::UiSystems;
 
 /// The order the crate's systems run in `Update`.
 ///
@@ -530,6 +532,13 @@ impl Plugin for GooeyStylePlugin {
             );
         // The one system that is not in `Update`: it needs this frame's transforms.
         anchor::add_systems(app);
+        // So the keycap's centring: it needs this frame's shaped text.
+        app.add_systems(
+            PostUpdate,
+            centre_keycaps
+                .in_set(UiSystems::PostLayout)
+                .after(bevy::ui::widget::text_system),
+        );
         #[cfg(feature = "reflect")]
         app.add_systems(
             Update,

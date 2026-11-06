@@ -8,6 +8,7 @@ use bevy::input::gamepad::{
 use bevy::input::keyboard::{KeyCode, KeyboardInput};
 use bevy::input::mouse::MouseButtonInput;
 use bevy::prelude::*;
+use bevy::text::TextLayoutInfo;
 
 use crate::binding::{Binding, BindingSettings};
 use crate::model::STICK_PUSH;
@@ -246,6 +247,57 @@ pub fn update_prompts(
             if text.0 != name {
                 text.0.clone_from(&name);
             }
+        }
+    }
+}
+
+/// Centres a keycap's words in the box its `min_width` gives it.
+///
+/// A keycap is a `Text` node whose `min_width` is a square (see `apply_skin`), and a `Text` node
+/// lays its glyphs out from its content box's left edge. A single character is narrower than that
+/// square, so without this the words sit hard against the left padding and every pixel of the
+/// slack lands on the right: the letter reads left-aligned in a too-wide cap.
+///
+/// [`Justify::Center`] cannot help. It centres a run inside the width the run was *broken* to, and
+/// a cap is [`LineBreak::NoWrap`] so that a name with a space in it ("Left Click", "Num Enter")
+/// stays on one line: `NoWrap` asks Bevy for `TextBounds::UNBOUNDED`, which leaves the alignment
+/// nothing to centre within. Centring the node's content instead (`JustifyContent::Center`) is a
+/// no-op on a node with no children, and letting the text wrap so that alignment has a width
+/// breaks a two-word cap onto two lines.
+///
+/// So the box is made to fit its words: the horizontal padding is widened to whatever leaves the
+/// content box exactly as wide as the shaped run, which puts the run in the middle by arithmetic.
+/// A cap whose run is already wider than its square keeps the padding `apply_skin` gave it.
+///
+/// Runs in `PostUpdate`, after Bevy has laid the text out ([`bevy::ui::UiSystems::PostLayout`]):
+/// the run's width is not known before then. It writes only a difference, so a settled legend
+/// costs a read a frame.
+pub fn centre_keycaps(mut caps: Query<(&Role, &mut Node, &ComputedNode, &TextLayoutInfo)>) {
+    for (role, mut node, computed, text) in &mut caps {
+        if !matches!(*role, Role::PromptKey | Role::PromptButton) {
+            continue;
+        }
+        let run = text.size.x;
+        if run <= 0.0 {
+            // No font yet (or a glyph the face lacks): nothing has been shaped to centre.
+            continue;
+        }
+        let inner = computed.content_box().size().x;
+        // Positive when the content box is wider than the run: half of that is what the left
+        // padding must give up so the run's own width is what the content box spans.
+        let slack = inner - run;
+        if slack <= 0.5 {
+            continue;
+        }
+        let Val::Px(padding) = node.padding.left else {
+            continue;
+        };
+        let Val::Px(vertical) = node.padding.top else {
+            continue;
+        };
+        let next = Val::Px(padding + slack / 2.0);
+        if node.padding.left != next {
+            node.padding = UiRect::axes(next, Val::Px(vertical));
         }
     }
 }
