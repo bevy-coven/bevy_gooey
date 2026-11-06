@@ -306,8 +306,8 @@ pub use text::{
     track_text_editing, update_text_inputs,
 };
 pub use toast::{
-    Toast, ToastAction, ToastAnchor, ToastBundle, ToastButton, ToastKind, ToastLog, ToastLogEntry,
-    ToastSettings, ToastStack, update_toasts,
+    Toast, ToastAction, ToastAnchor, ToastBundle, ToastButton, ToastInset, ToastKind, ToastLog,
+    ToastLogEntry, ToastSettings, ToastStack, update_toasts,
 };
 pub use toolbar::{
     GroupOption, Overflowed, ToggleGroupCount, ToggleGroupValue, Toolbar, fit_bars,
@@ -472,6 +472,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<HoldSettings>()
             .register_type::<SlideIn>()
             .register_type::<ToastAnchor>()
+            .register_type::<ToastInset>()
             .register_type::<ToastKind>()
             .register_type::<ToastLog>()
             .register_type::<ToastLogEntry>()

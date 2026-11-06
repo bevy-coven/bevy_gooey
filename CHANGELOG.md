@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `ToastSettings::inset` (`ToastInset { top, right, bottom, left }`, logical px, default none; `ToastInset::top(px)` and `ToastInset::bottom(px)`) keeps the toast stack off the window's edges, so a stack anchored `TopCenter` stands under an app's menu bar with its own padding below it, and a bottom one above a status band (#43). The stack is now an absolute node whose four sides are the inset (it was a 100% by 100% node at the window's corner); `update_toasts` writes them only on a difference and follows a host that rewrites the resource. A side that is negative or not finite keeps no room, as a non-finite `fade_seconds` is no fade. Scaled by `UiScale` like every other size.
+
 ## [0.35.1] - 2026-11-06
 
 ### Fixed
