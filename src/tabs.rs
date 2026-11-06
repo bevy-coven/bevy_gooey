@@ -287,6 +287,13 @@ pub fn step_tabs(
     }
 }
 
+/// What [`land_tab_focus`] reads of the widgets: each one's state, and the pages that stand apart
+/// from their strip ([`TabPageOf`]).
+pub(crate) type TabStates<'w, 's> = (
+    Query<'w, 's, (&'static TabsValue, &'static TabsCount)>,
+    Query<'w, 's, (Entity, &'static TabPageOf)>,
+);
+
 /// What [`land_tab_focus`] reads about an entity on the way to the page's first widget.
 pub(crate) type StopQuery = (
     Option<&'static TabIndex>,
@@ -306,10 +313,9 @@ pub fn land_tab_focus(
     parents: Query<&ChildOf>,
     roles: Query<&Role>,
     children: Query<&Children>,
-    values: Query<(&TabsValue, &TabsCount)>,
+    (values, side_pages): TabStates,
     visible: Query<&InheritedVisibility>,
     stops: Query<StopQuery>,
-    side_pages: Query<(Entity, &TabPageOf)>,
 ) {
     let Some(from) = focus.get() else {
         return;
