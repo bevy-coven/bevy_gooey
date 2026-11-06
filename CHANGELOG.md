@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.35.1] - 2026-11-06
+
 ### Fixed
 
 - A `Role::PromptKey` keycap's words are centred in its box (#44). The cap is a `Text` node whose `min_width` is a square, and Bevy lays a `Text` node's glyphs out from its content box's left edge, so a single character sat hard against the left padding and every pixel of slack landed on the right: "X" read 3 px (at 1x) to 4.5 px (a pad button's circle at 1x) left of its cap's middle, and more at a larger `text_scale`. `Justify::Center` cannot do it: it centres a run inside the width the run was broken to, and a cap must stay `LineBreak::NoWrap` so a name with a space ("Left Click", "Num Enter") stays on one line, and `NoWrap` leaves Bevy nothing to centre within. The new `centre_keycaps` runs in `PostUpdate` after the text is shaped and widens the cap's horizontal padding so its content box is exactly as wide as the run, which centres the run by arithmetic. Measured on the gallery's legend: ink off the cap's middle 3.0 px before, 0.0 px after (a pad button 4.5 px, 0.5 px). Nothing else changed; the two-word caps and the caps whose words fill them are untouched.
