@@ -194,6 +194,7 @@ impl BindingSettings {
     /// a legend and the palette.
     ///
     /// ```
+    /// # use bevy::prelude::*;
     /// # use bevy_gooey::*;
     /// let settings = BindingSettings {
     ///     platform: Some(Platform::Mac),
