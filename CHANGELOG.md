@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-11-06
+
 ### Added
 
 - `side_tabs(tabs, selected)`, `SideTab::new(label).badge(text)` and `side_tab_page(strip, index, widgets)` (#42): a vertical tab strip for a sidebar. Bevy's `TabList` with `ControlOrientation::Vertical`, so Up and Down on a tab move focus and select once; the D-pad's Up and Down step it (`step_tabs`), Left and Right move focus on into the page beside (a `VerticalTab` is not in `navigate_by_input`'s keep-sideways set, and its Up and Down are left to the strip). Labels are left-aligned with an optional `Role::TabBadge` pill at the end, read in the tab's accessible name. Its pages stand anywhere: `TabPageOf { tabs, index }` pages are shown by the strip's `TabsValue` (`update_tab_pages`, also for a page spawned later), and `land_tab_focus` moves focus off a page the strip turned away from. State and events are `TabsValue` and `ValueChange<usize>`, as for `tabs`.
