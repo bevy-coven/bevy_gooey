@@ -7,8 +7,8 @@ use bevy::prelude::*;
 use bevy::ui::{ComputedNode, InteractionDisabled, UiGlobalTransform};
 use bevy::window::PrimaryWindow;
 
-use crate::binding::Capturing;
-use crate::shortcut::{Modifiers, Shortcut};
+use crate::binding::{BindingSettings, Capturing};
+use crate::shortcut::{ChordText, Modifiers, Shortcut};
 use crate::skin::Role;
 use crate::text::TextEditing;
 use crate::tooltip::Tooltip;
@@ -158,6 +158,7 @@ type BadgeItem = (
 #[allow(clippy::too_many_arguments)]
 pub fn update_shortcut_badges(
     settings: Option<Res<ShortcutBadges>>,
+    binding: Res<BindingSettings>,
     keys: Option<Res<ButtonInput<KeyCode>>>,
     time: Option<Res<Time<Real>>>,
     mut held_for: Local<f32>,
@@ -212,7 +213,7 @@ pub fn update_shortcut_badges(
         if rect.intersect(screen).is_empty() {
             continue;
         }
-        wanted.push((entity, shortcut.label()));
+        wanted.push((entity, binding.chord(shortcut)));
     }
 
     // Reconcile: keep a badge whose widget still wants one, fix its words, drop the rest.
@@ -298,6 +299,7 @@ pub struct ShortcutLegendCard(pub Vec<LegendRow>);
 /// nothing while the overlay is down and no card stands. Runs in [`crate::GooeySystems::Style`],
 /// after [`update_shortcut_badges`].
 pub fn update_shortcut_legend(
+    binding: Res<BindingSettings>,
     up: Option<Res<BadgesShown>>,
     legend: Option<Res<ShortcutLegend>>,
     cards: Query<(Entity, &ShortcutLegendCard)>,
@@ -339,7 +341,8 @@ pub fn update_shortcut_legend(
         .with_children(|card| {
             for row in wanted {
                 card.spawn((
-                    Text::new(row.chord.label()),
+                    Text::new(binding.chord(row.chord)),
+                    ChordText(row.chord),
                     TextLayout::new(Justify::Center, LineBreak::NoWrap),
                     Node {
                         justify_self: JustifySelf::End,

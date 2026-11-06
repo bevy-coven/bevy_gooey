@@ -12,10 +12,10 @@ use bevy::ui_widgets::{Activate, ValueChange};
 
 use crate::drag::DragState;
 use crate::feedback::{UiFeedback, UiFeedbackKind};
-use crate::model::{PadStyle, is_modifier_key, key_name, mouse_name, pad_name};
+use crate::model::{ChordGlyphs, PadStyle, is_modifier_key, key_name, mouse_name, pad_name};
 use crate::nav::show_focus;
 use crate::prompt::InputDevice;
-use crate::shortcut::{Modifiers, Shortcut};
+use crate::shortcut::{Modifiers, Platform, Shortcut};
 use crate::skin::Role;
 
 /// The `GlobalZIndex` of the catcher a capturing row puts over the interface: above a dialog (100),
@@ -152,6 +152,18 @@ pub struct BindingSettings {
     pub cancel_key: KeyCode,
     /// The pad button that exits a capture, on any gamepad. Default: Start.
     pub cancel_button: GamepadButton,
+    /// How a chord spells its modifiers and named keys: Apple's symbols (`⇧⌘P`) or ASCII words
+    /// (`Shift+Cmd+P`). Default: [`ChordGlyphs::Glyphs`]. Set
+    /// [`ChordGlyphs::Words`](crate::ChordGlyphs::Words) when the host's font has no symbols —
+    /// Bevy's own bundled face maps none of a mac chord's thirteen, so a mac build reading this
+    /// is showing boxes. On anything but a mac the two spellings agree.
+    #[reflect(ignore)]
+    pub chord_glyphs: ChordGlyphs,
+    /// The platform every chord on screen is spelled for. `None` (the default) is the one this
+    /// build runs on ([`Platform::current`]); a host that documents or previews another platform's
+    /// keymap names it.
+    #[reflect(ignore)]
+    pub platform: Option<Platform>,
 }
 
 impl Default for BindingSettings {
@@ -163,26 +175,62 @@ impl Default for BindingSettings {
             pad_style: PadStyle::default(),
             cancel_key: KeyCode::Escape,
             cancel_button: GamepadButton::Start,
+            chord_glyphs: ChordGlyphs::default(),
+            platform: None,
         }
     }
 }
 
 impl BindingSettings {
+    /// The platform every chord on screen is spelled for: [`BindingSettings::platform`], or this
+    /// build's.
+    pub fn platform(&self) -> Platform {
+        self.platform.unwrap_or_else(Platform::current)
+    }
+
+    /// The words a chord wears on this host: [`Shortcut::label_with`], in
+    /// [`BindingSettings::chord_glyphs`] and [`BindingSettings::platform`]. Every place the crate
+    /// draws a chord reads this, so one setting reaches a tooltip, a menu row, a prompt, a badge,
+    /// a legend and the palette.
+    ///
+    /// ```
+    /// # use bevy_gooey::*;
+    /// let settings = BindingSettings {
+    ///     platform: Some(Platform::Mac),
+    ///     chord_glyphs: ChordGlyphs::Words,
+    ///     ..Default::default()
+    /// };
+    /// assert_eq!(settings.chord(Shortcut::new(Modifiers::META, KeyCode::KeyS)), "Cmd+S");
+    /// ```
+    pub fn chord(&self, shortcut: Shortcut) -> String {
+        shortcut.label_with(self.platform(), self.chord_glyphs)
+    }
+
+    /// The words an input wears on this host: [`Binding::label`] for a key, a mouse button or a
+    /// pad button (its own [`BindingSettings::pad_style`]), [`BindingSettings::chord`] for a
+    /// chord.
+    pub fn input_label(&self, binding: Binding) -> String {
+        match binding {
+            Binding::Chord(chord) => self.chord(chord),
+            other => other.label(self.pad_style),
+        }
+    }
+
     /// What a keyboard row says while it waits, with `{exit}` filled in.
     pub fn key_prompt(&self) -> String {
-        let exit = Binding::Key(self.cancel_key).label(self.pad_style);
+        let exit = self.input_label(Binding::Key(self.cancel_key));
         self.key_prompt.replace("{exit}", &exit)
     }
 
     /// What a pad row says while it waits, with `{exit}` filled in.
     pub fn pad_prompt(&self) -> String {
-        let exit = Binding::Pad(self.cancel_button).label(self.pad_style);
+        let exit = self.input_label(Binding::Pad(self.cancel_button));
         self.pad_prompt.replace("{exit}", &exit)
     }
 
     /// What a chord row says while it waits, with `{exit}` filled in.
     pub fn chord_prompt(&self) -> String {
-        let exit = Binding::Key(self.cancel_key).label(self.pad_style);
+        let exit = self.input_label(Binding::Key(self.cancel_key));
         self.chord_prompt.replace("{exit}", &exit)
     }
 
@@ -482,7 +530,7 @@ pub fn update_bindings(
         let Ok((_, value, waiting)) = rows.get(row) else {
             continue;
         };
-        let name = value.0.label(settings.pad_style);
+        let name = settings.input_label(value.0);
         let prompt = settings.prompt(&value.0);
         for part in children.iter_descendants(row) {
             let Ok((role, mut text, mut visibility)) = parts.get_mut(part) else {

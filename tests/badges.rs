@@ -856,3 +856,65 @@ fn the_legend_stays_inside_the_window_at_every_text_size_and_reads_at_4_5_to_1_i
         assert!(ratio >= 4.5, "{}: {ratio}", preset.name());
     }
 }
+
+/// Every chord word the overlay draws: the badges on the widgets and the legend's caps (#45).
+fn chords_on_screen(app: &mut App) -> Vec<String> {
+    let world = app.world_mut();
+    let mut words: Vec<String> = world
+        .query_filtered::<&Text, With<ShortcutBadge>>()
+        .iter(world)
+        .map(|text| text.0.clone())
+        .collect();
+    let caps: Vec<String> = world
+        .query::<(&Role, &Text, &ChildOf)>()
+        .iter(world)
+        .filter(|(role, _, _)| **role == Role::PromptKey)
+        .map(|(_, text, _)| text.0.clone())
+        .collect();
+    words.extend(caps);
+    words.sort();
+    words
+}
+
+#[test]
+fn the_overlay_spells_its_chords_the_hosts_way_and_follows_a_change() {
+    let mut app = app_with(GooeySkin::dark(), instant());
+    app.insert_resource(ShortcutLegend {
+        rows: vec![LegendRow::new(
+            Shortcut::new(Modifiers::META, KeyCode::KeyZ),
+            "Undo",
+        )],
+    });
+    app.world_mut().resource_mut::<BindingSettings>().platform = Some(Platform::Mac);
+    let save = app
+        .world_mut()
+        .spawn((
+            button("Save"),
+            Shortcut::new(Modifiers::META, KeyCode::KeyS),
+        ))
+        .id();
+    let card = app.world_mut().spawn(panel()).add_child(save).id();
+    app.world_mut().spawn(screen()).add_child(card);
+    settle(&mut app);
+    down(&mut app, KeyCode::AltLeft);
+    settle(&mut app);
+    let symbols = chords_on_screen(&mut app);
+    assert!(
+        symbols.contains(&"⌘S".to_owned()) && symbols.contains(&"⌘Z".to_owned()),
+        "the symbols by default, on a badge and on a legend row: {symbols:?}"
+    );
+
+    app.world_mut()
+        .resource_mut::<BindingSettings>()
+        .chord_glyphs = ChordGlyphs::Words;
+    settle(&mut app);
+    let words = chords_on_screen(&mut app);
+    assert!(
+        words.contains(&"Cmd+S".to_owned()) && words.contains(&"Cmd+Z".to_owned()),
+        "the same overlay, in words: {words:?}"
+    );
+    assert!(
+        words.iter().all(|chord| chord.is_ascii()),
+        "Words is ASCII everywhere the overlay draws a chord: {words:?}"
+    );
+}

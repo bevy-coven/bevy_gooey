@@ -725,6 +725,47 @@ pub fn is_modifier_key(code: &str) -> bool {
         })
 }
 
+/// How a chord spells its modifiers and named keys: Apple's symbols, or words that every font can
+/// draw.
+///
+/// A mac spells a chord with symbols (`⌃⌥⇧⌘`, and `↩⌫⌦⎋⇥` for a few keys), which is the platform's
+/// own notation — but symbols are only glyphs, and a face that does not map a codepoint draws a
+/// tofu box. A host that ships a monospace coding face, as a tool normally does, gets a box on
+/// nearly every Command chord: Bevy's own bundled default font (FiraMono's 95-codepoint subset)
+/// maps **none** of the thirteen a mac chord can wear, and the issue that asked for this
+/// ([#45](https://github.com/bevy-coven/bevy_gooey/issues/45)) measured a host's face missing seven
+/// of them. [`ChordGlyphs::Words`] spells the same chords in ASCII — `Cmd+Z`, `Shift+Cmd+P`,
+/// `Ctrl+Esc` — so the player can always read the interface.
+///
+/// It is a host setting, [`crate::BindingSettings::chord_glyphs`], because only the host knows
+/// which face it shipped. `Glyphs` is the default: the notation is Apple's and a face that carries
+/// the symbols loses nothing. On a platform that is not a mac the two are the same string —
+/// Microsoft's notation is already words.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum ChordGlyphs {
+    /// Apple's symbols on a mac: "⇧⌘P", "⌥↩", "⌃⎋".
+    #[default]
+    Glyphs,
+    /// Words in ASCII, on every platform: "Shift+Cmd+P", "Opt+Enter", "Ctrl+Esc". Apple's order
+    /// and its names, `Ctrl` `Opt` `Shift` `Cmd`; the key is named by [`key_name`], as a prompt
+    /// names it.
+    Words,
+}
+
+impl ChordGlyphs {
+    /// Every spelling, in the order a settings row offers them.
+    pub const ALL: [Self; 2] = [Self::Glyphs, Self::Words];
+
+    /// The spelling's name in a settings row: "Glyphs", "Words".
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Glyphs => "Glyphs",
+            Self::Words => "Words",
+        }
+    }
+}
+
 /// The words of a key chord as the platform spells them, from a `KeyCode` variant name and the
 /// modifiers held, `[ctrl, shift, alt, meta]`.
 ///
@@ -733,33 +774,58 @@ pub fn is_modifier_key(code: &str) -> bool {
 /// Microsoft's order: Windows logo (named "Super"), Ctrl, Alt, Shift, joined by "+"
 /// ("Ctrl+Shift+P"). `meta` is the Command key on a mac and the Windows or Super key elsewhere.
 ///
+/// [`ChordGlyphs::Words`] is the same order in ASCII, for a host whose face has no symbols
+/// ("Shift+Cmd+P", "Opt+Enter"); on anything but a mac it changes nothing.
+///
 /// ```
-/// use bevy_gooey::model::shortcut_label;
-/// assert_eq!(shortcut_label("KeyP", [true, true, false, false], false), "Ctrl+Shift+P");
-/// assert_eq!(shortcut_label("KeyP", [false, true, false, true], true), "⇧⌘P");
+/// use bevy_gooey::model::{ChordGlyphs, shortcut_label};
+/// assert_eq!(shortcut_label("KeyP", [true, true, false, false], false, ChordGlyphs::Glyphs), "Ctrl+Shift+P");
+/// assert_eq!(shortcut_label("KeyP", [false, true, false, true], true, ChordGlyphs::Glyphs), "⇧⌘P");
+/// assert_eq!(shortcut_label("KeyP", [false, true, false, true], true, ChordGlyphs::Words), "Shift+Cmd+P");
 /// ```
-pub fn shortcut_label(code: &str, [ctrl, shift, alt, meta]: [bool; 4], mac: bool) -> String {
-    let mut out = String::new();
+pub fn shortcut_label(
+    code: &str,
+    [ctrl, shift, alt, meta]: [bool; 4],
+    mac: bool,
+    glyphs: ChordGlyphs,
+) -> String {
     if mac {
-        for (held, glyph) in [(ctrl, '⌃'), (alt, '⌥'), (shift, '⇧'), (meta, '⌘')] {
-            if held {
-                out.push(glyph);
+        // Apple's order, as symbols with nothing between, or as words joined by "+".
+        let mut out = String::new();
+        let names = [
+            (ctrl, "Ctrl", '⌃'),
+            (alt, "Opt", '⌥'),
+            (shift, "Shift", '⇧'),
+            (meta, "Cmd", '⌘'),
+        ];
+        for (held, name, glyph) in names {
+            if !held {
+                continue;
+            }
+            match glyphs {
+                ChordGlyphs::Glyphs => out.push(glyph),
+                ChordGlyphs::Words => {
+                    out.push_str(name);
+                    out.push('+');
+                }
             }
         }
-        out.push_str(match code {
-            "Enter" => "↩",
-            "Backspace" => "⌫",
-            "Delete" => "⌦",
-            "Escape" => "⎋",
-            "Tab" => "⇥",
-            "ArrowUp" => "↑",
-            "ArrowDown" => "↓",
-            "ArrowLeft" => "←",
-            "ArrowRight" => "→",
-            other => return out + &key_name(other),
+        // A key wears its own glyph, or `key_name`'s words — "Esc", as a prompt names it.
+        out.push_str(&match (glyphs, code) {
+            (ChordGlyphs::Glyphs, "Enter") => "↩".to_owned(),
+            (ChordGlyphs::Glyphs, "Backspace") => "⌫".to_owned(),
+            (ChordGlyphs::Glyphs, "Delete") => "⌦".to_owned(),
+            (ChordGlyphs::Glyphs, "Escape") => "⎋".to_owned(),
+            (ChordGlyphs::Glyphs, "Tab") => "⇥".to_owned(),
+            (ChordGlyphs::Glyphs, "ArrowUp") => "↑".to_owned(),
+            (ChordGlyphs::Glyphs, "ArrowDown") => "↓".to_owned(),
+            (ChordGlyphs::Glyphs, "ArrowLeft") => "←".to_owned(),
+            (ChordGlyphs::Glyphs, "ArrowRight") => "→".to_owned(),
+            _ => key_name(code),
         });
         return out;
     }
+    let mut out = String::new();
     for (held, name) in [
         (meta, "Super"),
         (ctrl, "Ctrl"),
