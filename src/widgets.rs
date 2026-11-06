@@ -316,6 +316,31 @@ pub fn button(text: impl Into<String>) -> impl Bundle {
     )
 }
 
+/// The screen's one main action ("Create", "Start", "Save"): a [`button`] filled with
+/// [`crate::GooeySkin::accent`] and labelled in [`crate::GooeySkin::accent_text`] at rest, so a
+/// first-time player sees the one thing to press. Under the pointer it is
+/// [`crate::GooeySkin::primary_hovered`], held down [`crate::GooeySkin::primary_pressed`], and
+/// disabled it is dimmed like any button. It is a [`button`] with the [`crate::PrimaryButton`]
+/// marker, so focus, `Activate`, a screen reader and every test that finds a button treat it as one;
+/// put the marker on any other button to make that the main action instead. Give a screen one.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     menu(),
+///     children![
+///         (primary_button("New project"), observe(|_: On<Activate>| info!("new"))),
+///         button("Open..."),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn primary_button(text: impl Into<String>) -> impl Bundle {
+    (button(text), crate::PrimaryButton)
+}
+
 /// A button that confirms only when it is held, for an act the player cannot take back (delete a
 /// save, quit without saving, abandon a run). Hold Enter, Space or the pad's South while it has
 /// focus, or the primary pointer button while the pointer is over it, for `seconds`: a bar under

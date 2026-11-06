@@ -39,6 +39,7 @@ mod options;
 mod palette;
 mod pointer;
 mod popover;
+mod primary_button;
 mod progress;
 mod prompts;
 mod radial;

@@ -237,21 +237,21 @@ pub use model::{
     ENHANCED_CONTRAST, HOLD_SCALE_MAX, HOLD_UNWIND_RATE, HexError, INTERFACE_SIZE_STEPS,
     METER_GAIN_TAU_SECONDS, METER_SNAP, METER_TRAIL_HOLD_SECONDS, METER_TRAIL_RATE, MIN_TARGET_PX,
     MeterShown, NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES,
-    POPOVER_SLIDE_PX, POPOVER_SLIDE_SECONDS, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH,
-    SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STATE_STEP, STICK_PUSH, TABLE_LEAST_COLUMN,
-    TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit,
-    box_outside, choice_next, choice_step, cie_lightness, clock_text, column_resize, composite,
-    contrast_ratio, cooldown_sweep, cooldown_text, cooldown_words, dock_drop_rect, dock_edge_zone,
-    dock_neighbour, dock_tab_slot, dock_zone, ease_out, eta_words, format_number, fuzzy_score,
-    hex_text, hold_seconds, hold_step, hsv_to_rgb, is_modifier_key, key_name, list_height,
-    meter_fraction, meter_motion, mouse_name, natural_cmp, nearest_step, number_decimals, pad_name,
-    page_target, parse_hex, parse_number, pin_to_edge, progress_text, radial_pick, radial_place,
-    radial_step, relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
-    shortcut_conflicts, shortcut_label, slider_fraction, slider_text, slot_edge, snap_line_width,
-    snap_to_row, spinner_angle, split_clamp, split_drag, split_mins, step_value, tab_step,
-    table_anchor, table_step, table_window, target_step, target_toward, toast_alpha, toast_grow,
-    toast_hold, toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible,
-    type_ahead, window_ui_scale,
+    POPOVER_SLIDE_PX, POPOVER_SLIDE_SECONDS, PRIMARY_LIFT_L, PadStyle, RADIAL_DEAD_ZONE,
+    RADIAL_STICK_PUSH, SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STATE_STEP, STICK_PUSH,
+    TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward,
+    area_values, bar_fit, box_outside, choice_next, choice_step, cie_lightness, clock_text,
+    column_resize, composite, contrast_ratio, cooldown_sweep, cooldown_text, cooldown_words,
+    dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, ease_out, eta_words,
+    format_number, fuzzy_score, hex_text, hold_seconds, hold_step, hsv_to_rgb, is_modifier_key,
+    key_name, lift_toward, list_height, meter_fraction, meter_motion, mouse_name, natural_cmp,
+    nearest_step, number_decimals, pad_name, page_target, parse_hex, parse_number, pin_to_edge,
+    progress_text, radial_pick, radial_place, radial_step, relative_luminance, repeat_steps,
+    rgb_to_hsv, scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label, slider_fraction,
+    slider_text, slot_edge, snap_line_width, snap_to_row, spinner_angle, split_clamp, split_drag,
+    split_mins, step_value, tab_step, table_anchor, table_step, table_window, target_step,
+    target_toward, toast_alpha, toast_grow, toast_hold, toast_life, tree_ends, tree_heir,
+    tree_indent, tree_parent, tree_visible, type_ahead, window_ui_scale,
 };
 pub use motion::{MotionSettings, PopoverSlide, SlideIn, begin_entrances, update_motion};
 pub use nav::{
@@ -285,7 +285,8 @@ pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_s
 pub use select::{SELECT_FILTER_ABOVE, Select};
 pub use shortcut::{Modifiers, Platform, Shortcut};
 pub use skin::{
-    Density, GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin,
+    Density, GooeyFonts, GooeySkin, PrimaryButton, Role, SkinPreset, SkinProblem, SkinScope,
+    apply_skin,
 };
 pub use slots::{
     Slot, SlotCursor, SlotGrid, SlotItems, SlotMoved, SlotRef, SlotRefused, SlotRules,
@@ -319,11 +320,11 @@ pub use widgets::{
     binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
     heading, hold_button, icon, icon_button, interface_size, label, list, menu, menu_bar,
     menu_item, menu_title, meter, notification_center, number_field, pad_style, panel, popover,
-    popover_modal, progress, prompt, prompts, prompts_at, radial, radio_item, screen, section,
-    select, separator, skin_preset, slider, slot_grid, spinner, split, status_bar, status_item,
-    status_progress, submenu, surface, tab_page, table, tabs, text_area, text_input, text_size,
-    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
-    viewport,
+    popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial, radio_item,
+    screen, section, select, separator, skin_preset, slider, slot_grid, spinner, split, status_bar,
+    status_item, status_progress, submenu, surface, tab_page, table, tabs, text_area, text_input,
+    text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree,
+    vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -381,6 +382,7 @@ impl Plugin for GooeyStylePlugin {
             .add_message::<UiFeedback>()
             .register_type::<GooeySkin>()
             .register_type::<SkinScope>()
+            .register_type::<PrimaryButton>()
             .register_type::<Role>()
             .register_type::<Meter>()
             .register_type::<WorldAnchor>()

@@ -21,8 +21,8 @@ use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
-    STATE_STEP, TEXT_CONTRAST, cie_lightness, composite, contrast_ratio, list_height,
-    snap_line_width, tree_indent,
+    PRIMARY_LIFT_L, STATE_STEP, TEXT_CONTRAST, cie_lightness, composite, contrast_ratio,
+    lift_toward, list_height, snap_line_width, tree_indent,
 };
 use crate::popover::{PopoverPanel, placement_of};
 use crate::prompt::PromptsAnchor;
@@ -678,6 +678,34 @@ impl GooeySkin {
         self.pressed.unwrap_or_else(|| self.solid_surface())
     }
 
+    /// A [`crate::primary_button`]'s fill under the pointer: [`GooeySkin::accent`] moved toward
+    /// [`GooeySkin::text`] by [`crate::PRIMARY_LIFT_L`] of CIE L\* ([`crate::lift_toward`]). A step
+    /// in lightness, not a fixed mix, so the lift is seen in a skin whose accent is already near
+    /// its text; the text is the ink furthest from the accent's own words, so
+    /// [`GooeySkin::accent_text`] stays readable, and [`GooeySkin::problems`] checks both.
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// let skin = GooeySkin::dark();
+    /// assert_ne!(skin.primary_hovered(), skin.accent);
+    /// ```
+    pub fn primary_hovered(&self) -> Color {
+        self.lifted(PRIMARY_LIFT_L)
+    }
+
+    /// A [`crate::primary_button`]'s fill held down: [`GooeySkin::accent`] moved twice
+    /// [`crate::PRIMARY_LIFT_L`] toward [`GooeySkin::text`], a step past
+    /// [`GooeySkin::primary_hovered`].
+    pub fn primary_pressed(&self) -> Color {
+        self.lifted(PRIMARY_LIFT_L * 2.0)
+    }
+
+    /// The accent moved `step_l` of CIE L\* toward the text, at the accent's own alpha.
+    fn lifted(&self, step_l: f32) -> Color {
+        let [red, green, blue] = lift_toward(rgb(self.accent), rgb(self.text), step_l);
+        Color::srgba(red, green, blue, self.accent.alpha())
+    }
+
     /// The colour of a world gizmo or glyph while the player holds the key that asks the world to
     /// step back: [`GooeySkin::held`] (the field), else [`GooeySkin::text`] faded toward
     /// [`GooeySkin::held_ground`] by [`GooeySkin::held_fade`].
@@ -814,6 +842,18 @@ impl GooeySkin {
                 TEXT_CONTRAST,
             ),
             (
+                "accent_text on primary hovered",
+                rgb(self.accent_text),
+                rgb(self.primary_hovered()),
+                TEXT_CONTRAST,
+            ),
+            (
+                "accent_text on primary pressed",
+                rgb(self.accent_text),
+                rgb(self.primary_pressed()),
+                TEXT_CONTRAST,
+            ),
+            (
                 "focus_ring on surface_raised",
                 rgb(self.focus_ring),
                 rgb(self.surface_raised),
@@ -920,6 +960,30 @@ impl GooeySkin {
                 delta_l: delta,
                 needed: STATE_STEP,
             });
+        }
+        // A primary button's three fills, each a step from the next: the lift under the pointer and
+        // the press are how the player sees the button answer.
+        let lightness = |c: Color| cie_lightness(rgb(c));
+        for (pair, a, b) in [
+            (
+                "primary at rest and hovered",
+                self.accent,
+                self.primary_hovered(),
+            ),
+            (
+                "primary hovered and pressed",
+                self.primary_hovered(),
+                self.primary_pressed(),
+            ),
+        ] {
+            let delta = (lightness(a) - lightness(b)).abs();
+            if delta.is_nan() || delta < STATE_STEP {
+                out.push(SkinProblem::Indistinguishable {
+                    pair,
+                    delta_l: delta,
+                    needed: STATE_STEP,
+                });
+            }
         }
         let target = self.target();
         if target < MIN_TARGET_PX {
@@ -1325,6 +1389,15 @@ impl fmt::Display for SkinProblem {
 #[derive(Component, Clone, Debug, PartialEq, Reflect)]
 #[reflect(Component, Debug, PartialEq, Clone)]
 pub struct SkinScope(pub GooeySkin);
+
+/// Marks a [`crate::button`] as the screen's main action: [`apply_skin`] fills it with
+/// [`GooeySkin::accent`] and labels it in [`GooeySkin::accent_text`] at rest,
+/// [`GooeySkin::primary_hovered`] under the pointer and [`GooeySkin::primary_pressed`] held down; a
+/// disabled one is dimmed like any button. [`crate::primary_button`] spawns a button with it;
+/// inserting or removing it restyles the button, so the main action can move.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct PrimaryButton;
 
 /// The fonts widgets draw with. A separate resource from [`GooeySkin`] because a font is an asset
 /// handle the host loads, not data a project saves.
@@ -1875,6 +1948,8 @@ struct State {
     anchor: PromptsAnchor,
     /// The entity is a status item: a progress in it is a short bar.
     status_item: bool,
+    /// A button that is the screen's main action ([`PrimaryButton`]).
+    primary: bool,
 }
 
 impl Default for State {
@@ -1905,6 +1980,7 @@ impl Default for State {
             status: None,
             status_item: false,
             anchor: PromptsAnchor::default(),
+            primary: false,
         }
     }
 }
@@ -1930,6 +2006,7 @@ type StateQuery = (
         Has<DropCandidate>,
         Has<DropRefusing>,
         Option<&'static PromptsAnchor>,
+        Has<PrimaryButton>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -1967,6 +2044,7 @@ type Restyle = (
             Added<DropCandidate>,
             Added<DropRefusing>,
             Changed<PromptsAnchor>,
+            Added<PrimaryButton>,
         )>,
     )>,
 );
@@ -1985,6 +2063,7 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, FieldProblem>,
     RemovedComponents<'w, 's, DropCandidate>,
     RemovedComponents<'w, 's, DropRefusing>,
+    RemovedComponents<'w, 's, PrimaryButton>,
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
@@ -2061,6 +2140,7 @@ pub fn apply_skin(
         unproblemed,
         undropped,
         unrefused,
+        unprimed,
     ) = &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -2086,7 +2166,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    (marked, problem, status, candidate, refusing, anchor),
+                    (marked, problem, status, candidate, refusing, anchor, primary),
                     row,
                     role,
                 )| {
@@ -2122,6 +2202,7 @@ pub fn apply_skin(
                         anchor: anchor.copied().unwrap_or_default(),
                         status_item: role == Some(&Role::StatusItem),
                         band: row.is_some_and(|r| r.index % 2 == 1),
+                        primary,
                     }
                 },
             )
@@ -2171,6 +2252,7 @@ pub fn apply_skin(
         unproblemed.clear();
         undropped.clear();
         unrefused.clear();
+        unprimed.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -2211,6 +2293,7 @@ pub fn apply_skin(
     dirty.extend(unproblemed.read());
     dirty.extend(undropped.read());
     dirty.extend(unrefused.read());
+    dirty.extend(unprimed.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -2341,6 +2424,16 @@ fn restyle(
         Role::Panel => Some(skin.surface),
         Role::Button | Role::TableHeaderCell => Some(if state.disabled {
             skin.surface
+        } else if state.primary {
+            // The main action is the accent at rest and lifts from it, where a plain button
+            // rests quiet and turns to the accent when pressed.
+            if state.pressed {
+                skin.primary_pressed()
+            } else if state.hovered || state.open {
+                skin.primary_hovered()
+            } else {
+                skin.accent
+            }
         } else if state.pressed {
             skin.accent
         } else if state.hovered || state.open {
@@ -3707,7 +3800,9 @@ fn restyle(
         let disabled = parent.disabled || owner.disabled || parent.refusing;
         let color = match tone {
             IconTone::Text if disabled => skin.text_muted,
-            IconTone::Text if parent.pressed || parent.selected || owner.pressed => {
+            IconTone::Text
+                if parent.pressed || parent.selected || parent.primary || owner.pressed =>
+            {
                 skin.accent_text
             }
             IconTone::Text => skin.text,
@@ -3739,7 +3834,7 @@ fn restyle(
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted
-            } else if parent.pressed {
+            } else if parent.pressed || parent.primary {
                 skin.accent_text
             } else {
                 skin.text
