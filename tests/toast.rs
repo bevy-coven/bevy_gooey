@@ -677,11 +677,12 @@ fn toasts_stand_inside_the_window_in_even_rows_newest_nearest_the_edge() {
     );
 }
 
-/// A toast's body and its stack, after `n` frames of a toast spawned with `settings`.
-fn one_toast_with(
-    settings: ToastSettings,
-    scale: f32,
-) -> (App, (f32, f32, f32, f32), (f32, f32, f32, f32)) {
+/// A node's `(left, top, right, bottom)` in the window, logical px.
+type Edges = (f32, f32, f32, f32);
+
+/// A toast's body and its stack, six frames after a toast spawned with `settings` at the player's
+/// interface `scale`.
+fn one_toast_with(settings: ToastSettings, scale: f32) -> (App, Edges, Edges) {
     let mut app = app();
     *app.world_mut().resource_mut::<ToastSettings>() = settings;
     // The player's interface size, so `UiScale` is `scale` at 720p.
