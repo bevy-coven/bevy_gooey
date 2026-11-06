@@ -52,6 +52,7 @@ mod section;
 mod select;
 mod serde;
 mod shortcut;
+mod side_tabs;
 mod skin;
 mod slots;
 mod split;

@@ -35,7 +35,7 @@ use crate::region::{ArrowPolicy, FocusRegion};
 use crate::skin::Role;
 use crate::split::{SplitAxis, SplitDivider};
 use crate::table::{TableCache, TableCursor, TableHeaderCell};
-use crate::tabs::{StopQuery, TabsCount, TabsValue, first_stop};
+use crate::tabs::{StopQuery, TabsCount, TabsValue, VerticalTab, first_stop};
 use crate::text::AreaField;
 use crate::tree::TreeView;
 
@@ -62,6 +62,8 @@ type KeepsSideways = (
         With<ColorArea>,
     )>,
     Without<InteractionDisabled>,
+    // A vertical strip's tabs keep Up and Down instead; Left and Right move focus on.
+    Without<VerticalTab>,
 );
 
 /// The widgets whose Up and Down keys step a value (a number field's field, the colour picker's area):
@@ -151,6 +153,7 @@ pub struct FocusScopes<'w, 's> {
     /// The tabs of a dock, whose arrows with Ctrl and Shift held move their panel
     /// ([`crate::Dock`]).
     dock_tabs: Query<'w, 's, (), With<DockTab>>,
+    vertical_tabs: Query<'w, 's, (), With<VerticalTab>>,
     /// The tables, which take Up and Down themselves while they have a row to move to that way.
     tables:
         Query<'w, 's, (&'static TableCursor, &'static TableCache), Without<InteractionDisabled>>,
@@ -287,6 +290,11 @@ impl FocusScopes<'_, '_> {
     /// Whether `entity` is one of a tab strip's tabs.
     pub(crate) fn is_tab(&self, entity: Entity) -> bool {
         self.tab_stops.contains(entity)
+    }
+
+    /// Whether `entity` is a tab of a vertical strip, whose Up and Down are the strip's.
+    pub(crate) fn is_vertical_tab(&self, entity: Entity) -> bool {
+        self.vertical_tabs.contains(entity)
     }
 
     /// The tabs widget a bumper or Ctrl+PageUp turns for focus on `from`: the nearest one `from` is
@@ -527,8 +535,10 @@ pub fn navigate_by_input(
     } else {
         net_x
     };
-    // Down on a menu title opens its menu (`menu_by_input`), and moves nothing.
-    let net_y = if from.is_some_and(|f| scopes.menu_titles.contains(f)) {
+    // Down on a menu title opens its menu (`menu_by_input`), and moves nothing; Up and Down on a
+    // vertical strip's tab are Bevy's `TabList` (the keys) and `step_tabs` (the D-pad).
+    let net_y = if from.is_some_and(|f| scopes.menu_titles.contains(f) || scopes.is_vertical_tab(f))
+    {
         0.0
     } else {
         net_y

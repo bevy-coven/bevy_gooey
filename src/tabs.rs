@@ -37,6 +37,87 @@ pub struct TabsValue(pub usize);
 #[reflect(Component, Default, Debug, PartialEq, Clone)]
 pub struct TabsCount(pub usize);
 
+/// A page of a [`crate::side_tabs`] strip that stands wherever the host puts it (a sidebar's
+/// pane beside it, a dock group): shown while the strip's [`TabsValue`] is `index`, hidden
+/// otherwise, by [`update_tab_pages`]. [`crate::side_tab_page`] spawns one.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, PartialEq, Clone)]
+pub struct TabPageOf {
+    /// The [`crate::side_tabs`] widget (the entity that holds [`TabsValue`]).
+    pub tabs: Entity,
+    /// Which tab shows it, from 0 in the order the tabs were given.
+    pub index: usize,
+}
+
+/// Marks a tab of a vertical strip: Up and Down are its strip's (Bevy's `TabList`), Left and
+/// Right move focus on, and the D-pad's Up and Down step it.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct VerticalTab;
+
+/// One tab of a [`crate::side_tabs`] strip: its label, left-aligned, and an optional badge at its
+/// end ("3" new items).
+///
+/// ```
+/// # use bevy_gooey::*;
+/// let news = SideTab::new("What's new").badge("3");
+/// assert_eq!(news.badge.as_deref(), Some("3"));
+/// ```
+#[derive(Clone, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Debug, Default, PartialEq, Clone)]
+pub struct SideTab {
+    /// The tab's words.
+    pub label: String,
+    /// A short text at the tab's end, a count or "New"; none by default.
+    pub badge: Option<String>,
+}
+
+impl SideTab {
+    /// A tab called `label`, with no badge.
+    pub fn new(label: impl Into<String>) -> Self {
+        Self {
+            label: label.into(),
+            badge: None,
+        }
+    }
+
+    /// The badge at the tab's end.
+    pub fn badge(mut self, text: impl Into<String>) -> Self {
+        self.badge = Some(text.into());
+        self
+    }
+}
+
+impl<S: Into<String>> From<S> for SideTab {
+    fn from(label: S) -> Self {
+        Self::new(label)
+    }
+}
+
+/// Shows each [`TabPageOf`] page while its strip's [`TabsValue`] is its index and hides it
+/// otherwise (`Visibility::Hidden`, so it keeps no focus and takes no pointer), when the value
+/// changed or the page is new. Runs in [`crate::GooeySystems::Style`] after [`update_tabs`];
+/// writes only a difference.
+pub fn update_tab_pages(
+    roots: Query<(Ref<TabsValue>, &TabsCount)>,
+    mut pages: Query<(Ref<TabPageOf>, &mut Visibility)>,
+) {
+    for (page, mut visibility) in &mut pages {
+        let Ok((value, count)) = roots.get(page.tabs) else {
+            continue;
+        };
+        if !(value.is_changed() || page.is_changed()) {
+            continue;
+        }
+        let chosen = value.0.min(count.0.saturating_sub(1));
+        visibility.set_if_neq(if page.index == chosen {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        });
+    }
+}
+
 /// Turns Bevy's `ValueChange<Option<Entity>>` on the strip (a click, Left and Right, Home and
 /// End, Enter and Space on a tab) into the one [`ValueChange<usize>`] on the widget a game
 /// observes: the tab's place instead of an entity. The strip's own observer.
@@ -136,7 +217,8 @@ pub fn update_tabs(
 
 /// Turns the page of a tabs widget with the pad's bumpers, `LB` and `RB`, and with Ctrl+PageUp and
 /// Ctrl+PageDown: to the previous and next tab, wrapping round, one step a press
-/// ([`crate::tab_step`]); and steps it with the D-pad's Left and Right while a tab has focus. Shows
+/// ([`crate::tab_step`]); and steps it with the D-pad's Left and Right while a tab has focus (Up
+/// and Down on a [`crate::side_tabs`] strip's tab). Shows
 /// focus (`InputFocusVisible`). Runs in [`crate::GooeySystems::Navigate`]. Left and Right with the
 /// keyboard on a focused tab are Bevy's own (they move focus and select), so they are not handled
 /// here; PageUp and PageDown without Ctrl are [`crate::page_lists`]', and the pad's triggers are
@@ -172,7 +254,9 @@ pub fn step_tabs(
         return;
     };
     let on_tab = scopes.is_tab(from);
-    if on_tab {
+    if on_tab && scopes.is_vertical_tab(from) {
+        delta += step(pad(GamepadButton::DPadDown), pad(GamepadButton::DPadUp));
+    } else if on_tab {
         delta += step(pad(GamepadButton::DPadRight), pad(GamepadButton::DPadLeft));
     }
     let delta = delta.clamp(-1, 1);
@@ -225,10 +309,45 @@ pub fn land_tab_focus(
     values: Query<(&TabsValue, &TabsCount)>,
     visible: Query<&InheritedVisibility>,
     stops: Query<StopQuery>,
+    side_pages: Query<(Entity, &TabPageOf)>,
 ) {
     let Some(from) = focus.get() else {
         return;
     };
+    // A page of a side strip stands apart from it: its strip is named on the page.
+    if let Some(of) = parents
+        .iter_ancestors(from)
+        .find_map(|a| side_pages.get(a).ok().map(|(_, of)| *of))
+    {
+        let Ok((value, count)) = values.get(of.tabs) else {
+            return;
+        };
+        let chosen = value.0.min(count.0.saturating_sub(1));
+        if of.index == chosen {
+            return;
+        }
+        let shown = side_pages
+            .iter()
+            .find(|(_, p)| p.tabs == of.tabs && p.index == chosen)
+            .map(|(e, _)| e);
+        if shown.is_some_and(|shown| !visible.get(shown).is_ok_and(|v| v.get())) {
+            return;
+        }
+        let to = shown
+            .and_then(|shown| first_stop(shown, &stops))
+            .or_else(|| {
+                let strip = children
+                    .get(of.tabs)
+                    .ok()?
+                    .iter()
+                    .find(|&kid| roles.get(kid) == Ok(&Role::TabList))?;
+                children.get(strip).ok()?.get(chosen).copied()
+            });
+        if let Some(to) = to {
+            focus.set(to, FocusCause::Navigated);
+        }
+        return;
+    }
     // The nearest page `from` is in, its container and the widget it belongs to.
     let Some(page) = parents
         .iter_ancestors(from)

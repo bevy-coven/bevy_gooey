@@ -212,6 +212,7 @@ fn spec(role: Role) -> Spec {
         | Role::CardImage
         | Role::CardName
         | Role::CardLine
+        | Role::TabBadge
         | Role::Cooldown
         | Role::CooldownText
         | Role::HoldTrack
@@ -232,6 +233,7 @@ fn names(role: Role) -> bool {
         Role::ButtonText
             | Role::MenuTitleText
             | Role::TabText
+            | Role::TabBadge
             | Role::MenuText
             | Role::TableCellText
             | Role::ToastActionText

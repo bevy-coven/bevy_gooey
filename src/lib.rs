@@ -303,7 +303,10 @@ pub use table::{
     Column, RowActivated, RowSource, SelectMode, SortBy, Table, TableCursor, TableRow, TableRows,
     TableSelection, TableSort, TableWidths, table_by_input, update_tables,
 };
-pub use tabs::{TabsCount, TabsValue, land_tab_focus, step_tabs, update_tabs};
+pub use tabs::{
+    SideTab, TabPageOf, TabsCount, TabsValue, VerticalTab, land_tab_focus, step_tabs,
+    update_tab_pages, update_tabs,
+};
 pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
     track_text_editing, update_text_inputs,
@@ -323,10 +326,10 @@ pub use widgets::{
     dialog, dock, heading, hold_button, icon, icon_button, interface_size, label, list, menu,
     menu_bar, menu_item, menu_title, meter, notification_center, number_field, pad_style, panel,
     popover, popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial,
-    radio_item, screen, section, select, separator, skin_preset, slider, slot_grid, spinner, split,
-    status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs, text_area,
-    text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator,
-    tree, vec_field, viewport,
+    radio_item, screen, section, select, separator, side_tab_page, side_tabs, skin_preset, slider,
+    slot_grid, spinner, split, status_bar, status_item, status_progress, submenu, surface,
+    tab_page, table, tabs, text_area, text_input, text_size, toast, toast_alert, toggle,
+    toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -434,6 +437,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<VecMixed>()
             .register_type::<ChoiceValue>()
             .register_type::<TabsValue>()
+            .register_type::<TabPageOf>()
+            .register_type::<VerticalTab>()
             .register_type::<TabsCount>()
             .register_type::<ChoiceCount>()
             .register_type::<RadialValue>()
@@ -528,7 +533,7 @@ impl Plugin for GooeyStylePlugin {
                     (update_choices, update_radials).chain(),
                     dock::update_docks,
                     dock::update_dock_drag,
-                    update_tabs,
+                    (update_tabs, update_tab_pages).chain(),
                     update_splits,
                     update_trees,
                     update_tables,

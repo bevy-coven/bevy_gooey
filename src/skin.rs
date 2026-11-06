@@ -1700,6 +1700,9 @@ pub enum Role {
     /// [`GooeySkin::outline`] frame; [`GooeySkin::hovered`] under the pointer, the accent when
     /// chosen or pressed, the panel's fill when disabled, the focus ring while it has focus.
     CardCell,
+    /// A [`crate::side_tabs`] tab's badge at its end ("3"): a pill of the opaque surface with the
+    /// text's ink in the skin's small size, the same on a lit tab.
+    TabBadge,
     /// A card's picture across its width at 16:9, on a [`GooeySkin::surface_raised`] placeholder;
     /// half transparent on a disabled card.
     CardImage,
@@ -2495,6 +2498,7 @@ fn restyle(
             skin.solid_surface()
         }),
         Role::CardImage => Some(skin.surface_raised),
+        Role::TabBadge => Some(skin.solid_surface()),
         Role::Slot => Some(if state.refusing {
             skin.surface
         } else if state.pressed {
@@ -3043,6 +3047,11 @@ fn restyle(
                 next.padding = UiRect::all(Val::Px(skin.pad()));
                 next.row_gap = Val::Px(skin.gap * 0.25);
                 next.overflow = Overflow::clip();
+            }
+            Role::TabBadge => {
+                next.padding = UiRect::horizontal(Val::Px(skin.pad() * 0.5));
+                next.margin = UiRect::left(Val::Px(skin.gap));
+                next.border_radius = BorderRadius::MAX;
             }
             Role::CardImage => {
                 next.width = Val::Percent(100.0);
@@ -3942,6 +3951,8 @@ fn restyle(
             &look.fonts.heading,
             skin.heading_size * wheel_px / text_px,
         )),
+        // A badge's count is read on its own pill, lit tab or not.
+        Role::TabBadge => Some((skin.text, &look.fonts.body, skin.type_scale[1])),
         // A card's words follow the card: muted when disabled, the accent's text when chosen or
         // pressed; a line is quiet at rest and the text under the pointer, where the muted ink
         // is not held to the hovered fill.

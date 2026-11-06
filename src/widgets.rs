@@ -2175,6 +2175,101 @@ pub(crate) fn tabs_in<B: Bundle>(
     )
 }
 
+/// A vertical strip of tabs, a sidebar's navigation (Projects, Learn, What's new): Bevy's
+/// `TabList` with `ControlOrientation::Vertical`, so Up and Down on a focused tab move focus and
+/// select it at once, and a click selects; the D-pad's Up and Down step it, LB and RB (and
+/// Ctrl+PageUp and Ctrl+PageDown) turn it from anywhere inside, and Left and Right move focus on,
+/// into the page beside it. Each tab's label is left-aligned with an optional
+/// [`crate::SideTab::badge`] at its end, the tabs are as wide as the strip, and the selected one is
+/// lit like a [`tabs`] tab.
+///
+/// Its pages are not inside it: spawn each with [`side_tab_page`] wherever it belongs (the pane
+/// beside a sidebar), naming this widget, and the selected one shows while the others hide. The
+/// entity this returns holds [`crate::TabsValue`] (read it, or set it to turn the page from code)
+/// and reports each change the player makes as a `ValueChange<usize>` on itself.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// let nav = commands
+///     .spawn(side_tabs(["Projects".into(), "Learn".into(), SideTab::new("What's new").badge("3")], 0))
+///     .id();
+/// commands.spawn(side_tab_page(nav, 0, children![label("Your projects")]));
+/// commands.spawn(side_tab_page(nav, 1, children![label("Tutorials")]));
+/// commands.spawn(side_tab_page(nav, 2, children![label("Release notes")]));
+/// # }
+/// ```
+pub fn side_tabs(tabs: impl IntoIterator<Item = crate::SideTab>, selected: usize) -> impl Bundle {
+    let tabs: Vec<crate::SideTab> = tabs.into_iter().collect();
+    let count = tabs.len();
+    let selected = selected.min(count.saturating_sub(1));
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Tabs,
+        TabsValue(selected),
+        TabsCount(count),
+        observe(tabs_self_update),
+        children![(
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Stretch,
+                ..default()
+            },
+            TabList {
+                orientation: ControlOrientation::Vertical,
+                activation: TabActivation::Automatic,
+            },
+            Role::TabList,
+            observe(tabs_on_select),
+            Children::spawn(SpawnIter(tabs.into_iter().map(side_tab))),
+        )],
+    )
+}
+
+/// One tab of a [`side_tabs`] strip: a tab whose label stands at its start and whose badge, if
+/// any, at its end.
+fn side_tab(tab: crate::SideTab) -> impl Bundle {
+    (
+        Node {
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Tab,
+        Role::Tab,
+        crate::VerticalTab,
+        Hovered::default(),
+        AutoDirectionalNavigation::default(),
+        Children::spawn(SpawnWith(move |parts: &mut RelatedSpawner<ChildOf>| {
+            parts.spawn((Text::new(tab.label), Role::TabText));
+            if let Some(badge) = tab.badge {
+                parts.spawn((Text::new(badge), Role::TabBadge, ONE_LINE));
+            }
+        })),
+    )
+}
+
+/// A page of a [`side_tabs`] strip, spawned wherever the host wants it: a column of widgets spaced
+/// like a [`menu`], shown while `tabs` (the entity [`side_tabs`] returned) has `index` selected and
+/// hidden otherwise. Focus left on a page the strip turns away from moves to the shown page's first
+/// widget, or to the selected tab.
+pub fn side_tab_page(tabs: Entity, index: usize, widgets: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::TabPage,
+        crate::TabPageOf { tabs, index },
+        Visibility::Hidden,
+        widgets,
+    )
+}
+
 /// One tab of a strip: a button-sized target with its label, which Bevy's `TabList` selects on a
 /// click and on Left and Right.
 fn tab(label: String, extra: impl Bundle) -> impl Bundle {
