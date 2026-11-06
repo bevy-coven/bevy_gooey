@@ -10,6 +10,7 @@ mod anchor;
 mod badges;
 mod binding;
 mod cancel;
+mod card;
 mod choice;
 mod color;
 mod confirm;

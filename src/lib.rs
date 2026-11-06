@@ -141,6 +141,7 @@ mod anchor;
 mod badges;
 mod binding;
 mod cancel;
+mod card;
 mod choice;
 mod color;
 mod confirm;
@@ -199,6 +200,7 @@ pub use binding::{
     update_bindings,
 };
 pub use cancel::{Cancel, CancelScope, cancel_by_input};
+pub use card::{Card, CardCursor, CardGrid, CardRef, CardSelection, update_card_grids};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use color::{
     AreaMarker, ColorArea, ColorPicker, ColorRail, ColorRefused, ColorStrip, ColorSwatch,
@@ -317,14 +319,14 @@ pub use toolbar::{
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use widgets::{
-    binding, button, check_item, choice, color_field, command_palette, context_menu, dialog, dock,
-    heading, hold_button, icon, icon_button, interface_size, label, list, menu, menu_bar,
-    menu_item, menu_title, meter, notification_center, number_field, pad_style, panel, popover,
-    popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial, radio_item,
-    screen, section, select, separator, skin_preset, slider, slot_grid, spinner, split, status_bar,
-    status_item, status_progress, submenu, surface, tab_page, table, tabs, text_area, text_input,
-    text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree,
-    vec_field, viewport,
+    binding, button, card_grid, check_item, choice, color_field, command_palette, context_menu,
+    dialog, dock, heading, hold_button, icon, icon_button, interface_size, label, list, menu,
+    menu_bar, menu_item, menu_title, meter, notification_center, number_field, pad_style, panel,
+    popover, popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial,
+    radio_item, screen, section, select, separator, skin_preset, slider, slot_grid, spinner, split,
+    status_bar, status_item, status_progress, submenu, surface, tab_page, table, tabs, text_area,
+    text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator,
+    tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -441,6 +443,10 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<SlotItems>()
             .register_type::<SlotGrid>()
             .register_type::<SlotCursor>()
+            .register_type::<CardCursor>()
+            .register_type::<CardSelection>()
+            .register_type::<CardGrid>()
+            .register_type::<CardRef>()
             .register_type::<SlotRef>()
             .register_type::<ListView>()
             .register_type::<Split>()
@@ -498,6 +504,7 @@ impl Plugin for GooeyStylePlugin {
                         update_toasts,
                         update_notification_centers,
                         update_slot_grids,
+                        update_card_grids,
                         update_icons,
                         update_field_problems,
                         update_progress,

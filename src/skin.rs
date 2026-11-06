@@ -75,6 +75,16 @@ const SLOT_TEXT_SIZES: f32 = 4.0;
 /// The share of a slot's side its picture takes.
 const SLOT_ICON_SHARE: f32 = 0.6;
 
+/// A card's width, in body text sizes: room for a name of about 25 characters on a line and a
+/// picture large enough to recognise.
+const CARD_TEXT_SIZES: f32 = 14.0;
+
+/// A card's picture's width over its height: 16:9, a screen's shape, as a thumbnail of a scene is.
+const CARD_IMAGE_ASPECT: f32 = 16.0 / 9.0;
+
+/// How much of a disabled card's picture shows: half, dimmed with its words.
+const CARD_DIM_ALPHA: f32 = 0.5;
+
 /// How much of the icon a [`crate::Cooldown`]'s unrecovered wedge covers: the skin's background at
 /// this alpha, so the icon is dimmed and still recognisable.
 const COOLDOWN_DIM_ALPHA: f32 = 0.66;
@@ -1683,6 +1693,21 @@ pub enum Role {
     SlotCount,
     /// A slot's picture, 60% of the slot's side, tinted like an [`Role::Icon`].
     SlotIcon,
+    /// A [`crate::card_grid`]: its cards in a row a [`GooeySkin::gap`] apart that wraps to fill its
+    /// width; not drawn.
+    CardGrid,
+    /// A card: a column 14 body text sizes wide on the opaque surface in an
+    /// [`GooeySkin::outline`] frame; [`GooeySkin::hovered`] under the pointer, the accent when
+    /// chosen or pressed, the panel's fill when disabled, the focus ring while it has focus.
+    CardCell,
+    /// A card's picture across its width at 16:9, on a [`GooeySkin::surface_raised`] placeholder;
+    /// half transparent on a disabled card.
+    CardImage,
+    /// A card's name, in the body's size and [`GooeySkin::text`].
+    CardName,
+    /// A card's quiet line, in the skin's small size and [`GooeySkin::text_muted`] (the text on a
+    /// hovered card, the accent's text on a chosen one).
+    CardLine,
     /// A [`crate::Cooldown`]'s cover: the owner's whole padding box, dimmed from twelve o'clock
     /// round to where the clear wedge has opened; the sweep is data, written by
     /// [`crate::update_cooldowns`].
@@ -2072,6 +2097,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
         role,
         Some(
             Role::Button
+                | Role::CardCell
                 | Role::Toggle
                 | Role::Slider
                 | Role::Choice
@@ -2309,6 +2335,7 @@ pub fn apply_skin(
                             | Role::Radial
                             | Role::Slot
                             | Role::SlotEmpty
+                            | Role::CardCell
                             | Role::Tab
                             | Role::GroupOption
                             | Role::StatusItem
@@ -2380,7 +2407,7 @@ fn restyle(
         floating,
         target,
         cursor,
-        image,
+        mut image,
         tone,
         icon_size,
     ): bevy::ecs::query::QueryItem<'_, '_, Styled>,
@@ -2456,6 +2483,18 @@ fn restyle(
         // accent while pressed. The count's chip is the opaque surface, whatever is under it.
         // A slot that refuses what is carried is the panel's well, items and all: only the
         // places that take it stay raised.
+        // A card rests on the opaque surface so its quiet lines read at 4.5:1, lifts under the
+        // pointer, and is the accent when chosen, like a selected tab.
+        Role::CardCell => Some(if state.disabled {
+            skin.surface
+        } else if state.pressed || state.selected {
+            skin.accent
+        } else if state.hovered {
+            skin.hovered()
+        } else {
+            skin.solid_surface()
+        }),
+        Role::CardImage => Some(skin.surface_raised),
         Role::Slot => Some(if state.refusing {
             skin.surface
         } else if state.pressed {
@@ -2721,6 +2760,9 @@ fn restyle(
         | Role::SlotGrid
         | Role::SlotName
         | Role::SlotIcon
+        | Role::CardGrid
+        | Role::CardName
+        | Role::CardLine
         | Role::Cooldown
         | Role::RadialIcon
         | Role::RadialText
@@ -2839,9 +2881,10 @@ fn restyle(
         // The ring when focused. A filled slot's frame is its own fill (a fill is drawn inside the
         // border, so a clear frame would draw the well a border's width smaller than an empty
         // one beside it), an empty one's the quiet edge.
-        Role::Slot | Role::SlotEmpty if look.focused == Some(entity) => {
+        Role::Slot | Role::SlotEmpty | Role::CardCell if look.focused == Some(entity) => {
             Some(BorderColor::all(skin.focus_ring))
         }
+        Role::CardCell => Some(BorderColor::all(skin.outline)),
         Role::Slot => Some(BorderColor::all(if state.refusing {
             skin.surface_edge.unwrap_or(skin.surface_raised)
         } else if state.candidate {
@@ -2982,6 +3025,30 @@ fn restyle(
                 next.justify_content = JustifyContent::Center;
                 next.align_items = AlignItems::Center;
                 next.flex_shrink = 0.0;
+            }
+            Role::CardGrid => {
+                next.flex_direction = FlexDirection::Row;
+                next.flex_wrap = FlexWrap::Wrap;
+                next.width = Val::Percent(100.0);
+                next.align_items = AlignItems::FlexStart;
+                next.column_gap = Val::Px(skin.gap);
+                next.row_gap = Val::Px(skin.gap);
+            }
+            Role::CardCell => {
+                next.flex_direction = FlexDirection::Column;
+                next.width = Val::Px(text_px * CARD_TEXT_SIZES);
+                next.flex_shrink = 0.0;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad()));
+                next.row_gap = Val::Px(skin.gap * 0.25);
+                next.overflow = Overflow::clip();
+            }
+            Role::CardImage => {
+                next.width = Val::Percent(100.0);
+                next.aspect_ratio = Some(CARD_IMAGE_ASPECT);
+                next.margin = UiRect::bottom(Val::Px(skin.gap * 0.25));
+                next.border_radius = BorderRadius::all(Val::Px(skin.radius * 0.5));
             }
             Role::SlotGrid => {
                 // Tracks stand at the start and are never stretched: a grid in a column wider than
@@ -3792,6 +3859,18 @@ fn restyle(
         node.set_if_neq(next);
     }
 
+    // A card's picture is drawn as it is, and let half through on a disabled card.
+    if let (Role::CardImage, Some(image)) = (role, image.as_mut()) {
+        let color = if parent.is_some_and(|p| p.disabled) {
+            Color::WHITE.with_alpha(CARD_DIM_ALPHA)
+        } else {
+            Color::WHITE
+        };
+        if image.color != color {
+            image.color = color;
+        }
+    }
+
     // An icon is its image times a colour of the skin: the text's, following the widget it stands
     // in (muted when disabled, the accent's text pressed), or a fixed tone.
     if let (Role::Icon | Role::SlotIcon | Role::RadialIcon, Some(mut image)) = (role, image) {
@@ -3863,6 +3942,27 @@ fn restyle(
             &look.fonts.heading,
             skin.heading_size * wheel_px / text_px,
         )),
+        // A card's words follow the card: muted when disabled, the accent's text when chosen or
+        // pressed; a line is quiet at rest and the text under the pointer, where the muted ink
+        // is not held to the hovered fill.
+        Role::CardName | Role::CardLine => {
+            let parent = parent.unwrap_or_default();
+            let color = if parent.disabled {
+                skin.text_muted
+            } else if parent.pressed || parent.selected {
+                skin.accent_text
+            } else if *role == Role::CardName || parent.hovered {
+                skin.text
+            } else {
+                skin.text_muted
+            };
+            let size = if *role == Role::CardName {
+                skin.text_size
+            } else {
+                skin.type_scale[1]
+            };
+            Some((color, &look.fonts.body, size))
+        }
         // A slot's name is a button's text, inverted on the accent while pressed.
         Role::SlotName => {
             let parent = parent.unwrap_or_default();

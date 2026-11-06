@@ -25,6 +25,7 @@ use bevy::window::SystemCursorIcon;
 use crate::binding::{
     Binding, BindingValue, binding_on_activate, binding_on_key_input, binding_self_update,
 };
+use crate::card::Card;
 use crate::choice::{
     ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
     choice_on_key_input, choice_on_move, choice_self_update,
@@ -1106,6 +1107,45 @@ pub fn slot_grid(columns: usize, items: impl IntoIterator<Item = Option<Slot>>) 
         Role::SlotGrid,
         SlotGrid { columns },
         SlotItems(items.into_iter().collect()),
+    )
+}
+
+/// A wrapping grid of [`Card`]s, each a picture above a name and a few quiet lines: a project
+/// browser, a level select, a save list with thumbnails. The cards are a row that wraps to fill
+/// the grid's width, every card the same width (14 body text sizes), and the grid is one tab stop
+/// ([`crate::CardCursor`]) whose cards the arrows and the D-pad walk. Enter, Space, South or a
+/// click choose a card: it is drawn lit ([`crate::CardSelection`]) and one final
+/// `ValueChange<usize>` goes to the grid; focus moving between cards sends a non-final one. A
+/// [`Card::disabled`] card is dimmed and never chosen. Each card is a [`crate::CardRef`] entity,
+/// Bevy's `Button`, so it takes a [`crate::ContextMenu`] or a [`crate::Tooltip`] like any button.
+/// The cards are spawned once; respawn the grid to change them.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, maps: Res<AssetServer>) {
+/// commands.spawn((
+///     card_grid([
+///         Card::new("Harbour").image(maps.load("harbour.png")).line("10 x 10 m, 4 m tall"),
+///         Card::new("Keep").line("13 pieces"),
+///         Card::new("Ruins").line("Missing assets").disabled(),
+///     ]),
+///     observe(|change: On<ValueChange<usize>>| {
+///         if change.is_final {
+///             info!("open map {}", change.value);
+///         }
+///     }),
+/// ));
+/// # }
+/// ```
+pub fn card_grid(cards: impl IntoIterator<Item = Card>) -> impl Bundle {
+    (
+        Node::default(),
+        Role::CardGrid,
+        crate::CardGrid,
+        Children::spawn(SpawnWith(crate::card::spawn_cards(
+            cards.into_iter().collect(),
+        ))),
     )
 }
 
