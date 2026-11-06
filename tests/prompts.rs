@@ -18,6 +18,7 @@ use bevy::picking::pointer::{Location, PointerAction, PointerId, PointerInput};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
+use bevy::text::TextLayoutInfo;
 use bevy::ui::UiGlobalTransform;
 use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
@@ -823,4 +824,150 @@ fn idle_frames_write_nothing() {
         0,
         "a second press of the same device writes nothing"
     );
+}
+
+/// How far the run's middle sits from the middle of its node, in logical px, and whether the
+/// node is wider than the run (so the centring is measurable at all).
+///
+/// A `Text` node's glyphs are drawn from the node's content box, and each glyph's `position` is
+/// its middle within the run. A run pinned to the left therefore leaves all of the slack its
+/// `min_width` added on the right, which is what a single character in a keycap's square did.
+fn cap_off_centre(app: &App, entity: Entity) -> (f32, bool) {
+    let node = app.world().get::<ComputedNode>(entity).expect("laid out");
+    let info = app.world().get::<TextLayoutInfo>(entity).expect("a run");
+    let middle = info
+        .glyphs
+        .iter()
+        .map(|glyph| glyph.position.x)
+        .fold(f32::NEG_INFINITY, f32::max)
+        .midpoint(
+            info.glyphs
+                .iter()
+                .map(|glyph| glyph.position.x)
+                .fold(f32::INFINITY, f32::min),
+        );
+    // The cap's own square is wider than its words: that is the slack the box must share.
+    (
+        node.content_box().min.x + middle,
+        node.size().x > info.size.x + 0.5,
+    )
+}
+
+#[test]
+fn a_keycaps_character_is_centred_in_its_box_whichever_cap_it_wears() {
+    // A cap's `min_width` (its own square) is wider than a single character, so the run must be
+    // centred in the node rather than pinned to its left padding. Measured on the legend's cap
+    // and on a tooltip's, at each of the type scale's steps.
+    for text_scale in [1.0, 1.5, 2.0] {
+        let mut app = app();
+        app.world_mut().resource_mut::<GooeySkin>().text_scale = text_scale;
+        let world = app.world_mut();
+        let legend = world
+            .spawn((
+                prompts(),
+                children![
+                    prompt(
+                        "Select",
+                        Prompt::new(
+                            Binding::Key(KeyCode::KeyX),
+                            Binding::Pad(GamepadButton::West)
+                        ),
+                    ),
+                    // A name wider than its cap asks for a wider box, still centred.
+                    prompt(
+                        "Chord",
+                        Prompt::new(
+                            Binding::Chord(Shortcut {
+                                modifiers: Modifiers::CTRL | Modifiers::SHIFT,
+                                key: KeyCode::KeyZ,
+                            }),
+                            Binding::Pad(GamepadButton::West),
+                        ),
+                    ),
+                ],
+            ))
+            .id();
+        world.spawn(screen()).add_child(legend);
+        settle(&mut app);
+
+        let mut measured = false;
+        for prompt in app.world().get::<Children>(legend).expect("prompts").iter() {
+            let cap = part(&app, prompt, Role::PromptKey);
+            let words = app.world().get::<Text>(cap).expect("words").0.clone();
+            let (off, roomy) = cap_off_centre(&app, cap);
+            if !roomy {
+                // The cap hugs its words: there is nothing to centre within.
+                continue;
+            }
+            measured = true;
+            assert!(
+                off.abs() <= 0.5,
+                "{words:?} at {text_scale}x is {off} px off the middle of its cap, in a {:?} box",
+                app.world()
+                    .get::<ComputedNode>(cap)
+                    .expect("laid out")
+                    .size()
+            );
+        }
+        assert!(measured, "a cap at {text_scale}x is wider than its run");
+    }
+}
+
+#[test]
+fn a_keycap_with_two_words_stays_on_one_line_and_keeps_its_square() {
+    // The centring widens the cap's padding, never its break: a name with a space in it
+    // ("Left Click", "Num Enter") must stay on one line, and the cap must not grow taller.
+    for (w, h) in [(1280u32, 720u32), (640, 360)] {
+        let mut app = app_sized(w, h);
+        let world = app.world_mut();
+        let legend = world
+            .spawn((
+                prompts(),
+                children![
+                    prompt(
+                        "Fire",
+                        Prompt::new(
+                            Binding::Mouse(MouseButton::Left),
+                            Binding::Pad(GamepadButton::West)
+                        ),
+                    ),
+                    prompt(
+                        "Confirm",
+                        Prompt::new(
+                            Binding::Key(KeyCode::NumpadEnter),
+                            Binding::Pad(GamepadButton::West)
+                        ),
+                    ),
+                ],
+            ))
+            .id();
+        world.spawn(screen()).add_child(legend);
+        settle(&mut app);
+        let single = part(&app, legend, Role::PromptKey);
+        let tall = app
+            .world()
+            .get::<ComputedNode>(single)
+            .expect("laid out")
+            .size()
+            .y;
+        for prompt in app.world().get::<Children>(legend).expect("prompts").iter() {
+            let cap = part(&app, prompt, Role::PromptKey);
+            let words = app.world().get::<Text>(cap).expect("words").0.clone();
+            let info = app.world().get::<TextLayoutInfo>(cap).expect("a run");
+            let lines = info
+                .glyphs
+                .iter()
+                .map(|glyph| glyph.line_index)
+                .max()
+                .unwrap_or(0)
+                + 1;
+            assert_eq!(lines, 1, "{words:?} at {w}x{h} is on {lines} lines");
+            let node = app.world().get::<ComputedNode>(cap).expect("laid out");
+            assert!(
+                (node.size().y - tall).abs() <= 1.0,
+                "{words:?} at {w}x{h} is {:?} tall against {tall}: it grew a line",
+                node.size()
+            );
+        }
+    }
 }

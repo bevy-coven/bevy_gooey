@@ -1106,7 +1106,11 @@ fn the_frame_a_split_is_spawned_in_has_its_panes_in_their_ratio() {
     let container = app
         .world_mut()
         .spawn((
-            Node { width: Val::Px(800.0), height: Val::Px(400.0), ..default() },
+            Node {
+                width: Val::Px(800.0),
+                height: Val::Px(400.0),
+                ..default()
+            },
             children![(
                 split(
                     SplitAxis::Horizontal,
@@ -1122,7 +1126,12 @@ fn the_frame_a_split_is_spawned_in_has_its_panes_in_their_ratio() {
     // One frame: the spawn, its layout, and `Style`.
     app.update();
     let split = child_of(&app, container);
-    let parts: Vec<Entity> = app.world().get::<Children>(split).expect("the split's children").iter().collect();
+    let parts: Vec<Entity> = app
+        .world()
+        .get::<Children>(split)
+        .expect("the split's children")
+        .iter()
+        .collect();
     let (first, second) = (parts[0], parts[2]);
     let a = rect(&app, first);
     let b = rect(&app, second);
