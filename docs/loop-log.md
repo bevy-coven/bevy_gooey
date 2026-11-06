@@ -2394,3 +2394,29 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 63).** `cargo semver-checks --baseline-rev v0.35.0`: 202 checks pass, no semver update required (only a new public fn), so a PATCH bump: `release: v0.35.1` (README compatibility row `0.1 – 0.35.1`), published (https://crates.io/crates/bevy_gooey/0.35.1), tag `v0.35.1` pushed, `cargo info bevy_gooey@0.35.1` resolves. #44 closed with the merged sha and the version.
 
 **Cleanup (iteration 63).** Removed worktree `~/g63_base` and its `~/g63_base-target` (the before-baseline), `/tmp/g63` (captures, GIF frames, probe tests, mutation backups), the `Xvfb :99` this pass started. Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`.
+
+## Iteration 64 — 2026-11-06 — `ChordGlyphs`: a host spells a mac's chords in words (#45) (hand-driven, owner request 2026-11-06, host big)
+
+**Triage.** #45 is a filed `bug` and `consumer:bevy_grimoire`; the owner asked for it by name. An earlier session left a never-built draft in `~/bevy_gooey_loop` (the research note as `df8e16f` and a 14-file diff); this pass adopted both, built them for the first time and fixed what the build and the tests found.
+
+**Root cause, measured** (research note, `docs/research/chord-glyphs.md`). `model::shortcut_label` spells a mac chord with `⌃⌥⇧⌘` and `↩⌫⌦⎋⇥`. Bevy 0.20's bundled `FiraMono-subset.ttf` maps 95 codepoints and none of the thirteen; the host's `FiraMono-Regular.ttf` (1,350 codepoints) lacks seven. The crate had no way to ask for a spelling the face can draw.
+
+**What changed.** `model::ChordGlyphs { Glyphs (default), Words }`; `model::shortcut_label(code, mods, mac, glyphs)`; `Shortcut::label_with(platform, glyphs)`; `BindingSettings::{chord_glyphs, platform, chord(), input_label()}`; `ChordText(Shortcut)` + `update_chord_texts`. Every chord the crate draws now reads `BindingSettings::chord`: a tooltip's keycap, a menu row, a prompt, a shortcut badge, the legend and the palette's hint. `Shortcut::label()` and `label_on` keep Apple's symbols.
+
+**Fixed in review of the draft.** (1) The menu row and the tooltip keycap were spawned with `shortcut.label()` and only corrected a frame later by `update_chord_texts`; they now spawn in the host's spelling. (2) The badge carried a `ChordText` it re-inserted every frame; the badge system owns its text, so the component is gone from badges. (3) Four draft tests used `Shortcut::primary`, which is Ctrl on the Linux host and failed there; they use `Modifiers::META`. (4) A draft assertion that `Enter` is the same in both spellings on a mac was false (`↩` against `Enter`) and is replaced by a plain-letter one. (5) The draft's rustfmt drift in `src/lib.rs` and `tests/shortcut.rs`. (6) The draft's `AGENTS.md` and `host-api.md` were not updated; the CHANGELOG now says the `shortcut_label` signature change is breaking.
+
+**Tests.** `shortcut::a_macs_chord_in_words_is_ascii_for_every_key_and_modifier` (42 keys × 16 modifier sets), `the_symbols_are_still_apples_and_the_words_are_ascii` (`⌃⇧P` against `Ctrl+Shift+P`, `Ctrl+Opt+Shift+Cmd+X`, `Opt+Enter`, `Ctrl+Esc`), `the_spelling_only_changes_a_macs_chord`, `the_settings_spell_a_chord_and_an_input_in_the_hosts_way`, `a_tooltips_keycap_changes_with_the_spelling_without_being_respawned`, `a_menu_rows_chord_reads_the_hosts_spelling`; `badges::the_overlay_spells_its_chords_the_hosts_way_and_follows_a_change`; `palette::a_rows_chord_hint_follows_the_hosts_spelling_while_the_palette_is_open`. **Failing first:** with `shortcut_label` forced to ignore `Words` (a temporary edit in `src/model.rs`, restored), `shortcut::` showed 5 of 25 failing (the ASCII test, the symbols-and-words test, the settings test, the menu row and the tooltip keycap) and 20 passing; the badge and palette tests were added afterwards and pass.
+
+**Failing first, re-run on the whole set (restart of this pass, 2026-11-06 14:55).** The same mutation (both `match glyphs` in `shortcut_label` replaced by `match ChordGlyphs::Glyphs`), run on `test(shortcut::) | test(badges::) | test(palette::)`: 63 run, 7 failed (`a_macs_chord_in_words_is_ascii_for_every_key_and_modifier`, `the_symbols_are_still_apples_and_the_words_are_ascii`, `the_settings_spell_a_chord_and_an_input_in_the_hosts_way`, `a_menu_rows_chord_reads_the_hosts_spelling`, `a_tooltips_keycap_changes_with_the_spelling_without_being_respawned`, `badges::the_overlay_spells_its_chords_the_hosts_way_and_follows_a_change`, `palette::a_rows_chord_hint_follows_the_hosts_spelling_while_the_palette_is_open`); `the_spelling_only_changes_a_macs_chord` passes, as a control on the Linux spelling must. Mutation reverted (`src/` diff empty). The previous run of this pass was OOM-killed by systemd-oomd in its gate (big at 30 of 33 GB, swap full); this one builds with `CARGO_BUILD_JOBS=4` and `--test-threads 4`.
+
+**Gate (iteration 64).** Run once, on the tree merged with big_mac's v0.36.0 (#43, #40, #41, #42): see the release line.
+
+**Demo.** `examples/shortcuts` gained `GOOEY_PLATFORM=mac` and `GOOEY_GLYPHS=words` for a capture; see the release line.
+
+### Ranked backlog
+
+1. The `HoldSettings` option row ("Hold to confirm: Normal, Short, Tap") next to the text-size and theme rows.
+2. A "ready" cue for `Cooldown` (a one-frame flash under `MotionSettings`), and a charges variant.
+3. One keycap vocabulary for the shortcut badges and legend (the legend and a badge draw the same chord two ways today).
+4. Automatic `Words` when the face lacks the glyph (needs the shaper's cmap; `bevy_text` exposes none to a game system).
+5. Accessibility: `ReplaceSelectedText`; a table cell's `column_index`.
