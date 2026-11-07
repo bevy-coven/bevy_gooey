@@ -8,8 +8,11 @@
 
 - Type-select (#63, `docs/research/type-select.md`): in a table (its first column), a list (each focusable row's words), an open menu (its items) and a select of eight options or fewer, typing goes to the next row whose label starts with what was typed within a second, as a tree already did: one letter again cycles, a pause or a new group starts over, the target is scrolled into view, Space and Ctrl, Alt or Super chords are not names, and a text field or a binding row waiting for a key takes the characters instead. One prefix for the keyboard, `TypedPrefix`; the rule is `model::type_ahead`. Measured from Rune's focus runtime (open reference, `f73f72c`).
 
+- `GooeySkin::from_seed(PaletteSeed { background, text, accent })` (#54, `docs/research/skin-from-seeds.md`, `docs/guide/skins.md`): a whole skin from three colours, after Rune's palette kit. A ladder steps Oklab lightness away from the background at the hue of the more colourful seed, each at least `ELEVATION_STEP` past the last and never back. Muted text is held to 4.5:1, the outline is the text solved to 3:1, hover and press are the text over the resting button with the press a `STATE_STEP` past the hover, the accent's words are the better of black and white over its three primary fills, and the focus ring is a neutral blue solved to 3:1 on every step. Sizes are `tool()`'s. A seed whose skin fails `problems()` is refused with every problem; a translucent seed is `SkinProblem::TranslucentSeed`.
+
 ### Changed
 
+- **Breaking:** `SkinProblem` has a new variant, `TranslucentSeed`, so an exhaustive `match` on it needs an arm.
 - A tree's type-ahead is the table's type-select now (`table_by_input`); `tree_by_input` keeps Left, Right and `*`. The prefix is shared and resets when focus moves to another group, so leaving a tree and coming back within a second no longer starts the prefix over.
 - The split's divider, the table's rows and the tree's rows open on `DoublePress` instead of Bevy's `PointerClick::count == 2`: a third quick click no longer swallows the next pair, two clicks 5 px apart or a held press then a click no longer open, and the interval is read on `Time<Real>` rather than the wall clock.
 ## [0.38.0] - 2026-11-07

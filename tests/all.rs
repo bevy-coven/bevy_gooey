@@ -51,6 +51,7 @@ mod region;
 mod scale;
 mod scope;
 mod section;
+mod seed;
 mod select;
 mod serde;
 mod shortcut;

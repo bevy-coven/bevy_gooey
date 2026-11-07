@@ -1337,6 +1337,12 @@ pub enum SkinProblem {
         /// The name that matched nothing.
         name: String,
     },
+    /// A seed given to [`GooeySkin::from_seed`] is not opaque: a skin is derived from three
+    /// opaque colours.
+    TranslucentSeed {
+        /// Which seed: `background`, `text` or `accent`.
+        seed: &'static str,
+    },
 }
 
 impl fmt::Display for SkinProblem {
@@ -1372,6 +1378,12 @@ impl fmt::Display for SkinProblem {
                 f,
                 "surfaces {lower} and {upper} differ by ΔL* {delta_l:.2}; adjacent surfaces of the ladder need at least {ELEVATION_STEP} to be told apart"
             ),
+            Self::TranslucentSeed { seed } => {
+                write!(
+                    f,
+                    "the {seed} seed is not opaque: a skin is derived from opaque colours"
+                )
+            }
             Self::BadMotion { field } => write!(
                 f,
                 "{field} is not usable motion: a spring needs a duration above zero and a bounce between -1 and 1, a fade a length of zero or more"

@@ -101,6 +101,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   ladder of five fills whose every step `problems()` holds to at least ΔL\* 2, drawn by `surface(n)`; your own named colours go in `tones`, drawn by `Role::Tone` and checked pair by pair with `tone_problems`; `hover`, `pressed`, `held`, `card` and friends are the states your own controls draw by `Role::Pressed` and the like),
   and a `SkinScope(skin)` on any node restyles just that subtree (a preview of a theme, an editor's own
   chrome next to a game's skin):
+  `GooeySkin::from_seed(PaletteSeed { background, text, accent })` derives a whole checked skin from three colours:
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`

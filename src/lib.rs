@@ -175,6 +175,7 @@ mod radial;
 mod region;
 mod scale;
 mod section;
+mod seed;
 mod select;
 mod shortcut;
 mod skin;
@@ -293,6 +294,7 @@ pub use radial::{RadialCount, RadialItem, RadialSlot, RadialValue, radial_by_pad
 pub use region::{ArrowPolicy, FocusRegion, cycle_regions};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_sections};
+pub use seed::PaletteSeed;
 pub use select::{SELECT_FILTER_ABOVE, Select};
 pub use shortcut::{ChordText, Modifiers, Platform, Shortcut, update_chord_texts};
 pub use skin::{

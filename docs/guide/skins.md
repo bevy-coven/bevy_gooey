@@ -61,6 +61,35 @@ assert_eq!(tool.pad(), GooeySkin::dark().padding / 2.0);
 
 *`GooeySkin::tool()`: buttons 24 px high, 2 px frames, the same ring and keys as every look.*
 
+## A skin from three seeds
+
+A host that wants its own look gives a background, a text colour and an accent, and gets the rest:
+
+```rust
+use bevy::prelude::*;
+use bevy_gooey::{GooeySkin, PaletteSeed};
+
+fn seeded() -> Result<GooeySkin, Vec<bevy_gooey::SkinProblem>> {
+    GooeySkin::from_seed(PaletteSeed {
+        background: Srgba::hex("#0a0a0a").unwrap().into(),
+        text: Srgba::hex("#ededed").unwrap().into(),
+        accent: Srgba::hex("#e5484d").unwrap().into(),
+    })
+}
+```
+
+- **Surfaces.** The ladder steps Oklab lightness away from the background: lighter when the text is the lighter seed, darker when it is the darker one. A pure black still gets steps you can see. Each step is at least `ELEVATION_STEP` of L\* past the last, never back toward the background, and keeps the hue of the more colourful seed, so a warm paper stays warm. `surface` is step 1 and `surface_raised` step 3.
+- **Derived colours.**
+  - Secondary text is held to 4.5:1 on the panel.
+  - The outline is the text at the alpha that reaches 3:1.
+  - Hover and press are the text at a low alpha over the resting button, the press a `STATE_STEP` past the hover.
+  - The accent's words are black or white, whichever reads better on the accent and its hover and press.
+  - The focus ring is a neutral blue at 3:1 on every step.
+- **Everything else** is `GooeySkin::tool()`'s, a desktop tool's sizes and density.
+- **A seed that cannot be read is refused, never adjusted.** The `Err` holds every pair that fails, for example `text on surface` for grey on grey, or `accent_text on …` for a mid red that neither black nor white words reach 4.5:1 on across the accent and its hover and press. A translucent seed is `SkinProblem::TranslucentSeed`.
+
+The derivation is Rune's palette kit, measured and written again here (`docs/research/skin-from-seeds.md`).
+
 ## Design tokens and the surface ladder
 
 A tool's chrome stands on a ladder of surfaces (the window's ground, a panel, a row, a field, a card),
