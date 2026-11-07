@@ -399,25 +399,23 @@ fn a_track_is_the_spring_carried_through_every_retarget_value_and_velocity() {
     let mut app = app();
     let node = tracked(&mut app, MotionTarget::default());
     let mut reference = model::SpringState::default();
-    let mut worst: f32 = 0.0;
+    let mut fastest: f32 = 0.0;
     for (target, frames) in [(200.0, 5), (0.0, 4), (120.0, 3), (-40.0, 25)] {
         aim(&mut app, node, Vec2::new(target, 0.0));
         for frame in 0..frames {
             app.update();
             reference = model::spring_step(spring, reference, target, FRAME);
-            let off = (drawn_x(&app, node) - reference.value).abs();
-            worst = worst.max(off);
+            fastest = fastest.max(reference.velocity.abs());
             assert!(
-                off < 0.05,
+                (drawn_x(&app, node) - reference.value).abs() < 0.05,
                 "frame {frame} after a retarget to {target}: drawn {} against {}",
                 drawn_x(&app, node),
                 reference.value
             );
         }
     }
-    assert!(worst < 0.05);
-    // And the reference is not trivially still: the reversals were made while it moved fast.
-    assert!(reference.velocity.abs() > 1.0, "{reference:?}");
+    // Not vacuous: the reversals were made while it was moving fast.
+    assert!(fastest > 500.0, "{fastest} px/s");
 }
 
 #[test]
