@@ -1,10 +1,14 @@
 # Changelog
 
-## [Unreleased]
+## [0.41.0] - 2026-11-07
 
 ### Added
 
 - Tooltips on a desktop's timing (#64, `docs/research/tooltip-delay.md`, `docs/guide/widgets.md`): `TooltipSettings { delay_seconds: 0.5 }`. A tooltip opens after the pointer has rested on its widget that long, a press, a wheel turn or a key ends the visit until the pointer leaves and returns, and visible focus still opens it at once. `tests/tooltip.rs` runs with no delay (assumed owner exception, #76). Proved by `tests/tooltip_delay.rs`.
+
+### Changed
+
+- **Breaking:** the system function `show_tooltips` takes more parameters (the settings, the clock and the wheel and key readers). It is a system a plugin registers; a host that called it by hand, or ordered against it by name, is unaffected unless it called it with arguments.
 
 ## [0.40.3] - 2026-11-07
 
