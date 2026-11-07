@@ -19,13 +19,14 @@ use bevy::ui::{
 };
 use bevy::ui_widgets::{Activate, ScrollArea, ValueChange};
 
+use crate::binding::BindingSettings;
 use crate::cancel::Cancel;
 use crate::context::ContextTarget;
 use crate::list::span;
 use crate::model::scroll_to_reveal;
 use crate::nav::{Dialog, show_focus};
 use crate::popover::{Placement, PopoverPanel};
-use crate::shortcut::{Modifiers, Shortcut};
+use crate::shortcut::{ChordText, Modifiers, Shortcut};
 use crate::skin::{GooeySkin, Role};
 use crate::tooltip::Tooltip;
 use crate::widgets::{CHEVRON_INK_SHIFT, ONE_LINE};
@@ -218,6 +219,12 @@ fn build_item(mut world: DeferredWorld, HookContext { entity, .. }: HookContext)
     let Some(item) = world.get::<MenuItem>(entity).cloned() else {
         return;
     };
+    // The chord is spelled the host's way from the first frame; `update_chord_texts` keeps it so.
+    let chord = item.shortcut.map(|shortcut| {
+        world
+            .get_resource::<BindingSettings>()
+            .map_or_else(|| shortcut.label(), |settings| settings.chord(shortcut))
+    });
     let mut commands = world.commands();
     let mut row = commands.entity(entity);
     row.insert((
@@ -261,9 +268,10 @@ fn build_item(mut world: DeferredWorld, HookContext { entity, .. }: HookContext)
             ONE_LINE,
             Pickable::IGNORE,
         ));
-        if let Some(shortcut) = item.shortcut {
+        if let (Some(shortcut), Some(chord)) = (item.shortcut, chord) {
             row.spawn((
-                Text::new(shortcut.label()),
+                Text::new(chord),
+                ChordText(shortcut),
                 Role::MenuShortcut,
                 ONE_LINE,
                 Pickable::IGNORE,

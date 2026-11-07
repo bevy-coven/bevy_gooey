@@ -1,6 +1,29 @@
 # Changelog
 
-## [Unreleased]
+## [0.37.0] - 2026-11-06
+
+### Added
+
+- `ChordGlyphs { Glyphs, Words }` and `BindingSettings::{chord_glyphs, platform}` (#45, `docs/research/chord-glyphs.md`, `docs/guide/shortcuts.md`): a mac spells a chord with Apple's symbols (`⇧⌘P`), and a symbol is only a glyph — a face that does not map the codepoint draws a tofu box. Bevy's own bundled default font (FiraMono's 95-codepoint subset) maps **none** of the thirteen a mac chord can wear, and the tool that filed the issue ships a monospace face missing seven, so its Undo tooltip drew `?Z` where its accessible text read `⌘Z`. `ChordGlyphs::Words` spells the same chords in ASCII (`Cmd+Z`, `Shift+Cmd+P`, `Opt+Enter`, `Ctrl+Esc`, the key named by `model::key_name`), in Apple's order and names; outside a mac the two spellings agree, so a host sets it once. The setting reaches every chord the crate draws — a tooltip's keycap, a menu row, a prompt, a shortcut badge, the legend and the command palette. `BindingSettings::platform` (`None` is this build's) names the platform a chord is spelled for. New public items `ChordGlyphs`, `ChordText`, `update_chord_texts`, `Shortcut::label_with`, `BindingSettings::{chord, input_label, platform}`.
+
+### Changed
+
+- **Breaking:** `model::shortcut_label` takes a fourth argument, `ChordGlyphs` (pass `ChordGlyphs::Glyphs` for the old result), and `BindingSettings` has two new public fields (`chord_glyphs`, `platform`; use `..default()`). `Shortcut::label()`, `label_on(platform)` and `Binding::label(PadStyle)` are unchanged. `Platform` now derives serde's `Serialize` and `Deserialize` under the `serde` feature.
+
+## [0.36.0] - 2026-11-06
+
+### Added
+
+- `side_tabs(tabs, selected)`, `SideTab::new(label).badge(text)` and `side_tab_page(strip, index, widgets)` (#42): a vertical tab strip for a sidebar. Bevy's `TabList` with `ControlOrientation::Vertical`, so Up and Down on a tab move focus and select once; the D-pad's Up and Down step it (`step_tabs`), Left and Right move focus on into the page beside (a `VerticalTab` is not in `navigate_by_input`'s keep-sideways set, and its Up and Down are left to the strip). Labels are left-aligned with an optional `Role::TabBadge` pill at the end, read in the tab's accessible name. Its pages stand anywhere: `TabPageOf { tabs, index }` pages are shown by the strip's `TabsValue` (`update_tab_pages`, also for a page spawned later), and `land_tab_focus` moves focus off a page the strip turned away from. State and events are `TabsValue` and `ValueChange<usize>`, as for `tabs`.
+- `card_grid(cards)` and `Card { name, image, lines, disabled }` (`Card::new(name).image(handle).line(text).disabled()`) (#41): cards of a picture above a name and quiet lines, 14 body text sizes wide, in a row that wraps to fill its width. The grid is one tab stop (`CardCursor`, roving `TabIndex` like `slot_grid`'s) whose cards the arrows and the D-pad walk; focus moving sends one non-final `ValueChange<usize>`, Enter, Space, South or a click choose a card (`CardSelection`, drawn with Bevy's `Selected` in the accent) with one final one, and a disabled card (`InteractionDisabled`) is reached but never chosen. Each card is a `CardRef` entity and Bevy's `Button`, so a `ContextMenu` goes on it. New roles `CardGrid`, `CardCell`, `CardImage`, `CardName`, `CardLine`; a card's accessible name is its name and its value its lines joined by commas. Guide `docs/guide/cards.md`.
+- `primary_button(text)` and the `PrimaryButton` marker (#40): the screen's one main action, a `button` filled with `GooeySkin::accent` and labelled in `accent_text` at rest, `GooeySkin::primary_hovered()` under the pointer and `primary_pressed()` held down, dimmed like any button when disabled. The lifts are steps in lightness, not a fixed mix: the accent moved `PRIMARY_LIFT_L` (6) and twice that of CIE L\* toward `text` by the new `model::lift_toward` (a fixed sixth of the way was only 2.8 L\* in the dark preset, under `STATE_STEP`). `problems()` adds `accent_text on primary hovered`, `accent_text on primary pressed` (so 7:1 in `high_contrast_problems()`) and the `Indistinguishable` pairs `primary at rest and hovered` and `primary hovered and pressed`; every preset passes. It is a `Role::Button`, so focus, `Activate` and the accessibility tree are a button's.
+- `ToastSettings::inset` (`ToastInset { top, right, bottom, left }`, logical px, default none; `ToastInset::top(px)` and `ToastInset::bottom(px)`) keeps the toast stack off the window's edges, so a stack anchored `TopCenter` stands under an app's menu bar with its own padding below it, and a bottom one above a status band (#43). The stack is now an absolute node whose four sides are the inset (it was a 100% by 100% node at the window's corner); `update_toasts` writes them only on a difference and follows a host that rewrites the resource. A side that is negative or not finite keeps no room, as a non-finite `fade_seconds` is no fade. Scaled by `UiScale` like every other size.
+
+### Changed
+
+- **Breaking:** `ToastSettings` has a new public field, `inset` (a struct literal that names every field needs `inset: ToastInset::default()` or `..ToastSettings::default()`), and `Role` has new variants (`CardGrid`, `CardCell`, `CardImage`, `CardName`, `CardLine`, `TabBadge`), so an exhaustive `match` on `Role` needs arms for them.
+- The toast stack is an absolute node whose sides are `ToastSettings::inset` instead of a 100% by 100% node; with the default inset it covers the same window.
+- `land_tab_focus` also moves focus off a `TabPageOf` page its strip turned away from.
 
 ## [0.35.1] - 2026-11-06
 

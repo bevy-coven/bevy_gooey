@@ -102,10 +102,12 @@ fn spec(role: Role) -> Spec {
         | Role::Palette
         | Role::PaletteField
         | Role::SlotGrid
+        | Role::CardGrid
         | Role::FieldMessage => Spec::Group,
         Role::Heading
         | Role::Label
         | Role::Button
+        | Role::CardCell
         | Role::Meter
         | Role::Tooltip
         | Role::Scrim
@@ -207,6 +209,10 @@ fn spec(role: Role) -> Spec {
         | Role::SlotName
         | Role::SlotCount
         | Role::SlotIcon
+        | Role::CardImage
+        | Role::CardName
+        | Role::CardLine
+        | Role::TabBadge
         | Role::Cooldown
         | Role::CooldownText
         | Role::HoldTrack
@@ -227,6 +233,7 @@ fn names(role: Role) -> bool {
         Role::ButtonText
             | Role::MenuTitleText
             | Role::TabText
+            | Role::TabBadge
             | Role::MenuText
             | Role::TableCellText
             | Role::ToastActionText
@@ -356,6 +363,20 @@ impl Look<'_, '_> {
         }
     }
 
+    /// The words of each of `root`'s children of `role`, joined by a comma: a list a screen reader
+    /// pauses between.
+    fn lines(&self, root: Entity, role: Role) -> Option<String> {
+        let children = self.children.get(root).ok()?;
+        let lines: Vec<&str> = children
+            .iter()
+            .filter(|child| self.roles.get(*child).is_ok_and(|r| *r == role))
+            .filter_map(|child| self.texts.get(child).ok())
+            .map(|text| text.0.trim())
+            .filter(|text| !text.is_empty())
+            .collect();
+        (!lines.is_empty()).then(|| lines.join(", "))
+    }
+
     /// The row's label: a toggle's, a slider's, a text field's.
     fn control_text(&self, root: Entity) -> Option<String> {
         self.words(root, |role| role == Role::ControlText)
@@ -471,6 +492,13 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.value = look.words(entity, |role| role == Role::SlotCount);
         }
         Role::SlotEmpty => wanted.name = Some(EMPTY_SLOT.to_owned()),
+        // A card is its name, and its quiet lines one after another as its value; chosen is
+        // selected, as a tab is.
+        Role::CardCell => {
+            wanted.name = look.words(entity, |role| role == Role::CardName);
+            wanted.value = look.lines(entity, Role::CardLine);
+            wanted.selected = Some(facts.selected);
+        }
         Role::Binding => {
             wanted.name = look.control_text(entity);
             wanted.value = if facts.capturing {

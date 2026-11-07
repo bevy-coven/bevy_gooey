@@ -515,6 +515,32 @@ fn nothing_matching_says_so_and_enter_runs_nothing() {
     assert!(!labels(&mut app, palette).is_empty());
 }
 
+// --- the host's spelling of a chord (#45) ------------------------------------------------------
+
+#[test]
+fn a_rows_chord_hint_follows_the_hosts_spelling_while_the_palette_is_open() {
+    let mut app = app();
+    app.world_mut().resource_mut::<BindingSettings>().platform = Some(Platform::Mac);
+    set_commands(
+        &mut app,
+        vec![
+            PaletteCommand::new("save", "Save")
+                .category("File")
+                .shortcut(Shortcut::new(Modifiers::META, KeyCode::KeyS)),
+        ],
+    );
+    let palette = open(&mut app);
+    assert_eq!(rows(&mut app, palette)[0].hint, "\u{2318}S");
+
+    app.world_mut()
+        .resource_mut::<BindingSettings>()
+        .chord_glyphs = ChordGlyphs::Words;
+    for _ in 0..3 {
+        app.update();
+    }
+    assert_eq!(rows(&mut app, palette)[0].hint, "Cmd+S");
+}
+
 // --- disabled commands -------------------------------------------------------------------------
 
 #[test]

@@ -25,6 +25,7 @@ use bevy::window::SystemCursorIcon;
 use crate::binding::{
     Binding, BindingValue, binding_on_activate, binding_on_key_input, binding_self_update,
 };
+use crate::card::Card;
 use crate::choice::{
     ChoiceCount, ChoiceValue, StepBy, arrow_on_click, arrow_on_press, choice_on_activate,
     choice_on_key_input, choice_on_move, choice_self_update,
@@ -314,6 +315,31 @@ pub fn button(text: impl Into<String>) -> impl Bundle {
         AutoDirectionalNavigation::default(),
         children![(Text::new(text), Role::ButtonText)],
     )
+}
+
+/// The screen's one main action ("Create", "Start", "Save"): a [`button`] filled with
+/// [`crate::GooeySkin::accent`] and labelled in [`crate::GooeySkin::accent_text`] at rest, so a
+/// first-time player sees the one thing to press. Under the pointer it is
+/// [`crate::GooeySkin::primary_hovered`], held down [`crate::GooeySkin::primary_pressed`], and
+/// disabled it is dimmed like any button. It is a [`button`] with the [`crate::PrimaryButton`]
+/// marker, so focus, `Activate`, a screen reader and every test that finds a button treat it as one;
+/// put the marker on any other button to make that the main action instead. Give a screen one.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     menu(),
+///     children![
+///         (primary_button("New project"), observe(|_: On<Activate>| info!("new"))),
+///         button("Open..."),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn primary_button(text: impl Into<String>) -> impl Bundle {
+    (button(text), crate::PrimaryButton)
 }
 
 /// A button that confirms only when it is held, for an act the player cannot take back (delete a
@@ -1081,6 +1107,45 @@ pub fn slot_grid(columns: usize, items: impl IntoIterator<Item = Option<Slot>>) 
         Role::SlotGrid,
         SlotGrid { columns },
         SlotItems(items.into_iter().collect()),
+    )
+}
+
+/// A wrapping grid of [`Card`]s, each a picture above a name and a few quiet lines: a project
+/// browser, a level select, a save list with thumbnails. The cards are a row that wraps to fill
+/// the grid's width, every card the same width (14 body text sizes), and the grid is one tab stop
+/// ([`crate::CardCursor`]) whose cards the arrows and the D-pad walk. Enter, Space, South or a
+/// click choose a card: it is drawn lit ([`crate::CardSelection`]) and one final
+/// `ValueChange<usize>` goes to the grid; focus moving between cards sends a non-final one. A
+/// [`Card::disabled`] card is dimmed and never chosen. Each card is a [`crate::CardRef`] entity,
+/// Bevy's `Button`, so it takes a [`crate::ContextMenu`] or a [`crate::Tooltip`] like any button.
+/// The cards are spawned once; respawn the grid to change them.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, maps: Res<AssetServer>) {
+/// commands.spawn((
+///     card_grid([
+///         Card::new("Harbour").image(maps.load("harbour.png")).line("10 x 10 m, 4 m tall"),
+///         Card::new("Keep").line("13 pieces"),
+///         Card::new("Ruins").line("Missing assets").disabled(),
+///     ]),
+///     observe(|change: On<ValueChange<usize>>| {
+///         if change.is_final {
+///             info!("open map {}", change.value);
+///         }
+///     }),
+/// ));
+/// # }
+/// ```
+pub fn card_grid(cards: impl IntoIterator<Item = Card>) -> impl Bundle {
+    (
+        Node::default(),
+        Role::CardGrid,
+        crate::CardGrid,
+        Children::spawn(SpawnWith(crate::card::spawn_cards(
+            cards.into_iter().collect(),
+        ))),
     )
 }
 
@@ -2107,6 +2172,101 @@ pub(crate) fn tabs_in<B: Bundle>(
                 pages,
             ));
         })),
+    )
+}
+
+/// A vertical strip of tabs, a sidebar's navigation (Projects, Learn, What's new): Bevy's
+/// `TabList` with `ControlOrientation::Vertical`, so Up and Down on a focused tab move focus and
+/// select it at once, and a click selects; the D-pad's Up and Down step it, LB and RB (and
+/// Ctrl+PageUp and Ctrl+PageDown) turn it from anywhere inside, and Left and Right move focus on,
+/// into the page beside it. Each tab's label is left-aligned with an optional
+/// [`crate::SideTab::badge`] at its end, the tabs are as wide as the strip, and the selected one is
+/// lit like a [`tabs`] tab.
+///
+/// Its pages are not inside it: spawn each with [`side_tab_page`] wherever it belongs (the pane
+/// beside a sidebar), naming this widget, and the selected one shows while the others hide. The
+/// entity this returns holds [`crate::TabsValue`] (read it, or set it to turn the page from code)
+/// and reports each change the player makes as a `ValueChange<usize>` on itself.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// let nav = commands
+///     .spawn(side_tabs(["Projects".into(), "Learn".into(), SideTab::new("What's new").badge("3")], 0))
+///     .id();
+/// commands.spawn(side_tab_page(nav, 0, children![label("Your projects")]));
+/// commands.spawn(side_tab_page(nav, 1, children![label("Tutorials")]));
+/// commands.spawn(side_tab_page(nav, 2, children![label("Release notes")]));
+/// # }
+/// ```
+pub fn side_tabs(tabs: impl IntoIterator<Item = crate::SideTab>, selected: usize) -> impl Bundle {
+    let tabs: Vec<crate::SideTab> = tabs.into_iter().collect();
+    let count = tabs.len();
+    let selected = selected.min(count.saturating_sub(1));
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Tabs,
+        TabsValue(selected),
+        TabsCount(count),
+        observe(tabs_self_update),
+        children![(
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Stretch,
+                ..default()
+            },
+            TabList {
+                orientation: ControlOrientation::Vertical,
+                activation: TabActivation::Automatic,
+            },
+            Role::TabList,
+            observe(tabs_on_select),
+            Children::spawn(SpawnIter(tabs.into_iter().map(side_tab))),
+        )],
+    )
+}
+
+/// One tab of a [`side_tabs`] strip: a tab whose label stands at its start and whose badge, if
+/// any, at its end.
+fn side_tab(tab: crate::SideTab) -> impl Bundle {
+    (
+        Node {
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Tab,
+        Role::Tab,
+        crate::VerticalTab,
+        Hovered::default(),
+        AutoDirectionalNavigation::default(),
+        Children::spawn(SpawnWith(move |parts: &mut RelatedSpawner<ChildOf>| {
+            parts.spawn((Text::new(tab.label), Role::TabText));
+            if let Some(badge) = tab.badge {
+                parts.spawn((Text::new(badge), Role::TabBadge, ONE_LINE));
+            }
+        })),
+    )
+}
+
+/// A page of a [`side_tabs`] strip, spawned wherever the host wants it: a column of widgets spaced
+/// like a [`menu`], shown while `tabs` (the entity [`side_tabs`] returned) has `index` selected and
+/// hidden otherwise. Focus left on a page the strip turns away from moves to the shown page's first
+/// widget, or to the selected tab.
+pub fn side_tab_page(tabs: Entity, index: usize, widgets: impl Bundle) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::TabPage,
+        crate::TabPageOf { tabs, index },
+        Visibility::Hidden,
+        widgets,
     )
 }
 

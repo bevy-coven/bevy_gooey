@@ -11,7 +11,10 @@
 //! frames later; `GOOEY_SHOT_DIR=<dir>` also keeps every `GOOEY_SHOT_EVERY`th frame from
 //! `GOOEY_SHOT_FROM` (default 30) there as `f_%04d.png` (the directory must exist).
 //! `GOOEY_SKIN=parchment`, `high_contrast` or `tool`, `GOOEY_TEXT_SCALE=<f>` and
-//! `GOOEY_SIZE=<w>x<h>` set the start. `GOOEY_KEYS=enter,ctrl+shift+k,down,…` stages one step every
+//! `GOOEY_SIZE=<w>x<h>` set the start. `GOOEY_PLATFORM=mac` spells every chord the way a mac does
+//! (the capture host is not a mac) and `GOOEY_GLYPHS=words` spells them in ASCII instead of Apple's
+//! symbols (`cmd+s` and `shift+cmd+s` are staged keys too). `GOOEY_KEYS=enter,ctrl+shift+k,down,…`
+//! stages one step every
 //! `GOOEY_KEY_EVERY` (default 14) frames from frame 30: `up`, `down`, `enter`, `escape`, or a chord
 //! (`ctrl`, `shift`, `alt` or `meta` joined by `+` to a letter) as real keyboard input, modifiers
 //! first.
@@ -83,6 +86,7 @@ fn parse_step(text: &str) -> Option<Step> {
             "enter" => KeyCode::Enter,
             "escape" => KeyCode::Escape,
             "j" => KeyCode::KeyJ,
+            "o" => KeyCode::KeyO,
             "k" => KeyCode::KeyK,
             "p" => KeyCode::KeyP,
             "s" => KeyCode::KeyS,
@@ -113,6 +117,15 @@ fn main() {
     {
         window.resolution = WindowResolution::new(w, h).with_scale_factor_override(1.0);
     }
+    // A mac's spelling on another host, for the capture: the defect is Apple's notation and the
+    // fix is the host's own spelling of it.
+    let mut bindings = BindingSettings::default();
+    if std::env::var("GOOEY_PLATFORM").as_deref() == Ok("mac") {
+        bindings.platform = Some(Platform::Mac);
+    }
+    if std::env::var("GOOEY_GLYPHS").as_deref() == Ok("words") {
+        bindings.chord_glyphs = ChordGlyphs::Words;
+    }
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins.set(WindowPlugin {
@@ -122,6 +135,7 @@ fn main() {
         GooeyPlugins,
     ))
     .insert_resource(skin)
+    .insert_resource(bindings)
     .add_systems(Startup, setup)
     .add_systems(
         Update,

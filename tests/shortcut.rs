@@ -701,3 +701,248 @@ fn a_shortcut_tooltip_writes_nothing_while_idle() {
     }
     assert_eq!(app.world().resource::<Writes>().0, 0);
 }
+
+// ---- the host's own spelling (#45) -------------------------------------------------------------
+
+/// Every key `KeyCode` has, as the names `model::shortcut_label` reads.
+const EVERY_KEY: [KeyCode; 42] = [
+    KeyCode::KeyA,
+    KeyCode::KeyZ,
+    KeyCode::Digit0,
+    KeyCode::Digit9,
+    KeyCode::F1,
+    KeyCode::F12,
+    KeyCode::Enter,
+    KeyCode::NumpadEnter,
+    KeyCode::Backspace,
+    KeyCode::Delete,
+    KeyCode::Escape,
+    KeyCode::Tab,
+    KeyCode::Space,
+    KeyCode::ArrowUp,
+    KeyCode::ArrowDown,
+    KeyCode::ArrowLeft,
+    KeyCode::ArrowRight,
+    KeyCode::PageUp,
+    KeyCode::PageDown,
+    KeyCode::Home,
+    KeyCode::End,
+    KeyCode::Insert,
+    KeyCode::ContextMenu,
+    KeyCode::Backquote,
+    KeyCode::Backslash,
+    KeyCode::BracketLeft,
+    KeyCode::BracketRight,
+    KeyCode::Comma,
+    KeyCode::Equal,
+    KeyCode::Minus,
+    KeyCode::Period,
+    KeyCode::Quote,
+    KeyCode::Semicolon,
+    KeyCode::Slash,
+    KeyCode::NumpadAdd,
+    KeyCode::NumpadSubtract,
+    KeyCode::NumpadMultiply,
+    KeyCode::NumpadDivide,
+    KeyCode::NumpadDecimal,
+    KeyCode::NumpadComma,
+    KeyCode::NumpadEqual,
+    KeyCode::Numpad0,
+];
+
+/// Every combination of the four modifiers.
+fn every_modifier_combination() -> impl Iterator<Item = Modifiers> {
+    (0u8..16).map(|bits| Modifiers {
+        ctrl: bits & 1 != 0,
+        shift: bits & 2 != 0,
+        alt: bits & 4 != 0,
+        meta: bits & 8 != 0,
+    })
+}
+
+#[test]
+fn a_macs_chord_in_words_is_ascii_for_every_key_and_modifier() {
+    for key in EVERY_KEY {
+        for modifiers in every_modifier_combination() {
+            let chord = Shortcut::new(modifiers, key);
+            let words = chord.label_with(Platform::Mac, ChordGlyphs::Words);
+            assert!(
+                words.is_ascii(),
+                "{key:?} with {modifiers:?} is {words:?} in Words, which a symbol-less face cannot draw"
+            );
+            assert!(!words.is_empty());
+        }
+    }
+}
+
+#[test]
+fn the_symbols_are_still_apples_and_the_words_are_ascii() {
+    let palette = Shortcut::new(CTRL_SHIFT, KeyCode::KeyP);
+    assert_eq!(palette.label_on(Platform::Mac), "⌃⇧P");
+    assert_eq!(
+        palette.label_with(Platform::Mac, ChordGlyphs::Words),
+        "Ctrl+Shift+P"
+    );
+    // Apple's order, in words, with Command as "Cmd" and Option as "Opt".
+    let all = Shortcut::new(
+        Modifiers::CTRL | Modifiers::SHIFT | Modifiers::ALT | Modifiers::META,
+        KeyCode::KeyX,
+    );
+    assert_eq!(
+        all.label_with(Platform::Mac, ChordGlyphs::Words),
+        "Ctrl+Opt+Shift+Cmd+X"
+    );
+    // The named keys are `key_name`'s words, the ones a prompt and a hint already use.
+    assert_eq!(
+        Shortcut::new(Modifiers::META, KeyCode::Backspace)
+            .label_with(Platform::Mac, ChordGlyphs::Words),
+        "Cmd+Backspace"
+    );
+    assert_eq!(
+        Shortcut::new(Modifiers::ALT, KeyCode::Enter).label_with(Platform::Mac, ChordGlyphs::Words),
+        "Opt+Enter"
+    );
+    assert_eq!(
+        Shortcut::new(Modifiers::CTRL, KeyCode::Escape)
+            .label_with(Platform::Mac, ChordGlyphs::Words),
+        "Ctrl+Esc"
+    );
+    assert_eq!(
+        Shortcut::new(Modifiers::NONE, KeyCode::ArrowUp)
+            .label_with(Platform::Mac, ChordGlyphs::Words),
+        "Up Arrow"
+    );
+}
+
+#[test]
+fn the_spelling_only_changes_a_macs_chord() {
+    // A plain letter has no symbol to replace, on either platform.
+    let letter = Shortcut::new(Modifiers::NONE, KeyCode::KeyA);
+    assert_eq!(
+        letter.label_with(Platform::Mac, ChordGlyphs::Glyphs),
+        letter.label_with(Platform::Mac, ChordGlyphs::Words)
+    );
+    for key in EVERY_KEY {
+        for modifiers in every_modifier_combination() {
+            let chord = Shortcut::new(modifiers, key);
+            assert_eq!(
+                chord.label_with(Platform::Other, ChordGlyphs::Glyphs),
+                chord.label_with(Platform::Other, ChordGlyphs::Words),
+                "{key:?} with {modifiers:?}: Microsoft's notation is already words"
+            );
+        }
+    }
+}
+
+#[test]
+fn the_settings_spell_a_chord_and_an_input_in_the_hosts_way() {
+    let mac_words = BindingSettings {
+        platform: Some(Platform::Mac),
+        chord_glyphs: ChordGlyphs::Words,
+        ..default()
+    };
+    assert_eq!(
+        mac_words.chord(Shortcut::new(Modifiers::META, KeyCode::KeyS)),
+        "Cmd+S"
+    );
+    assert_eq!(
+        mac_words.input_label(Binding::Chord(Shortcut::new(
+            Modifiers::META,
+            KeyCode::KeyZ
+        ))),
+        "Cmd+Z"
+    );
+    // A key, a mouse button and a pad button are unaffected by the spelling.
+    assert_eq!(
+        mac_words.input_label(Binding::Key(KeyCode::Space)),
+        Binding::Key(KeyCode::Space).label(PadStyle::Xbox)
+    );
+    // The default is this build's platform and Apple's symbols, so nothing changes for a host
+    // that sets neither.
+    let plain = BindingSettings::default();
+    assert_eq!(plain.platform(), Platform::current());
+    assert_eq!(
+        plain.chord(Shortcut::primary(KeyCode::KeyS)),
+        Shortcut::primary(KeyCode::KeyS).label()
+    );
+    // The prompt that names the exit follows the spelling too.
+    let mac_exit = BindingSettings {
+        platform: Some(Platform::Mac),
+        chord_glyphs: ChordGlyphs::Words,
+        ..default()
+    };
+    assert_eq!(mac_exit.key_prompt(), "Press a key, Esc exits");
+}
+
+#[test]
+fn a_tooltips_keycap_changes_with_the_spelling_without_being_respawned() {
+    let mut app = app();
+    app.world_mut().resource_mut::<BindingSettings>().platform = Some(Platform::Mac);
+    let chord = Shortcut::new(Modifiers::META, KeyCode::KeyS);
+    let (_, tip) = tip_for(&mut app, Tooltip::new("Save").with_shortcut(chord));
+    let cap = cap_of(&app, tip).expect("a keycap");
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Text>(cap).expect("text").0,
+        "⌘S",
+        "the symbols by default"
+    );
+
+    app.world_mut()
+        .resource_mut::<BindingSettings>()
+        .chord_glyphs = ChordGlyphs::Words;
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Text>(cap).expect("text").0,
+        "Cmd+S",
+        "the same cap, in words"
+    );
+    assert!(
+        cap_of(&app, tip) == Some(cap),
+        "the keycap is rewritten, not respawned"
+    );
+
+    // And nothing is written once the settings settle.
+    settle(&mut app);
+    assert_eq!(app.world().get::<Text>(cap).expect("text").0, "Cmd+S");
+}
+
+/// A menu row's chord reads the host's spelling, and follows it once built.
+#[test]
+fn a_menu_rows_chord_reads_the_hosts_spelling() {
+    let mut app = app();
+    app.world_mut().resource_mut::<BindingSettings>().platform = Some(Platform::Mac);
+    let chord = Shortcut::new(Modifiers::META, KeyCode::KeyZ);
+    let item = app
+        .world_mut()
+        .spawn(menu_item("Undo").with_shortcut(chord))
+        .id();
+    let title = app.world_mut().spawn(menu_title("Edit", ())).id();
+    let bar = app.world_mut().spawn(menu()).id();
+    app.world_mut()
+        .entity_mut(bar)
+        .add_children(&[title])
+        .add_child(item);
+    settle(&mut app);
+    let row_texts = |app: &App| {
+        descendants(app.world(), item)
+            .into_iter()
+            .filter_map(|e| app.world().get::<Text>(e).map(|t| t.0.clone()))
+            .collect::<Vec<_>>()
+    };
+    assert!(
+        row_texts(&app).contains(&"⌘Z".to_owned()),
+        "the row says the symbols by default: {:?}",
+        row_texts(&app)
+    );
+
+    app.world_mut()
+        .resource_mut::<BindingSettings>()
+        .chord_glyphs = ChordGlyphs::Words;
+    settle(&mut app);
+    assert!(
+        row_texts(&app).contains(&"Cmd+Z".to_owned()),
+        "the built row follows the setting: {:?}",
+        row_texts(&app)
+    );
+}

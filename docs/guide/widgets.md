@@ -13,6 +13,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `heading(text)` | a title in the skin's heading size |
 | `label(text)` | body text |
 | `button(text)` | a Bevy `Button`, so it takes `observe`, `Tooltip` and `InteractionDisabled` |
+| `primary_button(text)` | the screen's one main action: a `button` with the `PrimaryButton` marker, filled with `accent` and labelled in `accent_text` at rest, lifted 6 L\* toward `text` under the pointer (`primary_hovered()`) and 12 held down (`primary_pressed()`); `problems()` checks the words on both lifts and the steps between the three fills. Move the marker to make another button the main action |
 | `meter(value, max)` | a HUD bar; `Meter { value, max }` on the entity drives it, and `update_meters` draws it |
 | `tooltip` (`Tooltip::new("…")`) | a component on any widget: its box opens beside the widget under the pointer or on visible focus, with the command's shortcut on a keycap if it has one — see [shortcuts](shortcuts.md) |
 | `dialog()` | a modal: a scrim, focus taken on opening and held, and given back to the opener on closing |

@@ -6,7 +6,7 @@ use std::ops::BitOr;
 
 use bevy::prelude::*;
 
-use crate::model::{is_modifier_key, shortcut_label};
+use crate::model::{ChordGlyphs, is_modifier_key, shortcut_label};
 
 /// The platform a chord is spelled for: a mac says "⇧⌘P", every other platform "Ctrl+Shift+P".
 /// [`Platform::current`] is the one this build runs on; a test or an editor that shows another
@@ -17,6 +17,7 @@ use crate::model::{is_modifier_key, shortcut_label};
 /// [`Shortcut::label_on`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect)]
 #[reflect(Debug, PartialEq, Hash, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Platform {
     /// macOS: Command is the primary modifier, labels use Apple's symbols and order.
     Mac,
@@ -179,8 +180,26 @@ impl Shortcut {
         self.label_on(Platform::current())
     }
 
-    /// The chord as `platform` spells it.
+    /// The chord as `platform` spells it, in Apple's own symbols (`⌃⌥⇧⌘`). A host whose face has
+    /// no symbols asks [`Shortcut::label_with`] for [`ChordGlyphs::Words`]; the crate's own
+    /// widgets read the host's setting.
     pub fn label_on(&self, platform: Platform) -> String {
+        self.label_with(platform, ChordGlyphs::Glyphs)
+    }
+
+    /// The chord as `platform` spells it, with `glyphs` deciding whether a mac's modifiers are
+    /// symbols or ASCII words. On any platform but a mac they agree, so a host can set
+    /// [`crate::BindingSettings::chord_glyphs`] once for every platform.
+    ///
+    /// ```
+    /// # use bevy::prelude::*;
+    /// # use bevy_gooey::*;
+    /// let save = Shortcut::new(Modifiers::META, KeyCode::KeyS);
+    /// assert_eq!(save.label_with(Platform::Mac, ChordGlyphs::Glyphs), "⌘S");
+    /// assert_eq!(save.label_with(Platform::Mac, ChordGlyphs::Words), "Cmd+S");
+    /// assert_eq!(save.label_with(Platform::Other, ChordGlyphs::Words), "Super+S");
+    /// ```
+    pub fn label_with(&self, platform: Platform, glyphs: ChordGlyphs) -> String {
         let Modifiers {
             ctrl,
             shift,
@@ -191,6 +210,7 @@ impl Shortcut {
             &format!("{:?}", self.key),
             [ctrl, shift, alt, meta],
             platform == Platform::Mac,
+            glyphs,
         )
     }
 
@@ -200,5 +220,42 @@ impl Shortcut {
     /// chords shares.
     pub fn just_pressed(&self, keys: &ButtonInput<KeyCode>) -> bool {
         keys.just_pressed(self.key) && Modifiers::held(keys) == self.modifiers
+    }
+}
+
+/// The chord a [`Text`] node draws, so the host's spelling reaches it: one system,
+/// [`update_chord_texts`], writes the words of every node that carries this, and rewrites them when
+/// [`crate::BindingSettings`] changes. A tooltip's keycap, a menu row's chord, a shortcut badge and
+/// the legend each put it on their text, so a setting changed at run time is seen by a menu that
+/// was built long before.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// let chord = Shortcut::primary(KeyCode::KeyS);
+/// commands.spawn((Text::new(chord.label()), ChordText(chord)));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, PartialEq, Clone)]
+pub struct ChordText(pub Shortcut);
+
+/// Writes each [`ChordText`]'s words in the host's own spelling
+/// ([`BindingSettings::chord`](crate::BindingSettings::chord)), when the settings change or the
+/// component is new. Writes only a difference. Runs in [`crate::GooeySystems::Style`], before the
+/// systems that lay out the words they read.
+pub fn update_chord_texts(
+    settings: Res<crate::binding::BindingSettings>,
+    mut chords: Query<(&ChordText, &mut Text, Ref<ChordText>)>,
+) {
+    for (chord, mut text, seen) in &mut chords {
+        if !settings.is_changed() && !seen.is_changed() {
+            continue;
+        }
+        let words = settings.chord(chord.0);
+        if text.0 != words {
+            text.0 = words;
+        }
     }
 }

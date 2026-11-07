@@ -235,7 +235,7 @@ pub fn update_prompts(
             Binding::Pad(_) => Role::PromptButton,
             Binding::Key(_) | Binding::Mouse(_) | Binding::Chord(_) => Role::PromptKey,
         };
-        let name = input.label(settings.pad_style);
+        let name = settings.input_label(input);
         for &part in parts {
             let Ok((mut role, mut text)) = keycaps.get_mut(part) else {
                 continue;

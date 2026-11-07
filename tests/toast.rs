@@ -677,6 +677,147 @@ fn toasts_stand_inside_the_window_in_even_rows_newest_nearest_the_edge() {
     );
 }
 
+/// A node's `(left, top, right, bottom)` in the window, logical px.
+type Edges = (f32, f32, f32, f32);
+
+/// A toast's body and its stack, six frames after a toast spawned with `settings` at the player's
+/// interface `scale`.
+fn one_toast_with(settings: ToastSettings, scale: f32) -> (App, Edges, Edges) {
+    let mut app = app();
+    *app.world_mut().resource_mut::<ToastSettings>() = settings;
+    // The player's interface size, so `UiScale` is `scale` at 720p.
+    app.world_mut().resource_mut::<UiScaleSettings>().scale = scale;
+    app.world_mut().spawn(toast("Saved"));
+    frames(&mut app, 6);
+    let row = toasts(&mut app)[0];
+    let body = body_of(&mut app, row);
+    let stack = the_stack(&mut app);
+    let body = rect(&app, body);
+    let stack = rect(&app, stack);
+    (app, body, stack)
+}
+
+#[test]
+fn a_top_inset_keeps_the_stack_below_a_menu_bar_and_the_default_keeps_the_edge() {
+    let skin = GooeySkin::default();
+    let margin = skin.padding * 2.0;
+    let bar = 34.0;
+    let top = |inset| ToastSettings {
+        anchor: ToastAnchor::TopCenter,
+        inset,
+        ..ToastSettings::default()
+    };
+    // As today: the stack is the window, the toast its padding from the top edge.
+    let (_, body, stack) = one_toast_with(top(ToastInset::default()), 1.0);
+    assert!(
+        stack.1.abs() <= 0.5,
+        "the stack at the window's top: {stack:?}"
+    );
+    assert!(
+        (body.1 - margin).abs() <= 1.0,
+        "the toast at the edge: {body:?}"
+    );
+    // A menu bar 34 px tall: the stack starts under it and the toast keeps its padding below it.
+    let (_, body, stack) = one_toast_with(top(ToastInset::top(bar)), 1.0);
+    assert!(
+        (stack.1 - bar).abs() <= 0.5,
+        "the stack under the bar: {stack:?}"
+    );
+    assert!(body.1 >= bar, "the toast's top {} is below the bar", body.1);
+    assert!(
+        (body.1 - (bar + margin)).abs() <= 1.0,
+        "and its padding below it: {body:?}"
+    );
+    // Still centred across the window, and still to its bottom.
+    assert!(
+        (640.0 - (body.0 + body.2) / 2.0).abs() <= 1.0,
+        "centred: {body:?}"
+    );
+    assert!(
+        (stack.3 - 720.0).abs() <= 0.5,
+        "the stack reaches the bottom: {stack:?}"
+    );
+}
+
+#[test]
+fn an_inset_is_logical_px_and_scales_with_the_interface() {
+    let bar = 34.0;
+    let scale = 1.5;
+    let settings = ToastSettings {
+        anchor: ToastAnchor::TopLeft,
+        inset: ToastInset::top(bar),
+        ..ToastSettings::default()
+    };
+    let (app, _, stack) = one_toast_with(settings, scale);
+    let ui = app.world().resource::<UiScale>().0;
+    assert!((ui - scale).abs() < 1e-4, "UiScale {ui}");
+    assert!(
+        (stack.1 - bar * scale).abs() <= 0.5,
+        "34 logical px are {} window px at {scale}: {stack:?}",
+        bar * scale
+    );
+}
+
+#[test]
+fn a_bottom_inset_keeps_the_stack_above_a_status_band_and_a_side_inset_off_a_side_panel() {
+    let skin = GooeySkin::default();
+    let margin = skin.padding * 2.0;
+    let settings = ToastSettings {
+        anchor: ToastAnchor::BottomRight,
+        inset: ToastInset {
+            bottom: 28.0,
+            right: 240.0,
+            ..ToastInset::default()
+        },
+        ..ToastSettings::default()
+    };
+    let (mut app, body, stack) = one_toast_with(settings, 1.0);
+    assert!(
+        (stack.3 - (720.0 - 28.0)).abs() <= 0.5,
+        "above the band: {stack:?}"
+    );
+    assert!(
+        (stack.2 - (1280.0 - 240.0)).abs() <= 0.5,
+        "left of the panel: {stack:?}"
+    );
+    assert!(
+        (body.3 - (720.0 - 28.0 - margin)).abs() <= 1.0,
+        "the toast its padding above the band: {body:?}"
+    );
+    assert!(
+        (body.2 - (1280.0 - 240.0 - margin)).abs() <= 1.0,
+        "and from the panel: {body:?}"
+    );
+    // A host whose band changes rewrites the resource, and the stack follows.
+    app.world_mut().resource_mut::<ToastSettings>().inset = ToastInset::default();
+    frames(&mut app, 2);
+    let stack = the_stack(&mut app);
+    let stack = rect(&app, stack);
+    assert!(
+        (stack.3 - 720.0).abs() <= 0.5,
+        "back at the edge: {stack:?}"
+    );
+    assert!((stack.2 - 1280.0).abs() <= 0.5, "and the side: {stack:?}");
+}
+
+#[test]
+fn an_unusable_inset_side_is_no_inset() {
+    let settings = ToastSettings {
+        anchor: ToastAnchor::TopCenter,
+        inset: ToastInset {
+            top: f32::NAN,
+            left: -50.0,
+            ..ToastInset::default()
+        },
+        ..ToastSettings::default()
+    };
+    let (_, _, stack) = one_toast_with(settings, 1.0);
+    assert!(
+        stack.1.abs() <= 0.5 && stack.0.abs() <= 0.5,
+        "the window's corner: {stack:?}"
+    );
+}
+
 #[test]
 fn a_long_message_wraps_at_the_measure_and_stays_in_its_toast() {
     let skin = GooeySkin::default();

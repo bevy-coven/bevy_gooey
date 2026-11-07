@@ -8,7 +8,8 @@ use bevy::prelude::*;
 use bevy::ui::{ComputedUiRenderTargetInfo, OverrideClip, UiGlobalTransform};
 use bevy::ui_widgets::popover::Popover;
 
-use crate::shortcut::Shortcut;
+use crate::binding::BindingSettings;
+use crate::shortcut::{ChordText, Shortcut};
 use crate::skin::Role;
 use crate::text::TextInputOf;
 
@@ -138,7 +139,10 @@ fn sync_box(world: &mut World, entity: Entity) {
                 ))
                 .id();
             if let Some(shortcut) = tip.shortcut {
-                world.spawn((keycap(shortcut), ChildOf(tip_box)));
+                let words = world
+                    .get_resource::<BindingSettings>()
+                    .map_or_else(|| shortcut.label(), |settings| settings.chord(shortcut));
+                world.spawn((keycap(shortcut, words), ChildOf(tip_box)));
             }
         }
         (None, false) => {
@@ -150,10 +154,12 @@ fn sync_box(world: &mut World, entity: Entity) {
     }
 }
 
-/// The keycap a tooltip's shortcut is drawn on: the prompts' cap, one line.
-fn keycap(shortcut: Shortcut) -> impl Bundle {
+/// The keycap a tooltip's shortcut is drawn on: the prompts' cap, one line, in the host's own
+/// spelling ([`ChordText`] rewrites it when the settings change).
+fn keycap(shortcut: Shortcut, words: String) -> impl Bundle {
     (
-        Text::new(shortcut.label()),
+        Text::new(words),
+        ChordText(shortcut),
         TextLayout::new(Justify::Center, LineBreak::NoWrap),
         Role::PromptKey,
     )
@@ -165,9 +171,10 @@ fn keycap(shortcut: Shortcut) -> impl Bundle {
 /// despawned when it goes. Writes only when the line differs. Runs in
 /// [`crate::GooeySystems::Style`], before [`show_tooltips`].
 pub fn update_tooltip_text(
+    settings: Res<BindingSettings>,
     tooltips: Query<(&Tooltip, &Children), Changed<Tooltip>>,
     boxes: Query<&Children, With<TooltipBox>>,
-    mut texts: Query<(&Role, &mut Text)>,
+    mut texts: Query<(&Role, &mut Text, Option<&mut ChordText>)>,
     mut commands: Commands,
 ) {
     for (tooltip, children) in &tooltips {
@@ -177,14 +184,17 @@ pub fn update_tooltip_text(
         {
             let mut cap = None;
             for line in lines {
-                let Ok((role, mut text)) = texts.get_mut(*line) else {
+                let Ok((role, mut text, chord)) = texts.get_mut(*line) else {
                     continue;
                 };
                 match *role {
                     Role::PromptKey => {
                         cap = Some(*line);
                         if let Some(shortcut) = tooltip.shortcut {
-                            let label = shortcut.label();
+                            if let Some(mut chord) = chord {
+                                chord.set_if_neq(ChordText(shortcut));
+                            }
+                            let label = settings.chord(shortcut);
                             if text.0 != label {
                                 text.0 = label;
                             }
@@ -196,7 +206,7 @@ pub fn update_tooltip_text(
             }
             match (tooltip.shortcut, cap) {
                 (Some(shortcut), None) => {
-                    commands.spawn((keycap(shortcut), ChildOf(tip_box)));
+                    commands.spawn((keycap(shortcut, settings.chord(shortcut)), ChildOf(tip_box)));
                 }
                 (None, Some(cap)) => commands.entity(cap).despawn(),
                 _ => {}
