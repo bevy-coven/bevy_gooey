@@ -14,6 +14,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::drag::{DropCandidate, DropRefusing};
+use crate::elevation::{Elevation, ElevationLevel};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
 use crate::icon::{IconSize, IconTone};
 use crate::list::ListView;
@@ -383,6 +384,14 @@ pub struct GooeySkin {
     /// [`GooeySkin::preview_edge`]; [`Role::PreviewEdge`] draws it as a border. Checked against the
     /// panel at the 3:1 graphic minimum.
     pub preview_edge: Option<Color>,
+    /// The shadows a surface casts at each height it stands at: [`Elevation::raised`] under a
+    /// panel and a card, [`Elevation::floating`] under a popover, a menu, a tooltip and the
+    /// colour picker, [`Elevation::overlay`] under a dialog's card, a toast and the command
+    /// palette. Each a stack of CSS-style [`crate::ShadowLayer`]s in logical px. `dark` (the
+    /// default skin), `parchment` and `tool` carry Rune's neutral stacks and `high_contrast` none,
+    /// as its edges carry its depth; a theme step ([`GooeySkin::with_colours_of`]) carries them. A negative or non-number blur, or an offset or spread that is not
+    /// finite, is [`SkinProblem::BadSize`] (`elevation.<level>`).
+    pub elevation: Elevation,
 }
 
 impl GooeySkin {
@@ -407,6 +416,7 @@ impl GooeySkin {
                 Color::srgb(0.20, 0.22, 0.27),
                 Color::srgb(0.273, 0.292, 0.339),
             ],
+            elevation: Elevation::on_dark(),
             ..Self::sizes()
         }
     }
@@ -432,6 +442,7 @@ impl GooeySkin {
                 Color::srgb(0.91, 0.85, 0.72),
                 Color::srgb(0.955, 0.925, 0.86),
             ],
+            elevation: Elevation::on_light(),
             ..Self::sizes()
         }
     }
@@ -503,6 +514,7 @@ impl GooeySkin {
             spacing: [2.0, 4.0, 6.0, 10.0, 16.0, 24.0],
             radii: [2.0, 4.0, 8.0],
             type_scale: [11.0, 12.0, 14.0, 16.0, 20.0],
+            elevation: Elevation::on_dark(),
             ..Self::sizes()
         }
     }
@@ -546,6 +558,7 @@ impl GooeySkin {
             unchecked: None,
             card: None,
             preview_edge: None,
+            elevation: Elevation::none(),
         }
     }
 
@@ -1039,6 +1052,9 @@ impl GooeySkin {
                 out.push(SkinProblem::BadSize { field });
             }
         }
+        for field in self.elevation.unusable() {
+            out.push(SkinProblem::BadSize { field });
+        }
         for (field, value) in non_negative {
             if !value.is_finite() || value < 0.0 {
                 out.push(SkinProblem::BadSize { field });
@@ -1140,6 +1156,7 @@ impl GooeySkin {
             unchecked: look.unchecked,
             card: look.card,
             preview_edge: look.preview_edge,
+            elevation: look.elevation.clone(),
             ..self
         }
     }
@@ -1898,10 +1915,10 @@ type Styled = (
     Option<&'static mut TextFont>,
     Option<(
         &'static mut Popover,
-        &'static mut BoxShadow,
         Option<&'static TooltipBox>,
         Option<(&'static PopoverPanel, Option<&'static PopoverSlide>)>,
     )>,
+    Option<&'static mut BoxShadow>,
     Option<&'static ComputedUiRenderTargetInfo>,
     Option<&'static mut TextCursorStyle>,
     Option<&'static mut ImageNode>,
@@ -2440,6 +2457,7 @@ fn restyle(
         text_color,
         text_font,
         floating,
+        shadow,
         target,
         cursor,
         mut image,
@@ -2453,7 +2471,7 @@ fn restyle(
 ) {
     let skin = look.skin;
     let scaled = |size: f32| FontSize::Px(size * skin.text_scale);
-    let tip = floating.as_ref().and_then(|(_, _, tip, _)| tip.copied());
+    let tip = floating.as_ref().and_then(|(_, tip, _)| tip.copied());
     // Every line weight (borders, the focus ring, the meter's frame and gap) on whole device
     // pixels at the node's scale, so it is one weight on every side wherever the node lands.
     let line = snap_line_width(skin.border, target.map_or(1.0, |t| t.scale_factor()));
@@ -4120,7 +4138,13 @@ fn restyle(
         });
     }
 
-    if let Some((mut popover, mut shadow, tip, panel)) = floating {
+    // The height the widget stands at, drawn from the skin's stacks; a toast's shadow fades with
+    // the toast.
+    if let (Some(mut shadow), Some(level)) = (shadow, level_of(*role, in_dialog)) {
+        shadow.set_if_neq(skin.elevation.box_shadow(level, state.alpha));
+    }
+
+    if let Some((mut popover, tip, panel)) = floating {
         let next = if let Some(tip) = tip {
             // One spacing step outside the panel a widget usually sits in (its padding and border),
             // so the tooltip never straddles that panel's edge. `Popover` measures from inside the
@@ -4139,15 +4163,25 @@ fn restyle(
         if *popover != next {
             *popover = next;
         }
-        // A soft drop shadow in the background colour lifts the box above the screen.
-        shadow.set_if_neq(BoxShadow::new(
-            skin.background.with_alpha(0.7),
-            Val::Px(0.0),
-            Val::Px(skin.border * 2.0),
-            Val::Px(0.0),
-            Val::Px(skin.pad()),
-        ));
     }
+}
+
+/// The height a widget of `role` stands at, if it casts a shadow: a panel over a dialog's scrim
+/// is the dialog, an overlay.
+fn level_of(role: Role, in_dialog: bool) -> Option<ElevationLevel> {
+    match role {
+        Role::Panel if in_dialog => Some(ElevationLevel::Overlay),
+        Role::Panel | Role::CardCell => Some(ElevationLevel::Raised),
+        Role::Tooltip | Role::Popover | Role::MenuPanel => Some(ElevationLevel::Floating),
+        Role::Palette | Role::Toast => Some(ElevationLevel::Overlay),
+        _ => None,
+    }
+}
+
+/// Whether a widget of `role` casts a shadow at some height ([`crate::elevation::give_elevation`]
+/// gives it its `BoxShadow`).
+pub(crate) fn elevated(role: Role) -> bool {
+    level_of(role, false).is_some() || level_of(role, true).is_some()
 }
 
 /// The ink of a menu row's label, tick and arrow: the text colour, the accent's text while the row

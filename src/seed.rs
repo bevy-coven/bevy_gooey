@@ -27,10 +27,13 @@
 use bevy::color::{Oklaba, Oklcha, Srgba};
 use bevy::prelude::*;
 
+use crate::elevation::Elevation;
 use crate::model::{
-    ELEVATION_STEP, NON_TEXT_CONTRAST, PRIMARY_LIFT_L, STATE_STEP, TEXT_CONTRAST, cie_lightness,
-    composite, contrast_ratio, lift_toward, relative_luminance,
+    ELEVATION_STEP, MIN_TARGET_PX, NON_TEXT_CONTRAST, PRIMARY_LIFT_L, STATE_STEP, TEXT_CONTRAST,
+    cie_lightness, composite, contrast_ratio, lift_toward, relative_luminance,
 };
+use crate::motion::MotionTokens;
+use crate::skin::Density;
 use crate::skin::{GooeySkin, SkinProblem};
 
 /// Three opaque colours a whole skin is derived from ([`GooeySkin::from_seed`]).
@@ -331,6 +334,11 @@ impl GooeySkin {
             surface_edge: None,
             scrim: Color::srgba(0.0, 0.0, 0.0, SCRIM_ALPHA),
             surfaces,
+            elevation: if dark {
+                Elevation::on_dark()
+            } else {
+                Elevation::on_light()
+            },
             hover: Some(from_rgb(hover)),
             pressed: Some(from_rgb(pressed)),
             ..GooeySkin::tool()
@@ -340,6 +348,147 @@ impl GooeySkin {
             Ok(skin)
         } else {
             Err(problems)
+        }
+    }
+}
+
+/// The Oklch lightness, chroma and hue (degrees) of Rune's neutral themes and its blue accent
+/// (`crates/rune/src/tok.rs` `theme()` and `accent(0, ..)` at `f73f72c`): background, text and
+/// accent, dark then light.
+const DESK_DARK_LCH: [[f32; 3]; 3] = [
+    [0.185, 0.004, 265.0],
+    [0.955, 0.003, 265.0],
+    [0.66, 0.17, 256.0],
+];
+/// Rune's light accent is `oklch(0.6 0.17 256)`; words on it reach 4.0:1 and it stands 2.9:1 on a
+/// resting button, under this crate's 4.5:1 and 3:1. 0.55 is the lightest step of 0.05 that meets
+/// both, so the light Desk's accent is that much deeper.
+const DESK_LIGHT_LCH: [[f32; 3]; 3] = [
+    [0.958, 0.004, 265.0],
+    [0.225, 0.006, 265.0],
+    [0.55, 0.17, 256.0],
+];
+
+/// An Oklch colour held as sRGB, the space every preset is written in (`Color::mix` mixes in a
+/// colour's own space, so the space a seed is held in reaches the fills derived from it).
+fn lch([l, c, h]: [f32; 3]) -> Color {
+    Color::Srgba(Srgba::from(Oklcha::new(l, c, h, 1.0)))
+}
+
+impl PaletteSeed {
+    /// Rune's neutral dark desktop theme: a blue-grey ground, near-white text, its blue accent.
+    /// [`GooeySkin::desk`] is this seed's skin.
+    pub fn desk() -> Self {
+        let [background, text, accent] = DESK_DARK_LCH.map(lch);
+        Self {
+            background,
+            text,
+            accent,
+        }
+    }
+
+    /// Rune's neutral light desktop theme, with a deeper blue accent (its own fails 4.5:1).
+    /// [`GooeySkin::desk_light`] is this seed's skin.
+    pub fn desk_light() -> Self {
+        let [background, text, accent] = DESK_LIGHT_LCH.map(lch);
+        Self {
+            background,
+            text,
+            accent,
+        }
+    }
+}
+
+impl GooeySkin {
+    /// A desktop tool's neutral dark look (Rune's): the colours [`GooeySkin::from_seed`] derives from
+    /// [`PaletteSeed::desk`], written out here so the preset is plain data; Rune's sizes, compact
+    /// density, a 24 px least target (WCAG 2.5.8), Rune's dark elevation and motion palette.
+    /// Not a step of the theme row ([`SkinPreset::ALL`](crate::SkinPreset::ALL) is the row's four
+    /// looks): a host that wants it sets it.
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// assert!(GooeySkin::desk().problems().is_empty());
+    /// assert_eq!(GooeySkin::desk().text_size, 13.0);
+    /// ```
+    pub fn desk() -> Self {
+        Self {
+            background: Color::srgb(0.0697, 0.0732, 0.0804),
+            surface: Color::srgb(0.1050, 0.1087, 0.1163),
+            surface_raised: Color::srgb(0.1610, 0.1649, 0.1730),
+            text: Color::srgb(0.9372, 0.9412, 0.9494),
+            text_muted: Color::srgb(0.6774, 0.6824, 0.6927),
+            accent: Color::srgb(0.2617, 0.5721, 0.9702),
+            accent_text: Color::BLACK,
+            danger: Color::srgb(0.93, 0.36, 0.34),
+            focus_ring: Color::srgb(0.4313, 0.6076, 0.9850),
+            outline: Color::srgb(0.3983, 0.4021, 0.4099),
+            hover: Some(Color::srgb(0.2076, 0.2115, 0.2195)),
+            pressed: Some(Color::srgb(0.2425, 0.2465, 0.2545)),
+            surfaces: vec![
+                Color::srgb(0.0697, 0.0732, 0.0804),
+                Color::srgb(0.1050, 0.1087, 0.1163),
+                Color::srgb(0.1326, 0.1364, 0.1442),
+                Color::srgb(0.1610, 0.1649, 0.1730),
+                Color::srgb(0.1902, 0.1942, 0.2024),
+            ],
+            elevation: Elevation::on_dark(),
+            ..Self::desk_sizes()
+        }
+    }
+
+    /// The light Desk: [`PaletteSeed::desk_light`]'s colours, the same sizes as
+    /// [`GooeySkin::desk`] and Rune's light elevation.
+    ///
+    /// ```
+    /// use bevy_gooey::GooeySkin;
+    /// assert!(GooeySkin::desk_light().problems().is_empty());
+    /// ```
+    pub fn desk_light() -> Self {
+        Self {
+            background: Color::srgb(0.9399, 0.9452, 0.9562),
+            surface: Color::srgb(0.9114, 0.9194, 0.9356),
+            surface_raised: Color::srgb(0.8534, 0.8613, 0.8774),
+            text: Color::srgb(0.1032, 0.1087, 0.1201),
+            text_muted: Color::srgb(0.4097, 0.4166, 0.4307),
+            accent: Color::srgb(0.1105, 0.4364, 0.8223),
+            accent_text: Color::WHITE,
+            danger: Color::srgb(0.70, 0.12, 0.10),
+            focus_ring: Color::srgb(0.2817, 0.4448, 0.8070),
+            outline: Color::srgb(0.5225, 0.5293, 0.5432),
+            hover: Some(Color::srgb(0.8159, 0.8237, 0.8395)),
+            pressed: Some(Color::srgb(0.7724, 0.7800, 0.7956)),
+            surfaces: vec![
+                Color::srgb(0.9374, 0.9454, 0.9618),
+                Color::srgb(0.9114, 0.9194, 0.9356),
+                Color::srgb(0.8791, 0.8870, 0.9032),
+                Color::srgb(0.8534, 0.8613, 0.8774),
+                Color::srgb(0.8089, 0.8166, 0.8326),
+            ],
+            elevation: Elevation::on_light(),
+            ..Self::desk_sizes()
+        }
+    }
+
+    /// Rune's desktop sizes (`tok.rs` `type_`, `space`, `radius`): 13 px body text, a 4/8/12/24
+    /// spacing scale, 6/8/12 corners, a 1 px frame, compact density at a 24 px least target.
+    fn desk_sizes() -> Self {
+        Self {
+            scrim: Color::srgba(0.0, 0.0, 0.0, SCRIM_ALPHA),
+            surface_edge: None,
+            density: Density::Compact,
+            text_size: 13.0,
+            heading_size: 15.0,
+            type_scale: [11.5, 12.0, 13.0, 15.0, 20.0],
+            spacing: [2.0, 4.0, 8.0, 12.0, 16.0, 24.0],
+            radii: [6.0, 8.0, 12.0],
+            radius: 6.0,
+            border: 1.0,
+            gap: 8.0,
+            padding: 12.0,
+            min_target: MIN_TARGET_PX,
+            motion: MotionTokens::default(),
+            ..GooeySkin::tool()
         }
     }
 }

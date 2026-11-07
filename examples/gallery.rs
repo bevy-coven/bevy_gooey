@@ -29,7 +29,7 @@
 //! `gooey: kept <n> frames in <dir>`: those frames are a GIF's, and the still stays one file.
 //! `GOOEY_A11Y=1` stands in for a connected screen reader and prints the accessibility tree at the
 //! capture frame, one `gooey: a11y` line per node: its role, name, value and flags.
-//! `GOOEY_SKIN=parchment`, `high_contrast` or `tool` starts in that skin;
+//! `GOOEY_SKIN=parchment`, `high_contrast`, `tool`, `desk` or `desk_light` starts in that skin;
 //! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size;
 //! `GOOEY_MOTION=<f>` sets `MotionSettings::duration_scale` (`0` is "reduce motion", `3` a slow
 //! entrance for a GIF).
@@ -208,6 +208,8 @@ fn main() {
         Ok("parchment") => GooeySkin::parchment(),
         Ok("high_contrast") => GooeySkin::high_contrast(),
         Ok("tool") => GooeySkin::tool(),
+        Ok("desk") => GooeySkin::desk(),
+        Ok("desk_light") => GooeySkin::desk_light(),
         _ => GooeySkin::dark(),
     };
     if let Some(scale) = std::env::var("GOOEY_TEXT_SCALE")

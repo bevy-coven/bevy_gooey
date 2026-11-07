@@ -90,6 +90,42 @@ fn seeded() -> Result<GooeySkin, Vec<bevy_gooey::SkinProblem>> {
 
 The derivation is Rune's palette kit, measured and written again here (`docs/research/skin-from-seeds.md`).
 
+## The Desk looks: a desktop tool's neutral skin
+
+`GooeySkin::desk()` and `GooeySkin::desk_light()` are Rune's neutral desktop look.
+- The colours are what `GooeySkin::from_seed` derives from `PaletteSeed::desk()` and `desk_light()`: a blue-grey ground, near-white or near-black text and a blue accent.
+- The sizes are a desktop tool's: 13 px body text, a 4/8/12/24 spacing scale, 6/8/12 corners, a 1 px frame and compact density at a 24 px least target.
+- Rune's elevation and its motion palette come with them.
+
+They are not steps of the theme row, which stays Dark, Parchment, High contrast and Tool. A host that wants them sets the skin:
+
+```rust,ignore
+app.insert_resource(GooeySkin::desk());
+```
+
+The light Desk's accent is a step deeper than Rune's: Rune's own light blue carries white words at 4.0:1, under this crate's 4.5:1.
+
+![The gooey gallery in Desk and Desk light above Rune's button variants in its neutral kit, dark and light](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/desk.png)
+
+## Elevation: shadows as data
+
+`GooeySkin::elevation` holds the shadows for the three heights a surface stands at. Each is a stack of `ShadowLayer { x, y, blur, spread, color }` in CSS terms and logical px, drawn in order.
+
+- `raised` is a panel and a card on the screen.
+- `floating` is a popover, a menu, a tooltip and the colour picker.
+- `overlay` is a dialog's card, a toast and the command palette (a filtering select's list is the palette's card, so it is an overlay too).
+
+`dark`, `parchment` and `tool` carry Rune's neutral stacks: a 1 px drop blurred 2 px, a 4 px drop blurred 8 px and an 8 px drop blurred 16 px, each with a half-pixel ring. `high_contrast` carries none, because its edges carry depth. A theme step carries the stacks of the look it takes. Bevy draws a shadow under the whole box, so a translucent fill shows a little of it through. A host's own `(Node, Role::Panel)` casts its height's stack too.
+
+```rust,ignore
+let mut skin = GooeySkin::dark();
+skin.elevation.overlay = vec![ShadowLayer::drop(8.0, 24.0, Color::srgba(0.0, 0.0, 0.0, 0.5))];
+```
+
+![The gallery with the Quit dialog open in the four presets: dark, parchment, high contrast with no shadows, and tool; the panels cast the raised stack and the dialog the overlay stack](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/elevation.png)
+
+The blur is CSS's, twice the Gaussian's standard deviation that Bevy's `ShadowStyle::blur_radius` takes (`shadow_sigma`), so `0 8px 24px` reads as it does in a browser. A negative or non-number blur is a `problems()` entry.
+
 ## Design tokens and the surface ladder
 
 A tool's chrome stands on a ladder of surfaces (the window's ground, a panel, a row, a field, a card),
