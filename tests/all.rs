@@ -32,6 +32,7 @@ mod elevation;
 mod field_problem;
 mod hold;
 mod icon;
+mod inspect_mixed;
 mod inspector;
 mod large_text;
 mod layout_motion;

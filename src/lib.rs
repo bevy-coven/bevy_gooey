@@ -248,8 +248,8 @@ pub use hold::{
 pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
 #[cfg(feature = "reflect")]
 pub use inspector::{
-    InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange, build_inspectors,
-    inspector, sync_inspectors,
+    InspectMixed, InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange,
+    build_inspectors, inspector, sync_inspect_mixed, sync_inspectors,
 };
 pub use layout_motion::{
     LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelSpring, mark_moving_parts,
@@ -650,7 +650,7 @@ impl Plugin for GooeyStylePlugin {
         #[cfg(feature = "reflect")]
         app.add_systems(
             Update,
-            (build_inspectors, sync_inspectors)
+            (build_inspectors, sync_inspect_mixed, sync_inspectors)
                 .chain()
                 .in_set(GooeySystems::Style)
                 .before(update_toasts),
