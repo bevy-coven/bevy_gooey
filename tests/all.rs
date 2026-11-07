@@ -35,6 +35,7 @@ mod menu;
 mod meter;
 mod meter_motion;
 mod motion;
+mod motion_trace;
 mod nav;
 mod number;
 mod options;

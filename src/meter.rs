@@ -3,12 +3,12 @@
 use bevy::prelude::*;
 
 use crate::model::{MeterShown, meter_fraction, meter_motion};
-use crate::motion::MotionSettings;
-use crate::skin::Role;
+use crate::motion::{MotionSettings, MotionToken};
+use crate::skin::{GooeySkin, Role, SkinScope, skin_of};
 
 /// A meter's reading. Change it and [`update_meters`] moves the fill: a loss drops it at once and
-/// leaves a [`Role::MeterTrail`] of the lost length that holds a moment and drains; a gain eases
-/// it up (see [`meter_motion`]; [`MotionSettings::off`] makes both instant). Any value is safe: the
+/// leaves a [`Role::MeterTrail`] of the lost length that holds a moment and drains; a gain takes
+/// it up on the skin's snappy spring (see [`meter_motion`]; [`MotionSettings::off`] makes both instant). Any value is safe: the
 /// fill is clamped to empty and full, and a non-finite or non-positive maximum reads as empty.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
 #[reflect(Component, Debug, PartialEq, Clone)]
@@ -34,8 +34,11 @@ pub struct MeterMotion {
 /// touched. Runs in [`crate::GooeySystems::Style`], on real time (a paused game's HUD still settles).
 pub fn update_meters(
     settings: Option<Res<MotionSettings>>,
+    skin: Res<GooeySkin>,
+    scopes: Query<&SkinScope>,
+    parents: Query<&ChildOf>,
     time: Option<Res<Time<Real>>>,
-    mut meters: Query<(Ref<Meter>, &mut MeterMotion, &Children)>,
+    mut meters: Query<(Entity, Ref<Meter>, &mut MeterMotion, &Children)>,
     mut parts: Query<(&Role, &mut Node)>,
 ) {
     // With no clock the old jump: a zero scale is the target at once.
@@ -45,16 +48,19 @@ pub fn update_meters(
         _ => 0.0,
     };
     let dt = time.map_or(0.0, |time| time.delta_secs());
-    for (meter, mut motion, children) in &mut meters {
+    for (entity, meter, mut motion, children) in &mut meters {
         let target = meter_fraction(meter.value, meter.max);
         let shown = motion.shown;
         if motion.primed && !meter.is_changed() && shown.fill == target && shown.trail == target {
             continue;
         }
+        let gain = skin_of(&skin, entity, &scopes, &parents)
+            .motion
+            .spring(MotionToken::Snappy);
         let next = if motion.primed {
-            meter_motion(shown, target, dt, scale)
+            meter_motion(shown, target, dt, gain, scale)
         } else {
-            meter_motion(shown, target, dt, 0.0)
+            meter_motion(shown, target, dt, gain, 0.0)
         };
         if motion.primed && next == shown {
             continue;

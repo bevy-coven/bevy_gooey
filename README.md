@@ -207,7 +207,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 ![The gallery's Health meter over the Audio tab: a hit takes the amber fill from full to 60% in one frame and the lost 40% stays behind it in red for a beat and then drains to the fill; a second hit does the same from 60% to 20%; a heal eases the fill back up to 60% with no red; a last hit leaves a red band again](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/meter.gif)
 
-*Motion: a hit drops a `meter()`'s fill to the new value in that frame and leaves the lost length behind it in the skin's danger colour for 0.45 s before it drains, a heal eases up with no trail, a dialog's card rises 12 px in 0.18 s and a menu or popover opens 6 px out of its anchor in 0.12 s, all on real time with nothing to write; `MotionSettings::off()` is the player's "reduce motion" and makes every one instant, and `SlideIn` does the same for your own panel. Recorded with `GOOEY_MOTION=2` and `GOOEY_KEYS=hit,hit,heal,hit` (twice slower, so the trail reads in a GIF); the dialog's rise is in the [motion guide](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/motion.md), the inventory's demo in its [guide](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/inventory.md), the radial menu's in [its own](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/radial.md).*
+*Motion: a hit drops a `meter()`'s fill to the new value in that frame and leaves the lost length behind it in the skin's danger colour for 0.45 s before it drains, a heal rises up with no trail, a dialog's card rises 12 px and a menu or popover opens 6 px out of its anchor, each on a spring from the skin's motion palette (`GooeySkin::motion`) that carries on from where it is drawn if it is interrupted, all on real time with nothing to write; `MotionSettings::off()` is the player's "reduce motion" and makes every one instant, and `MotionTarget` does the same for your own panel. Recorded with `GOOEY_MOTION=2` and `GOOEY_KEYS=hit,hit,heal,hit` (twice slower, so the trail reads in a GIF); the dialog's rise is in the [motion guide](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/motion.md), the inventory's demo in its [guide](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/inventory.md), the radial menu's in [its own](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/radial.md).*
 
 ![The gallery's settings panel and the Quit dialog over it, with the legend in the bottom-left corner: it reads "Enter Select, Esc Back" in rounded keycaps, "A Select, B Back" in round ones after a pad button is pressed, and back to keys on the next key; the Quit dialog has its own legend above the dimmed screen, which turns to the pad's the same way](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/prompts.gif)
 
@@ -228,7 +228,7 @@ see [use it in the Cauldron](https://bevy-coven.github.io/crates/bevy_gooey.html
 
 | `bevy_gooey` | Bevy |
 |---|---|
-| 0.1 – 0.37.0 | 0.20 |
+| 0.1 – 0.38.0 | 0.20 |
 
 ## Learn more
 
