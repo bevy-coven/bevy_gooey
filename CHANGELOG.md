@@ -1,11 +1,15 @@
 # Changelog
 
-## [Unreleased]
+## [0.41.0] - 2026-11-07
 
 ### Added
 
 - Tooltips on a desktop's timing (#64, `docs/research/tooltip-delay.md`, `docs/guide/widgets.md`): `TooltipSettings { delay_seconds: 0.5 }`. A tooltip opens after the pointer has rested on its widget that long, a press, a wheel turn or a key ends the visit until the pointer leaves and returns, and visible focus still opens it at once. `tests/tooltip.rs` runs with no delay (assumed owner exception, #76). Proved by `tests/tooltip_delay.rs`.
 - Switch motion (#67, `docs/research/switch-motion.md`, `docs/guide/motion.md`): a toggle's knob travels from one end of its track to the other on `motion.snappy` instead of jumping. `mark_moving_parts` gives a `Role::ToggleKnob` `MovesSmoothly` and the new `TravelSpring(MotionToken)` (a node with none travels on `motion.default`, as before); the state is still `Checked`, so a value the game sets with no event travels the same, a second flip mid-flight retargets from the drawn place, and the first frames, a new window size, scale or skin and reduced or no motion land. The track's colours follow through colour motion. Not built: the menu check mark's entrance, and Rune's hover stretch of the thumb. Proved by `tests/switch_motion.rs`.
+
+### Changed
+
+- **Breaking:** the system function `show_tooltips` takes more parameters (the settings, the clock and the wheel and key readers). It is a system a plugin registers; a host that called it by hand, or ordered against it by name, is unaffected unless it called it with arguments.
 
 ## [0.40.3] - 2026-11-07
 
