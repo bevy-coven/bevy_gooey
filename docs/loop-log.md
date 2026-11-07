@@ -2604,3 +2604,13 @@ began: 23 GB free; now 4.9 GB, of which 59 GB of `debug/deps` is the crate's own
 from (left, as the rules say). The `loop/iter-66` branch is kept, merged; no worktrees remain from this pass. Earlier
 passes' worktrees (`~/g17_base`, `~/g17_parked`, `~/g17s_base`) and the two stale `wiggum/parked-pass-*` branches
 are listed and left, as before.
+
+## Iteration 67 — 2026-11-07 — #75: the keycap centring test measured the wrong middle (test-only)
+
+`tests/prompts.rs::cap_off_centre` took the midpoint of the first and last glyph positions as the run's middle. A `PositionedGlyph::position` is its quad's centre, so that midpoint is `content.min + size/2 + (w_first - w_last)/2`, which no layout can change: the chord `⌃⇧Z` (6 px `⌃`, 10 px `Z`) read 1.5 px off while dead-centre. It now compares the run's shaped width (`TextLayoutInfo::size.x`) centred in the content box against the node's border-box centre, so a left-pinned run still fails. No `src/` change: the keycap was centred. Sources: Bevy 0.20 `TextLayoutInfo`/`PositionedGlyph` (technical); craft and shipping-game sources not applicable to a test-measurement fix.
+
+Gate on the merged tree: fmt, clippy `-D warnings`, `cargo nextest run --all-features --lib --tests` 1133/1133 (was 1 failing), 250 doctests, `cargo check --lib` + wasm32, `cargo doc -D warnings`. No package file changed by this pass, so no release of its own; `v0.40.0` (d6fa6dd, released by the grimoire loop) already covers the G-43..G-54 commits. `mean_ms`: not measured, no visual change.
+
+Disk: `/` was 100% full (504 MB free) and linking examples failed; nextest's bare `--all-features` builds every example, so use `--lib --tests` (as AGENTS.md says). Removed the ten >50 MB example binaries this session wrote into the shared target's `debug/examples` (today's mtime only): 504 MB -> 3.5 GB free. The shared target (`~/.cargo-target-shared/global`, tens of GB) and the stale `wiggum/parked-pass-91-by-hand`, `wiggum/pass-91-research-note`, `loop/iter-66` branches are left, listed here.
+
+Next: #51 colour motion in Oklab, #55 elevation as data, `Cooldown` ready cue, `HoldSettings` option row, free disk on this host (460 GB volume full).
