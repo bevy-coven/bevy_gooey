@@ -10,7 +10,8 @@
 use bevy::prelude::*;
 
 use crate::model::{
-    DIALOG_SLIDE_PX, DIALOG_SLIDE_SECONDS, POPOVER_SLIDE_PX, POPOVER_SLIDE_SECONDS, ease_out,
+    DIALOG_SLIDE_PX, DIALOG_SLIDE_SECONDS, POPOVER_SLIDE_PX, POPOVER_SLIDE_SECONDS, Spring,
+    ease_out,
 };
 use crate::popover::PopoverPanel;
 use crate::skin::Role;
@@ -62,6 +63,105 @@ impl MotionSettings {
     /// Whether motion is turned off (a scale that is zero, negative or not a number).
     pub fn is_off(&self) -> bool {
         self.duration_scale.is_nan() || self.duration_scale <= 0.0
+    }
+}
+
+/// Which of the skin's springs a motion uses ([`MotionTokens`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Default, Debug, PartialEq, Hash, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum MotionToken {
+    /// Small controls answering a press: the quick one.
+    Snappy,
+    /// The default state change.
+    #[default]
+    Default,
+    /// Larger things that arrive and settle.
+    Calm,
+    /// A thing that leads another (a drag's follower, a pointer-tied value).
+    Lead,
+}
+
+/// The skin's motion palette: four springs and a fade length, so a whole interface has one feel
+/// ([`GooeySkin::motion`](crate::GooeySkin::motion)). Every spring has bounce 0 by default:
+/// utility UI arrives and stops. [`MotionSettings::duration_scale`] multiplies every length here.
+///
+/// ```
+/// use bevy_gooey::{GooeySkin, MotionToken};
+/// let skin = GooeySkin::dark();
+/// assert_eq!(skin.motion.spring(MotionToken::Default).duration, 0.3);
+/// assert!(skin.problems().is_empty());
+/// ```
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(default)
+)]
+pub struct MotionTokens {
+    /// 0.25 s, bounce 0.
+    pub snappy: Spring,
+    /// 0.3 s, bounce 0.
+    pub default: Spring,
+    /// 0.4 s, bounce 0.
+    pub calm: Spring,
+    /// 0.2 s, bounce 0.
+    pub lead: Spring,
+    /// How long an opacity change takes, seconds. Default: 0.15. Zero or above, finite.
+    pub fade_seconds: f32,
+}
+
+impl Default for MotionTokens {
+    fn default() -> Self {
+        Self {
+            snappy: Spring {
+                duration: 0.25,
+                bounce: 0.0,
+            },
+            default: Spring {
+                duration: 0.3,
+                bounce: 0.0,
+            },
+            calm: Spring {
+                duration: 0.4,
+                bounce: 0.0,
+            },
+            lead: Spring {
+                duration: 0.2,
+                bounce: 0.0,
+            },
+            fade_seconds: 0.15,
+        }
+    }
+}
+
+impl MotionTokens {
+    /// The spring a token names.
+    pub fn spring(&self, token: MotionToken) -> Spring {
+        match token {
+            MotionToken::Snappy => self.snappy,
+            MotionToken::Default => self.default,
+            MotionToken::Calm => self.calm,
+            MotionToken::Lead => self.lead,
+        }
+    }
+
+    /// The name of the first field that cannot be used: a spring that is not
+    /// [`Spring::is_valid`], or a fade that is negative or not finite.
+    pub fn problem(&self) -> Option<&'static str> {
+        [
+            ("motion.snappy", self.snappy),
+            ("motion.default", self.default),
+            ("motion.calm", self.calm),
+            ("motion.lead", self.lead),
+        ]
+        .into_iter()
+        .find(|(_, spring)| !spring.is_valid())
+        .map(|(field, _)| field)
+        .or_else(|| {
+            (!self.fade_seconds.is_finite() || self.fade_seconds < 0.0)
+                .then_some("motion.fade_seconds")
+        })
     }
 }
 

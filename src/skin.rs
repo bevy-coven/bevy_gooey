@@ -11,7 +11,6 @@ use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
-use crate::PopoverSlide;
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::drag::{DropCandidate, DropRefusing};
@@ -30,6 +29,7 @@ use crate::status::StatusKind;
 use crate::table::TableRow;
 use crate::toast::{Toast, ToastKind};
 use crate::tooltip::TooltipBox;
+use crate::{MotionTokens, PopoverSlide};
 
 /// How far a skin's held colours step back toward its background when it sets none: 0.6, so a
 /// world glyph left at two fifths of the way from the background still reads and no longer competes
@@ -365,6 +365,12 @@ pub struct GooeySkin {
     /// from 0 (no change) to 1 (the ground gone into the background, the glyph into the ground):
     /// both come off this one fade, so a held ground and a held glyph compose. Outside 0 to 1 or not finite is [`SkinProblem::BadSize`].
     pub held_fade: f32,
+    /// The motion palette: four springs (snappy, default, calm, lead) and a fade length, so every
+    /// motion of the interface shares one feel. Default: [`MotionTokens::default`]. A spring that
+    /// has no motion, or a fade that is negative or not finite, is [`SkinProblem::BadMotion`]. Not
+    /// reflected (a spring is plain maths in `model`).
+    #[reflect(ignore)]
+    pub motion: MotionTokens,
     /// The mark of a thing that has not been judged yet (a check not run, a box not ticked by the
     /// tool); `None` is [`GooeySkin::text_muted`]. Read it with [`GooeySkin::unchecked`];
     /// [`Role::Unchecked`] draws it. Checked against the panel at the 3:1 graphic minimum.
@@ -536,6 +542,7 @@ impl GooeySkin {
             held: None,
             held_ground: None,
             held_fade: HELD_FADE,
+            motion: MotionTokens::default(),
             unchecked: None,
             card: None,
             preview_edge: None,
@@ -1018,6 +1025,9 @@ impl GooeySkin {
             // Out of range or NaN (a NaN is in no range).
             out.push(SkinProblem::BadSize { field: "held_fade" });
         }
+        if let Some(field) = self.motion.problem() {
+            out.push(SkinProblem::BadMotion { field });
+        }
         let non_negative = [
             ("gap", self.gap),
             ("padding", self.padding),
@@ -1315,6 +1325,12 @@ pub enum SkinProblem {
         /// The step they need.
         needed: f32,
     },
+    /// A [`GooeySkin::motion`] field cannot be used: a spring whose duration is not above zero or
+    /// whose bounce is not between −1 and 1, or a fade length that is negative or not finite.
+    BadMotion {
+        /// The field's name, such as `motion.default`.
+        field: &'static str,
+    },
     /// A pair given to [`GooeySkin::tone_problems`] names a colour the skin does not hold: neither
     /// one of its [`GooeySkin::tones`] nor one of its own colours. The pair is not checked.
     UnknownTone {
@@ -1355,6 +1371,10 @@ impl fmt::Display for SkinProblem {
             } => write!(
                 f,
                 "surfaces {lower} and {upper} differ by ΔL* {delta_l:.2}; adjacent surfaces of the ladder need at least {ELEVATION_STEP} to be told apart"
+            ),
+            Self::BadMotion { field } => write!(
+                f,
+                "{field} is not usable motion: a spring needs a duration above zero and a bounce between -1 and 1, a fade a length of zero or more"
             ),
             Self::BadScale { field } => write!(
                 f,

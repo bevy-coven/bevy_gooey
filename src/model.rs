@@ -2351,6 +2351,295 @@ pub fn ease_out(age: f32, seconds: f32) -> f32 {
     1.0 - left * left * left
 }
 
+/// The least a spring's position may be off its target, logical px, for it to count as at rest:
+/// below the 1/64 px a layout snaps to, so the last snap is invisible. Rune's `PropClass::eps` for
+/// spatial values.
+pub const SPRING_REST_POSITION: f32 = 1.0 / 128.0;
+/// The most a spring's speed may be, logical px a second, for it to count as at rest: ten times
+/// [`SPRING_REST_POSITION`] a second.
+pub const SPRING_REST_SPEED: f32 = SPRING_REST_POSITION * 10.0;
+/// The longest [`spring_settle_seconds`] will answer, seconds: a spring that has not settled by then
+/// is not one a person is waiting for.
+pub const SPRING_MAX_SETTLE_SECONDS: f32 = 120.0;
+/// How near ζ = 1 a spring is taken as critically damped, where the under- and over-damped closed
+/// forms divide by something near zero.
+const SPRING_CRITICAL_BAND: f64 = 1e-4;
+
+/// A spring in the terms a person tunes it by, SwiftUI's `Spring(duration:bounce:)` (mass 1).
+///
+/// `duration` is the *perceptual* duration in seconds, the period of the undamped spring
+/// (`ω = 2π / duration`), not the time it takes to settle, which is longer and depends on the
+/// bounce ([`spring_settle_seconds`]). `bounce` is in the open range −1 to 1: 0 is critically
+/// damped (the general-purpose spring: it arrives and stops), above 0 overshoots (`ζ = 1 − bounce`),
+/// below 0 is flattened, a longer and flatter tail (`ζ = 1 / (1 + bounce)`). Build one with
+/// [`Spring::new`], which refuses a value that has no motion; a spring read from data may still be
+/// bad, which [`Spring::is_valid`] says and [`crate::GooeySkin::problems`] reports.
+///
+/// ```
+/// use bevy_gooey::model::{Spring, SpringState, spring_step};
+/// let spring = Spring::new(0.3, 0.0).unwrap();
+/// let mut state = SpringState { value: 0.0, velocity: 0.0 };
+/// for _ in 0..60 {
+///     state = spring_step(spring, state, 100.0, 1.0 / 60.0);
+/// }
+/// assert!((state.value - 100.0).abs() < 0.01);
+/// assert!(Spring::new(0.0, 0.0).is_err());
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Spring {
+    /// The perceptual duration, seconds: above zero and finite.
+    pub duration: f32,
+    /// How much it overshoots: above −1 and below 1.
+    pub bounce: f32,
+}
+
+/// Why a [`Spring`] could not be made.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum SpringError {
+    /// The duration was not finite or not above zero.
+    Duration(f32),
+    /// The bounce was not in the open range −1 to 1.
+    Bounce(f32),
+}
+
+impl std::fmt::Display for SpringError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Duration(d) => write!(f, "a spring's duration must be above zero, not {d}"),
+            Self::Bounce(b) => write!(f, "a spring's bounce must be between -1 and 1, not {b}"),
+        }
+    }
+}
+
+impl std::error::Error for SpringError {}
+
+impl Spring {
+    /// A spring of `duration` seconds and `bounce`, or the reason it has none: a duration that is
+    /// not above zero (or not finite), or a bounce outside −1 to 1 (or not a number).
+    pub fn new(duration: f32, bounce: f32) -> Result<Self, SpringError> {
+        let spring = Self { duration, bounce };
+        if !(duration.is_finite() && duration > 0.0) {
+            Err(SpringError::Duration(duration))
+        } else if !(bounce > -1.0 && bounce < 1.0) {
+            Err(SpringError::Bounce(bounce))
+        } else {
+            Ok(spring)
+        }
+    }
+
+    /// Whether the spring is one [`Spring::new`] would have made.
+    pub fn is_valid(&self) -> bool {
+        Self::new(self.duration, self.bounce).is_ok()
+    }
+
+    /// The same spring with every length multiplied by `scale` (the player's
+    /// [`crate::MotionSettings::duration_scale`]). A scale that is not above zero or not finite
+    /// gives the spring back unchanged: whether to move at all is the caller's question.
+    pub fn scaled(self, scale: f32) -> Self {
+        if scale.is_finite() && scale > 0.0 {
+            Self {
+                duration: self.duration * scale,
+                ..self
+            }
+        } else {
+            self
+        }
+    }
+
+    /// The undamped angular frequency, radians a second.
+    fn omega(&self) -> f64 {
+        std::f64::consts::TAU / f64::from(self.duration)
+    }
+
+    /// The damping ratio.
+    fn zeta(&self) -> f64 {
+        let bounce = f64::from(self.bounce);
+        if bounce >= 0.0 {
+            1.0 - bounce
+        } else {
+            1.0 / (1.0 + bounce)
+        }
+    }
+}
+
+/// Where a [`Spring`] is and how fast it is going.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct SpringState {
+    /// The value now.
+    pub value: f32,
+    /// Its speed now, value units a second.
+    pub velocity: f32,
+}
+
+/// The closed form of a spring a time `t` after it left an offset `a` from its target at speed
+/// `v0`: `(offset, velocity)`. Exact for any `t`, so a step of `a + b` equals a step of `a` then
+/// one of `b`, and a retarget is a new call from the state it ended in.
+fn spring_solution(spring: &Spring, a: f64, v0: f64, t: f64) -> (f64, f64) {
+    let omega = spring.omega();
+    let zeta = spring.zeta();
+    if (zeta - 1.0).abs() < SPRING_CRITICAL_BAND {
+        // (a + b t) e^{-ωt}
+        let b = v0 + omega * a;
+        let decay = (-omega * t).exp();
+        ((a + b * t) * decay, (v0 - omega * b * t) * decay)
+    } else if zeta < 1.0 {
+        // e^{-σt} (a cos ω_d t + B sin ω_d t)
+        let sigma = zeta * omega;
+        let damped = omega * (1.0 - zeta * zeta).sqrt();
+        let b = (v0 + sigma * a) / damped;
+        let decay = (-sigma * t).exp();
+        let (sin, cos) = (damped * t).sin_cos();
+        (
+            decay * (a * cos + b * sin),
+            decay * (v0 * cos - (sigma * b + a * damped) * sin),
+        )
+    } else {
+        // c1 e^{r1 t} + c2 e^{r2 t}
+        let root = (zeta * zeta - 1.0).sqrt();
+        let r1 = -omega * (zeta - root);
+        let r2 = -omega * (zeta + root);
+        let c1 = (v0 - r2 * a) / (r1 - r2);
+        let c2 = a - c1;
+        let (e1, e2) = ((r1 * t).exp(), (r2 * t).exp());
+        (c1 * e1 + c2 * e2, c1 * r1 * e1 + c2 * r2 * e2)
+    }
+}
+
+/// A [`Spring`]'s state `dt` seconds on, moving toward `target`. Closed form: exact at any `dt`, the
+/// same at 60 Hz and at 120 Hz, and a new `target` simply continues from the state with its
+/// velocity (value and speed stay continuous). A `dt` of zero (or below) gives the state back, and
+/// so does one that is not finite, a target that is not, or a spring that is not
+/// [`Spring::is_valid`]: the caller, which knows where it is, says so.
+///
+/// ```
+/// use bevy_gooey::model::{Spring, SpringState, spring_step};
+/// let spring = Spring::new(0.3, 0.0).unwrap();
+/// let at = SpringState { value: 4.0, velocity: 2.0 };
+/// assert_eq!(spring_step(spring, at, 10.0, 0.0), at);
+/// assert_eq!(spring_step(spring, at, f32::NAN, 0.1), at);
+/// ```
+pub fn spring_step(spring: Spring, state: SpringState, target: f32, dt: f32) -> SpringState {
+    if !(dt.is_finite() && dt > 0.0)
+        || !target.is_finite()
+        || !state.value.is_finite()
+        || !state.velocity.is_finite()
+        || !spring.is_valid()
+    {
+        return state;
+    }
+    let a = f64::from(state.value) - f64::from(target);
+    let (offset, velocity) = spring_solution(&spring, a, f64::from(state.velocity), f64::from(dt));
+    SpringState {
+        value: (f64::from(target) + offset) as f32,
+        velocity: velocity as f32,
+    }
+}
+
+/// Whether a spring at `state` is at rest on `target`: within [`SPRING_REST_POSITION`] of it and
+/// going no faster than [`SPRING_REST_SPEED`]. The place to snap to the target and stop writing.
+pub fn spring_at_rest(state: SpringState, target: f32) -> bool {
+    (state.value - target).abs() <= SPRING_REST_POSITION
+        && state.velocity.abs() <= SPRING_REST_SPEED
+}
+
+/// How long a spring takes, from `state`, to come to rest on `target` and stay there
+/// ([`spring_at_rest`]): the time its decaying envelope needs, so a little over the time it is
+/// actually first at rest. 0 when it already is, [`SPRING_MAX_SETTLE_SECONDS`] when it does not
+/// settle (or an input is not finite). A 0.3 s spring with no bounce, from 0 to 100, takes about
+/// 0.6 s.
+///
+/// ```
+/// use bevy_gooey::model::{Spring, SpringState, spring_settle_seconds};
+/// let spring = Spring::new(0.3, 0.0).unwrap();
+/// let from = SpringState { value: 0.0, velocity: 0.0 };
+/// let seconds = spring_settle_seconds(spring, from, 100.0);
+/// assert!(seconds > 0.3 && seconds < 1.0, "{seconds}");
+/// ```
+pub fn spring_settle_seconds(spring: Spring, state: SpringState, target: f32) -> f32 {
+    if !spring.is_valid()
+        || !target.is_finite()
+        || !state.value.is_finite()
+        || !state.velocity.is_finite()
+    {
+        return SPRING_MAX_SETTLE_SECONDS;
+    }
+    if spring_at_rest(state, target) {
+        return 0.0;
+    }
+    let max = f64::from(SPRING_MAX_SETTLE_SECONDS);
+    let omega = spring.omega();
+    let zeta = spring.zeta();
+    let a = f64::from(state.value) - f64::from(target);
+    let v0 = f64::from(state.velocity);
+    let (rest_position, rest_speed) = (
+        f64::from(SPRING_REST_POSITION),
+        f64::from(SPRING_REST_SPEED),
+    );
+    let seconds = if (zeta - 1.0).abs() < SPRING_CRITICAL_BAND {
+        let b = v0 + omega * a;
+        let envelope = |t: f64| {
+            let decay = (-omega * t).exp();
+            (
+                (a.abs() + b.abs() * t) * decay,
+                (v0.abs() + omega * b.abs() * t) * decay,
+            )
+        };
+        bisect_after(1.0 / omega, max, |t| {
+            let (p, v) = envelope(t);
+            p <= rest_position && v <= rest_speed
+        })
+    } else if zeta < 1.0 {
+        let sigma = zeta * omega;
+        let damped = omega * (1.0 - zeta * zeta).sqrt();
+        let b = (v0 + sigma * a) / damped;
+        let position = a.hypot(b);
+        let speed = v0.hypot(sigma * b + a * damped);
+        ((position / rest_position)
+            .ln()
+            .max((speed / rest_speed).ln())
+            / sigma)
+            .max(0.0)
+    } else {
+        let root = (zeta * zeta - 1.0).sqrt();
+        let r1 = -omega * (zeta - root);
+        let r2 = -omega * (zeta + root);
+        let c1 = (v0 - r2 * a) / (r1 - r2);
+        let c2 = a - c1;
+        bisect_after(0.0, max, |t| {
+            let (e1, e2) = ((r1 * t).exp(), (r2 * t).exp());
+            c1.abs() * e1 + c2.abs() * e2 <= rest_position
+                && (c1 * r1).abs() * e1 + (c2 * r2).abs() * e2 <= rest_speed
+        })
+    };
+    if seconds.is_finite() {
+        seconds.clamp(0.0, max) as f32
+    } else {
+        SPRING_MAX_SETTLE_SECONDS
+    }
+}
+
+/// The smallest `t` in `from..=max` where `ok` holds, for a predicate that stays true once true
+/// (`max` when it never does).
+fn bisect_after(from: f64, max: f64, ok: impl Fn(f64) -> bool) -> f64 {
+    if ok(from) {
+        return from;
+    }
+    if !ok(max) {
+        return max;
+    }
+    let (mut lo, mut hi) = (from, max);
+    for _ in 0..60 {
+        let mid = 0.5 * (lo + hi);
+        if ok(mid) {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
+    }
+    hi
+}
+
 /// How long is left, in words: "about 20 s left", "about 3 min left", "about 1 h 5 min left". Under
 /// ten seconds it counts the seconds, to a minute it rounds to five, to an hour to the minute and
 /// past one to five minutes, because an estimate never has the precision it prints. A time that is
@@ -3714,5 +4003,146 @@ mod tests {
         assert!(box_outside((0.0, -30.0), (10.0, -1.0), view.0, view.1));
         assert!(!box_outside((90.0, 90.0), (130.0, 130.0), view.0, view.1));
         assert!(!box_outside((100.0, 0.0), (120.0, 10.0), view.0, view.1));
+    }
+
+    fn run(spring: Spring, target: f32, dt: f32, seconds: f32) -> Vec<SpringState> {
+        let steps = (seconds / dt).round() as usize;
+        let mut state = SpringState::default();
+        let mut out = vec![state];
+        for _ in 0..steps {
+            state = spring_step(spring, state, target, dt);
+            out.push(state);
+        }
+        out
+    }
+
+    fn at(spring: Spring, target: f32, seconds: f32) -> SpringState {
+        spring_step(spring, SpringState::default(), target, seconds)
+    }
+
+    #[test]
+    fn a_critical_spring_never_passes_its_target_and_rests_by_its_settle_time() {
+        let spring = Spring::new(0.3, 0.0).unwrap();
+        let settle = spring_settle_seconds(spring, SpringState::default(), 100.0);
+        assert!(settle > 0.3 && settle < 0.9, "{settle}");
+        for state in run(spring, 100.0, 1.0 / 240.0, 2.0) {
+            assert!(state.value <= 100.0 + 1e-3, "{state:?}");
+        }
+        let rested = at(spring, 100.0, settle);
+        assert!(spring_at_rest(rested, 100.0), "{rested:?} at {settle}");
+        let early = at(spring, 100.0, settle * 0.5);
+        assert!(!spring_at_rest(early, 100.0), "{early:?}");
+    }
+
+    #[test]
+    fn a_bouncy_spring_overshoots_once_and_a_flattened_one_never_does() {
+        let bouncy = run(Spring::new(0.3, 0.3).unwrap(), 100.0, 1.0 / 240.0, 1.5);
+        let peak = bouncy.iter().map(|s| s.value).fold(0.0, f32::max);
+        assert!(peak > 100.5, "{peak}");
+        // One overshoot worth the name: the excursions above the target that pass half a unit
+        // are counted, and the tail's later ripples (a fraction of the first) do not reach it.
+        let mut excursions = 0;
+        let mut above = false;
+        for state in &bouncy {
+            let over = state.value > 100.5;
+            if over && !above {
+                excursions += 1;
+            }
+            above = over;
+        }
+        assert_eq!(excursions, 1);
+        let flat = Spring::new(0.3, -0.5).unwrap();
+        let critical = Spring::new(0.3, 0.0).unwrap();
+        for state in run(flat, 100.0, 1.0 / 240.0, 2.0) {
+            assert!(state.value <= 100.0 + 1e-3, "{state:?}");
+        }
+        assert!(at(flat, 100.0, 0.15).value < at(critical, 100.0, 0.15).value);
+    }
+
+    #[test]
+    fn a_retarget_keeps_value_and_velocity_continuous() {
+        for bounce in [0.0, 0.3, -0.5] {
+            let spring = Spring::new(0.3, bounce).unwrap();
+            let mid = at(spring, 100.0, 0.1);
+            // A retarget changes the pull from here on, not the state at the instant: a tiny step
+            // after it moves the value by the speed it had, and the speed by almost nothing.
+            let dt = 1e-5;
+            let again = spring_step(spring, mid, 50.0, dt);
+            assert!(
+                mid.velocity.abs() > 10.0,
+                "it is moving, so this is not vacuous"
+            );
+            assert!(
+                (again.value - mid.value - mid.velocity * dt).abs() < 1e-4,
+                "{bounce}: {again:?} {mid:?}"
+            );
+            assert!((again.velocity - mid.velocity).abs() < 0.5, "{bounce}");
+            let settled = spring_step(spring, mid, 50.0, 5.0);
+            assert!((settled.value - 50.0).abs() < 1e-3);
+        }
+    }
+
+    #[test]
+    fn sixty_and_one_twenty_hertz_agree() {
+        for bounce in [0.0, 0.3, -0.5] {
+            let spring = Spring::new(0.3, bounce).unwrap();
+            let slow = run(spring, 100.0, 1.0 / 60.0, 0.2).pop().unwrap();
+            let fast = run(spring, 100.0, 1.0 / 120.0, 0.2).pop().unwrap();
+            assert!(
+                (slow.value - fast.value).abs() < 1e-4,
+                "{bounce}: {slow:?} {fast:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_spring_refuses_what_has_no_motion_and_a_step_refuses_what_is_not_a_number() {
+        assert_eq!(Spring::new(0.0, 0.0), Err(SpringError::Duration(0.0)));
+        assert_eq!(Spring::new(-1.0, 0.0), Err(SpringError::Duration(-1.0)));
+        assert!(Spring::new(f32::NAN, 0.0).is_err());
+        assert!(Spring::new(0.3, 1.0).is_err());
+        assert!(Spring::new(0.3, -1.0).is_err());
+        assert!(Spring::new(0.3, f32::NAN).is_err());
+        assert!(Spring::new(0.3, 0.999).is_ok());
+        let spring = Spring::new(0.3, 0.0).unwrap();
+        let state = SpringState {
+            value: 3.0,
+            velocity: 4.0,
+        };
+        assert_eq!(spring_step(spring, state, 10.0, 0.0), state);
+        assert_eq!(spring_step(spring, state, 10.0, -0.1), state);
+        assert_eq!(spring_step(spring, state, f32::NAN, 0.1), state);
+        assert_eq!(spring_step(spring, state, 10.0, f32::NAN), state);
+        let bad = Spring {
+            duration: 0.0,
+            bounce: 0.0,
+        };
+        assert_eq!(spring_step(bad, state, 10.0, 0.1), state);
+    }
+
+    #[test]
+    fn a_settle_time_holds_for_every_regime_and_a_longer_duration_takes_longer() {
+        for bounce in [0.0, 0.4, -0.5, -0.9] {
+            let spring = Spring::new(0.3, bounce).unwrap();
+            let settle = spring_settle_seconds(spring, SpringState::default(), 100.0);
+            assert!(settle > 0.0 && settle < 10.0, "{bounce}: {settle}");
+            let after = at(spring, 100.0, settle + 0.01);
+            assert!(spring_at_rest(after, 100.0), "{bounce}: {after:?}");
+            let slower = spring_settle_seconds(
+                Spring::new(0.6, bounce).unwrap(),
+                SpringState::default(),
+                100.0,
+            );
+            assert!(slower > settle, "{bounce}");
+        }
+        assert_eq!(
+            spring_settle_seconds(Spring::new(0.3, 0.0).unwrap(), SpringState::default(), 0.0),
+            0.0
+        );
+        // A scale multiplies the length, and a scale that is no length leaves it.
+        let spring = Spring::new(0.3, 0.0).unwrap();
+        assert_eq!(spring.scaled(2.0).duration, 0.6);
+        assert_eq!(spring.scaled(0.0), spring);
+        assert_eq!(spring.scaled(f32::NAN), spring);
     }
 }

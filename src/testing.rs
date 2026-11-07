@@ -30,6 +30,7 @@
 use std::fmt;
 
 use bevy::camera::{NormalizedRenderTarget, RenderTarget};
+use bevy::ecs::change_detection::Tick;
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::mouse::MouseButtonInput;
@@ -410,4 +411,248 @@ fn descendants(world: &World, entity: Entity) -> Vec<Entity> {
         }
     }
     out
+}
+
+/// What one frame of a [`MotionTrace`] saw of the entity: each field is `None` when the entity has
+/// no such component, on every frame.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TraceFrame {
+    /// Seconds of [`Time<Real>`] since the trace began watching: 0 for the first frame.
+    pub seconds: f32,
+    /// Seconds this frame took (the update that produced it); 0 for the first frame.
+    pub delta: f32,
+    /// The entity's [`UiTransform`], what a game and this crate's motion write.
+    pub transform: Option<UiTransform>,
+    /// Where the node is drawn, the centre of its [`UiGlobalTransform`], in logical px.
+    pub position: Option<Vec2>,
+    /// How big it is laid out, [`ComputedNode::size`], in logical px.
+    pub size: Option<Vec2>,
+    /// Its [`BackgroundColor`].
+    pub background: Option<Color>,
+    /// Its [`BorderColor`].
+    pub border: Option<BorderColor>,
+    /// Its [`TextColor`].
+    pub text: Option<Color>,
+    /// How many of [`UiTransform`], [`BackgroundColor`], [`BorderColor`] and [`TextColor`] were
+    /// written (by change tick, whether or not the value differed) in the update that produced
+    /// this frame. 0 for the first frame. Layout's own outputs are not counted.
+    pub writes: usize,
+}
+
+impl TraceFrame {
+    /// Whether `other` looks the same: every recorded value, not the clock or the writes.
+    fn looks_like(&self, other: &Self) -> bool {
+        self.transform == other.transform
+            && self.position == other.position
+            && self.size == other.size
+            && self.background == other.background
+            && self.border == other.border
+            && self.text == other.text
+    }
+}
+
+/// The entity a [`MotionTrace`] watched is gone: it was despawned after `frame` frames were
+/// recorded.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TraceEnded {
+    /// How many frames the trace holds: the first frame is frame 0.
+    pub frame: usize,
+}
+
+/// A frame-by-frame record of one entity's pose, for tests of motion: whether it is continuous,
+/// settles, is still when it should be, and writes nothing at rest.
+///
+/// Drive the app on a clock the test sets (`TimeUpdateStrategy::ManualDuration`), so a frame is a
+/// known length: [`MotionTrace::watch`] records the entity as it is, [`MotionTrace::step`] runs
+/// frames and records each. The questions then read the record. A step in the middle of a slide, a
+/// speed that jumps, or a write after the motion is over, which a hand-sampled test passes, show.
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use bevy_gooey::testing::MotionTrace;
+///
+/// // `app` runs on a manual clock; `card` was spawned and the app updated once.
+/// fn the_card_settles(app: &mut App, card: Entity) {
+///     let mut trace = MotionTrace::watch(app, card);
+///     trace.step(app, 30);
+///     assert!(trace.max_step_px() < 12.0);
+///     assert!(trace.settled_after_seconds().is_some_and(|s| s < 0.3));
+///     trace.step(app, 30);
+///     assert_eq!(trace.writes_at_rest(30), 0);
+/// }
+/// ```
+#[derive(Clone, Debug)]
+pub struct MotionTrace {
+    entity: Entity,
+    frames: Vec<TraceFrame>,
+    ended: Option<TraceEnded>,
+    began: f32,
+}
+
+/// The components whose change tick counts as the entity being written.
+fn written_since(world: &World, entity: Entity, since: Tick, now: Tick) -> usize {
+    fn changed<T: Component>(world: &World, entity: Entity, since: Tick, now: Tick) -> usize {
+        world
+            .get_entity(entity)
+            .ok()
+            .and_then(|e| e.get_ref::<T>())
+            .is_some_and(|c| c.last_changed().is_newer_than(since, now)) as usize
+    }
+    changed::<UiTransform>(world, entity, since, now)
+        + changed::<BackgroundColor>(world, entity, since, now)
+        + changed::<BorderColor>(world, entity, since, now)
+        + changed::<TextColor>(world, entity, since, now)
+}
+
+fn real_seconds(world: &World) -> f32 {
+    world
+        .get_resource::<Time<Real>>()
+        .map_or(0.0, |time| time.elapsed_secs())
+}
+
+fn sample(
+    world: &World,
+    entity: Entity,
+    began: f32,
+    delta: f32,
+    writes: usize,
+) -> Option<TraceFrame> {
+    let e = world.get_entity(entity).ok()?;
+    let node = e.get::<ComputedNode>();
+    let scale = node.map_or(1.0, |n| n.inverse_scale_factor());
+    Some(TraceFrame {
+        seconds: real_seconds(world) - began,
+        delta,
+        transform: e.get::<UiTransform>().copied(),
+        position: e.get::<UiGlobalTransform>().map(|t| t.translation * scale),
+        size: node.map(|n| n.size() * scale),
+        background: e.get::<BackgroundColor>().map(|c| c.0),
+        border: e.get::<BorderColor>().copied(),
+        text: e.get::<TextColor>().map(|c| c.0),
+        writes,
+    })
+}
+
+impl MotionTrace {
+    /// Starts watching `entity`: its pose as it is now is frame 0. An entity that does not exist
+    /// is an ended trace of no frames.
+    pub fn watch(app: &mut App, entity: Entity) -> Self {
+        let world = app.world();
+        let began = real_seconds(world);
+        let first = sample(world, entity, began, 0.0, 0);
+        Self {
+            entity,
+            ended: first.is_none().then_some(TraceEnded { frame: 0 }),
+            frames: first.into_iter().collect(),
+            began,
+        }
+    }
+
+    /// Runs `frames` updates and records the entity after each. An entity despawned along the way
+    /// ends the trace ([`MotionTrace::ended`]); the remaining updates still run, so the app goes on
+    /// as the test expects, and nothing panics.
+    pub fn step(&mut self, app: &mut App, frames: usize) {
+        for _ in 0..frames {
+            // The change tick of the first write in an update is the one read before it, so a
+            // write is "since" the tick before that.
+            let before = app.world().read_change_tick();
+            let since = Tick::new(before.get().wrapping_sub(1));
+            let clock = real_seconds(app.world());
+            app.update();
+            if self.ended.is_some() {
+                continue;
+            }
+            let world = app.world();
+            let now = world.read_change_tick();
+            let writes = written_since(world, self.entity, since, now);
+            let delta = real_seconds(world) - clock;
+            match sample(world, self.entity, self.began, delta, writes) {
+                Some(frame) => self.frames.push(frame),
+                None => {
+                    self.ended = Some(TraceEnded {
+                        frame: self.frames.len(),
+                    });
+                }
+            }
+        }
+    }
+
+    /// The frames recorded, the first at index 0.
+    pub fn frames(&self) -> &[TraceFrame] {
+        &self.frames
+    }
+
+    /// Whether the entity was despawned during the trace, and after how many frames.
+    pub fn ended(&self) -> Option<TraceEnded> {
+        self.ended
+    }
+
+    /// Whether nothing visible changed between the first frame and the second: an entity that is
+    /// simply there does not animate for having appeared. A slide that starts on its first frame
+    /// is not still, by design; read its start from [`MotionTrace::frames`]. A trace of fewer than
+    /// two frames is still.
+    pub fn still_on_first_frame(&self) -> bool {
+        match self.frames.as_slice() {
+            [first, second, ..] => first.looks_like(second),
+            _ => true,
+        }
+    }
+
+    /// The farthest the node was drawn to move between two frames, logical px: 0 with no layout.
+    pub fn max_step_px(&self) -> f32 {
+        self.steps()
+            .into_iter()
+            .map(|(step, _)| step)
+            .fold(0.0, f32::max)
+    }
+
+    /// The biggest change of speed from one frame to the next, logical px a second, 0 with fewer
+    /// than two steps: a smooth motion has none that stands out, a snap has one.
+    pub fn max_speed_change_px_per_s(&self) -> f32 {
+        let speeds: Vec<f32> = self
+            .steps()
+            .into_iter()
+            .filter(|(_, delta)| *delta > 0.0)
+            .map(|(step, delta)| step / delta)
+            .collect();
+        speeds
+            .windows(2)
+            .map(|w| (w[1] - w[0]).abs())
+            .fold(0.0, f32::max)
+    }
+
+    /// Seconds from the first frame until the last one in which anything changed, or `None` when
+    /// the entity was still changing on the final frame: not yet settled.
+    pub fn settled_after_seconds(&self) -> Option<f32> {
+        let last = self.frames.len().checked_sub(1)?;
+        let moved = self
+            .frames
+            .windows(2)
+            .rposition(|w| !w[0].looks_like(&w[1]))
+            .map(|i| i + 1);
+        match moved {
+            None => Some(0.0),
+            Some(i) if i == last => None,
+            Some(i) => Some(self.frames[i].seconds),
+        }
+    }
+
+    /// How many writes ([`TraceFrame::writes`]) the last `frames` frames hold: 0 when a settled
+    /// interface writes nothing.
+    pub fn writes_at_rest(&self, frames: usize) -> usize {
+        self.frames
+            .iter()
+            .rev()
+            .take(frames)
+            .map(|frame| frame.writes)
+            .sum()
+    }
+
+    /// The distance drawn between each two frames and the time between them.
+    fn steps(&self) -> Vec<(f32, f32)> {
+        self.frames
+            .windows(2)
+            .filter_map(|w| Some((w[1].position?.distance(w[0].position?), w[1].delta)))
+            .collect()
+    }
 }
