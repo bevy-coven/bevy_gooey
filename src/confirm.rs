@@ -215,5 +215,7 @@ fn answer(commands: &mut Commands, dialog: Entity, index: usize, cancelled: bool
         index,
         cancelled,
     });
-    commands.entity(dialog).despawn();
+    // The card thins out over the skin's fade instead of vanishing between two frames; focus goes
+    // back to the opener in this frame, and the veil stops taking the pointer.
+    commands.entity(dialog).insert(crate::Leave);
 }

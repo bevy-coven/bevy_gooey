@@ -3,9 +3,12 @@
 #![cfg(feature = "testing")]
 
 use bevy::input_focus::AutoFocus;
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
+use bevy::time::TimeUpdateStrategy;
 use bevy::winit::WinitPlugin;
 use bevy_gooey::testing::{click, find_by_label, focused_label, press};
 use bevy_gooey::*;
@@ -49,12 +52,16 @@ fn app() -> App {
             ));
         },
     );
+    // One frame of the test clock, seconds: a leave fades on real time, so the exit has to pass.
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f32(
+        0.03,
+    )));
     app.world_mut().spawn(Camera2d);
     app
 }
 
 fn settle(app: &mut App) {
-    for _ in 0..6 {
+    for _ in 0..14 {
         app.update();
     }
 }

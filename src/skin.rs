@@ -25,6 +25,7 @@ use crate::model::{
     lift_toward, list_height, snap_line_width, tree_indent,
 };
 use crate::popover::{PopoverPanel, placement_of};
+use crate::presence::PresenceAlpha;
 use crate::prompt::PromptsAnchor;
 use crate::status::StatusKind;
 use crate::table::TableRow;
@@ -1924,6 +1925,7 @@ type Styled = (
     Option<&'static mut ImageNode>,
     Option<&'static IconTone>,
     Option<&'static IconSize>,
+    Option<&'static PresenceAlpha>,
 );
 
 /// Every input a widget's look depends on, read once per run of [`apply_skin`], except the skin,
@@ -2122,6 +2124,7 @@ type Restyle = (
             Added<DropRefusing>,
             Changed<PromptsAnchor>,
             Added<PrimaryButton>,
+            Changed<PresenceAlpha>,
         )>,
     )>,
 );
@@ -2463,6 +2466,7 @@ fn restyle(
         mut image,
         tone,
         icon_size,
+        presence,
     ): bevy::ecs::query::QueryItem<'_, '_, Styled>,
     look: &Look,
     state: State,
@@ -2470,6 +2474,9 @@ fn restyle(
     owner: State,
 ) {
     let skin = look.skin;
+    // How opaque this node is drawn: the product of every `Opacity` at and above it (a fade), and
+    // whole for a node outside one.
+    let alpha = presence.map_or(1.0, |alpha| alpha.0);
     let scaled = |size: f32| FontSize::Px(size * skin.text_scale);
     let tip = floating.as_ref().and_then(|(_, tip, _)| tip.copied());
     // Every line weight (borders, the focus ring, the meter's frame and gap) on whole device
@@ -2855,7 +2862,7 @@ fn restyle(
         | Role::PaletteCount => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
-        background.set_if_neq(BackgroundColor(fill));
+        background.set_if_neq(BackgroundColor(faded(fill, alpha)));
     }
 
     let edge = match role {
@@ -3034,7 +3041,7 @@ fn restyle(
         _ => None,
     };
     if let (Some(edge), Some(mut border)) = (edge, border) {
-        border.set_if_neq(edge);
+        border.set_if_neq(faded_edge(edge, alpha));
     }
 
     if let Some(mut node) = node {
@@ -3925,6 +3932,7 @@ fn restyle(
         } else {
             Color::WHITE
         };
+        let color = faded(color, alpha);
         if image.color != color {
             image.color = color;
         }
@@ -3948,6 +3956,7 @@ fn restyle(
             IconTone::Accent => skin.accent,
             IconTone::Danger => skin.danger,
         };
+        let color = faded(color, alpha);
         if image.color != color {
             image.color = color;
         }
@@ -4114,7 +4123,7 @@ fn restyle(
     };
     if let Some((color, font, size)) = text {
         if let Some(mut text_color) = text_color {
-            text_color.set_if_neq(TextColor(color));
+            text_color.set_if_neq(TextColor(faded(color, alpha)));
         }
         if let Some(mut text_font) = text_font {
             let mut next = text_font.clone();
@@ -4130,10 +4139,11 @@ fn restyle(
     // field selects its text on focus, and a field a player Tabs away from kept it selected).
     if let (Role::TextField, Some(mut caret)) = (role, cursor) {
         caret.set_if_neq(TextCursorStyle {
-            color: skin.text,
-            selection_color: skin.accent,
+            color: faded(skin.text, alpha),
+            selection_color: faded(skin.accent, alpha),
             unfocused_selection_color: Color::NONE,
-            selected_text_color: (look.editing == Some(entity)).then_some(skin.accent_text),
+            selected_text_color: (look.editing == Some(entity))
+                .then(|| faded(skin.accent_text, alpha)),
             selection_radius: 0.0,
         });
     }
@@ -4141,7 +4151,9 @@ fn restyle(
     // The height the widget stands at, drawn from the skin's stacks; a toast's shadow fades with
     // the toast.
     if let (Some(mut shadow), Some(level)) = (shadow, level_of(*role, in_dialog)) {
-        shadow.set_if_neq(skin.elevation.box_shadow(level, state.alpha));
+        // Its alpha follows the node's own: a toast's by `state.alpha`, everything's by the
+        // `Opacity` at and above it.
+        shadow.set_if_neq(skin.elevation.box_shadow(level, state.alpha * alpha));
     }
 
     if let Some((mut popover, tip, panel)) = floating {
@@ -4207,6 +4219,19 @@ fn faded(color: Color, opacity: f32) -> Color {
         alpha: c.alpha * opacity.max(0.0),
         ..c
     })
+}
+
+/// `edge` with every side's alpha times `opacity`: a frame fading with the node under it.
+fn faded_edge(edge: BorderColor, opacity: f32) -> BorderColor {
+    if opacity >= 1.0 {
+        return edge;
+    }
+    BorderColor {
+        top: faded(edge.top, opacity),
+        right: faded(edge.right, opacity),
+        bottom: faded(edge.bottom, opacity),
+        left: faded(edge.left, opacity),
+    }
 }
 
 /// A tooltip's widest box, logical px: a comfortable line of about 40 characters (24 text sizes),

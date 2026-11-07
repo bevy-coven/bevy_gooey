@@ -2482,3 +2482,110 @@ Flaws left: with a 3 px gap the fill's corners are 2 px, so at 1.5x the 24 px fi
 **Release (iteration 65).** `cargo semver-checks --baseline-rev v0.37.0`: 7 major lints (removed `SlideIn`, `DIALOG_SLIDE_SECONDS`, `POPOVER_SLIDE_SECONDS`, `METER_GAIN_TAU_SECONDS`, `ease_out`, new public fields), so a minor bump pre-1.0: `release: v0.38.0` (README compatibility row `0.1 – 0.38.0`), published (https://crates.io/crates/bevy_gooey/0.38.0), tag `v0.38.0` pushed, `cargo info bevy_gooey@0.38.0` resolves. #46, #47, #48 closed with the sha and version and an `assumed-decision` label each; bevy_grimoire#331 told to move its pin to `8af0161`.
 
 **Cleanup (iteration 65).** Removed worktree `~/g65_base` (built into the shared `CARGO_TARGET_DIR`, no `-target` of its own) and `/tmp/g65` (captures, the Rune clone, gate logs, built gallery binaries, mutation backups). Leftovers from earlier passes, listed not removed: worktrees `~/g17_base`, `~/g17_parked`, `~/g17s_base`; the parked branches `wiggum/parked-pass-23-…` and `wiggum/parked-pass-90-…` (stale, see triage).
+
+## Iteration 66 — 2026-11-07 — Presence: a widget stays drawn while it goes (#49)
+
+**Triage.** Last audit row (pass 91): nothing missing. No `bug` issue open. Parked branches:
+`wiggum/parked-pass-90-…` is the stale ChordGlyphs draft (released as v0.37.0 by a hand-driven pass), ignored as before. 28 open
+issues, all `grimoire-ui` `G-NN`; each is named on exactly one bevy_grimoire `Needs` line, so the tie broke on
+lowest number. **Ready: #49 only.** Every other ready-looking request waits on it: #50 (reduced motion keeps fades),
+#60 (hover curves), #64 (tooltip timing), #69 (split panes), #71 (popovers open from their anchor), #72 (toasts
+enter from their edge) all list `#49` on their Depends line, and each of those is named on a grimoire slice that is
+otherwise ready. So #49 unblocks 6 of the 22 open `G-NN` requests at once — more than #55 or #65, the two the
+backlog ranks above it, each of which unblocks one.
+
+**Ranked candidates.** (1) #49 presence — unblocks 6. (2) #65 gliding scrolls — unblocks 1, and `bevy_gooey#59`
+(pixel-grid text) is the same weight. (3) #55 elevation as data — no dependants yet. (4) #61 press scale.
+
+**Sources** (`docs/research/presence.md`): craft — Iacovides et al., *Removing the HUD*
+(doi:10.1145/2793107.2793120: "The HUD may initially provide important information to players, but can later act
+as a barrier to deeper levels of involvement") and WCAG 2.2 SC 2.3.3; shipping/technical — Rune `f73f72c`
+(`rune-motion/src/scene/presence.rs`: "The app removed a keyed node. It stays drawn, plays its removal effect on the
+exit spring, and is reported in `exited` only once its presence has settled at 0 (opacity 0)"; `transition.rs`
+`Transition::identity()` "presence still holds removal until its fade settles"; `tokens.rs` exits 10–25 % shorter
+than entrances; `README.md` "Under reduced motion … opacity, colour and presence take a 0.18 s ease-in-out fade");
+Hicks et al., *Good Game Feel* (doi:10.26503/dl.v2018i1.936). home-still's MCP bridge answered 401; the CLI search
+worked.
+
+**What changed.** `Opacity(f32)` (public, 0..=1, held to the range, NaN reads as 1) multiplies every colour
+`apply_skin` writes on a `Role` node at or below it — fills, borders (`faded_edge`), text, an icon's
+`ImageNode::color`, a text caret's colour, selection and selected ink, and a floating box's `BoxShadow` — by the
+product of the `Opacity` at and above each node; a node with no `Role` is the host's and untouched. `Leave` starts an
+exit: the subtree takes `Pickable::IGNORE`, loses its `TabIndex`, a `Dialog` and its modal `TabGroup` come off (so
+`return_focus` hands focus back in that frame, as the despawn it replaces did), anything else focused inside lets
+focus go, and the node fades on `Spring::new(motion.fade_seconds, 0.0)` scaled by `MotionSettings::duration_scale`,
+despawning at `PRESENCE_GONE` (1/255). `Stay` reverses from the drawn value with its velocity, restores all of it
+and takes itself off with the exit; the `Leave` is spent when the exit starts, so a second one changes nothing.
+`Leaving` exposes `opacity()` and `returning()`. Cutover: `confirm`, `popover` (`close`), the palette (three close
+paths), and with them the menu, select list, context menu and colour picker (all popovers).
+
+**Assumed decision** (owner may override; on #49 with the label): `Leave` and `Stay` are components a game inserts,
+not `EntityCommand`s a game queues — this crate's state is components (`Opacity`, `MotionTarget`, `InstantMotion`), a
+component is what a test can assert on, and `insert(Leave)` needs no deferred indirection.
+
+**Tests** (1,073 in `all` + lib, 241 doctests). `tests/presence.rs`, 9, mutation-checked (an `instant = true` in
+`begin_leaves` fails 5 of the 9): a dialog's card is drawn on every frame of its exit with its opacity strictly
+partway and falling, and is gone within `motion.default` plus a frame; a press during the exit hits the screen's
+button under the veil, never the exit; `Stay` three frames in comes all the way back with no step larger than an
+uninterrupted exit's largest; `Opacity(0.5)` halves a panel's own fill (skin alpha × 0.5), its button's fill and its
+button's words, and leaves a host's own `Text` at Bevy's default ink; motion off despawns a `Leave` in its own
+frame; a second `Leave` is one exit and a plain `despawn()` is still immediate; 30 idle frames write nothing; a
+despawned parent takes a leaving child at once; a focus inside an exit is let go.
+
+**Fixed in review of my own work.** (1) `spread_opacity` first wrote a `PresenceAlpha` on every node unconditionally,
+which is a write per frame for the whole tree; it now writes only when the factor differs, and a whole subtree at 1
+carries no component at all. (2) A returned exit kept the `Opacity` the fade had written, so the node came back at
+0.995 rather than whole; the fade now removes it when the node had none. (3) Four test suites (`confirm`, `popover`,
+`palette`, `context_menu`) read "gone" one frame after the close and needed the exit's frames: each got a real
+`TimeUpdateStrategy` clock and a longer `settle`, which is what a headless window without one lacked. (4) `select`
+and `color` needed the same. (5) clippy: `type_complexity` on two queries and `too_many_arguments` on two systems,
+fixed with a `Touched`/`Already` alias and a `World`/`Tree` argument bundle.
+
+**Disk incident (recorded, not a code fault).** A `cargo nextest run` without `--lib --tests` linked all 29
+examples again — the trap `AGENTS.md` names — and filled the host to 926 MB free; 4,736 example binaries from that
+run (19 GB), then the regenerable `debug/incremental` (5.5 GB) and this crate's stale duplicate `all-*` fragments
+(3.8 GB minus the two newest) were removed. That is why two full-suite runs reported dozens of 0.005 s failures:
+they were the linker failing, not the tests. The pass's own scratch was 162 MB under `/tmp/g92`.
+
+**Critique and verdict** (`/tmp/g92/before|after`, `/tmp/g92/gif`, `/tmp/g92/{egrid,vgrid,zoomcmp}.png`). The exit is
+the point: at `GOOEY_MOTION=3` the card's fill mean goes 34 → 44 → 56 over six frames while the veil goes 19 → 24 →
+34, both on one curve and both arriving where the screen already stands, and the four frame strips show the card
+and the veil thinning together with the settings panel's own colour returning underneath and nothing of the dialog
+left — which is what Rune's `presence` aims at and what the issue's first acceptance asks for. Flaws found and
+answered: my first GIF cut at frames 40–96 caught only the *entrance* and the whole open dialog (the Escape lands
+after), so the capture was re-cut to frames 29–68, which is entrance → open → exit; the first three encodes showed
+green frames because `paletteuse` was run without `stats_mode=diff` on a *cropped* set, so the final one is encoded
+from the cropped frames directly (720×416, 40 frames, 2.67 s). The still captures outside an exit differ by 505
+pixels of 921,600, all inside `392x12+207+375` — the Health meter's drain, on the game clock. Verdict: **GREAT**
+for the exit; the entrance GIF (`motion.gif`) is unchanged and still true.
+
+**Checklist** (`/tmp/g92/findings.md`): contrast 8.9:1 body on the panel, ring 8.0:1 off the button and 3 px, targets
+44 px, gap 10 / padding 14, `problems()` empty in every preset, the scrim 2.7:1 in parchment, the meter at 70 % for
+70 — all unchanged, because nothing in `apply_skin`'s styling arms moved except the colour it writes being
+multiplied by the node's opacity. The new lines: the exit is 6 frames on a 60 Hz clock (0.1 s) and every frame of it
+is partway; a settled interface writes 0 in 30 frames open or after a return; the screen under an exiting dialog
+takes the pointer in the frame the exit starts.
+
+**mean_ms** (gallery, 1280×720, 120 frames): before 16.635, 16.665; after 16.667, 16.673 — no regression (the fade
+system returns on `exiting.is_empty()`, and a fade writes one `Opacity` and one `PresenceAlpha` per frame).
+
+**Demo and docs.** `docs/media/presence.gif` (720×416, 40 frames, 2.67 s, 1.5 MB), row in `docs/media/README.md`;
+guide `docs/guide/presence.md` and its index line; README's feature-list line; CHANGELOG `[Unreleased]`; AGENTS.md
+module entry.
+
+### Ranked backlog
+
+1. #51 colour motion in Oklab and #50 reduced motion keeps fades — both now ready, both named on grimoire slices.
+2. #52 layout motion and #53 size motion (ready); #60/#64/#69/#71/#72 follow once their pairs land.
+3. #55 elevation as data (no dependants yet, but it is the Desk preset's other half).
+4. #59 text on the device-pixel grid.
+5. A "ready" cue for `Cooldown`; the `HoldSettings` option row.
+
+**Gate (iteration 66).** `CARGO_INCREMENTAL=0`: fmt clean, clippy `--all-targets --all-features -D warnings` clean,
+1,073 tests in `all` + lib (1,072 passed, 1 pre-existing failure: `prompts::a_keycaps_character_is_centred_in_its_box_whichever_cap_it_wears`
+fails identically on the unmodified baseline `b9d2443`, a `⌃⇧Z` keycap 1.5 px off centre in the host's face),
+241 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`.
+
+**Known failure, not this pass's:** `prompts::a_keycaps_character_is_centred_in_its_box_whichever_cap_it_wears` —
+verified by `git stash` to the baseline commit, where it fails the same way. Filed as the top bug for the next
+pass under "Filed issues come before new features".
