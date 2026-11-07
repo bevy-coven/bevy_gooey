@@ -175,6 +175,7 @@ mod options;
 mod palette;
 mod popover;
 mod presence;
+mod press_scale;
 mod progress;
 mod prompt;
 mod radial;
@@ -297,6 +298,10 @@ pub use popover::{
 pub use presence::{
     Arriving, Leave, Leaving, Opacity, PRESENCE_GONE, Stay, begin_leaves, begin_stays,
     spread_opacity, update_arrivals, update_presence,
+};
+pub use press_scale::{
+    PRESS_RELEASE_BOUNCE, PRESS_SCALE, PressScale, PressScaleRestore, PressScaled,
+    draw_press_scale, mark_press_scale, restore_press_scale, update_press_scale,
 };
 pub use progress::{
     Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
@@ -509,6 +514,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<MotionSettings>()
             .register_type::<MovesSmoothly>()
             .register_type::<ControlSize>()
+            .register_type::<PressScale>()
             .register_type::<HoldToConfirm>()
             .register_type::<HoldProgress>()
             .register_type::<HoldConfirmed>()
@@ -542,6 +548,7 @@ impl Plugin for GooeyStylePlugin {
                     (
                         (begin_entrances, update_motion).chain(),
                         mark_moving_parts,
+                        (mark_press_scale, update_press_scale).chain(),
                         (
                             begin_leaves,
                             begin_stays,
@@ -600,10 +607,15 @@ impl Plugin for GooeyStylePlugin {
         // where it was, so it runs between Bevy's layout and everything that reads the result.
         app.add_systems(
             PostUpdate,
-            update_layout_motion
+            (update_layout_motion, draw_press_scale)
+                .chain()
                 .after(UiSystems::Layout)
                 .before(UiSystems::PostLayout),
         );
+        // The resting transforms go back before anything reads them, so picking hit-tests a
+        // pressed card at its resting size.
+        app.init_resource::<PressScaleRestore>()
+            .add_systems(First, restore_press_scale);
         // So the keycap's centring: it needs this frame's shaped text.
         app.add_systems(
             PostUpdate,

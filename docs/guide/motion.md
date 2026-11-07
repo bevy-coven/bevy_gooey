@@ -137,6 +137,15 @@ and moves things in the next, never makes a resize glide. The crate marks tabs; 
 glide on their own room, and toolbar and status items are moved by a fitting pass, so they are not
 marked; a game marks what it likes. `LayoutTravel::offset()` says how far from its place a node is drawn.
 
+## A tile that gives: `PressScale`
+
+Every card of a `card_grid` and every slot of a `slot_grid` shrinks to 0.97 about its centre while a
+press on it is held (`PRESS_SCALE`), on the snappy spring, and comes back with a slight bounce when it
+is let go or the pointer leaves. Only the drawing scales: layout and the hit test keep the resting size,
+so a press at the very edge stays on the tile. A scroll under the held press cancels it (the release
+chooses nothing). Reduced motion keeps the tile at its size. Put `PressScale(0.96)` on a node of your
+own that has a press state (a `Button`) for the same; buttons do not get it by default.
+
 ## Testing motion
 
 With the `testing` feature, `testing::MotionTrace` records a node's pose frame by frame on a manual
