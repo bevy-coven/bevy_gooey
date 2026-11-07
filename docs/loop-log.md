@@ -2586,6 +2586,11 @@ module entry.
 fails identically on the unmodified baseline `b9d2443`, a `⌃⇧Z` keycap 1.5 px off centre in the host's face),
 241 doctests, `cargo check --lib`, wasm32, `cargo doc -D warnings`.
 
+**Release (iteration 66).** `cargo semver-checks` against `v0.38.0`: 3 major lints — `GooeySkin` gained the
+`elevation` field (a merge with the Desk/elevation work that landed on `origin/main` while this pass ran), `SkinProblem`
+gained `TranslucentSeed`, and `table_by_input`/`tree_by_input` changed arity — so a minor bump pre-1.0: **0.39.0**.
+`cargo publish` from the pushed commit; the crates.io URL is in this entry's release line below.
+
 **Known failure, not this pass's:** `prompts::a_keycaps_character_is_centred_in_its_box_whichever_cap_it_wears` —
 verified by `git stash` to the baseline commit, where it fails the same way. Filed as the top bug for the next
 pass under "Filed issues come before new features".
