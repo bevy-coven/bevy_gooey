@@ -66,8 +66,8 @@ per subject. The README links each bullet to its page.
   items (`SlotItems`), one tab stop, the arrows and Home and End, a choice, and moving items by drag, keyboard or pad.
 - [Cards](cards.md) — `card_grid(cards)`: cards of a picture, a name and quiet lines in a row that wraps to fill its width,
   one tab stop the arrows walk, a chosen card lit and said once, a dimmed card no one chooses.
-- [Motion](motion.md) — a dialog's card and a popover's panel ease into place, `MotionSettings::off()` is the player's
-  "reduce motion", and `SlideIn` moves your own panel.
+- [Motion](motion.md) — a dialog's card and a popover's panel spring into place, the skin's motion palette,
+  `MotionSettings::off()` is the player's "reduce motion", `MotionTarget` moves your own panel, and `MotionTrace` tests it.
 - [Radial menu](radial.md) — `radial(items, selected)`: a weapon wheel chosen by the direction of a stick, the pointer or
   the D-pad, one `ValueChange<usize>` while pointing and a final one for the choice, and release-to-select.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB
