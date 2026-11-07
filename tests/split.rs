@@ -53,6 +53,9 @@ fn app_sized(width: u32, height: u32) -> App {
             .disable::<WinitPlugin>(),
         GooeyPlugins,
     ))
+    // The instant path: this file asserts layout a frame or two after a change, on the real-time
+    // clock (assumed owner exception, bevy_gooey#76).
+    .insert_resource(MotionSettings::off())
     .init_resource::<Changes>()
     .init_resource::<Writes>()
     .add_observer(|change: On<ValueChange<f32>>, mut log: ResMut<Changes>| {
