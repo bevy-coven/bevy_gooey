@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `model::{Spring, SpringError, SpringState, spring_step, spring_at_rest, spring_settle_seconds, spring_settled, SPRING_REST_POSITION, SPRING_REST_SPEED, SPRING_MAX_SETTLE_SECONDS}` (#47, `docs/research/motion-tracks.md`): a spring by perceptual duration and bounce (SwiftUI's mapping), exact closed form for the under-, critically and over-damped cases, so 60 Hz and 120 Hz agree and a retarget continues from `(value, velocity)`. `GooeySkin::motion: MotionTokens { snappy 0.25 s, default 0.3 s, calm 0.4 s, lead 0.2 s, fade_seconds 0.15 }` (`MotionToken` names one) and `SkinProblem::BadMotion { field }` for a spring with no motion.
+- `testing::MotionTrace` (feature `testing`, #46): `watch`, `step`, `frames`, `ended` (`TraceEnded`), `still_on_first_frame`, `max_step_px`, `max_speed_px_per_s`, `max_speed_change_px_per_s`, `settled_after_seconds` and `writes_at_rest`, over a `TraceFrame` per update (`UiTransform`, drawn position and size, background, border and text colour, and how many of the four writable components were written by change tick).
+- `MotionTarget { translation, scale, rotation, spring, enter_from }` and `InstantMotion` (#48): a retargetable track on `UiTransform`. A new target starts a spring segment from the drawn pose and its velocity; the first target lands with no motion unless `enter_from` gives it a place to come from; a game's own write to the transform drops the track; a settled track writes nothing.
+
+### Changed
+
+- **Breaking:** `SlideIn` is removed; a game's own panel uses `MotionTarget::default().entering_from(from)`. A dialog's card and a popover's panel slide on `motion.snappy` (about 0.45 s to rest) instead of fixed 0.18 s and 0.12 s ease-outs. `model::ease_out`, `DIALOG_SLIDE_SECONDS`, `POPOVER_SLIDE_SECONDS` and `METER_GAIN_TAU_SECONDS` are removed; the slide distances stay.
+- **Breaking:** a meter's gain rises on `motion.snappy` instead of an exponential ease: `model::meter_motion` takes the gain `Spring` before `duration_scale`, and `MeterShown` has two new public fields, `speed` and `aim`. `GooeySkin` has a new public field, `motion`, and `SkinProblem` a new variant, `BadMotion`.
+
 ## [0.37.0] - 2026-11-06
 
 ### Added
