@@ -2570,8 +2570,7 @@ takes the pointer in the frame the exit starts.
 system returns on `exiting.is_empty()`, and a fade writes one `Opacity` and one `PresenceAlpha` per frame).
 
 **Demo and docs.** `docs/media/presence.gif` (720×416, 40 frames, 2.67 s, 1.5 MB), row in `docs/media/README.md`;
-guide `docs/guide/presence.md` and its index line; README's feature-list line; CHANGELOG `[Unreleased]`; AGENTS.md
-module entry.
+guide `docs/guide/presence.md` and its index line; README's feature-list line; CHANGELOG `[0.39.0]`; AGENTS.md module entry.
 
 ### Ranked backlog
 
@@ -2589,7 +2588,9 @@ fails identically on the unmodified baseline `b9d2443`, a `⌃⇧Z` keycap 1.5 p
 **Release (iteration 66).** `cargo semver-checks` against `v0.38.0`: 3 major lints — `GooeySkin` gained the
 `elevation` field (a merge with the Desk/elevation work that landed on `origin/main` while this pass ran), `SkinProblem`
 gained `TranslucentSeed`, and `table_by_input`/`tree_by_input` changed arity — so a minor bump pre-1.0: **0.39.0**.
-`cargo publish` from the pushed commit; the crates.io URL is in this entry's release line below.
+`cargo publish` from the pushed commit `fcc39f4`: **https://crates.io/crates/bevy_gooey/0.39.0**,
+tag `v0.39.0` pushed, `cargo info bevy_gooey@0.39.0` resolves. #49 closed with the release; bevy_grimoire#331 told
+to move its pin to `fcc39f4`.
 
 **Known failure, not this pass's:** `prompts::a_keycaps_character_is_centred_in_its_box_whichever_cap_it_wears` —
 verified by `git stash` to the baseline commit, where it fails the same way. Filed as the top bug for the next
