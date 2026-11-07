@@ -18,6 +18,7 @@ mod context_menu;
 mod controls;
 mod cooldown;
 mod density;
+mod desk;
 mod dialog;
 mod dialog_look;
 mod dock;

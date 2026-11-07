@@ -90,6 +90,23 @@ fn seeded() -> Result<GooeySkin, Vec<bevy_gooey::SkinProblem>> {
 
 The derivation is Rune's palette kit, measured and written again here (`docs/research/skin-from-seeds.md`).
 
+## The Desk looks: a desktop tool's neutral skin
+
+`GooeySkin::desk()` and `GooeySkin::desk_light()` are Rune's neutral desktop look.
+- The colours are what `GooeySkin::from_seed` derives from `PaletteSeed::desk()` and `desk_light()`: a blue-grey ground, near-white or near-black text and a blue accent.
+- The sizes are a desktop tool's: 13 px body text, a 4/8/12/24 spacing scale, 6/8/12 corners, a 1 px frame and compact density at a 24 px least target.
+- Rune's elevation and its motion palette come with them.
+
+They are not steps of the theme row, which stays Dark, Parchment, High contrast and Tool. A host that wants them sets the skin:
+
+```rust,ignore
+app.insert_resource(GooeySkin::desk());
+```
+
+The light Desk's accent is a step deeper than Rune's: Rune's own light blue carries white words at 4.0:1, under this crate's 4.5:1.
+
+![The gooey gallery in Desk and Desk light above Rune's button variants in its neutral kit, dark and light](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/desk.png)
+
 ## Elevation: shadows as data
 
 `GooeySkin::elevation` holds the shadows for the three heights a surface stands at. Each is a stack of `ShadowLayer { x, y, blur, spread, color }` in CSS terms and logical px, drawn in order.

@@ -12,6 +12,8 @@
 
 - `GooeySkin::elevation: Elevation { raised, floating, overlay: Vec<ShadowLayer> }` and `ShadowLayer { x, y, blur, spread, color }` (#55, `docs/research/elevation.md`, `docs/guide/skins.md`): shadows as data, in CSS terms. A panel and a card cast `raised`, a popover, a menu and a tooltip `floating`, and a dialog's card, a toast (fading with it) and the palette `overlay`. `dark`, `parchment` and `tool` carry Rune's neutral stacks and `high_contrast` none. `shadow_sigma` turns CSS's blur into the deviation Bevy's box-shadow shader takes (half, `CSS_BLUR_PER_SIGMA`), read off `box_shadow.wesl`. A negative or non-number blur is a `BadSize` problem. A host's own `Role::Panel` gets its `BoxShadow` too.
 
+- `GooeySkin::desk()` and `GooeySkin::desk_light()`, with `PaletteSeed::desk()` and `desk_light()` (#56, `docs/research/desk-preset.md`, `docs/guide/skins.md`, `docs/media/desk.png`): Rune's neutral desktop look. The colours are `from_seed`'s from Rune's neutral themes and blue accent, held to it by a test. The sizes are Rune's: 13 px text, a 4/8/12/24 spacing scale, 6/8/12 corners, a 1 px frame, compact at a 24 px target. Rune's elevation and motion come with them. The light accent is a step deeper (`oklch(0.55 0.17 256)`), because Rune's misses 4.5:1. They are skins a host sets, not steps of the theme row.
+
 ### Changed
 
 - **Breaking:** `GooeySkin` has a new public field, `elevation` (a literal naming every field needs `elevation: Elevation::none()` or `..GooeySkin::default()`). Every panel now casts a soft shadow, and the tooltip's and popovers' old shadow (the background at 0.7 alpha) is the skin's `floating` stack.
