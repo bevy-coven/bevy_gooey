@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Button variants (#58, `docs/research/button-variant.md`, `docs/guide/widgets.md`): `ButtonVariant` (Neutral, Submit, Contrast, Danger, Warning, Outline, Ghost, GhostMuted, GhostFaint) on a `button` or `icon_button` picks its fill and ink at rest, hovered and pressed from the skin's own fields (`GooeySkin::variant_fill`, `variant_ink`, `warning`), and `problems()` checks every variant's ink on its fill and its three fills' steps. `Loading(bool)` swaps a button's label for a spinner, keeps its width and takes no click (`update_loading`). `PrimaryButton` is the same look as `Submit` and stays (its tests are protected). Proved by `tests/button_variant.rs`.
+
 ## [0.40.1] - 2026-11-07
 
 ### Added

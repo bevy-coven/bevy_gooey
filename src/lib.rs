@@ -143,6 +143,7 @@ mod access_actions;
 mod anchor;
 mod badges;
 mod binding;
+mod button_variant;
 mod cancel;
 mod card;
 mod choice;
@@ -211,6 +212,10 @@ pub use bevy::ui_widgets::{Activate, SliderRange, SliderStep, SliderValue, Value
 pub use binding::{
     Binding, BindingSettings, BindingValue, Capturing, bind_by_input, catch_pointer, not_capturing,
     update_bindings,
+};
+pub use button_variant::{
+    ButtonPhase, ButtonVariant, Loading, LoadingHold, LoadingSpinner, note_host_disable,
+    update_loading,
 };
 pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use card::{Card, CardCursor, CardGrid, CardRef, CardSelection, update_card_grids};
@@ -424,6 +429,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<GooeySkin>()
             .register_type::<SkinScope>()
             .register_type::<PrimaryButton>()
+            .register_type::<ButtonVariant>()
+            .register_type::<Loading>()
             .register_type::<Role>()
             .register_type::<Meter>()
             .register_type::<WorldAnchor>()
@@ -597,7 +604,7 @@ impl Plugin for GooeyStylePlugin {
                     (update_split_glides, update_splits).chain(),
                     update_trees,
                     update_tables,
-                    (elevation::give_elevation, apply_skin).chain(),
+                    (update_loading, elevation::give_elevation, apply_skin).chain(),
                     update_meters,
                     update_sliders,
                     (update_lists, access::update_accessibility).chain(),
@@ -605,6 +612,7 @@ impl Plugin for GooeyStylePlugin {
                     .chain()
                     .in_set(GooeySystems::Style),
             );
+        app.add_observer(note_host_disable);
         // Colours ease to what the skin wrote this frame, so it runs once every colour is written.
         app.add_systems(Update, update_color_motion.after(GooeySystems::Style));
         // The one system that is not in `Update`: it needs this frame's transforms.

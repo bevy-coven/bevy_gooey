@@ -9,6 +9,7 @@ mod access;
 mod anchor;
 mod badges;
 mod binding;
+mod button_variant;
 mod cancel;
 mod card;
 mod choice;

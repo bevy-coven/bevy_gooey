@@ -12,6 +12,7 @@ use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, Popover
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
 use crate::binding::Capturing;
+use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::color_motion::ColorTrack;
 use crate::control_size::ControlSize;
@@ -971,7 +972,12 @@ impl GooeySkin {
                 NON_TEXT_CONTRAST,
             )
         });
-        for (pair, a, b, needed) in pairs.into_iter().chain(edge) {
+        // Every button variant's ink on its fill, at rest, hovered and pressed.
+        let variants = self
+            .variant_pairs()
+            .into_iter()
+            .map(|(pair, ink, backing)| (pair, ink, backing, TEXT_CONTRAST));
+        for (pair, a, b, needed) in pairs.into_iter().chain(edge).chain(variants) {
             let needed = needed.max(floor);
             let ratio = contrast_ratio(a, b);
             // A NaN colour gives a NaN ratio, which is reported, not passed.
@@ -993,6 +999,16 @@ impl GooeySkin {
                 delta_l: delta,
                 needed: STATE_STEP,
             });
+        }
+        // Every variant's fills, each a step from the next: the button answers the pointer.
+        for (pair, delta) in self.variant_steps() {
+            if delta.is_nan() || delta < STATE_STEP {
+                out.push(SkinProblem::Indistinguishable {
+                    pair,
+                    delta_l: delta,
+                    needed: STATE_STEP,
+                });
+            }
         }
         // A primary button's three fills, each a step from the next: the lift under the pointer and
         // the press are how the player sees the button answer.
@@ -1275,6 +1291,20 @@ impl SkinPreset {
             }
         }
         best.0
+    }
+}
+
+/// How much of the ink the unlit three quarters of a busy button's spinner keep.
+const SPINNER_TRACE_ALPHA: f32 = 0.35;
+
+/// Which look a button's state is showing.
+fn phase_of(state: &State) -> ButtonPhase {
+    if state.pressed {
+        ButtonPhase::Pressed
+    } else if state.hovered || state.open {
+        ButtonPhase::Hover
+    } else {
+        ButtonPhase::Rest
     }
 }
 
@@ -2030,8 +2060,12 @@ struct State {
     anchor: PromptsAnchor,
     /// The entity is a status item: a progress in it is a short bar.
     status_item: bool,
-    /// A button that is the screen's main action ([`PrimaryButton`]).
+    /// A button that is the screen's main action ([`PrimaryButton`]) or a [`ButtonVariant::Submit`].
     primary: bool,
+    /// What the button says it does ([`ButtonVariant`]); a [`PrimaryButton`] is a Submit.
+    variant: ButtonVariant,
+    /// The button is busy ([`crate::Loading`]): its spinner draws in its ink.
+    holding: bool,
     /// The control's own size, when it has one ([`ControlSize`]).
     control: Option<ControlSize>,
     /// A text area: its field holds lines, so a size is its least height and not one line's centre.
@@ -2067,6 +2101,8 @@ impl Default for State {
             status_item: false,
             anchor: PromptsAnchor::default(),
             primary: false,
+            variant: ButtonVariant::Neutral,
+            holding: false,
             control: None,
             multi_line: false,
         }
@@ -2096,6 +2132,8 @@ type StateQuery = (
         Option<&'static PromptsAnchor>,
         Has<PrimaryButton>,
         Option<&'static ControlSize>,
+        Option<&'static ButtonVariant>,
+        Has<LoadingHold>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -2134,7 +2172,12 @@ type Restyle = (
             Added<DropRefusing>,
             Changed<PromptsAnchor>,
             Added<PrimaryButton>,
-            Or<(Changed<PresenceAlpha>, Changed<ControlSize>)>,
+            Or<(
+                Changed<PresenceAlpha>,
+                Changed<ControlSize>,
+                Changed<ButtonVariant>,
+                Added<LoadingHold>,
+            )>,
         )>,
     )>,
 );
@@ -2155,6 +2198,8 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, DropRefusing>,
     RemovedComponents<'w, 's, PrimaryButton>,
     RemovedComponents<'w, 's, ControlSize>,
+    RemovedComponents<'w, 's, ButtonVariant>,
+    RemovedComponents<'w, 's, LoadingHold>,
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
@@ -2234,6 +2279,8 @@ pub fn apply_skin(
         unrefused,
         unprimed,
         unsized_controls,
+        unvaried,
+        unheld,
     ) = &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -2259,7 +2306,18 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    (marked, problem, status, candidate, refusing, anchor, primary, control),
+                    (
+                        marked,
+                        problem,
+                        status,
+                        candidate,
+                        refusing,
+                        anchor,
+                        primary,
+                        control,
+                        variant,
+                        holding,
+                    ),
                     row,
                     role,
                 )| {
@@ -2270,7 +2328,8 @@ pub fn apply_skin(
                         pressed: pressed
                             || drag.is_some_and(|d| d.dragging)
                             || bar.is_some_and(|d| d.dragging),
-                        disabled,
+                        disabled: disabled && !holding,
+                        holding,
                         hovered: hovered.is_some_and(|h| h.0),
                         checked,
                         selected: selected || (checked && role == Some(&Role::GroupOption)),
@@ -2295,7 +2354,12 @@ pub fn apply_skin(
                         anchor: anchor.copied().unwrap_or_default(),
                         status_item: role == Some(&Role::StatusItem),
                         band: row.is_some_and(|r| r.index % 2 == 1),
-                        primary,
+                        primary: primary || variant.is_some_and(|v| *v == ButtonVariant::Submit),
+                        variant: variant.copied().unwrap_or(if primary {
+                            ButtonVariant::Submit
+                        } else {
+                            ButtonVariant::Neutral
+                        }),
                         control: control.copied(),
                         multi_line: role == Some(&Role::TextArea),
                     }
@@ -2356,6 +2420,8 @@ pub fn apply_skin(
         unrefused.clear();
         unprimed.clear();
         unsized_controls.clear();
+        unvaried.clear();
+        unheld.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -2398,6 +2464,8 @@ pub fn apply_skin(
     dirty.extend(unrefused.read());
     dirty.extend(unprimed.read());
     dirty.extend(unsized_controls.read());
+    dirty.extend(unvaried.read());
+    dirty.extend(unheld.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -2561,6 +2629,9 @@ fn restyle(
     let fill = match role {
         Role::Panel if in_dialog => Some(skin.solid_surface()),
         Role::Panel => Some(skin.surface),
+        Role::Button if !state.disabled && !matches!(state.variant, ButtonVariant::Neutral | ButtonVariant::Submit) => {
+            Some(skin.variant_fill(state.variant, phase_of(&state)))
+        }
         Role::Button | Role::TableHeaderCell => Some(if state.disabled {
             skin.surface
         } else if state.primary {
@@ -2970,6 +3041,9 @@ fn restyle(
         {
             Some(BorderColor::all(skin.focus_ring))
         }
+        Role::Button if state.variant.is_framed() && !state.disabled => {
+            Some(BorderColor::all(skin.outline))
+        }
         Role::Button | Role::Tab | Role::GroupOption | Role::StatusItem | Role::TableHeaderCell => {
             Some(BorderColor::all(Color::NONE))
         }
@@ -3066,11 +3140,25 @@ fn restyle(
             skin.outline
         })),
         // A quarter of the ring is lit; the others are the outline, 3:1 on the panel.
-        Role::Spinner => Some(BorderColor {
-            top: skin.accent,
-            right: skin.outline,
-            bottom: skin.outline,
-            left: skin.outline,
+        Role::Spinner => Some(match parent {
+            // In a busy button the quarter is the button's own ink, and the rest of the ring a pale
+            // trace of it, so it reads on the button's fill whatever that is.
+            Some(p) if p.holding => {
+                let ink = skin.variant_ink(p.variant, phase_of(&p));
+                let trace = ink.with_alpha(ink.alpha() * SPINNER_TRACE_ALPHA);
+                BorderColor {
+                    top: ink,
+                    right: trace,
+                    bottom: trace,
+                    left: trace,
+                }
+            }
+            _ => BorderColor {
+                top: skin.accent,
+                right: skin.outline,
+                bottom: skin.outline,
+                left: skin.outline,
+            },
         }),
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         // The swatch and the area are framed in the outline and wear the ring when focused: what
@@ -4013,6 +4101,14 @@ fn restyle(
         let color = match tone {
             IconTone::Text if disabled => skin.text_muted,
             IconTone::Text
+                if !matches!(
+                    parent.variant,
+                    ButtonVariant::Neutral | ButtonVariant::Submit
+                ) =>
+            {
+                skin.variant_ink(parent.variant, phase_of(&parent))
+            }
+            IconTone::Text
                 if parent.pressed || parent.selected || parent.primary || owner.pressed =>
             {
                 skin.accent_text
@@ -4047,6 +4143,11 @@ fn restyle(
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted
+            } else if !matches!(
+                parent.variant,
+                ButtonVariant::Neutral | ButtonVariant::Submit
+            ) {
+                skin.variant_ink(parent.variant, phase_of(&parent))
             } else if parent.pressed || parent.primary {
                 skin.accent_text
             } else {
