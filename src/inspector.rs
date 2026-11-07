@@ -1010,7 +1010,7 @@ fn mark_of(row: &Row, was: &[String], now: &[String]) -> Option<(Entity, Mark)> 
     match &row.kind {
         Kind::Number | Kind::Colour => {
             let (before, after) = (listed(was, &row.path), listed(now, &row.path));
-            (before != after).then(|| (row.entity, Mark::Mixed(after)))
+            (before != after).then_some((row.entity, Mark::Mixed(after)))
         }
         Kind::Vec(count) => {
             let flags = |list: &[String]| -> Vec<bool> {
@@ -1019,11 +1019,14 @@ fn mark_of(row: &Row, was: &[String], now: &[String]) -> Option<(Entity, Mark)> 
                     .collect()
             };
             let after = flags(now);
-            (flags(was) != after).then(|| (row.entity, Mark::Parts(after)))
+            (flags(was) != after).then_some((row.entity, Mark::Parts(after)))
         }
         Kind::Bool | Kind::Choice(_) | Kind::Text | Kind::ReadOnly(_) => None,
     }
 }
+
+/// What one inspector's changed list does: the root, the list now, and each row's move.
+type ListMoves = Vec<(Entity, Vec<String>, Vec<(Entity, Mark)>)>;
 
 /// Puts each row the [`InspectMixed`] list names into its mixed state, and each one it stopped naming
 /// back to the component's own value. Runs in [`crate::GooeySystems::Style`] after the rows are built
@@ -1032,7 +1035,7 @@ pub fn sync_inspect_mixed(
     world: &mut World,
     inspectors: &mut QueryState<(Entity, &Inspector, Option<&InspectMixed>)>,
 ) {
-    let mut moves: Vec<(Entity, Vec<String>, Vec<(Entity, Mark)>)> = Vec::new();
+    let mut moves: ListMoves = Vec::new();
     for (root, inspector, wanted) in inspectors.iter(world) {
         let now: &[String] = wanted.map_or(&[], |mixed| mixed.0.as_slice());
         if inspector.mixed == now {
