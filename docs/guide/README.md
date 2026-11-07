@@ -68,6 +68,8 @@ per subject. The README links each bullet to its page.
   one tab stop the arrows walk, a chosen card lit and said once, a dimmed card no one chooses.
 - [Motion](motion.md) — a dialog's card and a popover's panel spring into place, the skin's motion palette,
   `MotionSettings::off()` is the player's "reduce motion", `MotionTarget` moves your own panel, and `MotionTrace` tests it.
+- [Presence](presence.md) — `Leave` fades a dialog, a menu or any node out and despawns it, `Stay` turns one round
+  from where it is drawn, `Opacity` fades a whole subtree; `MotionSettings::off()` makes both instant.
 - [Radial menu](radial.md) — `radial(items, selected)`: a weapon wheel chosen by the direction of a stick, the pointer or
   the D-pad, one `ValueChange<usize>` while pointing and a final one for the choice, and release-to-select.
 - [Tabs](tabs.md) — `tabs(labels, selected, children![tab_page(..)])`: pages of widgets under a strip, LB
