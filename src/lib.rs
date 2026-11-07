@@ -153,6 +153,7 @@ mod cooldown;
 mod dock;
 mod dock_layout;
 mod drag;
+mod elevation;
 mod feedback;
 mod field;
 mod hold;
@@ -221,6 +222,7 @@ pub use drag::{
     DRAG_LIFT_PX, DragLabel, DragPayload, DragSettings, DragState, Dragging, DropCandidate,
     DropRefused, DropRefusing, DropTarget, Dropped, DroppedOnWorld, cancel_drags, is_dragging,
 };
+pub use elevation::{Elevation, ElevationLevel, ShadowLayer};
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
 pub use hold::{
@@ -239,11 +241,11 @@ pub use menu::{
 };
 pub use meter::{Meter, update_meters};
 pub use model::{
-    COMFORT_TARGET_PX, COOLDOWN_WHOLE_SECONDS_FROM, ChordGlyphs, DIALOG_SLIDE_PX,
-    DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone, ELEVATION_STEP,
-    ENHANCED_CONTRAST, HOLD_SCALE_MAX, HOLD_UNWIND_RATE, HexError, INTERFACE_SIZE_STEPS,
-    METER_SNAP, METER_TRAIL_HOLD_SECONDS, METER_TRAIL_RATE, MIN_TARGET_PX, MeterShown,
-    NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES,
+    COMFORT_TARGET_PX, COOLDOWN_WHOLE_SECONDS_FROM, CSS_BLUR_PER_SIGMA, ChordGlyphs,
+    DIALOG_SLIDE_PX, DOCK_EDGE_FRACTION, DOCK_EDGE_SHARE, DOCK_PANE_MIN_PX, DockZone,
+    ELEVATION_STEP, ENHANCED_CONTRAST, HOLD_SCALE_MAX, HOLD_UNWIND_RATE, HexError,
+    INTERFACE_SIZE_STEPS, METER_SNAP, METER_TRAIL_HOLD_SECONDS, METER_TRAIL_RATE, MIN_TARGET_PX,
+    MeterShown, NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES,
     POPOVER_SLIDE_PX, PRIMARY_LIFT_L, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH,
     SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, SPRING_MAX_SETTLE_SECONDS, SPRING_REST_POSITION,
     SPRING_REST_SPEED, STATE_STEP, STICK_PUSH, Spring, SpringError, SpringState,
@@ -255,12 +257,12 @@ pub use model::{
     key_name, lift_toward, list_height, meter_fraction, meter_motion, mouse_name, natural_cmp,
     nearest_step, number_decimals, pad_name, page_target, parse_hex, parse_number, pin_to_edge,
     progress_text, radial_pick, radial_place, radial_step, relative_luminance, repeat_steps,
-    rgb_to_hsv, scroll_to_reveal, scrub_value, shortcut_conflicts, shortcut_label, slider_fraction,
-    slider_text, slot_edge, snap_line_width, snap_to_row, spinner_angle, split_clamp, split_drag,
-    split_mins, spring_at_rest, spring_settle_seconds, spring_step, step_value, tab_step,
-    table_anchor, table_step, table_window, target_step, target_toward, toast_alpha, toast_grow,
-    toast_hold, toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible,
-    type_ahead, window_ui_scale,
+    rgb_to_hsv, scroll_to_reveal, scrub_value, shadow_sigma, shortcut_conflicts, shortcut_label,
+    slider_fraction, slider_text, slot_edge, snap_line_width, snap_to_row, spinner_angle,
+    split_clamp, split_drag, split_mins, spring_at_rest, spring_settle_seconds, spring_step,
+    step_value, tab_step, table_anchor, table_step, table_window, target_step, target_toward,
+    toast_alpha, toast_grow, toast_hold, toast_life, tree_ends, tree_heir, tree_indent,
+    tree_parent, tree_visible, type_ahead, window_ui_scale,
 };
 pub use motion::{
     InstantMotion, MotionSettings, MotionTarget, MotionToken, MotionTokens, PopoverSlide,
@@ -557,7 +559,7 @@ impl Plugin for GooeyStylePlugin {
                     update_splits,
                     update_trees,
                     update_tables,
-                    apply_skin,
+                    (elevation::give_elevation, apply_skin).chain(),
                     update_meters,
                     update_sliders,
                     (update_lists, access::update_accessibility).chain(),

@@ -27,6 +27,7 @@
 use bevy::color::{Oklaba, Oklcha, Srgba};
 use bevy::prelude::*;
 
+use crate::elevation::Elevation;
 use crate::model::{
     ELEVATION_STEP, NON_TEXT_CONTRAST, PRIMARY_LIFT_L, STATE_STEP, TEXT_CONTRAST, cie_lightness,
     composite, contrast_ratio, lift_toward, relative_luminance,
@@ -331,6 +332,11 @@ impl GooeySkin {
             surface_edge: None,
             scrim: Color::srgba(0.0, 0.0, 0.0, SCRIM_ALPHA),
             surfaces,
+            elevation: if dark {
+                Elevation::on_dark()
+            } else {
+                Elevation::on_light()
+            },
             hover: Some(from_rgb(hover)),
             pressed: Some(from_rgb(pressed)),
             ..GooeySkin::tool()

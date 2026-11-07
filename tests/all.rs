@@ -23,6 +23,7 @@ mod dialog_look;
 mod dock;
 mod double_press;
 mod drag;
+mod elevation;
 mod field_problem;
 mod hold;
 mod icon;
