@@ -2595,3 +2595,12 @@ to move its pin to `fcc39f4`.
 **Known failure, not this pass's:** `prompts::a_keycaps_character_is_centred_in_its_box_whichever_cap_it_wears` —
 verified by `git stash` to the baseline commit, where it fails the same way. Filed as the top bug for the next
 pass under "Filed issues come before new features".
+
+**Cleanup (iteration 66).** Removed `/tmp/g92` (194 MB: both capture sets, the GIF frames, the Rune clone, the
+probe crate, the gate logs) and the 60 example `.rmeta`/binary files this pass's builds left in the shared
+`debug/examples` (120 KB), plus the 19 GB of example binaries and 5.5 GB of `debug/incremental` that the
+accidental examples-link and the following rebuilds wrote — see the disk note above. `df -h /` before the pass
+began: 23 GB free; now 4.9 GB, of which 59 GB of `debug/deps` is the crate's own build cache the next pass starts
+from (left, as the rules say). The `loop/iter-66` branch is kept, merged; no worktrees remain from this pass. Earlier
+passes' worktrees (`~/g17_base`, `~/g17_parked`, `~/g17s_base`) and the two stale `wiggum/parked-pass-*` branches
+are listed and left, as before.
