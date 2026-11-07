@@ -74,9 +74,9 @@ use crate::select::{SELECT_HINT, SELECT_NO_MATCH, Select, select_on_activate};
 use crate::skin::Role;
 use crate::slots::{Slot, SlotGrid, SlotItems};
 use crate::split::{
-    Split, SplitAxis, SplitDivider, divider_on_cancel, divider_on_click, divider_on_drag,
-    divider_on_drag_end, divider_on_drag_start, divider_on_key_input, divider_on_press,
-    divider_on_release, split_self_update, toggle_split,
+    Split, SplitAxis, SplitDivider, divider_on_cancel, divider_on_click, divider_on_double_press,
+    divider_on_drag, divider_on_drag_end, divider_on_drag_start, divider_on_key_input,
+    divider_on_press, divider_on_release, split_self_update, toggle_split,
 };
 use crate::status::{StatusBar, StatusGroup, StatusItem};
 use crate::table::{Column, RowSource, table_bundle};
@@ -2436,6 +2436,7 @@ fn split_divider(axis: SplitAxis) -> impl Bundle {
             observe(divider_on_drag_end),
             observe(divider_on_cancel),
             observe(divider_on_click),
+            observe(divider_on_double_press),
             observe(divider_on_key_input),
             observe(toggle_split),
         ),

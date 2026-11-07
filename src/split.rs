@@ -14,6 +14,7 @@ use bevy::prelude::*;
 use bevy::ui::{InteractionDisabled, Pressed};
 use bevy::ui_widgets::ValueChange;
 
+use crate::clicks::DoublePress;
 use crate::model::{
     PAD_REPEAT_DELAY, PAD_REPEAT_RATE, SPLIT_KEY_STEP_PX, repeat_steps, split_clamp, split_drag,
     split_mins,
@@ -189,8 +190,6 @@ type Dividers = (
     Has<InteractionDisabled>,
 );
 
-/// What a click on a divider is checked against: disabled, pressed and mid-drag.
-type Pointed = (Has<InteractionDisabled>, Has<Pressed>, Has<SplitGrab>);
 type Roots = (
     &'static SplitFraction,
     &'static SplitMin,
@@ -385,23 +384,24 @@ pub(crate) fn divider_on_cancel(mut cancel: On<PointerCancel>, mut commands: Com
         .remove::<(Pressed, SplitGrab)>();
 }
 
-/// A double click collapses the first pane to its minimum, or restores it: the pointer's way to
-/// size a split without a drag (WCAG 2.5.7). Only a click that ends a press counts, never one that
-/// ends a drag: the pointer lets go over the divider it just moved, and Bevy calls that a click.
-pub(crate) fn divider_on_click(
-    mut click: On<PointerClick>,
-    dividers: Query<Pointed, With<SplitDivider>>,
+/// A click on the divider stops there: the split under it is not clicked.
+pub(crate) fn divider_on_click(mut click: On<PointerClick>) {
+    click.propagate(false);
+}
+
+/// A double press collapses the first pane to its minimum, or restores it: the pointer's way to
+/// size a split without a drag (WCAG 2.5.7). A press that ends a drag is never half of one
+/// ([`DoublePress`] pairs only clicks that did not travel past the slop),
+/// although the pointer lets go over the divider it just moved and Bevy calls that a click.
+pub(crate) fn divider_on_double_press(
+    mut double: On<DoublePress>,
+    dividers: Query<Has<InteractionDisabled>, With<SplitDivider>>,
     mut commands: Commands,
 ) {
-    click.propagate(false);
-    if click.button == PointerButton::Primary
-        && click.count == 2
-        && dividers
-            .get(click.entity)
-            .is_ok_and(|(disabled, pressed, dragged)| !disabled && pressed && !dragged)
-    {
+    double.propagate(false);
+    if dividers.get(double.entity).is_ok_and(|disabled| !disabled) {
         commands.trigger(ToggleSplit {
-            entity: click.entity,
+            entity: double.entity,
         });
     }
 }

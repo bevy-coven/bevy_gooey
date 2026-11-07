@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `DoublePress { entity }`, `ClickCount(u8)` and `PointerSettings { double_click_seconds: 0.5, double_click_slop_px: 4.0 }` (#62, `docs/research/double-press.md`, `docs/guide/pointer.md`): a desktop's double click. A second primary press on the same entity within the interval of the first and within the slop of where it was, let go there, is one `DoublePress` (an `EntityEvent` that bubbles like the click), sent in the second click's frame; the first click still lands at once; a press held past the interval or dragged past the slop pairs with nothing; a third quick click starts a new pair; keys never pair. `ClickCount` is on the pressed entity while the press is held, 1, 2, 3 for a run of quick presses, for a drag to read. The clock is `Time<Real>`. Measured from Rune's runtime (open reference, `f73f72c`).
+
+### Changed
+
+- The split's divider, the table's rows and the tree's rows open on `DoublePress` instead of Bevy's `PointerClick::count == 2`: a third quick click no longer swallows the next pair, two clicks 5 px apart or a held press then a click no longer open, and the interval is read on `Time<Real>` rather than the wall clock.
+
 ## [0.37.0] - 2026-11-06
 
 ### Added

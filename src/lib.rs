@@ -144,6 +144,7 @@ mod binding;
 mod cancel;
 mod card;
 mod choice;
+mod clicks;
 mod color;
 mod confirm;
 mod context;
@@ -203,6 +204,7 @@ pub use binding::{
 pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use card::{Card, CardCursor, CardGrid, CardRef, CardSelection, update_card_grids};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
+pub use clicks::{ClickCount, DoublePress, PointerSettings};
 pub use color::{
     AreaMarker, ColorArea, ColorPicker, ColorRail, ColorRefused, ColorStrip, ColorSwatch,
     ColorValue, SwatchHalf, update_colors,
@@ -594,6 +596,16 @@ impl Plugin for GooeyNavPlugin {
         }
         app.init_resource::<InputFocus>()
             .init_resource::<HoldSettings>()
+            .init_resource::<PointerSettings>()
+            .register_type::<PointerSettings>()
+            .register_type::<ClickCount>()
+            .init_resource::<clicks::Presses>()
+            .add_observer(clicks::presses_on_press)
+            .add_observer(clicks::presses_on_drag)
+            .add_observer(clicks::presses_on_click)
+            .add_observer(clicks::presses_on_release)
+            .add_observer(clicks::presses_on_drag_end)
+            .add_observer(clicks::presses_on_cancel)
             .init_resource::<InputDevice>()
             .init_resource::<BindingSettings>()
             .init_resource::<CommandList>()

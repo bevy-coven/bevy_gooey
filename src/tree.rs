@@ -19,6 +19,7 @@ use bevy::prelude::*;
 use bevy::ui::InteractionDisabled;
 use bevy::ui_widgets::observe;
 
+use crate::clicks::DoublePress;
 use crate::model::{TYPE_AHEAD_SECS, tree_ends, tree_heir, tree_parent, tree_visible, type_ahead};
 use crate::nav::show_focus;
 use crate::skin::Role;
@@ -405,6 +406,7 @@ pub(crate) fn spawn_lead(
             },
             Role::TreeTwisty,
             observe(twisty_on_click),
+            observe(twisty_on_double_press),
             ChildOf(cell),
         ))
         .id();
@@ -493,6 +495,12 @@ pub(crate) fn toggle(
         key,
         open: now,
     });
+}
+
+/// Two quick clicks on a chevron open and close its node and do not open the row: the double
+/// press stops at the chevron, as each click does.
+fn twisty_on_double_press(mut double: On<DoublePress>) {
+    double.propagate(false);
 }
 
 /// A click on a chevron opens or closes its node, and selects nothing.

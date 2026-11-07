@@ -21,6 +21,7 @@ mod density;
 mod dialog;
 mod dialog_look;
 mod dock;
+mod double_press;
 mod drag;
 mod field_problem;
 mod hold;

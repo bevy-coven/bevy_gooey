@@ -32,6 +32,7 @@ use bevy::ui::{InteractionDisabled, Pressed, Selected};
 use bevy::ui_widgets::{Activate, ScrollArea, ValueChange, observe};
 use bevy::window::SystemCursorIcon;
 
+use crate::clicks::DoublePress;
 use crate::list::ListView;
 use crate::model::{
     MIN_TARGET_PX, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, SPLIT_KEY_STEP_PX, TABLE_LEAST_COLUMN,
@@ -543,7 +544,8 @@ pub(crate) fn pick(
 }
 
 /// A click on a row: the cursor goes there and the selection by the modifiers held (Ctrl toggles,
-/// Shift takes the range in a [`SelectMode::Multi`] table); a double click opens the row.
+/// Shift takes the range in a [`SelectMode::Multi`] table); a double press opens the row
+/// (`row_on_double_press`).
 pub(crate) fn row_on_click(
     mut click: On<PointerClick>,
     rows: Query<&TableRow>,
@@ -585,7 +587,20 @@ pub(crate) fn row_on_click(
         (mode, &mut selection, &mut cursor, &mut cache),
         &mut commands,
     );
-    if click.count == 2 {
+}
+
+/// A double press on a row opens it; its first click already moved the cursor and the selection.
+pub(crate) fn row_on_double_press(
+    mut double: On<DoublePress>,
+    rows: Query<&TableRow>,
+    tables: Query<(), (With<Table>, Without<InteractionDisabled>)>,
+    mut commands: Commands,
+) {
+    double.propagate(false);
+    let Ok(row) = rows.get(double.entity) else {
+        return;
+    };
+    if tables.contains(row.table) {
         commands.trigger(RowActivated {
             entity: row.table,
             key: row.key,
@@ -1194,6 +1209,7 @@ pub fn update_tables(
                     },
                     Hovered::default(),
                     observe(row_on_click),
+                    observe(row_on_double_press),
                     ChildOf(parts.rows),
                 ))
                 .id();
