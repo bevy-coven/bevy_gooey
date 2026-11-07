@@ -148,6 +148,7 @@ mod card;
 mod choice;
 mod clicks;
 mod color;
+mod color_motion;
 mod confirm;
 mod context;
 mod control_size;
@@ -219,6 +220,7 @@ pub use color::{
     AreaMarker, ColorArea, ColorPicker, ColorRail, ColorRefused, ColorStrip, ColorSwatch,
     ColorValue, SwatchHalf, update_colors,
 };
+pub use color_motion::{ColorTrack, update_color_motion};
 pub use confirm::{Confirm, ConfirmButton, ConfirmChosen, confirm};
 pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use control_size::{CONTROL_LARGE_PX, CONTROL_REGULAR_PX, CONTROL_SMALL_PX, ControlSize};
@@ -603,6 +605,8 @@ impl Plugin for GooeyStylePlugin {
                     .chain()
                     .in_set(GooeySystems::Style),
             );
+        // Colours ease to what the skin wrote this frame, so it runs once every colour is written.
+        app.add_systems(Update, update_color_motion.after(GooeySystems::Style));
         // The one system that is not in `Update`: it needs this frame's transforms.
         anchor::add_systems(app);
         // Layout motion reads where this frame's layout put a node and moves its drawing back to

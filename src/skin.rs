@@ -13,6 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
+use crate::color_motion::ColorTrack;
 use crate::control_size::ControlSize;
 use crate::drag::{DropCandidate, DropRefusing};
 use crate::elevation::{Elevation, ElevationLevel};
@@ -1477,6 +1478,7 @@ pub struct GooeyFonts {
 /// its root (and on the parts it spawns); put one on your own node to have it styled the same way.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, PartialEq, Clone)]
+#[require(ColorTrack)]
 pub enum Role {
     /// A full-window layout root; not drawn.
     Screen,

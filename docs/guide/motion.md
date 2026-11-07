@@ -137,6 +137,17 @@ and moves things in the next, never makes a resize glide. The crate marks tabs; 
 glide on their own room, and toolbar and status items are moved by a fitting pass, so they are not
 marked; a game marks what it likes. `LayoutTravel::offset()` says how far from its place a node is drawn.
 
+## Colours that ease
+
+A hover, a focus ring, a selection, a disabled state and a skin change repaint on springs, in premultiplied
+Oklab (`ColorTrack`, `update_color_motion`). A state change takes `motion.snappy`, a new skin `motion.calm`,
+and a label or an icon's tint half as long as its fill, so the words lead the ground they sit on. A press
+lands in its frame and its release eases. The first colours of a widget, a colour that is yours (a
+`Role::Tone` node, a colour field's swatch) and a change of alpha alone land at once, and a settled widget
+writes nothing. Reduced motion eases over `motion.fade_seconds`; `MotionSettings::off()` lands everything.
+Two skins of opposite polarity must pass through a frame where a label is as bright as its fill; the label's
+head start keeps those to a third of the calm spring at most.
+
 ## Sections and splits that open
 
 A `section` that opens grows to its height and one that closes shrinks away, on the default spring, and

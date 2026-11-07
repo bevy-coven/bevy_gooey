@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Colour motion (#51, `docs/research/color-motion.md`, `docs/guide/motion.md`): a widget's background, border, text and icon colours ease to the skin's on springs in premultiplied Oklab, from a second system after `apply_skin` (`ColorTrack`, `update_color_motion`; every `Role` requires a track). A state change takes `motion.snappy`, a new skin `motion.calm`, a label half as long as its fill. A press, the first frame, `Role::Tone` and the colour field's data colours, and a change of alpha alone land at once; reduced motion fades over `motion.fade_seconds`. Proved by `tests/color_motion.rs`. The colour-sensitive real-clock test files run with `MotionSettings::off()` (#76).
+
 ## [0.40.0] - 2026-11-07
 
 ### Added

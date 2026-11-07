@@ -13,6 +13,7 @@ mod cancel;
 mod card;
 mod choice;
 mod color;
+mod color_motion;
 mod confirm;
 mod context_menu;
 mod control_size;
