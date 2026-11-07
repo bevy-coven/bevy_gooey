@@ -137,6 +137,15 @@ and moves things in the next, never makes a resize glide. The crate marks tabs; 
 glide on their own room, and toolbar and status items are moved by a fitting pass, so they are not
 marked; a game marks what it likes. `LayoutTravel::offset()` says how far from its place a node is drawn.
 
+## Sections and splits that open
+
+A `section` that opens grows to its height and one that closes shrinks away, on the default spring, and
+the widgets under it travel with it. A split collapsed or restored with Enter, South or a double click on
+its divider slides its panes there. The state is the new one at once: `SectionOpen` and `SplitFraction`
+say it in the frame it is asked for. Only the layout follows (`SectionGlide`, `SplitGlide` while it
+does). A divider drag, an arrow-key step and a value your game writes move the panes at once, and reduced
+motion makes both land at once.
+
 ## A tile that gives: `PressScale`
 
 Every card of a `card_grid` and every slot of a `slot_grid` shrinks to 0.97 about its centre while a

@@ -5,14 +5,17 @@ use std::collections::BTreeMap;
 
 use bevy::input_focus::{FocusCause, InputFocus};
 use bevy::prelude::*;
-use bevy::ui::InteractionDisabled;
+use bevy::ui::{ComputedNode, InteractionDisabled};
 use bevy::ui_widgets::{Activate, ValueChange};
 
+use crate::motion::MotionSettings;
+use crate::size_motion::SectionGlide;
 use crate::skin::Role;
 
 /// Whether a [`crate::section`] is open: the widget's state. Read it to know, set it to open or
-/// close the section from code (the screen follows in the same frame, and no [`ValueChange`] is
-/// sent for a change the game made itself). The player's Enter, Space, South or click sends one
+/// close the section from code (the body grows or shrinks to it from that frame, on the skin's
+/// default spring, or at once under reduced motion; no [`ValueChange`] is sent for a change the game
+/// made itself). The player's Enter, Space, South or click sends one
 /// [`ValueChange<bool>`](ValueChange) on the section and flips it.
 ///
 /// ```
@@ -136,6 +139,10 @@ pub fn update_sections(
     parents: Query<&ChildOf>,
     states: Option<ResMut<SectionStates>>,
     mut focus: ResMut<InputFocus>,
+    motion: Res<MotionSettings>,
+    glides: Query<&SectionGlide>,
+    laid_out: Query<&ComputedNode>,
+    mut commands: Commands,
 ) {
     let mut states = states;
     for (mut open, id, children) in &mut sections {
@@ -172,7 +179,38 @@ pub fn update_sections(
             } else {
                 match roles.get(child) {
                     Ok(Role::SectionBody) => {
-                        show(child, is_open, &mut nodes, Some(&mut visibility))
+                        // A player's or a game's toggle after the first frame grows or shrinks the
+                        // body (size motion); the state is the new one at once.
+                        // A write that keeps the value (a game setting every section each frame) is
+                        // no toggle: only a body shown or hidden against the state starts a glide.
+                        let shown_now = nodes.get(child).is_ok_and(|n| n.display != Display::None);
+                        let toggled = open.is_changed() && !open.is_added() && shown_now != is_open;
+                        let glide = glides.get(child).ok().cloned();
+                        match glide {
+                            Some(glide) if glide.opening() != is_open => {
+                                commands.entity(child).insert(glide.turned(is_open));
+                            }
+                            Some(_) => {}
+                            None if toggled && !motion.lands_travel() => {
+                                let Ok(node) = nodes.get(child).cloned() else {
+                                    continue;
+                                };
+                                let from = if is_open {
+                                    0.0
+                                } else {
+                                    laid_out
+                                        .get(child)
+                                        .map_or(0.0, |c| c.size().y * c.inverse_scale_factor())
+                                };
+                                commands
+                                    .entity(child)
+                                    .insert(SectionGlide::new(from, is_open, &node));
+                                if is_open {
+                                    show(child, true, &mut nodes, Some(&mut visibility));
+                                }
+                            }
+                            None => show(child, is_open, &mut nodes, Some(&mut visibility)),
+                        }
                     }
                     Ok(Role::SectionNote) => show(child, is_open && empty, &mut nodes, None),
                     _ => {}

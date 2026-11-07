@@ -185,6 +185,7 @@ mod section;
 mod seed;
 mod select;
 mod shortcut;
+mod size_motion;
 mod skin;
 mod slots;
 mod split;
@@ -317,6 +318,7 @@ pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_s
 pub use seed::PaletteSeed;
 pub use select::{SELECT_FILTER_ABOVE, Select};
 pub use shortcut::{ChordText, Modifiers, Platform, Shortcut, update_chord_texts};
+pub use size_motion::{SectionGlide, SplitGlide, update_section_glides, update_split_glides};
 pub use skin::{
     Density, GooeyFonts, GooeySkin, PrimaryButton, Role, SkinPreset, SkinProblem, SkinScope,
     apply_skin,
@@ -568,7 +570,7 @@ impl Plugin for GooeyStylePlugin {
                         update_cooldowns,
                         update_hold_bars,
                         (update_toggle_groups, fit_bars).chain(),
-                        update_sections,
+                        (update_sections, update_section_glides).chain(),
                         (
                             update_shortcut_badges,
                             update_shortcut_legend,
@@ -590,7 +592,7 @@ impl Plugin for GooeyStylePlugin {
                     dock::update_docks,
                     dock::update_dock_drag,
                     (update_tabs, update_tab_pages).chain(),
-                    update_splits,
+                    (update_split_glides, update_splits).chain(),
                     update_trees,
                     update_tables,
                     (elevation::give_elevation, apply_skin).chain(),

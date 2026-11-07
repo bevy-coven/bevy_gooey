@@ -63,6 +63,7 @@ mod select;
 mod serde;
 mod shortcut;
 mod side_tabs;
+mod size_motion;
 mod skin;
 mod slots;
 mod split;

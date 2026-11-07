@@ -20,6 +20,7 @@ use crate::model::{
     split_mins,
 };
 use crate::nav::show_focus;
+use crate::size_motion::SplitGlide;
 use crate::skin::Role;
 
 /// How a [`crate::split`] lays its two panes out.
@@ -294,6 +295,7 @@ pub(crate) fn divider_on_release(mut release: On<PointerRelease>, mut commands: 
 pub(crate) fn divider_on_drag_start(
     mut start: On<PointerDragStart>,
     geometry: SplitGeometry,
+    glides: Query<&SplitGlide>,
     mut commands: Commands,
 ) {
     start.propagate(false);
@@ -312,9 +314,17 @@ pub(crate) fn divider_on_drag_start(
             );
             return;
         }
+        // A drag that starts during a collapse's slide takes the divider from where it is drawn.
+        let from = glides
+            .get(reading.root)
+            .map_or(reading.fraction, SplitGlide::shown);
+        if from != reading.fraction {
+            commands.entity(reading.root).remove::<SplitGlide>();
+            report(&mut commands, &reading, from, false);
+        }
         commands
             .entity(start.entity)
-            .insert((Pressed, SplitGrab(reading.fraction)));
+            .insert((Pressed, SplitGrab(from)));
     }
 }
 
@@ -452,6 +462,8 @@ pub(crate) fn toggle_split(
     event: On<ToggleSplit>,
     geometry: SplitGeometry,
     saved: Query<&SplitSaved>,
+    motion: Res<crate::motion::MotionSettings>,
+    glides: Query<&SplitGlide>,
     mut commands: Commands,
 ) {
     let Some(reading) = geometry.read(event.entity) else {
@@ -472,6 +484,16 @@ pub(crate) fn toggle_split(
             .insert(SplitSaved(reading.fraction));
         smallest
     };
+    // The panes slide there (size motion): from where they are laid out now, a glide on its way
+    // included. The fraction is the new one at once.
+    if !motion.lands_travel() && to != reading.fraction {
+        let from = glides
+            .get(reading.root)
+            .map_or(reading.fraction, SplitGlide::shown);
+        commands
+            .entity(reading.root)
+            .insert(SplitGlide::new(from, to));
+    }
     report(&mut commands, &reading, to, true);
 }
 
@@ -537,6 +559,16 @@ pub fn split_by_pad(
     }
 }
 
+/// What laying a split out reads: its axis, state, minimums, size, parts and any glide on its way.
+type LaidOutSplit = (
+    &'static Split,
+    &'static SplitFraction,
+    &'static SplitMin,
+    &'static ComputedNode,
+    &'static Children,
+    Option<&'static SplitGlide>,
+);
+
 /// Lays each split's panes out from its [`SplitFraction`] and [`SplitMin`]: the first pane grows by
 /// the fraction (held to the minimums) and the second by what is left, from a basis of nothing, so
 /// they share the room the divider leaves in exactly that ratio, and each pane's own minimum is
@@ -545,11 +577,13 @@ pub fn split_by_pad(
 /// [`crate::GooeySystems::Style`], before [`crate::apply_skin`]; a split that did not change costs
 /// a comparison and writes nothing.
 pub fn update_splits(
-    splits: Query<(&Split, &SplitFraction, &SplitMin, &ComputedNode, &Children)>,
+    splits: Query<LaidOutSplit>,
     dividers: Query<&ComputedNode, With<SplitDivider>>,
     mut parts: Query<(&Role, &mut Node)>,
 ) {
-    for (split, fraction, min, node, children) in &splits {
+    for (split, fraction, min, node, children, glide) in &splits {
+        // A collapse or a restore on its way lays the panes out where it has got to.
+        let fraction = glide.map_or(fraction.0, SplitGlide::shown);
         let along = |size: Vec2| match split.axis {
             SplitAxis::Horizontal => size.x,
             SplitAxis::Vertical => size.y,
@@ -559,7 +593,7 @@ pub fn update_splits(
             .find_map(|c| dividers.get(c).ok())
             .map_or(0.0, |d| along(d.size()) * d.inverse_scale_factor());
         let extent = (along(node.size()) * node.inverse_scale_factor() - bar).max(0.0);
-        let first = split_clamp(fraction.0, extent, min.first, min.second);
+        let first = split_clamp(fraction, extent, min.first, min.second);
         // **A split that has not been laid out yet still says what its panes may not go under.**
         //
         // `split_mins` folds each minimum into the room that is there, so with no room it answers
