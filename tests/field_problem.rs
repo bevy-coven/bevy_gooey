@@ -14,6 +14,8 @@ use bevy_gooey::*;
 /// A headless app with a real window size, so UI layout runs.
 fn app(skin: GooeySkin) -> App {
     let mut app = App::new();
+    // Assumed owner exception (#76): colours ease on the real clock, so this app reads them landed.
+    app.insert_resource(MotionSettings::off());
     app.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {

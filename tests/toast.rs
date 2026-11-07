@@ -31,6 +31,8 @@ const SIXTY: f32 = 1.0 / 60.0;
 /// advances `frame` seconds a frame.
 fn app_at(frame: f32) -> App {
     let mut app = App::new();
+    // Assumed owner exception (#76): colours ease on the real clock, so this app reads them landed.
+    app.insert_resource(MotionSettings::off());
     app.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {
