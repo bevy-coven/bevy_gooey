@@ -69,6 +69,8 @@ shows. `.with_shortcut(Shortcut::primary(KeyCode::KeyS))` puts the command's cho
 right of the line, the same cap a `prompt` and a `binding` row draw ([shortcuts](shortcuts.md)). A tooltip on a
 widget inside a clipped container (a row of a `list`) draws over the clip rather than being cut by it.
 
+The box opens after the pointer has rested on the widget for `TooltipSettings::delay_seconds` (half a second by default), so moving across a toolbar does not flash a row of them. A press, a wheel turn or a key press hides it, and it stays hidden until the pointer leaves and comes back. A widget with visible focus opens its tooltip at once.
+
 ## A dialog
 
 **A dialog's default button is `DefaultButton`** on one button (or `confirm(..).default(index)`): Return in a single-line field ends its edit and then presses it, Return with nothing focused presses it, and it draws as the main action. A focused button and a text area keep their own Return.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Tooltips on a desktop's timing (#64, `docs/research/tooltip-delay.md`, `docs/guide/widgets.md`): `TooltipSettings { delay_seconds: 0.5 }`. A tooltip opens after the pointer has rested on its widget that long, a press, a wheel turn or a key ends the visit until the pointer leaves and returns, and visible focus still opens it at once. `tests/tooltip.rs` runs with no delay (assumed owner exception, #76). Proved by `tests/tooltip_delay.rs`.
+
 ## [0.40.3] - 2026-11-07
 
 ### Added

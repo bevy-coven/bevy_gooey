@@ -1,8 +1,13 @@
-//! Tooltips: a line of text beside a widget while the pointer is over it or it has visible focus.
+//! Tooltips: a line of text beside a widget while the pointer has rested on it for a moment, or at
+//! once while it has visible focus.
 
 use bevy::ecs::lifecycle::HookContext;
 use bevy::ecs::world::DeferredWorld;
+use bevy::input::ButtonState;
+use bevy::input::keyboard::KeyboardInput;
+use bevy::input::mouse::MouseWheel;
 use bevy::input_focus::{InputFocus, InputFocusVisible};
+use bevy::picking::events::PointerPress;
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::ui::{ComputedUiRenderTargetInfo, OverrideClip, UiGlobalTransform};
@@ -12,6 +17,46 @@ use crate::binding::BindingSettings;
 use crate::shortcut::{ChordText, Shortcut};
 use crate::skin::Role;
 use crate::text::TextInputOf;
+
+/// How long the pointer rests on a widget before its tooltip opens, seconds: a desktop's half a second,
+/// so moving across a toolbar does not flash a row of tooltips (Rune's `help_delay`).
+pub const TOOLTIP_DELAY_SECONDS: f32 = 0.5;
+
+/// When a pointer's tooltip opens. Visible focus is not waited for: a keyboard or pad player has no
+/// hover, so their tooltip opens in the frame focus arrives. `delay_seconds` 0 opens a tooltip as
+/// the pointer arrives; negative or not a number is 0.
+///
+/// ```
+/// use bevy_gooey::TooltipSettings;
+/// assert_eq!(TooltipSettings::default().delay_seconds, 0.5);
+/// ```
+#[derive(Resource, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Resource, Default, Debug, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(default)
+)]
+pub struct TooltipSettings {
+    /// Seconds the pointer rests on a widget before its tooltip opens. Default: 0.5.
+    pub delay_seconds: f32,
+}
+
+impl Default for TooltipSettings {
+    fn default() -> Self {
+        Self {
+            delay_seconds: TOOLTIP_DELAY_SECONDS,
+        }
+    }
+}
+
+/// How long the pointer has rested on a tooltip's widget, and whether a press, a wheel turn or a key
+/// ended this visit: the box then stays shut until the pointer leaves and comes back.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+pub struct TooltipDwell {
+    seconds: f32,
+    quiet: bool,
+}
 
 /// Shows its text in a box beside this entity while the pointer is over it, or while it has focus
 /// and focus is visible (a keyboard or pad player has moved it), so every input reaches it.
@@ -134,6 +179,7 @@ fn sync_box(world: &mut World, entity: Entity) {
                     BoxShadow::default(),
                     GlobalZIndex(200),
                     TooltipBox::default(),
+                    TooltipDwell::default(),
                     ChildOf(entity),
                     children![(Text::new(tip.text), Role::Label)],
                 ))
@@ -220,26 +266,62 @@ pub fn update_tooltip_text(
 /// the widget sits in a row and how much room the window leaves beside it, for
 /// [`crate::apply_skin`] to place and fit the box. Writes only what changed. Runs in
 /// [`crate::GooeySystems::Style`], before [`crate::apply_skin`].
+#[allow(clippy::too_many_arguments)]
 pub fn show_tooltips(
     focus: Option<Res<InputFocus>>,
     visible: Option<Res<InputFocusVisible>>,
+    settings: Option<Res<TooltipSettings>>,
+    time: Option<Res<Time<Real>>>,
+    mut wheel: Option<MessageReader<MouseWheel>>,
+    mut keys: Option<MessageReader<KeyboardInput>>,
     widgets: Query<Described, Without<TooltipBox>>,
     flows: Query<&Node, Without<TooltipBox>>,
     fields: Query<&TextInputOf>,
     caps: Query<(&Role, &ComputedNode)>,
-    mut boxes: Query<(&ChildOf, &mut Node, &mut TooltipBox, &Children)>,
+    mut boxes: Query<(
+        &ChildOf,
+        &mut Node,
+        &mut TooltipBox,
+        &mut TooltipDwell,
+        &Children,
+    )>,
 ) {
+    let wanted = settings.map_or(TOOLTIP_DELAY_SECONDS, |s| s.delay_seconds);
+    let delay = if wanted.is_finite() {
+        wanted.max(0.0)
+    } else {
+        0.0
+    };
+    let dt = time.map_or(0.0, |t| t.delta_secs());
+    // A wheel turn or a key press ends every visit that is on: the player is doing something else.
+    let turned = wheel.as_mut().is_some_and(|w| w.read().count() > 0);
+    let typed = keys
+        .as_mut()
+        .is_some_and(|k| k.read().any(|key| key.state == ButtonState::Pressed));
+    let interrupted = turned || typed;
     let focused = visible
         .is_some_and(|v| v.0)
         .then(|| focus.and_then(|f| f.get()))
         .flatten();
     let focused_row = focused.and_then(|f| fields.get(f).ok()).map(|of| of.0);
-    for (owner, mut node, mut tip, lines) in &mut boxes {
+    for (owner, mut node, mut tip, mut dwell, lines) in &mut boxes {
         let widget = owner.parent();
         let Ok((hovered, parent, placed)) = widgets.get(widget) else {
             continue;
         };
-        let shown = hovered.is_some_and(|h| h.get())
+        let over = hovered.is_some_and(|h| h.get());
+        // The visit: time on the widget, ended by a press, a wheel turn or a key, and over when the
+        // pointer leaves.
+        let mut visit = *dwell;
+        if !over {
+            visit = TooltipDwell::default();
+        } else if interrupted {
+            visit.quiet = true;
+        } else if !visit.quiet && visit.seconds < delay {
+            visit.seconds = (visit.seconds + dt).min(delay);
+        }
+        dwell.set_if_neq(visit);
+        let shown = (over && !visit.quiet && visit.seconds >= delay)
             || focused == Some(widget)
             || focused_row == Some(widget);
         let display = if shown { Display::Flex } else { Display::None };
@@ -285,3 +367,28 @@ type Described = (
         &'static ComputedUiRenderTargetInfo,
     )>,
 );
+
+/// A press on a widget, or on anything inside it, ends its tooltip's visit: the box stays shut until
+/// the pointer leaves and comes back. A global observer.
+pub(crate) fn tooltip_on_press(
+    press: On<PointerPress>,
+    parents: Query<&ChildOf>,
+    children: Query<&Children>,
+    mut dwells: Query<&mut TooltipDwell, With<TooltipBox>>,
+) {
+    // The press bubbles, and every global observer runs at each hop: act on the first only.
+    if press.entity != press.original_event_target() {
+        return;
+    }
+    let mut at = Some(press.entity);
+    while let Some(entity) = at {
+        for kid in children.get(entity).into_iter().flat_map(|c| c.iter()) {
+            if let Ok(mut dwell) = dwells.get_mut(kid)
+                && !dwell.quiet
+            {
+                dwell.quiet = true;
+            }
+        }
+        at = parents.get(entity).ok().map(ChildOf::parent);
+    }
+}
