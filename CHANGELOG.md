@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Switch motion (#67, `docs/research/switch-motion.md`, `docs/guide/motion.md`): a toggle's knob travels from one end of its track to the other on `motion.snappy` instead of jumping. `mark_moving_parts` gives a `Role::ToggleKnob` `MovesSmoothly` and the new `TravelSpring(MotionToken)` (a node with none travels on `motion.default`, as before); the state is still `Checked`, so a value the game sets with no event travels the same, a second flip mid-flight retargets from the drawn place, and the first frames, a new window size, scale or skin and reduced or no motion land. The track's colours follow through colour motion. Not built: the menu check mark's entrance, and Rune's hover stretch of the thumb. Proved by `tests/switch_motion.rs`.
+
 ## [0.40.3] - 2026-11-07
 
 ### Added

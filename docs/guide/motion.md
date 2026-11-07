@@ -133,9 +133,23 @@ moves, and the picking with it. The corner is what is tracked, so a node that on
 A move lands at once in a node's first two frames (`LAYOUT_QUIET_FRAMES`), in the two frames after a
 new window size, scale or skin and after the node gets a new parent, when its parent scrolls, and under
 reduced or no motion. The two frames are there so that a fitting pass, which reads one frame's layout
-and moves things in the next, never makes a resize glide. The crate marks tabs; a dock's tabs are spawned again on each change to the dock's layout, so they do not travel yet (G-63). Toasts
-glide on their own room, and toolbar and status items are moved by a fitting pass, so they are not
-marked; a game marks what it likes. `LayoutTravel::offset()` says how far from its place a node is drawn.
+and moves things in the next, never makes a resize glide. The crate marks tabs and a toggle's knob; a
+dock's tabs are spawned again on each change to the dock's layout, so they do not travel yet (G-63).
+Toasts glide on their own room, and toolbar and status items are moved by a fitting pass, so they are
+not marked; a game marks what it likes. `LayoutTravel::offset()` says how far from its place a node is
+drawn.
+
+A marked node travels on `motion.default` unless it also has `TravelSpring(MotionToken)`, which names
+the skin's spring that carries it. A `toggle`'s knob is the crate's own case: it travels from one end of
+its track to the other on `motion.snappy`, so a switch answers a press quickly, and its track's colours
+follow through colour motion. A value the game sets with no event (`Checked` inserted or removed)
+travels the same, a second flip mid-flight carries on from where the knob is drawn, and a toggle that
+starts on has its knob at the end from its first frame.
+
+```rust,ignore
+// A card that slides over on the calm spring when its neighbour is taken out.
+commands.spawn((panel(), MovesSmoothly, TravelSpring(MotionToken::Calm)));
+```
 
 ## Colours that ease
 

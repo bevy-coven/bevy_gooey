@@ -72,6 +72,7 @@ mod slots;
 mod split;
 mod state_roles;
 mod status_bar;
+mod switch_motion;
 mod table;
 mod tabs;
 mod testing;

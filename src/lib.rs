@@ -252,7 +252,8 @@ pub use inspector::{
     inspector, sync_inspectors,
 };
 pub use layout_motion::{
-    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, mark_moving_parts, update_layout_motion,
+    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelSpring, mark_moving_parts,
+    update_layout_motion,
 };
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use menu::{
@@ -526,6 +527,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ToastSettings>()
             .register_type::<MotionSettings>()
             .register_type::<MovesSmoothly>()
+            .register_type::<TravelSpring>()
             .register_type::<ControlSize>()
             .register_type::<PressScale>()
             .register_type::<HoldToConfirm>()
