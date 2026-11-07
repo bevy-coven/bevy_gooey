@@ -1,8 +1,8 @@
 //! Motion as a game sees it, in the same headless window on a clock the test sets
 //! (`TimeUpdateStrategy::ManualDuration`, 30 ms a frame): a dialog's card rises into place and
 //! settles, a popover slides out of its anchor only once it is drawn, a paused game's menu still
-//! moves, one setting turns every motion off at once or at the start, a game's own `SlideIn` works
-//! and is never replaced, and nothing is written once a slide is spent.
+//! moves, one setting turns every motion off at once or at the start, a game's own `MotionTarget`
+//! works and is never replaced, and nothing is written once a slide is spent.
 
 use std::time::Duration;
 
@@ -118,8 +118,20 @@ fn offset(app: &App, entity: Entity) -> Vec2 {
     Vec2::new(px(at.x), px(at.y))
 }
 
-fn sliding(app: &App, entity: Entity) -> bool {
-    app.world().get::<SlideIn>(entity).is_some()
+/// Whether the crate gave `entity` a track.
+fn has_track(app: &App, entity: Entity) -> bool {
+    app.world().get::<MotionTarget>(entity).is_some()
+}
+
+/// Frames of the test clock a snappy spring needs to settle a rise of [`DIALOG_SLIDE_PX`], and one
+/// frame more: what "settled" means for an entrance.
+fn settle_frames(scale: f32) -> usize {
+    let spring = GooeySkin::default().motion.snappy.scaled(scale);
+    let from = model::SpringState {
+        value: DIALOG_SLIDE_PX,
+        velocity: 0.0,
+    };
+    (model::spring_settle_seconds(spring, from, 0.0) / FRAME).ceil() as usize + 1
 }
 
 #[test]
@@ -134,16 +146,17 @@ fn a_dialogs_card_rises_from_below_and_settles_in_the_time_it_has() {
         "the first frame is partway: {first:?}"
     );
     let mut last = first.y;
-    // 0.18 s is six frames of 30 ms; every frame before the end is lower than the one before.
+    // A spring from rest only comes down: every frame is lower than the one before until it is at
+    // rest on its place.
     for _ in 0..4 {
         app.update();
         let now = offset(&app, card).y;
         assert!(now < last && now > 0.0, "{now} after {last}");
         last = now;
     }
-    frames(&mut app, 3);
+    frames(&mut app, settle_frames(1.0));
     assert_eq!(offset(&app, card), Vec2::ZERO);
-    assert!(!sliding(&app, card), "a spent slide takes itself off");
+    assert!(has_track(&app, card), "the card keeps its track, at rest");
 }
 
 #[test]
@@ -153,7 +166,7 @@ fn with_motion_off_a_card_is_in_place_in_its_first_frame_and_never_slides() {
     let card = confirm(&mut app);
     app.update();
     assert_eq!(offset(&app, card), Vec2::ZERO);
-    assert!(!sliding(&app, card));
+    assert!(!has_track(&app, card));
 }
 
 #[test]
@@ -165,7 +178,6 @@ fn turning_motion_off_ends_a_running_slide_in_the_next_frame() {
     app.insert_resource(MotionSettings::off());
     app.update();
     assert_eq!(offset(&app, card), Vec2::ZERO);
-    assert!(!sliding(&app, card));
 }
 
 #[test]
@@ -175,10 +187,10 @@ fn a_slower_scale_takes_proportionally_longer() {
         duration_scale: 2.0,
     });
     let card = confirm(&mut app);
-    // 0.18 s × 2 is twelve frames: still moving after eight, settled after thirteen.
-    frames(&mut app, 8);
+    // Twice the length: still moving when the normal one would be done, settled when twice is.
+    frames(&mut app, settle_frames(1.0) - 1);
     assert!(offset(&app, card).y > 0.0);
-    frames(&mut app, 5);
+    frames(&mut app, settle_frames(2.0));
     assert_eq!(offset(&app, card), Vec2::ZERO);
 }
 
@@ -190,7 +202,7 @@ fn a_paused_games_dialog_still_slides() {
     frames(&mut app, 2);
     let mid = offset(&app, card).y;
     assert!(mid > 0.0 && mid < DIALOG_SLIDE_PX, "{mid}");
-    frames(&mut app, 6);
+    frames(&mut app, settle_frames(1.0));
     assert_eq!(offset(&app, card), Vec2::ZERO);
 }
 
@@ -201,7 +213,7 @@ fn the_command_palettes_card_rises_like_a_dialogs() {
     frames(&mut app, 2);
     let card = app
         .world_mut()
-        .query_filtered::<Entity, With<SlideIn>>()
+        .query_filtered::<Entity, With<MotionTarget>>()
         .iter(app.world())
         .find(|&e| {
             app.world()
@@ -221,7 +233,7 @@ fn a_panel_on_a_screen_does_not_slide() {
         .id();
     frames(&mut app, 3);
     let card = app.world().get::<Children>(screen).expect("child")[0];
-    assert!(!sliding(&app, card));
+    assert!(!has_track(&app, card));
     assert_eq!(offset(&app, card), Vec2::ZERO);
 }
 
@@ -273,7 +285,7 @@ fn a_popover_opens_from_closer_to_its_anchor_and_only_once_it_is_drawn() {
         shown > 0.0 && shown < POPOVER_SLIDE_PX,
         "the frame it is drawn it is already moving: {shown}"
     );
-    frames(&mut app, 8);
+    frames(&mut app, settle_frames(1.0));
     assert_eq!(reach(&app, panel), None, "a spent slide takes itself off");
 }
 
@@ -288,7 +300,7 @@ fn a_popover_lands_where_it_does_with_no_motion_and_comes_from_the_anchor() {
     );
     // Until it is drawn, then partway through its slide, and once it is over.
     let mut mid = None;
-    for _ in 0..12 {
+    for _ in 0..40 {
         moving.update();
         still.update();
         if mid.is_none() && reach(&moving, a).is_some_and(|r| r > 0.0 && r < POPOVER_SLIDE_PX) {
@@ -344,28 +356,36 @@ fn a_game_can_slide_its_own_panel_and_the_crate_never_replaces_it() {
     let mut app = app();
     let own = app
         .world_mut()
-        .spawn((Node::default(), SlideIn::new(Vec2::new(-30.0, 0.0), 0.09)))
+        .spawn((
+            Node::default(),
+            MotionTarget::default().entering_from(Vec2::new(-30.0, 0.0)),
+        ))
         .id();
     app.update();
     let first = offset(&app, own);
     assert!(first.x < 0.0 && first.x > -30.0, "{first:?}");
-    frames(&mut app, 4);
+    frames(&mut app, settle_frames(1.0) * 3);
     assert_eq!(offset(&app, own), Vec2::ZERO);
-    assert!(!sliding(&app, own));
 
-    // A card that comes with a slide of its own keeps it.
+    // A card that comes with a track of its own keeps it.
     let card = app
         .world_mut()
         .spawn((
             dialog(),
-            children![(panel(), SlideIn::new(Vec2::new(0.0, 40.0), 0.3))],
+            children![(
+                panel(),
+                MotionTarget::default().entering_from(Vec2::new(0.0, 40.0))
+            )],
         ))
         .id();
     app.update();
     let card = app.world().get::<Children>(card).expect("a card")[0];
     assert_eq!(
-        app.world().get::<SlideIn>(card).expect("kept").from,
-        Vec2::new(0.0, 40.0)
+        app.world()
+            .get::<MotionTarget>(card)
+            .expect("kept")
+            .enter_from,
+        Some(Vec2::new(0.0, 40.0))
     );
 }
 
@@ -373,7 +393,7 @@ fn a_game_can_slide_its_own_panel_and_the_crate_never_replaces_it() {
 fn nothing_is_written_once_a_slide_is_spent() {
     let mut app = app();
     confirm(&mut app);
-    frames(&mut app, 12);
+    frames(&mut app, settle_frames(1.0));
     let before = app.world().resource::<Moves>().0;
     for _ in 0..30 {
         app.update();
