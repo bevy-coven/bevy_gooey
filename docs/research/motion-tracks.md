@@ -93,7 +93,25 @@ reverses *from where it is* instead of snapping to its start. No visible bounce 
   change between its first and second recorded frame (nothing animates merely because it appeared).
   A dialog card's entrance starts on its first frame, by design, so its test asserts the start pose
   instead.
+- Rune's rest rule has an absolute speed limit (ten times the position tolerance a second), so a spring
+  stretched to twice its length settles *sooner* than twice as late (measured: 0.63 s against 1.17 s
+  for a 100 px move, 3 frames short of "doubles ±1 frame"). The crate's tracks, the popover slide and
+  the meter use `model::spring_settled`, whose speed limit is `tolerance × ω` (it would move less than
+  the tolerance in the time it takes to turn): scale-free, so `duration_scale` doubles the settle time.
+  `spring_at_rest` keeps Rune's absolute rule as the issue names it.
+- The meter's gain was an exponential ease (τ 0.08 s); it is now `motion.snappy`, which takes about
+  twice as long to arrive (0.25 s perceptual, ≈0.45 s to rest) and carries its speed into a higher
+  target. `MeterShown` gained `speed` and `aim`: with a bounce above 0 the fill passes its target, and
+  coming back to the *same* target is not a loss (a lower target is).
 - Bounce ≥ 0.4 is allowed by the type (Apple allows it) but the palette never uses it.
+
+## Measured
+
+(Numbers from this pass's tests, snappy spring 0.25 s, bounce 0, a 30 ms frame.)
+
+- A dialog card rise of 12 px: first drawn frame 9.9 px low, settled (`spring_settle_seconds`) in about
+  0.44 s; the old ease-out was 0.18 s. The largest frame step of an open is 2.1 px; reopening a card
+  0.05 s into a close has no larger step.
 
 ## Pending index
 
