@@ -829,26 +829,24 @@ fn idle_frames_write_nothing() {
 /// How far the run's middle sits from the middle of its node, in logical px, and whether the
 /// node is wider than the run (so the centring is measurable at all).
 ///
-/// A `Text` node's glyphs are drawn from the node's content box, and each glyph's `position` is
-/// its middle within the run. A run pinned to the left therefore leaves all of the slack its
-/// `min_width` added on the right, which is what a single character in a keycap's square did.
+/// A `Text` node's glyphs are drawn from the node's content box. A run pinned to the left
+/// therefore leaves all of the slack its `min_width` added on the right, which is what a single
+/// character in a keycap's square did.
+///
+/// The middle is the **run's** own: `TextLayoutInfo::size.x` is the width Bevy shaped, and the
+/// content box is where it draws from. It is deliberately not the midpoint of the first and last
+/// glyphs, which is not a run's middle: a `PositionedGlyph::position` is its quad's centre, so
+/// that midpoint sits at `content.min + size/2 + (w_first - w_last)/2` — a number the layout
+/// cannot move, because both glyphs travel together. It read the chord `⌃⇧Z` (a 6 px `⌃` and a
+/// 10 px `Z`) as 1.5 px off centre while the run was dead-centre, which is issue #75.
 fn cap_off_centre(app: &App, entity: Entity) -> (f32, bool) {
     let node = app.world().get::<ComputedNode>(entity).expect("laid out");
     let info = app.world().get::<TextLayoutInfo>(entity).expect("a run");
-    let middle = info
-        .glyphs
-        .iter()
-        .map(|glyph| glyph.position.x)
-        .fold(f32::NEG_INFINITY, f32::max)
-        .midpoint(
-            info.glyphs
-                .iter()
-                .map(|glyph| glyph.position.x)
-                .fold(f32::INFINITY, f32::min),
-        );
-    // The cap's own square is wider than its words: that is the slack the box must share.
+    let content = node.content_box();
+    // These rects are object-centred: the node's own middle is `border_box().center().x`, not
+    // half its width.
     (
-        node.content_box().min.x + middle,
+        content.min.x + info.size.x / 2.0 - node.border_box().center().x,
         node.size().x > info.size.x + 0.5,
     )
 }
