@@ -169,6 +169,7 @@ mod number;
 mod options;
 mod palette;
 mod popover;
+mod presence;
 mod progress;
 mod prompt;
 mod radial;
@@ -282,6 +283,10 @@ pub use palette::{
 pub use popover::{
     CloseReason, Placement, PopoverClosed, PopoverPanel, PopoverPoint, anchor_pointer_popovers,
     close_popovers_on_press, drop_pointer_anchors, reveal_popovers,
+};
+pub use presence::{
+    Leave, Leaving, Opacity, PRESENCE_GONE, Stay, begin_leaves, begin_stays, spread_opacity,
+    update_presence,
 };
 pub use progress::{
     Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
@@ -498,6 +503,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<HoldSettings>()
             .register_type::<MotionTarget>()
             .register_type::<InstantMotion>()
+            .register_type::<Opacity>()
+            .register_type::<Leave>()
+            .register_type::<Stay>()
             .register_type::<MotionToken>()
             .register_type::<ToastAnchor>()
             .register_type::<ToastInset>()
@@ -521,6 +529,7 @@ impl Plugin for GooeyStylePlugin {
                 (
                     (
                         (begin_entrances, update_motion).chain(),
+                        (begin_leaves, begin_stays, update_presence, spread_opacity).chain(),
                         update_toasts,
                         update_notification_centers,
                         update_slot_grids,

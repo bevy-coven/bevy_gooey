@@ -168,8 +168,9 @@ fn close(commands: &mut Commands, popover: Entity, anchor: Entity, reason: Close
         });
         if world.get::<MenuPanel>(popover).is_some() {
             close_menu(world, popover);
-        } else if let Ok(entity) = world.get_entity_mut(popover) {
-            entity.despawn();
+        } else if let Ok(mut entity) = world.get_entity_mut(popover) {
+            // It stays drawn while it goes, and stops taking the pointer at once.
+            entity.insert(crate::Leave);
         }
     });
 }
