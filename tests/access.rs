@@ -754,7 +754,10 @@ fn a_node_declares_exactly_the_actions_its_widget_takes() {
     );
     let name = {
         let world = app.world_mut();
-        let mut fields = world.query_filtered::<(Entity, &TextInputOf), Without<NumberInput>>();
+        let mut fields = world.query_filtered::<
+            (Entity, &TextInputOf),
+            (With<bevy::ui_widgets::TextInput>, Without<NumberInput>),
+        >();
         let (field, _) = fields.iter(world).next().expect("a text field");
         field
     };
