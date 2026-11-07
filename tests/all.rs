@@ -30,6 +30,7 @@ mod hold;
 mod icon;
 mod inspector;
 mod large_text;
+mod layout_motion;
 mod leaf;
 mod lines;
 mod list;

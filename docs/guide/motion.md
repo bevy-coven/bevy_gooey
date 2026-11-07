@@ -117,6 +117,26 @@ carries. Do not put one on a `Popover`: Bevy's `Popover` measures where its pane
 `UiTransform` every frame, which would undo it (the crate's own popovers slide by their gap to the
 anchor instead, `PopoverSlide`).
 
+## Moving with layout: `MovesSmoothly`
+
+```rust,ignore
+// Cards in a row that slide over when one is taken out, instead of jumping.
+commands.spawn((Node::default(), children![(panel(), MovesSmoothly), (panel(), MovesSmoothly)]));
+```
+
+A node with `MovesSmoothly` that layout puts somewhere else inside its parent is drawn where it was and
+travels to the new place on the skin's `motion.default` spring, keeping its speed if it is moved again
+on the way. Its children ride it. Layout is at the new place from the first frame: only the drawing
+moves, and the picking with it. The corner is what is tracked, so a node that only grows does not move
+(the one under it does).
+
+A move lands at once in a node's first two frames (`LAYOUT_QUIET_FRAMES`), in the two frames after a
+new window size, scale or skin and after the node gets a new parent, when its parent scrolls, and under
+reduced or no motion. The two frames are there so that a fitting pass, which reads one frame's layout
+and moves things in the next, never makes a resize glide. The crate marks tabs; a dock's tabs are spawned again on each change to the dock's layout, so they do not travel yet (G-63). Toasts
+glide on their own room, and toolbar and status items are moved by a fitting pass, so they are not
+marked; a game marks what it likes. `LayoutTravel::offset()` says how far from its place a node is drawn.
+
 ## Testing motion
 
 With the `testing` feature, `testing::MotionTrace` records a node's pose frame by frame on a manual

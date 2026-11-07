@@ -162,6 +162,7 @@ mod hold;
 mod icon;
 #[cfg(feature = "reflect")]
 mod inspector;
+mod layout_motion;
 mod list;
 mod menu;
 mod meter;
@@ -236,6 +237,9 @@ pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
 pub use inspector::{
     InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange, build_inspectors,
     inspector, sync_inspectors,
+};
+pub use layout_motion::{
+    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, mark_moving_parts, update_layout_motion,
 };
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use menu::{
@@ -501,6 +505,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ToastStack>()
             .register_type::<ToastSettings>()
             .register_type::<MotionSettings>()
+            .register_type::<MovesSmoothly>()
             .register_type::<HoldToConfirm>()
             .register_type::<HoldProgress>()
             .register_type::<HoldConfirmed>()
@@ -533,6 +538,7 @@ impl Plugin for GooeyStylePlugin {
                 (
                     (
                         (begin_entrances, update_motion).chain(),
+                        mark_moving_parts,
                         (
                             begin_leaves,
                             begin_stays,
@@ -587,6 +593,14 @@ impl Plugin for GooeyStylePlugin {
             );
         // The one system that is not in `Update`: it needs this frame's transforms.
         anchor::add_systems(app);
+        // Layout motion reads where this frame's layout put a node and moves its drawing back to
+        // where it was, so it runs between Bevy's layout and everything that reads the result.
+        app.add_systems(
+            PostUpdate,
+            update_layout_motion
+                .after(UiSystems::Layout)
+                .before(UiSystems::PostLayout),
+        );
         // So the keycap's centring: it needs this frame's shaped text.
         app.add_systems(
             PostUpdate,
