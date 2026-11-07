@@ -53,6 +53,8 @@ pub(crate) enum Move {
     Last,
     /// The next option, wrapping from the last to the first.
     Next,
+    /// That option (held to the last); type-select's move.
+    To(usize),
 }
 
 /// A request to move a choice. A step past an end, or onto the option already selected, is no
@@ -81,6 +83,7 @@ pub(crate) fn choice_on_move(
         Move::First => 0,
         Move::Last => last,
         Move::Next => choice_next(selected, len),
+        Move::To(index) => index.min(last),
     };
     if to != value.0 {
         commands.trigger(ValueChange {

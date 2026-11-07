@@ -37,11 +37,12 @@ use crate::list::ListView;
 use crate::model::{
     MIN_TARGET_PX, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, SPLIT_KEY_STEP_PX, TABLE_LEAST_COLUMN,
     TableStep, column_resize, natural_cmp, repeat_steps, scroll_to_reveal, table_anchor,
-    table_step, table_window, tree_indent,
+    table_step, table_window, tree_indent, type_ahead,
 };
 use crate::nav::show_focus;
 use crate::skin::{GooeySkin, Role, SkinScope};
-use crate::tree::{Lead, Tree, bind_lead, spawn_lead};
+use crate::tree::{Lead, Tree, TreeView, bind_lead, spawn_lead};
+use crate::type_select::{TypedPrefix, plain, starts_with_ignore_case, typed_characters};
 use crate::widgets::{ONE_LINE, list_rail};
 
 /// How many rows tall a table stands unless it carries its own [`TableRows`].
@@ -1325,9 +1326,10 @@ type Typed = (
 /// The keys and the pad on a focused table: Up and Down move the cursor row (the D-pad too, held
 /// to repeat), Page Up and Page Down a page (the triggers too), Home and End the first and last
 /// rows of the data, Space selects the cursor row (toggles it in a [`SelectMode::Multi`] table),
-/// Ctrl and A select every row, Enter and the pad's South button open it ([`RowActivated`]). Shift
-/// extends the selection and Ctrl moves the cursor and leaves the selection where it is. Shows
-/// focus. Runs in [`crate::GooeySystems::Navigate`], after [`crate::navigate_by_input`], which
+/// Ctrl and A select every row, Enter and the pad's South button open it ([`RowActivated`]), and
+/// typing goes to the next row whose first column starts with what was typed within a second
+/// (type-select, scrolled into view; a tree keeps `*`). Shift extends the selection and Ctrl moves
+/// the cursor and leaves the selection where it is. Shows focus. Runs in [`crate::GooeySystems::Navigate`], after [`crate::navigate_by_input`], which
 /// leaves Up and Down to a table that has a row to move to that way and lets focus leave it from
 /// its first and last rows.
 #[allow(clippy::too_many_arguments)]
@@ -1339,6 +1341,8 @@ pub fn table_by_input(
     mut shown: ResMut<InputFocusVisible>,
     gamepads: Query<&Gamepad>,
     mut tables: Query<Typed, Without<InteractionDisabled>>,
+    trees: Query<(), With<TreeView>>,
+    mut prefix: ResMut<TypedPrefix>,
     mut held: Local<(i8, f32)>,
     mut commands: Commands,
 ) {
@@ -1413,7 +1417,13 @@ pub fn table_by_input(
     }
     open |= pad_pressed(GamepadButton::South);
 
-    let handled = !steps.is_empty() || toggle || all || open;
+    // Type-select: a tree keeps `*` for opening a node's siblings.
+    let mut characters = typed_characters(&typed, plain(&keys));
+    if trees.contains(entity) {
+        characters.retain(|c| c != '*');
+    }
+
+    let handled = !steps.is_empty() || toggle || all || open || !characters.is_empty();
     if !handled {
         return;
     }
@@ -1451,6 +1461,24 @@ pub fn table_by_input(
                 entity,
                 at,
                 how,
+                true,
+                (mode, &mut selection, &mut cursor, &mut cache),
+                &mut commands,
+            );
+        }
+    }
+    if !characters.is_empty() {
+        let (needle, len) = prefix.needle(entity, time.elapsed_secs(), &characters);
+        let found = type_ahead(cache.keys.len(), cache.index_of(cursor.0), len, |i| {
+            // The cache is rebuilt in Style; rows a source lost earlier this frame are no match.
+            let row = cache.order.get(i).copied().unwrap_or(i);
+            row < table.len() && starts_with_ignore_case(&table.source.cell(row, 0), &needle)
+        });
+        if let Some(at) = found {
+            pick(
+                entity,
+                at,
+                Pick::Only,
                 true,
                 (mode, &mut selection, &mut cursor, &mut cache),
                 &mut commands,

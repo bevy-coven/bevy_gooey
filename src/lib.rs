@@ -188,6 +188,7 @@ mod toast;
 mod toolbar;
 mod tooltip;
 mod tree;
+mod type_select;
 mod widgets;
 
 pub use anchor::{AnchorPinned, OffScreen, WorldAnchor, WorldAnchors, update_world_anchors};
@@ -329,6 +330,7 @@ pub use toolbar::{
 };
 pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
+pub use type_select::TypedPrefix;
 pub use widgets::{
     binding, button, card_grid, check_item, choice, color_field, command_palette, context_menu,
     dialog, dock, heading, hold_button, icon, icon_button, interface_size, label, list, menu,
@@ -607,6 +609,7 @@ impl Plugin for GooeyNavPlugin {
             .register_type::<PointerSettings>()
             .register_type::<ClickCount>()
             .init_resource::<clicks::Presses>()
+            .init_resource::<TypedPrefix>()
             .add_observer(clicks::presses_on_press)
             .add_observer(clicks::presses_on_drag)
             .add_observer(clicks::presses_on_click)
@@ -672,6 +675,7 @@ impl Plugin for GooeyNavPlugin {
                         navigate_by_input.run_if(not_capturing),
                         table_by_input.run_if(not_capturing),
                         tree_by_input.run_if(not_capturing),
+                        type_select::type_select_by_input,
                     )
                         .chain(),
                     (

@@ -76,10 +76,13 @@ placement, its outside-press close, its `Cancel` and its focus in and back are t
 the window's edge. A menu taller than the room the window leaves is capped there and scrolls, the wheel and
 the focus following.
 
+## Typing a name
+
+With an open menu's item focused, typing goes to the next item whose label starts with what was typed within a second ("s" is Save, "s" again Save as..., a pause starts over); Space, and anything typed with Ctrl, Alt or Super held, is not a name. The same type-select is in [lists](lists.md), [tables](tables.md), [trees](trees.md) and a [select](select.md) of eight options or fewer.
+
 ## What is not here
 
 - No hover-to-open for submenus and no safe triangle: a submenu opens on Right, Enter, Space or a click.
-- No type-ahead (the first letter of a label).
 - A game's own chord for a command is the game's: the row shows it, `Shortcut::just_pressed` matches it.
 - Bevy's `bevy_ui_widgets::menu` is not used: it closes a menu when focus leaves it, holds one menu open at a
   time and has no submenus.

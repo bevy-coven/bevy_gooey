@@ -72,6 +72,7 @@ mod tones;
 mod toolbar;
 mod tooltip;
 mod tree;
+mod type_select;
 
 /// The files in `tests/` and the `mod` lines above are the same set.
 #[test]

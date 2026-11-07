@@ -128,6 +128,11 @@ pub struct MenuItem {
 }
 
 impl MenuItem {
+    /// The words on the row.
+    pub(crate) fn label(&self) -> &str {
+        &self.label
+    }
+
     pub(crate) fn command(label: impl Into<String>) -> Self {
         Self::of(label, Kind::Command, false)
     }

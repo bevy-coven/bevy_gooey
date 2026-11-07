@@ -6,8 +6,11 @@
 
 - `DoublePress { entity }`, `ClickCount(u8)` and `PointerSettings { double_click_seconds: 0.5, double_click_slop_px: 4.0 }` (#62, `docs/research/double-press.md`, `docs/guide/pointer.md`): a desktop's double click. A second primary press on the same entity within the interval of the first and within the slop of where it was, let go there, is one `DoublePress` (an `EntityEvent` that bubbles like the click), sent in the second click's frame; the first click still lands at once; a press held past the interval or dragged past the slop pairs with nothing; a third quick click starts a new pair; keys never pair. `ClickCount` is on the pressed entity while the press is held, 1, 2, 3 for a run of quick presses, for a drag to read. The clock is `Time<Real>`. Measured from Rune's runtime (open reference, `f73f72c`).
 
+- Type-select (#63, `docs/research/type-select.md`): in a table (its first column), a list (each focusable row's words), an open menu (its items) and a select of eight options or fewer, typing goes to the next row whose label starts with what was typed within a second, as a tree already did: one letter again cycles, a pause or a new group starts over, the target is scrolled into view, Space and Ctrl, Alt or Super chords are not names, and a text field or a binding row waiting for a key takes the characters instead. One prefix for the keyboard, `TypedPrefix`; the rule is `model::type_ahead`. Measured from Rune's focus runtime (open reference, `f73f72c`).
+
 ### Changed
 
+- A tree's type-ahead is the table's type-select now (`table_by_input`); `tree_by_input` keeps Left, Right and `*`. The prefix is shared and resets when focus moves to another group, so leaving a tree and coming back within a second no longer starts the prefix over.
 - The split's divider, the table's rows and the tree's rows open on `DoublePress` instead of Bevy's `PointerClick::count == 2`: a third quick click no longer swallows the next pair, two clicks 5 px apart or a held press then a click no longer open, and the interval is read on `Time<Real>` rather than the wall clock.
 ## [0.38.0] - 2026-11-07
 

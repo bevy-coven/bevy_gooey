@@ -30,3 +30,7 @@ fn load_game(mut commands: Commands) {
 - PageUp and PageDown, and the pad's left and right triggers, move focus a viewport up or down the list in one press. Up and Down stay among a list's rows until they run out (rows the list has clipped lie further off than the button under it, so geometry alone would step out past them), and a row the list has clipped away is never the neighbour of a widget outside it.
 - To scroll from code, set the `ScrollPosition` on the `ListView` entity (the first child of the list's root). A list builds every row it is given, so it is for tens of rows, not thousands; a list at its end does not scroll the panel behind it; a wheel notch is Bevy's 100 px.
 - A list is not announced to screen readers yet: Bevy's `ScrollArea` and `Scrollbar` carry no accessibility node.
+
+## Typing a name
+
+With a row of a list focused, typing goes to the next shown, enabled row whose words start with what was typed within a second, and the list scrolls it into view: "c" is the first row starting with c after the focused one, "c" again the next, "ce" the first starting "ce", and a pause starts over. Space presses the row, as ever, and is not a name; nothing happens while a text field in the list has focus. A row's words are its own text or the first text under it.

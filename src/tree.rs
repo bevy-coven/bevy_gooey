@@ -20,7 +20,7 @@ use bevy::ui::InteractionDisabled;
 use bevy::ui_widgets::observe;
 
 use crate::clicks::DoublePress;
-use crate::model::{TYPE_AHEAD_SECS, tree_ends, tree_heir, tree_parent, tree_visible, type_ahead};
+use crate::model::{tree_ends, tree_heir, tree_parent, tree_visible};
 use crate::nav::show_focus;
 use crate::skin::Role;
 use crate::table::{
@@ -580,12 +580,6 @@ type Typed = (
     &'static mut TableCache,
 );
 
-/// Whether `label` starts with `prefix` (already lower case), without regard to case.
-fn starts_with_ignore_case(label: &str, prefix: &str) -> bool {
-    let mut letters = label.chars().flat_map(char::to_lowercase);
-    prefix.chars().all(|p| letters.next() == Some(p))
-}
-
 /// What a tree key does to the cursor node.
 enum Act {
     Open(u64),
@@ -597,19 +591,17 @@ enum Act {
 /// Ctrl+A, Enter and the pad's South are [`crate::table_by_input`]'s): Right opens a closed node,
 /// or goes to the first child of an open one; Left closes an open node, or goes to the parent of
 /// a closed one or an end node (the D-pad's Left and Right too); `*` opens every sibling of the
-/// cursor node; and typing goes to the next shown node whose label starts with the characters typed
-/// within a second ([`type_ahead`]). Shows focus. Runs in [`crate::GooeySystems::Navigate`], after
+/// cursor node (typing a node's name is the table's type-select, `crate::table_by_input`). Shows
+/// focus. Runs in [`crate::GooeySystems::Navigate`], after
 /// [`crate::navigate_by_input`], which leaves Left and Right to a tree.
 #[allow(clippy::too_many_arguments)]
 pub fn tree_by_input(
-    time: Res<Time<Real>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut presses: MessageReader<KeyboardInput>,
     focus: Res<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     gamepads: Query<&Gamepad>,
     mut trees: Query<Typed, (With<TreeView>, Without<InteractionDisabled>)>,
-    mut prefix: Local<(String, f32)>,
     mut commands: Commands,
 ) {
     let typed: Vec<KeyboardInput> = presses
@@ -618,7 +610,6 @@ pub fn tree_by_input(
         .cloned()
         .collect();
     let Some(entity) = focus.get().filter(|&f| trees.contains(f)) else {
-        prefix.0.clear();
         return;
     };
     let Ok((mut table, mode, mut selection, mut cursor, mut cache)) = trees.get_mut(entity) else {
@@ -631,7 +622,7 @@ pub fn tree_by_input(
     let pad = |button| gamepads.iter().any(|g| g.just_pressed(button));
 
     let mut sideways: Vec<i8> = Vec::new();
-    let (mut star, mut characters) = (false, String::new());
+    let mut star = false;
     for press in &typed {
         if !plain {
             continue;
@@ -640,9 +631,6 @@ pub fn tree_by_input(
             (KeyCode::ArrowLeft, _) => sideways.push(-1),
             (KeyCode::ArrowRight, _) => sideways.push(1),
             (_, Key::Character(c)) if c.as_str() == "*" => star = true,
-            (_, Key::Character(c)) if c.chars().all(|ch| !ch.is_control()) => {
-                characters.push_str(c.as_str());
-            }
             _ => {}
         }
     }
@@ -652,7 +640,7 @@ pub fn tree_by_input(
     if pad(GamepadButton::DPadRight) {
         sideways.push(1);
     }
-    if sideways.is_empty() && !star && characters.is_empty() {
+    if sideways.is_empty() && !star {
         return;
     }
     show_focus(&mut shown);
@@ -708,41 +696,6 @@ pub fn tree_by_input(
             .collect();
         for key in closed {
             toggle(entity, &mut table, key, Some(true), &mut commands);
-        }
-    }
-
-    if !characters.is_empty() {
-        let now = time.elapsed_secs();
-        if now - prefix.1 > TYPE_AHEAD_SECS {
-            prefix.0.clear();
-        }
-        prefix.1 = now;
-        prefix
-            .0
-            .extend(characters.chars().flat_map(char::to_lowercase));
-        // The same letter again is "the next one": a prefix of one letter repeated is that letter.
-        let first = prefix.0.chars().next();
-        let needle = match first {
-            Some(c) if prefix.0.chars().all(|p| p == c) => c.to_string(),
-            _ => prefix.0.clone(),
-        };
-        let found = table.source::<Tree>().and_then(|tree| {
-            type_ahead(
-                tree.len(),
-                cache.index_of(cursor.0),
-                needle.chars().count(),
-                |i| starts_with_ignore_case(&tree.cell(i, 0), &needle),
-            )
-        });
-        if let Some(index) = found {
-            pick(
-                entity,
-                index,
-                Pick::Only,
-                true,
-                chosen(mode, &mut selection, &mut cursor, &mut cache),
-                &mut commands,
-            );
         }
     }
 }
