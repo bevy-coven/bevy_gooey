@@ -5,7 +5,9 @@ one frame, and a HUD meter that loses health leaves the lost length behind its f
 There is nothing to write for any of it, and one setting turns it all off.
 
 ```rust,ignore
-// A game's "Reduce motion" option:
+// A game's "Reduce motion" option: nothing travels, fades stay.
+commands.insert_resource(MotionSettings::reduced());
+// Or no motion at all, fades included.
 commands.insert_resource(MotionSettings::off());
 ```
 
@@ -69,13 +71,25 @@ HUD draws and writes exactly what it did before. The gallery stages it: `GOOEY_K
 
 ## The one setting
 
-`MotionSettings { duration_scale }` is a resource (serde, `Reflect`; `GooeyStylePlugin` adds it with the
-default 1):
+`MotionSettings { duration_scale, reduced }` is a resource (serde, `Reflect`; `GooeyStylePlugin` adds it
+with the defaults 1 and `false`):
 
-- `1.0` as designed; `2.0` takes twice as long.
-- `0.0`, or `MotionSettings::off()`, is "Reduce motion": nothing starts, and a slide or a trail that is
-  running ends in the next frame. WCAG 2.2 SC 2.3.3 (Animation from Interactions) asks that motion triggered by
-  interaction can be turned off unless it is essential, and an entrance never is.
+- `duration_scale` `1.0` as designed; `2.0` takes twice as long.
+- `reduced: true`, or `MotionSettings::reduced()`, is "Reduce motion": the crate's travel lands and fades
+  still run. Every `MotionTarget` lands at once, and so do a popover's slide and a meter's fill; a spinner
+  and a hold bar are progress, not travel, and keep moving.
+  A dialog's card and a popover panel are in place on their first frame and fade in over the skin's
+  `motion.fade_seconds` (0.15 s, times `duration_scale`) on an ease-in-out, and an exit (`Leave`) still
+  fades out. Turning it on mid-flight lands what is travelling in the next frame and lets a fade finish.
+- `duration_scale` `0.0`, or `MotionSettings::off()`, is no motion at all: nothing starts, fades included,
+  and a slide or a trail that is running ends in the next frame. Off wins over reduced. WCAG 2.2 SC 2.3.3
+  (Animation from Interactions) asks that motion triggered by interaction can be turned off unless it is
+  essential, and an entrance never is.
+
+`motion_row("Motion")` is the options screen's row for it: Full, Reduced and Off (`MOTION_STEPS`). Full and
+Reduced keep the player's own `duration_scale` (1 coming from Off), a step writes `MotionSettings` and
+nothing else, and a hand-written value shows the step it is in (`motion_step`). A host that localises
+the words writes its own `choice` with `with_motion_step`.
 
 The crate cannot read the operating system's own reduced-motion preference (Bevy has no way to), so a
 game wires its own option, or reads the platform's and sets this.

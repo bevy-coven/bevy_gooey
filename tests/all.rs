@@ -50,6 +50,7 @@ mod progress;
 mod prompts;
 mod radial;
 mod readme;
+mod reduced_motion;
 mod region;
 mod scale;
 mod scope;

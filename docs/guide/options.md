@@ -1,6 +1,6 @@
 # Player options the crate owns
 
-`text_size`, `interface_size`, `pad_style` and `skin_preset` are the options-screen rows for the four settings this crate itself reads. Each is one line, needs no observer and no state of your own, and the whole screen answers the frame the player steps it:
+`text_size`, `interface_size`, `pad_style`, `skin_preset` and `motion_row` are the options-screen rows for the five settings this crate itself reads. Each is one line, needs no observer and no state of your own, and the whole screen answers the frame the player steps it:
 
 ```rust
 use bevy::prelude::*;
@@ -26,6 +26,7 @@ fn display_page(mut commands: Commands) {
 | `interface_size(label)` | how large the whole interface is, on top of the window's share | `UiScaleSettings::scale` | 75%, 100%, 125%, 150% (`INTERFACE_SIZE_STEPS`) |
 | `pad_style(label)` | whose button names a pad shows | `BindingSettings::pad_style` | Xbox, PlayStation, Switch (`PAD_STYLES`) |
 | `skin_preset(label)` | the look: the colours of every widget | `GooeySkin`'s colours, and no size | Dark, Parchment, High contrast, Tool (`SkinPreset::ALL`; Tool is the compact look, but a step writes its colours only) |
+| `motion_row(label)` | how much the interface moves | `MotionSettings` (`reduced`, and `duration_scale` for Off) | Full, Reduced, Off (`MOTION_STEPS`; Full and Reduced keep the player's own `duration_scale`) |
 
 Text size is the one the Xbox Accessibility Guideline 101 and WCAG 2.2 (1.4.4) ask for: text that resizes to 200% "without loss of content or functionality", and the rule that it reaches everything the player reads, the dialog, the toast and the legend as well as the menu. `GooeySkin::text_scale` is read by every part, so the row only has to write it. Interface size enlarges the panels and the targets too, and goes below 100% for the player who wants the interface to cover less of the game; EVE Online's UI scaling tops out at 150%, as this one does.
 
@@ -41,7 +42,7 @@ A row is a [`choice`](controls.md) (Bevy's `Button`, one tab stop, Left and Righ
 - **The label is yours.** Every widget takes its string from the host; the options of the first three rows are percentages and the makers' names, so there is nothing else to localise. The theme's are English words ("Dark", "Parchment", "High contrast"): a host that localises writes a `choice` over its own strings, with `SkinPreset::ALL` for the order and `GooeySkin::with_colours_of` for the step.
 - **Plugins.** The rows' systems are `GooeyStylePlugin`'s. `interface_size` also needs `GooeyScalePlugin` for the setting itself: without it the row steps and nothing is drawn differently, and nothing panics.
 
-Other steps, or a setting of your own, are a `choice` and eight lines: the steps in a table, an observer that indexes it, and a write when you load. The four rows exist because the crate owns these settings and so can keep them true without you.
+Other steps, or a setting of your own, are a `choice` and eight lines: the steps in a table, an observer that indexes it, and a write when you load. The five rows exist because the crate owns these settings and so can keep them true without you.
 
 ## Every step holds
 

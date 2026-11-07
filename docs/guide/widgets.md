@@ -23,7 +23,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `command_palette()` | a modal field over every command in `CommandList`, fuzzy-ranked, with chords and reasons; Enter or a click sends one `RunCommand` — see [the command palette](command-palette.md) |
 | `toggle`, `choice`, `slider` | the options-screen controls, on Bevy's own `Checkbox`, `Button` and `Slider` — see [controls](controls.md) |
 | `radial` | a weapon wheel: items on a ring a stick, the pointer or the D-pad points at — see [radial menu](radial.md) |
-| `text_size`, `interface_size`, `pad_style`, `skin_preset` | the player's text size, interface size, controller and theme (Dark, Parchment, High contrast, Tool), as `choice` rows that edit the crate's own settings and follow them, with nothing to wire — see [player options](options.md) |
+| `text_size`, `interface_size`, `pad_style`, `skin_preset`, `motion_row` | the player's text size, interface size, controller, theme (Dark, Parchment, High contrast, Tool) and motion (Full, Reduced, Off), as `choice` rows that edit the crate's own settings and follow them, with nothing to wire — see [player options](options.md) |
 | `tabs`, `tab_page` | a strip of labels over pages of widgets, turned by a click, the arrows and the pad's bumpers — see [tabs](tabs.md) |
 | `list` | rows that scroll and follow focus — see [lists](lists.md) |
 | `tree(nodes)` | nodes that open and close, ten thousand in a dozen entities: the table's rows in one column, indented, with a chevron, Right and Left, type-ahead and a selection by key — see [trees](trees.md) |

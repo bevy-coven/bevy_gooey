@@ -15,7 +15,7 @@ per subject. The README links each bullet to its page.
 - [Navigation](navigation.md) — what moves focus, what shows the ring, and what an open dialog holds.
 - [Settings controls](controls.md) — `toggle`, `choice` and `slider`: one bundle each, Bevy's own widget
   at the root, and `ValueChange` once per change.
-- [Player options](options.md) — `text_size`, `interface_size`, `pad_style` and `skin_preset`: the rows for the four
+- [Player options](options.md) — `text_size`, `interface_size`, `pad_style`, `skin_preset` and `motion_row`: the rows for the
   settings the crate itself reads (the theme row is the high-contrast switch), with nothing to wire, and the sizes every widget is checked at.
 - [Rebinding controls](bindings.md) — `binding(label, value)`: a row that waits for the player's next key,
   mouse button or pad button, what it hears and holds back while it waits, and `BindingSettings`.
@@ -67,7 +67,7 @@ per subject. The README links each bullet to its page.
 - [Cards](cards.md) — `card_grid(cards)`: cards of a picture, a name and quiet lines in a row that wraps to fill its width,
   one tab stop the arrows walk, a chosen card lit and said once, a dimmed card no one chooses.
 - [Motion](motion.md) — a dialog's card and a popover's panel spring into place, the skin's motion palette,
-  `MotionSettings::off()` is the player's "reduce motion", `MotionTarget` moves your own panel, and `MotionTrace` tests it.
+  `MotionSettings::reduced()` is the player's "reduce motion" (`off()` no motion at all), `MotionTarget` moves your own panel, and `MotionTrace` tests it.
 - [Presence](presence.md) — `Leave` fades a dialog, a menu or any node out and despawns it, `Stay` turns one round
   from where it is drawn, `Opacity` fades a whole subtree; `MotionSettings::off()` makes both instant.
 - [Radial menu](radial.md) — `radial(items, selected)`: a weapon wheel chosen by the direction of a stick, the pointer or

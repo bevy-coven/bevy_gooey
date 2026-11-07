@@ -31,8 +31,8 @@
 //! capture frame, one `gooey: a11y` line per node: its role, name, value and flags.
 //! `GOOEY_SKIN=parchment`, `high_contrast`, `tool`, `desk` or `desk_light` starts in that skin;
 //! `GOOEY_TEXT_SCALE=<f>` starts at that text scale; `GOOEY_SIZE=<w>x<h>` sets the window size;
-//! `GOOEY_MOTION=<f>` sets `MotionSettings::duration_scale` (`0` is "reduce motion", `3` a slow
-//! entrance for a GIF).
+//! `GOOEY_MOTION=<f>` sets `MotionSettings::duration_scale` (`0` is no motion, `3` a slow
+//! entrance for a GIF); `GOOEY_MOTION_REDUCED=1` turns on `MotionSettings::reduced`.
 //! `GOOEY_KEYS=down,down,enter,…` stages a state before the shot: from frame 30 it presses one key
 //! every 10 frames, as real keyboard input (`up`, `down`, `left`, `right`, `enter`, `tab`, `escape`), or
 //! clicks the window's empty top-left corner, as real pointer input (`click`). `untip` takes
@@ -245,7 +245,7 @@ fn main() {
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(1.0),
-        reduced: false,
+        reduced: std::env::var("GOOEY_MOTION_REDUCED").is_ok(),
     })
     .insert_resource(HeldHealth(
         std::env::var("GOOEY_HEALTH")

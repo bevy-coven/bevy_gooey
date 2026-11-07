@@ -7,7 +7,8 @@
 //! so nothing jumps when a motion is interrupted. The crate gives one to a dialog's card as it opens
 //! (with [`MotionTarget::entering_from`]) and drives every popover panel's slide the same way; a game
 //! puts its own on its panels. [`MotionSettings`] is the player's "reduce motion" (WCAG 2.3.3): at
-//! zero nothing starts and a running track lands in the frame it is seen.
+//! zero nothing starts and a running track lands in the frame it is seen, and reduced lands every
+//! track while fades run.
 
 use bevy::prelude::*;
 
@@ -15,14 +16,16 @@ use crate::model::{
     DIALOG_SLIDE_PX, POPOVER_SLIDE_PX, Spring, SpringState, spring_settled, spring_step,
 };
 use crate::popover::PopoverPanel;
+use crate::presence::{Arriving, Opacity};
 use crate::skin::{GooeySkin, Role, SkinScope, skin_of};
 
 /// How much motion the player wants: the one switch for every motion the crate draws.
 ///
 /// Every motion lasts its own length times [`MotionSettings::duration_scale`]; at 0
-/// ([`MotionSettings::off`]) none starts and a running one ends at once. A game wires this to its
-/// "Reduce motion" option: an entrance is never essential, and WCAG 2.2 SC 2.3.3 asks that motion
-/// triggered by interaction can be disabled. The crate cannot read the operating system's own
+/// ([`MotionSettings::off`]) none starts and a running one ends at once.
+/// [`MotionSettings::reduced`] stops only what travels and keeps fades. A game wires these to its
+/// "Reduce motion" option ([`crate::motion_row`] is one): an entrance is never essential, and WCAG
+/// 2.2 SC 2.3.3 asks that motion triggered by interaction can be disabled. The crate cannot read the operating system's own
 /// preference, Bevy having no way to.
 ///
 /// ```
@@ -43,9 +46,10 @@ pub struct MotionSettings {
     /// The multiplier on every motion's length. 1 is as designed, 2 half as fast, 0 no motion.
     /// Default: 1.
     pub duration_scale: f32,
-    /// Reduced motion: nothing travels, scales or turns (every [`MotionTarget`] lands, and so do a
-    /// popover's slide and a meter's fill), while fades still run, and an entrance that would
-    /// travel fades in over [`MotionTokens::fade_seconds`] instead. `duration_scale` 0 is still
+    /// Reduced motion: the crate's travel lands (every [`MotionTarget`], a popover's slide and a
+    /// meter's fill), while fades still run, and an entrance that would travel fades in over
+    /// [`MotionTokens::fade_seconds`] instead. A spinner keeps turning and a hold bar keeps
+    /// filling: they say that something is happening, and are not travel. `duration_scale` 0 is still
     /// off: off wins over reduced. Default: `false`.
     pub reduced: bool,
 }
@@ -80,6 +84,12 @@ impl MotionSettings {
     /// Whether motion is turned off (a scale that is zero, negative or not a number).
     pub fn is_off(&self) -> bool {
         self.duration_scale.is_nan() || self.duration_scale <= 0.0
+    }
+
+    /// Whether nothing travels: motion is off, or reduced. A fade still runs while this is true and
+    /// [`MotionSettings::is_off`] is not.
+    pub fn lands_travel(&self) -> bool {
+        self.reduced || self.is_off()
     }
 }
 
@@ -365,25 +375,37 @@ impl PopoverSlide {
 }
 
 /// What a new node's role and parent say about it.
-type NewCard = (Entity, &'static Role, &'static ChildOf);
+type NewCard = (Entity, &'static Role, &'static ChildOf, Has<Opacity>);
+
+/// A new popover panel, and whether it carries an opacity of its own.
+type NewPopover = (Entity, Has<Opacity>);
 
 /// A node that has just got a role or a parent and no motion of its own yet.
 type NewCardFilter = (Or<(Added<Role>, Added<ChildOf>)>, Without<MotionTarget>);
 
 /// Gives a dialog's card and each popover panel that appeared this frame its entrance, unless
 /// motion is off or the card already has a [`MotionTarget`]. A card is a `Panel` or `Palette`
-/// whose parent is a scrim. Runs in [`crate::GooeySystems::Style`], before [`update_motion`].
+/// whose parent is a scrim. Under [`MotionSettings::reduced`] the entrance is a fade in place
+/// ([`crate::Arriving`]) instead of a slide, for a node with no [`Opacity`] of its own. Runs in
+/// [`crate::GooeySystems::Style`], before [`update_motion`].
 pub fn begin_entrances(
     settings: Res<MotionSettings>,
     mut commands: Commands,
-    popovers: Query<Entity, (Added<PopoverPanel>, Without<PopoverSlide>)>,
+    popovers: Query<NewPopover, (Added<PopoverPanel>, Without<PopoverSlide>)>,
     cards: Query<NewCard, NewCardFilter>,
     roles: Query<&Role>,
 ) {
     if settings.is_off() {
         return;
     }
-    for entity in &popovers {
+    let reduced = settings.reduced;
+    for (entity, faded) in &popovers {
+        if reduced {
+            if !faded {
+                commands.entity(entity).insert(Arriving::begin());
+            }
+            continue;
+        }
         commands.entity(entity).insert(PopoverSlide {
             reach: SpringState {
                 value: POPOVER_SLIDE_PX,
@@ -392,10 +414,16 @@ pub fn begin_entrances(
             spent: false,
         });
     }
-    for (entity, role, parent) in &cards {
+    for (entity, role, parent, faded) in &cards {
         if matches!(role, Role::Panel | Role::Palette)
             && roles.get(parent.parent()).is_ok_and(|r| *r == Role::Scrim)
         {
+            if reduced {
+                if !faded {
+                    commands.entity(entity).insert(Arriving::begin());
+                }
+                continue;
+            }
             commands
                 .entity(entity)
                 .insert(MotionTarget::default().entering_from(Vec2::new(0.0, DIALOG_SLIDE_PX)));
@@ -419,8 +447,9 @@ pub fn update_motion(
     mut popovers: Query<(Entity, &mut PopoverSlide, Option<&Visibility>)>,
 ) {
     let delta = time.as_ref().map_or(0.0, |time| time.delta_secs());
-    // With no clock the track jumps: nothing can say how long it has been.
-    let off = settings.is_off() || time.is_none();
+    // With no clock the track jumps: nothing can say how long it has been. Reduced motion lands
+    // every track too: nothing travels, scales or turns.
+    let off = settings.lands_travel() || time.is_none();
     for (entity, target, mut track, mut transform, visibility, instant) in &mut tracks {
         if track.settled && !target.is_changed() {
             continue;

@@ -87,6 +87,47 @@ pub struct Leave;
 #[reflect(Component, Default, Debug, PartialEq, Clone)]
 pub struct Stay;
 
+/// A node fading in where it stands: the entrance a dialog's card and a popover panel get under
+/// [`MotionSettings::reduced`](crate::MotionSettings::reduced), in place of the slide that would
+/// carry them. [`begin_entrances`](crate::begin_entrances) gives it with an [`Opacity`] of 0, and
+/// [`update_arrivals`] raises that to 1 over [`fade_seconds`](crate::MotionTokens::fade_seconds)
+/// times [`duration_scale`](crate::MotionSettings::duration_scale), on an ease-in-out, then takes
+/// both off. A fixed-length fade, not a spring, as reduced motion's own fade is in Rune
+/// (`REDUCED_FADE`): it lasts what it says. A [`Leave`] during it starts the exit from where the
+/// fade had got to.
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
+pub struct Arriving {
+    /// Seconds of the fade drawn so far.
+    elapsed: f32,
+    /// The opacity the fade last wrote: one that differs was written by the host, which then owns
+    /// the node's opacity.
+    drawn: Opacity,
+}
+
+impl Arriving {
+    /// A fade that has not started. Insert it with `Opacity(0.0)`.
+    pub(crate) fn begin() -> (Self, Opacity) {
+        let start = Opacity(0.0);
+        (
+            Self {
+                elapsed: 0.0,
+                drawn: start,
+            },
+            start,
+        )
+    }
+}
+
+/// How far through a fade of `length` seconds, `elapsed` in, a fixed-length ease-in-out stands:
+/// 0 at the start, 1 at the end (smoothstep). A length that is not above zero is at its end.
+fn arrival_at(elapsed: f32, length: f32) -> f32 {
+    if !(length.is_finite() && length > 0.0) {
+        return 1.0;
+    }
+    let t = (elapsed / length).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
+}
+
 /// What an exit took off one node of its subtree, to be put back by [`Stay`].
 #[derive(Clone, Copy, Debug)]
 struct Pose {
@@ -229,6 +270,7 @@ type Starting = (
     Option<&'static Opacity>,
     Option<&'static Dialog>,
     Option<&'static TabGroup>,
+    Has<Arriving>,
 );
 
 /// What an exit reads of one node of its subtree.
@@ -263,7 +305,7 @@ pub fn begin_leaves(
     }
     let spring = Spring::new(skin.motion.fade_seconds, 0.0).ok();
     let instant = motion.is_off() || spring.is_none();
-    for (entity, own, dialog, group) in &starting {
+    for (entity, own, dialog, group, arriving) in &starting {
         if instant {
             commands.entity(entity).try_despawn();
             continue;
@@ -299,6 +341,11 @@ pub fn begin_leaves(
             focus.clear();
         }
         let from = own.map_or(1.0, Opacity::factor);
+        // A node still fading in leaves from where its fade had got to; the opacity is the
+        // arrival's, not one of its own to give back on `Stay`.
+        if arriving {
+            commands.entity(entity).remove::<Arriving>();
+        }
         commands.entity(entity).insert((
             Opacity(from),
             Leaving {
@@ -307,7 +354,7 @@ pub fn begin_leaves(
                     velocity: 0.0,
                 },
                 toward: 0.0,
-                own: own.copied(),
+                own: if arriving { None } else { own.copied() },
                 dialog: dialog.cloned(),
                 group: group.copied(),
                 poses,
@@ -448,3 +495,69 @@ pub fn update_presence(
         }
     }
 }
+
+/// What the arrival system reads of a node fading in.
+type Fading = (
+    Entity,
+    &'static mut Arriving,
+    &'static mut Opacity,
+    Option<&'static Visibility>,
+);
+
+/// Steps every [`Arriving`] fade on real time and writes its [`Opacity`]; at the end of the fade
+/// both come off, so the node is drawn whole and [`spread_opacity`] re-reads its subtree once. A
+/// hidden node's fade waits (a popover is drawn a frame after it is spawned), and with motion off
+/// or no clock it lands at once. Writes only on a difference. Runs in
+/// [`crate::GooeySystems::Style`], after [`update_presence`] and before [`spread_opacity`].
+pub fn update_arrivals(
+    skin: Res<GooeySkin>,
+    motion: Res<crate::MotionSettings>,
+    scopes: Query<&SkinScope>,
+    parents: Query<&ChildOf>,
+    time: Option<Res<Time<Real>>>,
+    mut commands: Commands,
+    mut fading: Query<Fading, Without<Leaving>>,
+) {
+    if fading.is_empty() {
+        return;
+    }
+    let delta = time.as_ref().map_or(0.0, |time| time.delta_secs());
+    let off = motion.is_off() || time.is_none();
+    for (entity, mut arrival, mut opacity, visibility) in &mut fading {
+        // A host that wrote the node's opacity during the fade has taken it over: the fade stops
+        // and the host's value stays.
+        if *opacity != arrival.drawn {
+            commands.entity(entity).remove::<Arriving>();
+            continue;
+        }
+        if visibility == Some(&Visibility::Hidden) && !off {
+            continue;
+        }
+        let length = skin_of(&skin, entity, &scopes, &parents)
+            .motion
+            .fade_seconds
+            * motion.duration_scale;
+        let elapsed = arrival.elapsed + delta;
+        // A thousandth of a frame short of the end is the end: the sum of frame times rounds. A
+        // length that is not a finite number above zero has no middle.
+        let done = off
+            || !(length.is_finite() && length > 0.0)
+            || elapsed + ARRIVAL_END_SLACK_SECONDS >= length;
+        if done {
+            commands.entity(entity).remove::<(Arriving, Opacity)>();
+            continue;
+        }
+        let value = Opacity(arrival_at(elapsed, length));
+        *arrival = Arriving {
+            elapsed,
+            drawn: value,
+        };
+        if *opacity != value {
+            *opacity = value;
+        }
+    }
+}
+
+/// How far short of a fade's length its summed frame times may fall and still be at its end, in
+/// seconds: `f32` noise on a sum of frames, far under a frame.
+const ARRIVAL_END_SLACK_SECONDS: f32 = 1.0e-5;

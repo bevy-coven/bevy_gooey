@@ -43,6 +43,8 @@ pub fn update_meters(
 ) {
     // With no clock the old jump: a zero scale is the target at once.
     let scale = match (&settings, &time) {
+        // Reduced motion lands the fill: it is travel.
+        (Some(settings), Some(_)) if settings.lands_travel() => 0.0,
         (Some(settings), Some(_)) => settings.duration_scale,
         (None, Some(_)) => 1.0,
         _ => 0.0,

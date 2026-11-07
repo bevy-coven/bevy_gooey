@@ -36,7 +36,7 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
 - `ChoiceValue(usize)` and `ChoiceCount(usize)` — a `choice`'s selected index and its number of options.
   Write a `ChoiceValue` to move the choice from code (no `ValueChange` comes back for that); read it to
   know where the choice stands.
-- `OptionRow` — on a `text_size`, `interface_size`, `pad_style` or `skin_preset` row: which of the crate's own settings it
+- `OptionRow` — on a `text_size`, `interface_size`, `pad_style`, `skin_preset` or `motion_row` row: which of the crate's own settings it
   edits. A host that registers `update_option_rows` itself needs nothing else; a game never builds one.
   See [player options](options.md).
 - `BindingValue(Binding)` — a `binding`'s input: a key, a mouse button, a pad button or a chord. Write one to change
@@ -164,7 +164,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_tooltip_text` | Style | a changed `Tooltip` reaches its box in place |
 | `update_sliders` | Style | a slider's thumb, fill and readout from its `SliderValue` |
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
-| `update_option_rows` | Style | a `text_size`, `interface_size`, `pad_style` or `skin_preset` row follows its setting with no event, and on the frame it is spawned; before `update_choices` |
+| `update_option_rows` | Style | a `text_size`, `interface_size`, `pad_style`, `skin_preset` or `motion_row` row follows its setting with no event, and on the frame it is spawned; before `update_choices` |
 | `update_tabs` | Style | a tabs widget's selected page shown and no other, its tab lit, a value past the end pulled back |
 | `update_splits` | Style | a split's two panes' `flex_grow` and least sizes from `SplitFraction` and `SplitMin`, before `apply_skin`; writes only when they differ |
 | `update_trees` | Style | a removed node's selection and cursor move to its heir (next sibling, else the one before, else the parent), before `update_tables` |

@@ -279,7 +279,7 @@ pub use number::{
     MIXED_HINT, MixedValue, NumberInput, NumberRange, NumberRefused, NumberStep, NumberValue,
     VecChange, VecMixed, VecPart, VecValue, update_numbers, update_vecs,
 };
-pub use options::{OptionRow, update_option_rows};
+pub use options::{MOTION_STEPS, OptionRow, motion_step, update_option_rows, with_motion_step};
 pub use palette::{
     CommandList, CommandPalette, PALETTE_ROWS, PaletteCommand, PaletteCount, PaletteHistory,
     PaletteInput, PaletteNote, PaletteRow, RunCommand, palette_by_input, update_palette,
@@ -289,8 +289,8 @@ pub use popover::{
     close_popovers_on_press, drop_pointer_anchors, reveal_popovers,
 };
 pub use presence::{
-    Leave, Leaving, Opacity, PRESENCE_GONE, Stay, begin_leaves, begin_stays, spread_opacity,
-    update_presence,
+    Arriving, Leave, Leaving, Opacity, PRESENCE_GONE, Stay, begin_leaves, begin_stays,
+    spread_opacity, update_arrivals, update_presence,
 };
 pub use progress::{
     Progress, ProgressClamped, ProgressText, Spinner, update_progress, update_spinners,
@@ -345,12 +345,12 @@ pub use type_select::TypedPrefix;
 pub use widgets::{
     binding, button, card_grid, check_item, choice, color_field, command_palette, context_menu,
     dialog, dock, heading, hold_button, icon, icon_button, interface_size, label, list, menu,
-    menu_bar, menu_item, menu_title, meter, notification_center, number_field, pad_style, panel,
-    popover, popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial,
-    radio_item, screen, section, select, separator, side_tab_page, side_tabs, skin_preset, slider,
-    slot_grid, spinner, split, status_bar, status_item, status_progress, submenu, surface,
-    tab_page, table, tabs, text_area, text_input, text_size, toast, toast_alert, toggle,
-    toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
+    menu_bar, menu_item, menu_title, meter, motion_row, notification_center, number_field,
+    pad_style, panel, popover, popover_modal, primary_button, progress, prompt, prompts,
+    prompts_at, radial, radio_item, screen, section, select, separator, side_tab_page, side_tabs,
+    skin_preset, slider, slot_grid, spinner, split, status_bar, status_item, status_progress,
+    submenu, surface, tab_page, table, tabs, text_area, text_input, text_size, toast, toast_alert,
+    toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -533,7 +533,14 @@ impl Plugin for GooeyStylePlugin {
                 (
                     (
                         (begin_entrances, update_motion).chain(),
-                        (begin_leaves, begin_stays, update_presence, spread_opacity).chain(),
+                        (
+                            begin_leaves,
+                            begin_stays,
+                            update_presence,
+                            update_arrivals,
+                            spread_opacity,
+                        )
+                            .chain(),
                         update_toasts,
                         update_notification_centers,
                         update_slot_grids,

@@ -2,8 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- Reduced motion that keeps fades (#50, `docs/research/reduced-motion.md`, `docs/guide/motion.md`): `MotionSettings::reduced` (serde default `false`) and `MotionSettings::reduced()`. Under it the crate's travel lands (every `MotionTarget`, a popover's slide and a meter's fill) while a `Leave` still fades; a spinner and a hold bar are progress, not travel, and keep moving. A dialog's card and a popover panel are in place on their first frame and fade in over `motion.fade_seconds` on an ease-in-out (`Arriving`, `update_arrivals`). `duration_scale` 0 is still off and wins over reduced. `motion_row(label)` is the options row for it: Full, Reduced and Off (`MOTION_STEPS`, `motion_step`, `with_motion_step`, `OptionRow::Motion`), writing only `MotionSettings`. Proved by `tests/reduced_motion.rs`.
+
 ### Changed
 
+- **Breaking:** `MotionSettings` has a new public field, `reduced`, so a literal naming every field needs `reduced: false` or `..default()`.
 - Every widget's text size is set on the device-pixel grid (#59, `docs/research/text-grid.md`, `docs/guide/scale.md`): `apply_skin` rounds each one up to the smallest size that is a whole number of device pixels at the node's scale (the window's scale factor times `UiScale`), never smaller than the skin asks and less than one device pixel bigger, and sets it again when the scale changes; `snap_text_size(size, scale)` is the rule, public beside `snap_line_width`. 14 px body text at a 1.1 text size and 1.25x was 19.25 device px and is 20. A host's own `Text` without a `Role` keeps its size. Proved by `tests/text_grid.rs`.
 
 ## [0.39.0] - 2026-11-07

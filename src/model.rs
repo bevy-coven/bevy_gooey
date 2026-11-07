@@ -2377,7 +2377,7 @@ pub fn hold_seconds(seconds: f32, scale: f32) -> f32 {
 /// A hold's progress, `0.0` to `1.0`, after `dt` seconds. Held, it rises by `dt / seconds` (a tap,
 /// `seconds` of zero, is full at once); let go, it unwinds [`HOLD_UNWIND_RATE`] times as fast as it
 /// rose, never taking more than half a second to empty, or at once when `instant` (the player's
-/// reduced motion).
+/// motion is off).
 ///
 /// ```
 /// use bevy_gooey::model::hold_step;

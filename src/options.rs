@@ -1,5 +1,6 @@
 //! The options screen's rows for the settings this crate itself reads: [`crate::text_size`],
-//! [`crate::interface_size`], [`crate::pad_style`] and [`crate::skin_preset`]. Each is a
+//! [`crate::interface_size`], [`crate::pad_style`], [`crate::skin_preset`] and
+//! [`crate::motion_row`]. Each is a
 //! [`crate::choice`] that edits one field of a resource and shows it, so the setting lives once,
 //! in the resource.
 
@@ -9,6 +10,7 @@ use bevy::ui_widgets::ValueChange;
 use crate::binding::BindingSettings;
 use crate::choice::ChoiceValue;
 use crate::model::{INTERFACE_SIZE_STEPS, PAD_STYLES, TEXT_SIZE_STEPS, nearest_step};
+use crate::motion::MotionSettings;
 use crate::scale::UiScaleSettings;
 use crate::skin::{GooeySkin, SkinPreset};
 
@@ -27,6 +29,43 @@ pub enum OptionRow {
     PadStyle,
     /// [`GooeySkin`]'s colours, in [`SkinPreset::ALL`].
     SkinPreset,
+    /// [`MotionSettings`], in [`MOTION_STEPS`].
+    Motion,
+}
+
+/// The steps a [`crate::motion_row`] offers, as the player reads them: full motion, reduced motion
+/// ([`MotionSettings::reduced`]) and none ([`MotionSettings::off`]).
+pub const MOTION_STEPS: [&str; 3] = ["Full", "Reduced", "Off"];
+
+/// The [`MOTION_STEPS`] index a setting shows as: Off for any scale that is off, Reduced for a
+/// reduced one, else Full. A hand-written scale (0.5, 2) shows as the step it is in.
+pub fn motion_step(settings: &MotionSettings) -> usize {
+    if settings.is_off() {
+        2
+    } else if settings.reduced {
+        1
+    } else {
+        0
+    }
+}
+
+/// `settings` moved to [`MOTION_STEPS`]'s step `index`: Full and Reduced keep the player's own
+/// `duration_scale` (1 when coming from Off), and Off is [`MotionSettings::off`]. `None` for an
+/// index past the steps.
+pub fn with_motion_step(settings: &MotionSettings, index: usize) -> Option<MotionSettings> {
+    let scale = if settings.is_off() {
+        MotionSettings::default().duration_scale
+    } else {
+        settings.duration_scale
+    };
+    match index {
+        0 | 1 => Some(MotionSettings {
+            duration_scale: scale,
+            reduced: index == 1,
+        }),
+        2 => Some(MotionSettings::off()),
+        _ => None,
+    }
 }
 
 impl OptionRow {
@@ -49,6 +88,7 @@ impl OptionRow {
                 .iter()
                 .map(|preset| preset.name().to_owned())
                 .collect(),
+            Self::Motion => MOTION_STEPS.iter().map(|&step| step.to_owned()).collect(),
         }
     }
 }
@@ -69,6 +109,7 @@ pub(crate) fn option_on_change(
     skin: Option<ResMut<GooeySkin>>,
     scale: Option<ResMut<UiScaleSettings>>,
     binding: Option<ResMut<BindingSettings>>,
+    motion: Option<ResMut<MotionSettings>>,
 ) {
     let Ok(row) = rows.get(change.source) else {
         return;
@@ -96,6 +137,13 @@ pub(crate) fn option_on_change(
                 skin.set_if_neq(next);
             }
         }
+        OptionRow::Motion => {
+            if let Some(mut motion) = motion
+                && let Some(next) = with_motion_step(&motion, change.value)
+            {
+                motion.set_if_neq(next);
+            }
+        }
     }
 }
 
@@ -109,6 +157,7 @@ pub fn update_option_rows(
     skin: Res<GooeySkin>,
     scale: Option<Res<UiScaleSettings>>,
     binding: Res<BindingSettings>,
+    motion: Option<Res<MotionSettings>>,
     mut rows: Query<(Ref<OptionRow>, &mut ChoiceValue)>,
 ) {
     for (row, mut value) in &mut rows {
@@ -127,6 +176,10 @@ pub fn update_option_rows(
                 .as_ref()
                 .filter(|scale| scale.is_changed() || row.is_added())
                 .map(|scale| nearest_step(&INTERFACE_SIZE_STEPS, scale.scale)),
+            OptionRow::Motion => motion
+                .as_ref()
+                .filter(|motion| motion.is_changed() || row.is_added())
+                .map(|motion| motion_step(motion)),
             OptionRow::PadStyle => (binding.is_changed() || row.is_added()).then(|| {
                 PAD_STYLES
                     .iter()

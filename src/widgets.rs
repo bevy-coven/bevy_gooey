@@ -819,6 +819,30 @@ pub fn text_size(label: impl Into<String>) -> impl Bundle {
     option_row(OptionRow::TextSize, label)
 }
 
+/// The player's **motion**: a [`choice`] row over Full, Reduced and Off
+/// ([`MOTION_STEPS`](crate::MOTION_STEPS)) that sets [`MotionSettings`](crate::MotionSettings).
+/// Reduced stops everything that travels, scales or turns and keeps fades
+/// ([`MotionSettings::reduced`](crate::MotionSettings::reduced)); Off stops fades too (WCAG 2.2
+/// SC 2.3.3). `label` is the row's name, in the host's language; the steps are English words, and
+/// a host that localises writes its own [`choice`] with
+/// [`with_motion_step`](crate::with_motion_step).
+///
+/// It behaves as [`text_size`] does: the resource is the one place the setting lives, the row
+/// follows it with no event (a hand-written scale shows the step it is in,
+/// [`motion_step`](crate::motion_step)), and a step writes `MotionSettings` and nothing else. Full
+/// and Reduced keep the player's own `duration_scale`.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((panel(), children![heading("Accessibility"), motion_row("Motion")]));
+/// # }
+/// ```
+pub fn motion_row(label: impl Into<String>) -> impl Bundle {
+    option_row(OptionRow::Motion, label)
+}
+
 /// The player's **interface size**: a [`choice`] row over 75%, 100%, 125% and 150%
 /// ([`INTERFACE_SIZE_STEPS`](crate::INTERFACE_SIZE_STEPS)) that sets
 /// [`UiScaleSettings::scale`](crate::UiScaleSettings::scale),

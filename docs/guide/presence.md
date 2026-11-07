@@ -67,7 +67,9 @@ does not begin until it is on screen.
 
 ## Turning it off
 
-`MotionSettings::off()` is the player's "reduce motion" (WCAG 2.2 SC 2.3.3): a `Leave` under it despawns
+Under `MotionSettings::reduced()` an exit still fades exactly as here: reduced motion stops travel, not fades ([motion](motion.md)).
+
+`MotionSettings::off()` is no motion at all (WCAG 2.2 SC 2.3.3): a `Leave` under it despawns
 in the frame it is asked, and no `Leaving` is ever added. An exit is never essential — the widget is
 gone either way — so there is nothing to lose.
 
