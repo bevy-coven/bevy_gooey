@@ -58,6 +58,7 @@ pub struct Confirm {
     body: String,
     choices: Vec<String>,
     safe: usize,
+    default: Option<usize>,
 }
 
 /// The veil: the whole window, its contents centred (the same node [`dialog`](crate::dialog) is).
@@ -86,8 +87,19 @@ impl Confirm {
             title: title.into(),
             body: body.into(),
             safe: choices.len().saturating_sub(1),
+            default: None,
             choices,
         }
+    }
+
+    /// Makes choice `index` the dialog's default button ([`crate::DefaultButton`]): the one Return
+    /// presses with nothing focused. An index past the last choice is the last. Focus opens on the
+    /// safe choice, and a focused button keeps its own Return, so a Return typed at once presses the
+    /// safe choice; the default answers only once nothing is focused (a click on the card's
+    /// background). Give both the same index when the safe choice is also the usual one.
+    pub fn default(mut self, index: usize) -> Self {
+        self.default = Some(index.min(self.choices.len().saturating_sub(1)));
+        self
     }
 
     /// Makes choice `index` the safe one: the one that has focus when the dialog opens and the one
@@ -173,6 +185,11 @@ fn build(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
                 .id();
             if index == confirm.safe {
                 world.entity_mut(choice).insert(AutoFocus);
+            }
+            if confirm.default == Some(index) {
+                world
+                    .entity_mut(choice)
+                    .insert(crate::default_button::DefaultButton);
             }
         }
     });

@@ -10,6 +10,8 @@ use bevy::text::{EditableText, TextEdit, TextEditChange, TextReadWriteMode};
 use bevy::ui::InteractionDisabled;
 use bevy::ui_widgets::{TextInput, ValueChange};
 
+use crate::number::NumberInput;
+
 /// What a [`crate::text_input`] row holds: the text in its field. It is the widget's state: read it
 /// to know what the player typed, set it to change the field from code (the field shows the text
 /// in the same frame, the caret at its end, and no [`ValueChange`] is sent for a change the game
@@ -130,6 +132,14 @@ fn finish(commands: &mut Commands, row: Entity, value: String) {
     });
 }
 
+/// What a key in a field reads of it: its text, its row, and whether it is an area or a number.
+type KeyField = (
+    &'static EditableText,
+    &'static TextInputOf,
+    Has<AreaField>,
+    Has<NumberInput>,
+);
+
 /// Enter in a focused field is a submit: a final change with the text, whether or not it changed.
 /// In a [`crate::text_area`] plain Enter adds a line (Bevy's handler), so only Ctrl+Enter or
 /// Cmd+Enter (Super) submits. The field stays focused (Up, Down and Tab leave it). Bevy's handler lets Enter bubble ("to allow
@@ -137,8 +147,10 @@ fn finish(commands: &mut Commands, row: Entity, value: String) {
 /// does too.
 pub(crate) fn text_on_key_input(
     input: On<FocusedInput<KeyboardInput>>,
-    fields: Query<(&EditableText, &TextInputOf, Has<AreaField>), Without<InteractionDisabled>>,
+    fields: Query<KeyField, Without<InteractionDisabled>>,
+    coloured: Query<(), With<crate::color::ColorValue>>,
     keys: Res<ButtonInput<KeyCode>>,
+    mut lookup: crate::default_button::DefaultLookup,
     mut commands: Commands,
 ) {
     if input.input.state != ButtonState::Pressed
@@ -147,7 +159,7 @@ pub(crate) fn text_on_key_input(
     {
         return;
     }
-    let Ok((text, &TextInputOf(row), area)) = fields.get(input.focused_entity) else {
+    let Ok((text, &TextInputOf(row), area, number)) = fields.get(input.focused_entity) else {
         return;
     };
     let chord = keys.any_pressed([
@@ -158,6 +170,23 @@ pub(crate) fn text_on_key_input(
     ]);
     if (chord || !area) && !text.is_composing() {
         finish(&mut commands, row, text.value().to_string());
+        // A plain Return in a single-line field ends its edit and then presses its dialog's default
+        // button, if it has one (after the final change, so the game reads the value first).
+        // Only a plain text row presses it: a number or colour that does not parse is refused and the
+        // old value put back, which a dialog must not then submit.
+        let plain = !area
+            && !number
+            && !coloured.contains(row)
+            && !keys.any_pressed([
+                KeyCode::ShiftLeft,
+                KeyCode::ShiftRight,
+                KeyCode::AltLeft,
+                KeyCode::AltRight,
+            ])
+            && !chord;
+        if plain {
+            crate::default_button::press_default(&mut lookup, &mut commands, input.focused_entity);
+        }
     }
 }
 

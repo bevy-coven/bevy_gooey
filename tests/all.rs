@@ -20,6 +20,7 @@ mod context_menu;
 mod control_size;
 mod controls;
 mod cooldown;
+mod default_button;
 mod density;
 mod desk;
 mod dialog;

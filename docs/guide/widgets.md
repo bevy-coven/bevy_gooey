@@ -71,6 +71,8 @@ widget inside a clipped container (a row of a `list`) draws over the clip rather
 
 ## A dialog
 
+**A dialog's default button is `DefaultButton`** on one button (or `confirm(..).default(index)`): Return in a single-line field ends its edit and then presses it, Return with nothing focused presses it, and it draws as the main action. A focused button and a text area keep their own Return.
+
 **A question with choices is one line: `confirm(title, body, choices)`.** It spawns the dialog, its
 panel, the title, the line of body (none when it is empty) and a button for each choice, and answers
 with one `ConfirmChosen { entity, index, cancelled }` before it despawns itself. The last choice is

@@ -155,6 +155,7 @@ mod context;
 mod control_size;
 mod controls;
 mod cooldown;
+mod default_button;
 mod dock;
 mod dock_layout;
 mod drag;
@@ -231,6 +232,7 @@ pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use control_size::{CONTROL_LARGE_PX, CONTROL_REGULAR_PX, CONTROL_SMALL_PX, ControlSize};
 pub use controls::update_sliders;
 pub use cooldown::{Cooldown, CooldownReady, update_cooldowns};
+pub use default_button::DefaultButton;
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
 pub use dock_layout::{DockDropTarget, DockLayout, DockSkip};
 pub use drag::{
@@ -706,6 +708,9 @@ impl Plugin for GooeyNavPlugin {
             .register_type::<Confirm>()
             .register_type::<ConfirmButton>()
             .register_type::<ConfirmChosen>()
+            .register_type::<DefaultButton>()
+            .init_resource::<default_button::WarnedDialogs>()
+            .add_observer(default_button::default_on_unfocused_enter)
             .add_observer(confirm::confirm_on_activate)
             .add_observer(confirm::confirm_on_cancel)
             .add_observer(menu::menu_on_activate)

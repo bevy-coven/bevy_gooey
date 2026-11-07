@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- A dialog's default button (#66, `docs/research/default-button.md`, `docs/guide/widgets.md`): `DefaultButton` on one button of a `dialog()`, or `Confirm::default(index)`. Return in a single-line field ends its edit and then presses it; Return with nothing focused presses it; a focused button, a text area and a disabled default keep theirs; two defaults warn once and the first wins. It draws as `ButtonVariant::Submit` unless the host chose a variant. Proved by `tests/default_button.rs`.
+
 ## [0.40.2] - 2026-11-07
 
 ### Added
