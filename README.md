@@ -146,7 +146,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   with its chord and why it is off, "opn prj" finds "File: Open Project", Enter sends one `RunCommand`:
   [the command palette](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/command-palette.md).
 - **Keep the interface's share of the screen at every resolution, and let the pointer through a HUD** — the
-  skin's sizes scale with the window, every border stays a whole number of device pixels, and the empty part
+  skin's sizes scale with the window, every border and every text size stays a whole number of device pixels, and the empty part
   of a `screen` is `Pickable::IGNORE`; two quick clicks in one place are one `DoublePress` (a third starts a new pair, a held or dragged press pairs with nothing) and `ClickCount` tells a drag which press of a run it is: [screen size](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/scale.md),
   [over a game world](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/pointer.md); and `(meter(0.8, 1.0), WorldAnchor::above(enemy, 44.0))` is a health bar that rides a thing in the world (`.pinned()` keeps a beacon on the screen's edge toward it), gone with the thing: [world anchors](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/world-anchor.md). `Cooldown::new(8.0)` on any widget dims it and sweeps it clear clockwise with the seconds left on a chip, sends `CooldownReady` when it ends and puts the seconds in its accessible name: [cooldowns](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/cooldowns.md).
 

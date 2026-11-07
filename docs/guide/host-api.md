@@ -189,7 +189,7 @@ press and they do not.
 `model` holds the crate's arithmetic with no `bevy` in it, so a host can run it in its own tests or
 use it for its own UI: `relative_luminance`, `contrast_ratio`, `composite`, `meter_fraction`,
 `slider_fraction`, `slider_text`, `list_height`, `scroll_to_reveal`, `snap_to_row`, `page_target`,
-`snap_line_width`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
+`snap_line_width`, `snap_text_size`, `window_ui_scale`, `toast_hold`, `toast_life`, `toast_alpha`, `toast_grow`,
 `repeat_steps`, `choice_step`, `choice_next`, `nearest_step`, `tab_step`, `target_toward`, `target_step`, `key_name`, `mouse_name`,
 `shortcut_label`, `shortcut_conflicts`, `is_modifier_key`, `fuzzy_score`, `split_mins`, `split_clamp`,
 `split_drag`, `natural_cmp`, `table_window`, `table_step`, `table_anchor`, `column_resize`, `tree_indent`, `tree_ends`, `tree_visible`, `tree_parent`, `tree_heir`, `type_ahead`, `dock_zone`, `dock_edge_zone`, `dock_drop_rect`, `dock_tab_slot`, `dock_neighbour`,

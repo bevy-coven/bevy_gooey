@@ -330,6 +330,41 @@ pub fn snap_line_width(length: f32, scale: f32) -> f32 {
         return length;
     }
     let device = (length * scale + SNAP_TOLERANCE).floor().max(1.0);
+    logical_for_device(device, scale)
+}
+
+/// A text size `size` (logical px) raised to the smallest one whose device size at `scale` device
+/// pixels per logical px is a whole number, so glyphs are drawn at a whole pixel size and the lines
+/// they set stay on the pixel grid. Returns logical px, less than one device pixel above `size`.
+/// A size within a thousandth of a device pixel above a whole number counts as that number, as for
+/// [`snap_line_width`], so a size already on the grid is not pushed a pixel up by rounding noise;
+/// that thousandth is the most the result is ever below `size`.
+///
+/// `scale` is the one Bevy lays the text out at: the window's scale factor times [`bevy::ui::UiScale`]
+/// (`ComputedUiRenderTargetInfo::scale_factor`). The result is chosen so that `scale * result`, as
+/// `f32`, is the whole number wherever an `f32` allows it, and otherwise the least size above it.
+///
+/// A size or scale that is not finite and above zero is returned unchanged.
+///
+/// ```
+/// // 15.4 px at 1.25x would be 19.25 device px: it is set at 20.
+/// let size = bevy_gooey::snap_text_size(15.4, 1.25);
+/// assert_eq!(size * 1.25, 20.0);
+/// // 16 px at 1.5x is already 24 device px.
+/// assert_eq!(bevy_gooey::snap_text_size(16.0, 1.5), 16.0);
+/// ```
+pub fn snap_text_size(size: f32, scale: f32) -> f32 {
+    let usable = |x: f32| x.is_finite() && x > 0.0;
+    if !usable(size) || !usable(scale) {
+        return size;
+    }
+    let device = (size * scale - SNAP_TOLERANCE).ceil().max(1.0);
+    logical_for_device(device, scale)
+}
+
+/// The logical length whose product with `scale`, as `f32`, is exactly `device`, or failing that
+/// the least one above it.
+fn logical_for_device(device: f32, scale: f32) -> f32 {
     let mut logical = device / scale;
     // Division and multiplication each round, so step by ulps until the product is exact, or
     // failing that, the least one above: a product an ulp short rounds a pixel short.

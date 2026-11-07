@@ -16,6 +16,7 @@
 
 ### Changed
 
+- Every widget's text size is set on the device-pixel grid (#59, `docs/research/text-grid.md`, `docs/guide/scale.md`): `apply_skin` rounds each one up to the smallest size that is a whole number of device pixels at the node's scale (the window's scale factor times `UiScale`), never smaller than the skin asks and less than one device pixel bigger, and sets it again when the scale changes; `snap_text_size(size, scale)` is the rule, public beside `snap_line_width`. 14 px body text at a 1.1 text size and 1.25x was 19.25 device px and is 20. A host's own `Text` without a `Role` keeps its size. Proved by `tests/text_grid.rs`.
 - **Breaking:** `GooeySkin` has a new public field, `elevation` (a literal naming every field needs `elevation: Elevation::none()` or `..GooeySkin::default()`). Every panel now casts a soft shadow, and the tooltip's and popovers' old shadow (the background at 0.7 alpha) is the skin's `floating` stack.
 - **Breaking:** `SkinProblem` has a new variant, `TranslucentSeed`, so an exhaustive `match` on it needs an arm.
 - A tree's type-ahead is the table's type-select now (`table_by_input`); `tree_by_input` keeps Left, Right and `*`. The prefix is shared and resets when focus moves to another group, so leaving a tree and coming back within a second no longer starts the prefix over.

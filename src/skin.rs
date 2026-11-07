@@ -22,7 +22,7 @@ use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
     COMFORT_TARGET_PX, ELEVATION_STEP, ENHANCED_CONTRAST, MIN_TARGET_PX, NON_TEXT_CONTRAST,
     PRIMARY_LIFT_L, STATE_STEP, TEXT_CONTRAST, cie_lightness, composite, contrast_ratio,
-    lift_toward, list_height, snap_line_width, tree_indent,
+    lift_toward, list_height, snap_line_width, snap_text_size, tree_indent,
 };
 use crate::popover::{PopoverPanel, placement_of};
 use crate::prompt::PromptsAnchor;
@@ -2175,8 +2175,8 @@ fn owns_parts(role: Option<&Role>) -> bool {
 /// disabled or on state, or scale changed are restyled (and every button, toggle and slider when
 /// focus moves), in the frame the change happens, with the parts that follow them (a button's text,
 /// a switch's knob, a slider's thumb); a [`SkinScope`] that is added, changed or removed restyles
-/// its subtree. Lines are drawn at the scale Bevy last computed for the
-/// node, so the frame a window is resized draws them at the old scale's snapping and the next frame
+/// its subtree. Lines and text sizes are set at the scale Bevy last computed
+/// for the node, so the frame a window is resized draws them at the old scale's snapping and the next frame
 /// at the new one's. A changed skin that fails [`GooeySkin::problems`] logs one warning per problem
 /// and is applied anyway.
 #[allow(clippy::too_many_arguments)]
@@ -2470,13 +2470,19 @@ fn restyle(
     owner: State,
 ) {
     let skin = look.skin;
-    let scaled = |size: f32| FontSize::Px(size * skin.text_scale);
+    let scale = target.map_or(1.0, |t| t.scale_factor());
+    // Every text size on whole device pixels at the node's scale (the window's times `UiScale`),
+    // rounded up, so glyphs are set at a whole pixel size and are not softened between two.
+    let scaled = |size: f32| FontSize::Px(snap_text_size(size * skin.text_scale, scale));
     let tip = floating.as_ref().and_then(|(_, tip, _)| tip.copied());
     // Every line weight (borders, the focus ring, the meter's frame and gap) on whole device
     // pixels at the node's scale, so it is one weight on every side wherever the node lands.
-    let line = snap_line_width(skin.border, target.map_or(1.0, |t| t.scale_factor()));
+    let line = snap_line_width(skin.border, scale);
     // The settings controls' sizes grow with the player's text size, like the meter.
     let text_px = skin.text_size * skin.text_scale;
+    // The body text as it is set (`scaled`): what a line of it is high, for a height that holds
+    // one. Widths keep `text_px`.
+    let set_px = snap_text_size(text_px, scale);
     // A wheel is the player's text size until 26 of them would pass `RADIAL_WINDOW_SHARE` of the
     // window's shorter side: past that the whole wheel (disc, labels and name) stops growing, so
     // it is always whole on the screen, which 200% text on a 720p window would not be.
@@ -3568,14 +3574,14 @@ fn restyle(
             // frame twice come to `min_target`) and what centres the line. A `min_height` here is
             // read as the content's, which made the field a padding and a frame too tall.
             Role::TextField => {
-                let (x, y) = text_field_inset(skin, text_px, line);
+                let (x, y) = text_field_inset(skin, set_px, line);
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(x), Val::Px(y));
             }
             // Over the field's first character: the same inset, inside its frame.
             Role::TextHint => {
-                let (x, y) = text_field_inset(skin, text_px, line);
+                let (x, y) = text_field_inset(skin, set_px, line);
                 next.left = Val::Px(line + x);
                 next.right = Val::Px(line + x);
                 next.top = Val::Px(line + y);
@@ -3608,7 +3614,7 @@ fn restyle(
             // A binding keycap's frame and air, at least as wide as it is high, so a single
             // character is a square (a circle for a pad button) and a longer name a wider cap.
             Role::PromptKey | Role::PromptButton => {
-                let cap = text_px * LIST_LINE_TEXT_SIZES + skin.pad() * 0.6 + 2.0 * line;
+                let cap = set_px * LIST_LINE_TEXT_SIZES + skin.pad() * 0.6 + 2.0 * line;
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = if *role == Role::PromptButton {
                     BorderRadius::MAX
@@ -3652,7 +3658,7 @@ fn restyle(
                 let (row, gap) = if *role == Role::TableView {
                     (skin.table_pitch(), 0.0)
                 } else {
-                    let row = (text_px * LIST_LINE_TEXT_SIZES
+                    let row = (set_px * LIST_LINE_TEXT_SIZES
                         + skin.pad() * LIST_PADDING_FACTOR
                         + 2.0 * line)
                         .max(skin.target());

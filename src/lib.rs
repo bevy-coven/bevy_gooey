@@ -128,7 +128,9 @@
 //! that plugin out (`GooeyPlugins.build().disable::<GooeyScalePlugin>()`). Line weights (borders,
 //! the focus ring, a meter's frame and gap) are the exception to "multiplied": they are drawn a
 //! whole number of device pixels wide at whatever scale the node has, rounded down
-//! ([`snap_line_width`]), so each is one weight on all four sides.
+//! ([`snap_line_width`]), so each is one weight on all four sides. Text sizes are the other
+//! exception: each is rounded up to the smallest size that is a whole number of device pixels at
+//! the node's scale ([`snap_text_size`]), so glyphs are never set between two pixel sizes.
 
 #![warn(missing_docs)]
 
@@ -258,11 +260,11 @@ pub use model::{
     nearest_step, number_decimals, pad_name, page_target, parse_hex, parse_number, pin_to_edge,
     progress_text, radial_pick, radial_place, radial_step, relative_luminance, repeat_steps,
     rgb_to_hsv, scroll_to_reveal, scrub_value, shadow_sigma, shortcut_conflicts, shortcut_label,
-    slider_fraction, slider_text, slot_edge, snap_line_width, snap_to_row, spinner_angle,
-    split_clamp, split_drag, split_mins, spring_at_rest, spring_settle_seconds, spring_step,
-    step_value, tab_step, table_anchor, table_step, table_window, target_step, target_toward,
-    toast_alpha, toast_grow, toast_hold, toast_life, tree_ends, tree_heir, tree_indent,
-    tree_parent, tree_visible, type_ahead, window_ui_scale,
+    slider_fraction, slider_text, slot_edge, snap_line_width, snap_text_size, snap_to_row,
+    spinner_angle, split_clamp, split_drag, split_mins, spring_at_rest, spring_settle_seconds,
+    spring_step, step_value, tab_step, table_anchor, table_step, table_window, target_step,
+    target_toward, toast_alpha, toast_grow, toast_hold, toast_life, tree_ends, tree_heir,
+    tree_indent, tree_parent, tree_visible, type_ahead, window_ui_scale,
 };
 pub use motion::{
     InstantMotion, MotionSettings, MotionTarget, MotionToken, MotionTokens, PopoverSlide,
