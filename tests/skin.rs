@@ -396,3 +396,45 @@ fn a_tooltip_and_a_panel_have_a_white_edge_in_high_contrast_and_the_quiet_one_ot
         }
     }
 }
+
+#[test]
+fn a_skin_with_a_spring_that_has_no_motion_or_a_bad_fade_is_reported_by_field() {
+    assert!(GooeySkin::dark().problems().is_empty());
+    for (edit, field) in [
+        (
+            (|s: &mut GooeySkin| s.motion.snappy.duration = 0.0) as fn(&mut GooeySkin),
+            "motion.snappy",
+        ),
+        (|s| s.motion.default.bounce = 1.0, "motion.default"),
+        (|s| s.motion.calm.duration = f32::NAN, "motion.calm"),
+        (|s| s.motion.lead.bounce = -1.0, "motion.lead"),
+        (|s| s.motion.fade_seconds = -0.1, "motion.fade_seconds"),
+        (
+            |s| s.motion.fade_seconds = f32::INFINITY,
+            "motion.fade_seconds",
+        ),
+    ] {
+        let mut skin = GooeySkin::dark();
+        edit(&mut skin);
+        assert_eq!(
+            skin.problems(),
+            vec![SkinProblem::BadMotion { field }],
+            "{field}"
+        );
+    }
+    // A zero fade is allowed: no fade is a choice.
+    let mut skin = GooeySkin::dark();
+    skin.motion.fade_seconds = 0.0;
+    assert!(skin.problems().is_empty());
+}
+
+#[test]
+fn every_preset_carries_the_default_motion_palette_and_a_theme_step_leaves_it() {
+    for preset in SkinPreset::ALL {
+        assert_eq!(preset.skin().motion, MotionTokens::default());
+    }
+    let mut mine = GooeySkin::dark();
+    mine.motion.default = Spring::new(0.5, 0.1).unwrap();
+    let themed = mine.clone().with_colours_of(&GooeySkin::parchment());
+    assert_eq!(themed.motion, mine.motion);
+}

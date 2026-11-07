@@ -208,3 +208,22 @@ fn the_reduce_motion_setting_round_trips_and_an_empty_file_is_full_motion()
     );
     Ok(())
 }
+
+#[test]
+fn a_skins_motion_palette_is_data_and_a_file_without_one_has_the_default_palette()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut skin = GooeySkin::dark();
+    skin.motion.calm = bevy_gooey::Spring::new(0.55, 0.2)?;
+    skin.motion.fade_seconds = 0.3;
+    let text = ron::to_string(&skin)?;
+    assert_eq!(ron::from_str::<GooeySkin>(&text)?, skin);
+    let bare = ron::from_str::<GooeySkin>("(text_scale: 1.5)")?;
+    assert_eq!(bare.motion, bevy_gooey::MotionTokens::default());
+    let partial = ron::from_str::<GooeySkin>("(motion: (fade_seconds: 0.5))")?;
+    assert_eq!(partial.motion.fade_seconds, 0.5);
+    assert_eq!(
+        partial.motion.snappy,
+        bevy_gooey::MotionTokens::default().snappy
+    );
+    Ok(())
+}
