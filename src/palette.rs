@@ -17,6 +17,7 @@ use bevy::text::{EditableText, TextEdit};
 use bevy::ui::{ComputedNode, InteractionDisabled, Selected, UiGlobalTransform};
 use bevy::ui_widgets::{Activate, TextInput, ValueChange};
 
+use crate::binding::BindingSettings;
 use crate::cancel::Cancel;
 use crate::choice::ChoiceValue;
 use crate::feedback::{UiFeedback, UiFeedbackKind};
@@ -614,6 +615,7 @@ fn rows_that_fit(
 /// the frame the change happens.
 #[allow(clippy::too_many_arguments)]
 pub fn update_palette(
+    binding: Res<BindingSettings>,
     list: Res<CommandList>,
     history: Res<PaletteHistory>,
     inputs: Query<(Entity, Ref<TextInputValue>, &PaletteInput)>,
@@ -639,6 +641,7 @@ pub fn update_palette(
         .filter(|(entity, palette)| {
             palette.is_added()
                 || palette.is_changed()
+                || binding.is_changed()
                 || list.is_changed()
                 || history.is_changed()
                 || inputs.iter().any(|(input, value, of)| {
@@ -740,7 +743,7 @@ pub fn update_palette(
             let (title, hint) = command.map_or((String::new(), String::new()), |command| {
                 let hint = match (&command.enabled, &command.shortcut) {
                     (Err(reason), _) => reason.clone(),
-                    (Ok(()), Some(shortcut)) => shortcut.label(),
+                    (Ok(()), Some(shortcut)) => binding.chord(*shortcut),
                     (Ok(()), None) => String::new(),
                 };
                 (command.label(), hint)

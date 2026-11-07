@@ -25,7 +25,7 @@ use crate::list::span;
 use crate::model::scroll_to_reveal;
 use crate::nav::{Dialog, show_focus};
 use crate::popover::{Placement, PopoverPanel};
-use crate::shortcut::{Modifiers, Shortcut};
+use crate::shortcut::{ChordText, Modifiers, Shortcut};
 use crate::skin::{GooeySkin, Role};
 use crate::tooltip::Tooltip;
 use crate::widgets::{CHEVRON_INK_SHIFT, ONE_LINE};
@@ -264,6 +264,7 @@ fn build_item(mut world: DeferredWorld, HookContext { entity, .. }: HookContext)
         if let Some(shortcut) = item.shortcut {
             row.spawn((
                 Text::new(shortcut.label()),
+                ChordText(shortcut),
                 Role::MenuShortcut,
                 ONE_LINE,
                 Pickable::IGNORE,

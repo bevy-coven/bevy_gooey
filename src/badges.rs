@@ -7,8 +7,8 @@ use bevy::prelude::*;
 use bevy::ui::{ComputedNode, InteractionDisabled, UiGlobalTransform};
 use bevy::window::PrimaryWindow;
 
-use crate::binding::Capturing;
-use crate::shortcut::{Modifiers, Shortcut};
+use crate::binding::{BindingSettings, Capturing};
+use crate::shortcut::{ChordText, Modifiers, Shortcut};
 use crate::skin::Role;
 use crate::text::TextEditing;
 use crate::tooltip::Tooltip;
@@ -122,9 +122,10 @@ pub struct ShortcutBadge;
 
 /// The badge's bundle: one line of the chord's words, absolute on its widget (the corner and the
 /// frame are [`crate::apply_skin`]'s), never taking the pointer or focus.
-fn badge(label: String) -> impl Bundle {
+fn badge(label: String, chord: Shortcut) -> impl Bundle {
     (
         Text::new(label),
+        ChordText(chord),
         TextLayout::new(Justify::Center, LineBreak::NoWrap),
         Node {
             position_type: PositionType::Absolute,
@@ -158,6 +159,7 @@ type BadgeItem = (
 #[allow(clippy::too_many_arguments)]
 pub fn update_shortcut_badges(
     settings: Option<Res<ShortcutBadges>>,
+    binding: Res<BindingSettings>,
     keys: Option<Res<ButtonInput<KeyCode>>>,
     time: Option<Res<Time<Real>>>,
     mut held_for: Local<f32>,
@@ -196,7 +198,7 @@ pub fn update_shortcut_badges(
     };
     let screen = Rect::from_corners(Vec2::ZERO, window.physical_size().as_vec2());
 
-    let mut wanted: Vec<(Entity, String)> = Vec::new();
+    let mut wanted: Vec<(Entity, String, Shortcut)> = Vec::new();
     for (entity, shortcut, tooltip, shown, node, at) in &widgets {
         let Some(shortcut) = shortcut
             .copied()
@@ -212,26 +214,27 @@ pub fn update_shortcut_badges(
         if rect.intersect(screen).is_empty() {
             continue;
         }
-        wanted.push((entity, shortcut.label()));
+        wanted.push((entity, binding.chord(shortcut), shortcut));
     }
 
     // Reconcile: keep a badge whose widget still wants one, fix its words, drop the rest.
     let mut kept: Vec<Entity> = Vec::new();
     for (badge, parent, text) in &badges {
         let widget = parent.parent();
-        match wanted.iter().find(|(w, _)| *w == widget) {
-            Some((_, label)) if !kept.contains(&widget) => {
+        match wanted.iter().find(|(w, ..)| *w == widget) {
+            Some((_, label, chord)) if !kept.contains(&widget) => {
                 kept.push(widget);
                 if text.0 != *label {
                     commands.entity(badge).insert(Text::new(label.clone()));
                 }
+                commands.entity(badge).insert(ChordText(*chord));
             }
             _ => commands.entity(badge).despawn(),
         }
     }
-    for (widget, label) in wanted {
+    for (widget, label, chord) in wanted {
         if !kept.contains(&widget) {
-            commands.spawn((badge(label), ChildOf(widget)));
+            commands.spawn((badge(label, chord), ChildOf(widget)));
         }
     }
 }
@@ -340,6 +343,7 @@ pub fn update_shortcut_legend(
             for row in wanted {
                 card.spawn((
                     Text::new(row.chord.label()),
+                    ChordText(row.chord),
                     TextLayout::new(Justify::Center, LineBreak::NoWrap),
                     Node {
                         justify_self: JustifySelf::End,

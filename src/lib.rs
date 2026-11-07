@@ -40,7 +40,8 @@
 //!   [`InputDevice`] tracks), [`toast`] and
 //!   [`toast_alert`] (a line of news spawned from any system, stood in one [`ToastStack`] and
 //!   timed by [`ToastSettings`]),
-//!   [`Tooltip`] (with a command's [`Shortcut`] on a keycap: "Ctrl+S", or "⌘S" on a mac), the
+//!   [`Tooltip`] (with a command's [`Shortcut`] on a keycap: "Ctrl+S", or "⌘S" on a mac — and
+//!   [`ChordGlyphs`] spells it "Cmd+S" for a host whose font has no symbols), the
 //!   modal [`dialog`] and the anchored [`popover`] ([`popover_modal`] holds
 //!   focus; [`Placement`] says where it opens, [`PopoverClosed`] why it closed), and the
 //!   [`menu_bar`] of [`menu_title`]s with [`menu_item`], [`check_item`], [`radio_item`],
@@ -237,7 +238,7 @@ pub use model::{
     ENHANCED_CONTRAST, HOLD_SCALE_MAX, HOLD_UNWIND_RATE, HexError, INTERFACE_SIZE_STEPS,
     METER_GAIN_TAU_SECONDS, METER_SNAP, METER_TRAIL_HOLD_SECONDS, METER_TRAIL_RATE, MIN_TARGET_PX,
     MeterShown, NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES,
-    POPOVER_SLIDE_PX, POPOVER_SLIDE_SECONDS, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH,
+    ChordGlyphs, POPOVER_SLIDE_PX, POPOVER_SLIDE_SECONDS, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH,
     SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, STATE_STEP, STICK_PUSH, TABLE_LEAST_COLUMN,
     TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit,
     box_outside, choice_next, choice_step, cie_lightness, clock_text, column_resize, composite,
@@ -283,7 +284,7 @@ pub use region::{ArrowPolicy, FocusRegion, cycle_regions};
 pub use scale::{UiScaleSettings, scale_with_window};
 pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_sections};
 pub use select::{SELECT_FILTER_ABOVE, Select};
-pub use shortcut::{Modifiers, Platform, Shortcut};
+pub use shortcut::{ChordText, Modifiers, Platform, Shortcut, update_chord_texts};
 pub use skin::{
     Density, GooeyFonts, GooeySkin, Role, SkinPreset, SkinProblem, SkinScope, apply_skin,
 };
@@ -412,6 +413,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ShortcutLegend>()
             .register_type::<LegendRow>()
             .register_type::<Modifiers>()
+            .register_type::<ChordText>()
             .register_type::<Platform>()
             .register_type::<InputDevice>()
             .register_type::<Prompt>()
@@ -503,7 +505,12 @@ impl Plugin for GooeyStylePlugin {
                         update_hold_bars,
                         (update_toggle_groups, fit_bars).chain(),
                         update_sections,
-                        (update_shortcut_badges, update_shortcut_legend).chain(),
+                        (
+                            update_shortcut_badges,
+                            update_shortcut_legend,
+                            update_chord_texts,
+                        )
+                            .chain(),
                         (drag::update_drag_visuals, drag::update_drop_candidates).chain(),
                     )
                         .chain(),
