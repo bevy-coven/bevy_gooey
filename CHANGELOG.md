@@ -2,7 +2,15 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Every widget's text size is set on the device-pixel grid (#59, `docs/research/text-grid.md`, `docs/guide/scale.md`): `apply_skin` rounds each one up to the smallest size that is a whole number of device pixels at the node's scale (the window's scale factor times `UiScale`), never smaller than the skin asks and less than one device pixel bigger, and sets it again when the scale changes; `snap_text_size(size, scale)` is the rule, public beside `snap_line_width`. 14 px body text at a 1.1 text size and 1.25x was 19.25 device px and is 20. A host's own `Text` without a `Role` keeps its size. Proved by `tests/text_grid.rs`.
+
+## [0.39.0] - 2026-11-07
+
 ### Added
+
+- `Opacity(f32)`, `Leave`, `Stay` and `Leaving` (#49, `docs/research/presence.md`, `docs/guide/presence.md`): a widget that goes stays drawn while it fades. `Opacity` multiplies every colour the crate writes on a `Role` at or below it by the product of the `Opacity` at and above each node (fills, borders, text, an icon's tint, a caret and a floating box's shadow); a node with no `Role` is the host's and is untouched. `Leave` on any node starts an exit on the skin's `motion.fade_seconds`, and in the same frame every node of the subtree takes `Pickable::IGNORE` and loses its `TabIndex`, a `Dialog` gives its focus back and anything else focused inside lets focus go; the node despawns within `motion.default` plus a frame. `Stay` turns the fade round from where it is drawn, restores all of that, and comes to rest at the opacity it had. A `Leave` on a node already going changes nothing; a plain `despawn()` is still immediate; `MotionSettings::off()` makes a `Leave` land in its own frame. The cutover: `confirm`, `popover`, the command palette and a select's list exit this way.
 
 - `DoublePress { entity }`, `ClickCount(u8)` and `PointerSettings { double_click_seconds: 0.5, double_click_slop_px: 4.0 }` (#62, `docs/research/double-press.md`, `docs/guide/pointer.md`): a desktop's double click. A second primary press on the same entity within the interval of the first and within the slop of where it was, let go there, is one `DoublePress` (an `EntityEvent` that bubbles like the click), sent in the second click's frame; the first click still lands at once; a press held past the interval or dragged past the slop pairs with nothing; a third quick click starts a new pair; keys never pair. `ClickCount` is on the pressed entity while the press is held, 1, 2, 3 for a run of quick presses, for a drag to read. The clock is `Time<Real>`. Measured from Rune's runtime (open reference, `f73f72c`).
 
@@ -16,7 +24,6 @@
 
 ### Changed
 
-- Every widget's text size is set on the device-pixel grid (#59, `docs/research/text-grid.md`, `docs/guide/scale.md`): `apply_skin` rounds each one up to the smallest size that is a whole number of device pixels at the node's scale (the window's scale factor times `UiScale`), never smaller than the skin asks and less than one device pixel bigger, and sets it again when the scale changes; `snap_text_size(size, scale)` is the rule, public beside `snap_line_width`. 14 px body text at a 1.1 text size and 1.25x was 19.25 device px and is 20. A host's own `Text` without a `Role` keeps its size. Proved by `tests/text_grid.rs`.
 - **Breaking:** `GooeySkin` has a new public field, `elevation` (a literal naming every field needs `elevation: Elevation::none()` or `..GooeySkin::default()`). Every panel now casts a soft shadow, and the tooltip's and popovers' old shadow (the background at 0.7 alpha) is the skin's `floating` stack.
 - **Breaking:** `SkinProblem` has a new variant, `TranslucentSeed`, so an exhaustive `match` on it needs an arm.
 - A tree's type-ahead is the table's type-select now (`table_by_input`); `tree_by_input` keeps Left, Right and `*`. The prefix is shared and resets when focus moves to another group, so leaving a tree and coming back within a second no longer starts the prefix over.

@@ -8,9 +8,12 @@ use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input_focus::{AutoFocus, InputFocus};
 use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
+use bevy::time::TimeUpdateStrategy;
 use bevy::ui::{ComputedUiRenderTargetInfo, UiGlobalTransform};
 use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
@@ -69,6 +72,10 @@ fn app_with(skin: GooeySkin) -> App {
             writes.0 += changed.iter().count() as u32
         },
     );
+    // One frame of the test clock, seconds: a leave fades on real time, so the exit has to pass.
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f32(
+        0.03,
+    )));
     app.world_mut().spawn(Camera2d);
     app
 }
@@ -78,7 +85,7 @@ fn app() -> App {
 }
 
 fn settle(app: &mut App) {
-    for _ in 0..6 {
+    for _ in 0..14 {
         app.update();
     }
 }

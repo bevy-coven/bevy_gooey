@@ -44,6 +44,7 @@ mod options;
 mod palette;
 mod pointer;
 mod popover;
+mod presence;
 mod primary_button;
 mod progress;
 mod prompts;

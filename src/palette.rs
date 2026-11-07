@@ -271,14 +271,14 @@ pub struct PaletteCount(pub Entity);
 /// `Cancel` that reaches the palette is the palette's; the game needs no observer.
 pub(crate) fn palette_on_cancel(mut cancel: On<Cancel>, mut commands: Commands) {
     cancel.propagate(false);
-    commands.entity(cancel.entity).despawn();
+    commands.entity(cancel.entity).insert(crate::Leave);
 }
 
 /// A click on the scrim outside the card closes the palette. A click inside bubbles up with its
 /// original target in the card, so it is not this.
 pub(crate) fn palette_on_click(click: On<PointerClick>, mut commands: Commands) {
     if click.original_event_target() == click.entity {
-        commands.entity(click.entity).despawn();
+        commands.entity(click.entity).insert(crate::Leave);
     }
 }
 
@@ -360,7 +360,7 @@ fn run_selected(
             return false;
         };
         let select = source.select;
-        commands.entity(palette).despawn();
+        commands.entity(palette).insert(crate::Leave);
         commands.queue(move |world: &mut World| {
             let now = world.get::<ChoiceValue>(select).map(|value| value.0);
             if now.is_some_and(|now| now != index) {
@@ -381,7 +381,12 @@ fn run_selected(
     }
     let id = command.id.clone();
     history.record(&id);
-    commands.entity(palette).despawn();
+    // The exit begins now and the dialog is a dialog no longer, so focus is back on the opener
+    // before the command runs; the card is still drawn while it thins out.
+    commands
+        .entity(palette)
+        .remove::<(crate::Dialog, bevy::input_focus::tab_navigation::TabGroup)>()
+        .insert(crate::Leave);
     commands.trigger(RunCommand { id });
     true
 }

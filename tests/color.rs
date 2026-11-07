@@ -13,10 +13,13 @@ use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, 
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
+use bevy::time::TimeUpdateStrategy;
 use bevy::ui::{ComputedNode, InteractionDisabled, UiGlobalTransform};
 use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
 use bevy_gooey::*;
+
+use std::time::Duration;
 
 /// Every `ValueChange<Srgba>` a game would see: the row, the colour and whether the change ended.
 #[derive(Resource, Default)]
@@ -83,6 +86,10 @@ fn app_sized(width: u32, height: u32) -> App {
             writes.0 += changed.iter().count() as u32
         },
     );
+    // One frame of the test clock: a picker that closes fades on real time, so the exit has to pass.
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f32(
+        0.03,
+    )));
     app.world_mut().spawn(Camera2d);
     app
 }
@@ -92,7 +99,7 @@ fn app() -> App {
 }
 
 fn settle(app: &mut App) {
-    for _ in 0..6 {
+    for _ in 0..14 {
         app.update();
     }
 }
