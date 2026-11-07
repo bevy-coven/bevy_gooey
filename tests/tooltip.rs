@@ -25,6 +25,9 @@ fn app() -> App {
     let mut app = App::new();
     // Assumed owner exception (#76): colours ease on the real clock, so this app reads them landed.
     app.insert_resource(MotionSettings::off());
+    // Assumed owner exception (#76): these tests move the pointer for a few real milliseconds and
+    // read the box, so they run with no dwell; `tests/tooltip_delay.rs` proves the delay.
+    app.insert_resource(TooltipSettings { delay_seconds: 0.0 });
     app.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {

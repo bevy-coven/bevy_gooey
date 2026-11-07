@@ -362,7 +362,10 @@ pub use toolbar::{
     GroupOption, Overflowed, ToggleGroupCount, ToggleGroupValue, Toolbar, fit_bars,
     update_toggle_groups,
 };
-pub use tooltip::{Tooltip, TooltipBox, show_tooltips, update_tooltip_text};
+pub use tooltip::{
+    TOOLTIP_DELAY_SECONDS, Tooltip, TooltipBox, TooltipDwell, TooltipSettings, show_tooltips,
+    update_tooltip_text,
+};
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use type_select::TypedPrefix;
 pub use widgets::{
@@ -555,6 +558,9 @@ impl Plugin for GooeyStylePlugin {
             .add_observer(toast::toast_on_activate)
             .add_observer(toast::toast_button_removed)
             .add_observer(text::text_on_edit)
+            .init_resource::<TooltipSettings>()
+            .register_type::<TooltipSettings>()
+            .add_observer(tooltip::tooltip_on_press)
             .add_observer(dock::dock_on_select)
             .add_observer(dock::dock_on_resize)
             .add_systems(
