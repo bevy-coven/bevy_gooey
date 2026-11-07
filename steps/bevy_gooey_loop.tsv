@@ -16749,3 +16749,381 @@ pass	seq	phase	kind	category	tool	start	seconds	detail
 90	273	log	model	model		2026-11-04T13:05:38Z	4.2	
 90	274	log	tool	push gate	bash	2026-11-04T13:05:42Z	1.7	Log release and cleanup, push :: cd /home/ladvien/bevy_gooey_loop; cat >> docs/loop-log.md <<'EOF' **Gate (iteration 62).** `CARGO_BUILD_JOBS=4`, sccache off (`CARGO_BUILD_RUSTC_WRAPPER=`): fmt
 90	275	log	model	model		2026-11-04T13:05:44Z	7.6	
+91	1	orient	model	model		2026-11-07T05:00:12Z	5.9	
+91	2	orient	tool	phase mark	bash	2026-11-07T05:00:18Z	0.7	Orienting: audit, parked work, log :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark orient; git fetch -q origin loop-stats && git show origin/loop-stats:steps/bevy_
+91	3	orient	tool	github	bash	2026-11-07T05:00:18Z	0.7	Listing open issues :: cd /home/ladvien/bevy_gooey_loop && gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json number,title,labels,createdAt --jq '.[] | "#\(.nu
+91	4	orient	model	model		2026-11-07T05:00:18Z	4.9	
+91	5	orient	tool	github	bash	2026-11-07T05:00:23Z	0.5	Checking #45 and parked branch :: cd /home/ladvien/bevy_gooey_loop && gh issue view 45 --json state,title,labels,comments --jq '{state,title,labels:[.labels[].name],c:[.comments[]|.body[0:300]]}
+91	6	orient	model	model		2026-11-07T05:00:24Z	2.6	
+91	7	orient	tool	git	bash	2026-11-07T05:00:26Z	0.6	Checking origin/main vs local :: cd /home/ladvien/bevy_gooey_loop && git fetch -q origin && git status -sb | head -3; git log origin/main --oneline -12 --format='%h %ad %s' --date=format:%m-%d-
+91	8	orient	model	model		2026-11-07T05:00:27Z	4.1	
+91	9	orient	tool	git	bash	2026-11-07T05:00:31Z	0.0	Merging origin/main :: cd /home/ladvien/bevy_gooey_loop && git show --stat df8e16f | tail -5; git merge origin/main -m "Merge origin/main" 2>&1 | tail -5; git status -sb | head -5
+91	10	orient	model	model		2026-11-07T05:00:31Z	6.3	
+91	11	bugs	tool	phase mark	bash	2026-11-07T05:00:37Z	1.6	Ranking ready G-NN issues :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark bugs; gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 --json
+91	12	bugs	model	model		2026-11-07T05:00:39Z	4.3	
+91	13	bugs	tool	shell	bash	2026-11-07T05:00:43Z	0.0	Reading issues 46-48 :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import json g=json.load(open('/tmp/gooey_issues.json')) for n in (46,47,48): i=[x for x in g if x['number']=
+91	14	bugs	model	model		2026-11-07T05:00:43Z	5.3	
+91	15	bugs	tool	shell	bash	2026-11-07T05:00:49Z	0.0	Checking log numbering and motion.rs :: cd /home/ladvien/bevy_gooey_loop && grep -n '^## Iteration\|^## ' docs/loop-log.md | tail -6; ls docs/research | head -80; ls ~ | grep -E '^g[0-9]+' ; df -h . |
+91	16	bugs	model	model		2026-11-07T05:00:49Z	4.0	
+91	17	bugs	tool	github	bash	2026-11-07T05:00:53Z	10.0	Cloning Rune reference :: cd /tmp && mkdir -p g65 && cd g65 && (gh repo clone anomalyco/rune rune -- --depth 1 2>&1 | tail -2); ls rune 2>/dev/null; ls rune/crates 2>/dev/null; du -sh ~/
+91	18	bugs	model	model		2026-11-07T05:01:03Z	1.9	
+91	19	bugs	tool	shell	bash	2026-11-07T05:01:05Z	0.0	Reading Rune's spring source :: cd /tmp/g65/rune && ls crates/rune-motion/src; wc -l crates/rune-motion/src/*.rs; cat crates/rune-motion/src/spring.rs; grep -rn "motion_gate" --include=*.rs -l
+91	20	bugs	model	model		2026-11-07T05:01:05Z	1.7	
+91	21	bugs	tool	shell	bash	2026-11-07T05:01:06Z	0.0	Raw spring.rs :: cd /tmp/g65/rune && cat crates/rune-motion/src/spring.rs | sed -n 1,200p; cat crates/rune-motion/src/layer.rs | sed -n 1,60p
+91	22	bugs	model	model		2026-11-07T05:01:06Z	2.9	
+91	23	bugs	tool	shell	bash	2026-11-07T05:01:09Z	0.0	Rune tokens and rest rule :: cd /tmp/g65/rune && cat crates/rune-motion/src/tokens.rs | sed -n 1,95p; grep -rn "Eps {" crates/rune-motion/src/*.rs | head; sed -n 60,130p crates/rune-motion/
+91	24	bugs	model	model		2026-11-07T05:01:09Z	3.2	
+91	25	bugs	tool	shell	bash	2026-11-07T05:01:12Z	0.0	Rune rest rule and motion_gate :: cd /tmp/g65/rune && sed -n 35,70p crates/rune-motion/src/props.rs; grep -n "fn settle_after" -A40 crates/rune-motion/src/layer.rs | head -70; sed -n 1,60p crate
+91	26	bugs	model	model		2026-11-07T05:01:12Z	6.0	
+91	27	bugs	tool	homestill	bash	2026-11-07T05:01:18Z	0.9	home-still preflight and search :: cd /tmp/g65 && (timeout 40 hs status 2>&1 | head -8); (timeout 60 hs distill search "game feel animation responsiveness spring easing interface" --output json 2
+91	28	bugs	tool	read files	read	2026-11-07T05:01:18Z	0.9	Apple springs talk :: https://developer.apple.com/videos/play/wwdc2023/10158/
+91	29	bugs	model	model		2026-11-07T05:01:19Z	69.7	
+91	30	bugs	tool	shell	bash	2026-11-07T05:02:29Z	0.0	Reading motion.rs rest :: cd /home/ladvien/bevy_gooey_loop && sed -n 80,330p src/motion.rs
+91	31	bugs	model	model		2026-11-07T05:02:29Z	34.4	
+91	32	bugs	tool	shell	bash	2026-11-07T05:03:03Z	0.0	Inspect model/skin conventions :: cd /home/ladvien/bevy_gooey_loop && grep -n "ease_out\|DIALOG_SLIDE\|POPOVER_SLIDE\|serde\|^use\|derive" src/model.rs | head -40; grep -rn "ease_out\|DIALOG_SLI
+91	33	bugs	model	model		2026-11-07T05:03:03Z	4.6	
+91	34	bugs	tool	shell	bash	2026-11-07T05:03:08Z	0.0	How model types are reflected :: cd /home/ladvien/bevy_gooey_loop && grep -rn "reflect_opaque\|reflect(opaque\|reflect(ignore" src | head; grep -n "pub held_fade" -B6 -A4 src/skin.rs; grep -n "
+91	35	bugs	model	model		2026-11-07T05:03:08Z	4.7	
+91	36	bugs	tool	shell	bash	2026-11-07T05:03:13Z	0.0	Check reflection of model types and deps :: cd /home/ladvien/bevy_gooey_loop && grep -n "PadStyle" src/model.rs | head -3; grep -n "struct BindingSettings" -B8 src/binding.rs | head -20; grep -n "Reflect\
+91	37	bugs	model	model		2026-11-07T05:03:13Z	4.4	
+91	38	bugs	tool	shell	bash	2026-11-07T05:03:17Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 139,175p src/binding.rs; sed -n 570,580p src/model.rs; grep -rn "PadStyle" src/lib.rs | head -3
+91	39	bugs	model	model		2026-11-07T05:03:17Z	28.3	
+91	40	bugs	tool	edit files	write	2026-11-07T05:03:45Z	0.0	Writing motion research note :: /home/ladvien/bevy_gooey_loop/docs/research/motion-tracks.md
+91	41	bugs	model	model		2026-11-07T05:03:45Z	2.5	
+91	42	research	tool	phase mark	bash	2026-11-07T05:03:48Z	0.1	Commit research note :: cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark research; git checkout -q -b loop/iter-65 && git add docs/research/motion-tracks
+91	43	research	model	model		2026-11-07T05:03:48Z	26.1	
+91	44	research	tool	shell	bash	2026-11-07T05:04:14Z	0.0	Inspect skin problems and Display :: cd /home/ladvien/bevy_gooey_loop && sed -n 1005,1030p src/skin.rs; sed -n 1318,1362p src/skin.rs; grep -n "held_fade: HELD_FADE" -B3 -A12 src/skin.rs | head -40
+91	45	research	model	model		2026-11-07T05:04:14Z	59.7	
+91	46	research	tool	shell	bash	2026-11-07T05:05:14Z	0.0	Add spring maths to model.rs :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='src/model.rs' s=open(p).read() marker="/// How long is left, in words:" assert s.count(marker)=
+91	47	research	model	model		2026-11-07T05:05:14Z	20.8	
+91	48	research	tool	shell	bash	2026-11-07T05:05:35Z	0.0	Add MotionTokens, skin field, SkinProblem :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/motion.rs' s=open(p).read() s=s.replace('''use crate::model::{ DIALOG_SLIDE_PX, DIALOG_SLIDE_SECONDS,
+91	49	research	model	model		2026-11-07T05:05:35Z	5.3	
+91	50	research	tool	shell	bash	2026-11-07T05:05:40Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/lib.rs' s=open(p).read() s=s.replace("pub use motion::{MotionSettings, PopoverSlide, SlideIn, begin_e
+91	51	research	model	model		2026-11-07T05:05:40Z	3.9	
+91	52	research	tool	cargo test	bash	2026-11-07T05:05:44Z	10.7	Run spring model tests :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/lib.rs' s=open(p).read() s=s.replace("slot_edge, snap_line_width, snap_to_row, spinner_angle, split_c
+91	53	research	model	model		2026-11-07T05:05:55Z	2.7	
+91	54	build	tool	phase mark	bash	2026-11-07T05:05:57Z	15.2	cd /home/ladvien/bevy_gooey_loop && sed -i 's/^use crate::PopoverSlide;/use crate::{MotionTokens, PopoverSlide};/' src/skin.rs && python3 ~/.local/share/wiggum/
+91	55	build	model	model		2026-11-07T05:06:13Z	7.9	
+91	56	build	tool	cargo test	bash	2026-11-07T05:06:20Z	7.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() a=s.index(" // Exactly one overshoot: it crosses") b=s.index(" let flat = 
+91	57	build	model	model		2026-11-07T05:06:28Z	3.9	
+91	58	build	tool	cargo test	bash	2026-11-07T05:06:32Z	1.0	cd /home/ladvien/bevy_gooey_loop && export CARGO_TARGET_DIR=/home/ladvien/target/gooey-loop CARGO_BUILD_JOBS=4 && (CARGO_BUILD_RUSTC_WRAPPER= cargo nextest run 
+91	59	build	model	model		2026-11-07T05:06:33Z	9.2	
+91	60	build	tool	cargo test	bash	2026-11-07T05:06:42Z	6.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() a=s.index(" // The new target changes the pull from here on") b=s.index(" 
+91	61	build	model	model		2026-11-07T05:06:49Z	4.4	
+91	62	build	tool	shell	bash	2026-11-07T05:06:53Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,20p tests/serde.rs; sed -n 1,12p tests/skin.rs; sed -n 61,75p tests/serde.rs
+91	63	build	model	model		2026-11-07T05:06:53Z	10.1	
+91	64	build	tool	cargo test	bash	2026-11-07T05:07:03Z	60.1	[launched bg_1] cd /home/ladvien/bevy_gooey_loop && cat >> tests/serde.rs <<'E' #[test] fn a_skins_motion_palette_is_data_and_a_file_without_one_has_the_default_palette() -> Re
+91	65	build	model	model		2026-11-07T05:08:03Z	3.9	
+91	66	build	tool	shell	bash	2026-11-07T05:08:08Z	0.4	cd /home/ladvien/bevy_gooey_loop && sed -n 1,60p src/testing.rs; grep -n "^pub fn\|^pub struct\|^pub enum\|^fn " src/testing.rs; sed -n 1,70p tests/motion.rs
+91	67	build	model	model		2026-11-07T05:08:09Z	30.7	
+91	68	build	tool	shell	bash	2026-11-07T05:08:39Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 355,420p src/testing.rs; grep -n "inverse_scale_factor" ~/.cargo/registry/src/*/bevy_ui-0.20.0/src/ui_node.rs | head 
+91	69	build	model	model		2026-11-07T05:08:39Z	32.2	
+91	70	build	tool	shell	bash	2026-11-07T05:09:12Z	2.8	Add MotionTrace to testing.rs :: cd /home/ladvien/bevy_gooey_loop && cat >> src/testing.rs <<'E' /// What one frame of a [`MotionTrace`] saw of the entity: each field is `None` when the entity 
+91	71	build	model	model		2026-11-07T05:09:14Z	4.3	
+91	72	build	tool	shell	bash	2026-11-07T05:09:19Z	0.1	cd /home/ladvien/bevy_gooey_loop && sed -n 1,12p tests/testing.rs; grep -n "mod testing\|mod motion" tests/all.rs; sed -n 70,140p tests/motion.rs
+91	73	build	model	model		2026-11-07T05:09:19Z	39.4	
+91	74	build	tool	shell	bash	2026-11-07T05:09:59Z	1.0	Write MotionTrace tests :: cd /home/ladvien/bevy_gooey_loop && cat > tests/motion_trace.rs <<'E' //! `MotionTrace` (feature `testing`), in the same headless window on a clock the test set
+91	75	build	model	model		2026-11-07T05:10:00Z	8.7	
+91	76	build	tool	shell	bash	2026-11-07T05:10:09Z	1.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/motion_trace.rs' s=open(p).read() a=s.index(" let rose = start") b=s.index(" let settled = trace.se
+91	77	build	model	model		2026-11-07T05:10:10Z	47.1	
+91	78	build	tool	shell	bash	2026-11-07T05:10:58Z	0.5	cd /home/ladvien/bevy_gooey_loop && grep -n "MeterMotion" src/meter.rs | head -5; grep -n "pub struct MeterMotion" -B4 -A8 src/meter.rs; grep -rn "SlideIn\|Popo
+91	79	build	model	model		2026-11-07T05:10:58Z	3.2	
+91	80	build	tool	shell	bash	2026-11-07T05:11:01Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 150,260p src/model.rs
+91	81	build	bg	shell	bash	2026-11-07T05:07:04Z	237.0	bg_1 completed: cat >> tests/serde.rs <<'E' #[test] fn a_skins_motion_palette_is_data_and_a_file_without_one_has_the_default_palette...
+91	82	build	model	model		2026-11-07T05:11:01Z	3.3	
+91	83	build	tool	cargo test	bash	2026-11-07T05:11:05Z	0.0	[launched bg_2] cd /home/ladvien/bevy_gooey_loop && export CARGO_TARGET_DIR=/home/ladvien/target/gooey-loop CARGO_BUILD_JOBS=4 && (CARGO_BUILD_RUSTC_WRAPPER= cargo nextest run 
+91	84	build	model	model		2026-11-07T05:11:05Z	6.0	
+91	85	build	tool	shell	bash	2026-11-07T05:11:11Z	0.3	date -u; cd /home/ladvien/bevy_gooey_loop && grep -n "meter_motion\|MeterShown" tests/*.rs src/*.rs | grep -v "^src/model.rs" | head -20; sed -n 30,110p src/met
+91	86	build	model	model		2026-11-07T05:11:11Z	10.8	
+91	87	build	tool	shell	bash	2026-11-07T05:11:22Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "skin_of\|SkinOf\|SkinLookup" src/cooldown.rs src/skin.rs | head; grep -n "pub fn update_cooldowns" -B2 -A25 src/coo
+91	88	build	model	model		2026-11-07T05:11:22Z	23.4	
+91	89	build	tool	shell	bash	2026-11-07T05:11:45Z	0.1	cd ~/.cargo/registry/src/*/bevy_ui-0.20.0/src && grep -n "pub struct UiTransform" -B5 -A40 ui_transform.rs | head -90; cd /home/ladvien/bevy_gooey_loop; grep -n
+91	90	build	model	model		2026-11-07T05:11:45Z	2.0	
+91	91	build	tool	shell	bash	2026-11-07T05:11:47Z	0.1	cd /home/ladvien/bevy_gooey_loop; d=$(ls -d ~/.cargo/registry/src/*/bevy_ui-0.20.0/src); grep -n "pub struct UiTransform" -B5 -A30 $d/ui_transform.rs | head -70
+91	92	build	model	model		2026-11-07T05:11:47Z	48.3	
+91	93	build	tool	shell	bash	2026-11-07T05:12:36Z	0.4	Rewrite motion.rs onto tracks :: cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/motion.rs' s=open(p).read() a=s.index("/// A panel arriving:") head=s[:a] head=head.replace('''//! Mo
+91	94	build	model	model		2026-11-07T05:12:36Z	17.4	
+91	95	build	tool	shell	bash	2026-11-07T05:12:54Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/motion.rs' s=open(p).read() s=s.replace("if track.settled && !target.is_changed() && !off {","if trac
+91	96	build	model	model		2026-11-07T05:12:54Z	9.1	
+91	97	build	tool	cargo build	bash	2026-11-07T05:13:03Z	60.0	[launched bg_3] cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='src/model.rs' s=open(p).read() s=s.replace('''/// How long a dialog's card takes to rise into p
+91	98	build	model	model		2026-11-07T05:14:03Z	4.0	
+91	99	build	tool	wait: other	wait	2026-11-07T05:14:07Z	5.2	{}
+91	100	build	model	model		2026-11-07T05:14:12Z	1.0	
+91	101	build	tool	wait: other	wait	2026-11-07T05:14:13Z	10.0	{}
+91	102	build	model	model		2026-11-07T05:14:23Z	2.2	
+91	103	build	tool	shell	bash	2026-11-07T05:14:25Z	0.3	cd /home/ladvien/bevy_gooey_loop && sed -n 108,420p tests/motion.rs
+91	104	build	model	model		2026-11-07T05:14:26Z	32.4	
+91	105	build	tool	shell	bash	2026-11-07T05:14:58Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/motion.rs' s=open(p).read() # header doc s=s.replace("""//! Motion as a game sees it, in the same h
+91	106	build	model	model		2026-11-07T05:14:58Z	1.9	
+91	107	build	tool	wait: other	wait	2026-11-07T05:15:00Z	30.1	{}
+91	108	build	model	model		2026-11-07T05:15:30Z	35.5	
+91	109	build	tool	shell	bash	2026-11-07T05:16:06Z	1.8	Add track tests :: cd /home/ladvien/bevy_gooey_loop && cat >> tests/motion_trace.rs <<'E' /// A node with a track at rest on its place, updated until it is. fn tracked(app: &mut A
+91	110	build	model	model		2026-11-07T05:16:08Z	6.5	
+91	111	build	tool	shell	bash	2026-11-07T05:16:15Z	0.2	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/motion_trace.rs' s=open(p).read() s=s.replace("fn the_first_target_lands_where_it_says_and_the_node
+91	112	build	model	model		2026-11-07T05:16:15Z	3.3	
+91	113	build	tool	shell	bash	2026-11-07T05:16:18Z	1.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/motion_trace.rs' s=open(p).read() s=s.replace(''' assert_eq!( trace.max_step_px(), 50.0_f32.hypot(2
+91	114	build	tool	wait: other	wait	2026-11-07T05:16:18Z	1.0	{}
+91	115	build	model	model		2026-11-07T05:16:19Z	8.7	
+91	116	build	tool	wait: other	wait	2026-11-07T05:16:28Z	0.0	{}
+91	117	build	model	model		2026-11-07T05:16:28Z	4.4	
+91	118	build	tool	shell	bash	2026-11-07T05:16:32Z	0.1	cd /home/ladvien/bevy_gooey_loop && grep -n "pub fn spring_at_rest" -B2 -A8 src/model.rs | head -30; sed -n 488,498p src/lib.rs
+91	119	build	model	model		2026-11-07T05:16:33Z	5.6	
+91	120	build	tool	cargo build	bash	2026-11-07T05:16:38Z	15.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() old='''pub fn spring_at_rest(state: SpringState, target: f32) -> bool { (s
+91	121	build	model	model		2026-11-07T05:16:54Z	8.9	
+91	122	build	tool	cargo test	bash	2026-11-07T05:17:03Z	0.0	[launched bg_4] cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/testing.rs' s=open(p).read() s=s.replace(''' /// The biggest change of speed from one frame to the ne
+91	123	build	model	model		2026-11-07T05:17:03Z	2.8	
+91	124	build	tool	shell	bash	2026-11-07T05:17:06Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -rn "SlideIn\|ease_out\|DIALOG_SLIDE_SECONDS\|POPOVER_SLIDE_SECONDS" --include=*.rs --include=*.md . 2>/dev/null | grep
+91	125	build	model	model		2026-11-07T05:17:06Z	28.9	
+91	126	build	tool	shell	bash	2026-11-07T05:17:35Z	0.4	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/guide/motion.md' s=open(p).read() a=s.index("## What moves") b=s.index("## A meter's trail") s=s[:a]
+91	127	build	model	model		2026-11-07T05:17:35Z	5.4	
+91	128	build	tool	read files	read	2026-11-07T05:17:41Z	0.0	README.md:210:raw
+91	129	build	model	model		2026-11-07T05:17:41Z	8.3	
+91	130	build	tool	edit files	edit	2026-11-07T05:17:50Z	0.1	Update README motion caption :: [README.md#0000] PUT 210.=210: +*Motion: a hit drops a `meter()`'s fill to the new value in that frame and leaves the lost length behind it in the skin's danger
+91	131	build	model	model		2026-11-07T05:17:50Z	5.2	
+91	132	build	tool	edit files	edit	2026-11-07T05:17:55Z	0.8	Update README motion caption :: [README.md#F472] PUT 210.=210: +*Motion: a hit drops a `meter()`'s fill to the new value in that frame and leaves the lost length behind it in the skin's danger
+91	133	build	tool	shell	bash	2026-11-07T05:17:57Z	0.2	cd /home/ladvien/bevy_gooey_loop && grep -n "SlideIn" docs/guide/README.md
+91	134	build	model	model		2026-11-07T05:17:57Z	2.5	
+91	135	build	tool	read files	read	2026-11-07T05:18:01Z	1.1	docs/guide/README.md:69-70
+91	136	build	model	model		2026-11-07T05:18:02Z	3.1	
+91	137	build	tool	edit files	edit	2026-11-07T05:18:05Z	0.0	Update guide index motion line :: [docs/guide/README.md#B2AE] PUT 69.=70: +- [Motion](motion.md) — a dialog's card and a popover's panel spring into place, the skin's motion palette, + `MotionSe
+91	138	build	tool	wait: other	wait	2026-11-07T05:18:05Z	5.0	{}
+91	139	build	model	model		2026-11-07T05:18:10Z	3.4	
+91	140	build	tool	wait: other	wait	2026-11-07T05:18:13Z	10.0	{}
+91	141	build	model	model		2026-11-07T05:18:23Z	14.5	
+91	142	build	tool	shell	bash	2026-11-07T05:18:38Z	0.9	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() s=s.replace('''/// How fast a meter's fill rises to a higher value: the ti
+91	143	build	model	model		2026-11-07T05:18:39Z	13.0	
+91	144	build	tool	shell	bash	2026-11-07T05:18:52Z	2.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() s=s.replace(" if target < shown.fill {\n next.fill = target;\n next.speed 
+91	145	build	model	model		2026-11-07T05:18:55Z	2.8	
+91	146	build	tool	shell	bash	2026-11-07T05:18:58Z	3.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/lib.rs' s=open(p).read() s=s.replace(" METER_GAIN_TAU_SECONDS, METER_SNAP,"," METER_SNAP,") open(p,'w
+91	147	build	model	model		2026-11-07T05:19:02Z	8.5	
+91	148	build	tool	shell	bash	2026-11-07T05:19:10Z	2.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='src/model.rs' s=open(p).read() i=s.index(" fn settled(at: f32) -> MeterShown {") head,tail=s[:i
+91	149	build	model	model		2026-11-07T05:19:13Z	9.7	
+91	150	build	tool	shell	bash	2026-11-07T05:19:23Z	1.3	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() marker=" #[test]\n fn a_gain_during_a_trail_lifts_the_trail_with_the_fill(
+91	151	build	tool	wait: other	wait	2026-11-07T05:19:23Z	30.1	{}
+91	152	build	model	model		2026-11-07T05:19:53Z	11.8	
+91	153	build	tool	shell	bash	2026-11-07T05:20:05Z	1.6	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() s=s.replace(''' /// frame. 0 at rest and after a loss. pub speed: f32, }''
+91	154	build	bg	shell	bash	2026-11-07T05:17:12Z	174.7	bg_4 completed: python3 - <<'E' p='src/testing.rs' s=open(p).read() s=s.replace(''' /// The biggest change of speed from one frame...
+91	155	build	model	model		2026-11-07T05:20:07Z	7.0	
+91	156	build	tool	cargo test	bash	2026-11-07T05:20:14Z	0.0	[launched bg_5] cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/motion_trace.rs' s=open(p).read() a=s.index(" let settled = trace.settled_after_seconds().expect(\"
+91	157	build	model	model		2026-11-07T05:20:14Z	3.0	
+91	158	build	tool	shell	bash	2026-11-07T05:20:17Z	0.0	cd /home/ladvien/bevy_gooey_loop && sed -n 1,40p CHANGELOG.md | cut -c1-300; grep -n "^- \`src/motion.rs\`" AGENTS.md | cut -c1-60
+91	159	build	model	model		2026-11-07T05:20:17Z	3.1	
+91	160	build	tool	wait: other	wait	2026-11-07T05:20:20Z	60.0	{}
+91	161	build	model	model		2026-11-07T05:21:20Z	2.8	
+91	162	build	tool	shell	bash	2026-11-07T05:21:23Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "motion.gif" -B2 -A6 docs/media/README.md | cut -c1-900 | head -40; ls docs/media | head -50; ls tools 2>/dev/null
+91	163	build	model	model		2026-11-07T05:21:23Z	3.4	
+91	164	build	tool	wait: other	wait	2026-11-07T05:21:26Z	215.5	{}
+91	165	build	model	model		2026-11-07T05:25:01Z	41.7	
+91	166	build	tool	shell	bash	2026-11-07T05:25:43Z	0.0	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import re p='src/model.rs' s=open(p).read() old=s[s.index("/// [`spring_at_rest`] for a value that is not a 
+91	167	build	model	model		2026-11-07T05:25:43Z	10.8	
+91	168	build	tool	cargo test	bash	2026-11-07T05:25:54Z	0.0	[launched bg_6] cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() marker=" #[test]\n fn a_spring_refuses_what_has_no_motion" new=''' #[test]
+91	169	build	model	model		2026-11-07T05:25:54Z	16.4	
+91	170	build	tool	shell	bash	2026-11-07T05:26:10Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='docs/research/motion-tracks.md' s=open(p).read() s=s.replace("- Bounce ≥ 0.4 is allowed by the type","""-
+91	171	build	model	model		2026-11-07T05:26:10Z	4.0	
+91	172	build	tool	read files	read	2026-11-07T05:26:14Z	0.0	AGENTS.md:37:raw
+91	173	build	tool	read files	read	2026-11-07T05:26:14Z	0.2	AGENTS.md:36-37
+91	174	build	model	model		2026-11-07T05:26:15Z	16.7	
+91	175	build	tool	edit files	edit	2026-11-07T05:26:31Z	0.1	Rewrite AGENTS.md motion entry :: [AGENTS.md#C7FE] PUT 37.=37: +- `src/motion.rs` — `MotionSettings { duration_scale }` (resource, serde, `GooeyStylePlugin` inits it; `off()`, `is_off()`: the pl
+91	176	build	tool	wait: other	wait	2026-11-07T05:26:31Z	5.1	{}
+91	177	build	model	model		2026-11-07T05:26:36Z	1.3	
+91	178	build	tool	wait: other	wait	2026-11-07T05:26:38Z	10.3	{}
+91	179	build	model	model		2026-11-07T05:26:48Z	3.0	
+91	180	build	tool	wait: other	wait	2026-11-07T05:26:51Z	30.0	{}
+91	181	build	model	model		2026-11-07T05:27:21Z	2.4	
+91	182	build	tool	wait: other	wait	2026-11-07T05:27:23Z	60.0	{}
+91	183	build	model	model		2026-11-07T05:28:23Z	2.7	
+91	184	build	tool	wait: other	wait	2026-11-07T05:28:26Z	105.6	{}
+91	185	build	model	model		2026-11-07T05:30:12Z	5.5	
+91	186	build	tool	shell	bash	2026-11-07T05:30:17Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "the first value is the one it had" -B3 -A1 tests/motion_trace.rs; python3 - <<'E' p='src/model.rs' s=open(p).read()
+91	187	build	model	model		2026-11-07T05:30:17Z	1.7	
+91	188	build	tool	edit files	edit	2026-11-07T05:30:19Z	0.0	Fix writes expectation :: [tests/motion_trace.rs#0000] PUT 226.=227: + 10, + "a write of the value it had is a write too"
+91	189	build	model	model		2026-11-07T05:30:19Z	1.5	
+91	190	build	tool	edit files	edit	2026-11-07T05:30:21Z	0.0	Fix writes expectation :: [tests/motion_trace.rs#E205] PUT 226.=227: + 10, + "a write of the value it had is a write too"
+91	191	build	model	model		2026-11-07T05:30:21Z	5.3	
+91	192	gate	tool	phase mark	bash	2026-11-07T05:30:26Z	0.4	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark gate; cat > /tmp/g65/gate.sh <<'E' #!/bin/bash cd /home/ladvien/bevy_gooey_loop 
+91	193	gate	model	model		2026-11-07T05:30:26Z	2.0	
+91	194	gate	tool	shell	bash	2026-11-07T05:30:28Z	0.0	[launched bg_7] /tmp/g65/gate.sh > /tmp/g65/gate.log 2>&1; grep -E "^===|^rc=|GATE DONE|FAIL|error|warning: unused" /tmp/g65/gate.log | head -60
+91	195	gate	model	model		2026-11-07T05:30:28Z	6.8	
+91	196	gate	tool	git	bash	2026-11-07T05:30:35Z	0.1	cd /home/ladvien/bevy_gooey_loop && git add src tests && git commit -q -m "Motion: springs by duration and bounce, MotionTrace, retargetable MotionTarget tracks
+91	197	gate	model	model		2026-11-07T05:30:35Z	6.0	
+91	198	gate	tool	wait: other	wait	2026-11-07T05:30:41Z	5.0	{}
+91	199	gate	model	model		2026-11-07T05:30:46Z	1.0	
+91	200	gate	tool	wait: other	wait	2026-11-07T05:30:47Z	10.0	{}
+91	201	gate	model	model		2026-11-07T05:30:57Z	3.6	
+91	202	gate	tool	git	bash	2026-11-07T05:31:01Z	1.4	cd /home/ladvien/bevy_gooey_loop && git worktree add --detach ~/g65_base 6f6d14b 2>&1 | tail -1; ls /home/ladvien/target/gooey-loop/release/examples/gallery && 
+91	203	gate	model	model		2026-11-07T05:31:02Z	1.4	
+91	204	gate	tool	shell	bash	2026-11-07T05:31:04Z	0.0	ls /tmp/.X11-unix/ 2>/dev/null; pgrep -a Xvfb | head; which Xvfb xvfb-run
+91	205	gate	model	model		2026-11-07T05:31:04Z	2.9	
+91	206	gate	tool	wait: other	wait	2026-11-07T05:31:06Z	30.0	{}
+91	207	gate	model	model		2026-11-07T05:31:36Z	2.9	
+91	208	gate	tool	wait: other	wait	2026-11-07T05:31:39Z	60.0	{}
+91	209	gate	model	model		2026-11-07T05:32:39Z	1.1	
+91	210	gate	tool	wait: other	wait	2026-11-07T05:32:41Z	31.7	{}
+91	211	gate	model	model		2026-11-07T05:33:12Z	1.9	
+91	212	gate	tool	shell	bash	2026-11-07T05:33:14Z	0.0	grep -n "clippy" -A25 /tmp/g65/gate.log | head -60; grep -n "a_loss_is_exact" -B2 -A14 /tmp/g65/gate.log | head -50; grep -E "Summary" /tmp/g65/gate.log
+91	213	gate	model	model		2026-11-07T05:33:14Z	9.3	
+91	214	gate	tool	cargo clippy	bash	2026-11-07T05:33:23Z	18.8	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='src/model.rs' s=open(p).read() s=s.replace(" if target < shown.fill && !overshoot {\n next.fill = target;
+91	215	gate	model	model		2026-11-07T05:33:42Z	3.2	
+91	216	gate	tool	cargo test	bash	2026-11-07T05:33:46Z	60.4	[launched bg_8] cd /home/ladvien/bevy_gooey_loop && export CARGO_TARGET_DIR=/home/ladvien/target/gooey-loop CARGO_BUILD_JOBS=4 CARGO_BUILD_RUSTC_WRAPPER=; cargo nextest run --a
+91	217	gate	model	model		2026-11-07T05:34:46Z	1.1	
+91	218	gate	tool	wait: other	wait	2026-11-07T05:34:47Z	5.0	{}
+91	219	gate	model	model		2026-11-07T05:34:52Z	1.0	
+91	220	gate	tool	wait: other	wait	2026-11-07T05:34:53Z	10.0	{}
+91	221	gate	model	model		2026-11-07T05:35:03Z	3.5	
+91	222	gate	tool	wait: other	wait	2026-11-07T05:35:07Z	30.0	{}
+91	223	gate	model	model		2026-11-07T05:35:37Z	1.0	
+91	224	gate	tool	wait: other	wait	2026-11-07T05:35:38Z	60.1	{}
+91	225	gate	model	model		2026-11-07T05:36:38Z	1.3	
+91	226	gate	tool	wait: other	wait	2026-11-07T05:36:39Z	92.8	{}
+91	227	gate	model	model		2026-11-07T05:38:12Z	6.4	
+91	228	gate	tool	cargo test	bash	2026-11-07T05:38:18Z	0.0	[launched bg_9] cd /home/ladvien/bevy_gooey_loop && cp src/motion.rs /tmp/g65/motion.rs.orig && python3 - <<'E' p='src/motion.rs' s=open(p).read() a=" } else if new_heading {\n
+91	229	gate	model	model		2026-11-07T05:38:18Z	2.2	
+91	230	gate	tool	wait: other	wait	2026-11-07T05:38:20Z	5.1	{}
+91	231	gate	model	model		2026-11-07T05:38:26Z	1.1	
+91	232	gate	tool	wait: other	wait	2026-11-07T05:38:27Z	10.0	{}
+91	233	gate	model	model		2026-11-07T05:38:37Z	1.0	
+91	234	gate	tool	wait: other	wait	2026-11-07T05:38:38Z	30.3	{}
+91	235	gate	model	model		2026-11-07T05:39:08Z	2.3	
+91	236	gate	tool	wait: other	wait	2026-11-07T05:39:11Z	60.4	{}
+91	237	gate	model	model		2026-11-07T05:40:11Z	1.7	
+91	238	gate	tool	wait: other	wait	2026-11-07T05:40:13Z	181.2	{}
+91	239	gate	model	model		2026-11-07T05:43:14Z	25.5	
+91	240	gate	tool	cargo test	bash	2026-11-07T05:43:40Z	0.0	[launched bg_10] cd /home/ladvien/bevy_gooey_loop && cp /tmp/g65/motion.rs.orig src/motion.rs && python3 - <<'E' p='tests/motion_trace.rs' s=open(p).read() marker="#[test]\nfn t
+91	241	gate	model	model		2026-11-07T05:43:40Z	2.1	
+91	242	gate	tool	shell	bash	2026-11-07T05:43:42Z	0.0	date -u
+91	243	gate	tool	wait: other	wait	2026-11-07T05:43:42Z	5.0	{}
+91	244	gate	model	model		2026-11-07T05:43:47Z	3.0	
+91	245	gate	tool	wait: other	wait	2026-11-07T05:43:50Z	10.0	{}
+91	246	gate	model	model		2026-11-07T05:44:00Z	1.2	
+91	247	gate	tool	wait: other	wait	2026-11-07T05:44:01Z	30.4	{}
+91	248	gate	model	model		2026-11-07T05:44:32Z	2.9	
+91	249	gate	tool	wait: other	wait	2026-11-07T05:44:35Z	60.1	{}
+91	250	gate	model	model		2026-11-07T05:45:35Z	1.2	
+91	251	gate	tool	wait: other	wait	2026-11-07T05:45:36Z	160.3	{}
+91	252	gate	model	model		2026-11-07T05:48:16Z	3.9	
+91	253	prove	tool	phase mark	bash	2026-11-07T05:48:20Z	0.0	[launched bg_11] cd /home/ladvien/bevy_gooey_loop && cp /tmp/g65/motion.rs.orig src/motion.rs && git diff --stat | tail -3; python3 ~/.local/share/wiggum/steps.py mark prove; cd
+91	254	prove	model	model		2026-11-07T05:48:20Z	2.9	
+91	255	prove	tool	wait: other	wait	2026-11-07T05:48:23Z	5.0	{}
+91	256	prove	model	model		2026-11-07T05:48:28Z	1.1	
+91	257	prove	tool	wait: other	wait	2026-11-07T05:48:29Z	10.0	{}
+91	258	prove	model	model		2026-11-07T05:48:39Z	2.8	
+91	259	prove	tool	shell	bash	2026-11-07T05:48:42Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "GOOEY_MOTION\|TimeUpdateStrategy\|GOOEY_KEY_EVERY\|GOOEY_HEALTH\|mean_ms" examples/gallery.rs | head -20
+91	260	prove	model	model		2026-11-07T05:48:42Z	3.1	
+91	261	prove	tool	wait: other	wait	2026-11-07T05:48:45Z	30.0	{}
+91	262	prove	model	model		2026-11-07T05:49:15Z	1.1	
+91	263	prove	tool	wait: other	wait	2026-11-07T05:49:16Z	60.0	{}
+91	264	prove	model	model		2026-11-07T05:50:16Z	1.1	
+91	265	prove	tool	wait: other	wait	2026-11-07T05:50:17Z	203.1	{}
+91	266	prove	model	model		2026-11-07T05:53:40Z	5.2	
+91	267	prove	tool	cargo build	bash	2026-11-07T05:53:46Z	0.0	[launched bg_12] cd /home/ladvien/bevy_gooey_loop && export CARGO_TARGET_DIR=/home/ladvien/target/gooey-loop CARGO_BUILD_JOBS=4 CARGO_BUILD_RUSTC_WRAPPER= && (cargo build --rele
+91	268	prove	tool	wait: other	wait	2026-11-07T05:53:46Z	5.0	{}
+91	269	prove	model	model		2026-11-07T05:53:51Z	3.3	
+91	270	prove	tool	shell	bash	2026-11-07T05:53:54Z	14.2	cd /tmp/g65 && export DISPLAY=:93 && for i in 1 2; do for skin in dark parchment; do GOOEY_SIZE=1280x720 GOOEY_FRAMES=120 GOOEY_SKIN=$skin GOOEY_HEALTH=60 GOOEY
+91	271	prove	model	model		2026-11-07T05:54:08Z	0.9	
+91	272	prove	tool	wait: other	wait	2026-11-07T05:54:09Z	10.0	{}
+91	273	prove	model	model		2026-11-07T05:54:19Z	4.5	
+91	274	prove	tool	shell	bash	2026-11-07T05:54:24Z	5.5	cd /tmp/g65 && export DISPLAY=:93 && mkdir -p before/motion && GOOEY_SIZE=1280x720 GOOEY_MOTION=3 GOOEY_FRAMES=200 GOOEY_SHOT_DIR=/tmp/g65/before/motion GOOEY_S
+91	275	prove	model	model		2026-11-07T05:54:29Z	1.0	
+91	276	prove	tool	wait: other	wait	2026-11-07T05:54:30Z	9.4	{}
+91	277	prove	model	model		2026-11-07T05:54:39Z	4.6	
+91	278	prove	tool	shell	bash	2026-11-07T05:54:44Z	18.1	cd /tmp/g65 && export DISPLAY=:93 && for i in 1 2; do for skin in dark parchment; do GOOEY_SIZE=1280x720 GOOEY_FRAMES=120 GOOEY_SKIN=$skin GOOEY_HEALTH=60 GOOEY
+91	279	prove	model	model		2026-11-07T05:55:02Z	4.5	
+91	280	prove	tool	shell	bash	2026-11-07T05:55:07Z	2.4	cd /tmp/g65 && for v in before after; do montage $(for i in $(seq 1 61); do printf "$v/motion/f_%04d.png " $i; done) -crop 600x300+340+215 +repage -tile 8x -geo
+91	281	prove	model	model		2026-11-07T05:55:09Z	1.2	
+91	282	prove	tool	read files	read	2026-11-07T05:55:10Z	0.3	/tmp/g65/after/sheet.png
+91	283	prove	model	model		2026-11-07T05:55:10Z	6.2	
+91	284	prove	tool	shell	bash	2026-11-07T05:55:17Z	1.2	cd /tmp/g65 && cat > curve.py <<'E' import sys from PIL import Image import numpy as np for v in ("before","after"): ys=[] for i in range(1,62): try: im=np.arra
+91	285	prove	model	model		2026-11-07T05:55:18Z	7.1	
+91	286	prove	tool	shell	bash	2026-11-07T05:55:25Z	0.3	cd /tmp/g65 && for f in 0005 0008 0013; do magick \( before/motion/f_$f.png -crop 600x300+340+215 +repage \) \( after/motion/f_$f.png -crop 600x300+340+215 +rep
+91	287	prove	model	model		2026-11-07T05:55:25Z	1.2	
+91	288	prove	tool	read files	read	2026-11-07T05:55:26Z	0.1	/tmp/g65/cmp_all.png
+91	289	prove	model	model		2026-11-07T05:55:27Z	16.6	
+91	290	prove	tool	shell	bash	2026-11-07T05:55:43Z	8.6	cd /tmp/g65 && export DISPLAY=:93 && mkdir -p gif/motion gif/meter && ls after/motion | head -2; ls after/motion | tail -3; frames=$(for i in $(seq 1 2 61); do 
+91	291	prove	model	model		2026-11-07T05:55:52Z	4.3	
+91	292	prove	tool	shell	bash	2026-11-07T05:55:56Z	0.8	cd /tmp/g65 && ls gif/meter | head -3; frames=$(for i in $(seq 3 141); do printf "gif/meter/f_%04d.png " $i; done); magick -delay 5 -loop 0 $(for f in $frames; 
+91	293	prove	model	model		2026-11-07T05:55:57Z	3.4	
+91	294	prove	tool	shell	bash	2026-11-07T05:56:00Z	1.6	cd /tmp/g65 && ls gif/meter | tail -2; N=$(ls gif/meter | wc -l); echo $N; frames=$(for i in $(seq 3 $((N-1))); do f=$(printf "gif/meter/f_%04d.png" $i); [ -f $
+91	295	prove	model	model		2026-11-07T05:56:02Z	1.2	
+91	296	prove	tool	read files	read	2026-11-07T05:56:03Z	0.0	/tmp/g65/gif/meter_sheet.png
+91	297	prove	model	model		2026-11-07T05:56:03Z	10.6	
+91	298	prove	tool	shell	bash	2026-11-07T05:56:14Z	0.0	cd /tmp/g65 && cp gif/motion.gif /home/ladvien/bevy_gooey_loop/docs/media/motion.gif && cp gif/meter.gif /home/ladvien/bevy_gooey_loop/docs/media/meter.gif && c
+91	299	prove	model	model		2026-11-07T05:56:14Z	5.7	
+91	300	prove	tool	git	bash	2026-11-07T05:56:20Z	0.0	[launched bg_13] cd /home/ladvien/bevy_gooey_loop && git add -A src tests docs && git commit -q -m "motion: retarget test against the spring reference, meter aim on a loss, clip
+91	301	prove	model	model		2026-11-07T05:56:20Z	29.0	
+91	302	prove	tool	git	bash	2026-11-07T05:56:49Z	0.1	cd /home/ladvien/bevy_gooey_loop && cat >> docs/loop-log.md <<'E' ## Iteration 65 — 2026-11-07 — Springs by duration and bounce (#47), `MotionTrace` (#46), reta
+91	303	prove	model	model		2026-11-07T05:56:49Z	1.1	
+91	304	prove	tool	wait: other	wait	2026-11-07T05:56:50Z	5.0	{}
+91	305	prove	model	model		2026-11-07T05:56:55Z	2.5	
+91	306	prove	tool	wait: other	wait	2026-11-07T05:56:57Z	10.0	{}
+91	307	prove	model	model		2026-11-07T05:57:07Z	1.1	
+91	308	prove	tool	wait: other	wait	2026-11-07T05:57:08Z	30.0	{}
+91	309	prove	model	model		2026-11-07T05:57:38Z	1.0	
+91	310	prove	tool	wait: other	wait	2026-11-07T05:57:40Z	55.5	{}
+91	311	prove	model	model		2026-11-07T05:58:35Z	2.5	
+91	312	prove	tool	shell	bash	2026-11-07T05:58:37Z	0.0	grep -n "a_track_is_the_spring" -A12 /tmp/g65/gate2.log | grep -E "panicked|drawn|frame" | head
+91	313	prove	model	model		2026-11-07T05:58:37Z	2.4	
+91	314	prove	tool	cargo test	bash	2026-11-07T05:58:40Z	61.2	[launched bg_14] cd /home/ladvien/bevy_gooey_loop && export CARGO_TARGET_DIR=/home/ladvien/target/gooey-loop CARGO_BUILD_JOBS=4 CARGO_BUILD_RUSTC_WRAPPER=; cargo nextest run --a
+91	315	prove	model	model		2026-11-07T05:59:41Z	4.4	
+91	316	prove	tool	wait: other	wait	2026-11-07T05:59:46Z	5.1	{}
+91	317	prove	model	model		2026-11-07T05:59:51Z	1.3	
+91	318	prove	tool	wait: other	wait	2026-11-07T05:59:52Z	10.0	{}
+91	319	prove	model	model		2026-11-07T06:00:02Z	1.7	
+91	320	prove	tool	wait: other	wait	2026-11-07T06:00:04Z	30.4	{}
+91	321	prove	model	model		2026-11-07T06:00:34Z	2.6	
+91	322	prove	tool	wait: other	wait	2026-11-07T06:00:38Z	60.1	{}
+91	323	prove	model	model		2026-11-07T06:01:38Z	3.0	
+91	324	prove	tool	wait: other	wait	2026-11-07T06:01:41Z	146.5	{}
+91	325	prove	model	model		2026-11-07T06:04:08Z	10.1	
+91	326	prove	tool	cargo test	bash	2026-11-07T06:04:18Z	0.0	[launched bg_15] cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' p='tests/motion_trace.rs' s=open(p).read() a=s.index(" let mut worst: f32 = 0.0;") b=s.index("#[test]\nfn th
+91	327	prove	tool	wait: other	wait	2026-11-07T06:04:18Z	5.0	{}
+91	328	prove	model	model		2026-11-07T06:04:23Z	1.2	
+91	329	prove	tool	wait: other	wait	2026-11-07T06:04:24Z	10.4	{}
+91	330	prove	model	model		2026-11-07T06:04:34Z	2.3	
+91	331	prove	tool	wait: other	wait	2026-11-07T06:04:37Z	30.3	{}
+91	332	prove	model	model		2026-11-07T06:05:07Z	2.1	
+91	333	prove	tool	wait: other	wait	2026-11-07T06:05:09Z	60.1	{}
+91	334	prove	model	model		2026-11-07T06:06:09Z	1.3	
+91	335	prove	tool	wait: other	wait	2026-11-07T06:06:11Z	292.0	{}
+91	336	prove	model	model		2026-11-07T06:11:03Z	6.4	
+91	337	prove	tool	shell	bash	2026-11-07T06:11:09Z	1.5	cd /home/ladvien/bevy_gooey_loop && cp /tmp/g65/motion.rs.orig2 src/motion.rs && cargo fmt && git diff --stat | tail -3 && git add -A src tests && git commit -q
+91	338	prove	model	model		2026-11-07T06:11:11Z	3.7	
+91	339	gate	tool	phase mark	bash	2026-11-07T06:11:14Z	0.0	[launched bg_16] python3 ~/.local/share/wiggum/steps.py mark gate; (/tmp/g65/gate.sh > /tmp/g65/gate3.log 2>&1; grep -E "^===|^rc=|GATE DONE|FAIL|Summary" /tmp/g65/gate3.log)
+91	340	gate	tool	wait: other	wait	2026-11-07T06:11:14Z	5.0	{}
+91	341	gate	model	model		2026-11-07T06:11:19Z	1.1	
+91	342	gate	tool	wait: other	wait	2026-11-07T06:11:20Z	10.0	{}
+91	343	gate	model	model		2026-11-07T06:11:30Z	1.5	
+91	344	gate	tool	wait: other	wait	2026-11-07T06:11:32Z	30.0	{}
+91	345	gate	model	model		2026-11-07T06:12:02Z	1.3	
+91	346	gate	tool	wait: other	wait	2026-11-07T06:12:03Z	60.0	{}
+91	347	gate	model	model		2026-11-07T06:13:03Z	1.2	
+91	348	gate	tool	wait: other	wait	2026-11-07T06:13:05Z	30.6	{}
+91	349	gate	model	model		2026-11-07T06:13:35Z	3.3	
+91	350	ship	tool	phase mark	bash	2026-11-07T06:13:38Z	0.0	[launched bg_17] cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark ship && git push origin main 2>&1 | tail -2; python3 ~/.local/share/wiggum/steps
+91	351	ship	tool	wait: other	wait	2026-11-07T06:13:38Z	5.0	{}
+91	352	ship	model	model		2026-11-07T06:13:43Z	1.0	
+91	353	ship	tool	wait: other	wait	2026-11-07T06:13:44Z	10.0	{}
+91	354	ship	model	model		2026-11-07T06:13:54Z	1.6	
+91	355	ship	tool	wait: other	wait	2026-11-07T06:13:56Z	20.3	{}
+91	356	ship	model	model		2026-11-07T06:14:16Z	3.2	
+91	357	ship	tool	shell	bash	2026-11-07T06:14:20Z	0.0	cd /home/ladvien/bevy_gooey_loop && grep -n "0\.37\.0\|0\.1 – 0" README.md Cargo.toml | head; grep -n '^version' Cargo.toml
+91	358	ship	model	model		2026-11-07T06:14:20Z	4.0	
+91	359	ship	tool	cargo build	bash	2026-11-07T06:14:24Z	0.0	[launched bg_18] cd /home/ladvien/bevy_gooey_loop && sed -i 's/^version = "0.37.0"/version = "0.38.0"/' Cargo.toml && sed -i 's/| 0.1 – 0.37.0 | 0.20 |/| 0.1 – 0.38.0 | 0.20 |/'
+91	360	ship	tool	wait: other	wait	2026-11-07T06:14:24Z	5.0	{}
+91	361	ship	model	model		2026-11-07T06:14:29Z	1.2	
+91	362	ship	tool	wait: other	wait	2026-11-07T06:14:30Z	2.0	{}
+91	363	ship	model	model		2026-11-07T06:14:32Z	3.1	
+91	364	ship	tool	cargo publish	bash	2026-11-07T06:14:35Z	0.0	[launched bg_19] cd /home/ladvien/bevy_gooey_loop && export CARGO_TARGET_DIR=/home/ladvien/target/gooey-loop CARGO_BUILD_JOBS=4 CARGO_BUILD_RUSTC_WRAPPER= && git add Cargo.toml 
+91	365	ship	tool	wait: other	wait	2026-11-07T06:14:35Z	5.0	{}
+91	366	ship	model	model		2026-11-07T06:14:40Z	1.1	
+91	367	ship	tool	wait: other	wait	2026-11-07T06:14:41Z	10.0	{}
+91	368	ship	model	model		2026-11-07T06:14:51Z	1.1	
+91	369	ship	tool	wait: other	wait	2026-11-07T06:14:52Z	6.1	{}
+91	370	ship	model	model		2026-11-07T06:14:58Z	2.9	
+91	371	ship	tool	push gate	bash	2026-11-07T06:15:01Z	16.4	cd /home/ladvien/bevy_gooey_loop && export CARGO_TARGET_DIR=/home/ladvien/target/gooey-loop CARGO_BUILD_JOBS=4 CARGO_BUILD_RUSTC_WRAPPER= && cargo publish 2>&1 
+91	372	ship	model	model		2026-11-07T06:15:18Z	4.5	
+91	373	ship	tool	shell	bash	2026-11-07T06:15:22Z	0.1	cd /home/ladvien/bevy_gooey_loop && python3 - <<'E' import json,re r=json.load(open('/tmp/grim_issues.json')) for n in (46,47,48): print(n,[x['number'] for x in
+91	374	ship	model	model		2026-11-07T06:15:22Z	17.6	
+91	375	ship	tool	github	bash	2026-11-07T06:15:40Z	12.5	cd /home/ladvien/bevy_gooey_loop && gh label create assumed-decision --color FBCA04 2>/dev/null; gh issue comment 47 -R bevy-coven/bevy_gooey --body "Fixed in \
+91	376	ship	model	model		2026-11-07T06:15:52Z	10.8	
+91	377	log	tool	phase mark	bash	2026-11-07T06:16:03Z	2.1	cd /home/ladvien/bevy_gooey_loop && python3 ~/.local/share/wiggum/steps.py mark log; df -h . | tail -1; git worktree remove ~/g65_base && rm -rf /tmp/g65 && df 
+91	378	log	model	model		2026-11-07T06:16:05Z	11.7	
