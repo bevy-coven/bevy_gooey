@@ -221,6 +221,7 @@ pub fn meter_motion(
     if target < shown.fill && !overshoot {
         next.fill = target;
         next.speed = 0.0;
+        next.aim = target;
         if shown.trail <= shown.fill {
             next.trail = shown.fill;
             next.hold = METER_TRAIL_HOLD_SECONDS;

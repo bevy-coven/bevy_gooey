@@ -305,6 +305,16 @@ impl MotionTrack {
     }
 }
 
+/// What the track system reads and writes of a node with a [`MotionTarget`].
+type Track = (
+    Entity,
+    Ref<'static, MotionTarget>,
+    &'static mut MotionTrack,
+    &'static mut UiTransform,
+    Option<&'static Visibility>,
+    Has<InstantMotion>,
+);
+
 /// Whether a lane is at rest on its target, by the lane's own tolerance.
 fn lane_at_rest(spring: Spring, lane: usize, state: SpringState, target: f32) -> bool {
     let tolerance = if lane < 2 {
@@ -389,14 +399,7 @@ pub fn update_motion(
     parents: Query<&ChildOf>,
     time: Option<Res<Time<Real>>>,
     mut commands: Commands,
-    mut tracks: Query<(
-        Entity,
-        Ref<MotionTarget>,
-        &mut MotionTrack,
-        &mut UiTransform,
-        Option<&Visibility>,
-        Has<InstantMotion>,
-    )>,
+    mut tracks: Query<Track>,
     mut popovers: Query<(Entity, &mut PopoverSlide, Option<&Visibility>)>,
 ) {
     let delta = time.as_ref().map_or(0.0, |time| time.delta_secs());
@@ -453,16 +456,16 @@ pub fn update_motion(
                 .spring(target.spring)
                 .scaled(settings.duration_scale);
             let mut settled = true;
-            for lane in 0..LANES {
-                let state = spring_step(spring, track.lanes[lane], want[lane], delta);
-                track.lanes[lane] = if lane_at_rest(spring, lane, state, want[lane]) {
+            for (lane, (state, &goal)) in track.lanes.iter_mut().zip(&want).enumerate() {
+                let next = spring_step(spring, *state, goal, delta);
+                *state = if lane_at_rest(spring, lane, next, goal) {
                     SpringState {
-                        value: want[lane],
+                        value: goal,
                         velocity: 0.0,
                     }
                 } else {
                     settled = false;
-                    state
+                    next
                 };
             }
             track.settled = settled;

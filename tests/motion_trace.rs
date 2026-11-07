@@ -379,6 +379,47 @@ fn a_retarget_keeps_the_speed_the_node_had_and_a_snap_would_not() {
     );
 }
 
+/// The `x` a node's `UiTransform` draws, logical px.
+fn drawn_x(app: &App, node: Entity) -> f32 {
+    match app
+        .world()
+        .get::<UiTransform>(node)
+        .map(|t| t.translation.x)
+    {
+        Some(Val::Px(x)) => x,
+        other => panic!("not a px translation: {other:?}"),
+    }
+}
+
+#[test]
+fn a_track_is_the_spring_carried_through_every_retarget_value_and_velocity() {
+    // The reference is the model's spring stepped by hand with the same retargets: a track that
+    // dropped the velocity at a retarget, or restarted from the old target, would part from it.
+    let spring = GooeySkin::default().motion.default;
+    let mut app = app();
+    let node = tracked(&mut app, MotionTarget::default());
+    let mut reference = model::SpringState::default();
+    let mut worst: f32 = 0.0;
+    for (target, frames) in [(200.0, 5), (0.0, 4), (120.0, 3), (-40.0, 25)] {
+        aim(&mut app, node, Vec2::new(target, 0.0));
+        for frame in 0..frames {
+            app.update();
+            reference = model::spring_step(spring, reference, target, FRAME);
+            let off = (drawn_x(&app, node) - reference.value).abs();
+            worst = worst.max(off);
+            assert!(
+                off < 0.05,
+                "frame {frame} after a retarget to {target}: drawn {} against {}",
+                drawn_x(&app, node),
+                reference.value
+            );
+        }
+    }
+    assert!(worst < 0.05);
+    // And the reference is not trivially still: the reversals were made while it moved fast.
+    assert!(reference.velocity.abs() > 1.0, "{reference:?}");
+}
+
 #[test]
 fn the_first_target_lands_where_it_says_with_no_travel_from_spawn() {
     let mut app = app();
