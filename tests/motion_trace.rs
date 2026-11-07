@@ -531,6 +531,7 @@ fn doubling_the_duration_scale_doubles_the_settle_time_within_a_frame() {
         let mut app = app();
         app.insert_resource(MotionSettings {
             duration_scale: scale,
+            reduced: false,
         });
         let node = tracked(&mut app, MotionTarget::default());
         let mut trace = MotionTrace::watch(&mut app, node);

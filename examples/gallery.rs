@@ -245,6 +245,7 @@ fn main() {
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(1.0),
+        reduced: false,
     })
     .insert_resource(HeldHealth(
         std::env::var("GOOEY_HEALTH")

@@ -185,6 +185,7 @@ fn a_slower_scale_takes_proportionally_longer() {
     let mut app = app();
     app.insert_resource(MotionSettings {
         duration_scale: 2.0,
+        reduced: false,
     });
     let card = confirm(&mut app);
     // Twice the length: still moving when the normal one would be done, settled when twice is.

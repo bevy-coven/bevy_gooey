@@ -302,6 +302,7 @@ fn a_slower_scale_takes_proportionally_longer() {
     let mut app = app();
     app.insert_resource(MotionSettings {
         duration_scale: 2.0,
+        reduced: false,
     });
     let track = bar(&mut app, 100.0);
     set(&mut app, track, 40.0);

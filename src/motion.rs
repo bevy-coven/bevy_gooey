@@ -43,21 +43,37 @@ pub struct MotionSettings {
     /// The multiplier on every motion's length. 1 is as designed, 2 half as fast, 0 no motion.
     /// Default: 1.
     pub duration_scale: f32,
+    /// Reduced motion: nothing travels, scales or turns (every [`MotionTarget`] lands, and so do a
+    /// popover's slide and a meter's fill), while fades still run, and an entrance that would
+    /// travel fades in over [`MotionTokens::fade_seconds`] instead. `duration_scale` 0 is still
+    /// off: off wins over reduced. Default: `false`.
+    pub reduced: bool,
 }
 
 impl Default for MotionSettings {
     fn default() -> Self {
         Self {
             duration_scale: 1.0,
+            reduced: false,
         }
     }
 }
 
 impl MotionSettings {
-    /// No motion at all: the reduced-motion setting.
+    /// No motion at all, fades included.
     pub const fn off() -> Self {
         Self {
             duration_scale: 0.0,
+            reduced: false,
+        }
+    }
+
+    /// Reduced motion at the designed lengths: travel lands at once and fades run
+    /// ([`MotionSettings::reduced`]).
+    pub const fn reduced() -> Self {
+        Self {
+            duration_scale: 1.0,
+            reduced: true,
         }
     }
 
