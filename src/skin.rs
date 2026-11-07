@@ -13,6 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
 use crate::binding::Capturing;
 use crate::choice::{ChoiceCount, ChoiceValue};
+use crate::control_size::ControlSize;
 use crate::drag::{DropCandidate, DropRefusing};
 use crate::elevation::{Elevation, ElevationLevel};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
@@ -2029,6 +2030,10 @@ struct State {
     status_item: bool,
     /// A button that is the screen's main action ([`PrimaryButton`]).
     primary: bool,
+    /// The control's own size, when it has one ([`ControlSize`]).
+    control: Option<ControlSize>,
+    /// A text area: its field holds lines, so a size is its least height and not one line's centre.
+    multi_line: bool,
 }
 
 impl Default for State {
@@ -2060,6 +2065,8 @@ impl Default for State {
             status_item: false,
             anchor: PromptsAnchor::default(),
             primary: false,
+            control: None,
+            multi_line: false,
         }
     }
 }
@@ -2086,6 +2093,7 @@ type StateQuery = (
         Has<DropRefusing>,
         Option<&'static PromptsAnchor>,
         Has<PrimaryButton>,
+        Option<&'static ControlSize>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -2124,7 +2132,7 @@ type Restyle = (
             Added<DropRefusing>,
             Changed<PromptsAnchor>,
             Added<PrimaryButton>,
-            Changed<PresenceAlpha>,
+            Or<(Changed<PresenceAlpha>, Changed<ControlSize>)>,
         )>,
     )>,
 );
@@ -2144,6 +2152,7 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, DropCandidate>,
     RemovedComponents<'w, 's, DropRefusing>,
     RemovedComponents<'w, 's, PrimaryButton>,
+    RemovedComponents<'w, 's, ControlSize>,
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
@@ -2222,6 +2231,7 @@ pub fn apply_skin(
         undropped,
         unrefused,
         unprimed,
+        unsized_controls,
     ) = &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -2247,7 +2257,7 @@ pub fn apply_skin(
                     list,
                     capturing,
                     open,
-                    (marked, problem, status, candidate, refusing, anchor, primary),
+                    (marked, problem, status, candidate, refusing, anchor, primary, control),
                     row,
                     role,
                 )| {
@@ -2284,6 +2294,8 @@ pub fn apply_skin(
                         status_item: role == Some(&Role::StatusItem),
                         band: row.is_some_and(|r| r.index % 2 == 1),
                         primary,
+                        control: control.copied(),
+                        multi_line: role == Some(&Role::TextArea),
                     }
                 },
             )
@@ -2291,35 +2303,42 @@ pub fn apply_skin(
     };
     // A part of a toggle or a slider, however deep, follows that toggle or slider's state.
     let owner_of = |entity: Entity| {
-        parents
-            .iter_ancestors(entity)
-            .find(|&a| {
-                states.get(a).is_ok_and(|(.., role)| {
-                    matches!(
-                        role,
-                        Some(
-                            Role::Toggle
-                                | Role::Slider
-                                | Role::Choice
-                                | Role::Binding
-                                | Role::Radial
-                                | Role::TextInput
-                                | Role::TextArea
-                                | Role::PaletteField
-                                | Role::NumberPart
-                                | Role::Toast
-                                | Role::MenuItem
-                                | Role::PaletteRow
-                                | Role::TableRow
-                                | Role::TableHeaderCell
-                                | Role::TableEdge
-                                | Role::SplitDivider
-                        )
+        let is_owner = |a: &Entity| {
+            states.get(*a).is_ok_and(|(.., role)| {
+                matches!(
+                    role,
+                    Some(
+                        Role::Toggle
+                            | Role::Slider
+                            | Role::Choice
+                            | Role::Binding
+                            | Role::Radial
+                            | Role::TextInput
+                            | Role::TextArea
+                            | Role::PaletteField
+                            | Role::NumberPart
+                            | Role::Toast
+                            | Role::MenuItem
+                            | Role::PaletteRow
+                            | Role::TableRow
+                            | Role::TableHeaderCell
+                            | Role::TableEdge
+                            | Role::SplitDivider
                     )
-                })
+                )
             })
-            .map(state_of)
-            .unwrap_or_default()
+        };
+        let mut owners = parents.iter_ancestors(entity).filter(is_owner);
+        let Some(first) = owners.next() else {
+            return State::default();
+        };
+        let mut owner = state_of(first);
+        // A part of a part (a vec field's component inside the vec field) takes the size the
+        // outer control was given.
+        if owner.control.is_none() {
+            owner.control = owners.find_map(|a| state_of(a).control);
+        }
+        owner
     };
 
     if skin.is_changed() || fonts.is_changed() {
@@ -2334,6 +2353,7 @@ pub fn apply_skin(
         undropped.clear();
         unrefused.clear();
         unprimed.clear();
+        unsized_controls.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -2375,6 +2395,7 @@ pub fn apply_skin(
     dirty.extend(undropped.read());
     dirty.extend(unrefused.read());
     dirty.extend(unprimed.read());
+    dirty.extend(unsized_controls.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -2490,6 +2511,29 @@ fn restyle(
     // The body text as it is set (`scaled`): what a line of it is high, for a height that holds
     // one. Widths keep `text_px`.
     let set_px = snap_text_size(text_px, scale);
+    // A control's height: its own `ControlSize`, never under the skin's target, else the target.
+    let height_of = |state: &State| {
+        state
+            .control
+            .map_or(skin.target(), |size| size.height(skin.target()))
+    };
+    let control = height_of(&state);
+    let owner_control = height_of(&owner);
+    // The height a field's line is centred in: a text area's lines start at its top, as before.
+    let field_height = if owner.multi_line {
+        skin.target()
+    } else {
+        owner_control
+    };
+    // A sized control's air above and below: what centres `content` logical px in its height inside
+    // its frame, so the size is the height; an unsized control keeps the skin's own air.
+    let air = |content: f32, skins_own: f32| {
+        if state.control.is_some() {
+            ((control - content - 2.0 * line) / 2.0).max(0.0)
+        } else {
+            skins_own
+        }
+    };
     // A wheel is the player's text size until 26 of them would pass `RADIAL_WINDOW_SHARE` of the
     // window's shorter side: past that the whole wheel (disc, labels and name) stops growing, so
     // it is always whole on the screen, which 200% text on a 720p window would not be.
@@ -3202,7 +3246,10 @@ fn restyle(
             | Role::ToastAction => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad() * 1.5),
+                    Val::Px(air(set_px * LIST_LINE_TEXT_SIZES, skin.pad() * 0.6)),
+                );
                 // A tab shares its strip equally and never narrower than its own label and
                 // padding (`Val::Auto`), so a long label is not squeezed out of its tab.
                 next.min_width = if *role == Role::Tab {
@@ -3214,7 +3261,7 @@ fn restyle(
                 if *role == Role::Button {
                     next.column_gap = Val::Px(skin.gap * 0.5);
                 }
-                next.min_height = Val::Px(skin.target());
+                next.min_height = Val::Px(control);
                 // A toast's button never gives up its padded label to a long message (which
                 // shrinks and wraps), stands a gap from its neighbours on the row, and keeps its
                 // own height beside a wrapped message instead of stretching to it.
@@ -3370,8 +3417,14 @@ fn restyle(
             Role::Toggle => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding = UiRect::axes(Val::Px(skin.pad() * 1.5), Val::Px(skin.pad() * 0.6));
-                next.min_height = Val::Px(skin.target());
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad() * 1.5),
+                    Val::Px(air(
+                        (set_px * LIST_LINE_TEXT_SIZES).max(switch),
+                        skin.pad() * 0.6,
+                    )),
+                );
+                next.min_height = Val::Px(control);
                 next.column_gap = Val::Px(skin.gap);
             }
             // A framed pill, one line of frame and one of gap round the knob, which sits at the
@@ -3440,14 +3493,19 @@ fn restyle(
                     top: Val::ZERO,
                     bottom: Val::ZERO,
                 };
-                next.min_height = Val::Px(skin.target());
+                next.min_height = Val::Px(control);
                 next.column_gap = Val::Px(skin.gap);
             }
             // As wide as a button and as high as the toggle's row inside its frame, so the row is
             // the toggle's height and a thumb has the room NN/g asks of a stepper's buttons.
             Role::ChoiceArrow => {
                 next.min_width = Val::Px(arrow);
-                next.min_height = Val::Px((switch + skin.pad() * 1.2).max(skin.target()));
+                // A sized choice's arrow fills the row inside its frame, so the row is the size.
+                next.min_height = Val::Px(if owner.control.is_some() {
+                    (owner_control - 2.0 * line).max(0.0)
+                } else {
+                    (switch + skin.pad() * 1.2).max(skin.target())
+                });
                 next.flex_shrink = 0.0;
             }
             // Two sides of a square, turned by `choice()`: the forward chevron keeps its top and
@@ -3516,7 +3574,7 @@ fn restyle(
                     Val::Px(if palette { 0.0 } else { skin.pad() * 1.5 }),
                     Val::Px(skin.pad() * 0.1),
                 );
-                next.min_height = Val::Px(skin.target());
+                next.min_height = Val::Px(control);
                 next.column_gap = Val::Px(skin.gap);
                 // A text area's label stands over its field.
                 next.row_gap = Val::Px(if *role == Role::TextArea {
@@ -3537,7 +3595,7 @@ fn restyle(
                     top: Val::ZERO,
                     bottom: Val::ZERO,
                 };
-                next.min_height = Val::Px(skin.target());
+                next.min_height = Val::Px(owner_control);
                 next.column_gap = Val::Px(skin.gap * 0.5);
             }
             Role::NumberParts => next.column_gap = Val::Px(skin.gap),
@@ -3581,14 +3639,14 @@ fn restyle(
             // frame twice come to `min_target`) and what centres the line. A `min_height` here is
             // read as the content's, which made the field a padding and a frame too tall.
             Role::TextField => {
-                let (x, y) = text_field_inset(skin, set_px, line);
+                let (x, y) = text_field_inset(skin, field_height, set_px, line);
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
                 next.padding = UiRect::axes(Val::Px(x), Val::Px(y));
             }
             // Over the field's first character: the same inset, inside its frame.
             Role::TextHint => {
-                let (x, y) = text_field_inset(skin, set_px, line);
+                let (x, y) = text_field_inset(skin, field_height, set_px, line);
                 next.left = Val::Px(line + x);
                 next.right = Val::Px(line + x);
                 next.top = Val::Px(line + y);
@@ -4302,10 +4360,10 @@ fn tooltip_placement(gap: f32, margin: f32, in_row: bool) -> Popover {
 }
 
 /// How far a text field's text stands inside its frame, in logical px: the side, and the top, which
-/// is what leaves the line in the middle of the target's height (the text sits at the top of its
-/// box). Never less than the thin air a keycap has above and below.
-fn text_field_inset(skin: &GooeySkin, text_px: f32, line: f32) -> (f32, f32) {
+/// is what leaves the line in the middle of `height` (the control's height, the target unless a
+/// [`ControlSize`] says more; the text sits at the top of its box). Never less than the thin air a keycap has above and below.
+fn text_field_inset(skin: &GooeySkin, height: f32, text_px: f32, line: f32) -> (f32, f32) {
     let x = skin.pad() * 0.6;
-    let centred = (skin.target() - 2.0 * line - text_px * LIST_LINE_TEXT_SIZES) / 2.0;
+    let centred = (height - 2.0 * line - text_px * LIST_LINE_TEXT_SIZES) / 2.0;
     (x, centred.max(skin.pad() * 0.3))
 }

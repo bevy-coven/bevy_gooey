@@ -15,6 +15,7 @@ mod choice;
 mod color;
 mod confirm;
 mod context_menu;
+mod control_size;
 mod controls;
 mod cooldown;
 mod density;

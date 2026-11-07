@@ -150,6 +150,7 @@ mod clicks;
 mod color;
 mod confirm;
 mod context;
+mod control_size;
 mod controls;
 mod cooldown;
 mod dock;
@@ -218,6 +219,7 @@ pub use color::{
 };
 pub use confirm::{Confirm, ConfirmButton, ConfirmChosen, confirm};
 pub use context::{ContextMenu, ContextTarget, context_by_key};
+pub use control_size::{CONTROL_LARGE_PX, CONTROL_REGULAR_PX, CONTROL_SMALL_PX, ControlSize};
 pub use controls::update_sliders;
 pub use cooldown::{Cooldown, CooldownReady, update_cooldowns};
 pub use dock::{Dock, DockLayoutChanged, DockPanel, DockPanelSkipped, PanelRegistry};
@@ -506,6 +508,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ToastSettings>()
             .register_type::<MotionSettings>()
             .register_type::<MovesSmoothly>()
+            .register_type::<ControlSize>()
             .register_type::<HoldToConfirm>()
             .register_type::<HoldProgress>()
             .register_type::<HoldConfirmed>()
