@@ -448,6 +448,9 @@ pub fn update_motion(
         } else if new_heading {
             track.heading = Some(want);
             track.settled = false;
+            for lane in track.lanes.iter_mut() {
+                lane.velocity = 0.0;
+            }
         }
         if !track.settled && visibility != Some(&Visibility::Hidden) {
             let look = skin_of(&skin, entity, &scopes, &parents);
