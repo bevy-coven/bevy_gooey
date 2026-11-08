@@ -101,6 +101,14 @@ impl Popped {
     }
 }
 
+/// What [`update_pops`] reads of a swollen node.
+type Swelling = (
+    Entity,
+    Option<Ref<'static, Pop>>,
+    Option<&'static Lift>,
+    &'static mut Popped,
+);
+
 /// Starts a pop on a node whose [`Pop`] was just inserted, holds a [`Lift`], and steps every
 /// swollen node toward where it is going, on real time. A node at rest and not triggered is read and
 /// not written. Runs in [`crate::GooeySystems::Style`].
@@ -110,7 +118,7 @@ pub fn update_pops(
     scopes: Query<&SkinScope>,
     parents: Query<&ChildOf>,
     time: Option<Res<Time<Real>>>,
-    mut pops: Query<(Entity, Option<Ref<Pop>>, Option<&Lift>, &mut Popped)>,
+    mut pops: Query<Swelling>,
 ) {
     let delta = time.as_ref().map_or(0.0, |time| time.delta_secs());
     let lands = settings.lands_travel() || time.is_none();

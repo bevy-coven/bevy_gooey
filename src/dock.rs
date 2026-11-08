@@ -1064,6 +1064,13 @@ pub(crate) fn start_dock_travel(
     }
 }
 
+/// What the tab reorder reads of a dock tab: its drawing, its track and whether it is lifted.
+type ReorderTab = (
+    &'static mut UiTransform,
+    Option<&'static MotionTarget>,
+    Has<Lift>,
+);
+
 /// While a tab is carried within its strip (G-63): the tab follows the pointer and the tabs it
 /// passes step aside on the snappy spring, so a gap stands where it would land; when it is put
 /// down, taken back (Escape) or dropped elsewhere, everything goes home. Runs in
@@ -1072,13 +1079,14 @@ pub(crate) fn start_dock_travel(
 ///
 /// Only the picture moves: layout keeps every tab where it was, so the slot under the pointer is
 /// found from the strip as it stood when the tab was picked up, and nothing feeds back.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn update_tab_reorder(
     ui_scale: Option<Res<UiScale>>,
     skin: Res<GooeySkin>,
     scopes: Query<&SkinScope>,
     parents: Query<&ChildOf>,
     docks: Query<&DockDrag>,
-    mut tabs: Query<(&mut UiTransform, Option<&MotionTarget>, Has<Lift>), With<DockTab>>,
+    mut tabs: Query<ReorderTab, With<DockTab>>,
     all_tabs: Query<(Entity, &DockTab)>,
     mut gone: RemovedComponents<DockDrag>,
     mut commands: Commands,
