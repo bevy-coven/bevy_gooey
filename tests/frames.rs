@@ -211,10 +211,10 @@ fn a_settled_framed_interface_writes_nothing() {
     #[derive(Resource, Default)]
     struct Writes(u32);
     let (_, _, mut framed, _, _) = pair();
+    type Written = Or<(Changed<ImageNode>, Changed<BackgroundColor>)>;
     framed.init_resource::<Writes>().add_systems(
         Last,
-        |changed: Query<(), Or<(Changed<ImageNode>, Changed<BackgroundColor>)>>,
-         mut n: ResMut<Writes>| n.0 += changed.iter().count() as u32,
+        |changed: Query<(), Written>, mut n: ResMut<Writes>| n.0 += changed.iter().count() as u32,
     );
     frames(&mut framed, 3);
     let before = framed.world().resource::<Writes>().0;
