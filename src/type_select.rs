@@ -95,12 +95,35 @@ pub(crate) fn plain(keys: &ButtonInput<KeyCode>) -> bool {
         && !held(KeyCode::SuperLeft, KeyCode::SuperRight)
 }
 
+/// A container whose focusable descendants type-select (G-68): focus on one, and typing a name moves
+/// focus to the next whose words start with it, exactly as in a [`ListView`]. A card grid, a project
+/// browser or a save list is not a list, and this makes it one for the keyboard. A row is a
+/// descendant that takes focus (a `TabIndex`), is shown and not disabled; its words are its own text
+/// or the first text under it. A `ListView` needs no marker. The nearest group above the focused
+/// row is the one that is searched.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// // A grid of project cards: typing "al" with a card focused goes to "Alpha".
+/// commands.spawn((
+///     Node::default(),
+///     TypeSelectGroup,
+///     children![button("Alpha"), button("Beta"), button("Bravo")],
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Default, Debug, PartialEq, Clone)]
+pub struct TypeSelectGroup;
+
 /// What the widgets that are entities of their own read to type-select.
 #[derive(SystemParam)]
 pub(crate) struct Groups<'w, 's> {
     parents: Query<'w, 's, &'static ChildOf>,
     children: Query<'w, 's, &'static Children>,
-    lists: Query<'w, 's, (), With<ListView>>,
+    lists: Query<'w, 's, (), Or<(With<ListView>, With<TypeSelectGroup>)>>,
     panels: Query<'w, 's, (), With<MenuPanel>>,
     items: Query<'w, 's, &'static MenuItem>,
     stops: Query<'w, 's, (&'static InheritedVisibility, Has<InteractionDisabled>), With<TabIndex>>,

@@ -380,7 +380,7 @@ pub use tooltip::{
     update_tooltip_text,
 };
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
-pub use type_select::TypedPrefix;
+pub use type_select::{TypeSelectGroup, TypedPrefix};
 pub use widgets::{
     binding, button, card_grid, check_item, choice, color_field, combobox, command_palette,
     context_menu, dialog, dock, heading, hold_button, icon, icon_button, interface_size, label,
@@ -551,6 +551,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<FadeEdge>()
             .register_type::<PressScale>()
             .register_type::<HoverGroup>()
+            .register_type::<TypeSelectGroup>()
             .register_type::<GroupReveal>()
             .add_observer(hover_group::holds_on_press)
             .add_observer(hover_group::holds_on_release)

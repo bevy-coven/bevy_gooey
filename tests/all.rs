@@ -93,6 +93,7 @@ mod tooltip;
 mod tooltip_delay;
 mod tree;
 mod type_select;
+mod type_select_group;
 
 /// The files in `tests/` and the `mod` lines above are the same set.
 #[test]
