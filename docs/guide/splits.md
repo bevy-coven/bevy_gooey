@@ -42,3 +42,18 @@ fn dock(mut commands: Commands) {
 - `model::split_mins`, `split_clamp` and `split_drag` are the engine-free maths: a fraction held to the minimums in a room, and where a drag leaves it.
 - A split does not remember a pane's content when a pane is collapsed (the content stays, clipped), does not persist its state by itself, and has no accessibility node yet: Bevy's headless widgets give a separator none.
 - **A drag that does nothing says why.** The divider's handlers log at `debug` level (target `bevy_gooey::split`, for example `RUST_LOG=bevy_gooey::split=debug`) each condition that makes them stand still: a divider or split missing the components they read (`ChildOf`, `SplitDivider`, `ComputedNode`, `SplitFraction`, `SplitMin`), a drag by a button other than the primary one, a disabled divider, a drag that never began on it, and each move's pointer distance, the room and the fraction before and after. A drag whose pointer position never changes between press and move has distance zero and moves nothing. The same drag is tested for an interface drawn into an image (the pointer's target is the image, at its own scale factor, under a UI scale), one move a frame and minimums of 96 px.
+
+## A collapsed pane peeks
+
+Collapse the first pane (Enter on the divider, South, a double click) and it does not have to be gone: rest the
+pointer on the divider (or the sliver of pane the minimum leaves) for `SplitPeekSettings::delay_seconds` (0.05 s,
+Rune's sidebar peek) and the pane slides out over the second pane as wide as a restore would make it, with the
+`floating` shadow, **without moving the second pane by a pixel** (it is out of the flow; the divider moves to its
+far edge, above it, and the second pane keeps the room it had). It stays while the pointer is on it, the divider or
+the edge, and slides back when the pointer has been off them for `grace_seconds` (0.15 s) or Escape is pressed
+(WCAG 1.4.13: hoverable, persistent, dismissible). Enter, South or a double press on the divider docks it where
+it floats (no glide: it is already that wide), and a drag, an arrow, Home, End or the D-pad on the divider docks it
+first and goes on from there. A pointer that was already on the edge when the pane collapsed has to leave and come
+back before it peeks. `SplitPeek::is_open` says whether one floats; `SplitPeekSettings { enabled: false, .. }`
+turns it off. Under reduced motion it fades in with no slide and goes at once, and with no motion it comes and goes
+in a frame. A split that is not collapsed never peeks. (`docs/research/split-peek.md`)

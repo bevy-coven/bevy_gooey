@@ -87,6 +87,8 @@ feature; `GooeyFonts` holds asset handles and `InputDevice` is runtime state.
   `command_palette()` lists, the ids that ran last, the event a choice sends and what an open palette
   holds (`results()`, `selected()`). See [the command palette](command-palette.md).
 
+- `SplitPeekSettings`, `SplitPeek`, `SplitSaved` — whether a collapsed pane peeks and how long it dwells and lingers, whether one floats now, and the fraction a collapsed split restores to. See [split panes](splits.md#a-collapsed-pane-peeks).
+
 - `SplitFraction(f32)`, `SplitMin { first, second }`, `Split`, `SplitDivider` — on the entity `split(axis, first,
   second)` returned: the first pane's share (the state, serde data), each pane's least size in logical px, the
   axis, and the divider part. A player's change is one `ValueChange<f32>` on the split. See [split panes](splits.md).
@@ -166,6 +168,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 | `update_choices` | Style | a choice's selected option, and a value past the end pulled back |
 | `update_option_rows` | Style | a `text_size`, `interface_size`, `pad_style`, `skin_preset` or `motion_row` row follows its setting with no event, and on the frame it is spawned; before `update_choices` |
 | `update_tabs` | Style | a tabs widget's selected page shown and no other, its tab lit, a value past the end pulled back |
+| `update_split_peeks` | Style | a collapsed split's first pane floats over the second one while the pointer rests on its edge, and goes after the grace or on Escape; before `update_motion` |
 | `update_splits` | Style | a split's two panes' `flex_grow` and least sizes from `SplitFraction` and `SplitMin`, before `apply_skin`; writes only when they differ |
 | `update_trees` | Style | a removed node's selection and cursor move to its heir (next sibling, else the one before, else the parent), before `update_tables` |
 | `update_tables` | Style | each table's order, its pool of row entities bound to the rows in view, the room above and below them, the columns' widths, the sort mark and the scroll (the anchor row kept when rows change); before `apply_skin`, writes only when something differs |
