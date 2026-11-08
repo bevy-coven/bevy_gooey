@@ -8,6 +8,7 @@
 //! [`crate::update_splits`] writes that layout from the [`SplitPeek`] this module keeps.
 
 use bevy::input::ButtonInput;
+use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::ui::{BoxShadow, ComputedNode, InteractionDisabled, UiTransform};
@@ -130,7 +131,8 @@ type PartRead = (
 ///
 /// A split peeks only while it is collapsed (it holds a `SplitSaved`, sits at its smallest and has
 /// no glide on its way) and its divider is not disabled. The pointer resting on the divider or the
-/// collapsed pane for [`SplitPeekSettings::delay_seconds`] opens it; the pointer off the floating
+/// collapsed pane for [`SplitPeekSettings::delay_seconds`] opens it, and so does a visible focus
+/// inside the pane (Tab or an arrow into it); the pointer off the floating
 /// pane and the divider for [`SplitPeekSettings::grace_seconds`], or Escape, closes it. A restore
 /// (the split is no longer collapsed) ends it in that frame. A split that is not collapsed costs a
 /// comparison.
@@ -141,6 +143,9 @@ pub fn update_split_peeks(
     skin: Res<GooeySkin>,
     time: Option<Res<Time<Real>>>,
     keys: Option<Res<ButtonInput<KeyCode>>>,
+    focus: Option<Res<InputFocus>>,
+    focus_visible: Option<Res<InputFocusVisible>>,
+    parents: Query<&ChildOf>,
     mut commands: Commands,
     mut splits: Query<Peeked>,
     parts: Query<PartRead>,
@@ -191,7 +196,15 @@ pub fn update_split_peeks(
             && glide.is_none()
             && saved.is_some()
             && (fraction.0 - smallest) * extent < 0.5;
-        let touching = bar_hover.get() || pane_hover.get();
+        // A focus ring inside the collapsed pane is as good as the pointer on it: a keyboard or pad
+        // player who tabs into the pane sees it come out (the divider's own focus is not, or a
+        // pane collapsed with Enter on it would come straight back).
+        let focused_in = focus_visible.as_ref().is_some_and(|v| v.0)
+            && focus
+                .as_ref()
+                .and_then(|f| f.get())
+                .is_some_and(|f| parents.iter_ancestors(f).any(|a| a == pane));
+        let touching = bar_hover.get() || pane_hover.get() || focused_in;
         // The pointer already on the edge when the pane gets collapsed (the double press that did
         // it) has not come to it: the peek waits for it to leave and return.
         if collapsed && !peek.armed {

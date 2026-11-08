@@ -23,7 +23,7 @@ Rune's `SidebarPeek`: "A closed sidebar that peeks: resting the pointer on the w
 - **P3. It arrives and leaves from the edge.** On open the pane's `MotionTarget` starts `-width` away along the axis (an `entering_from`, on `snappy`) and a fade (`Arriving`); on close it retargets there (so a pointer returning mid-way retargets back, keeping its speed) and, once it has landed, goes back into the flow. Under `MotionSettings::reduced` it fades without travelling; with no motion it comes and goes in a frame.
 - **P4. Hoverable, persistent, dismissible.** While it is open, the pointer on the pane, its divider or within `SplitPeekSettings::margin` (12 px, Rune's) of them holds it; leaving all of them for `grace_seconds` (0.15 s, Rune's) closes it. Escape closes it at once (SC 1.4.13's dismissible; the crate's one reader of Escape for it, never when a `Cancel` was sent).
 - **P5. Docking.** `toggle_split` (Enter, South, a double press) while it peeks docks it: the fraction becomes the saved one with **no glide**, because the pane is already that wide, and the peek ends in the same frame. A drag that starts on the divider while it peeks docks it the same way and carries on from the docked fraction. The keys and the D-pad on a focused divider dock it first too (a step is from the docked width).
-- **P6. Only the pointer peeks.** A keyboard or pad player has the toggle (Enter, South), and focus moving into a collapsed pane's content would reach clipped widgets, which is the open gap noted in the split's note. The issue's "F6 into a collapsed region opens it docked" waits for `FocusRegion` on panes; recorded under Deviations.
+- **P6. (Superseded, iteration 73: a visible focus inside the pane peeks it too, see Deviations.) Only the pointer peeks.** A keyboard or pad player has the toggle (Enter, South), and focus moving into a collapsed pane's content would reach clipped widgets, which is the open gap noted in the split's note. The issue's "F6 into a collapsed region opens it docked" waits for `FocusRegion` on panes; recorded under Deviations.
 
 ## Parameters
 
@@ -48,6 +48,7 @@ A sidebar that was put away and is one glance of the pointer from coming back: i
 
 ## Deviations
 
+- **Focus peeks (iteration 73).** `update_split_peeks` counts a *visible* focus on a descendant of the collapsed pane as the pointer being on it (WCAG 2.4.7 Focus Visible: the ring must not be clipped away), so Tab or an arrow into the pane floats it, and focus leaving takes it away after the grace. The divider's own focus does not count. Reduced motion, Escape and the grace behave as for the pointer.
 - **No F6 case**: the issue's "F6 into a collapsed region opens it docked" needs a pane that is a `FocusRegion`; a split pane is not one yet. A keyboard player docks it with Enter on the divider.
 - **The edge is the divider** (24 px), not a zone over the window's edge.
 - **Escape is read directly** while a peek is open (`just_pressed`), because a `Cancel` is sent only from a focused widget and a peek the pointer opened has none. It never fires for a press the focused widget turned into a `Cancel`.

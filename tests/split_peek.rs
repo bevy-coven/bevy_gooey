@@ -458,3 +458,75 @@ fn a_disabled_divider_does_not_peek() {
     rest_on_divider(&mut app, &rig, 0.5);
     assert!(!peek(&app, &rig).is_open());
 }
+
+/// The sidebar's button, inside the collapsed pane.
+fn pane_button(app: &App, rig: &Rig) -> Entity {
+    let world = app.world();
+    world
+        .get::<Children>(rig.first)
+        .into_iter()
+        .flat_map(|kids| kids.iter())
+        .flat_map(|kid| {
+            std::iter::once(kid).chain(
+                world
+                    .entity(kid)
+                    .get::<Children>()
+                    .into_iter()
+                    .flat_map(|k| k.iter()),
+            )
+        })
+        .flat_map(|kid| {
+            std::iter::once(kid).chain(
+                world
+                    .entity(kid)
+                    .get::<Children>()
+                    .into_iter()
+                    .flat_map(|k| k.iter()),
+            )
+        })
+        .find(|e| world.get::<Role>(*e) == Some(&Role::Button))
+        .expect("the button")
+}
+
+#[test]
+fn a_visible_focus_inside_the_collapsed_pane_floats_it_and_leaving_takes_it_away() {
+    let mut app = app(MotionSettings::default());
+    let rig = collapsed(&mut app);
+    assert!(!floating(&app, &rig));
+    let button = pane_button(&app, &rig);
+    focus(&mut app, button);
+    frames(&mut app, 20);
+    assert!(peek(&app, &rig).is_open(), "tabbing into the pane opens it");
+    assert!(floating(&app, &rig));
+    // Stays while the focus stays, however long, with the pointer away.
+    frames(&mut app, 60);
+    assert!(peek(&app, &rig).is_open());
+    // Focus back on the divider: after the grace the pane goes.
+    focus(&mut app, rig.divider);
+    frames(&mut app, 40);
+    assert!(!floating(&app, &rig), "focus left the pane");
+    assert!(
+        app.world().get::<SplitSaved>(rig.split).is_some(),
+        "still collapsed"
+    );
+}
+
+#[test]
+fn the_dividers_own_focus_and_a_hidden_focus_peek_nothing() {
+    let mut app = app(MotionSettings::default());
+    let rig = collapsed(&mut app);
+    focus(&mut app, rig.divider);
+    frames(&mut app, 30);
+    assert!(
+        !floating(&app, &rig),
+        "Enter on the divider collapsed it; it stays collapsed"
+    );
+    let button = pane_button(&app, &rig);
+    focus(&mut app, button);
+    app.world_mut().insert_resource(InputFocusVisible(false));
+    frames(&mut app, 30);
+    assert!(
+        !floating(&app, &rig),
+        "a pointer press leaves focus there with no ring"
+    );
+}

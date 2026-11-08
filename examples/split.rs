@@ -39,6 +39,8 @@ enum Step {
     Hover,
     /// The pointer to the bottom right corner, off every divider.
     Away,
+    /// Shift+Tab: focus one stop back (into the collapsed sidebar, which then peeks).
+    Back,
 }
 
 /// Capture mode's state, present only when `GOOEY_FRAMES` is set.
@@ -139,6 +141,7 @@ fn steps_of(text: &str) -> Vec<Step> {
             match word {
                 "hover" => return Some(Step::Hover),
                 "away" => return Some(Step::Away),
+                "back" => return Some(Step::Back),
                 _ => {}
             }
             if let Some(by) = word.strip_prefix("drag:") {
@@ -325,6 +328,23 @@ fn stage(
             let state = match phase {
                 0 => ButtonState::Pressed,
                 n if n == every / 2 => ButtonState::Released,
+                _ => return,
+            };
+            keys.write(KeyboardInput {
+                key_code,
+                logical_key: Key::Unidentified(NativeKey::Unidentified),
+                state,
+                text: None,
+                repeat: false,
+                window,
+            });
+        }
+        Step::Back => {
+            let (key_code, state) = match phase {
+                0 => (KeyCode::ShiftLeft, ButtonState::Pressed),
+                1 => (KeyCode::Tab, ButtonState::Pressed),
+                n if n == every / 2 => (KeyCode::Tab, ButtonState::Released),
+                n if n == every / 2 + 1 => (KeyCode::ShiftLeft, ButtonState::Released),
                 _ => return,
             };
             keys.write(KeyboardInput {

@@ -45,7 +45,7 @@ fn dock(mut commands: Commands) {
 
 ## A collapsed pane peeks
 
-![The split example: the Library sidebar is collapsed with Enter on its divider, the pointer rests on the divider and the sidebar slides out over the Viewport panel with its shadow (the Viewport does not move), the pointer leaves and it slides back, and Enter on the divider docks it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/split-peek.gif)
+![The split example: the Library sidebar is collapsed with Enter on its divider, the pointer rests on the divider and the sidebar slides out over the Viewport panel with its shadow (the Viewport does not move), the pointer leaves and it slides back, Shift+Tab into the collapsed sidebar slides it out around the focused switch, and Enter on the divider docks it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/split-peek.gif)
 
 Collapse the first pane (Enter on the divider, South, a double click) and it does not have to be gone: rest the
 pointer on the divider (or the sliver of pane the minimum leaves) for `SplitPeekSettings::delay_seconds` (0.05 s,
@@ -55,7 +55,9 @@ far edge, above it, and the second pane keeps the room it had). It stays while t
 the edge, and slides back when the pointer has been off them for `grace_seconds` (0.15 s) or Escape is pressed
 (WCAG 1.4.13: hoverable, persistent, dismissible). Enter, South or a double press on the divider docks it where
 it floats (no glide: it is already that wide), and a drag, an arrow, Home, End or the D-pad on the divider docks it
-first and goes on from there. A pointer that was already on the edge when the pane collapsed has to leave and come
-back before it peeks. `SplitPeek::is_open` says whether one floats; `SplitPeekSettings { enabled: false, .. }`
+first and goes on from there. A visible focus inside the collapsed pane peeks it too (Tab or an arrow into it: a keyboard or pad player sees
+the widget they land on, where it was clipped before); the divider's own focus does not, or a pane collapsed with
+Enter on it would come straight back. A pointer that was already on the edge when the pane collapsed has to leave
+and come back before it peeks. `SplitPeek::is_open` says whether one floats; `SplitPeekSettings { enabled: false, .. }`
 turns it off. Under reduced motion it fades in with no slide and goes at once, and with no motion it comes and goes
 in a frame. A split that is not collapsed never peeks. (`docs/research/split-peek.md`)
