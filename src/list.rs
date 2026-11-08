@@ -10,7 +10,9 @@ use bevy::ui::{ComputedNode, ScrollPosition, UiGlobalTransform};
 use bevy::ui_widgets::Scrollbar;
 
 use crate::model::{page_target, scroll_to_reveal, snap_to_row};
+use crate::motion::MotionSettings;
 use crate::nav::show_focus;
+use crate::scroll_glide::{ScrollEdgeFade, ScrollGlide};
 use crate::skin::Role;
 
 /// How much list to keep in sight beyond the focused widget, in rows (a widget's height and the gap
@@ -40,6 +42,7 @@ const CONTEXT_ROWS: f32 = 1.5;
 /// ```
 #[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
 #[reflect(Component, Debug, PartialEq, Clone)]
+#[require(ScrollGlide, ScrollEdgeFade)]
 pub struct ListView {
     /// How many rows tall the list stands; a fraction cuts the last row visible.
     pub rows: f32,
@@ -103,6 +106,7 @@ fn list_of(
 /// row, so a click focuses a half-visible row where it stands and the next key brings it in.
 /// Writes `ScrollPosition` only when it must move by more than half a pixel. Runs in
 /// [`crate::GooeySystems::Navigate`], after the systems that move focus.
+#[allow(clippy::too_many_arguments)]
 pub fn scroll_to_focus(
     focus: Res<InputFocus>,
     visible: Res<InputFocusVisible>,
@@ -116,9 +120,12 @@ pub fn scroll_to_focus(
             &UiGlobalTransform,
             &Children,
             &mut ScrollPosition,
+            &mut ScrollGlide,
         ),
         With<ListView>,
     >,
+    settings: Res<MotionSettings>,
+    time: Option<Res<Time<Real>>>,
 ) {
     if !visible.0 || !(focus.is_changed() || visible.is_changed()) {
         return;
@@ -129,7 +136,7 @@ pub fn scroll_to_focus(
     let Some(list) = list_of(target, &parents, &lists) else {
         return;
     };
-    let (Ok((node, transform)), Ok((view, view_transform, view_children, mut scroll))) =
+    let (Ok((node, transform)), Ok((view, view_transform, view_children, mut scroll, mut glide))) =
         (nodes.get(target), views.get_mut(list))
     else {
         return;
@@ -141,6 +148,9 @@ pub fn scroll_to_focus(
     let laid_out = view.scroll_position.y * scale;
     let max = (view.content_size().y + view.scrollbar_size.y - view.size().y).max(0.0) * scale;
     let from_start = top - view_top + laid_out;
+    // Where the scroll is heading: a glide's goal, so a row asked for mid-glide is revealed from
+    // where the scroll will be and never pulls the goal back.
+    let base = glide.goal().unwrap_or(laid_out);
     // The rows' column holds their gap and the rows; a list's context is counted in rows, gap
     // included.
     let column = view_children
@@ -154,7 +164,7 @@ pub fn scroll_to_focus(
         from_start,
         from_start + height,
         view_height,
-        laid_out,
+        base,
         max,
         CONTEXT_ROWS * (height + gap),
     );
@@ -167,7 +177,7 @@ pub fn scroll_to_focus(
         .filter_map(|row| nodes.get(row).ok())
         .map(|(node, transform)| span(node, transform).0 - view_top + laid_out)
         .collect();
-    let want = snap_to_row(want, laid_out, &tops)
+    let want = snap_to_row(want, base, &tops)
         .filter(|&snapped| {
             want < max - 0.5
                 && snapped <= max
@@ -175,8 +185,12 @@ pub fn scroll_to_focus(
                 && from_start + height <= snapped + view_height + 0.5
         })
         .unwrap_or(want);
-    if (want - scroll.y).abs() > 0.5 {
-        scroll.y = want;
+    if (want - glide.goal().unwrap_or(scroll.y)).abs() > 0.5 {
+        if ScrollGlide::glides(&settings, time.as_deref()) {
+            glide.go(&scroll, want);
+        } else {
+            scroll.y = want;
+        }
     }
 }
 

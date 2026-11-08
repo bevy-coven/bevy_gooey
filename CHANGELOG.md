@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Scrolls that glide and fade at their edges (#65, `docs/research/scroll-glide.md`, `docs/guide/lists.md`): a scroll the crate makes (the follow-focus of a list and a tree, PageUp and PageDown, and a table's cursor) travels on a third of `motion.default` (`ScrollGlide`, `SCROLL_SPRING_FRACTION`) instead of jumping, keeps its speed when asked again mid-glide, and is ended by the wheel, a drag or a write to `ScrollPosition`; reduced and no motion land it at once. `ScrollEdgeFade(24 px)`, on every list and table viewport, fades an edge only where content is hidden, at `hidden / 15 px` (`scroll_fade_strength`). Proved by `tests/scroll_glide.rs`.
+
 ## [0.41.0] - 2026-11-07
 
 ### Added

@@ -60,6 +60,7 @@ mod reduced_motion;
 mod region;
 mod scale;
 mod scope;
+mod scroll_glide;
 mod section;
 mod seed;
 mod select;

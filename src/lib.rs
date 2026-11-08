@@ -184,6 +184,7 @@ mod prompt;
 mod radial;
 mod region;
 mod scale;
+mod scroll_glide;
 mod section;
 mod seed;
 mod select;
@@ -323,6 +324,11 @@ pub use prompt::{
 pub use radial::{RadialCount, RadialItem, RadialSlot, RadialValue, radial_by_pad, update_radials};
 pub use region::{ArrowPolicy, FocusRegion, cycle_regions};
 pub use scale::{UiScaleSettings, scale_with_window};
+pub use scroll_glide::{
+    FadeEdge, SCROLL_FADE_PX, SCROLL_FADE_RAMP_PX, SCROLL_SPRING_FRACTION, ScrollEdgeFade,
+    ScrollFade, ScrollFadeParts, ScrollGlide, manage_scroll_fades, scroll_fade_strength,
+    update_scroll_fades, update_scroll_glides,
+};
 pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_sections};
 pub use seed::PaletteSeed;
 pub use select::{SELECT_FILTER_ABOVE, Select};
@@ -530,6 +536,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<MotionSettings>()
             .register_type::<MovesSmoothly>()
             .register_type::<ControlSize>()
+            .register_type::<ScrollEdgeFade>()
+            .register_type::<FadeEdge>()
             .register_type::<PressScale>()
             .register_type::<HoldToConfirm>()
             .register_type::<HoldProgress>()
@@ -611,7 +619,13 @@ impl Plugin for GooeyStylePlugin {
                     (update_tabs, update_tab_pages).chain(),
                     (update_split_glides, update_splits).chain(),
                     update_trees,
-                    update_tables,
+                    (
+                        update_tables,
+                        update_scroll_glides,
+                        manage_scroll_fades,
+                        update_scroll_fades,
+                    )
+                        .chain(),
                     (update_loading, elevation::give_elevation, apply_skin).chain(),
                     update_meters,
                     update_sliders,
