@@ -32,7 +32,7 @@ Rune's `Reorder`: "The pointer moved `dy` since the press on row `index`, which 
 |step aside|carried width + gap|Rune's `pitch`|
 |spring|`snappy`|Rune's tab spring `SNAP`|
 |strip row|1.5 tab heights|a design default|
-|scale of the carried tab|1|Rune's 0.95 is a pickup cue; this crate draws the carried tab at its own size, the ghost marks the pickup|
+|scale of the carried tab|1.03 (`LIFT_GAIN`)|Rune's `lift`|
 
 ## Validation targets
 
@@ -47,7 +47,7 @@ A tab that sticks to the pointer, neighbours that make room with a small springy
 
 ## Deviations
 
-- **No pickup scale** (Rune's 0.95): the dock's ghost already marks the pickup.
+- **Pickup lift** (iteration 72, `pop.md` addendum): the carried tab is drawn at 1.03 with the floating elevation, as Rune's `lift` does (`tab.rs:148`); the 0.95 of the press is not built.
 - **The ghost and the landing rectangle remain** beside the carried tab (`tests/dock.rs` pins them); they could go in a later cutover.
 - **Only a single-row strip steps tabs aside**; a wrapped strip drops as before and its tabs glide only at the rebuild.
 - **Neighbours of a cross-group drop** glide only if they were laid out elsewhere; they were drawn in place, so they stay.

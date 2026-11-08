@@ -27,6 +27,14 @@ Sanctuary, `src/ui/juice.rs:1-9`: "A [`Pop`] swells a node and settles it ... Al
 - **A gain that is not a number above zero is no pop.**
 - At rest a node is read and not written; `PressScaleRestore` stays empty.
 
+## Addendum, 2026-11-08 (iteration 72): `Lift`, a swell that is held
+
+Sources: Rune `crates/rune-kit/src/shell/tab_strip/tab.rs:148`, "`let lift = |e: El| k.elevate(e.radius(RADIUS).scale(1.03).scale_motion(rune_motion::motion::MORPH).motion_intent(MotionIntent::OVERSHOOT), &k.elevation.floating)`": a picked-up tab is raised to the floating elevation and drawn at 1.03, on a springy morph. Deviation recorded by `tab-reorder.md` ("No pickup scale").
+
+- **`Lift(f32)`** (public, `LIFT_GAIN` = 0.03): the same drawing as `Pop` with a different target. While the component is on a node its scale springs to `1 + gain` and stays; remove it and the spring takes it back to 1 with the release bounce. `Pop` and `Lift` share `Popped` and the drawing pass, so a pop on a lifted node swells from the lift.
+- Reduced or no motion: a held scale is not motion, so the node lands on `1 + gain` at once (and a `Pop` still draws nothing).
+- **A carried dock tab is lifted**: `update_tab_reorder` puts `Lift` and the skin's floating elevation (`BoxShadow`) on it while it is carried and takes both off when the drag ends (`DockDrag` removed), so it rises on pickup and settles with the bounce on the drop.
+
 ## What great looks like
 
 A HUD readout that ticks from 41 to 42 swells 10% for about a tenth of a second and settles with a hair of life, as a coin counter does in a shipping platformer; the digits are never blurred (the whole node scales, so the text is rescaled by the renderer, not re-laid out); a run of five changes in half a second reads as one growing bump, not five.

@@ -6,7 +6,8 @@ Each GIF's row in that table holds the command that made it: a capture run of an
 frames into the GIF. This script runs both with the prebuilt release examples, on the display in
 `$DISPLAY` (the loop's Xvfb), into a scratch directory, then compares the new GIF with the committed
 one by its frames (downscaled, grey) and replaces the committed file only when it differs by more
-than noise: a different number of frames, or a mean difference above `--threshold` grey levels. A
+than noise: a different number of frames, or a mean difference above `--threshold` grey levels
+spread over at least a fifth of the frames. A
 rewrite of byte-different but identical-looking GIFs would add tens of MB to the repository every pass.
 
     cargo build --release --examples --all-features   # the inspector example needs `reflect`
@@ -76,15 +77,24 @@ def thumbs(gif):
     return [out[i:i + size] for i in range(0, len(out) - size + 1, size)][:FRAMES_MAX]
 
 
+FRAME_NOISE = 3.0
+"""A frame whose mean grey difference is above this counts as changed."""
+CHANGED_SHARE = 0.2
+"""A GIF whose mean difference is above the threshold counts as changed only when at least this share
+of its frames changed: a timing-dependent frame or two (a table's sort landing a frame apart) is noise."""
+
+
 def difference(old, new):
-    """(frame count change, mean absolute grey difference over the frames both have)."""
+    """(frame count change, mean grey difference over the frames both have, share of frames that
+    differ by more than `FRAME_NOISE`)."""
     if not old or not new:
-        return abs(len(old) - len(new)), 255.0
+        return abs(len(old) - len(new)), 255.0, 1.0
     n = min(len(old), len(new))
-    total = 0
-    for a, b in zip(old[:n], new[:n]):
-        total += sum(abs(x - y) for x, y in zip(a, b)) / len(a)
-    return abs(len(old) - len(new)), total / n
+    per_frame = [
+        sum(abs(x - y) for x, y in zip(a, b)) / len(a) for a, b in zip(old[:n], new[:n])
+    ]
+    changed = sum(d > FRAME_NOISE for d in per_frame) / n
+    return abs(len(old) - len(new)), sum(per_frame) / n, changed
 
 
 def record(name, run, encode, crop, span, binaries, scratch):
@@ -98,7 +108,10 @@ def record(name, run, encode, crop, span, binaries, scratch):
     # Every /tmp path of the commands moves into this GIF's own scratch directory.
     def local(text):
         return re.sub(r"/tmp/([\w.-]+)", lambda m: str(work / m.group(1)), text)
-    run_cmd = local(run).replace(f"cargo run --release --example {example}", f'"{exe}"')
+    # `cargo run --release [--features f] --example x` is the prebuilt binary: the examples were
+    # built with `--all-features`, so a feature flag in the row needs no rebuild here.
+    run_cmd = re.sub(
+        rf"cargo run --release (?:--features \w+ )?--example {example}", f'"{exe}"', local(run))
     for path in set(re.findall(re.escape(str(work)) + r"/[\w.-]+", run_cmd + encode)):
         if "." not in Path(path).name:
             Path(path).mkdir(parents=True, exist_ok=True)
@@ -150,13 +163,13 @@ def main():
             try:
                 new = record(name, run, encode, crop, span, binaries, scratch)
                 old = MEDIA / name
-                frames, mean = difference(thumbs(old) if old.exists() else [], thumbs(new))
-                if frames > 2 or mean > args.threshold:
+                frames, mean, share = difference(thumbs(old) if old.exists() else [], thumbs(new))
+                if frames > 2 or (mean > args.threshold and share >= CHANGED_SHARE):
                     if not args.dry_run:
                         shutil.copyfile(new, old)
-                    status[name] = f"UPDATED (frames {frames:+}, mean diff {mean:.2f})"
+                    status[name] = f"UPDATED (frames {frames:+}, mean diff {mean:.2f}, {share:.0%} of frames)"
                 else:
-                    status[name] = f"same (mean diff {mean:.2f})"
+                    status[name] = f"same (mean diff {mean:.2f}, {share:.0%} of frames)"
             except Exception as err:  # one GIF failing never stops the rest
                 status[name] = f"FAILED {err}"
             print(f"{name}: {status[name]}", flush=True)
