@@ -1,12 +1,16 @@
 # Changelog
 
-## [Unreleased]
+## [0.42.0] - 2026-11-07
 
 ### Added
 
 - Scrolls that glide and fade at their edges (#65, `docs/research/scroll-glide.md`, `docs/guide/lists.md`): a scroll the crate makes (the follow-focus of a list and a tree, PageUp and PageDown, and a table's cursor) travels on a third of `motion.default` (`ScrollGlide`, `SCROLL_SPRING_FRACTION`) instead of jumping, keeps its speed when asked again mid-glide, and is ended by the wheel, a drag or a write to `ScrollPosition`; reduced and no motion land it at once. `ScrollEdgeFade(24 px)`, on every list and table viewport, fades an edge only where content is hidden, at `hidden / 15 px` (`scroll_fade_strength`). Proved by `tests/scroll_glide.rs`.
 - A reflect inspector over a multi-selection (#77, `docs/research/inspect-mixed.md`, `docs/guide/inspector.md`): `InspectMixed(Vec<String>)` on the inspector's root names the reflect paths whose values differ across the selection. A number or colour row whose path is listed reads mixed (`MixedValue`), and a vector row's listed components do (`VecMixed`); the player's edit takes the marker off the row and sends the one `InspectorChange`; a list that changes (or is removed) puts each row it names back to the component's own value, and one that has not changed writes nothing (`sync_inspect_mixed`, between `build_inspectors` and `sync_inspectors`). Not built: a mixed state for toggles, choices and text rows (this crate has none), and a `problems()` line for a listed path the type does not have (it is ignored). Proved by `tests/inspect_mixed.rs`.
 - Switch motion (#67, `docs/research/switch-motion.md`, `docs/guide/motion.md`): a toggle's knob travels from one end of its track to the other on `motion.snappy` instead of jumping. `mark_moving_parts` gives a `Role::ToggleKnob` `MovesSmoothly` and the new `TravelSpring(MotionToken)` (a node with none travels on `motion.default`, as before); the state is still `Checked`, so a value the game sets with no event travels the same, a second flip mid-flight retargets from the drawn place, and the first frames, a new window size, scale or skin and reduced or no motion land. The track's colours follow through colour motion. Not built: the menu check mark's entrance, and Rune's hover stretch of the thumb. Proved by `tests/switch_motion.rs`.
+
+### Changed
+
+- **Breaking:** the system functions `update_tables` and `scroll_to_focus` take more parameters (the motion settings and the clock). They are systems a plugin registers; a host that called one by hand needs the two resources. `ListView` now requires `ScrollGlide` and `ScrollEdgeFade`.
 
 ## [0.41.0] - 2026-11-07
 
