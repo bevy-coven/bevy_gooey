@@ -17,15 +17,17 @@ use bevy::input_focus::{FocusCause, FocusedInput, InputFocus, InputFocusVisible}
 use bevy::picking::events::{PointerCancel, PointerDrag, PointerDragEnd, PointerDragStart};
 use bevy::picking::pointer::PointerButton;
 use bevy::prelude::*;
-use bevy::ui::{ComputedNode, UiGlobalTransform};
+use bevy::ui::{ComputedNode, UiGlobalTransform, UiTransform};
 use bevy::ui_widgets::{ValueChange, observe};
 
 use crate::cancel::Cancel;
 use crate::dock_layout::{DockDropTarget, DockLayout, DockSkip};
+use crate::layout_motion::TravelFrom;
 use crate::model::{
     DOCK_PANE_MIN_PX, DockZone, MIN_TARGET_PX, dock_drop_rect, dock_edge_zone, dock_neighbour,
     dock_tab_slot, dock_zone,
 };
+use crate::motion::{MotionTarget, MotionToken};
 use crate::nav::show_focus;
 use crate::skin::Role;
 use crate::split::{SplitFraction, SplitMin};
@@ -175,6 +177,9 @@ pub(crate) struct DockShown {
     pages: HashMap<String, Entity>,
     /// The panel whose tab takes focus, and whether the strips have been rebuilt since it moved.
     refocus: Option<(String, bool)>,
+    /// Where each tab was drawn (its centre, physical window px) when the tree was last rebuilt, so
+    /// the new tab of the same panel glides from there ([`TravelFrom`]).
+    departed: HashMap<String, Vec2>,
 }
 
 /// Where a split or a group stands in its dock: the dock and the way down the tree (`false` first
@@ -194,6 +199,9 @@ pub(crate) struct DockGroup;
 pub(crate) struct DockTab {
     dock: Entity,
     panel: String,
+    /// Where the tab it replaces was drawn, for [`start_dock_travel`] to turn into a
+    /// [`TravelFrom`] the frame it appears.
+    from: Option<Vec2>,
 }
 
 /// A tab being carried: on the dock, from the press that picked it up to the let go.
@@ -204,6 +212,27 @@ pub(crate) struct DockDrag {
     pointer: Vec2,
     /// Where the panel will go if the pointer is let go now.
     target: Option<DockDropTarget>,
+    /// The strip the tab is carried out of, as laid out when it was picked up: what the tabs it
+    /// passes step aside from.
+    strip: Option<StripDrag>,
+}
+
+/// One tab of a strip, as laid out when a tab of it was picked up: its entity, centre and size, in
+/// layout pixels.
+#[derive(Clone, Debug)]
+struct StripTab {
+    entity: Entity,
+    centre: Vec2,
+    size: Vec2,
+}
+
+/// A tab being carried within its strip (G-63): the tabs of the strip in order, which one it is and
+/// where on it the pointer took hold.
+#[derive(Clone, Debug)]
+struct StripDrag {
+    tabs: Vec<StripTab>,
+    from: usize,
+    grab: Vec2,
 }
 
 /// The entities of an existing node adopted as the children of the one this is inserted in, in
@@ -230,6 +259,7 @@ pub(crate) fn update_docks(
     registry: Res<PanelRegistry>,
     mut docks: Query<(Entity, Ref<Dock>, &mut DockShown, &Children)>,
     roles: Query<&Role>,
+    tabs: Query<(&DockTab, &UiGlobalTransform)>,
     mut commands: Commands,
 ) {
     for (entity, dock, mut shown, kids) in &mut docks {
@@ -265,12 +295,27 @@ pub(crate) fn update_docks(
                 pages.insert(id.to_owned(), page.id());
             }
         }
+        // Where each tab is drawn now: the tab of the same panel in the new tree glides from there.
+        shown.departed = tabs
+            .iter()
+            .filter(|(tab, _)| tab.dock == entity)
+            .map(|(tab, at)| (tab.panel.clone(), at.translation))
+            .collect();
         if let Some(old) = shown.root.take() {
             commands.entity(old).despawn();
         }
-        let root = layout
-            .as_ref()
-            .map(|layout| spawn_node(&mut commands, entity, &registry, &pages, layout, Vec::new()));
+        let departed = shown.departed.clone();
+        let root = layout.as_ref().map(|layout| {
+            spawn_node(
+                &mut commands,
+                entity,
+                &registry,
+                &pages,
+                &departed,
+                layout,
+                Vec::new(),
+            )
+        });
         if let Some(root) = root {
             commands.entity(body).add_child(root);
         }
@@ -295,6 +340,7 @@ fn spawn_node(
     dock: Entity,
     registry: &PanelRegistry,
     pages: &HashMap<String, Entity>,
+    departed: &HashMap<String, Vec2>,
     layout: &DockLayout,
     path: Vec<bool>,
 ) -> Entity {
@@ -310,8 +356,24 @@ fn spawn_node(
                 path.push(second);
                 path
             };
-            let a = spawn_node(commands, dock, registry, pages, first, down(false));
-            let b = spawn_node(commands, dock, registry, pages, second, down(true));
+            let a = spawn_node(
+                commands,
+                dock,
+                registry,
+                pages,
+                departed,
+                first,
+                down(false),
+            );
+            let b = spawn_node(
+                commands,
+                dock,
+                registry,
+                pages,
+                departed,
+                second,
+                down(true),
+            );
             commands
                 .spawn((
                     split_in(*axis, adopt(vec![a]), adopt(vec![b])),
@@ -330,6 +392,7 @@ fn spawn_node(
                         DockTab {
                             dock,
                             panel: id.clone(),
+                            from: departed.get(id).copied(),
                         },
                     )
                 })
@@ -509,6 +572,7 @@ pub(crate) struct DockGeometry<'w, 's> {
             &'static DockTab,
             &'static ComputedNode,
             &'static UiGlobalTransform,
+            &'static UiTransform,
         ),
     >,
     frames: Query<'w, 's, (&'static ComputedNode, &'static UiGlobalTransform)>,
@@ -561,10 +625,13 @@ impl DockGeometry<'_, '_> {
                     .ok()?
                     .iter()
                     .filter_map(|tab| {
-                        let (tab, node, at) = self.tabs.get(tab).ok()?;
+                        let (tab, node, at, moved) = self.tabs.get(tab).ok()?;
                         let scale = node.inverse_scale_factor();
                         let half = node.size().y * scale / 2.0;
-                        let centre = at.translation * scale;
+                        // Where layout put it: a tab being carried, or one stepping aside for it,
+                        // is drawn elsewhere, and the slot under the pointer is the layout's.
+                        let centre = at.translation * scale
+                            - Vec2::new(px_of(moved.translation.x), px_of(moved.translation.y));
                         Some((
                             tab.panel.clone(),
                             centre.x,
@@ -667,29 +734,75 @@ fn part(rect: Rect, zone: DockZone, whole: bool) -> Rect {
     )
 }
 
+/// What the strip a carried tab came out of is read from.
+type StripTabs<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static DockTab,
+        &'static ComputedNode,
+        &'static UiGlobalTransform,
+        &'static ChildOf,
+    ),
+>;
+
 /// A press that moves picks the tab up: the dock starts carrying it.
 fn tab_on_drag_start(
     mut start: On<PointerDragStart>,
-    tabs: Query<&DockTab>,
+    tabs: StripTabs,
+    kids: Query<&Children>,
+    ui_scale: Option<Res<UiScale>>,
     mut commands: Commands,
 ) {
     start.propagate(false);
     if start.button != PointerButton::Primary {
         return;
     }
-    if let Ok(tab) = tabs.get(start.entity) {
-        commands.entity(tab.dock).insert(DockDrag {
-            panel: tab.panel.clone(),
-            pointer: start.pointer.position,
-            target: None,
+    let Ok((tab, _, _, strip)) = tabs.get(start.entity) else {
+        return;
+    };
+    let scale = ui_scale.map_or(1.0, |scale| scale.0);
+    // The strip as it stands now, before any tab has moved: the tabs the carried one passes step
+    // aside from these places.
+    let seen: Vec<StripTab> = kids
+        .get(strip.parent())
+        .map(|kids| {
+            kids.iter()
+                .filter_map(|kid| {
+                    let (_, node, at, _) = tabs.get(kid).ok()?;
+                    let to_layout = node.inverse_scale_factor();
+                    Some(StripTab {
+                        entity: kid,
+                        centre: at.translation * to_layout,
+                        size: node.size() * to_layout,
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let pointer = start.pointer.position / scale;
+    let strip = seen
+        .iter()
+        .position(|t| t.entity == start.entity)
+        .map(|from| StripDrag {
+            grab: pointer - seen[from].centre,
+            from,
+            tabs: seen,
         });
-    }
+    commands.entity(tab.dock).insert(DockDrag {
+        panel: tab.panel.clone(),
+        pointer: start.pointer.position,
+        target: None,
+        strip,
+    });
 }
 
-/// The carried tab follows the pointer.
+/// The carried tab follows the pointer. The place the tab was taken hold of is where the press was,
+/// not where the pointer had got to when the drag began (a drag begins a few pixels after the press).
 fn tab_on_drag(
     mut drag: On<PointerDrag>,
     tabs: Query<&DockTab>,
+    ui_scale: Option<Res<UiScale>>,
     mut carried: Query<&mut DockDrag>,
 ) {
     drag.propagate(false);
@@ -697,6 +810,11 @@ fn tab_on_drag(
         && let Ok(mut carried) = carried.get_mut(tab.dock)
     {
         carried.pointer = drag.pointer.position;
+        if let Some(strip) = carried.strip.as_mut() {
+            let scale = ui_scale.map_or(1.0, |scale| scale.0);
+            let pressed = (drag.pointer.position - drag.distance) / scale;
+            strip.grab = pressed - strip.tabs[strip.from].centre;
+        }
     }
 }
 
@@ -914,6 +1032,153 @@ pub(crate) fn land_dock_focus(
         {
             focus.set(tab, FocusCause::Navigated);
             shown.refocus = None;
+        }
+    }
+}
+
+/// A logical px of a `Val`, 0 for any other.
+fn px_of(val: Val) -> f32 {
+    match val {
+        Val::Px(px) => px,
+        _ => 0.0,
+    }
+}
+
+/// Turns the place the tab it replaces was drawn at into a [`TravelFrom`], the frame a tab appears,
+/// so a rebuilt dock's tabs glide from where they were instead of jumping. Runs in
+/// [`crate::GooeySystems::Style`], after [`update_docks`].
+pub(crate) fn start_dock_travel(
+    mut tabs: Query<(Entity, &mut DockTab), Added<DockTab>>,
+    mut commands: Commands,
+) {
+    for (entity, mut tab) in &mut tabs {
+        if let Some(from) = tab.bypass_change_detection().from.take() {
+            commands.entity(entity).try_insert(TravelFrom(from));
+        }
+    }
+}
+
+/// While a tab is carried within its strip (G-63): the tab follows the pointer and the tabs it
+/// passes step aside on the snappy spring, so a gap stands where it would land; when it is put
+/// down, taken back (Escape) or dropped elsewhere, everything goes home. Runs in
+/// [`crate::GooeySystems::Style`], after [`update_dock_drag`]. A dock carrying nothing costs
+/// nothing.
+///
+/// Only the picture moves: layout keeps every tab where it was, so the slot under the pointer is
+/// found from the strip as it stood when the tab was picked up, and nothing feeds back.
+pub(crate) fn update_tab_reorder(
+    ui_scale: Option<Res<UiScale>>,
+    docks: Query<&DockDrag>,
+    mut tabs: Query<(&mut UiTransform, Option<&MotionTarget>), With<DockTab>>,
+    all_tabs: Query<(Entity, &DockTab)>,
+    mut gone: RemovedComponents<DockDrag>,
+    mut commands: Commands,
+) {
+    let scale = ui_scale.map_or(1.0, |scale| scale.0);
+    for drag in &docks {
+        let Some(strip) = &drag.strip else {
+            continue;
+        };
+        let pointer = drag.pointer / scale;
+        let carried = &strip.tabs[strip.from];
+        // The pointer is over the strip's row, or within a tab's height of it.
+        let inside = (pointer.y - carried.centre.y).abs() <= carried.size.y * 1.5;
+        // One row only: a wrapped strip steps nothing aside.
+        let one_row = strip
+            .tabs
+            .iter()
+            .all(|t| (t.centre.y - carried.centre.y).abs() < 1.0);
+        let to = if inside && one_row {
+            strip
+                .tabs
+                .iter()
+                .enumerate()
+                .filter(|&(i, t)| i != strip.from && t.centre.x < pointer.x)
+                .count()
+        } else {
+            strip.from
+        };
+        // The carried tab follows the pointer along the strip, and all the way off it.
+        let want = Vec2::new(
+            pointer.x - strip.grab.x - carried.centre.x,
+            if inside {
+                0.0
+            } else {
+                pointer.y - strip.grab.y - carried.centre.y
+            },
+        );
+        if let Ok((mut transform, track)) = tabs.get_mut(carried.entity) {
+            let next = Val2::px(want.x, want.y);
+            if transform.translation != next {
+                transform.translation = next;
+            }
+            if track.is_some() {
+                commands.entity(carried.entity).remove::<MotionTarget>();
+            }
+        }
+        // How far a tab it passes steps aside: its own width and the gap to its neighbour.
+        let gap = if strip.from + 1 < strip.tabs.len() {
+            strip.tabs[strip.from + 1].centre.x
+                - strip.tabs[strip.from + 1].size.x / 2.0
+                - (carried.centre.x + carried.size.x / 2.0)
+        } else if strip.from > 0 {
+            carried.centre.x
+                - carried.size.x / 2.0
+                - (strip.tabs[strip.from - 1].centre.x + strip.tabs[strip.from - 1].size.x / 2.0)
+        } else {
+            0.0
+        };
+        let step = carried.size.x + gap.max(0.0);
+        for (index, other) in strip.tabs.iter().enumerate() {
+            if index == strip.from {
+                continue;
+            }
+            let shift = if to > strip.from && index > strip.from && index <= to {
+                -step
+            } else if to < strip.from && index >= to && index < strip.from {
+                step
+            } else {
+                0.0
+            };
+            let Ok((_, track)) = tabs.get(other.entity) else {
+                continue;
+            };
+            let now = track.map_or(0.0, |t| t.translation.x);
+            if now != shift {
+                commands.entity(other.entity).insert(MotionTarget {
+                    translation: Vec2::new(shift, 0.0),
+                    spring: MotionToken::Snappy,
+                    ..default()
+                });
+            }
+        }
+    }
+    // A drag that ended (dropped, taken back or let go elsewhere): the carried tab springs home from
+    // where it was drawn and the tabs that stepped aside go back. A drop that changed the layout
+    // rebuilds the strip, which makes these tabs gone and the new ones glide in
+    // ([`start_dock_travel`]).
+    for dock in gone.read() {
+        for (entity, tab) in &all_tabs {
+            if tab.dock != dock {
+                continue;
+            }
+            let Ok((transform, track)) = tabs.get(entity) else {
+                continue;
+            };
+            let at = Vec2::new(
+                px_of(transform.translation.x),
+                px_of(transform.translation.y),
+            );
+            if at != Vec2::ZERO && track.is_none() {
+                commands
+                    .entity(entity)
+                    .try_insert(MotionTarget::default().entering_from(at));
+            } else if track.is_some_and(|t| t.translation != Vec2::ZERO) {
+                commands.entity(entity).try_insert(MotionTarget {
+                    spring: MotionToken::Snappy,
+                    ..default()
+                });
+            }
         }
     }
 }

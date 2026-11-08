@@ -262,7 +262,7 @@ pub use inspector::{
     build_inspectors, inspector, sync_inspect_mixed, sync_inspectors,
 };
 pub use layout_motion::{
-    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelSpring, mark_moving_parts,
+    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelFrom, TravelSpring, mark_moving_parts,
     update_layout_motion,
 };
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
@@ -645,8 +645,13 @@ impl Plugin for GooeyStylePlugin {
                     (update_palette, update_comboboxes).chain(),
                     update_option_rows,
                     (update_choices, update_radials).chain(),
-                    dock::update_docks,
-                    dock::update_dock_drag,
+                    (
+                        dock::update_docks,
+                        dock::update_dock_drag,
+                        dock::start_dock_travel,
+                        dock::update_tab_reorder,
+                    )
+                        .chain(),
                     (update_tabs, update_tab_pages).chain(),
                     (update_split_glides, update_splits).chain(),
                     update_trees,
