@@ -280,3 +280,33 @@ fn a_list_that_has_not_changed_writes_nothing() {
     }
     assert_eq!(app.world().resource::<MixedWrites>().0, 0);
 }
+
+#[test]
+fn a_row_the_player_edited_stays_as_they_left_it_when_the_list_changes_for_another_path() {
+    let mut app = app();
+    let ui = ui(&mut app, Some(&["yaw", "x"]));
+    let (yaw, x) = (row(&app, &ui, "yaw"), row(&app, &ui, "x"));
+    app.world_mut().trigger(ValueChange {
+        source: yaw,
+        value: 90.0_f32,
+        is_final: true,
+    });
+    settle(&mut app);
+    assert!(!mixed(&app, yaw));
+
+    // The host's list still names yaw and gains another path: yaw's membership did not change, so the
+    // row is not marked again over the player's edit.
+    set_list(&mut app, &ui, &["yaw", "x", "position.y"]);
+    assert!(!mixed(&app, yaw), "the edited row is not re-marked");
+    assert!(mixed(&app, x), "x was never edited and stays mixed");
+    assert_eq!(
+        app.world().get::<VecMixed>(row(&app, &ui, "position")),
+        Some(&VecMixed(vec![false, true, false])),
+        "the new path is marked"
+    );
+
+    // Once the host takes yaw out and puts it back (the next selection), it reads mixed again.
+    set_list(&mut app, &ui, &["x", "position.y"]);
+    set_list(&mut app, &ui, &["yaw", "x", "position.y"]);
+    assert!(mixed(&app, yaw), "a path added to the list reads mixed");
+}
