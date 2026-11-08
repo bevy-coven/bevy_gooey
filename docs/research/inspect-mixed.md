@@ -21,10 +21,11 @@ Researched 2026-11-07 for issue #77 (G-67), asked by bevy_grimoire's UI series (
 
 ## Proof
 
-`tests/inspect_mixed.rs`, 5 tests, headless window:
+`tests/inspect_mixed.rs`, 6 tests, headless window (mutation-checked on a copy of the tree: marking nothing fails three of them, re-marking every named row on any change fails the sixth):
 
 - The issue's acceptance: a struct with `yaw` and `x`, `InspectMixed(["yaw"])`: the yaw row has `MixedValue` and the hint in its field, the x row has its number; the player's edit of yaw (90) sends one `InspectorChange` for `yaw`, writes the field, and the row no longer reads mixed or shows the hint, and stays so while the list still names it.
 - Taking `yaw` out of the list shows the component's own value (12.5) with no hint; a list of two, then one, then the component removed.
 - A vector marks `position.y` only (`VecMixed([false, true, false])`) and a colour row reads mixed; `position` marks all three; an empty list takes `VecMixed` off.
 - A path the target does not have and a toggle are left alone.
 - Twenty frames with an unchanged list write no `MixedValue` or `VecMixed`.
+- A row the player edited is not marked again when the list gains another path while still naming it; taking the path out and putting it back marks it again.
