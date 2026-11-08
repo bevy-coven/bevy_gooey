@@ -1804,6 +1804,9 @@ pub enum Role {
     Cooldown,
     /// The seconds left on a [`Role::Cooldown`], on a chip of the opaque surface in its middle.
     CooldownText,
+    /// The art layer of a framed widget ([`crate::GooeyFrames`]): fills it, draws under its other
+    /// children; the tint is data written by [`crate::update_frames`].
+    FrameArt,
     /// An [`crate::led`]'s row: its dot, its label and its state word, a half gap apart.
     Led,
     /// An LED's dot: a square of `LED_TEXT_SIZES` body text sizes, its fill, frame, silhouette and
@@ -2972,6 +2975,7 @@ fn restyle(
         | Role::Cooldown
         | Role::Led
         | Role::LedDot
+        | Role::FrameArt
         | Role::RadialIcon
         | Role::RadialText
         | Role::RadialCentre

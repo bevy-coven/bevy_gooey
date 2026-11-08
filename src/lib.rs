@@ -163,6 +163,7 @@ mod drag;
 mod elevation;
 mod feedback;
 mod field;
+mod frames;
 mod hold;
 mod hover_group;
 mod icon;
@@ -253,6 +254,7 @@ pub use drag::{
 pub use elevation::{Elevation, ElevationLevel, ShadowLayer};
 pub use feedback::{UiFeedback, UiFeedbackKind, feedback_on_focus};
 pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
+pub use frames::{Frame, FrameLayer, Framed, GooeyFrames, update_frames};
 pub use hold::{
     HoldConfirmed, HoldProgress, HoldSettings, HoldToConfirm, hold_by_input, update_hold_bars,
 };
@@ -443,6 +445,7 @@ impl Plugin for GooeyStylePlugin {
         app.init_resource::<GooeySkin>()
             .init_resource::<InputDevice>()
             .init_resource::<GooeyFonts>()
+            .init_resource::<GooeyFrames>()
             .init_resource::<PanelRegistry>()
             .init_resource::<ToastSettings>()
             .init_resource::<SplitPeekSettings>()
@@ -677,6 +680,7 @@ impl Plugin for GooeyStylePlugin {
                         update_loading,
                         elevation::give_elevation,
                         apply_skin,
+                        update_frames,
                     )
                         .chain(),
                     update_meters,

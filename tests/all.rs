@@ -32,6 +32,7 @@ mod double_press;
 mod drag;
 mod elevation;
 mod field_problem;
+mod frames;
 mod hold;
 mod hover_group;
 mod icon;

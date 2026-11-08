@@ -293,3 +293,19 @@ the scope off so it joins the left one.
 
 A game sets the resource at start-up (`app.insert_resource(GooeySkin::parchment())`); Grimoire reads a
 project's `family/bevy_gooey.ron` into the same type while the editor runs.
+
+## Art frames: `GooeyFrames`
+
+A skin is colours, and a game with painted art wants its panels and buttons drawn from that art. `GooeyFrames` (a resource, like `GooeyFonts`: images are the game's assets, not saved data) holds a nine-slice `Frame { image, slice }` for every `panel()` (a dialog's too) and every `button()` that has a fill at rest (a ghost button stays flat):
+
+```rust
+fn setup(mut frames: ResMut<GooeyFrames>, assets: Res<AssetServer>) {
+    frames.panel = Some(Frame::new(assets.load("ui/panel.png"), 12.0));
+    frames.button = Some(Frame::new(assets.load("ui/button.png"), 8.0));
+}
+```
+
+The skin's colours tint the art: the fill each state would have is the tint, so rest, hover, press, disabled, a `SkinScope` and a fade all multiply the image. Draw the art in light neutrals (near white) and the skin does the colour; art with its own colours is tinted toward the skin's. The art is a layer under the widget's children (`FrameLayer`, found by `Framed(entity)` on the widget) because Bevy draws an image inside a node's padding; layout is the flat look's, the focus ring (a button's border) is drawn over the art, and a panel's outline is dropped (the art has its own edge). Take a field back to `None` and the flat fill returns. A widget that already holds an image of your own is left alone. Corner size is in image pixels and is not scaled by `UiScale`. Only panels and buttons for now. `examples/frames.rs` draws its own art in code; research: `docs/research/frames.md`.
+
+![The frames example in the parchment look: a Camp panel and three buttons drawn from a bevelled paper plate with the focus ring over it, then Enter on "Flat look" takes the frames away and the flat fills come back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/frames.gif)
+
