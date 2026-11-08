@@ -121,6 +121,15 @@ fn drawn(app: &App, entity: Entity) -> Rect {
     Rect::from_center_size(at * scale, node.size() * scale)
 }
 
+/// The scale a node is drawn at, read off its global transform.
+fn drawn_scale(app: &App, entity: Entity) -> f32 {
+    let at = app
+        .world()
+        .get::<UiGlobalTransform>(entity)
+        .expect("placed");
+    bevy::math::Affine2::from(*at).matrix2.x_axis.x
+}
+
 fn window(app: &mut App) -> Entity {
     app.world_mut()
         .query_filtered::<Entity, With<PrimaryWindow>>()
@@ -221,6 +230,23 @@ fn the_tab_follows_the_pointer_and_the_one_it_passes_steps_aside() {
         "Alpha is {} along, the pointer {}",
         alpha_off.x,
         to
+    );
+    // Picked up: held a little larger, with the floating shadow (Rune's `lift`).
+    let ratio = drawn_scale(&app, alpha);
+    assert!(
+        (ratio - (1.0 + LIFT_GAIN)).abs() < 0.01,
+        "the carried tab is lifted: {ratio}"
+    );
+    assert!(app.world().get::<Lift>(alpha).is_some());
+    assert!(
+        app.world()
+            .get::<BoxShadow>(alpha)
+            .is_some_and(|s| !s.0.is_empty()),
+        "and raised"
+    );
+    assert!(
+        (drawn(&app, bravo).width() - b0.width()).abs() < 0.6,
+        "its neighbour is not"
     );
     // Layout is untouched until it is let go.
     assert_eq!(reports(&app), 0);

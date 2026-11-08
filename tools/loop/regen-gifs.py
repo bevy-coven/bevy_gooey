@@ -145,6 +145,8 @@ def record(name, run, encode, crop, span, binaries, scratch):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("names", nargs="*", help="GIF names without .gif; default every one")
+    ap.add_argument("--force", action="store_true",
+                    help="replace the named GIFs whatever the comparison says (a change too small for the thumbnails)")
     ap.add_argument("--threshold", type=float, default=1.5,
                     help="mean grey-level difference under which a GIF counts as unchanged")
     ap.add_argument("--dry-run", action="store_true")
@@ -164,7 +166,7 @@ def main():
                 new = record(name, run, encode, crop, span, binaries, scratch)
                 old = MEDIA / name
                 frames, mean, share = difference(thumbs(old) if old.exists() else [], thumbs(new))
-                if frames > 2 or (mean > args.threshold and share >= CHANGED_SHARE):
+                if args.force or frames > 2 or (mean > args.threshold and share >= CHANGED_SHARE):
                     if not args.dry_run:
                         shutil.copyfile(new, old)
                     status[name] = f"UPDATED (frames {frames:+}, mean diff {mean:.2f}, {share:.0%} of frames)"

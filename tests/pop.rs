@@ -177,3 +177,34 @@ fn a_settled_node_writes_nothing() {
     frames(&mut app, 30);
     assert_eq!(app.world().resource::<Writes>().0, writes);
 }
+
+#[test]
+fn a_lift_holds_the_swell_while_it_is_there_and_lets_go_with_a_settle() {
+    let mut app = app(MotionSettings::default());
+    let panel = readout(&mut app);
+    app.world_mut().entity_mut(panel).insert(Lift::default());
+    frames(&mut app, SETTLED);
+    let held = drawn_scale(&app, panel);
+    assert!((held - (1.0 + LIFT_GAIN)).abs() < 1e-3, "held: {held}");
+    let writes = app.world().resource::<Writes>().0;
+    frames(&mut app, 30);
+    assert_eq!(
+        app.world().resource::<Writes>().0,
+        writes,
+        "a held lift writes nothing"
+    );
+    app.world_mut().entity_mut(panel).remove::<Lift>();
+    frames(&mut app, SETTLED);
+    assert!((drawn_scale(&app, panel) - 1.0).abs() < 1e-4, "put down");
+}
+
+#[test]
+fn a_lift_lands_at_once_under_reduced_motion() {
+    for settings in [MotionSettings::off(), MotionSettings::reduced()] {
+        let mut app = app(settings);
+        let panel = readout(&mut app);
+        app.world_mut().entity_mut(panel).insert(Lift::default());
+        frames(&mut app, 2);
+        assert!((drawn_scale(&app, panel) - (1.0 + LIFT_GAIN)).abs() < 1e-3);
+    }
+}

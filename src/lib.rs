@@ -316,7 +316,7 @@ pub use palette::{
     CommandList, CommandPalette, PALETTE_ROWS, PaletteCommand, PaletteCount, PaletteHistory,
     PaletteInput, PaletteNote, PaletteRow, RunCommand, palette_by_input, update_palette,
 };
-pub use pop::{POP_GAIN, Pop, Popped, draw_pops, update_pops};
+pub use pop::{LIFT_GAIN, Lift, POP_GAIN, Pop, Popped, draw_pops, update_pops};
 pub use popover::{
     CloseReason, Placement, PopoverClosed, PopoverPanel, PopoverPoint, anchor_pointer_popovers,
     close_popovers_on_press, drop_pointer_anchors, reveal_popovers,
@@ -566,6 +566,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<FadeEdge>()
             .register_type::<PressScale>()
             .register_type::<Pop>()
+            .register_type::<Lift>()
             .register_type::<Led>()
             .register_type::<LedState>()
             .register_type::<LedWord>()

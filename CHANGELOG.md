@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- `Lift(f32)` (`LIFT_GAIN` 0.03, `docs/research/pop.md` addendum, `docs/guide/motion.md`): hold a node a little larger, about its centre, while the component is on it, and let it go with a spring and a slight bounce when it is removed: a picked-up card, tab or item. The same drawing pass as `Pop` (layout and the hit test keep the resting size); reduced or no motion lands it at the lifted size.
+
+### Changed
+
+- A carried dock tab is lifted as Rune's is (`crates/rune-kit/src/shell/tab_strip/tab.rs:148`): drawn 3% larger with the skin's floating shadow while it follows the pointer, settling back on the drop (`tests/dock_reorder.rs`, `docs/media/dock-reorder.gif`).
+- `tools/loop/regen-gifs.py` counts a GIF as changed only when its frames differ over at least a fifth of them, runs `--features` rows from the all-features build (the inspector row no longer times out) and takes `--force`.
+
 ## [0.45.0] - 2026-11-08
 
 Breaking (pre-1.0, minor): `Role` gains `Led` and `LedDot`; a host that matches `Role` exhaustively adds two arms.

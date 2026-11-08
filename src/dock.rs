@@ -22,6 +22,7 @@ use bevy::ui_widgets::{ValueChange, observe};
 
 use crate::cancel::Cancel;
 use crate::dock_layout::{DockDropTarget, DockLayout, DockSkip};
+use crate::elevation::ElevationLevel;
 use crate::layout_motion::{MovesSmoothly, TravelFrom};
 use crate::model::{
     DOCK_PANE_MIN_PX, DockZone, MIN_TARGET_PX, dock_drop_rect, dock_edge_zone, dock_neighbour,
@@ -29,7 +30,8 @@ use crate::model::{
 };
 use crate::motion::{MotionTarget, MotionToken};
 use crate::nav::show_focus;
-use crate::skin::Role;
+use crate::pop::Lift;
+use crate::skin::{GooeySkin, Role, SkinScope, skin_of};
 use crate::split::{SplitFraction, SplitMin};
 use crate::widgets::{panel, split_in, tab_page, tabs_in};
 
@@ -1072,8 +1074,11 @@ pub(crate) fn start_dock_travel(
 /// found from the strip as it stood when the tab was picked up, and nothing feeds back.
 pub(crate) fn update_tab_reorder(
     ui_scale: Option<Res<UiScale>>,
+    skin: Res<GooeySkin>,
+    scopes: Query<&SkinScope>,
+    parents: Query<&ChildOf>,
     docks: Query<&DockDrag>,
-    mut tabs: Query<(&mut UiTransform, Option<&MotionTarget>), With<DockTab>>,
+    mut tabs: Query<(&mut UiTransform, Option<&MotionTarget>, Has<Lift>), With<DockTab>>,
     all_tabs: Query<(Entity, &DockTab)>,
     mut gone: RemovedComponents<DockDrag>,
     mut commands: Commands,
@@ -1111,7 +1116,16 @@ pub(crate) fn update_tab_reorder(
                 pointer.y - strip.grab.y - carried.centre.y
             },
         );
-        if let Ok((mut transform, track)) = tabs.get_mut(carried.entity) {
+        if let Ok((mut transform, track, lifted)) = tabs.get_mut(carried.entity) {
+            // Picked up: raised to the floating elevation and held a little larger (Rune's `lift`).
+            if !lifted {
+                commands.entity(carried.entity).try_insert((
+                    Lift::default(),
+                    skin_of(&skin, carried.entity, &scopes, &parents)
+                        .elevation
+                        .box_shadow(ElevationLevel::Floating, 1.0),
+                ));
+            }
             let next = Val2::px(want.x, want.y);
             if transform.translation != next {
                 transform.translation = next;
@@ -1144,7 +1158,7 @@ pub(crate) fn update_tab_reorder(
             } else {
                 0.0
             };
-            let Ok((_, track)) = tabs.get(other.entity) else {
+            let Ok((_, track, _)) = tabs.get(other.entity) else {
                 continue;
             };
             let now = track.map_or(0.0, |t| t.translation.x);
@@ -1166,9 +1180,13 @@ pub(crate) fn update_tab_reorder(
             if tab.dock != dock {
                 continue;
             }
-            let Ok((transform, track)) = tabs.get(entity) else {
+            let Ok((transform, track, lifted)) = tabs.get(entity) else {
                 continue;
             };
+            // Put down: the lift and its shadow go, the scale settles back on its spring.
+            if lifted {
+                commands.entity(entity).remove::<(Lift, BoxShadow)>();
+            }
             let at = Vec2::new(
                 px_of(transform.translation.x),
                 px_of(transform.translation.y),

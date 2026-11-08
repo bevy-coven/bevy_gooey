@@ -211,7 +211,7 @@ component is the trigger and stays), and a pop on a node still settling stacks o
 at, so a counter that ticks five times in half a second reads as one fuller swell. `Pop(0.2)` is a
 bigger one. Only the drawing scales, as for `PressScale` (layout and the hit test keep the resting size,
 the two compose on one node), it runs on real time, so a paused game still pops its menu, and reduced or
-no motion draws nothing swollen. It scales about the node's own centre: a readout stretched across a row swells about the row's middle, so let it hug its words (`align_items: FlexStart` on its parent). `examples/pop.rs` is the whole feature in one line. Research:
+no motion draws nothing swollen. It scales about the node's own centre: a readout stretched across a row swells about the row's middle, so let it hug its words (`align_items: FlexStart` on its parent). `Lift` is the held form: `Lift::default()` on a node (a picked-up card or tab) keeps it `LIFT_GAIN` (3%) larger until the component is removed, then springs back with the bounce; reduced or no motion lands it at the lifted size at once. A carried dock tab is lifted with the floating shadow. `examples/pop.rs` is the whole feature in one line. Research:
 `docs/research/pop.md`.
 
 ![The pop example: Enter on "Pick up a coin" three times swells the Coins readout, one fuller swell as the pickups stack, and a gem pickup swells the Gems readout](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/pop.gif)

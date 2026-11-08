@@ -15,7 +15,11 @@ use crate::skin::{GooeySkin, SkinScope, skin_of};
 /// (`Pop::with(0.10, 0.12)`), a design default.
 pub const POP_GAIN: f32 = 0.10;
 
-/// How near 1 a settling pop must be to count as at rest: a ten-thousandth of the node's size.
+/// The swell of a default [`Lift`]: Rune's picked-up tab (`scale(1.03)`,
+/// `crates/rune-kit/src/shell/tab_strip/tab.rs:148`).
+pub const LIFT_GAIN: f32 = 0.03;
+
+/// How near its target a settling pop must be to count as at rest: a ten-thousandth of the node's size.
 const POP_REST: f32 = 1.0e-4;
 
 /// Swell by this share of the node's size about its centre and settle back, on the skin's snappy
@@ -48,7 +52,32 @@ impl Default for Pop {
     }
 }
 
-/// How far a [`Pop`] node is drawn swollen now: its scale and how fast it changes.
+/// Hold the node swollen by this share of its size, about its centre, while the component is on it:
+/// a picked-up card, tab or item. It springs up to `1 + gain` and, when the component is removed,
+/// back to 1 with a slight bounce; a [`Pop`] on a lifted node swells from the lift. Only the drawing
+/// scales, as for [`Pop`]. Under reduced or no motion the node lands on the lifted size at once (a
+/// held size is not motion). A gain that is not a number above zero holds nothing.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, card: Entity) {
+/// commands.entity(card).insert(Lift::default()); // picked up
+/// commands.entity(card).remove::<Lift>(); // put down
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Component, Default, Debug, PartialEq, Clone)]
+#[require(Popped)]
+pub struct Lift(pub f32);
+
+impl Default for Lift {
+    fn default() -> Self {
+        Self(LIFT_GAIN)
+    }
+}
+
+/// How far a [`Pop`] or [`Lift`] node is drawn swollen now: its scale and how fast it changes.
 #[derive(Component, Clone, Debug, PartialEq)]
 pub struct Popped {
     scale: SpringState,
@@ -70,42 +99,47 @@ impl Popped {
     pub fn scale(&self) -> f32 {
         self.scale.value
     }
-
-    fn at_rest(&self) -> bool {
-        self.scale.value == 1.0 && self.scale.velocity == 0.0
-    }
 }
 
-/// Starts a pop on a node whose [`Pop`] was just inserted and steps every pop toward 1, on real
-/// time. A node at rest and not triggered is read and not written. Runs in
-/// [`crate::GooeySystems::Style`].
+/// Starts a pop on a node whose [`Pop`] was just inserted, holds a [`Lift`], and steps every
+/// swollen node toward where it is going, on real time. A node at rest and not triggered is read and
+/// not written. Runs in [`crate::GooeySystems::Style`].
 pub fn update_pops(
     settings: Res<MotionSettings>,
     skin: Res<GooeySkin>,
     scopes: Query<&SkinScope>,
     parents: Query<&ChildOf>,
     time: Option<Res<Time<Real>>>,
-    mut pops: Query<(Entity, Ref<Pop>, &mut Popped)>,
+    mut pops: Query<(Entity, Option<Ref<Pop>>, Option<&Lift>, &mut Popped)>,
 ) {
     let delta = time.as_ref().map_or(0.0, |time| time.delta_secs());
     let lands = settings.lands_travel() || time.is_none();
-    for (entity, pop, mut state) in &mut pops {
-        let triggered = pop.is_changed();
-        if !triggered && state.at_rest() {
+    for (entity, pop, lift, mut state) in &mut pops {
+        let triggered = pop.as_ref().is_some_and(|pop| pop.is_changed());
+        let held = lift
+            .map(|lift| lift.0)
+            .filter(|gain| gain.is_finite() && *gain > 0.0)
+            .map_or(1.0, |gain| 1.0 + gain);
+        let rests = state.scale.value == held && state.scale.velocity == 0.0;
+        if !triggered && rests {
             continue;
         }
         if lands {
-            if !state.at_rest() {
-                state.scale = SpringState {
-                    value: 1.0,
-                    velocity: 0.0,
-                };
+            let at = SpringState {
+                value: held,
+                velocity: 0.0,
+            };
+            if state.scale != at {
+                state.scale = at;
             }
             continue;
         }
         let mut now = state.scale;
-        if triggered && pop.0.is_finite() && pop.0 > 0.0 {
-            now.value = now.value.max(1.0) + pop.0;
+        if let Some(pop) = pop.as_ref().filter(|_| triggered)
+            && pop.0.is_finite()
+            && pop.0 > 0.0
+        {
+            now.value = now.value.max(held) + pop.0;
         }
         let snappy = skin_of(&skin, entity, &scopes, &parents)
             .motion
@@ -115,10 +149,10 @@ pub fn update_pops(
             bounce: PRESS_RELEASE_BOUNCE,
         }
         .scaled(settings.duration_scale);
-        let next = spring_step(spring, now, 1.0, delta);
-        let next = if spring_settled(spring, next, 1.0, POP_REST) {
+        let next = spring_step(spring, now, held, delta);
+        let next = if spring_settled(spring, next, held, POP_REST) {
             SpringState {
-                value: 1.0,
+                value: held,
                 velocity: 0.0,
             }
         } else {
@@ -134,7 +168,7 @@ pub fn update_pops(
 /// remembering the resting transforms for [`crate::restore_press_scale`]. Runs in `PostUpdate`,
 /// after Bevy's layout and the press scale and before its clipping. A node at rest is not touched.
 pub fn draw_pops(
-    widgets: Query<(Entity, &Popped), With<Pop>>,
+    widgets: Query<(Entity, &Popped)>,
     children: Query<&Children>,
     fixed: Query<(), With<FixedNode>>,
     mut globals: Query<&mut UiGlobalTransform>,
