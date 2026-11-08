@@ -2411,6 +2411,27 @@ pub fn hold_step(progress: f32, dt: f32, seconds: f32, held: bool, instant: bool
 pub const DIALOG_SLIDE_PX: f32 = 12.0;
 /// How far a popover (a menu, a select list, a colour picker) slides from its anchor, logical px.
 pub const POPOVER_SLIDE_PX: f32 = 6.0;
+/// The scale a popover's panel starts at, as it opens: 0.96, Rune's overlay entrance, growing to 1
+/// on the same spring as the slide.
+pub const POPOVER_SCALE_FROM: f32 = 0.96;
+
+/// The scale a popover's panel is drawn at while it is `reach` logical px short of its gap
+/// ([`POPOVER_SLIDE_PX`] at the start, 0 when it has arrived): [`POPOVER_SCALE_FROM`] to 1 along
+/// the slide, so one spring drives both. A reach past either end is held to it.
+///
+/// ```
+/// use bevy_gooey::{POPOVER_SLIDE_PX, popover_scale};
+/// assert_eq!(popover_scale(POPOVER_SLIDE_PX), 0.96);
+/// assert_eq!(popover_scale(0.0), 1.0);
+/// assert!((popover_scale(POPOVER_SLIDE_PX / 2.0) - 0.98).abs() < 1e-6);
+/// assert_eq!(popover_scale(f32::NAN), 1.0);
+/// ```
+pub fn popover_scale(reach: f32) -> f32 {
+    if !reach.is_finite() {
+        return 1.0;
+    }
+    1.0 - (1.0 - POPOVER_SCALE_FROM) * (reach / POPOVER_SLIDE_PX).clamp(0.0, 1.0)
+}
 /// How far a toast starts from its place, toward the window edge its stack is anchored to, logical px.
 /// A toast is one or two lines of text with its padding, so this carries it from just past the edge.
 pub const TOAST_SLIDE_PX: f32 = 48.0;

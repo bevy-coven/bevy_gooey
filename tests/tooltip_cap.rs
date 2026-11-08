@@ -95,7 +95,8 @@ fn an_open_tooltip_with_a_shortcut_stays_still_at_every_scale() {
         let erase = world
             .spawn((
                 button("Erase"),
-                Tooltip::new("Remove mode").with_shortcut(Shortcut::new(Modifiers::NONE, KeyCode::KeyX)),
+                Tooltip::new("Remove mode")
+                    .with_shortcut(Shortcut::new(Modifiers::NONE, KeyCode::KeyX)),
             ))
             .id();
         let row = world
@@ -160,7 +161,12 @@ fn an_open_tooltip_with_a_shortcut_stays_still_at_every_scale() {
         // And the words are still in the middle of their cap (the run's own width, from the content
         // box, against the node's middle; physical px, so half a device pixel of slack).
         let node = app.world().get::<ComputedNode>(cap).expect("laid out");
-        let run = app.world().get::<TextLayoutInfo>(cap).expect("a run").size.x;
+        let run = app
+            .world()
+            .get::<TextLayoutInfo>(cap)
+            .expect("a run")
+            .size
+            .x;
         let off = node.content_box().min.x + run / 2.0 - node.border_box().center().x;
         assert!(
             off.abs() <= 0.6,
