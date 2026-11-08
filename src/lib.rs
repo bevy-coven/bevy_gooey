@@ -196,6 +196,7 @@ mod size_motion;
 mod skin;
 mod slots;
 mod split;
+mod split_peek;
 mod status;
 mod table;
 mod tabs;
@@ -356,9 +357,10 @@ pub use slots::{
     update_slot_grids,
 };
 pub use split::{
-    Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, split_by_pad,
-    update_splits,
+    Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, SplitSaved,
+    split_by_pad, update_splits,
 };
+pub use split_peek::{SplitPeek, SplitPeekSettings, update_split_peeks};
 pub use status::{StatusBar, StatusItem, StatusKind, StatusPriority};
 pub use table::{
     Column, RowActivated, RowSource, SelectMode, SortBy, Table, TableCursor, TableRow, TableRows,
@@ -439,6 +441,7 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<GooeyFonts>()
             .init_resource::<PanelRegistry>()
             .init_resource::<ToastSettings>()
+            .init_resource::<SplitPeekSettings>()
             .init_resource::<MotionSettings>()
             .init_resource::<ShortcutBadges>()
             .init_resource::<BadgesShown>()
@@ -531,6 +534,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<SelectMode>()
             .register_type::<TableRows>()
             .register_type::<SplitDivider>()
+            .register_type::<SplitPeek>()
+            .register_type::<SplitPeekSettings>()
             .register_type::<Tooltip>()
             .register_type::<Placement>()
             .register_type::<PopoverPanel>()
@@ -597,6 +602,7 @@ impl Plugin for GooeyStylePlugin {
                 Update,
                 (
                     (
+                        update_split_peeks,
                         (begin_entrances, update_motion).chain(),
                         mark_moving_parts,
                         (mark_press_scale, update_press_scale).chain(),

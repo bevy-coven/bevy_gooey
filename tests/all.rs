@@ -77,6 +77,7 @@ mod size_motion;
 mod skin;
 mod slots;
 mod split;
+mod split_peek;
 mod state_roles;
 mod status_bar;
 mod switch_motion;

@@ -22,6 +22,7 @@ use crate::model::{
 use crate::nav::show_focus;
 use crate::size_motion::SplitGlide;
 use crate::skin::Role;
+use crate::split_peek::SplitPeek;
 
 /// How a [`crate::split`] lays its two panes out.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect)]
@@ -41,7 +42,7 @@ pub enum SplitAxis {
 /// split and its own value wins.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, PartialEq, Clone)]
-#[require(SplitFraction, SplitMin)]
+#[require(SplitFraction, SplitMin, crate::SplitPeek)]
 pub struct Split {
     axis: SplitAxis,
 }
@@ -141,9 +142,18 @@ impl SplitDivider {
 #[derive(Component, Clone, Copy, Debug)]
 pub(crate) struct SplitGrab(f32);
 
-/// Where a split was before its first pane was collapsed, so the next collapse gives it back.
-#[derive(Component, Clone, Copy, Debug)]
-pub(crate) struct SplitSaved(f32);
+/// On a split whose first pane is collapsed: the fraction a restore gives back (Enter, South, a
+/// double press, or docking a peek). A game reads it to know a split is collapsed and how wide it
+/// will be restored; the crate puts it on and takes it off.
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
+pub struct SplitSaved(pub(crate) f32);
+
+impl SplitSaved {
+    /// The fraction a restore gives back.
+    pub fn fraction(&self) -> f32 {
+        self.0
+    }
+}
 
 /// A request to collapse a split's first pane to its minimum, or restore it, from its divider:
 /// Enter, the pad's South button and a double click.
@@ -163,6 +173,9 @@ struct Reading {
     /// divider's.
     extent: f32,
     disabled: bool,
+    /// The fraction a peeking first pane docks at (the one a restore gives back), `Some` exactly
+    /// while the pane floats over the second one.
+    peeking: Option<f32>,
 }
 
 impl Reading {
@@ -195,6 +208,8 @@ type Roots = (
     &'static SplitFraction,
     &'static SplitMin,
     &'static ComputedNode,
+    &'static SplitPeek,
+    Option<&'static SplitSaved>,
 );
 
 /// A system parameter that reads a divider's split (its fraction, minimums and room); it is in the
@@ -220,7 +235,7 @@ impl SplitGeometry<'_, '_> {
             );
             return None;
         };
-        let Ok((fraction, min, root_node)) = self.roots.get(parent.parent()) else {
+        let Ok((fraction, min, root_node, peek, saved)) = self.roots.get(parent.parent()) else {
             debug!(
                 "split divider {divider} is not read: its parent {} lacks a `SplitFraction`, \
                  `SplitMin` or `ComputedNode`",
@@ -235,13 +250,18 @@ impl SplitGeometry<'_, '_> {
         let axis = divider_axis.axis;
         let whole = along(root_node.size(), axis) * root_node.inverse_scale_factor();
         let bar = along(node.size(), axis) * node.inverse_scale_factor();
+        let extent = (whole - bar).max(0.0);
         Some(Reading {
             root: parent.parent(),
             axis,
             fraction: fraction.0,
             min: *min,
-            extent: (whole - bar).max(0.0),
+            extent,
             disabled,
+            peeking: peek
+                .is_open()
+                .then(|| saved.map(|s| split_clamp(s.0, extent, min.first, min.second)))
+                .flatten(),
         })
     }
 }
@@ -312,6 +332,16 @@ pub(crate) fn divider_on_drag_start(
                 "split divider {} is not dragged: it is `InteractionDisabled`",
                 start.entity
             );
+            return;
+        }
+        // A drag that starts while the pane peeks docks it where it floats and drags from there.
+        if let Some(docked) = reading.peeking {
+            commands.trigger(ToggleSplit {
+                entity: start.entity,
+            });
+            commands
+                .entity(start.entity)
+                .insert((Pressed, SplitGrab(docked)));
             return;
         }
         // A drag that starts during a collapse's slide takes the divider from where it is drawn.
@@ -432,6 +462,22 @@ pub(crate) fn divider_on_key_input(
     };
     let step = |sign: f32| reading.moved(sign * SPLIT_KEY_STEP_PX);
     let key = input.input.key_code;
+    // A step, Home or End while the pane peeks docks it first: the next press steps from there.
+    let moves = match (reading.axis, key) {
+        (SplitAxis::Horizontal, KeyCode::ArrowLeft | KeyCode::ArrowRight)
+        | (SplitAxis::Vertical, KeyCode::ArrowUp | KeyCode::ArrowDown)
+        | (_, KeyCode::Home | KeyCode::End) => true,
+        _ => false,
+    };
+    if moves && reading.peeking.is_some() {
+        input.propagate(false);
+        if !reading.disabled {
+            commands.trigger(ToggleSplit {
+                entity: input.focused_entity,
+            });
+        }
+        return;
+    }
     let to = match (reading.axis, key) {
         (SplitAxis::Horizontal, KeyCode::ArrowLeft) | (SplitAxis::Vertical, KeyCode::ArrowUp) => {
             step(-1.0)
@@ -486,7 +532,7 @@ pub(crate) fn toggle_split(
     };
     // The panes slide there (size motion): from where they are laid out now, a glide on its way
     // included. The fraction is the new one at once.
-    if !motion.lands_travel() && to != reading.fraction {
+    if !motion.lands_travel() && to != reading.fraction && reading.peeking.is_none() {
         let from = glides
             .get(reading.root)
             .map_or(reading.fraction, SplitGlide::shown);
@@ -554,6 +600,11 @@ pub fn split_by_pad(
     }
     show_focus(&mut shown);
     if let Some(reading) = geometry.read(divider) {
+        if reading.peeking.is_some() {
+            // Docks the peeking pane; the held direction steps it from there.
+            commands.trigger(ToggleSplit { entity: divider });
+            return;
+        }
         let to = reading.moved(f32::from(direction) * steps as f32 * SPLIT_KEY_STEP_PX);
         report(&mut commands, &reading, to, true);
     }
@@ -567,6 +618,7 @@ type LaidOutSplit = (
     &'static ComputedNode,
     &'static Children,
     Option<&'static SplitGlide>,
+    &'static SplitPeek,
 );
 
 /// Lays each split's panes out from its [`SplitFraction`] and [`SplitMin`]: the first pane grows by
@@ -581,7 +633,7 @@ pub fn update_splits(
     dividers: Query<&ComputedNode, With<SplitDivider>>,
     mut parts: Query<(&Role, &mut Node)>,
 ) {
-    for (split, fraction, min, node, children, glide) in &splits {
+    for (split, fraction, min, node, children, glide, peek) in &splits {
         // A collapse or a restore on its way lays the panes out where it has got to.
         let fraction = glide.map_or(fraction.0, SplitGlide::shown);
         let along = |size: Vec2| match split.axis {
@@ -611,9 +663,11 @@ pub fn update_splits(
             .iter()
             .filter(|&c| parts.get(c).is_ok_and(|(role, _)| *role == Role::SplitPane))
             .collect();
-        for (pane, (grow, least)) in panes
+        let peeking = peek.is_open();
+        for (index, (pane, (grow, least))) in panes
             .into_iter()
             .zip([(first, min_first), (1.0 - first, min_second)])
+            .enumerate()
         {
             let Ok((_, mut node)) = parts.get_mut(pane) else {
                 continue;
@@ -623,14 +677,108 @@ pub fn update_splits(
                 SplitAxis::Horizontal => (least, Val::Px(0.0)),
                 SplitAxis::Vertical => (Val::Px(0.0), least),
             };
-            if node.flex_grow != grow
-                || node.min_width != min_width
-                || node.min_height != min_height
-            {
-                node.flex_grow = grow;
-                node.min_width = min_width;
-                node.min_height = min_height;
+            let mut next = node.clone();
+            next.flex_grow = grow;
+            next.min_width = min_width;
+            next.min_height = min_height;
+            if index == 1 {
+                // The floating pane and the divider are out of the flow: the second pane takes the
+                // rest alone (a grow under 1 would leave some of it empty), after the room the
+                // collapsed pane and the divider had.
+                let kept = Val::Px(peek.collapsed() + bar);
+                next.margin = match (peeking, split.axis) {
+                    (false, _) => UiRect::ZERO,
+                    (true, SplitAxis::Horizontal) => UiRect::left(kept),
+                    (true, SplitAxis::Vertical) => UiRect::top(kept),
+                };
+                if peeking {
+                    next.flex_grow = 1.0;
+                }
             }
+            if index == 0 {
+                // A peeking first pane floats at the split's start edge, as wide as it will be
+                // restored; otherwise it is in the flow.
+                let size = Val::Px(peek.width());
+                (
+                    next.position_type,
+                    next.left,
+                    next.top,
+                    next.right,
+                    next.bottom,
+                ) = if peeking {
+                    match split.axis {
+                        SplitAxis::Horizontal => (
+                            PositionType::Absolute,
+                            Val::Px(0.0),
+                            Val::Px(0.0),
+                            Val::Auto,
+                            Val::Px(0.0),
+                        ),
+                        SplitAxis::Vertical => (
+                            PositionType::Absolute,
+                            Val::Px(0.0),
+                            Val::Px(0.0),
+                            Val::Px(0.0),
+                            Val::Auto,
+                        ),
+                    }
+                } else {
+                    (
+                        PositionType::Relative,
+                        Val::Auto,
+                        Val::Auto,
+                        Val::Auto,
+                        Val::Auto,
+                    )
+                };
+                (next.width, next.height) = match (peeking, split.axis) {
+                    (false, _) => (Val::Auto, Val::Auto),
+                    (true, SplitAxis::Horizontal) => (size, Val::Auto),
+                    (true, SplitAxis::Vertical) => (Val::Auto, size),
+                };
+            }
+            node.set_if_neq(next);
+        }
+        // A peeking pane's divider stands on its far edge, above it, out of the flow.
+        let at = Val::Px(peek.width());
+        for child in children.iter() {
+            let Ok((role, mut node)) = parts.get_mut(child) else {
+                continue;
+            };
+            if *role != Role::SplitDivider {
+                continue;
+            }
+            let mut next = node.clone();
+            (
+                next.position_type,
+                next.left,
+                next.top,
+                next.right,
+                next.bottom,
+            ) = match (peeking, split.axis) {
+                (false, _) => (
+                    PositionType::Relative,
+                    Val::Auto,
+                    Val::Auto,
+                    Val::Auto,
+                    Val::Auto,
+                ),
+                (true, SplitAxis::Horizontal) => (
+                    PositionType::Absolute,
+                    at,
+                    Val::Px(0.0),
+                    Val::Auto,
+                    Val::Px(0.0),
+                ),
+                (true, SplitAxis::Vertical) => (
+                    PositionType::Absolute,
+                    Val::Px(0.0),
+                    at,
+                    Val::Px(0.0),
+                    Val::Auto,
+                ),
+            };
+            node.set_if_neq(next);
         }
     }
 }
