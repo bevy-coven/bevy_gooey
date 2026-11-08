@@ -613,5 +613,9 @@ pub(crate) fn hide_menu_panel(world: &mut bevy::ecs::world::World, panel: Entity
         {
             node.display = Display::None;
         }
+        // A context menu stands apart from what it was opened beside, so it is a root again.
+        if entity.contains::<crate::ContextTarget>() {
+            entity.remove::<(crate::ContextTarget, ChildOf)>();
+        }
     }
 }

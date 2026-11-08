@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- A context menu fades out beside what it was opened for, as every other menu does (`docs/guide/popovers.md`): it keeps its parent and its `ContextTarget` until the fade ends, then becomes a root again; a menu opened again during the fade sends `On<Add<ContextTarget>>` as one opened from rest does. Under `MotionSettings::off()` it still closes in the frame. `tests/menu_exit.rs`.
+
 ## [0.44.0] - 2026-11-08
 
 Breaking (pre-1.0, minor): the public system `update_layout_motion` takes one more parameter (`TravelFrom`); a host that schedules it by hand is unaffected, one that calls it as a plain function is not.

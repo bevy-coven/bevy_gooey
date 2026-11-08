@@ -125,6 +125,6 @@ on the skin's `snappy` spring it grows to 1, fades in and slides in from 6 px cl
 translation, so the origin cannot sit on the anchor's edge; the slide stands in for it). Closing a `popover()`
 puts `Leave` on it: it stops taking the pointer and focus at once, fades out and despawns. A menu's panel
 (a bar's, a submenu's) fades out the same way and then goes out of sight instead of despawning, ready for
-its next opening; open it again while it fades and it comes back where it stands. A context menu closes at
-once. `MotionSettings::reduced()` fades without the scale and the slide; `MotionSettings::off()` draws and
+its next opening; open it again while it fades and it comes back where it stands. A context menu fades out beside what it was opened
+for, keeping its parent and its `ContextTarget` until it is out of sight. `MotionSettings::reduced()` fades without the scale and the slide; `MotionSettings::off()` draws and
 removes the panel in a frame.

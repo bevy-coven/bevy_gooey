@@ -400,8 +400,8 @@ pub(crate) fn close_menu(world: &mut World, panel: Entity) {
     }
     let anchor = anchor_of(world, panel);
     // A drawn menu fades out where it stands (presence) and goes out of sight when the fade ends;
-    // one never drawn, a context menu (which becomes a root again here) and every menu under no
-    // motion go at once.
+    // one never drawn and every menu under no motion go at once. A context menu keeps its place
+    // (its parent, and what it is for) until then: it becomes a root again when it is out of sight.
     let fades = world
         .get_resource::<crate::MotionSettings>()
         .is_some_and(|motion| !motion.is_off());
@@ -411,7 +411,7 @@ pub(crate) fn close_menu(world: &mut World, panel: Entity) {
             && entity
                 .get::<Node>()
                 .is_some_and(|n| n.display != Display::None);
-        if fades && drawn && !entity.contains::<ContextTarget>() {
+        if fades && drawn {
             entity.insert(crate::Leave);
         } else {
             entity.insert(Visibility::Hidden);

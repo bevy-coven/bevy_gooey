@@ -257,3 +257,140 @@ fn the_lit_row_never_flashes_brighter_than_its_colour_while_the_menu_fades_in() 
         "the row peaked at {peak} on its way to {settled}: {seen:?}"
     );
 }
+
+/// A context menu on a button, opened below the focused button by Shift+F10.
+fn open_context(app: &mut App) -> (Entity, Entity) {
+    let menu = app
+        .world_mut()
+        .spawn(context_menu(children![
+            menu_item("Rename"),
+            menu_item("Delete")
+        ]))
+        .id();
+    let thing = app
+        .world_mut()
+        .spawn((button("Thing"), ContextMenu(menu)))
+        .id();
+    for _ in 0..4 {
+        app.update();
+    }
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(thing, bevy::input_focus::FocusCause::Navigated);
+    app.update();
+    let window = app
+        .world_mut()
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(app.world())
+        .expect("one primary window");
+    let mut key = |app: &mut App, key_code, state| {
+        app.world_mut().write_message(KeyboardInput {
+            key_code,
+            logical_key: Key::Unidentified(NativeKey::Unidentified),
+            state,
+            text: None,
+            repeat: false,
+            window,
+        });
+        app.update();
+    };
+    key(app, KeyCode::ShiftLeft, ButtonState::Pressed);
+    key(app, KeyCode::F10, ButtonState::Pressed);
+    key(app, KeyCode::F10, ButtonState::Released);
+    key(app, KeyCode::ShiftLeft, ButtonState::Released);
+    for _ in 0..10 {
+        app.update();
+    }
+    (menu, thing)
+}
+
+#[test]
+fn a_context_menu_fades_out_beside_what_it_was_opened_for() {
+    let mut app = app(MotionSettings::default());
+    let (menu, thing) = open_context(&mut app);
+    assert!(drawn(&app, menu), "Shift+F10 opened it");
+    assert_eq!(
+        app.world().get::<ChildOf>(menu).map(ChildOf::parent),
+        Some(thing)
+    );
+    let before = app
+        .world()
+        .get::<UiGlobalTransform>(menu)
+        .expect("laid out")
+        .translation;
+    tap(&mut app, KeyCode::Escape);
+    app.update();
+    assert!(drawn(&app, menu), "still on screen while it fades");
+    assert!(opacity(&app, menu) < 1.0, "and fading");
+    assert_eq!(
+        app.world().get::<ChildOf>(menu).map(ChildOf::parent),
+        Some(thing),
+        "it stays where it is until it is gone"
+    );
+    let during = app
+        .world()
+        .get::<UiGlobalTransform>(menu)
+        .expect("laid out")
+        .translation;
+    assert!(
+        (during - before).length() < 1.0,
+        "no jump when it starts to leave: {before:?} {during:?}"
+    );
+    for _ in 0..40 {
+        app.update();
+    }
+    assert!(!drawn(&app, menu), "gone when the fade is over");
+    assert!(
+        app.world().get::<ContextTarget>(menu).is_none()
+            && app.world().get::<ChildOf>(menu).is_none(),
+        "and a root for nothing again"
+    );
+}
+
+#[test]
+fn a_context_menu_opened_again_while_it_fades_announces_itself_again() {
+    #[derive(Resource, Default)]
+    struct Adds(u32);
+    let mut app = app(MotionSettings::default());
+    app.init_resource::<Adds>();
+    app.add_observer(|_: On<Add<ContextTarget>>, mut adds: ResMut<Adds>| adds.0 += 1);
+    let (menu, thing) = open_context(&mut app);
+    assert_eq!(app.world().resource::<Adds>().0, 1);
+    tap(&mut app, KeyCode::Escape);
+    app.update();
+    assert!(opacity(&app, menu) < 1.0, "fading");
+    // Shift+F10 again.
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(thing, bevy::input_focus::FocusCause::Navigated);
+    app.update();
+    let window = app
+        .world_mut()
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(app.world())
+        .expect("one primary window");
+    for (key_code, state) in [
+        (KeyCode::ShiftLeft, ButtonState::Pressed),
+        (KeyCode::F10, ButtonState::Pressed),
+        (KeyCode::F10, ButtonState::Released),
+        (KeyCode::ShiftLeft, ButtonState::Released),
+    ] {
+        app.world_mut().write_message(KeyboardInput {
+            key_code,
+            logical_key: Key::Unidentified(NativeKey::Unidentified),
+            state,
+            text: None,
+            repeat: false,
+            window,
+        });
+        app.update();
+    }
+    for _ in 0..10 {
+        app.update();
+    }
+    assert_eq!(app.world().resource::<Adds>().0, 2, "announced again");
+    assert!(
+        drawn(&app, menu) && opacity(&app, menu) > 0.99,
+        "back, whole"
+    );
+}

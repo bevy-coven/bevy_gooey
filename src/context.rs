@@ -57,7 +57,8 @@ use crate::shortcut::{Modifiers, Shortcut};
 #[reflect(Component, Debug, Clone, PartialEq)]
 pub struct ContextMenu(pub Entity);
 
-/// On a context menu's panel exactly while it is open: the entity that has the [`ContextMenu`] it
+/// On a context menu's panel from its opening until it is out of sight (a menu fades out first, so
+/// it outlives the `PopoverClosed` by the length of the fade): the entity that has the [`ContextMenu`] it
 /// was opened for (never the widget a key opened it beside, when that is one of its descendants).
 /// Read it in an item's `Activate` observer with [`ContextTarget::of`], or in an
 /// `On<Add<ContextTarget>>` observer, which runs before the menu is first drawn, to enable,
@@ -166,7 +167,12 @@ fn open_context(world: &mut World, menu: Entity, thing: Entity, at: At) {
     if world.get::<PopoverPanel>(menu).is_some() {
         close_menu(world, menu);
     }
-    world.entity_mut(menu).insert(ContextTarget(thing));
+    // Removed first: a menu opened again while it still fades out must announce its new thing with
+    // an `Add`, as one opened from rest does.
+    world
+        .entity_mut(menu)
+        .remove::<ContextTarget>()
+        .insert(ContextTarget(thing));
     match at {
         At::Pointer => show_menu(world, menu, thing, Placement::AtPointer),
         At::Widget(widget) => {
