@@ -217,3 +217,12 @@ spring or a trail ends (`tests/motion.rs` counts `Changed<UiTransform>` and `tes
 `Changed<Node>` over thirty idle frames).
 
 Research and parameters: [`docs/research/motion.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/research/motion.md) and, for the meter, [`docs/research/meter-motion.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/research/meter-motion.md).
+
+## Gliding from where a node was drawn: `TravelFrom`
+
+`MovesSmoothly` carries a node to a new place in layout *within* one entity's life. A node that is spawned again
+(a dock rebuilds its tabs on every change) has no old place, so give the new one `TravelFrom(centre)`: the
+centre, in physical window pixels (the old node's `UiGlobalTransform::translation`), where it was drawn a moment
+ago. At its first look in layout `update_layout_motion` starts the travel from there to where layout put it, and
+takes the component off; reduced or no motion lands it. The crate does this for a dock's tabs
+(`DockShown` keeps where each was drawn), so a dropped tab, a keyboard move and a changed layout glide.
