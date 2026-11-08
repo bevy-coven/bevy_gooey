@@ -118,12 +118,15 @@ pub(crate) fn plain(keys: &ButtonInput<KeyCode>) -> bool {
 #[reflect(Component, Default, Debug, PartialEq, Clone)]
 pub struct TypeSelectGroup;
 
+/// A node whose focusable descendants type-select: a list, or a container marked [`TypeSelectGroup`].
+type Grouped = Or<(With<ListView>, With<TypeSelectGroup>)>;
+
 /// What the widgets that are entities of their own read to type-select.
 #[derive(SystemParam)]
 pub(crate) struct Groups<'w, 's> {
     parents: Query<'w, 's, &'static ChildOf>,
     children: Query<'w, 's, &'static Children>,
-    lists: Query<'w, 's, (), Or<(With<ListView>, With<TypeSelectGroup>)>>,
+    lists: Query<'w, 's, (), Grouped>,
     panels: Query<'w, 's, (), With<MenuPanel>>,
     items: Query<'w, 's, &'static MenuItem>,
     stops: Query<'w, 's, (&'static InheritedVisibility, Has<InteractionDisabled>), With<TabIndex>>,
