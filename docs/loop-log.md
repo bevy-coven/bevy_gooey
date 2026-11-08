@@ -2699,3 +2699,19 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Demos:** all GIFs re-recorded by `regen-gifs.py`: only `table.gif` differed (nondeterministic, restored to avoid churn); `inspector.gif` timed out at 300 s (`cargo run --features reflect` rebuilds a different feature set than the `--all-features` build; unchanged feature, left as committed). New `led.gif`. Backlog: make regen-gifs use the all-features binary for `--features reflect` rows; `table.gif` determinism.
 
 **Backlog:** F6 into a collapsed pane; wrapped tab strips stepping aside; pickup scale for the carried tab; reduced-motion peek fade-out; `led` hosting a custom word (`LedWord` text is writable, but the state rewrites it). 
+
+## Iteration 72 — 2026-11-08 — `Lift`: a carried dock tab is picked up (Rune's lift); tooling; v0.45.1
+
+**Triage:** gooey issue list empty, no `grimoire-ui` issue open, #336 waits for the editor's pin move; grimoire #344 (a card needs two presses) is the editor's own test and not gooey's. bevy_grimoire #340 says "a bare gooey `label` was measured a line short at this panel's width and drawn over": probed with a throwaway test (a wrapped label in a 260 px column, and squeezed beside a button in a row, at window scales 1, 1.5, 2 and 2 with a UI scale of 2.4 and 1.25): the next widget always starts under the last line, no reproduction, test deleted (the claim is likely the editor's scroll/inspector context; nothing filed). So the pass took my own backlog: the pickup cue Rune gives a carried tab (`tab.rs:148`, scale 1.03 and the floating elevation), recorded as a deviation by iteration 68.
+
+**Built:** `Lift(f32)` (`LIFT_GAIN` 0.03), the held form of `Pop` on the same `Popped` state and drawing pass (`update_pops` target is `1 + gain` while there); reduced/off motion lands at the lifted size. `update_tab_reorder` lifts the carried dock tab with the skin's floating `BoxShadow` and puts both down on drag end. `tests/pop.rs` +2, `tests/dock_reorder.rs` asserts the lift, its shadow, and that the neighbour is not lifted. Docs: `pop.md` addendum, `tab-reorder.md`, `motion.md`, `docks.md`, CHANGELOG, AGENTS. **Tooling:** `tools/loop/regen-gifs.py` now counts a GIF changed only when a fifth of its frames differ (table.gif's timing noise), runs `--features` rows from the all-features build (inspector.gif no longer times out) and has `--force` (a 3% lift is invisible in 96 px thumbnails).
+
+**Critique and verdict** (`dock-reorder.gif` contact sheet): the carried tab shows its halo and slight growth, the neighbour steps aside; subtle by design (Rune's is 3%). GREAT for a polish item; a bigger cue would contradict the reference.
+
+**Perf:** nothing runs for a node without `Pop`/`Lift` (queries are empty in the gallery). The host was under load (load average 15 to 80 from other agents' builds): gallery min 22.83 ms vs 22.3 ms at a quiet moment, outliers to 38 ms; no paired baseline possible, not claimed as a measurement.
+
+**Gate:** fmt, clippy (too_many_arguments and two type_complexity, aliased), nextest 1251/1251, doctests, check + wasm32, `doc -D warnings`. semver-checks: additive, so 0.45.0 → 0.45.1.
+
+**Demos:** all 42 GIFs re-recorded; `dock-reorder.gif` forced (new lift), `ladder.gif` came out 5.4 mean diff over 33% of frames under that load (timing), restored from the committed one. 
+
+**Backlog:** F6 into a collapsed pane; wrapped tab strips stepping aside; reduced-motion peek fade-out; the press 0.95 cue for tabs; deterministic captures under load (a fixed clock like `hotbar`'s for `ladder`, `table`).

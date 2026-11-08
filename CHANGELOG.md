@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.45.1] - 2026-11-08
+
 ### Added
 
 - `Lift(f32)` (`LIFT_GAIN` 0.03, `docs/research/pop.md` addendum, `docs/guide/motion.md`): hold a node a little larger, about its centre, while the component is on it, and let it go with a spring and a slight bounce when it is removed: a picked-up card, tab or item. The same drawing pass as `Pop` (layout and the hit test keep the resting size); reduced or no motion lands it at the lifted size.
