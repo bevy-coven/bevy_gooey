@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Type-select in any focus group (#78, `docs/research/type-select.md`, `docs/guide/menus.md`): a public `TypeSelectGroup` marker on a container makes its focusable descendants (a `TabIndex`, shown, not disabled) type-select the way a `ListView`'s rows do, so a card grid, a project browser or a save list takes it. A row's words are its own text or the first text under it; the prefix, the pause and the repeated-letter rules are the list's, and a focused text field still takes the characters. Not built: a group that is a table or a tree (those keep their own cursor). Proved by `tests/type_select_group.rs`.
+
 ## [0.43.0] - 2026-11-07
 
 ### Added

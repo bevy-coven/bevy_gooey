@@ -26,3 +26,7 @@ Researched 2026-11-07 for issue #63 (G-56), asked by bevy_grimoire's feel series
 
 - Rune also type-selects in a tab list. gooey's tabs are three to seven labels, which the arrows and the bumpers already reach, so this item leaves them alone.
 - A filtering select (more than eight options) types into its own field, which is that list's type-select.
+
+## A group that is not a list (G-68, #78)
+
+bevy_grimoire's launcher shows its projects as a wrapping grid of focusable cards, none of which is a `ListView` row, so typing a project's first letters did nothing. `TypeSelectGroup` marks any container: the nearest one above the focused row is searched, with the list's own reading of a row (a `TabIndex`, shown, not disabled; its words its own text or the first text under it) and the shared `TypedPrefix`. It is one `Or<(With<ListView>, With<TypeSelectGroup>)>` in `Groups::lists`, so a list needs no marker and a group has no second path. A table or a tree keeps its cursor (`table_by_input`), as before. Proved by `tests/type_select_group.rs`: a prefix, a repeated letter, a hidden and a disabled row skipped, a text field keeping its characters, and no marker meaning no type-select.

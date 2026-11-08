@@ -80,6 +80,8 @@ the focus following.
 
 With an open menu's item focused, typing goes to the next item whose label starts with what was typed within a second ("s" is Save, "s" again Save as..., a pause starts over); Space, and anything typed with Ctrl, Alt or Super held, is not a name. The same type-select is in [lists](lists.md), [tables](tables.md), [trees](trees.md) and a [select](select.md) of eight options or fewer.
 
+Type-select is not only for menus: a `ListView`'s rows have it, and any other container whose focusable children should have it carries `TypeSelectGroup` (a grid of cards, a save list). Focus a row, type a name, and focus goes to the next row whose label starts with it; the rest of the rules are the menu's.
+
 ## What is not here
 
 - No hover-to-open for submenus and no safe triangle: a submenu opens on Right, Enter, Space or a click.
