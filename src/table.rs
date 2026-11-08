@@ -39,7 +39,9 @@ use crate::model::{
     TableStep, column_resize, natural_cmp, repeat_steps, scroll_to_reveal, table_anchor,
     table_step, table_window, tree_indent, type_ahead,
 };
+use crate::motion::MotionSettings;
 use crate::nav::show_focus;
+use crate::scroll_glide::{ScrollGlide, glide_spring, step_glide};
 use crate::skin::{GooeySkin, Role, SkinScope};
 use crate::tree::{Lead, Tree, TreeView, bind_lead, spawn_lead};
 use crate::type_select::{TypedPrefix, plain, starts_with_ignore_case, typed_characters};
@@ -1035,7 +1037,9 @@ pub fn update_tables(
     parents: Query<&ChildOf>,
     mut tables: Query<Laid>,
     mut nodes: Query<&mut Node>,
-    mut scrolls: Query<(&mut ScrollPosition, &mut ListView)>,
+    mut scrolls: Query<(&mut ScrollPosition, &mut ListView, &mut ScrollGlide)>,
+    settings: Res<MotionSettings>,
+    time: Option<Res<Time<Real>>>,
     mut texts: Query<&mut Text>,
     mut rows: Query<(&mut TableRow, Has<Selected>)>,
     mut commands: Commands,
@@ -1053,7 +1057,7 @@ pub fn update_tables(
         let cache = &mut *cache;
         let fresh = !cache.built;
         let rebuilt = fresh || table.is_changed() || sort.is_changed();
-        let Ok((mut scroll, mut view)) = scrolls.get_mut(parts.view) else {
+        let Ok((mut scroll, mut view, mut glide)) = scrolls.get_mut(parts.view) else {
             continue;
         };
         if view.rows != rows_tall.0 {
@@ -1117,12 +1121,34 @@ pub fn update_tables(
             }
             cache.built = true;
         }
+        // The table moved the scroll itself this frame (a sort starts from the top, the rows
+        // shrank): a glide that was running is over, and a request starts from `y`.
+        if (scroll.y - y).abs() > 0.01 {
+            scroll.y = y;
+            *glide = ScrollGlide::default();
+        }
         if cache.follow {
             cache.follow = false;
             if let Some(i) = cache.index_of(cursor.0) {
                 let top = i as f32 * pitch;
-                y = scroll_to_reveal(top, top + pitch, view_h, y, max, pitch);
+                let base = glide.goal().unwrap_or(y);
+                let want = scroll_to_reveal(top, top + pitch, view_h, base, max, pitch);
+                if (want - base).abs() > 0.01 {
+                    glide.go(&scroll, want);
+                }
             }
+        }
+        // The table steps its own viewport's glide, so the rows it binds below are the rows of the
+        // scroll this frame draws (the glide system skips a table's viewport).
+        if glide.goal().is_some() {
+            step_glide(
+                &mut glide,
+                &mut scroll,
+                glide_spring(skin, &settings),
+                !ScrollGlide::glides(&settings, time.as_deref()),
+                time.as_ref().map_or(0.0, |time| time.delta_secs()),
+            );
+            y = scroll.y.clamp(0.0, max);
         }
         if (scroll.y - y).abs() > 0.01 {
             scroll.y = y;
