@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.44.2] - 2026-11-08
+
 ### Added
 
 - `Pop(f32)` (`docs/research/pop.md`, `docs/guide/motion.md`): `commands.entity(readout).insert(Pop::default())` swells a node by `POP_GAIN` (10%) about its centre and settles it on the snappy spring with a slight bounce, the second feedback channel for a changed HUD number or a chosen slot. Inserting it again is a new pop, a pop on a node still settling stacks on the drawn scale, only the drawing scales (layout and the hit test keep the resting size, and it composes with `PressScale`), it runs on real time, and reduced or no motion draws nothing swollen. New `Popped`, `update_pops`, `draw_pops`; `examples/pop.rs` and `docs/media/pop.gif`. Found in Sanctuary's hand-built `ui/juice.rs`.

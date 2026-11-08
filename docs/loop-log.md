@@ -2659,3 +2659,23 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Demos:** every GIF re-recorded by `tools/loop/regen-gifs.py` (40; recording is deterministic now, 37 came out identical to the committed file, so only `context-menu.gif`, `table.gif` and `presence.gif` changed: the churn of iteration 68 was the one-time catch-up).
 
 **Backlog:** F6 into a collapsed pane; wrapped tab strips stepping aside; a pickup scale for the carried tab; a reduced-motion peek fade-out; nothing is filed. The loop's timer stops it when no `grimoire-ui` issue is open.
+
+## Iteration 70 — 2026-11-08 — `Pop`: a changed HUD number swells and settles; v0.44.2
+
+**Triage:** no open issue in bevy_gooey (empty list), epic bevy_grimoire#330 has only UI-R06 (#336) left, unblocked since v0.44.0 and waiting on the editor's pin move; no `grimoire-ui` issue is open. Parked branches `wiggum/parked-pass-23-…` and `-90-…` stale (shortcut work, long fixed). So section 4's "never idle": read Sanctuary's `src/ui/juice.rs` (clone removed) and found `Pop` (swell on a changed number, a focus change, a chosen wheel slot; eight call sites) hand-built. Runner-up: F6 into a collapsed pane (needs a new concept, a pane as `FocusRegion`).
+
+**Built:** `Pop(f32)` (default `POP_GAIN` 0.10), `Popped`, `update_pops`, `draw_pops` (`src/pop.rs`); `press_scale::scale_subtree` extracted so both share the drawing walk and `PressScaleRestore`. Inserting `Pop` is the trigger and it stays; a pop on a settling node stacks (mutation-checked); snappy spring with Rune's `POP` bounce; real time; nothing under reduced/off motion. `examples/pop.rs`, `docs/media/pop.gif`, `docs/research/pop.md`, guide section in `motion.md`, README line, AGENTS entry, `tests/pop.rs` (5).
+
+**Sources:** Hicks et al. *Good Game Feel* (10.26503/dl.v2018i1.936, craft); Sanctuary `ui/juice.rs` (shipping game); Rune `rune-motion/src/tokens.rs:30` (technical). Vlambeer's screenshake talk is not in the corpus (Pending index).
+
+**Critique and verdict** (`/tmp/g70/critique.md`, `pop.gif` frames): two flaws fixed on the way: a row-wide label swelled about the row's middle (readouts now hug their words, documented), and body-sized text made the swell invisible in a GIF (headings). GREAT.
+
+**Perf:** gallery, 8 alternating pairs, min 22.243 → 22.206 ms; stills identical (AE 0). Nothing runs for a settled node.
+
+**Gate:** fmt, clippy, nextest 1244/1244, doctests, `check --lib` + wasm32, `doc -D warnings`; semver-checks: no change, patch.
+
+**Demos:** all 41 GIFs re-recorded; only `table.gif` differed (mean 1.8: it differs on every recording, a timing-dependent frame; left as committed to avoid churn), new `pop.gif`.
+
+**Env:** my Xvfb on `:93` died between tool calls once (started from a tool shell): restart it with `setsid nohup`. Scratch `/tmp/g70` removed.
+
+**Backlog:** F6 into a collapsed pane; make `table.gif` deterministic; wrapped tab strips stepping aside; pickup scale for the carried tab; reduced-motion peek fade-out. Sanctuary's `SlideIn`/`FadeIn` are already `MotionTarget::entering_from` and `Arriving`.
