@@ -2614,3 +2614,30 @@ Gate on the merged tree: fmt, clippy `-D warnings`, `cargo nextest run --all-fea
 Disk: `/` was 100% full (504 MB free) and linking examples failed; nextest's bare `--all-features` builds every example, so use `--lib --tests` (as AGENTS.md says). Removed the ten >50 MB example binaries this session wrote into the shared target's `debug/examples` (today's mtime only): 504 MB -> 3.5 GB free. The shared target (`~/.cargo-target-shared/global`, tens of GB) and the stale `wiggum/parked-pass-91-by-hand`, `wiggum/pass-91-research-note`, `loop/iter-66` branches are left, listed here.
 
 Next: #51 colour motion in Oklab, #55 elevation as data, `Cooldown` ready cue, `HoldSettings` option row, free disk on this host (460 GB volume full).
+
+## Iteration 68 — 2026-11-08 — Popover entrance (#71), split peek (#69), tab reorder (#70), tooltip flicker (#79); v0.44.0
+
+Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune"); its open item UI-R06 (#336) needed gooey #69, #70, #71; also bug #79; several issues, one gate, one release; own recommendation, never ask; re-record the demo GIFs every loop.
+
+**Items (ranked by what blocked #336):** #79 bug (smallest, first), #71 popover entrance, #69 split peek, #70 tab reorder. All four closed by the merge (`4850058`), released as v0.44.0.
+
+**Sources:** Rune (`anomalyco/rune` at `a7f276c`): `crates/rune-kit/src/overlay.rs:44-70` (popover scale-from), `shell/pane.rs:20-136, 277-345` (peek), `shell/reorder.rs` (strip geometry read once at pickup), `shell/tab_strip/tab.rs:137`, `kit.rs:222-224`. Notes: `docs/research/popover-entrance.md`, `split-peek.md`, `tab-reorder.md`.
+
+**Built:** #79 `centre_keycaps` pads in logical px (`tests/tooltip_cap.rs`, failed first). #71 `POPOVER_SCALE_FROM` 0.96 with the fade and the 6 px slide, menus fade out through presence. #69 `src/split_peek.rs` (`SplitPeekSettings`, floating opaque pane with shadow, docks on Enter/drag). #70 `TravelFrom` + `update_tab_reorder` (carried tab follows, neighbours step aside, any rebuild glides). `tools/loop/regen-gifs.py` re-records every GIF of `docs/media/README.md` (handles crops and frame ranges).
+
+**Critique and verdict** (`/tmp/g68/critique.md`, montages looked at): all four ship. Three things the first build got wrong that only the pictures or a sharper test showed:
+1. the lit menu row flashed ~2× too bright as a menu faded in: `Lane::follow_alpha` scaled colour velocity by the alpha ratio (older bug, exposed by popovers now fading; mutation-checked test in `menu_exit`);
+2. the floating split pane was see-through (Viewport's words ghosted through "Library"): now an opaque fill, test added;
+3. a rebuilt dock tab was marked `MovesSmoothly` a frame late, so it sat at its slot for one frame before gliding. The first test could not see it (the slot was 10 px away; asserting "first frame < 30%" of 10 px is vacuous). Test now carries 40 px; `start_dock_travel` marks the tab itself.
+
+**Assumed decisions (#71):** the 6 px slide stays (protected tests pin `PopoverSlide`); context menus still close at once. Exceptions per #76: `MotionSettings::off()` in `tests/context_menu.rs` and `tests/elevation.rs`, `SplitPeekSettings { enabled: false }` in `tests/split.rs` (commit "assumed owner exception (#76)").
+
+**Perf:** gallery, 10 alternating pairs, min 22.629 → 22.589 ms, median 24.165 → 23.774 ms; stills pixel-identical (AE 0).
+
+**Gate on the merged tree:** fmt, clippy `-D warnings` (one `matches!` lint fixed), nextest 1237/1237, doctests, `check --lib` + wasm32, `doc -D warnings`. semver-checks: one major (`update_layout_motion` takes 9 params): 0.43.1 → 0.44.0.
+
+**Demos:** 33 GIFs re-recorded (`regen-gifs.py`), new `split-peek.gif` and `dock-reorder.gif`. Mean frame diff of the replaced ones 1.5–14: they predated colour and layout motion. Cost: the repo grows by tens of MB per full re-record; the script keeps a file when its frames differ by ≤1.5 mean grey. Inspector/presence/cooldown/hold needed `--all-features` and crop support, now in the script.
+
+**Backlog:** context-menu exit fade; F6 into a collapsed pane; wrapped tab strips stepping aside; a pickup scale for the carried tab; reduced-motion peek fade-out. Parked branch `wiggum/parked-pass-90-20261106-230008` judged stale (shortcut work), left alone. Next: #76 (owner decision), #73 combobox and any new `grimoire-ui` issues.
+
+**Retro:** a green test is not proof when its geometry makes the assertion trivial; check the distance the assertion is a fraction of. `CARGO_TARGET_DIR` is unset on this host (target is `./target`), Xvfb was not running (I started `:93` myself).
