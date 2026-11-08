@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.46.0] - 2026-11-08
+
+Breaking (pre-1.0, minor): the public system `update_split_peeks` reads focus now and takes three more parameters; a host that schedules it by hand is unaffected, one that calls it as a plain function is not.
+
 ### Fixed
 
 - A keyboard or pad player who tabs into a collapsed split's pane lands on widgets that were clipped away, with no visible focus ring. A visible focus inside the collapsed pane now peeks it like the pointer does (`docs/guide/splits.md`, `docs/research/split-peek.md`); the divider's own focus does not, and focus leaving takes the pane away after `grace_seconds`. `tests/split_peek.rs`.

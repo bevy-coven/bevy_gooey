@@ -2715,3 +2715,21 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Demos:** all 42 GIFs re-recorded; `dock-reorder.gif` forced (new lift), `ladder.gif` came out 5.4 mean diff over 33% of frames under that load (timing), restored from the committed one. 
 
 **Backlog:** F6 into a collapsed pane; wrapped tab strips stepping aside; reduced-motion peek fade-out; the press 0.95 cue for tabs; deterministic captures under load (a fixed clock like `hotbar`'s for `ladder`, `table`).
+
+## Iteration 73 — 2026-11-08 — A collapsed pane peeks for a visible focus; v0.46.0
+
+**Triage:** gooey issue list empty, no `grimoire-ui` issue open, #336 waits on the editor's pin; grimoire's new issues (#344 two presses to open a card, #343 LED, already shipped) are the editor's. So a backlog item, picked for what a keyboard or pad player meets: with a split pane collapsed (the editor's sidebar at min 0), Tab and Shift+Tab walk into widgets that are clipped away, with no visible focus ring (WCAG 2.4.7); F6 into the pane (the issue's wording) needs panes to be `FocusRegion`s, a bigger concept. Runner-up: wrapped tab strips stepping aside.
+
+**Built:** `update_split_peeks` treats a *visible* focus on a descendant of the collapsed first pane as the pointer being on it (`InputFocusVisible` and an ancestor walk), so Tab or an arrow into the pane floats it with its shadow, and focus leaving takes it away after the grace; the divider's own focus does not count, or a pane collapsed with Enter on it would come straight back. Tests: `tests/split_peek.rs` +2 (opens and closes with focus; the divider's focus and a hidden focus peek nothing). Example: `examples/split.rs` step `back` (Shift+Tab); `split-peek.gif` re-recorded with it (11.6 s). Docs: guide, `split-peek.md` Deviations (P6 superseded), CHANGELOG, AGENTS.
+
+**Critique and verdict** (`split-peek.gif` frames): Shift+Tab slides the sidebar out around the focused Autosave switch with its ring intact, Tab takes the ring to the divider and the sidebar leaves after the grace. GREAT.
+
+**Perf:** nothing runs unless a split is collapsed (the existing early `continue`); the host was loaded (load average 15 to 146 from other agents' builds and a clippy sharing this target dir), so no timing is claimed.
+
+**Gate:** fmt, clippy, nextest 1253/1253, doctests, check + wasm32, `doc -D warnings`. semver-checks: `update_split_peeks` takes 12 parameters instead of 9 (a public system): 0.45.1 → 0.46.0.
+
+**Demos:** all 42 GIFs re-recorded; the only change is `split-peek.gif` (forced), the others match to the pixel thumbnails. 
+
+**Disk:** `./target` is 417 GB (`CARGO_TARGET_DIR` unset on this host) and `/home` is at 94% (234 GB free): an agent should approve a `cargo clean -p bevy_gooey` or a move to the shared target; not done here (never delete a cache unasked). The pass ran 40 minutes behind a loaded host.
+
+**Backlog:** wrapped tab strips stepping aside; reduced-motion peek fade-out; the press 0.95 cue for tabs; F6 into a collapsed pane (panes as `FocusRegion`s); deterministic captures under load.
