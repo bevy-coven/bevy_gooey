@@ -2641,3 +2641,21 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Backlog:** context-menu exit fade; F6 into a collapsed pane; wrapped tab strips stepping aside; a pickup scale for the carried tab; reduced-motion peek fade-out. Parked branch `wiggum/parked-pass-90-20261106-230008` judged stale (shortcut work), left alone. Next: #76 (owner decision), #73 combobox and any new `grimoire-ui` issues.
 
 **Retro:** a green test is not proof when its geometry makes the assertion trivial; check the distance the assertion is a fraction of. `CARGO_TARGET_DIR` is unset on this host (target is `./target`), Xvfb was not running (I started `:93` myself).
+
+## Iteration 69 — 2026-11-08 — A context menu fades out like every other menu (backlog from 68); #76 closed; v0.44.1
+
+**Triage:** the epic bevy_grimoire#330 has one item left (UI-R06, #336) and every gooey issue it needs (#67-#72, #73) is closed and released; its comment from pass 68 says to move the pin to v0.44.0. The only open gooey issue was #76 (owner decision on `MotionSettings::off()` in real-clock tests): all seven items it unblocked are released and none of them changed an assertion, so I commented and closed it (reopen to override). Nothing else is filed (`gh issue list` empty), so the pass took the first backlog item of iteration 68: a menu opened from a title fades out and a context menu vanished in a frame, two exits in one interface. Runner-up: F6 into a collapsed pane (a pane is not a `FocusRegion`, needs a new concept).
+
+**Built:** `close_menu` puts `Leave` on a drawn context menu too and leaves its `ChildOf` and `ContextTarget` alone; `hide_menu_panel` makes it a root again when the fade ends (a context menu re-parented at once would have jumped: it hangs under the focused widget or the pointer point). `open_context` removes the old `ContextTarget` before inserting, so a reopening during the fade still sends `On<Add<ContextTarget>>`; the mutation of that line fails its test. `MotionSettings::off()` still closes in the frame, so `tests/context_menu.rs` is untouched. Tests: `menu_exit::a_context_menu_fades_out_beside_what_it_was_opened_for` (no jump at the start of the exit, parent kept, root again after) and `..._opened_again_while_it_fades_announces_itself_again`.
+
+**Sources:** no new research (a behaviour match of an earlier note: `docs/research/popover-entrance.md`); Rune's overlay exit (`crates/rune-kit/src/overlay.rs`) fades every overlay alike.
+
+**Critique:** `docs/media/context-menu.gif` contact sheet: the corner menu and the menu after Enter are caught mid-fade and half transparent over the world, at their place, no jump. Verdict GREAT for the exit; the same see-through-for-0.15 s note as the other menus.
+
+**Perf:** no per-frame system added; the fade is the presence path menus already use (iteration 68: min 22.629 → 22.589 ms).
+
+**Gate:** fmt, clippy (one `unused_mut` in the new test, fixed), nextest 1239/1239, doctests, `check --lib` + wasm32, `doc -D warnings`; semver-checks: no change.
+
+**Demos:** every GIF re-recorded by `tools/loop/regen-gifs.py` (40; recording is deterministic now, 37 came out identical to the committed file, so only `context-menu.gif`, `table.gif` and `presence.gif` changed: the churn of iteration 68 was the one-time catch-up).
+
+**Backlog:** F6 into a collapsed pane; wrapped tab strips stepping aside; a pickup scale for the carried tab; a reduced-motion peek fade-out; nothing is filed. The loop's timer stops it when no `grimoire-ui` issue is open.
