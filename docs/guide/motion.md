@@ -20,7 +20,7 @@ commands.insert_resource(MotionSettings::off());
 | What | How | On |
 |---|---|---|
 | A dialog's card (a `panel()` or the palette's card inside a `dialog()` scrim) | rises `DIALOG_SLIDE_PX` (12 px) | `motion.snappy` |
-| A popover's panel (`popover`, `popover_modal`, menus, context menus, select lists, the colour picker) | opens `POPOVER_SLIDE_PX` (6 px) closer to its anchor, then settles at its gap | `motion.snappy` |
+| A popover's panel (`popover`, `popover_modal`, menus, context menus, select lists, the colour picker) | opens `POPOVER_SLIDE_PX` (6 px) closer to its anchor and at `POPOVER_SCALE_FROM` (0.96) scale, fading in (`motion.fade_seconds`), then settles at its gap and at scale 1; it fades out where it stands when it closes (a menu's panel then goes out of sight, ready for the next opening) | `motion.snappy` |
 | A `meter()` that loses value | the fill drops to the new value in that frame; a `Role::MeterTrail` in `danger` keeps the lost length, holds, then drains to the fill | hold `METER_TRAIL_HOLD_SECONDS` (0.45 s), then `METER_TRAIL_RATE` (1.5 bars a second) |
 | A `meter()` that gains value | the fill rises to it; no trail | `motion.snappy` |
 
@@ -115,7 +115,8 @@ is read, and writes nothing. It follows `MotionSettings`; a game that writes `Ui
 a track runs wins (the track is dropped); and the crate never replaces a `MotionTarget` a card already
 carries. Do not put one on a `Popover`: Bevy's `Popover` measures where its panel is and corrects
 `UiTransform` every frame, which would undo it (the crate's own popovers slide by their gap to the
-anchor instead, `PopoverSlide`).
+anchor instead, `PopoverSlide`, and their scale, which Bevy's `Popover` never writes, rides the same
+spring about the panel's own centre: `model::popover_scale`).
 
 ## Moving with layout: `MovesSmoothly`
 

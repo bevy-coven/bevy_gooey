@@ -116,3 +116,15 @@ anchor), `PopoverClosed` and `CloseReason`, `PopoverPoint`, and the systems `clo
 `anchor_pointer_popovers` and `drop_pointer_anchors` in `GooeySystems::Navigate`. The look is
 `Role::Popover`: an opaque `solid_surface` card, a frame in `outline` (3:1 on the card in every preset,
 like a dialog's), a shadow, padded like a panel; skin it with the rest of the skin.
+
+## How it opens and closes
+
+A popover's panel opens from its anchor: the frame it is first drawn it is at 0.96 scale and transparent, and
+on the skin's `snappy` spring it grows to 1, fades in and slides in from 6 px closer to the anchor
+(`docs/research/popover-entrance.md`). It scales about its own centre (Bevy's `Popover` owns the panel's
+translation, so the origin cannot sit on the anchor's edge; the slide stands in for it). Closing a `popover()`
+puts `Leave` on it: it stops taking the pointer and focus at once, fades out and despawns. A menu's panel
+(a bar's, a submenu's) fades out the same way and then goes out of sight instead of despawning, ready for
+its next opening; open it again while it fades and it comes back where it stands. A context menu closes at
+once. `MotionSettings::reduced()` fades without the scale and the slide; `MotionSettings::off()` draws and
+removes the panel in a frame.

@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Popovers open from their anchor (G-64, #71, `docs/research/popover-entrance.md`): a popover's panel (every menu, submenu, select list, colour picker and `popover()`) now opens at `POPOVER_SCALE_FROM` (0.96) scale and fading in, beside its slide, all on the skin's `snappy` spring and `fade_seconds` (`model::popover_scale`; written to `UiTransform::scale`, which Bevy's `Popover` never touches). A menu's panel now fades out where it stands when it closes and goes out of sight at the end of the fade (it was hidden at once); a menu opened again while it fades comes back where it stands. Under `MotionSettings::reduced` it only fades; with no motion it is drawn whole and closes in the frame. The 6 px slide stays (protected tests pin it), and a context menu still closes at once.
+- `tools/loop/regen-gifs.py` re-records every GIF of `docs/media/README.md` from its command and replaces the committed file only when its frames differ.
+
+### Fixed
+
+- A tooltip with a shortcut no longer flickers between two widths (#79): `centre_keycaps` added half the keycap's slack in physical pixels to a logical padding, so at a scale factor of 2 and a `UiScale` of 1.2 the cap grew past its square, which resized the box sized from it, which restyled the cap back. `tests/tooltip_cap.rs` holds the box and the cap still for 30 frames at four scales.
 ## [0.43.1] - 2026-11-07
 
 ### Added
