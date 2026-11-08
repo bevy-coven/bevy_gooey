@@ -2679,3 +2679,23 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Env:** my Xvfb on `:93` died between tool calls once (started from a tool shell): restart it with `setsid nohup`. Scratch `/tmp/g70` removed.
 
 **Backlog:** F6 into a collapsed pane; make `table.gif` deterministic; wrapped tab strips stepping aside; pickup scale for the carried tab; reduced-motion peek fade-out. Sanctuary's `SlideIn`/`FadeIn` are already `MotionTarget::entering_from` and `Arriving`.
+
+## Iteration 71 — 2026-11-08 — `led`: a glowing dot that says whether something is live (#80, G-69); v0.45.0
+
+**Triage:** gooey issue list empty; epic #330 only has #336 (pin move). Reading bevy_grimoire's open issues found #343 (assumed decision: "a glowing indicator virtual LED stating whether something is live. Make it look amazing"), which says a pass may not build a widget gooey lacks and so needs a G-NN request. Filed it as gooey #80 (labels consumer, grimoire-ui, assumed-decision) and built it: it outranks my own backlog (F6 into a collapsed pane). Parked branches stale, untouched.
+
+**Assumed decision (#80):** options: new skin fields for the colours / colours derived from existing ones / an image. Picked derived: `GooeySkin::live()` (danger's lightness and chroma at hue 145, as `warning()` is at amber), `warning()`, `danger`, `outline`. No preset, theme step or `with_colours_of` changes. What "live" means stays the host's.
+
+**Built:** `led(label, state)` row, `Led(LedState)` (Off ring, Live disc, Busy rounded square with pulsing glow, Failed diamond), `LedWord`, `update_leds`, `Role::Led`/`LedDot`, `live()`. Dot colours, shape and glow are data written only on a difference; reduced/off motion keeps the glow steady. Non-colour signal by construction (silhouette + word). `tests/led.rs` (5), `examples/led.rs`, `docs/media/led.gif`, `docs/research/led.md`, guide section in `status-bar.md`, README, AGENTS, CHANGELOG.
+
+**Sources:** WCAG 2.2 SC 1.4.1 and 2.3.3 (read directly, Pending index: home-still's search had nothing on status indicators); Rune `rune-motion/src/tokens.rs` drift token; this crate's `warning()` and cooldown data-fill pattern.
+
+**Critique and verdict** (`/tmp/g71/gifsheet.png`, zoom): first cut had a 0.9 text-size dot with a faint glow: not "amazing"; enlarged to 1.1 sizes, glow blur 1.6 dots and alpha 0.7 (pulse 0.25 to 0.85): the four silhouettes read in greyscale and the halo is visible on the panel. GREAT.
+
+**Perf:** gallery, 6 alternating pairs, 22.308 vs 22.318 ms min; AE 0.
+
+**Gate:** fmt, clippy (type_complexity in the test: alias), nextest 1249/1249, doctests, check + wasm32, `doc -D warnings` (a doc link fixed). semver-checks: 1 major (new `Role` variants), so 0.44.2 → 0.45.0.
+
+**Demos:** all GIFs re-recorded by `regen-gifs.py`: only `table.gif` differed (nondeterministic, restored to avoid churn); `inspector.gif` timed out at 300 s (`cargo run --features reflect` rebuilds a different feature set than the `--all-features` build; unchanged feature, left as committed). New `led.gif`. Backlog: make regen-gifs use the all-features binary for `--features reflect` rows; `table.gif` determinism.
+
+**Backlog:** F6 into a collapsed pane; wrapped tab strips stepping aside; pickup scale for the carried tab; reduced-motion peek fade-out; `led` hosting a custom word (`LedWord` text is writable, but the state rewrites it). 
