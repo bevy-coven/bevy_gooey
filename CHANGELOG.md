@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-11-08
+
+Breaking (pre-1.0, minor): the public system `update_layout_motion` takes one more parameter (`TravelFrom`); a host that schedules it by hand is unaffected, one that calls it as a plain function is not.
+
 ### Added
 
 - Popovers open from their anchor (G-64, #71, `docs/research/popover-entrance.md`): a popover's panel (every menu, submenu, select list, colour picker and `popover()`) now opens at `POPOVER_SCALE_FROM` (0.96) scale and fading in, beside its slide, all on the skin's `snappy` spring and `fade_seconds` (`model::popover_scale`; written to `UiTransform::scale`, which Bevy's `Popover` never touches). A menu's panel now fades out where it stands when it closes and goes out of sight at the end of the fade (it was hidden at once); a menu opened again while it fades comes back where it stands. Under `MotionSettings::reduced` it only fades; with no motion it is drawn whole and closes in the frame. The 6 px slide stays (protected tests pin it), and a context menu still closes at once.
