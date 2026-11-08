@@ -224,30 +224,51 @@ pub fn draw_press_scale(
         if scale == 1.0 || !scale.is_finite() {
             continue;
         }
-        let Ok(centre) = globals.get(entity).map(|at| at.translation) else {
+        scale_subtree(
+            entity,
+            scale,
+            &children,
+            &fixed,
+            &mut globals,
+            &mut restore,
+            &mut stack,
+        );
+    }
+}
+
+/// Draws `entity` and everything under it at `scale` about its centre, remembering each resting
+/// transform in `restore`. A popover or a pointer point hung from the widget is laid out on the
+/// window, not inside it: it keeps its own place and size.
+pub(crate) fn scale_subtree(
+    entity: Entity,
+    scale: f32,
+    children: &Query<&Children>,
+    fixed: &Query<(), With<FixedNode>>,
+    globals: &mut Query<&mut UiGlobalTransform>,
+    restore: &mut PressScaleRestore,
+    stack: &mut Vec<Entity>,
+) {
+    let Ok(centre) = globals.get(entity).map(|at| at.translation) else {
+        return;
+    };
+    stack.clear();
+    stack.push(entity);
+    while let Some(node) = stack.pop() {
+        if node != entity && fixed.contains(node) {
+            continue;
+        }
+        let Ok(mut at) = globals.get_mut(node) else {
             continue;
         };
-        stack.clear();
-        stack.push(entity);
-        while let Some(node) = stack.pop() {
-            // A popover or a pointer point hung from the widget is laid out on the window, not
-            // inside it: it keeps its own place and size.
-            if node != entity && fixed.contains(node) {
-                continue;
-            }
-            let Ok(mut at) = globals.get_mut(node) else {
-                continue;
-            };
-            restore.0.push((node, *at));
-            let rest = Affine2::from(*at);
-            *at = Affine2::from_mat2_translation(
-                rest.matrix2 * scale,
-                centre + (rest.translation - centre) * scale,
-            )
-            .into();
-            if let Ok(kids) = children.get(node) {
-                stack.extend(kids.iter());
-            }
+        restore.0.push((node, *at));
+        let rest = Affine2::from(*at);
+        *at = Affine2::from_mat2_translation(
+            rest.matrix2 * scale,
+            centre + (rest.translation - centre) * scale,
+        )
+        .into();
+        if let Ok(kids) = children.get(node) {
+            stack.extend(kids.iter());
         }
     }
 }

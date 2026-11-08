@@ -53,6 +53,7 @@ mod number;
 mod options;
 mod palette;
 mod pointer;
+mod pop;
 mod popover;
 mod popover_entrance;
 mod presence;

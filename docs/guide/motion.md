@@ -202,6 +202,20 @@ so a press at the very edge stays on the tile. A scroll under the held press can
 chooses nothing). Reduced motion keeps the tile at its size. Put `PressScale(0.96)` on a node of your
 own that has a press state (a `Button`) for the same; buttons do not get it by default.
 
+## A number that changed: `Pop`
+
+`commands.entity(readout).insert(Pop::default())` swells a node by `POP_GAIN` (10%) about its centre and
+settles it on the snappy spring with a slight bounce: the second feedback channel for a HUD number,
+a chosen slot or a repaired panel, beside the words themselves. Inserting it again is a new pop (the
+component is the trigger and stays), and a pop on a node still settling stacks on the scale it is drawn
+at, so a counter that ticks five times in half a second reads as one fuller swell. `Pop(0.2)` is a
+bigger one. Only the drawing scales, as for `PressScale` (layout and the hit test keep the resting size,
+the two compose on one node), it runs on real time, so a paused game still pops its menu, and reduced or
+no motion draws nothing swollen. It scales about the node's own centre: a readout stretched across a row swells about the row's middle, so let it hug its words (`align_items: FlexStart` on its parent). `examples/pop.rs` is the whole feature in one line. Research:
+`docs/research/pop.md`.
+
+![The pop example: Enter on "Pick up a coin" three times swells the Coins readout, one fuller swell as the pickups stack, and a gem pickup swells the Gems readout](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/pop.gif)
+
 ## Testing motion
 
 With the `testing` feature, `testing::MotionTrace` records a node's pose frame by frame on a manual

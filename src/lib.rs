@@ -178,6 +178,7 @@ mod notification;
 mod number;
 mod options;
 mod palette;
+mod pop;
 mod popover;
 mod presence;
 mod press_scale;
@@ -313,6 +314,7 @@ pub use palette::{
     CommandList, CommandPalette, PALETTE_ROWS, PaletteCommand, PaletteCount, PaletteHistory,
     PaletteInput, PaletteNote, PaletteRow, RunCommand, palette_by_input, update_palette,
 };
+pub use pop::{POP_GAIN, Pop, Popped, draw_pops, update_pops};
 pub use popover::{
     CloseReason, Placement, PopoverClosed, PopoverPanel, PopoverPoint, anchor_pointer_popovers,
     close_popovers_on_press, drop_pointer_anchors, reveal_popovers,
@@ -561,6 +563,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Indicating>()
             .register_type::<FadeEdge>()
             .register_type::<PressScale>()
+            .register_type::<Pop>()
             .register_type::<HoverGroup>()
             .register_type::<TypeSelectGroup>()
             .register_type::<GroupReveal>()
@@ -606,6 +609,7 @@ impl Plugin for GooeyStylePlugin {
                         (begin_entrances, update_motion).chain(),
                         mark_moving_parts,
                         (mark_press_scale, update_press_scale).chain(),
+                        update_pops,
                         (
                             begin_leaves,
                             begin_stays,
@@ -691,7 +695,7 @@ impl Plugin for GooeyStylePlugin {
         // where it was, so it runs between Bevy's layout and everything that reads the result.
         app.add_systems(
             PostUpdate,
-            (update_layout_motion, draw_press_scale)
+            (update_layout_motion, draw_press_scale, draw_pops)
                 .chain()
                 .after(UiSystems::Layout)
                 .before(UiSystems::PostLayout),
