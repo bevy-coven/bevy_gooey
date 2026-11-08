@@ -16,7 +16,7 @@ use bevy::ui_widgets::{ValueChange, observe};
 
 use crate::choice::ChoiceValue;
 use crate::color::ColorValue;
-use crate::number::{NumberValue, VecChange, VecValue};
+use crate::number::{MixedValue, NumberValue, VecChange, VecMixed, VecValue};
 use crate::section::SectionId;
 use crate::skin::Role;
 use crate::text::{TextEditing, TextInputValue};
@@ -92,6 +92,8 @@ pub struct Inspector {
     /// What it edits.
     pub target: InspectTarget,
     rows: Vec<Row>,
+    /// The [`InspectMixed`] list [`sync_inspect_mixed`] last put on the rows.
+    mixed: Vec<String>,
 }
 
 /// A step for a number field built from a reflected number, as a field attribute:
@@ -99,6 +101,37 @@ pub struct Inspector {
 /// hundredth of a range, when it has one).
 #[derive(Reflect, Clone, Copy, Debug, PartialEq)]
 pub struct InspectStep(pub f32);
+
+/// On an [`inspector`](crate::inspector)'s root: the reflect paths whose values **differ across the
+/// host's selection** (`"yaw"`, `"position.x"`). A number or colour row whose path is listed reads
+/// mixed ([`MixedValue`], the [`MIXED_HINT`](crate::MIXED_HINT) in its field), and a vector row's
+/// listed components do ([`VecMixed`]; listing the vector's own path marks every component). An edit of
+/// a mixed row takes the marker off it and sends the one [`InspectorChange`] an edit sends: the host
+/// applies it to every member and then takes the path out of the list. Changing the list (a path
+/// added, taken out, or the whole component removed) puts each row it names back to the component's
+/// own value or to mixed; a row the player has edited is left as it is until the list changes
+/// for that path. [`sync_inspect_mixed`] does it, only when the list differs from the one it last
+/// applied. A path the target does not have is ignored.
+///
+/// Toggles, choices and text rows have no mixed state in this crate and are left as they are.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, ship: Entity) {
+/// #[derive(Component, Reflect, Default)]
+/// #[reflect(Component)]
+/// struct Engine { thrust: f32, yaw: f32 }
+///
+/// // Several ships are selected and their yaw differs.
+/// commands.spawn((
+///     inspector(InspectTarget::component::<Engine>(ship)),
+///     InspectMixed(vec!["yaw".to_owned()]),
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Debug, Default, PartialEq, Eq)]
+pub struct InspectMixed(pub Vec<String>);
 
 /// A player's edit, sent on the [`inspector`](crate::inspector) after it was written to the
 /// component or resource. `path` is Bevy's reflect path of the field from the target (`"speed"`,
@@ -240,6 +273,7 @@ pub fn inspector(target: InspectTarget) -> impl Bundle {
         Inspector {
             target,
             rows: Vec::new(),
+            mixed: Vec::new(),
         },
     )
 }
@@ -938,6 +972,104 @@ fn differs(world: &World, row: &Row, target: &dyn Reflect) -> Option<Update> {
         Kind::ReadOnly(name) => {
             let text = format!("{name}: {field:?}");
             (entity.get::<Text>()?.0 != text).then_some(Update::ReadOnly(text))
+        }
+    }
+}
+
+/// The marker a row's state moves to when the [`InspectMixed`] list changes.
+enum Mark {
+    /// A number or colour row: mixed or not.
+    Mixed(bool),
+    /// A vector row: which components are mixed.
+    Parts(Vec<bool>),
+}
+
+/// Whether `path` is named by `list`.
+fn listed(list: &[String], path: &str) -> bool {
+    list.iter().any(|p| p == path)
+}
+
+/// The reflect path of component `index` of the vector at `path`.
+fn component_path(path: &str, index: usize) -> String {
+    let name = ["x", "y", "z", "w"].get(index).copied().unwrap_or("");
+    if path.is_empty() {
+        name.to_owned()
+    } else {
+        format!("{path}.{name}")
+    }
+}
+
+/// Whether the vector at `path` has component `index` mixed under `list`: the component's own path,
+/// or the vector's.
+fn component_listed(list: &[String], path: &str, index: usize) -> bool {
+    listed(list, path) || listed(list, &component_path(path, index))
+}
+
+/// What `row` moves to when the list goes from `was` to `now`, if it moves.
+fn mark_of(row: &Row, was: &[String], now: &[String]) -> Option<(Entity, Mark)> {
+    match &row.kind {
+        Kind::Number | Kind::Colour => {
+            let (before, after) = (listed(was, &row.path), listed(now, &row.path));
+            (before != after).then_some((row.entity, Mark::Mixed(after)))
+        }
+        Kind::Vec(count) => {
+            let flags = |list: &[String]| -> Vec<bool> {
+                (0..*count)
+                    .map(|i| component_listed(list, &row.path, i))
+                    .collect()
+            };
+            let after = flags(now);
+            (flags(was) != after).then_some((row.entity, Mark::Parts(after)))
+        }
+        Kind::Bool | Kind::Choice(_) | Kind::Text | Kind::ReadOnly(_) => None,
+    }
+}
+
+/// What one inspector's changed list does: the root, the list now, and each row's move.
+type ListMoves = Vec<(Entity, Vec<String>, Vec<(Entity, Mark)>)>;
+
+/// Puts each row the [`InspectMixed`] list names into its mixed state, and each one it stopped naming
+/// back to the component's own value. Runs in [`crate::GooeySystems::Style`] after the rows are built
+/// and before they are kept in step; with the list as it was, it writes nothing.
+pub fn sync_inspect_mixed(
+    world: &mut World,
+    inspectors: &mut QueryState<(Entity, &Inspector, Option<&InspectMixed>)>,
+) {
+    let mut moves: ListMoves = Vec::new();
+    for (root, inspector, wanted) in inspectors.iter(world) {
+        let now: &[String] = wanted.map_or(&[], |mixed| mixed.0.as_slice());
+        if inspector.mixed == now {
+            continue;
+        }
+        let marks = inspector
+            .rows
+            .iter()
+            .filter_map(|row| mark_of(row, &inspector.mixed, now))
+            .collect();
+        moves.push((root, now.to_vec(), marks));
+    }
+    for (root, now, marks) in moves {
+        for (entity, mark) in marks {
+            let Ok(mut row) = world.get_entity_mut(entity) else {
+                continue;
+            };
+            match mark {
+                Mark::Mixed(true) => {
+                    row.insert(MixedValue);
+                }
+                Mark::Mixed(false) => {
+                    row.remove::<MixedValue>();
+                }
+                Mark::Parts(flags) if flags.iter().any(|mixed| *mixed) => {
+                    row.insert(VecMixed(flags));
+                }
+                Mark::Parts(_) => {
+                    row.remove::<VecMixed>();
+                }
+            }
+        }
+        if let Some(mut inspector) = world.get_mut::<Inspector>(root) {
+            inspector.mixed = now;
         }
     }
 }

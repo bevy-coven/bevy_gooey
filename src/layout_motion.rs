@@ -13,7 +13,9 @@
 //! fitting pass (a toolbar's overflow, a status bar hiding what does not fit) reads one frame's
 //! layout and moves things in the next.
 //!
-//! The crate marks tabs; a game marks its own. A dock's tabs are spawned again on every change to
+//! The crate marks tabs and a toggle's knob; a game marks its own. A knob travels on the skin's
+//! snappy spring ([`TravelSpring`]), a small control answering a press; every other node travels on
+//! the default one. A dock's tabs are spawned again on every change to
 //! the dock's layout, so they are new on the only frames they move and do not travel yet (G-63). Rows of a list, a table or a tree are
 //! pooled (a reused row is a new row) and are not marked. Toasts glide on their own room already,
 //! and toolbar and status items are moved by a fitting pass, so none of them is marked.
@@ -28,6 +30,23 @@ use bevy::ui::{
 use crate::model::{SPRING_REST_POSITION, SpringState, spring_settled, spring_step};
 use crate::motion::{MotionSettings, MotionToken};
 use crate::skin::{GooeySkin, Role, SkinScope, skin_of};
+
+/// Which of the skin's springs carries a [`MovesSmoothly`] node to its new place (a name in
+/// [`GooeySkin::motion`](crate::GooeySkin::motion)). A node without it travels on
+/// [`MotionToken::Default`]. The crate gives a toggle's knob [`MotionToken::Snappy`], so a switch
+/// answers a press quickly; a game's own marked node picks the spring that suits what it is.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// // A card that slides over on the calm spring when its neighbour is taken out.
+/// commands.spawn((panel(), MovesSmoothly, TravelSpring(MotionToken::Calm)));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Default, Debug, PartialEq, Clone)]
+pub struct TravelSpring(pub MotionToken);
 
 /// Travel to a new place in layout on the skin's default spring, instead of jumping there.
 ///
@@ -93,13 +112,21 @@ type NewPart = (Entity, &'static Role);
 /// A node that just got its role and is not marked yet.
 type NewPartFilter = (Added<Role>, Without<MovesSmoothly>);
 
-/// Gives the crate's own moving parts [`MovesSmoothly`] the frame they get their role: tabs. A game
-/// that takes it off one keeps it off, and its motion stops. Runs in
-/// [`crate::GooeySystems::Style`].
+/// Gives the crate's own moving parts [`MovesSmoothly`] the frame they get their role: tabs, and a
+/// toggle's knob, which also gets a [`TravelSpring`] of [`MotionToken::Snappy`]. A game that takes
+/// it off one keeps it off, and its motion stops. Runs in [`crate::GooeySystems::Style`].
 pub fn mark_moving_parts(mut commands: Commands, added: Query<NewPart, NewPartFilter>) {
     for (entity, role) in &added {
-        if *role == Role::Tab {
-            commands.entity(entity).insert(MovesSmoothly);
+        match role {
+            Role::Tab => {
+                commands.entity(entity).insert(MovesSmoothly);
+            }
+            Role::ToggleKnob => {
+                commands
+                    .entity(entity)
+                    .insert((MovesSmoothly, TravelSpring(MotionToken::Snappy)));
+            }
+            _ => {}
         }
     }
 }
@@ -112,6 +139,7 @@ type Traveller = (
     &'static UiTransform,
     Ref<'static, ComputedUiRenderTargetInfo>,
     &'static ChildOf,
+    Option<&'static TravelSpring>,
 );
 
 /// The shape of the tree a move is drawn over.
@@ -159,7 +187,7 @@ pub fn update_layout_motion(
     moves.clear();
     // Every corner is read before any drawing is moved, so a moving parent's own offset is never
     // read into its child's place.
-    for (entity, mut travel, node, own, target, parent) in &mut travellers {
+    for (entity, mut travel, node, own, target, parent, travel_spring) in &mut travellers {
         let (Ok(parent_node), Ok(parent_at), Ok(at)) = (
             nodes.get(parent.parent()),
             globals.get(parent.parent()),
@@ -233,7 +261,7 @@ pub fn update_layout_motion(
         }
         let spring = skin_of(&skin, entity, &scopes, &parents)
             .motion
-            .spring(MotionToken::Default)
+            .spring(travel_spring.map_or(MotionToken::Default, |token| token.0))
             .scaled(settings.duration_scale);
         for lane in &mut travel.offset {
             let next = spring_step(spring, *lane, 0.0, delta);

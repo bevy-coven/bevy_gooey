@@ -249,11 +249,12 @@ pub use hold::{
 pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
 #[cfg(feature = "reflect")]
 pub use inspector::{
-    InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange, build_inspectors,
-    inspector, sync_inspectors,
+    InspectMixed, InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange,
+    build_inspectors, inspector, sync_inspect_mixed, sync_inspectors,
 };
 pub use layout_motion::{
-    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, mark_moving_parts, update_layout_motion,
+    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelSpring, mark_moving_parts,
+    update_layout_motion,
 };
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use menu::{
@@ -535,6 +536,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ToastSettings>()
             .register_type::<MotionSettings>()
             .register_type::<MovesSmoothly>()
+            .register_type::<TravelSpring>()
             .register_type::<ControlSize>()
             .register_type::<ScrollEdgeFade>()
             .register_type::<FadeEdge>()
@@ -662,7 +664,7 @@ impl Plugin for GooeyStylePlugin {
         #[cfg(feature = "reflect")]
         app.add_systems(
             Update,
-            (build_inspectors, sync_inspectors)
+            (build_inspectors, sync_inspect_mixed, sync_inspectors)
                 .chain()
                 .in_set(GooeySystems::Style)
                 .before(update_toasts),
