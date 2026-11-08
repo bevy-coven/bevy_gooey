@@ -2,7 +2,7 @@
 
 The game-UI kit: a skin as data, ready-made game widgets (screen, panel, menu, heading, label, button, HUD meter, toggle, choice, slider, tooltip, modal dialog), keyboard and gamepad navigation and UI feedback, on Bevy 0.20's headless widgets (`bevy_ui_widgets`) and input focus (`bevy_input_focus`). Its design rules and their sources are in `docs/research/gooey.md`.
 
-README and docs follow https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
+README and docs follow https://github.com/dark-incorporated/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
 
 ## Force pushes and deletions need the user's express permission
 
@@ -16,7 +16,7 @@ When one of these seems necessary, stop and ask. Name the exact command, what it
 
 ## Source of truth
 
-This repository, [`bevy-coven/bevy_gooey`](https://github.com/bevy-coven/bevy_gooey), is canonical. MIT OR Apache-2.0. A change a game or the editor (bevy_grimoire) needs is made here, in its own commit with its tests here, and requested here as an issue labelled `consumer` and `consumer:<project>`; it is never patched into the consumer.
+This repository, [`dark-incorporated/bevy_gooey`](https://github.com/dark-incorporated/bevy_gooey), is canonical. MIT OR Apache-2.0. A change a game or the editor (bevy_dark_factory) needs is made here, in its own commit with its tests here, and requested here as an issue labelled `consumer` and `consumer:<project>`; it is never patched into the consumer.
 
 ## Layout
 

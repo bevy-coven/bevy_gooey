@@ -1,6 +1,6 @@
 # Motion: springs by duration and bounce, a trace that proves them, tracks that retarget
 
-Slices of one series (bevy_grimoire's feel series, tracking bevy-coven/bevy_grimoire#330):
+Slices of one series (bevy_grimoire's feel series, tracking dark-incorporated/bevy_dark_factory#330):
 **#47 (G-40)** the spring in `model`, **#46 (G-39)** `MotionTrace` (feature `testing`), **#48 (G-41)**
 retargetable tracks on `UiTransform`. Today's motion is `model::ease_out`: a fixed-length curve that
 restarts from its first frame when it is interrupted, and cannot carry a velocity in.

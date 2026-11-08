@@ -1,6 +1,6 @@
 # Type-select in lists, tables, trees, menus and selects
 
-Researched 2026-11-07 for issue #63 (G-56), asked by bevy_grimoire's feel series (bevy-coven/bevy_grimoire#330). The reference is Rune (https://github.com/anomalyco/rune at `f73f72cdc563534e4f7de9f5a79bed007ac42384`, MIT, © Anomaly), read as an open reference. Its rules were measured from its source and written again here on gooey's own widgets. No Rune code is in this crate.
+Researched 2026-11-07 for issue #63 (G-56), asked by bevy_grimoire's feel series (dark-incorporated/bevy_dark_factory#330). The reference is Rune (https://github.com/anomalyco/rune at `f73f72cdc563534e4f7de9f5a79bed007ac42384`, MIT, © Anomaly), read as an open reference. Its rules were measured from its source and written again here on gooey's own widgets. No Rune code is in this crate.
 
 ## Sources
 

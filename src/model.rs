@@ -856,7 +856,7 @@ pub fn is_modifier_key(code: &str) -> bool {
 /// tofu box. A host that ships a monospace coding face, as a tool normally does, gets a box on
 /// nearly every Command chord: Bevy's own bundled default font (FiraMono's 95-codepoint subset)
 /// maps **none** of the thirteen a mac chord can wear, and the issue that asked for this
-/// ([#45](https://github.com/bevy-coven/bevy_gooey/issues/45)) measured a host's face missing seven
+/// ([#45](https://github.com/dark-incorporated/bevy_gooey/issues/45)) measured a host's face missing seven
 /// of them. [`ChordGlyphs::Words`] spells the same chords in ASCII — `Cmd+Z`, `Shift+Cmd+P`,
 /// `Ctrl+Esc` — so the player can always read the interface.
 ///

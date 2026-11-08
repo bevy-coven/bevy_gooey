@@ -16,7 +16,7 @@ fn open_menu(mut commands: Commands, file_button: Entity) {
 }
 ```
 
-![The popover example: a File menu under its button with the ring on its second item, Escape closing it, Edit pinned to the window's right edge with its menu sliding to end at the button's edge, and a context menu at the pointer that flips up and to the left in the corner](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/popover.gif)
+![The popover example: a File menu under its button with the ring on its second item, Escape closing it, Edit pinned to the window's right edge with its menu sliding to end at the button's edge, and a context menu at the pointer that flips up and to the left in the corner](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/popover.gif)
 
 *`examples/popover`: File's menu, Escape, Edit at the window's edge, a right-click near the corner, a press elsewhere.*
 

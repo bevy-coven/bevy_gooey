@@ -17,7 +17,7 @@ fn rules(
 }
 ```
 
-![The forms example: the empty Name field is framed red with "A name is needed" under it behind a red bar; typing "Aurora" removes the message and the rows below close up](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/forms.gif)
+![The forms example: the empty Name field is framed red with "A name is needed" under it behind a red bar; typing "Aurora" removes the message and the rows below close up](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/forms.gif)
 
 - **The words are the message** (WCAG 3.3.1 asks for the error to be "described to the user in text"), in the text colour at 4.5:1. The colour is a second cue: a bar at the start of the message in `GooeySkin::danger` for `FieldProblem::error` or `GooeySkin::accent` for `FieldProblem::warning`, and an error also frames the field in `danger`. `danger` and `accent` are held to 3:1 against the panel, which a bar and a frame need; small text needs 4.5:1, which is why the words are not coloured.
 - **A warning leaves the frame alone.** It does not block, and the accent is the focus ring's blue in the Tool look and close to the danger's red in parchment, so a warning frame would read as focus or as an error. The bar and the words say it.

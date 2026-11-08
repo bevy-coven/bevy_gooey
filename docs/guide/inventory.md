@@ -22,7 +22,7 @@ fn backpack(mut commands: Commands) {
 }
 ```
 
-![The inventory example: a Backpack of five columns, a Chest of four and an Equipment row of three in one panel, slots with white-on-transparent icons (a sword, a potion with a count of 3, arrows with 24, a ruby, a key, a torch, gold, a map), empty slots as dark wells with a hairline, two text-only slots (Bread, Rope); the ring walks the backpack and tooltips open (Health potion, Arrows, Torch); Enter reads "Used Torch"; Alt+M lifts the torch, the slots that take it get a light frame (the Equipment row's weapon and charm slots, which refuse it, stay dark), the arrows steer the mark through the backpack into the chest, Alt+M drops it and the panel reads "Moved Torch"; the ring went with the torch and two Lefts put it on the gold](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/inventory.gif)
+![The inventory example: a Backpack of five columns, a Chest of four and an Equipment row of three in one panel, slots with white-on-transparent icons (a sword, a potion with a count of 3, arrows with 24, a ruby, a key, a torch, gold, a map), empty slots as dark wells with a hairline, two text-only slots (Bread, Rope); the ring walks the backpack and tooltips open (Health potion, Arrows, Torch); Enter reads "Used Torch"; Alt+M lifts the torch, the slots that take it get a light frame (the Equipment row's weapon and charm slots, which refuse it, stay dark), the arrows steer the mark through the backpack into the chest, Alt+M drops it and the panel reads "Moved Torch"; the ring went with the torch and two Lefts put it on the gold](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/inventory.gif)
 
 *`examples/inventory`: Tab enters the backpack, the arrows walk it (tooltips follow the ring), Enter uses the torch, Alt+M lifts it, the arrows steer it across to the chest and Alt+M drops it.*
 
@@ -93,7 +93,7 @@ commands.spawn((
 .observe(|refused: On<SlotRefused>| warn!("slot {} will not take that", refused.to));
 ```
 
-![The inventory example with an Equipment row: the pointer lifts the Iron sword, every slot that takes it is framed in a light outline and the torch slot, which refuses it, is dimmed; over the torch slot the landing mark and the ghost turn red and the line below reads "Iron sword does not fit there"; it is let go there and nothing moves; the second drag puts the sword in the weapon slot, "Moved Iron sword" and the frames are gone.](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/slot-rules.gif)
+![The inventory example with an Equipment row: the pointer lifts the Iron sword, every slot that takes it is framed in a light outline and the torch slot, which refuses it, is dimmed; over the torch slot the landing mark and the ghost turn red and the line below reads "Iron sword does not fit there"; it is let go there and nothing moves; the second drag puts the sword in the weapon slot, "Moved Iron sword" and the frames are gone.](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/slot-rules.gif)
 
 *`examples/inventory` with `GOOEY_KEYS=drag:b0>e1,drag:b0>e0`: the sword is lifted and the slots that take it are framed; over the torch slot it is refused while it is still in the hand, then it goes to the weapon slot.*
 

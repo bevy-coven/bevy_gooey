@@ -30,7 +30,7 @@ fn tools(mut commands: Commands, server: Res<AssetServer>) {
 }
 ```
 
-![The tools example: a toolbar of icon buttons and a four-mode group (Move lit in the accent) over a Project panel, a status bar under it; the window narrows to 560 px and the last three buttons hide behind a More button whose menu lists them](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tools.gif)
+![The tools example: a toolbar of icon buttons and a four-mode group (Move lit in the accent) over a Project panel, a status bar under it; the window narrows to 560 px and the last three buttons hide behind a More button whose menu lists them](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/tools.gif)
 
 - **A selection indicator slides (`toggle_group`).** Changing the lit option springs one accent node from the old option's rect to the new one's on `motion.snappy` instead of swapping two fills; a change mid-flight turns round from where it is drawn. It is hidden at rest, so the options look as ever; reduced motion and no motion light the option at once. `SelectionIndicator` is its component and `Indicating` the mark on a strip and its options while it travels.
 - **`icon_button(source, tooltip)`** is a [`button`](widgets.md) with an `icon` in it: a square at least `skin.target()` (44 px; 24 px in the Tool look) whose picture follows the button's disabled and pressed state. The tooltip is required because it is the button's name: it shows on hover and on visible focus, with its chord on a keycap. Observe `Activate` on it as on any button.

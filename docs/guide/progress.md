@@ -30,7 +30,7 @@ fn advance(mut bars: Query<(&mut Progress, &mut ProgressText)>) {
 }
 ```
 
-![The forms example: a progress bar with "4 of 7: Packing atlases, about 7 s left" under it and a spinner beside "Syncing with the server"](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/forms.gif)
+![The forms example: a progress bar with "4 of 7: Packing atlases, about 7 s left" under it and a spinner beside "Syncing with the server"](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/forms.gif)
 
 - **`progress(fraction)`** is a track like a meter's (the same frame and fill, so one visual language) with a line of words under it. Change `Progress(f32)` and the fill moves in the same frame. A value outside `0.0..=1.0` is drawn at the nearest end (NaN as empty), logs one warning and puts `ProgressClamped` on the bar until the value is back in range.
 - **`ProgressText { step, eta_seconds }`** is drawn "3 of 7: Measuring meshes, about 20 s left". Either part may be `None`; with neither the line is not drawn and takes no room. The time left is rounded the way an estimate deserves (`model::eta_words`): the second under ten seconds, five seconds to a minute, the minute to an hour, then "about 1 h 5 min left". The parts are joined by a comma, not the middle dot of the original request: Bevy's default font draws U+00B7 as a box, and the host supplies the font.

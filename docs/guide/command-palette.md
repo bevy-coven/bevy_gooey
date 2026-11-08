@@ -7,7 +7,7 @@ menu hierarchy for someone who does not know the chord yet, and it shows them th
 (Malacria et al., *ExposeHK*: hotkeys "remov[e] the need to traverse a menu or tab hierarchy" but "few users
 employ any form of shortcut interface").
 
-![The palette example: the player opens it, types "opn prj" and "File: Open Project" is the lit first row with Ctrl+O at its end; Down and Up move the lit row, Enter runs it and the line behind reads "Last command: File: Open Project"; opened again it lists that command first, "sav" shows File: Save and File: Save As... dimmed with "No project is open" where their chords would be, Down puts the ring on the second and Escape closes it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/command-palette.gif)
+![The palette example: the player opens it, types "opn prj" and "File: Open Project" is the lit first row with Ctrl+O at its end; Down and Up move the lit row, Enter runs it and the line behind reads "Last command: File: Open Project"; opened again it lists that command first, "sav" shows File: Save and File: Save As... dimmed with "No project is open" where their chords would be, Down puts the ring on the second and Escape closes it](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/command-palette.gif)
 
 ## Three steps
 

@@ -27,7 +27,7 @@ commands.spawn((
 ));
 ```
 
-![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cancel.gif)
+![The gallery's menu panel and Load game list: the ring moves onto Options and then Quit, Enter opens the dialog "Leave the game?" with a line of body and the choices Leave and Stay over the dimmed screen with the ring on Stay, and Escape closes it with the ring back on Quit](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/cancel.gif)
 
 *Back: the Quit dialog's one `Cancel` observer closes it on Escape, and on a pad's B. Focus returns to Quit.*
 

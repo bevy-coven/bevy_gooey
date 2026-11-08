@@ -16,7 +16,7 @@ fn wheel(mut commands: Commands) {
 }
 ```
 
-![The radial example: a disc with eight items on a ring, the lit one in the accent and named in the middle; a stick sweeps round it, South chooses Shotgun, the arrows step to Knife and Enter chooses it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/radial.gif)
+![The radial example: a disc with eight items on a ring, the lit one in the accent and named in the middle; a stick sweeps round it, South chooses Shotgun, the arrows step to Knife and Enter chooses it](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/radial.gif)
 
 *`examples/radial`: the left stick pointing at each item in turn, South choosing Shotgun, Right twice and Enter choosing Knife.*
 
@@ -71,7 +71,7 @@ commands.spawn(radial(
 
 The picture is white on transparent: the skin tints it like a button's icon (`text`, the accent's text on the lit item, muted when disabled), so it keeps its contrast in every preset. It is three body text sizes square (48 px at the default size, `Role::RadialIcon`) and its item is a square a little larger; it shrinks with the wheel in a short window. `GOOEY_PICTURES=1 cargo run --example radial` draws the weapons as pictures.
 
-![The radial example with pictures: a pistol, a rifle, a shotgun, a grenade, a knife, a bow, a torch and a medkit on the ring; the stick moves the amber highlight to the rifle, grenade, knife and medkit and back to the grenade, the name read in the middle each time, and South chooses the grenade](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/radial-pictures.gif)
+![The radial example with pictures: a pistol, a rifle, a shotgun, a grenade, a knife, a bow, a torch and a medkit on the ring; the stick moves the amber highlight to the rifle, grenade, knife and medkit and back to the grenade, the name read in the middle each time, and South chooses the grenade](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/radial-pictures.gif)
 
 ## Accessibility
 
@@ -81,4 +81,4 @@ A screen reader is told a spin button whose value is the highlighted item's name
 
 `RADIAL_STICK_PUSH` = 0.5 and `RADIAL_DEAD_ZONE` = 0.25 of the radius are constants in `model`, with the maths a game may reuse for its own wheel: `radial_pick(x, y, count)` (which wedge a direction faces; an edge belongs to the clockwise item), `radial_place(index, count)` and `radial_step(value, count, delta)`.
 
-Research and sources: [`docs/research/radial.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/research/radial.md).
+Research and sources: [`docs/research/radial.md`](https://github.com/dark-incorporated/bevy_gooey/blob/main/docs/research/radial.md).

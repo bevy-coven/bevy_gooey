@@ -20,7 +20,7 @@ fn pan(keys: Res<ButtonInput<KeyCode>>) {
 }
 ```
 
-![The workspace example: F6 puts the ring on the Library's Wall button, then on the viewport's frame, where Left, Left and Up change the pan readout and move no focus; F6 goes to the Notes field, F6 back to Wall, and Shift+F6 walks back to the viewport and the Notes](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/focus-regions.gif)
+![The workspace example: F6 puts the ring on the Library's Wall button, then on the viewport's frame, where Left, Left and Up change the pan readout and move no focus; F6 goes to the Notes field, F6 back to Wall, and Shift+F6 walks back to the viewport and the Notes](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/focus-regions.gif)
 
 - **F6 and Shift+F6** move focus to the first widget of the next (previous) region, wrapping. Regions are visited in the order they stand in the UI tree, which is the order they were spawned in. A region with nothing focusable in it is skipped, and a region that is itself a tab stop (a `viewport()`) is its own first widget. F6 with Ctrl, Alt or Super held is not ours.
 - **`ArrowPolicy::Host`** (`FocusRegion::host()`) leaves the arrow keys to the host: with focus on the region or in it, `navigate_by_input` moves nothing and shows no ring for them, and `ButtonInput<KeyCode>` has them as ever. The nearest region at or above the focused widget decides, so a button inside a host region keeps the arrows for the host too. The widgets that read arrows themselves (a slider, a text field) still do.

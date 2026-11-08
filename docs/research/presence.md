@@ -1,7 +1,7 @@
 # Presence: a widget that leaves stays drawn while it goes
 
 The last slice of bevy_grimoire's feel series that every later request names (tracking
-bevy-coven/bevy_grimoire#330): **#49 (G-42)** presence, `Opacity` multiplying down a tree, and
+dark-incorporated/bevy_dark_factory#330): **#49 (G-42)** presence, `Opacity` multiplying down a tree, and
 `Leave`/`Stay` on a widget. Today a dialog, a menu or a toast vanishes in one frame: `despawn()` is
 the only way out the crate offers, and `apply_skin` has no idea what an opacity is.
 

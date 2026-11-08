@@ -40,7 +40,7 @@ fn run(keys: Res<ButtonInput<KeyCode>>) {
 
 `examples/shortcuts.rs` is the keymap screen: three chord rows, a line that names the commands whose chords clash, the commands that run on their chords, and a Save button whose tooltip follows its row.
 
-![The keymap screen](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcuts.gif)
+![The keymap screen](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/shortcuts.gif)
 
 *`examples/shortcuts`: Enter on Save, Ctrl+Shift+K binds it; the same chord on Save all makes the clash line appear and Ctrl+Alt+J clears it; Ctrl+Shift+K runs Save, and the ring on the Save button opens its tooltip with the chord on a keycap.*
 
@@ -67,7 +67,7 @@ fn setup(mut commands: Commands) {
 - **Where.** A `Role::ShortcutBadge` child at the widget's right edge, inside its frame, so the focus ring is never covered and a badge never covers its neighbour. It is the inverse of a panel (the text colour as the fill, the panel's ink as the words, 4.5:1), so it stands off a button's own fill, hovered, pressed or lit, in every look, and in the smallest step of the type scale. It takes no pointer and no focus. `ShortcutBadge` is the marker to query.
 - **What it does not do.** It never runs a chord: a game compares `Shortcut::just_pressed` itself, and a chord held while the badges are up still fires. A badge is a child of its widget: a list that clips the widget clips its badge.
 
-![The shortcut badges example](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcut-badges.gif)
+![The shortcut badges example](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/shortcut-badges.gif)
 
 *`examples/badges`: Alt shows a chip with the chord on each command (none on the dimmed Redo or on Help) and letting go hides them; Alt with Shift held hides them.*
 
@@ -95,7 +95,7 @@ fn dim(shown: Res<BadgesShown>) { /* shown.0 */ }
 - **`BadgesShown(bool)`** is true from the frame the reveal has been held for `delay_seconds` until it is let go, switched off or blocked, whether or not any widget has a chord to show. The crate writes it only when it changes; a host reads it and never writes it.
 - **`ShortcutLegend { rows }`** draws one card in the middle of the window (a `Role::ShortcutLegend` root over the badges, `ShortcutLegendCard` holds the rows on show) while `BadgesShown` is true: a keycap column (`Shortcut::label`) and a column of words, in the skin's opaque surface and outline frame, 4.5:1 in every look, never taking the pointer or focus. It is for empty ground (a canvas, a game world): put the interface elsewhere or it covers it. An empty list draws nothing, and rows written while it is up redraw it in that frame.
 
-![The legend and a plain-key reveal](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/shortcut-legend.gif)
+![The legend and a plain-key reveal](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/shortcut-legend.gif)
 
 *`GOOEY_LEGEND=1` `examples/badges`: K shows the chips on the commands and a card of four chords that act on the canvas; letting go hides both; K with Shift held hides both (a modifier is down), and Shift let go shows them again.*
 

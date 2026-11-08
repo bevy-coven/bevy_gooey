@@ -41,7 +41,7 @@ fn setup(mut commands: Commands) {
 }
 ```
 
-![The context example: a right-click on a crate opens its menu at the pointer; Locked is ticked and Inspect's chord I stands at the right; choosing Locked says "Toggled lock on: Crate B" at the bottom; a right-click on the crate in the bottom-right corner opens the whole menu above and to the left of the pointer; Down then Shift+F10 opens the inventory row's menu below the row, Right on Move to opens its submenu, and Enter on Chest 2 says which row was moved](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/context-menu.gif)
+![The context example: a right-click on a crate opens its menu at the pointer; Locked is ticked and Inspect's chord I stands at the right; choosing Locked says "Toggled lock on: Crate B" at the bottom; a right-click on the crate in the bottom-right corner opens the whole menu above and to the left of the pointer; Down then Shift+F10 opens the inventory row's menu below the row, Right on Move to opens its submenu, and Enter on Chest 2 says which row was moved](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/context-menu.gif)
 
 *`examples/context`: a right-click on a crate, the menu flipping at the window's corner, Shift+F10 on an inventory row, a submenu, and the line at the bottom saying which thing a command was for.*
 

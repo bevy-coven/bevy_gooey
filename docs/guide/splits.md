@@ -29,7 +29,7 @@ fn dock(mut commands: Commands) {
 }
 ```
 
-![The split example: a Library sidebar beside a Viewport panel over a Log panel, the dividers dragged and stepped with the keys](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/split.gif)
+![The split example: a Library sidebar beside a Viewport panel over a Log panel, the dividers dragged and stepped with the keys](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/split.gif)
 
 - `SplitAxis::Horizontal` puts the panes side by side (a vertical divider, moved with Left and Right); `SplitAxis::Vertical` stacks them (a horizontal divider, moved with Up and Down).
 - **The state is a fraction.** `SplitFraction(f32)` on the split is the first pane's share of the room the divider leaves (the split's length on its axis less the divider's), 0.5 until you insert another in the same tuple. It is plain data (serde with the `serde` feature): save it with the player's other settings. Set it from code and the panes follow in the same frame with no event; a player's change is one `ValueChange<f32>` on the split, `is_final` false while a drag goes on and true at its end and for every key. A fraction keeps the layout through a window resize and a change of UI scale.
@@ -45,7 +45,7 @@ fn dock(mut commands: Commands) {
 
 ## A collapsed pane peeks
 
-![The split example: the Library sidebar is collapsed with Enter on its divider, the pointer rests on the divider and the sidebar slides out over the Viewport panel with its shadow (the Viewport does not move), the pointer leaves and it slides back, and Enter on the divider docks it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/split-peek.gif)
+![The split example: the Library sidebar is collapsed with Enter on its divider, the pointer rests on the divider and the sidebar slides out over the Viewport panel with its shadow (the Viewport does not move), the pointer leaves and it slides back, and Enter on the divider docks it](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/split-peek.gif)
 
 Collapse the first pane (Enter on the divider, South, a double click) and it does not have to be gone: rest the
 pointer on the divider (or the sliver of pane the minimum leaves) for `SplitPeekSettings::delay_seconds` (0.05 s,

@@ -11,9 +11,9 @@ commands.insert_resource(MotionSettings::reduced());
 commands.insert_resource(MotionSettings::off());
 ```
 
-![The gallery's Quit dialog opening twice over the settings screen: the card rises a few pixels into place, settles, vanishes on Escape and rises again on Enter](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/motion.gif)
+![The gallery's Quit dialog opening twice over the settings screen: the card rises a few pixels into place, settles, vanishes on Escape and rises again on Enter](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/motion.gif)
 
-![The gallery's Health meter: a hit drops the fill at once and leaves the lost length in red, which holds and drains; a heal eases the fill up with no red](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/meter.gif)
+![The gallery's Health meter: a hit drops the fill at once and leaves the lost length in red, which holds and drains; a heal eases the fill up with no red](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/meter.gif)
 
 ## What moves
 
@@ -214,7 +214,7 @@ the two compose on one node), it runs on real time, so a paused game still pops 
 no motion draws nothing swollen. It scales about the node's own centre: a readout stretched across a row swells about the row's middle, so let it hug its words (`align_items: FlexStart` on its parent). `examples/pop.rs` is the whole feature in one line. Research:
 `docs/research/pop.md`.
 
-![The pop example: Enter on "Pick up a coin" three times swells the Coins readout, one fuller swell as the pickups stack, and a gem pickup swells the Gems readout](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/pop.gif)
+![The pop example: Enter on "Pick up a coin" three times swells the Coins readout, one fuller swell as the pickups stack, and a gem pickup swells the Gems readout](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/pop.gif)
 
 ## Testing motion
 
@@ -230,7 +230,7 @@ skipped before any node is touched; the gallery's frame time does not move. Noth
 spring or a trail ends (`tests/motion.rs` counts `Changed<UiTransform>` and `tests/meter_motion.rs`
 `Changed<Node>` over thirty idle frames).
 
-Research and parameters: [`docs/research/motion.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/research/motion.md) and, for the meter, [`docs/research/meter-motion.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/research/meter-motion.md).
+Research and parameters: [`docs/research/motion.md`](https://github.com/dark-incorporated/bevy_gooey/blob/main/docs/research/motion.md) and, for the meter, [`docs/research/meter-motion.md`](https://github.com/dark-incorporated/bevy_gooey/blob/main/docs/research/meter-motion.md).
 
 ## Gliding from where a node was drawn: `TravelFrom`
 

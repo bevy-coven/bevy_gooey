@@ -1,6 +1,6 @@
 # Toasts enter from their edge
 
-Researched 2026-11-07 for issue #72 (G-65), asked by bevy_grimoire's feel series (bevy-coven/bevy_grimoire#330). The reference is Rune (https://github.com/anomalyco/rune at `f73f72cdc563534e4f7de9f5a79bed007ac42384`, MIT, © Anomaly); this crate's code is its own, on bevy_ui.
+Researched 2026-11-07 for issue #72 (G-65), asked by bevy_grimoire's feel series (dark-incorporated/bevy_dark_factory#330). The reference is Rune (https://github.com/anomalyco/rune at `f73f72cdc563534e4f7de9f5a79bed007ac42384`, MIT, © Anomaly); this crate's code is its own, on bevy_ui.
 
 ## Sources
 

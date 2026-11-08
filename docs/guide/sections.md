@@ -22,7 +22,7 @@ fn settings(mut commands: Commands) {
 }
 ```
 
-![The sections example: a Settings panel of the sections Physics, Graphics (with a closed Shadows section inside) and Modding (empty, so it says "Empty"); Enter folds Physics away, Down walks the ring to Shadows and Enter opens it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/sections.gif)
+![The sections example: a Settings panel of the sections Physics, Graphics (with a closed Shadows section inside) and Modding (empty, so it says "Empty"); Enter folds Physics away, Down walks the ring to Shadows and Enter opens it](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/sections.gif)
 
 - **The children are any bundle** (`children![..]`, or `()` for none), so a section inside one is a nested section with no new API. The body is indented one and a half paddings so what is inside reads as inside.
 - **The header is a button's look** (a raised bar at least `skin.target()` high, the ring, hover and press every button has) with a chevron that points right when closed and down when open. Enter, Space, South and a click toggle it.

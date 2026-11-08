@@ -128,7 +128,7 @@ fn quit(mut commands: Commands) {
 }
 ```
 
-![The Quit dialog in the dark and the parchment preset: the title "Leave the game?", a line of body, and the choices Leave and Stay in a framed panel over the dimmed screen, the ring on Stay](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dialog.png)
+![The Quit dialog in the dark and the parchment preset: the title "Leave the game?", a line of body, and the choices Leave and Stay in a framed panel over the dimmed screen, the ring on Stay](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/dialog.png)
 
 ## Over a game world
 

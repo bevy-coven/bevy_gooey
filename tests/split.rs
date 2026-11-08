@@ -1104,7 +1104,7 @@ fn an_idle_split_writes_nothing() {
 
 /// **The frame a split is spawned in already has its panes in their ratio.**
 ///
-/// Measured by a caller of this crate (bevy_grimoire's Cauldron): entering the project page showed one
+/// Measured by a caller of this crate (bevy_dark_factory's Dark Factory): entering the project page showed one
 /// frame with the body across the whole window and the sidebar a few pixels wide, then the right
 /// layout. `update_splits` runs in `GooeySystems::Style`, which is after layout, and a split spawned
 /// this frame has no `ComputedNode` size yet — so `extent` is 0, `split_clamp` returns the fraction

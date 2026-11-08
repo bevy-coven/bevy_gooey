@@ -1,6 +1,6 @@
 # Inspector rows that read mixed over a multi-selection
 
-Researched 2026-11-07 for issue #77 (G-67), asked by bevy_grimoire's UI series (bevy-coven/bevy_grimoire#208, UI-50 #236). No reference implementation: the behaviour is the one every multi-select inspector has (Unity's mixed-value dash, Godot's multi-node editing), asked for here as data.
+Researched 2026-11-07 for issue #77 (G-67), asked by bevy_grimoire's UI series (dark-incorporated/bevy_dark_factory#208, UI-50 #236). No reference implementation: the behaviour is the one every multi-select inspector has (Unity's mixed-value dash, Godot's multi-node editing), asked for here as data.
 
 ## Model adopted
 

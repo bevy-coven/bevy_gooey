@@ -36,7 +36,7 @@ refuses a skin, so an editor can show a half-finished one.
 
 High contrast is the mode Xbox Accessibility Guideline 102 asks a game for: "When enabled, the contrast ratios should equal or exceed 7:1 for all UI elements against their background." Opaque black surfaces, white text and white outlines, an amber accent, a cyan focus ring that no other state uses, and a light red for danger (WCAG advises against red on black, for protanopia). A panel, a tooltip and the legend are framed in white (`surface_edge: Some(white)`; the other presets leave it `None`, which keeps their quiet `surface_raised` frame), so a tooltip over a panel is a card of its own. `GooeySkin::high_contrast_problems()` is `problems()` with every pair held to `ENHANCED_CONTRAST`, 7:1, so a game that writes its own high-contrast skin has the check in one call (it is empty for `high_contrast()` and not for the other two, which meet the 4.5:1 and 3:1 minimums and no more).
 
-![The gallery in high contrast: a black screen with white frames on the settings panel, the Load game list, the field, the tooltip and the legend, an amber Audio tab, meter, slider and switch, and a cyan ring on Options with its tooltip beside it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/high-contrast.png)
+![The gallery in high contrast: a black screen with white frames on the settings panel, the Load game list, the field, the tooltip and the legend, an amber Audio tab, meter, slider and switch, and a cyan ring on Options with its tooltip beside it](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/high-contrast.png)
 
 *`GooeySkin::high_contrast()`: every text is at least 7:1 on what it is drawn on (15.9:1 on a button), the ring is 13.5:1 on the panel, and a button's fill is 1.3:1 from the panel (the focus ring is the one frame that appears).*
 
@@ -57,7 +57,7 @@ assert_eq!(tool.pad(), GooeySkin::dark().padding / 2.0);
 
 `GooeySkin::tool()` (`SkinPreset::Tool`, the fourth row of the theme row) is the whole look for a tool: a cool neutral grey with a blue accent (not a game's amber), `Density::Compact`, 14 px text (21 px at 1080p, over Xbox Accessibility Guideline 101's PC minimum of 18 px), a 6 px gap, a 2 px border (the ring's weight, WCAG 2.4.13) and a 4 px radius. A theme-row step writes its colours only, so a player who steps onto Tool keeps their own text size and density; start in the whole preset by inserting `GooeySkin::tool()`. The gallery's settings panel is 294 px tall in it and 520 px in dark. `examples/density` flips `density` with a switch.
 
-![The gallery in the Tool look: the settings panel (Play, Options, Quit, a health meter, the Audio, Display and Controls tabs with Audio lit blue, the Volume slider and Subtitles switch) and the top of the Load game list, all in grey and blue at 14 px text](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tool.png)
+![The gallery in the Tool look: the settings panel (Play, Options, Quit, a health meter, the Audio, Display and Controls tabs with Audio lit blue, the Volume slider and Subtitles switch) and the top of the Load game list, all in grey and blue at 14 px text](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/tool.png)
 
 *`GooeySkin::tool()`: buttons 24 px high, 2 px frames, the same ring and keys as every look.*
 
@@ -105,7 +105,7 @@ app.insert_resource(GooeySkin::desk());
 
 The light Desk's accent is a step deeper than Rune's: Rune's own light blue carries white words at 4.0:1, under this crate's 4.5:1.
 
-![The gooey gallery in Desk and Desk light above Rune's button variants in its neutral kit, dark and light](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/desk.png)
+![The gooey gallery in Desk and Desk light above Rune's button variants in its neutral kit, dark and light](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/desk.png)
 
 ## Elevation: shadows as data
 
@@ -122,7 +122,7 @@ let mut skin = GooeySkin::dark();
 skin.elevation.overlay = vec![ShadowLayer::drop(8.0, 24.0, Color::srgba(0.0, 0.0, 0.0, 0.5))];
 ```
 
-![The gallery with the Quit dialog open in the four presets: dark, parchment, high contrast with no shadows, and tool; the panels cast the raised stack and the dialog the overlay stack](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/elevation.png)
+![The gallery with the Quit dialog open in the four presets: dark, parchment, high contrast with no shadows, and tool; the panels cast the raised stack and the dialog the overlay stack](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/elevation.png)
 
 The blur is CSS's, twice the Gaussian's standard deviation that Bevy's `ShadowStyle::blur_radius` takes (`shadow_sigma`), so `0 8px 24px` reads as it does in a browser. A negative or non-number blur is a `problems()` entry.
 
@@ -174,7 +174,7 @@ surface is ignored. The check is about fills telling apart, not about text: the 
 cream panels, and a host that puts text on a step checks that pair itself, at 7:1 in a high-contrast skin).
 A theme step (`with_colours_of`) brings the ladder with the colours and keeps the player's scales.
 
-![The ladder example: four nested cards, Surface 1 to Surface 4, each lighter than the one it sits in and labelled with its CIE L*, in dark, then the Theme row steps through Parchment, High contrast and Tool and back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/ladder.gif)
+![The ladder example: four nested cards, Surface 1 to Surface 4, each lighter than the one it sits in and labelled with its CIE L*, in dark, then the Theme row steps through Parchment, High contrast and Tool and back](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/ladder.gif)
 
 *`examples/ladder`: the steps in dark are L\* 12.9, 18.3, 23.6 and 31.6 over a ground of 6.5; the labels are the ladder read back through `cie_lightness`.*
 
@@ -223,7 +223,7 @@ check is whether a reader can tell them apart. A pressed fill at hover's lightne
 `SkinProblem::BadSize`. Held colours are not contrast-checked: a held colour is stepped back on purpose.
 A theme step (`with_colours_of`) replaces them with the look's own, as it does every colour.
 
-![The states example: a panel "State roles" with five swatches (Hovered, Pressed, Card, Unchecked, a Preview edge) over a world glyph at rest beside the same glyph held, in dark, then the Theme row steps through Parchment, High contrast and Tool](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/states.gif)
+![The states example: a panel "State roles" with five swatches (Hovered, Pressed, Card, Unchecked, a Preview edge) over a world glyph at rest beside the same glyph held, in dark, then the Theme row steps through Parchment, High contrast and Tool](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/states.gif)
 
 *`examples/states`: every swatch is a `Role` on a plain node; the glyphs are read from `text` and `held()`.*
 
@@ -291,5 +291,5 @@ the scope off so it joins the left one.
 (accent: Srgba((red: 0.2, green: 0.6, blue: 0.9, alpha: 1.0)), text_scale: 1.25)
 ```
 
-A game sets the resource at start-up (`app.insert_resource(GooeySkin::parchment())`); Grimoire reads a
+A game sets the resource at start-up (`app.insert_resource(GooeySkin::parchment())`); Dark Factory reads a
 project's `family/bevy_gooey.ron` into the same type while the editor runs.

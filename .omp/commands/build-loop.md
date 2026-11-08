@@ -5,7 +5,7 @@ argument-hint: "[optional focus, e.g. 'gamepad only']"
 
 One run of this command is one iteration of a long-running loop on bevy_gooey, a Bevy 0.20 crate that makes game interfaces easy: a skin, ready-made game widgets (buttons, panels, menus, HUD meters, tooltips, modal dialogs), keyboard and gamepad navigation and UI feedback, on Bevy's own headless widgets. Do ONE improvement per iteration, the single most valuable one from a game developer's point of view, finish it completely, then stop.
 
-README and docs follow https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
+README and docs follow https://github.com/dark-incorporated/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
 
 This crate must be easy AND good-looking AND fast: a widget that needs more than a few lines to use is not done, one that looks merely fine next to shipping games is not done, and one that costs frame time a HUD should not cost is not done. The judgement here is a game UI designer's: legibility at couch distance, a focus that is always visible, hit targets a thumb can hit, one visual language across every screen. Its API is the family's: flat re-exports and no prelude, independent plugins in `GooeyPlugins`, systems in `GooeySystems`, settings as serde data, engine-free maths in `model`. Its design rules are in `docs/research/gooey.md`.
 
@@ -22,11 +22,11 @@ The driver times every step of a pass from the omp session afterwards (`~/.local
 
 ## Every pass ships: commit, push, publish, docs, demos (owner, 2026-10-31)
 
-The owner's rule for every pass of this loop. It is checked: after each pass the driver audits it from git (`tools/loop/steps.py audit` in bevy_grimoire) and records commits on `main`, commits left unpushed, package files changed, release tags, doc and demo files, and what was **missing**, on this repo's `loop-stats` branch.
+The owner's rule for every pass of this loop. It is checked: after each pass the driver audits it from git (`tools/loop/steps.py audit` in bevy_dark_factory) and records commits on `main`, commits left unpushed, package files changed, release tags, doc and demo files, and what was **missing**, on this repo's `loop-stats` branch.
 
 1. **Commit and push.** Everything the pass made is committed and pushed to `main` (through the gate) before the pass ends. Nothing stays only in the clone.
 2. **Publish.** A pass that changed what the package ships releases it in the same pass (the "Release" block in section 8). There is no time limit between releases. A publish crates.io refuses with `429` is logged once and not retried in this pass; the next pass releases, and its audit says so.
-3. **Docs.** A change to behaviour or API updates its documentation in the same pass: the README line, the `docs/guide/` section, rustdoc and the CHANGELOG, following https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md. Images and links in a README are absolute URLs.
+3. **Docs.** A change to behaviour or API updates its documentation in the same pass: the README line, the `docs/guide/` section, rustdoc and the CHANGELOG, following https://github.com/dark-incorporated/.github/blob/main/DOCUMENTATION.md. Images and links in a README are absolute URLs.
 4. **Demos.** A change anyone can see ships its demo in the same pass: a GIF or still recorded from `examples/gallery`'s capture knobs, shown in the README or `docs/guide/`, and listed in `docs/media/README.md`. A media file a published README names is never moved.
 5. **Read the last audit first.** In Orient, run `git fetch -q origin loop-stats && git show origin/loop-stats:steps/bevy_gooey_loop-audit.tsv | tail -3`. Anything the previous pass left in `missing` (`push`, `release`, `docs`, `demo?`) is this pass's first job, ahead of its item, because it finishes work already done; only a broken gate comes before it. `demo?` is met by a demo, or by one line in the log saying why the change is not visible.
 
@@ -153,7 +153,7 @@ region, not an impression:
 
 ## One test binary, not 34 (owner, 2026-11-01: disk)
 
-Measured 2026-11-01 on big: every file in `tests/` links its own copy of Bevy into a debug executable of 650 to 790 MB, so one full relink writes about 24 GB, the loop wrote about 48 GB an hour, and big's disk fell under this loop's 150 GB floor. bevy_grimoire hit the same wall with 150 test binaries and fixed it with one (`autotests = false`, one `[[test]]`, one `tests/all.rs`): build 276 s plus run 539 s became 108 s plus 24 s.
+Measured 2026-11-01 on big: every file in `tests/` links its own copy of Bevy into a debug executable of 650 to 790 MB, so one full relink writes about 24 GB, the loop wrote about 48 GB an hour, and big's disk fell under this loop's 150 GB floor. bevy_dark_factory hit the same wall with 150 test binaries and fixed it with one (`autotests = false`, one `[[test]]`, one `tests/all.rs`): build 276 s plus run 539 s became 108 s plus 24 s.
 
 **DONE (verified 2026-11-04): `Cargo.toml:16` has `autotests = false`, `[[test]] name = "all"` is declared, and
 `tests/all.rs:70` holds the `every_test_file_is_a_module` guard. Do not redo it.** The recipe below is the one
@@ -166,15 +166,15 @@ a *new* test file follows.
 - Also set `CARGO_PROFILE_DEV_DEBUG=0` for the gate's builds only if `target` is still over 100 GB after this, and say so in the log.
 - **Done when:** `ls target/debug/deps` holds one `all-*` test executable, the full gate is green, and the log line quotes the sorted test count before and after.
 
-## Grimoire's UI requests come first (owner, 2026-11-01)
+## Dark Factory's UI requests come first (owner, 2026-11-01)
 
-While any issue labelled `grimoire-ui` is open, **the pass's item is a cluster of up to three ready `G-NN` issues** (owner, 2026-11-01: 17 requests are open and 42 of bevy_grimoire's 43 open UI issues wait on them, so one request a pass is the whole project's bottleneck), ahead of everything below except a broken gate and a `bug` issue. A `G-NN` is **ready** when every issue on its Depends on line is closed. **Order the ready ones by how many open bevy_grimoire `ui` issues name each on their Needs line** (`gh issue list -R bevy-coven/bevy_grimoire --label ui --state open --json number,body`, count `bevy_gooey#<n>`), most first, ties by lowest number, and take the first three that sit together (the same module, or one building on another's types). Fewer than three when fewer are ready. bevy_grimoire is rebuilding its whole interface on this crate (tracking issue linked in each request), so each request is a feature the editor is waiting on.
+While any issue labelled `factory-ui` is open, **the pass's item is a cluster of up to three ready `G-NN` issues** (owner, 2026-11-01: 17 requests are open and 42 of bevy_dark_factory's 43 open UI issues wait on them, so one request a pass is the whole project's bottleneck), ahead of everything below except a broken gate and a `bug` issue. A `G-NN` is **ready** when every issue on its Depends on line is closed. **Order the ready ones by how many open bevy_dark_factory `ui` issues name each on their Needs line** (`gh issue list -R dark-incorporated/bevy_dark_factory --label ui --state open --json number,body`, count `bevy_gooey#<n>`), most first, ties by lowest number, and take the first three that sit together (the same module, or one building on another's types). Fewer than three when fewer are ready. bevy_dark_factory is rebuilding its whole interface on this crate (tracking issue linked in each request), so each request is a feature the editor is waiting on.
 
 - Build the general form: any game or tool could use it, the editor is the example, and the editor's name never appears in the API.
 - **One verified slice per issue** with its failing-first test, one commit each; close each with `Fixes #N` in the commit that meets its last acceptance item. **One gate and one push for the pass, and one release** that covers every issue the pass closed ("Every pass ships"): the budget is 150 minutes (checkpoints at 45/90/125), a pass stops starting issues at 125 minutes, and an issue past its 40-minute share is committed as the slice it reached with a comment on what remains. Never leave a half-done issue in the tree.
-- When it closes, comment on each bevy_grimoire issue whose **Needs** line names it: "Fixed in <sha>, released as v<version>; move the pin to <sha>."
+- When it closes, comment on each bevy_dark_factory issue whose **Needs** line names it: "Fixed in <sha>, released as v<version>; move the pin to <sha>."
 - A request that would break the crate's rules (WCAG checks, the scope in docs/guide/scope.md) is answered on the issue with what it needs and why, labelled `blocked`, and skipped.
-- This loop runs only while such issues are open: a timer on big (`gooey-grimoire-watch`) stops it at a pass boundary when none is left, and starts it again when bevy_grimoire files a new one.
+- This loop runs only while such issues are open: a timer on big (`gooey-factory-watch`) stops it at a pass boundary when none is left, and starts it again when bevy_dark_factory files a new one.
 
 ## Filed issues come before new features
 
@@ -182,7 +182,7 @@ While any issue labelled `grimoire-ui` is open, **the pass's item is a cluster o
 Before you pick an item, list the repository's open issues and triage them:
 
 ```sh
-gh issue list --repo bevy-coven/bevy_gooey --state open --limit 100 \
+gh issue list --repo dark-incorporated/bevy_gooey --state open --limit 100 \
   --json number,title,labels,createdAt --jq '.[] | "#\(.number) \(.title)"'
 ```
 
@@ -197,7 +197,7 @@ Then, in this order:
    others.
 2. **An issue labelled `consumer` is the pass's item next, ahead of the series and your own candidates.**
    A project built on this crate needs it and is waiting. The `consumer:<name>` label says which project;
-   `consumer:bevy_grimoire` is the owner's editor. Its own work resumes when the issue is closed as completed
+   `consumer:bevy_dark_factory` is the owner's editor. Its own work resumes when the issue is closed as completed
    and it moves its git pin to a `main` commit containing the fix. Take the oldest one you can work this pass.
    - **Build the general form.** The requester is the example, never a name in this crate's API, a path or a
      default: this crate serves other projects too. Where an issue asks for something shaped to one project,
@@ -258,7 +258,7 @@ State in one sentence why your pick beats the runner-up. If it is too big, carve
 self-contained slice. Record the ranked candidate list in the log, not only the winner.
 
 **A pass never ends idle** (owner, 2026-10-29: "If they're not addressing bugs or enhancing features, they need to evolve their own code base to support Bevy Emerge better or add new features. Research these things in home still, implement them. They shouldn't stay idle."). An empty issue list or a stale backlog is this step's input, never a reason to ship nothing, and a candidate is not "speculation" once it is researched. When the ranked list above gives no workable item, take the first of these that applies:
-1. **What the owner's projects hand-roll.** Read Sanctuary's `src/ui/` (`gh repo clone Ladvien/sanctuary /tmp/gN/sanctuary -- --depth 1`, removed afterwards) and bevy_grimoire's `crates/bevy_grimoire_mapper/src/chrome.rs` (a shallow clone under `/tmp`), find a widget or pattern either builds by hand, and build its general form here, never named for either.
+1. **What the owner's projects hand-roll.** Read Sanctuary's `src/ui/` (`gh repo clone Ladvien/sanctuary /tmp/gN/sanctuary -- --depth 1`, removed afterwards) and bevy_dark_factory's `crates/bevy_dark_factory/src/chrome.rs` (a shallow clone under `/tmp`), find a widget or pattern either builds by hand, and build its general form here, never named for either.
 2. **A feature a shipping game in this domain expects and this crate lacks**, found by research: home-still first (`distill_search`; for a paper the corpus lacks, `paper_search`, `paper_download`, `scribe_convert`, then `distill_index`), then shipped-game practice, then section 5 before any code.
 3. **Depth on the weakest existing feature**: measure it against its research note's validation targets and improve the worst gap.
 

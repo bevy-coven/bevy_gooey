@@ -22,7 +22,7 @@ fn status(mut commands: Commands) {
 }
 ```
 
-![The tools example's status bar: "main", "2 problems" behind an amber bar, "Baking" with a short progress bar on the left, "UTF-8", "Spaces: 4" and "Ln 4, Col 12" on the right; the window narrows and UTF-8, then Spaces: 4, go](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tools.gif)
+![The tools example's status bar: "main", "2 problems" behind an amber bar, "Baking" with a short progress bar on the left, "UTF-8", "Spaces: 4" and "Ln 4, Col 12" on the right; the window narrows and UTF-8, then Spaces: 4, go](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/tools.gif)
 
 - **Left and right.** The left group grows and starts at the bar's start; the right is pushed to its end. Put the workspace's state (branch, problems, sync) on the left and the file's (encoding, position) on the right, as VS Code's guidelines do.
 - **`status_item(text)`** is a Bevy `Button` a target high: Enter, Space, South and a click send `Activate`; hover and visible focus light it like a menu title. It takes a `Tooltip` like any widget. Its words are one line in the text colour at 4.5:1 in every look.

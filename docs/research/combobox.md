@@ -1,6 +1,6 @@
 # The combobox
 
-Researched 2026-11-07 for issue #73 (G-66), asked by bevy_grimoire's feel series (bevy-coven/bevy_grimoire#330). The reference is Rune (https://github.com/anomalyco/rune at `f73f72cdc563534e4f7de9f5a79bed007ac42384`, MIT, © Anomaly), read as an open reference. No Rune code is in this crate.
+Researched 2026-11-07 for issue #73 (G-66), asked by bevy_grimoire's feel series (dark-incorporated/bevy_dark_factory#330). The reference is Rune (https://github.com/anomalyco/rune at `f73f72cdc563534e4f7de9f5a79bed007ac42384`, MIT, © Anomaly), read as an open reference. No Rune code is in this crate.
 
 ## Sources
 
@@ -18,7 +18,7 @@ Researched 2026-11-07 for issue #73 (G-66), asked by bevy_grimoire's feel series
 
 ## Where this differs from the issue
 
-- **Opening from the anchor and the height spring (#71 and the size motion) are not built.** The issue depends on bevy-coven/bevy_gooey#71 (G-64), still open; the list is a plain `popover` and takes that motion when #71 lands. The list's height lands with the rows.
+- **Opening from the anchor and the height spring (#71 and the size motion) are not built.** The issue depends on dark-incorporated/bevy_gooey#71 (G-64), still open; the list is a plain `popover` and takes that motion when #71 lands. The list's height lands with the rows.
 - **No virtual rows.** Rune's rows are virtual; this list builds one row per option (`list` is "for tens of rows, not thousands"). A combobox of ten thousand options would need the table's row pool; recorded here, not built.
 - **No pad path.** A pad cannot type; the D-pad moves focus off a text field. A pad player uses a `select`.
 - **Case-insensitive** comes from `fuzzy_score`, which lower-cases both sides.

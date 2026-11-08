@@ -14,7 +14,7 @@ commands.entity(sheet).insert(Leave);
 commands.entity(sheet).insert(Stay);   // it turns round from where it is drawn
 ```
 
-![The gallery's Quit dialog closed on Escape: the card and its veil thin out together while the settings screen's own colour comes back, then the screen stands as it was with nothing left of the dialog](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/presence.gif)
+![The gallery's Quit dialog closed on Escape: the card and its veil thin out together while the settings screen's own colour comes back, then the screen stands as it was with nothing left of the dialog](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/presence.gif)
 
 ## What leaves
 

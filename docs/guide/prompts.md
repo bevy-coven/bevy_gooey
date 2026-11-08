@@ -17,7 +17,7 @@ fn hints(mut commands: Commands) {
 }
 ```
 
-![The Quit dialog over the settings panel with the legend "A Select, B Back" in the corner: the keycaps start as the keyboard's, "Enter" and "Esc", turn round ("A", "B") when a pad button is pressed and back to keys on the next key; the dialog has its own legend, undimmed above the scrim](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/prompts.gif)
+![The Quit dialog over the settings panel with the legend "A Select, B Back" in the corner: the keycaps start as the keyboard's, "Enter" and "Esc", turn round ("A", "B") when a pad button is pressed and back to keys on the next key; the dialog has its own legend, undimmed above the scrim](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/prompts.gif)
 
 - **The words are yours, the input is the crate's.** `prompt(label, keys)` takes the label, so the crate has no string to translate; the keycap is `Binding::label`, the same words a `binding` row shows ("Enter", "Esc", "Right Click", "A" or "Cross"), so a hint and a rebinding screen never disagree. A pad button is named by `BindingSettings::pad_style`, the one setting that says "A", "Cross" or "B".
 - **A prompt is an action with two inputs.** `Prompt { keyboard, pad }` is the prompt's state. `Prompt::SELECT` is Enter and the pad's South button and `Prompt::BACK` is Escape and the pad's East button: the inputs the crate itself acts on (Space selects too; the prompt names one). For an action of your own, `Prompt::new(Binding::Key(KeyCode::KeyI), Binding::Pad(GamepadButton::North))`. A mouse button is a keyboard-side input: `Binding::Mouse(MouseButton::Right)` reads "Right Click".
@@ -28,7 +28,7 @@ fn hints(mut commands: Commands) {
 - **The corner is yours to choose, once.** `prompts()` is `prompts_at(PromptsAnchor::BottomLeft)`; `prompts_at(PromptsAnchor::BottomRight)`, `BottomCenter`, `TopLeft`, `TopCenter` and `TopRight` stand 5% in from the edges they touch (a centred one is `left: 50%` pulled back by half its own width, so it stays its content's width), no wider than 90% of the parent. Xbox's guideline 112 asks that the hints stay in one place and order, not that the place be the bottom-left, so pick the anchor your HUD leaves free and give every legend, a dialog's too, the same one. `PromptsAnchor` is a component: insert another on a live legend and it moves in that frame, writing nothing while it stays. Epic's Common UI leaves its action bar's place to the host in the same way.
 - **A game that rebinds keeps the hint true.** `Prompt` is a component: set it from the `ValueChange<Binding>` of a `binding` row and the keycap follows in the same frame, in the same entity.
 
-![The gallery's legend "Enter Select, Esc Back" standing bottom-left, then moving through bottom-centre, bottom-right, top-left, top-centre, top-right and back, each 5% in from the edges it touches](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/prompts-anchor.gif)
+![The gallery's legend "Enter Select, Esc Back" standing bottom-left, then moving through bottom-centre, bottom-right, top-left, top-centre, top-right and back, each 5% in from the edges it touches](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/prompts-anchor.gif)
 
 ```rust
 // `InventoryHint` is your own marker on the prompt for the inventory.

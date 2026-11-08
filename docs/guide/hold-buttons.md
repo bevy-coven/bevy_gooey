@@ -16,7 +16,7 @@ fn delete_button(mut commands: Commands) {
 }
 ```
 
-![The hold example: a Save slot 2 panel with a Hold to confirm row (Normal), a Hold to delete button with an empty bar under its label, a Keep the save button and the line "Nothing deleted yet". Enter held for two thirds of a second fills the bar to about half and letting go empties it; Enter held on again fills it across, the line reads "Deleted: 1" and the bar stays full until Enter is let go. Up and Right twice turn the Hold to confirm row to Short and then Tap; a tap of Enter on the button then reads "Deleted: 2" with no bar filled](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/hold.gif)
+![The hold example: a Save slot 2 panel with a Hold to confirm row (Normal), a Hold to delete button with an empty bar under its label, a Keep the save button and the line "Nothing deleted yet". Enter held for two thirds of a second fills the bar to about half and letting go empties it; Enter held on again fills it across, the line reads "Deleted: 1" and the bar stays full until Enter is let go. Up and Right twice turn the Hold to confirm row to Short and then Tap; a tap of Enter on the button then reads "Deleted: 2" with no bar filled](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/hold.gif)
 
 *`examples/hold`: the button, the setting row that edits `HoldSettings`, and a key held and tapped.*
 
@@ -67,4 +67,4 @@ Use a hold for what cannot be undone and is rare. A hold costs a second every ti
 anything the player does often.
 
 The maths (`model::hold_seconds`, `model::hold_step`) is engine-free. Research:
-[`docs/research/hold-button.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/research/hold-button.md).
+[`docs/research/hold-button.md`](https://github.com/dark-incorporated/bevy_gooey/blob/main/docs/research/hold-button.md).

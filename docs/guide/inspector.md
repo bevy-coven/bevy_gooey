@@ -35,7 +35,7 @@ fn editor(mut commands: Commands, turret: Entity) {
 }
 ```
 
-![The inspector example: a Turret panel with an Online switch, a Mode choice, a Rate number field, an Aim vector, a Tint colour field and a Barrel section; edits made with the keys show in a readout beside it as the game sees them, and a field's doc comment is its tooltip](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/inspector.gif)
+![The inspector example: a Turret panel with an Online switch, a Mode choice, a Rate number field, an Aim vector, a Tint colour field and a Barrel section; edits made with the keys show in a readout beside it as the game sees them, and a field's doc comment is its tooltip](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/inspector.gif)
 
 - **The target** is `InspectTarget::component::<T>(entity)` or `InspectTarget::resource::<T>()`. The type is registered for reflection with `#[reflect(Component)]` (or `#[reflect(Resource)]`); one that is not shows a line saying so instead of a panel.
 - **One widget per field**: `bool` is a `toggle`; an enum whose variants all carry nothing is a `choice`; `f32`, `f64` and the integers are a `number_field` (an integer stays an integer: a typed 5.7 is 6); `Vec2`, `Vec3` and `Vec4` a `vec_field`; `Srgba` and `Color` a `color_field`; `String` a `text_input`; a struct or tuple struct a `section` of its fields (open at first, and its state kept across a rebuilt inspector by a `SectionId` of the type and field path). Anything else (an `Option`, a `Vec`, a map, an enum with data) is a line `Name: {value:?}` that follows the value. A field is labelled with its name (`max_speed` is "Max speed").

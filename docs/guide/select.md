@@ -15,7 +15,7 @@ fn language(mut commands: Commands) {
 }
 ```
 
-![The tools example: the Language select with Enter on it opening a list of twelve options, the typed "po" narrowing it to Polski and Portugues, Enter choosing Polski](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tools.gif)
+![The tools example: the Language select with Enter on it opening a list of twelve options, the typed "po" narrowing it to Polski and Portugues, Enter choosing Polski](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/tools.gif)
 
 - **The row** looks and steps like a choice (a label, the chosen option between two arrows; Left, Right, Home and End and the D-pad step it, the arrows click) and its state is the same `ChoiceValue`. `select(..)` carries a `Select` component with the option strings; with more than `SELECT_FILTER_ABOVE` (8) of them, Enter, Space, South or a click on the row opens the list instead of cycling.
 - **Typing a name** on a select of eight options or fewer steps it to the next option starting with what was typed within a second (one `ValueChange<usize>`, as a step); on a select that filters, typing does nothing until its list is open, where typing narrows it.

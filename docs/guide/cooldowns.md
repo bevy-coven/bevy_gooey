@@ -25,7 +25,7 @@ fn hotbar(mut commands: Commands) {
 }
 ```
 
-![The hotbar example: four 80 px slots with a torch, a gem, an arrow and a flask. Fireball, Frost nova, Dash and Heal are cast one after another; each slot dims, a clear wedge opens clockwise from twelve o'clock with a thin light hand at its edge, the seconds left (whole seconds, then tenths in the last three) stand on a small dark chip in the middle, and the slot is plain again when its time is up, the line under the bar reading "Dash ready", "Frost nova ready"](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/cooldown.gif)
+![The hotbar example: four 80 px slots with a torch, a gem, an arrow and a flask. Fireball, Frost nova, Dash and Heal are cast one after another; each slot dims, a clear wedge opens clockwise from twelve o'clock with a thin light hand at its edge, the seconds left (whole seconds, then tenths in the last three) stand on a small dark chip in the middle, and the slot is plain again when its time is up, the line under the bar reading "Dash ready", "Frost nova ready"](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/cooldown.gif)
 
 *`examples/hotbar`: four abilities in a `slot_grid`, each cell carrying a `Cooldown`.*
 
@@ -69,4 +69,4 @@ fn arm_cells(mut commands: Commands, cells: Query<Entity, Added<SlotRef>>) {
 used. A cooldown belongs to the cell, not the item: a game that lets the player reorder the bar moves the
 timer with the item.
 
-Research: [`docs/research/cooldown.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/research/cooldown.md).
+Research: [`docs/research/cooldown.md`](https://github.com/dark-incorporated/bevy_gooey/blob/main/docs/research/cooldown.md).

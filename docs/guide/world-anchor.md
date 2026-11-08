@@ -14,7 +14,7 @@ fn health_bar(mut commands: Commands, enemy: Entity) {
 }
 ```
 
-![The world example: five wandering enemies each with its name and a health bar standing above it while the camera sweeps right and back; a Camp panel stays on the screen's right edge with an arrow pointing right until the yellow camp comes into view, then stands over it with no arrow, and leaves to the edge again when the camera sweeps back](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/world-anchor.gif)
+![The world example: five wandering enemies each with its name and a health bar standing above it while the camera sweeps right and back; a Camp panel stays on the screen's right edge with an arrow pointing right until the yellow camp comes into view, then stands over it with no arrow, and leaves to the edge again when the camera sweeps back](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/world-anchor.gif)
 
 *`examples/world`: nameplates over moving enemies and a camp beacon pinned to the screen's edge.*
 
@@ -62,4 +62,4 @@ insert `Display::None`, from the distance to the camera).
 
 The maths is `model::{pin_to_edge, box_outside}`, engine-free.
 
-Research: [`docs/research/world-anchor.md`](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/research/world-anchor.md).
+Research: [`docs/research/world-anchor.md`](https://github.com/dark-incorporated/bevy_gooey/blob/main/docs/research/world-anchor.md).

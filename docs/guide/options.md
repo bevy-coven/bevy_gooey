@@ -50,10 +50,10 @@ WCAG asks that a resize offering steps between 100% and 200% have "no loss of co
 
 `cargo run --example options` is the whole screen, four rows and the legend, with the capture knobs the gallery has (`GOOEY_KEYS=right,right,right` is three steps on Text size, `GOOEY_SKIN=high_contrast` starts in high contrast).
 
-![The options screen: the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with it, back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to the pad's, and Controller steps to PlayStation (the legend reads Cross Select, Circle Back), to Switch and back to Xbox; Theme steps to Parchment and to High contrast, where the screen turns black with white frames, and back to Dark](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/options.gif)
+![The options screen: the ring on Text size steps 100%, 125%, 150% and 200% and the panel and the legend grow with it, back to 100%; Interface size steps to 125% and 150% and back; a pad button turns the legend to the pad's, and Controller steps to PlayStation (the legend reads Cross Select, Circle Back), to Switch and back to Xbox; Theme steps to Parchment and to High contrast, where the screen turns black with white frames, and back to Dark](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/options.gif)
 
 *The four rows in `examples/options`: the whole screen answers each step the frame it is made.*
 
-![The gallery's settings panel, Load game list and legend: Theme steps from Dark to Parchment to High contrast, where every widget turns black with white frames, amber fills and a cyan ring, and back; nothing moves](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/theme.gif)
+![The gallery's settings panel, Load game list and legend: Theme steps from Dark to Parchment to High contrast, where every widget turns black with white frames, amber fills and a cyan ring, and back; nothing moves](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/theme.gif)
 
 *Theme in the gallery's Display page: `skin_preset("Theme")`, one line, restyles every widget on screen.*

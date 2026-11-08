@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.97.1"
 description = "Game interfaces made easy for Bevy: a skin, ready-made game widgets (buttons, panels, menus, HUD meters, tooltips, modal dialogs) and keyboard and gamepad navigation, on Bevy's own headless widgets."
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/bevy-coven/bevy_gooey"
+repository = "https://github.com/dark-incorporated/bevy_gooey"
 keywords = ["bevy", "gamedev", "ui", "gui", "widgets"]
 categories = ["game-development", "gui"]
 # `docs/` holds the gallery still and the research notes, so it is out of the package; the README is
@@ -22,7 +22,7 @@ path = "tests/all.rs"
 [features]
 default = []
 # `serde` derives on `GooeySkin`, `UiScaleSettings` and `Meter`, and Bevy's own `serialize` for `Color`: a
-# project saves its skin and scale as data and an editor (bevy_grimoire's family host) edits them live.
+# project saves its skin and scale as data and an editor (bevy_dark_factory's family host) edits them live.
 serde = ["dep:serde", "bevy/serialize"]
 # `inspector(InspectTarget)`: a column of a reflected component's or resource's fields, each the widget of
 # its type, written back through `ReflectMut`. Also turns on Bevy's `reflect_documentation`, so a field's

@@ -32,7 +32,7 @@ fn setup(mut commands: Commands) {
 }
 ```
 
-![The menus example: a bar with File, Edit, View and Help; F10 puts the ring on File, Down opens its menu with the ring on New and the chords Ctrl+N, Ctrl+O and Ctrl+S in a column at the right, Down twice reaches Recent and Right opens its submenu, Left closes it, Right on Save walks to Edit's menu where the disabled Redo shows "Nothing to redo", and Escape closes it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/menus.gif)
+![The menus example: a bar with File, Edit, View and Help; F10 puts the ring on File, Down opens its menu with the ring on New and the chords Ctrl+N, Ctrl+O and Ctrl+S in a column at the right, Down twice reaches Recent and Right opens its submenu, Left closes it, Right on Save walks to Edit's menu where the disabled Redo shows "Nothing to redo", and Escape closes it](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/menus.gif)
 
 *`examples/menus`: F10, Down, Right into a submenu, Left, Right across the bar to Edit, the reason on a disabled item, Escape.*
 

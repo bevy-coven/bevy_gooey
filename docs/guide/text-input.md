@@ -55,7 +55,7 @@ commands.spawn((
 ));
 ```
 
-![The workspace example's Inspector: focus is on the Notes field (five lines high, a caret at the end of "Walls hold the roof up."); Enter starts lines "Doors open." and "Lamps hang.", the line under it counts "Editing, 3 lines."; Ctrl+Enter ends the edit and it says "Saved 3 lines." with the field's frame back to the outline](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/text-area.gif)
+![The workspace example's Inspector: focus is on the Notes field (five lines high, a caret at the end of "Walls hold the roof up."); Enter starts lines "Doors open." and "Lamps hang.", the line under it counts "Editing, 3 lines."; Ctrl+Enter ends the edit and it says "Saved 3 lines." with the field's frame back to the outline](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/text-area.gif)
 
 - **Enter adds a line** (Bevy's `allow_newlines`); **Ctrl+Enter or Cmd+Enter ends the edit**: one final `ValueChange<String>` with the text as it stands, the field kept. Either chord works on every platform.
 - **Up and Down are the caret's** (a line up or down): the arrow keys never move focus out of an area. The D-pad still does (a pad has no caret), Tab leaves, and Escape blurs, so the field never traps the keyboard (WCAG 2.1.2).

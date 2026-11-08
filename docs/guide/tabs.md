@@ -24,7 +24,7 @@ fn settings(mut commands: Commands) {
 }
 ```
 
-![The gallery's settings panel in 4.7 s: the ring moves from Quit onto the lit Audio tab; Right turns to Display (the Quality and Window choices), Right again to Controls (the Jump and Use rebinding rows) and Right once more wraps to Audio; Down enters the page on the Volume slider; Ctrl+PageDown turns to Display with the ring landing on Quality, again to Controls with the ring on Jump, and Ctrl+PageUp back to Display](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/tabs.gif)
+![The gallery's settings panel in 4.7 s: the ring moves from Quit onto the lit Audio tab; Right turns to Display (the Quality and Window choices), Right again to Controls (the Jump and Use rebinding rows) and Right once more wraps to Audio; Down enters the page on the Volume slider; Ctrl+PageDown turns to Display with the ring landing on Quality, again to Controls with the ring on Jump, and Ctrl+PageUp back to Display](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/tabs.gif)
 
 *`examples/gallery`: the three tabs of its settings, turned by Right on a focused tab and by the bumper's keys from inside a page. The panel never changes size.*
 

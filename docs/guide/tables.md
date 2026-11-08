@@ -22,7 +22,7 @@ fn inventory(mut commands: Commands) {
 }
 ```
 
-![The table example: an inventory of ten thousand rows; a click on the Qty header sorts it (a chevron says which way), a click selects a row, the arrows move the ring, End goes to the last row of the data, a column edge is dragged, and the Name header sorts](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/table.gif)
+![The table example: an inventory of ten thousand rows; a click on the Qty header sorts it (a chevron says which way), a click selects a row, the arrows move the ring, End goes to the last row of the data, a column edge is dragged, and the Name header sorts](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/table.gif)
 
 - **The rows are yours.** A `RowSource` is `len`, `cell(row, column) -> Cow<str>` and, if you need them, `key(row)` (the row's identity, its index by default) and `compare(column, a, b)` (the order, the cells' text in natural order by default: "Item 2" before "Item 10"). `Vec<Vec<String>>` is one. The table asks for what is in view and keeps no copy.
 - **Virtualized.** Every row is one height (a button's, `GooeySkin::table_pitch`), so the table needs no measuring: the viewport is as tall as all the rows, the rows in view and one more are real entities, and the rest are the room above and below them. However the table scrolls it has at most `rows in view + 2` row entities (`TableRows`, 8.5 by default: `(table(..), TableRows(12.0))`). A cell is one line, cut at its column.

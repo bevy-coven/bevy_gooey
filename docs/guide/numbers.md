@@ -19,7 +19,7 @@ fn inspector(mut commands: Commands) {
 }
 ```
 
-![The numbers example: a Position row of three fields, a Scale row whose Y is a muted "--", Health, Speed and Mass fields; the numbers are scrubbed, typed, refused and stepped](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/numbers.gif)
+![The numbers example: a Position row of three fields, a Scale row whose Y is a muted "--", Health, Speed and Mass fields; the numbers are scrubbed, typed, refused and stepped](https://raw.githubusercontent.com/dark-incorporated/bevy_gooey/main/docs/media/numbers.gif)
 
 - **The state** is `NumberValue(f32)` on the row, with `NumberStep(f32)` and `NumberRange { min, max }` beside it; read it, or write it from code and the field shows it in the same frame with no event coming back. The row is also a `text_input` row, so its `TextInputValue` and `TextEditing` are there for the host (`is_text_editing` keeps a game's hotkeys quiet while the player types a number).
 - **The event** is `ValueChange<f32>` on the row, once per change the player makes: `is_final` is false while a drag is still rolling the number and true when it ends, on Enter, when focus leaves after an edit, and for each key or D-pad step. A `vec_field` sends `VecChange { index, value, values, is_final }` on its row instead (the component that changed and the whole vector), and keeps `VecValue(Vec<f32>)`.
