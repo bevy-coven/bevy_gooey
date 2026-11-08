@@ -13,7 +13,9 @@
 //! `GOOEY_KEYS=tab,right,…` stages one step every `GOOEY_KEY_EVERY` (default 10) frames from frame
 //! 30: `tab`, `up`, `down`, `left`, `right`, `home`, `end`, `enter` as real keyboard input, and a
 //! drag of a divider with the pointer, spread over the step's frames: `drag:<dx>,<dy>` for the
-//! sidebar's divider and `dragv:<dx>,<dy>` for the log's, in layout px; with a drag in it the
+//! sidebar's divider and `dragv:<dx>,<dy>` for the log's, in layout px, and `hover` and `away` move the
+//! pointer onto the sidebar's divider and off it (a collapsed sidebar peeks while it rests there), plus
+//! `escape`; with a drag in it the
 //! steps are separated by `;`, as in `GOOEY_KEYS='drag:120,0;tab;right'`.
 
 use bevy::camera::NormalizedRenderTarget;
@@ -32,6 +34,10 @@ enum Step {
     Key(KeyCode),
     /// A drag of the divider of this axis by this much, in layout px.
     Drag(SplitAxis, Vec2),
+    /// The pointer onto the sidebar's divider and left there (a collapsed sidebar peeks).
+    Hover,
+    /// The pointer to the bottom right corner, off every divider.
+    Away,
 }
 
 /// Capture mode's state, present only when `GOOEY_FRAMES` is set.
@@ -129,6 +135,11 @@ fn steps_of(text: &str) -> Vec<Step> {
         .into_iter()
         .filter_map(|word| {
             let word = word.trim();
+            match word {
+                "hover" => return Some(Step::Hover),
+                "away" => return Some(Step::Away),
+                _ => {}
+            }
             if let Some(by) = word.strip_prefix("drag:") {
                 return Some(Step::Drag(SplitAxis::Horizontal, pair(by)?));
             }
@@ -144,6 +155,7 @@ fn steps_of(text: &str) -> Vec<Step> {
                 "home" => KeyCode::Home,
                 "end" => KeyCode::End,
                 "enter" => KeyCode::Enter,
+                "escape" => KeyCode::Escape,
                 _ => return None,
             }))
         })
@@ -322,6 +334,31 @@ fn stage(
                 repeat: false,
                 window,
             });
+        }
+        Step::Hover | Step::Away => {
+            if phase != 0 {
+                return;
+            }
+            let Some(target) = WindowRef::Entity(window).normalize(None) else {
+                return;
+            };
+            let position = match step {
+                Step::Hover => dividers
+                    .iter()
+                    .find(|(d, ..)| d.axis() == SplitAxis::Horizontal)
+                    .map_or(Vec2::ZERO, |(_, _, at)| {
+                        at.translation / props.scale_factor()
+                    }),
+                _ => Vec2::new(1100.0, 650.0) * ui_scale.0,
+            };
+            pointer.write(PointerInput::new(
+                PointerId::Mouse,
+                Location {
+                    target: NormalizedRenderTarget::Window(target),
+                    position,
+                },
+                PointerAction::Move { delta: Vec2::ZERO },
+            ));
         }
         Step::Drag(axis, by) => {
             let Some(target) = WindowRef::Entity(window).normalize(None) else {
