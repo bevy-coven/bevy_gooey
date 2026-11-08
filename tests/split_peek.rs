@@ -13,7 +13,7 @@ use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
 use bevy::time::TimeUpdateStrategy;
-use bevy::ui::{ComputedNode, UiGlobalTransform};
+use bevy::ui::{BoxShadow, ComputedNode, UiGlobalTransform};
 use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
 use bevy_gooey::*;
@@ -247,6 +247,20 @@ fn the_pointer_resting_on_the_collapsed_edge_floats_the_pane_over_the_second_pan
         "{during:?} against {before:?}"
     );
     assert!(app.world().get::<SplitSaved>(rig.split).is_some());
+    // The floating pane is opaque (the second pane's words must not show through it) and casts a
+    // shadow; its divider stands on its far edge.
+    let fill = app
+        .world()
+        .get::<BackgroundColor>(rig.first)
+        .expect("a fill while it floats")
+        .0;
+    assert_eq!(Srgba::from(fill).alpha, 1.0);
+    assert!(app.world().get::<BoxShadow>(rig.first).is_some());
+    let (pane, bar) = (rect(&app, rig.first), rect(&app, rig.divider));
+    assert!(
+        (bar.min.x - pane.max.x).abs() < 1.5,
+        "the divider is on the pane's far edge"
+    );
 }
 
 #[test]

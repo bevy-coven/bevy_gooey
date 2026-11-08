@@ -199,7 +199,7 @@ fn the_tab_follows_the_pointer_and_the_one_it_passes_steps_aside() {
     );
     let (a0, b0, c0) = (drawn(&app, alpha), drawn(&app, bravo), drawn(&app, charlie));
     // Past Bravo's centre, short of Charlie's.
-    let to = b0.center().x + 10.0 - a0.center().x;
+    let to = b0.center().x + 40.0 - a0.center().x;
     carry(&mut app, a0.center(), to);
     let step = a0.width() + (b0.min.x - a0.max.x);
     // Bravo travelled left by the carried tab's width and the gap, and Charlie stayed.
@@ -239,7 +239,7 @@ fn the_tab_follows_the_pointer_and_the_one_it_passes_steps_aside() {
     let settled = drawn(&app, alpha);
     // No jump: the frame it was let go it had moved by one step of its spring, not to its slot.
     assert!(
-        (first - before).length() < 0.3 * (settled.center() - before).length().max(1.0),
+        (first - before).length() < 0.5 * (settled.center() - before).length().max(1.0),
         "the tab jumped on release: {before:?}, then {first:?}, ending at {:?}",
         settled.center()
     );

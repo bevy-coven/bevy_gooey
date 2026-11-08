@@ -15,7 +15,7 @@ use bevy::ui::{BoxShadow, ComputedNode, InteractionDisabled, UiTransform};
 use crate::elevation::ElevationLevel;
 use crate::model::{split_clamp, split_mins};
 use crate::motion::{MotionSettings, MotionTarget, MotionToken, MotionTrack};
-use crate::presence::Arriving;
+use crate::presence::{Arriving, Opacity};
 use crate::size_motion::SplitGlide;
 use crate::skin::{GooeySkin, Role};
 use crate::split::{Split, SplitAxis, SplitFraction, SplitMin, SplitSaved};
@@ -144,7 +144,7 @@ pub fn update_split_peeks(
     mut commands: Commands,
     mut splits: Query<Peeked>,
     parts: Query<PartRead>,
-    mut shadows: Query<&mut BoxShadow>,
+    mut floating: Query<(&mut BoxShadow, &mut BackgroundColor, Option<&Opacity>)>,
 ) {
     let settings = settings.map_or_else(SplitPeekSettings::default, |s| *s);
     let delta = time.as_ref().map_or(f32::INFINITY, |t| t.delta_secs());
@@ -293,8 +293,15 @@ pub fn update_split_peeks(
         }
         // The floating pane's shadow rises with the slide (or the fade) that brings it in.
         if peek.is_open()
-            && let Ok(mut shadow) = shadows.get_mut(pane)
+            && let Ok((mut shadow, mut fill, faded)) = floating.get_mut(pane)
         {
+            // Opaque, so the second pane's words do not show through a floating one; faded in with
+            // the pane under reduced motion.
+            let solid = Srgba::from(skin.solid_surface());
+            let own = faded.map_or(1.0, Opacity::factor);
+            fill.set_if_neq(BackgroundColor(Color::from(
+                solid.with_alpha(solid.alpha * own),
+            )));
             let progress = match (split.axis(), pane_transform.translation) {
                 (SplitAxis::Horizontal, t) => px(t.x),
                 (SplitAxis::Vertical, t) => px(t.y),
@@ -378,7 +385,11 @@ fn open(
     }
     let mut pane = commands.entity(pane);
     if fresh {
-        pane.insert((ZIndex(1), BoxShadow::default()));
+        pane.insert((
+            ZIndex(1),
+            BoxShadow::default(),
+            BackgroundColor(Color::NONE),
+        ));
     }
     if motion.reduced && !motion.is_off() {
         if fresh {
@@ -424,6 +435,13 @@ fn release(commands: &mut Commands, pane: Entity, divider: Entity) {
     commands.entity(divider).remove::<ZIndex>();
     commands
         .entity(pane)
-        .remove::<(MotionTarget, MotionTrack, ZIndex, BoxShadow, Arriving)>()
+        .remove::<(
+            MotionTarget,
+            MotionTrack,
+            ZIndex,
+            BoxShadow,
+            BackgroundColor,
+            Arriving,
+        )>()
         .insert(UiTransform::default());
 }

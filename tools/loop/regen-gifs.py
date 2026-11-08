@@ -9,7 +9,7 @@ one by its frames (downscaled, grey) and replaces the committed file only when i
 than noise: a different number of frames, or a mean difference above `--threshold` grey levels. A
 rewrite of byte-different but identical-looking GIFs would add tens of MB to the repository every pass.
 
-    cargo build --release --examples
+    cargo build --release --examples --all-features   # the inspector example needs `reflect`
     python3 tools/loop/regen-gifs.py            # every GIF
     python3 tools/loop/regen-gifs.py split tabs # only these
     python3 tools/loop/regen-gifs.py --dry-run  # record and compare, change nothing
@@ -32,7 +32,7 @@ FRAMES_MAX = 400
 
 
 def rows():
-    """(name, run command, encode command) for each GIF row of the media list."""
+    """(name, run command, encode command, crop, frame range) for each GIF row of the media list."""
     for line in (MEDIA / "README.md").read_text().splitlines():
         m = re.match(r"\| `([^`]+\.gif)` \|", line)
         if not m:
@@ -43,8 +43,13 @@ def rows():
         spans = re.findall(r"`([^`]+)`", cells[2])
         run = next((s for s in spans if "cargo run" in s), None)
         encode = next((s for s in spans if s.startswith("ffmpeg")), None)
+        # A row that crops each kept frame first says so in its words: "-crop WxH+X+Y" or "crops each
+        # frame to WxH+X+Y", and may use only a range of frames ("over frames 29 to 68").
+        crop = re.search(r"(?:-crop |crops each frame to )(\d+[x×]\d+\+\d+\+\d+)", cells[2])
+        span = re.search(r"over frames (\d+) to (\d+)", cells[2])
         if run and encode:
-            yield m.group(1), run, encode
+            yield m.group(1), run, encode, crop and crop.group(1), span and (
+                int(span.group(1)), int(span.group(2)))
 
 
 def target_dir():
@@ -82,7 +87,7 @@ def difference(old, new):
     return abs(len(old) - len(new)), total / n
 
 
-def record(name, run, encode, binaries, scratch):
+def record(name, run, encode, crop, span, binaries, scratch):
     """Runs the capture and the encode into `scratch`; returns the new GIF's path."""
     example = re.search(r"--example (\w+)", run).group(1)
     exe = binaries / example
@@ -104,6 +109,19 @@ def record(name, run, encode, binaries, scratch):
     out = work / name
     encode_cmd = local(encode).replace(f"docs/media/{name}", str(out)).replace(
         "ffmpeg ", "ffmpeg -loglevel error -y ", 1)
+    if crop:
+        # The frames the capture kept, cropped (and only the range the row names) into one directory
+        # the encode reads from.
+        shots = re.search(r"GOOEY_SHOT_DIR=(\S+)", run_cmd).group(1)
+        cropped = work / "crop"
+        cropped.mkdir(exist_ok=True)
+        frames = sorted(Path(shots).glob("f_*.png"))
+        for number, frame in enumerate(frames, start=1):
+            if span and not span[0] <= number <= span[1]:
+                continue
+            subprocess.run(["magick", str(frame), "-crop", crop.replace("×", "x"), "+repage",
+                            str(cropped / frame.name)], check=True)
+        encode_cmd = re.sub(r"-i '[^']*f_\*\.png'", f"-i '{cropped}/f_*.png'", encode_cmd)
     result = subprocess.run(["bash", "-c", encode_cmd], cwd=ROOT, capture_output=True, text=True,
                             timeout=300)
     if result.returncode != 0 or not out.exists():
@@ -126,11 +144,11 @@ def main():
     wanted = {n.removesuffix(".gif") + ".gif" for n in args.names}
     status = {}
     try:
-        for name, run, encode in rows():
+        for name, run, encode, crop, span in rows():
             if wanted and name not in wanted:
                 continue
             try:
-                new = record(name, run, encode, binaries, scratch)
+                new = record(name, run, encode, crop, span, binaries, scratch)
                 old = MEDIA / name
                 frames, mean = difference(thumbs(old) if old.exists() else [], thumbs(new))
                 if frames > 2 or mean > args.threshold:

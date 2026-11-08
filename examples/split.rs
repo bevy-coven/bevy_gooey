@@ -1,8 +1,8 @@
 //! Split panes: a sidebar beside a viewport with a log under it, two dividers. Drag a divider, or
 //! Tab to one and use the arrows (along its axis), Home, End and Enter; the D-pad and South do the
 //! same on a pad, and a double click collapses the sidebar to its minimum and gives it back. Rest
-//! the pointer on a collapsed sidebar's edge and it peeks over the viewport. The sidebar keeps 56 px and
-//! the viewport 360 px however small the window gets.
+//! the pointer on a collapsed sidebar's edge and it peeks over the viewport. The sidebar closes completely and
+//! the viewport keeps 360 px however small the window gets.
 //!
 //! Run `cargo run --release --example split`.
 //!
@@ -223,7 +223,7 @@ fn setup(mut commands: Commands) {
                     ),
                 ),
                 SplitFraction(0.3),
-                SplitMin::new(56.0, 360.0),
+                SplitMin::new(0.0, 360.0),
             )],
         )],
     ));
