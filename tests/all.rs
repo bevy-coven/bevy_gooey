@@ -42,6 +42,7 @@ mod leaf;
 mod lines;
 mod list;
 mod menu;
+mod menu_exit;
 mod meter;
 mod meter_motion;
 mod motion;

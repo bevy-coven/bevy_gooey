@@ -10,6 +10,7 @@ use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::Pickable;
 use bevy::prelude::*;
 
+use crate::menu::MenuPanel;
 use crate::model::{Spring, SpringState, spring_settled, spring_step};
 use crate::nav::Dialog;
 use crate::popover::PopoverPanel;
@@ -271,6 +272,7 @@ type Starting = (
     Option<&'static Dialog>,
     Option<&'static TabGroup>,
     Has<Arriving>,
+    Has<MenuPanel>,
 );
 
 /// What an exit reads of one node of its subtree.
@@ -305,9 +307,17 @@ pub fn begin_leaves(
     }
     let spring = Spring::new(skin.motion.fade_seconds, 0.0).ok();
     let instant = motion.is_off() || spring.is_none();
-    for (entity, own, dialog, group, arriving) in &starting {
+    for (entity, own, dialog, group, arriving, menu_panel) in &starting {
         if instant {
-            commands.entity(entity).try_despawn();
+            // A menu's panel is there for the next opening: it goes out of sight, not out of the
+            // world.
+            if menu_panel {
+                commands.queue(move |world: &mut bevy::ecs::world::World| {
+                    hide_menu_panel(world, entity)
+                });
+            } else {
+                commands.entity(entity).try_despawn();
+            }
             continue;
         }
         let mut subtree: Vec<Entity> = std::iter::once(entity)
@@ -422,6 +432,7 @@ type Exiting = (
     &'static mut Leaving,
     &'static mut Opacity,
     Option<&'static Visibility>,
+    Has<MenuPanel>,
 );
 
 /// Steps every [`Leaving`] fade on real time, writes its [`Opacity`], and despawns the node the frame
@@ -442,7 +453,7 @@ pub fn update_presence(
     }
     let delta = time.as_ref().map_or(0.0, |time| time.delta_secs());
     let off = motion.is_off() || time.is_none();
-    for (entity, mut exit, mut opacity, visibility) in &mut exiting {
+    for (entity, mut exit, mut opacity, visibility, menu_panel) in &mut exiting {
         // A hidden node's fade waits: a popover is drawn a frame after it is spawned.
         let spring = Spring::new(
             skin_of(&skin, entity, &scopes, &parents)
@@ -464,7 +475,37 @@ pub fn update_presence(
         let landed = waiting
             || spring.is_some_and(|spring| spring_settled(spring, next, goal, PRESENCE_GONE));
         if goal <= 0.0 && landed {
-            commands.entity(entity).try_despawn();
+            if menu_panel {
+                // A menu's panel stays for its next opening: everything the exit took off it is
+                // put back, and it goes out of sight.
+                for pose in std::mem::take(&mut exit.poses) {
+                    let mut node = commands.entity(pose.entity);
+                    match pose.pickable {
+                        Some(pickable) => node.insert(pickable),
+                        None => node.remove::<Pickable>(),
+                    };
+                    if let Some(tab) = pose.tab {
+                        node.insert(tab);
+                    }
+                }
+                let own = exit.own.take();
+                commands.entity(entity).remove::<(Leaving, Stay)>();
+                match own {
+                    Some(own) => {
+                        if *opacity != own {
+                            *opacity = own;
+                        }
+                    }
+                    None => {
+                        commands.entity(entity).remove::<Opacity>();
+                    }
+                }
+                commands.queue(move |world: &mut bevy::ecs::world::World| {
+                    hide_menu_panel(world, entity)
+                });
+            } else {
+                commands.entity(entity).try_despawn();
+            }
             continue;
         }
         if goal > 0.0 && landed {
@@ -561,3 +602,16 @@ pub fn update_arrivals(
 /// How far short of a fade's length its summed frame times may fall and still be at its end, in
 /// seconds: `f32` noise on a sum of frames, far under a frame.
 const ARRIVAL_END_SLACK_SECONDS: f32 = 1.0e-5;
+
+/// Takes a menu's panel out of sight once its exit is over (or at once, with no motion): hidden, not
+/// laid out, ready for the next opening.
+pub(crate) fn hide_menu_panel(world: &mut bevy::ecs::world::World, panel: Entity) {
+    if let Ok(mut entity) = world.get_entity_mut(panel) {
+        entity.insert(Visibility::Hidden);
+        if let Some(mut node) = entity.get_mut::<Node>()
+            && node.display != Display::None
+        {
+            node.display = Display::None;
+        }
+    }
+}

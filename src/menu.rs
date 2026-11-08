@@ -367,6 +367,9 @@ pub(crate) fn show_menu(world: &mut World, panel: Entity, anchor: Entity, placem
     sync_nothing(world, panel);
     sync_marks(world, panel);
     let mut entity = world.entity_mut(panel);
+    // A menu reopened while it is still fading out comes back where it stands: the exit turns
+    // round (`Stay`) and the panel is not hidden for the frame it takes to draw it again.
+    let leaving = entity.contains::<crate::Leaving>();
     entity.insert((
         PopoverPanel::menu(anchor, placement),
         Dialog::default(),
@@ -374,8 +377,12 @@ pub(crate) fn show_menu(world: &mut World, panel: Entity, anchor: Entity, placem
             order: 0,
             modal: true,
         },
-        Visibility::Hidden,
     ));
+    if leaving {
+        entity.insert(crate::Stay);
+    } else {
+        entity.insert(Visibility::Hidden);
+    }
     if let Some(mut node) = entity.get_mut::<Node>() {
         node.display = Display::Flex;
     }
@@ -392,15 +399,29 @@ pub(crate) fn close_menu(world: &mut World, panel: Entity) {
         }
     }
     let anchor = anchor_of(world, panel);
+    // A drawn menu fades out where it stands (presence) and goes out of sight when the fade ends;
+    // one never drawn, a context menu (which becomes a root again here) and every menu under no
+    // motion go at once.
+    let fades = world
+        .get_resource::<crate::MotionSettings>()
+        .is_some_and(|motion| !motion.is_off());
     if let Ok(mut entity) = world.get_entity_mut(panel) {
         entity.remove::<(PopoverPanel, Dialog, TabGroup)>();
-        entity.insert(Visibility::Hidden);
-        if let Some(mut node) = entity.get_mut::<Node>() {
-            node.display = Display::None;
-        }
-        // A context menu stands apart from what it was opened beside, so it is a root again.
-        if entity.contains::<ContextTarget>() {
-            entity.remove::<(ContextTarget, ChildOf)>();
+        let drawn = entity.get::<Visibility>() != Some(&Visibility::Hidden)
+            && entity
+                .get::<Node>()
+                .is_some_and(|n| n.display != Display::None);
+        if fades && drawn && !entity.contains::<ContextTarget>() {
+            entity.insert(crate::Leave);
+        } else {
+            entity.insert(Visibility::Hidden);
+            if let Some(mut node) = entity.get_mut::<Node>() {
+                node.display = Display::None;
+            }
+            // A context menu stands apart from what it was opened beside, so it is a root again.
+            if entity.contains::<ContextTarget>() {
+                entity.remove::<(ContextTarget, ChildOf)>();
+            }
         }
     }
     if let Some(anchor) = anchor
