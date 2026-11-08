@@ -45,6 +45,8 @@ fn dock(mut commands: Commands) {
 
 ## A collapsed pane peeks
 
+![The split example: the Library sidebar is collapsed with Enter on its divider, the pointer rests on the divider and the sidebar slides out over the Viewport panel with its shadow (the Viewport does not move), the pointer leaves and it slides back, and Enter on the divider docks it](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/split-peek.gif)
+
 Collapse the first pane (Enter on the divider, South, a double click) and it does not have to be gone: rest the
 pointer on the divider (or the sliver of pane the minimum leaves) for `SplitPeekSettings::delay_seconds` (0.05 s,
 Rune's sidebar peek) and the pane slides out over the second pane as wide as a restore would make it, with the
