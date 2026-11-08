@@ -91,6 +91,7 @@ mod tokens;
 mod tones;
 mod toolbar;
 mod tooltip;
+mod tooltip_cap;
 mod tooltip_delay;
 mod tree;
 mod type_select;

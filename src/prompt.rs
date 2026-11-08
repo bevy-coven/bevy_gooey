@@ -283,8 +283,8 @@ pub fn centre_keycaps(mut caps: Query<(&Role, &mut Node, &ComputedNode, &TextLay
             continue;
         }
         let inner = computed.content_box().size().x;
-        // Positive when the content box is wider than the run: half of that is what the left
-        // padding must give up so the run's own width is what the content box spans.
+        // Positive when the content box is wider than the run: half of that, in logical px, is what
+        // the left padding must give up so the run's own width is what the content box spans.
         let slack = inner - run;
         if slack <= 0.5 {
             continue;
@@ -295,7 +295,11 @@ pub fn centre_keycaps(mut caps: Query<(&Role, &mut Node, &ComputedNode, &TextLay
         let Val::Px(vertical) = node.padding.top else {
             continue;
         };
-        let next = Val::Px(padding + slack / 2.0);
+        // `slack` is in physical pixels and a `Val::Px` in logical ones: at a scale factor of 2 and a
+        // `UiScale` of 1.2 a slack of 10 px is 4.2 logical px, and half of that is the padding. Adding
+        // the physical half widened the cap past its square, which resized the tooltip box that is
+        // sized from the cap, which restyled the cap (#79).
+        let next = Val::Px(padding + slack * computed.inverse_scale_factor() / 2.0);
         if node.padding.left != next {
             node.padding = UiRect::axes(next, Val::Px(vertical));
         }
