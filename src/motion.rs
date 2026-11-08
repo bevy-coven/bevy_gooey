@@ -44,6 +44,7 @@ use crate::toast::{Toast, ToastAnchor, ToastSettings};
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct MotionSettings {
     /// The multiplier on every motion's length. 1 is as designed, 2 half as fast, 0 no motion.
     /// Default: 1.
@@ -361,8 +362,11 @@ fn lane_at_rest(spring: Spring, lane: usize, state: SpringState, target: f32) ->
 /// placement is made of, and [`crate::apply_skin`] writes it, less [`PopoverSlide::reach`]. A
 /// panel that flips to the anchor's other side is moved in the right direction there too. The crate
 /// adds it; a game's own panel uses [`MotionTarget`].
-#[derive(Component, Clone, Debug, PartialEq)]
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct PopoverSlide {
+    #[reflect(ignore)]
     reach: SpringState,
     /// Whether the slide has reached its end: the component is taken off a frame after, so the
     /// restyle for its last value is seen.

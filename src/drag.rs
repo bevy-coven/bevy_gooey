@@ -60,6 +60,7 @@ pub struct DragLabel(pub String);
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct DragSettings {
     /// The chord that lifts the focused source and, while one is carried, puts it down on the
     /// marked target. Default: Alt+M.

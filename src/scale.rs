@@ -31,6 +31,7 @@ use crate::model::window_ui_scale;
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct UiScaleSettings {
     /// The window's shorter side, in logical px, at which the interface is drawn at the skin's own
     /// sizes: 720. A game designed at 1080p sets 1080.

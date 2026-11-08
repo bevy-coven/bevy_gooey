@@ -179,7 +179,9 @@ impl Column {
 ///     }
 /// }
 /// ```
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 #[require(
     TableSort,
     TableSelection,
@@ -190,7 +192,9 @@ impl Column {
     TableCache
 )]
 pub struct Table {
+    #[reflect(ignore)]
     source: Box<dyn RowSource>,
+    #[reflect(ignore)]
     columns: Vec<Column>,
 }
 
@@ -298,7 +302,8 @@ pub enum SelectMode {
 ///     }
 /// }
 /// ```
-#[derive(Component, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TableSelection(pub BTreeSet<u64>);
 
@@ -332,14 +337,16 @@ impl TableSelection {
 /// The row of a [`crate::table`] that keys act on, by [`RowSource::key`]: the row ringed while the
 /// table has focus. Arrows and Page keys move it, Enter opens it ([`RowActivated`]), Space
 /// selects it. A game sets it to move the ring from code.
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TableCursor(pub Option<u64>);
 
 /// The widths of a [`crate::table`]'s columns in body text sizes, as the player has dragged them:
 /// the state a game saves with the player's other settings. A column with no entry has its
 /// [`Column::width`].
-#[derive(Component, Clone, Debug, Default, PartialEq)]
+#[derive(Component, Clone, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TableWidths(pub Vec<f32>);
 
@@ -417,7 +424,8 @@ pub(crate) struct EdgeGrab(f32);
 /// shows, and each is rebound as the table scrolls, so what an entity shows changes: ask this
 /// component which row it is (for a tooltip or a context menu on the row under the pointer), and
 /// never keep the entity.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct TableRow {
     /// The table.
     pub table: Entity,

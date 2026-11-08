@@ -63,7 +63,8 @@ pub struct MoreFor(Entity);
 
 /// On a bar's item that its width has no room for now: it is not laid out (`Display::None`), and
 /// holds the display it comes back with. Query for it to know what a bar has hidden.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct Overflowed {
     display: Display,
 }

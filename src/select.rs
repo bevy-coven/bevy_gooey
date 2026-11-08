@@ -22,7 +22,8 @@ pub(crate) const SELECT_NO_MATCH: &str = "No option matches";
 
 /// The options of a [`crate::select`], as text. Part of what it spawns; the row's value is its
 /// [`ChoiceValue`](crate::ChoiceValue).
-#[derive(Component, Clone, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct Select {
     options: Vec<String>,
 }

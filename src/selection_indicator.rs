@@ -39,11 +39,14 @@ pub struct Indicating(pub bool);
 /// puck, shown only while the puck travels. Part of what those spawn; a game never builds one. Its
 /// fields are its own; the node is the strip's backdrop, and the [`IndicatorPuck`] child is what
 /// moves.
-#[derive(Component, Clone, Debug, Default)]
+#[derive(Component, Clone, Debug, Default, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct SelectionIndicator {
     /// The option the puck last rested on or travelled to.
     lit: Option<Entity>,
     /// Where the puck is drawn now, and how fast each lane is moving.
+    #[reflect(ignore)]
     lanes: [SpringState; LANES],
     /// Where it is heading.
     goal: [f32; LANES],
@@ -68,7 +71,8 @@ impl SelectionIndicator {
 
 /// The accent node that moves inside a [`SelectionIndicator`]'s backdrop. Part of what
 /// [`crate::toggle_group`], [`crate::tabs`] and [`crate::side_tabs`] spawn.
-#[derive(Component, Clone, Copy, Debug, Default)]
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct IndicatorPuck;
 
 /// The bundle of an indicator: a backdrop that is absolute, behind its siblings, clear of the

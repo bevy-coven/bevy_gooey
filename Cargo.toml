@@ -60,7 +60,8 @@ accesskit = "0.24"
 # full umbrella here, where it cannot reach a consumer's dependency graph. `ron` round-trips the skin in
 # tests. `tests/leaf.rs` reads `[dependencies]` only, deliberately.
 [dev-dependencies]
-bevy = { version = "0.20.0" }
+# `debug`: `System::name()` is the full type path only with it, which `tests/machine_plate.rs` matches on.
+bevy = { version = "0.20.0", features = ["debug"] }
 ron = "0.12"
 
 [[example]]

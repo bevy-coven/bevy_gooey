@@ -124,13 +124,16 @@ impl PanelRegistry {
 /// What a dock shows is this layout without the panels it cannot show (unknown or repeated ids), a
 /// group left empty collapsed ([`DockLayout::prune`]); a change the player makes is made to that
 /// and written back here.
-#[derive(Component, Clone, Debug, PartialEq)]
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 #[require(DockShown)]
-pub struct Dock(pub DockLayout);
+pub struct Dock(#[reflect(ignore)] pub DockLayout);
 
 /// The page of a panel, in the dock that shows it: put on the entity [`PanelRegistry::register`]'s
 /// function fills, so a game can find a panel's widgets by its id.
-#[derive(Component, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Component, Clone, Debug, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Component)]
 pub struct DockPanel(pub String);
 
 /// The player changed a [`Dock`]'s layout, by dropping a tab (in a group, beside one, at the

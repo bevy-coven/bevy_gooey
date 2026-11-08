@@ -87,10 +87,14 @@ impl InspectTarget {
 /// An [`inspector`](crate::inspector)'s root: what it edits. The rows are built from the target
 /// the frame this is added and kept in step with it by [`sync_inspectors`]; to inspect something
 /// else, despawn the inspector and spawn another.
-#[derive(Component, Clone, Debug)]
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct Inspector {
     /// What it edits.
+    #[reflect(ignore)]
     pub target: InspectTarget,
+    #[reflect(ignore)]
     rows: Vec<Row>,
     /// The [`InspectMixed`] list [`sync_inspect_mixed`] last put on the rows.
     mixed: Vec<String>,
@@ -130,7 +134,8 @@ pub struct InspectStep(pub f32);
 /// ));
 /// # }
 /// ```
-#[derive(Component, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct InspectMixed(pub Vec<String>);
 
 /// A player's edit, sent on the [`inspector`](crate::inspector) after it was written to the
@@ -147,7 +152,8 @@ pub struct InspectorChange {
 
 /// On each row an inspector builds (not on a section): which inspector it belongs to and which
 /// field it edits.
-#[derive(Component, Clone, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct InspectRow {
     /// The inspector.
     pub inspector: Entity,

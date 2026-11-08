@@ -31,6 +31,7 @@ use crate::split::{Split, SplitAxis, SplitFraction, SplitMin, SplitSaved};
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct SplitPeekSettings {
     /// Whether a collapsed pane peeks at all. Default: true.
     pub enabled: bool,

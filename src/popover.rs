@@ -98,7 +98,8 @@ pub struct PopoverClosed {
 /// The zero-size node at the pointer that a [`Placement::AtPointer`] popover is anchored to: a
 /// child of the popover's anchor, laid out on the window, removed with its popover. A game never
 /// builds one.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct PopoverPoint;
 
 impl PopoverPanel {

@@ -261,6 +261,7 @@ const COMPACT_PADDING: f32 = 0.5;
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct GooeySkin {
     /// Behind everything: a host's clear colour, and what a translucent [`GooeySkin::surface`] is
     /// checked over.

@@ -163,9 +163,12 @@ pub struct SlotGrid {
 /// ));
 /// # }
 /// ```
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct SlotRules {
     /// Whether slot `index` may hold `item`.
+    #[reflect(ignore)]
     pub accepts: fn(&Slot, usize) -> bool,
 }
 

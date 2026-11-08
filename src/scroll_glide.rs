@@ -42,11 +42,14 @@ pub const SCROLL_SPRING_FRACTION: f32 = 1.0 / 3.0;
 /// A scroll gliding to where the crate asked it to go. It is on every [`crate::ListView`] and
 /// holds no goal while the list is at rest. To scroll a list from code and have it glide, call
 /// [`ScrollGlide::go`]; to jump, write the `ScrollPosition`.
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct ScrollGlide {
     /// Where the glide is heading, if it is running.
     goal: Option<f32>,
     /// The scroll the glide shows now, and how fast it is moving.
+    #[reflect(ignore)]
     shown: SpringState,
     /// The scroll the glide last wrote: a `ScrollPosition` that reads otherwise was written by the
     /// wheel, a drag or the game, and that ends the glide.
@@ -193,7 +196,9 @@ pub enum FadeEdge {
 }
 
 /// One edge's overlay, and what it last drew (to write nothing while it is unchanged).
-#[derive(Component, Clone, Debug, PartialEq)]
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct ScrollFade {
     /// The viewport it fades.
     pub view: Entity,
@@ -201,6 +206,7 @@ pub struct ScrollFade {
     pub edge: FadeEdge,
     /// The strength it was last drawn at: 0 hidden, 1 full.
     pub strength: f32,
+    #[reflect(ignore)]
     drawn: Option<Drawn>,
 }
 
@@ -216,7 +222,8 @@ struct Drawn {
 }
 
 /// The overlays a viewport's [`ScrollEdgeFade`] made, so they can be taken down again.
-#[derive(Component, Clone, Copy, Debug, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Component)]
 pub struct ScrollFadeParts {
     top: Entity,
     bottom: Entity,

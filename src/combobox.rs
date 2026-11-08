@@ -105,9 +105,12 @@ pub struct ComboValue(pub Option<String>);
 
 /// The state of a [`crate::combobox`]: its options, and, while its list is open, which of them
 /// match and which is lit. Read it through the methods.
-#[derive(Component, Clone, Debug)]
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 #[require(ComboValue)]
 pub struct Combobox {
+    #[reflect(ignore)]
     options: Vec<ComboOption>,
     /// The open list, if there is one.
     popover: Option<Entity>,
@@ -184,17 +187,20 @@ impl Combobox {
 }
 
 /// On a combobox's field row: the combobox it belongs to. Part of what [`crate::combobox`] spawns.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct ComboField(pub Entity);
 
 /// On a combobox's text field while its list is open: Enter is the list's, so the field does not
 /// also submit its dialog. Put on and taken off by [`update_comboboxes`].
-#[derive(Component, Clone, Copy, Debug, Default)]
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct ComboListOpen;
 
 /// One of an open combobox's reused rows: its combobox, the popover it is in and its place among the
 /// rows shown. Part of what the list spawns.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct ComboRow {
     /// The combobox the row is in.
     pub combo: Entity,
@@ -205,7 +211,8 @@ pub struct ComboRow {
 }
 
 /// On the line that says "No option matches". Part of what the list spawns.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct ComboNote {
     /// The combobox the line is in.
     pub combo: Entity,

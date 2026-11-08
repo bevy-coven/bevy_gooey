@@ -326,6 +326,7 @@ pub(crate) fn add_systems(app: &mut App) {
     app.add_systems(
         PostUpdate,
         update_world_anchors
+            .in_set(crate::GooeySystems::Layout)
             .after(TransformSystems::Propagate)
             .after(CameraUpdateSystems)
             .before(UiSystems::Prepare),

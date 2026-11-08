@@ -71,7 +71,8 @@ pub fn is_text_editing(editing: Query<(), With<TextEditing>>) -> bool {
 /// Which [`crate::text_input`] row a field or its hint belongs to. Part of what `text_input()`
 /// spawns, a game never builds one; read it to find the row from the field a Bevy event names
 /// (`FocusGained`, `TextEditChange`).
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct TextInputOf(pub Entity);
 
 /// On a [`crate::text_area`]'s field: Enter adds a line (Bevy's), Ctrl+Enter or Cmd+Enter ends the
@@ -81,7 +82,8 @@ pub(crate) struct AreaField;
 
 /// On a [`crate::text_input`] row whose text changed since the last time an edit ended: when
 /// focus leaves it, that is a final change. Put on and taken off by the row's own systems.
-#[derive(Component, Clone, Copy, Debug, Default)]
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct TextEdited;
 
 /// The field's own edit notice becomes the game's: one [`ValueChange<String>`] on the row for each

@@ -18,7 +18,8 @@ use crate::skin::{GooeySkin, SkinPreset};
 /// [`crate::text_size`], [`crate::interface_size`], [`crate::pad_style`] and
 /// [`crate::skin_preset`] spawn, for [`update_option_rows`] to find them by; a game never builds
 /// one.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 #[non_exhaustive]
 pub enum OptionRow {
     /// [`GooeySkin::text_scale`], in [`TEXT_SIZE_STEPS`].

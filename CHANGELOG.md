@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The crate meets the family's machine plate (`.github/docs/STYLE.md`). `GooeySystems` is now the one root set: every system the crate adds is in it, through three new variants `Input` (`First` and `PreUpdate`: `restore_press_scale`, `keep_focus_on_escape`), `Settle` (`Update`, chained after `Style`: `update_color_motion`, which was `.after(Style)`) and `Layout` (`PostUpdate`: `update_world_anchors`, `update_layout_motion`, `draw_press_scale`, `draw_pops`, `centre_keycaps`); no system's order changed. Every public component derives `Reflect` with `#[reflect(Component)]` and is registered by `GooeyStylePlugin` (fields that cannot reflect are `#[reflect(ignore)]`; the generic `DragPayload<T>` and `DropTarget<T>` are registered per payload by the game); every settings resource is `Reflect` + `Default` and registered. New `tests/machine_plate.rs`.
+
 ## [0.44.2] - 2026-11-08
 
 ### Added

@@ -86,7 +86,8 @@ impl SectionStates {
 
 /// On a section's header, the button that opens and closes it. Part of what [`crate::section`]
 /// spawns; query for it to find the header of a section.
-#[derive(Component, Clone, Copy, Debug, Default)]
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct SectionHeader;
 
 /// The header was activated (Enter, Space, South, a click): ask for the opposite state.

@@ -130,7 +130,8 @@ pub struct NumberRefused {
 
 /// On a number field's text field (the one a [`crate::number_field`] row types in), which steps on
 /// Up and Down. Part of what `number_field()` spawns, a game never builds one.
-#[derive(Component, Clone, Copy, Debug, Default)]
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct NumberInput;
 
 /// A drag of a number row that has begun: the value it began at, and whether it has changed it.
@@ -142,7 +143,8 @@ pub(crate) struct NumberGrab {
 
 /// On each component's number row of a [`crate::vec_field`]: the vec row it belongs to, and its
 /// place. Part of what `vec_field()` spawns, a game never builds one.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct VecPart {
     /// The vec row.
     pub root: Entity,

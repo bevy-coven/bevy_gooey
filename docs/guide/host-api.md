@@ -124,7 +124,7 @@ observes. Nothing is closed for it. See [navigation](navigation.md#back).
 
 `GooeyStylePlugin` and `GooeyNavPlugin` are independent, and `GooeyPlugins` is both plus
 `GooeyScalePlugin`. A host that wants the systems and not the plugins registers them itself, in
-`GooeySystems::{Navigate, Style}`, chained Navigate before Style:
+`GooeySystems::{Navigate, Style, Settle}`, chained in that order in `Update` (`Input` is the crate's `First` and `PreUpdate` work, `Layout` its `PostUpdate` work):
 
 | system | set | what it does |
 |---|---|---|

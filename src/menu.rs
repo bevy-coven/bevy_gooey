@@ -118,11 +118,14 @@ enum Kind {
 /// )]));
 /// # }
 /// ```
-#[derive(Component, Clone, Debug)]
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 #[component(on_add = build_item)]
 pub struct MenuItem {
     label: String,
     shortcut: Option<Shortcut>,
+    #[reflect(ignore)]
     kind: Kind,
     on: bool,
 }
@@ -191,7 +194,8 @@ impl MenuItem {
 /// commands.spawn((menu_item("Paste"), Disabled::new("Nothing on the clipboard")));
 /// # }
 /// ```
-#[derive(Component, Clone, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 #[component(on_insert = disable, on_remove = enable)]
 pub struct Disabled(pub String);
 

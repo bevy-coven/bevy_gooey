@@ -409,23 +409,39 @@ use bevy::input_focus::{InputFocus, InputFocusVisible};
 use bevy::prelude::*;
 use bevy::ui::UiSystems;
 
-/// The order the crate's systems run in `Update`.
+/// The one root set of the crate: every system the crate adds is in one of its variants, so a host
+/// orders its own systems against all of them or one.
 ///
-/// [`GooeySystems::Navigate`] moves focus and activates before [`GooeySystems::Style`] draws, so a
-/// focus move is drawn in the very frame it happens.
+/// In `Update`, [`GooeySystems::Navigate`] moves focus and activates before [`GooeySystems::Style`]
+/// draws, so a focus move is drawn in the very frame it happens, and [`GooeySystems::Settle`] runs
+/// once the skin has written. [`GooeySystems::Input`] is the crate's work in `First` and
+/// `PreUpdate`, [`GooeySystems::Layout`] its work in `PostUpdate`.
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GooeySystems {
+    /// Work in `First` and `PreUpdate`, ahead of the frame's own systems: resting transforms
+    /// restored, and the first Escape of an open combobox kept for its list.
+    Input,
     /// Arrow-key, D-pad and pad-button navigation, and the focus feedback.
     Navigate,
     /// The skin, the meters and the interface's scale: every widget's look.
     Style,
+    /// Colours easing to what the skin wrote this frame, after every colour is written.
+    Settle,
+    /// Work in `PostUpdate`, around Bevy's UI layout: world anchors, layout motion, the drawn press
+    /// scale and pops, and keycap centring.
+    Layout,
 }
 
 /// Chains the crate's sets, and does it idempotently, so each plugin may call it.
 fn chain_sets(app: &mut App) {
     app.configure_sets(
         Update,
-        (GooeySystems::Navigate, GooeySystems::Style).chain(),
+        (
+            GooeySystems::Navigate,
+            GooeySystems::Style,
+            GooeySystems::Settle,
+        )
+            .chain(),
     );
 }
 
@@ -457,6 +473,69 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<InputFocusVisible>()
             .add_message::<UiFeedback>()
             .register_type::<GooeySkin>()
+            // The crate's public components, reflected for inspection (machine plate rule 4).
+            .register_type::<AreaMarker>()
+            .register_type::<Arriving>()
+            .register_type::<ColorArea>()
+            .register_type::<ColorPicker>()
+            .register_type::<ColorRail>()
+            .register_type::<ColorStrip>()
+            .register_type::<ColorSwatch>()
+            .register_type::<ColorTrack>()
+            .register_type::<ComboField>()
+            .register_type::<ComboListOpen>()
+            .register_type::<ComboNote>()
+            .register_type::<ComboRow>()
+            .register_type::<Combobox>()
+            .register_type::<CommandPalette>()
+            .register_type::<Disabled>()
+            .register_type::<Dock>()
+            .register_type::<DockPanel>()
+            .register_type::<GroupHold>()
+            .register_type::<IndicatorPuck>()
+            .register_type::<LayoutTravel>()
+            .register_type::<Leaving>()
+            .register_type::<LoadingHold>()
+            .register_type::<LoadingSpinner>()
+            .register_type::<MenuItem>()
+            .register_type::<NotificationRow>()
+            .register_type::<NumberInput>()
+            .register_type::<OptionRow>()
+            .register_type::<Overflowed>()
+            .register_type::<PaletteCount>()
+            .register_type::<PaletteInput>()
+            .register_type::<PaletteNote>()
+            .register_type::<PaletteRow>()
+            .register_type::<PopoverPoint>()
+            .register_type::<PopoverSlide>()
+            .register_type::<Popped>()
+            .register_type::<PressScaled>()
+            .register_type::<RevealTrack>()
+            .register_type::<ScrollFade>()
+            .register_type::<ScrollFadeParts>()
+            .register_type::<ScrollGlide>()
+            .register_type::<SectionGlide>()
+            .register_type::<SectionHeader>()
+            .register_type::<Select>()
+            .register_type::<SelectionIndicator>()
+            .register_type::<ShortcutBadge>()
+            .register_type::<ShortcutLegendCard>()
+            .register_type::<SlotRules>()
+            .register_type::<SplitGlide>()
+            .register_type::<SplitSaved>()
+            .register_type::<SwatchHalf>()
+            .register_type::<Table>()
+            .register_type::<TableCursor>()
+            .register_type::<TableRow>()
+            .register_type::<TableSelection>()
+            .register_type::<TableWidths>()
+            .register_type::<TextEdited>()
+            .register_type::<TextInputOf>()
+            .register_type::<ToastButton>()
+            .register_type::<TooltipBox>()
+            .register_type::<TooltipDwell>()
+            .register_type::<TravelFrom>()
+            .register_type::<VecPart>()
             .register_type::<SkinScope>()
             .register_type::<PrimaryButton>()
             .register_type::<ButtonVariant>()
@@ -685,10 +764,12 @@ impl Plugin for GooeyStylePlugin {
         // input lets go of it.
         app.add_systems(
             PreUpdate,
-            keep_focus_on_escape.after(bevy::input_focus::InputFocusSystems::Dispatch),
+            keep_focus_on_escape
+                .after(bevy::input_focus::InputFocusSystems::Dispatch)
+                .in_set(GooeySystems::Input),
         );
         // Colours ease to what the skin wrote this frame, so it runs once every colour is written.
-        app.add_systems(Update, update_color_motion.after(GooeySystems::Style));
+        app.add_systems(Update, update_color_motion.in_set(GooeySystems::Settle));
         // The one system that is not in `Update`: it needs this frame's transforms.
         anchor::add_systems(app);
         // Layout motion reads where this frame's layout put a node and moves its drawing back to
@@ -697,20 +778,26 @@ impl Plugin for GooeyStylePlugin {
             PostUpdate,
             (update_layout_motion, draw_press_scale, draw_pops)
                 .chain()
+                .in_set(GooeySystems::Layout)
                 .after(UiSystems::Layout)
                 .before(UiSystems::PostLayout),
         );
         // The resting transforms go back before anything reads them, so picking hit-tests a
         // pressed card at its resting size.
         app.init_resource::<PressScaleRestore>()
-            .add_systems(First, restore_press_scale);
+            .add_systems(First, restore_press_scale.in_set(GooeySystems::Input));
         // So the keycap's centring: it needs this frame's shaped text.
         app.add_systems(
             PostUpdate,
             centre_keycaps
+                .in_set(GooeySystems::Layout)
                 .in_set(UiSystems::PostLayout)
                 .after(bevy::ui::widget::text_system),
         );
+        #[cfg(feature = "reflect")]
+        app.register_type::<Inspector>()
+            .register_type::<InspectRow>()
+            .register_type::<InspectMixed>();
         #[cfg(feature = "reflect")]
         app.add_systems(
             Update,

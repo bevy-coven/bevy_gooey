@@ -37,6 +37,7 @@ pub const TOOLTIP_DELAY_SECONDS: f32 = 0.5;
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct TooltipSettings {
     /// Seconds the pointer rests on a widget before its tooltip opens. Default: 0.5.
     pub delay_seconds: f32,
@@ -52,7 +53,8 @@ impl Default for TooltipSettings {
 
 /// How long the pointer has rested on a tooltip's widget, and whether a press, a wheel turn or a key
 /// ended this visit: the box then stays shut until the pointer leaves and comes back.
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component)]
 pub struct TooltipDwell {
     seconds: f32,
     quiet: bool,
@@ -124,7 +126,8 @@ impl Tooltip {
 
 /// The box a [`Tooltip`] spawned, a child of the widget it describes: query it to find the box
 /// (its [`Text`] is its child).
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component)]
 pub struct TooltipBox {
     /// The widget's parent lays its children out in a row, so the box opens below or above it
     /// rather than beside it. [`crate::apply_skin`] places the box from it.

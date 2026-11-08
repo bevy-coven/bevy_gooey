@@ -49,8 +49,11 @@ impl Default for Pop {
 }
 
 /// How far a [`Pop`] node is drawn swollen now: its scale and how fast it changes.
-#[derive(Component, Clone, Debug, PartialEq)]
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct Popped {
+    #[reflect(ignore)]
     scale: SpringState,
 }
 

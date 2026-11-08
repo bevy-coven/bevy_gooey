@@ -154,8 +154,11 @@ impl Lane {
 
 /// What a styled node's colours are drawn as while they move to the skin's: the track
 /// [`update_color_motion`] keeps on every [`Role`]. Internal; a game reads the colour components.
-#[derive(Component, Clone, Debug, Default, PartialEq)]
+#[derive(Component, Clone, Debug, Default, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct ColorTrack {
+    #[reflect(ignore)]
     lanes: [Lane; LANES],
     /// How many frames the track has run, up to [`QUIET_FRAMES`]: the colours of those land.
     age: u8,

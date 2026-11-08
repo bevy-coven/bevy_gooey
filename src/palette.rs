@@ -158,7 +158,9 @@ pub struct RunCommand {
 
 /// An open [`command_palette`](crate::command_palette): which of its matches is lit and which
 /// matches there are. Its fields are the palette's own; read them through the methods.
-#[derive(Component, Clone, Debug)]
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct CommandPalette {
     selected: usize,
     top: usize,
@@ -168,6 +170,7 @@ pub struct CommandPalette {
     matches: Vec<usize>,
     /// The options of the [`crate::select`] this palette chooses for, when it is not the game's
     /// command palette: the list it matches, in place of [`CommandList`].
+    #[reflect(ignore)]
     source: Option<PaletteSource>,
 }
 
@@ -246,12 +249,14 @@ impl CommandPalette {
 
 /// On a palette's field row: which palette it is in. Part of what [`crate::command_palette`]
 /// spawns; a game never builds one.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct PaletteInput(pub Entity);
 
 /// One of a palette's reused rows: its palette and its place among the rows shown. Part of what
 /// [`crate::command_palette`] spawns.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct PaletteRow {
     /// The palette the row is in.
     pub palette: Entity,
@@ -260,11 +265,13 @@ pub struct PaletteRow {
 }
 
 /// On the line that says "No command matches". Part of what [`crate::command_palette`] spawns.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct PaletteNote(pub Entity);
 
 /// On the line that says which of how many is lit. Part of what [`crate::command_palette`] spawns.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct PaletteCount(pub Entity);
 
 /// Back out: Escape (the dialog's [`Cancel`]) closes the palette and gives focus back. A global

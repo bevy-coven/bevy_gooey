@@ -136,6 +136,7 @@ pub struct Catcher(Entity);
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct BindingSettings {
     /// What a keyboard row's keycap says while it waits. Default: "Press a key, {exit} exits".
     pub key_prompt: String,

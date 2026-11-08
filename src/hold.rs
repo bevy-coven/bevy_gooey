@@ -88,6 +88,7 @@ pub struct HoldConfirmed {
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct HoldSettings {
     /// The multiplier on every hold's seconds, held to 0 to 4 when read. Default: 1.
     pub duration_scale: f32,

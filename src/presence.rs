@@ -96,7 +96,8 @@ pub struct Stay;
 /// both off. A fixed-length fade, not a spring, as reduced motion's own fade is in Rune
 /// (`REDUCED_FADE`): it lasts what it says. A [`Leave`] during it starts the exit from where the
 /// fade had got to.
-#[derive(Component, Clone, Copy, Debug, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Component)]
 pub struct Arriving {
     /// Seconds of the fade drawn so far.
     elapsed: f32,
@@ -142,8 +143,11 @@ struct Pose {
 ///
 /// A game reads [`Leaving::opacity`] for how far through its exit a widget is, and `With<Leaving>` to
 /// know one is on its way out.
-#[derive(Component, Clone, Debug)]
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct Leaving {
+    #[reflect(ignore)]
     fade: SpringState,
     /// 0 while it goes, 1 while it comes back.
     toward: f32,
@@ -152,6 +156,7 @@ pub struct Leaving {
     /// The dialog it stopped being, to be one again on [`Stay`].
     dialog: Option<Dialog>,
     group: Option<TabGroup>,
+    #[reflect(ignore)]
     poses: Vec<Pose>,
 }
 

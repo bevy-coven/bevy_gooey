@@ -83,7 +83,8 @@ pub struct ColorRefused {
 /// keeps the hue, saturation and value the player is on, which the row's [`ColorValue`] cannot (a
 /// grey has no hue and a black no saturation, so dragging to black and back would forget where the
 /// player was). A game never builds one; it may read which row a picker belongs to.
-#[derive(Component, Clone, Copy, Debug, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Component)]
 pub struct ColorPicker {
     field: Entity,
     hue: f32,
@@ -105,12 +106,14 @@ impl ColorPicker {
 
 /// On a colour field's swatch button: its row. Part of what [`crate::color_field`] spawns, a game
 /// never builds one.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct ColorSwatch(pub(crate) Entity);
 
 /// One half of a swatch: the colour opaque (`alpha` false) or at its own alpha (`alpha` true), so a
 /// translucent colour shows as one. Part of what [`crate::color_field`] spawns.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct SwatchHalf {
     pub(crate) row: Entity,
     pub(crate) alpha: bool,
@@ -118,13 +121,15 @@ pub struct SwatchHalf {
 
 /// The picker's saturation and value area, a focusable plane: the pointer sets both, the arrow
 /// keys step them, and the D-pad's Left and Right step the saturation. Part of the picker.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct ColorArea {
     pub(crate) picker: Entity,
 }
 
 /// The ring on the area at the colour's saturation and value. Part of the picker.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct AreaMarker {
     pub(crate) picker: Entity,
 }
@@ -138,16 +143,22 @@ pub(crate) enum Channel {
 }
 
 /// A picker's slider: hue, brightness or alpha. Part of the picker.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct ColorStrip {
     pub(crate) picker: Entity,
+    #[reflect(ignore)]
     pub(crate) channel: Channel,
 }
 
 /// The gradient a strip's rail shows. Part of the picker.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct ColorRail {
     pub(crate) picker: Entity,
+    #[reflect(ignore)]
     pub(crate) channel: Channel,
 }
 

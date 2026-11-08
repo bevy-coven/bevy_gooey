@@ -24,8 +24,11 @@ const FRACTION_REST: f32 = 1.0e-4;
 
 /// A split sliding to the fraction a collapse or a restore asked for: the fraction it is laid out
 /// at now, which [`crate::update_splits`] uses in place of [`SplitFraction`] until it arrives.
-#[derive(Component, Clone, Copy, Debug, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct SplitGlide {
+    #[reflect(ignore)]
     shown: SpringState,
     to: f32,
 }
@@ -51,8 +54,11 @@ impl SplitGlide {
 /// A section's body growing open or shrinking shut: its laid-out height now, logical px, and
 /// which way it is going. While it lasts the body is clipped to that height; when it opens, the
 /// body's own height comes back, and when it shuts, the body leaves layout as a closed one does.
-#[derive(Component, Clone, Debug, PartialEq)]
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct SectionGlide {
+    #[reflect(ignore)]
     height: SpringState,
     opening: bool,
     /// The body's own height and overflow, given back when the glide ends.

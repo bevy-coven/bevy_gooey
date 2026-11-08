@@ -17,7 +17,8 @@ pub struct NotificationCenter;
 
 /// On a row [`update_notification_centers`] spawned: a button for a log entry, or the line that says
 /// there is none.
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
 pub struct NotificationRow;
 
 /// Keeps every [`crate::notification_center`] as the [`crate::ToastLog`] says: a row for each entry,

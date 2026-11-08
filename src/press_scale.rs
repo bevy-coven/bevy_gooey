@@ -63,8 +63,11 @@ impl Default for PressScale {
 
 /// How far a [`PressScale`] widget is drawn shrunk now: its scale and how fast it changes, and
 /// whether the press it is answering was cancelled by a scroll.
-#[derive(Component, Clone, Debug, PartialEq)]
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct PressScaled {
+    #[reflect(ignore)]
     scale: SpringState,
     cancelled: bool,
     /// Where every scroll view above the widget stood when the press began, so a scroll that

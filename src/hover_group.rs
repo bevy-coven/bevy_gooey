@@ -66,9 +66,12 @@ pub struct GroupReveal {
 
 /// Where a [`GroupReveal`] is on its way between rest (0) and hovered (1), and whether it has looked at
 /// its group yet. The crate's state; a game reads [`Opacity`].
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct RevealTrack {
     /// The progress from rest to hovered and how fast it is changing.
+    #[reflect(ignore)]
     progress: SpringState,
     /// Whether the first look has landed it where its group says.
     primed: bool,
@@ -82,7 +85,8 @@ impl RevealTrack {
 }
 
 /// The pointer whose press began inside a [`HoverGroup`] and has not been let go.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct GroupHold(PointerId);
 
 /// Every [`HoverGroup`] at or above `entity`.

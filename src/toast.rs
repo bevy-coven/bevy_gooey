@@ -164,6 +164,7 @@ impl ToastInset {
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct ToastSettings {
     /// Where the stack stands. Default: bottom centre.
     pub anchor: ToastAnchor,
@@ -444,7 +445,8 @@ pub struct ToastAction {
 }
 
 /// On a toast's button: which toast, and which id it sends (none for a sticky toast's Dismiss).
-#[derive(Component, Clone, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct ToastButton {
     toast: Entity,
     id: Option<String>,

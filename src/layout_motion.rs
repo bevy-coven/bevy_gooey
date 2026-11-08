@@ -77,16 +77,20 @@ pub struct MovesSmoothly;
 /// `UiGlobalTransform` of the node it replaces held it. A node a rebuild replaces (a dock's tabs are
 /// spawned again on every change) gets the place its old self was drawn at, and glides from there to
 /// where layout puts it. Taken off at that look; ignored under reduced or no motion, which land.
-#[derive(Component, Clone, Copy, Debug, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Component)]
 pub struct TravelFrom(pub Vec2);
 
 /// What [`update_layout_motion`] keeps of a [`MovesSmoothly`] node: where layout last put its
 /// top-left corner inside its parent, logical px, and how far from there it is drawn now.
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(from_reflect = false)]
+#[reflect(Component)]
 pub struct LayoutTravel {
     /// The corner's place inside the parent at the last look, logical px; `None` before the first.
     placed: Option<Vec2>,
     /// How far from its layout place the node is drawn, logical px, and how fast that changes.
+    #[reflect(ignore)]
     offset: [SpringState; 2],
     /// Frames left in which a move lands instead of travelling.
     quiet: u8,

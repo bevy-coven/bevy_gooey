@@ -49,6 +49,7 @@ use bevy::prelude::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(default)
 )]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub struct PointerSettings {
     /// Two presses closer than this, seconds from press to press, can pair; a press held longer
     /// than this is not a click. Default 0.5, the double-click time of desktops that have no system

@@ -42,6 +42,7 @@ mod layout_motion;
 mod leaf;
 mod lines;
 mod list;
+mod machine_plate;
 mod menu;
 mod menu_exit;
 mod meter;

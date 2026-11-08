@@ -361,7 +361,8 @@ pub struct Loading(pub bool);
 
 /// What [`update_loading`] did to a loading button, so it can be undone: it holds the button's input
 /// and hides its label, and `own_disabled` is whether the host had already disabled it.
-#[derive(Component, Clone, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct LoadingHold {
     own_disabled: bool,
     /// What it hid, with the visibility each had, to put back.
@@ -369,7 +370,8 @@ pub struct LoadingHold {
 }
 
 /// The spinner [`update_loading`] puts over a loading button's label.
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct LoadingSpinner;
 
 type Loaded = (

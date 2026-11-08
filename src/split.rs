@@ -145,7 +145,8 @@ pub(crate) struct SplitGrab(f32);
 /// On a split whose first pane is collapsed: the fraction a restore gives back (Enter, South, a
 /// double press, or docking a peek). A game reads it to know a split is collapsed and how wide it
 /// will be restored; the crate puts it on and takes it off.
-#[derive(Component, Clone, Copy, Debug, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Component)]
 pub struct SplitSaved(pub(crate) f32);
 
 impl SplitSaved {

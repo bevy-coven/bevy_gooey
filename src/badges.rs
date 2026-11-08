@@ -117,7 +117,8 @@ impl Default for ShortcutBadges {
 pub struct BadgesShown(pub bool);
 
 /// A badge, a child of the widget it names: query for it to read the words on show.
-#[derive(Component, Clone, Copy, Debug, Default)]
+#[derive(Component, Clone, Copy, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct ShortcutBadge;
 
 /// The badge's bundle: one line of the chord's words, absolute on its widget (the corner and the
@@ -292,7 +293,8 @@ pub struct ShortcutLegend {
 /// The legend's card, a root node standing while the overlay is up and the [`ShortcutLegend`] has
 /// rows; it holds the rows it was built from, so a settled legend writes nothing and a host can
 /// read what is on show.
-#[derive(Component, Clone, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
 pub struct ShortcutLegendCard(pub Vec<LegendRow>);
 
 /// Shows and hides the [`ShortcutLegend`] card with the overlay. Reads one resource and writes
