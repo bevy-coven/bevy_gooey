@@ -196,6 +196,7 @@ mod size_motion;
 mod skin;
 mod slots;
 mod split;
+mod split_peek;
 mod status;
 mod table;
 mod tabs;
@@ -261,7 +262,7 @@ pub use inspector::{
     build_inspectors, inspector, sync_inspect_mixed, sync_inspectors,
 };
 pub use layout_motion::{
-    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelSpring, mark_moving_parts,
+    LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelFrom, TravelSpring, mark_moving_parts,
     update_layout_motion,
 };
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
@@ -276,23 +277,24 @@ pub use model::{
     ELEVATION_STEP, ENHANCED_CONTRAST, HOLD_SCALE_MAX, HOLD_UNWIND_RATE, HexError,
     INTERFACE_SIZE_STEPS, METER_SNAP, METER_TRAIL_HOLD_SECONDS, METER_TRAIL_RATE, MIN_TARGET_PX,
     MeterShown, NON_TEXT_CONTRAST, NumberError, PAD_REPEAT_DELAY, PAD_REPEAT_RATE, PAD_STYLES,
-    POPOVER_SLIDE_PX, PRIMARY_LIFT_L, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH,
-    SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, SPRING_MAX_SETTLE_SECONDS, SPRING_REST_POSITION,
-    SPRING_REST_SPEED, STATE_STEP, STICK_PUSH, Spring, SpringError, SpringState,
-    TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TOAST_SLIDE_PX, TYPE_AHEAD_SECS, TableStep,
-    Toward, area_values, bar_fit, box_outside, choice_next, choice_step, cie_lightness, clock_text,
-    column_resize, composite, contrast_ratio, cooldown_sweep, cooldown_text, cooldown_words,
-    dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, eta_words,
-    format_number, fuzzy_score, hex_text, hold_seconds, hold_step, hsv_to_rgb, is_modifier_key,
-    key_name, lift_toward, list_height, meter_fraction, meter_motion, mouse_name, natural_cmp,
-    nearest_step, number_decimals, pad_name, page_target, parse_hex, parse_number, pin_to_edge,
-    progress_text, radial_pick, radial_place, radial_step, relative_luminance, repeat_steps,
-    rgb_to_hsv, scroll_to_reveal, scrub_value, shadow_sigma, shortcut_conflicts, shortcut_label,
-    slider_fraction, slider_text, slot_edge, snap_line_width, snap_text_size, snap_to_row,
-    spinner_angle, split_clamp, split_drag, split_mins, spring_at_rest, spring_settle_seconds,
-    spring_step, step_value, tab_step, table_anchor, table_step, table_window, target_step,
-    target_toward, toast_alpha, toast_grow, toast_hold, toast_life, tree_ends, tree_heir,
-    tree_indent, tree_parent, tree_visible, type_ahead, window_ui_scale,
+    POPOVER_SCALE_FROM, POPOVER_SLIDE_PX, PRIMARY_LIFT_L, PadStyle, RADIAL_DEAD_ZONE,
+    RADIAL_STICK_PUSH, SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, SPRING_MAX_SETTLE_SECONDS,
+    SPRING_REST_POSITION, SPRING_REST_SPEED, STATE_STEP, STICK_PUSH, Spring, SpringError,
+    SpringState, TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TOAST_SLIDE_PX,
+    TYPE_AHEAD_SECS, TableStep, Toward, area_values, bar_fit, box_outside, choice_next,
+    choice_step, cie_lightness, clock_text, column_resize, composite, contrast_ratio,
+    cooldown_sweep, cooldown_text, cooldown_words, dock_drop_rect, dock_edge_zone, dock_neighbour,
+    dock_tab_slot, dock_zone, eta_words, format_number, fuzzy_score, hex_text, hold_seconds,
+    hold_step, hsv_to_rgb, is_modifier_key, key_name, lift_toward, list_height, meter_fraction,
+    meter_motion, mouse_name, natural_cmp, nearest_step, number_decimals, pad_name, page_target,
+    parse_hex, parse_number, pin_to_edge, popover_scale, progress_text, radial_pick, radial_place,
+    radial_step, relative_luminance, repeat_steps, rgb_to_hsv, scroll_to_reveal, scrub_value,
+    shadow_sigma, shortcut_conflicts, shortcut_label, slider_fraction, slider_text, slot_edge,
+    snap_line_width, snap_text_size, snap_to_row, spinner_angle, split_clamp, split_drag,
+    split_mins, spring_at_rest, spring_settle_seconds, spring_step, step_value, tab_step,
+    table_anchor, table_step, table_window, target_step, target_toward, toast_alpha, toast_grow,
+    toast_hold, toast_life, tree_ends, tree_heir, tree_indent, tree_parent, tree_visible,
+    type_ahead, window_ui_scale,
 };
 pub use motion::{
     InstantMotion, MotionSettings, MotionTarget, MotionToken, MotionTokens, PopoverSlide,
@@ -355,9 +357,10 @@ pub use slots::{
     update_slot_grids,
 };
 pub use split::{
-    Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, split_by_pad,
-    update_splits,
+    Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, SplitSaved,
+    split_by_pad, update_splits,
 };
+pub use split_peek::{SplitPeek, SplitPeekSettings, update_split_peeks};
 pub use status::{StatusBar, StatusItem, StatusKind, StatusPriority};
 pub use table::{
     Column, RowActivated, RowSource, SelectMode, SortBy, Table, TableCursor, TableRow, TableRows,
@@ -438,6 +441,7 @@ impl Plugin for GooeyStylePlugin {
             .init_resource::<GooeyFonts>()
             .init_resource::<PanelRegistry>()
             .init_resource::<ToastSettings>()
+            .init_resource::<SplitPeekSettings>()
             .init_resource::<MotionSettings>()
             .init_resource::<ShortcutBadges>()
             .init_resource::<BadgesShown>()
@@ -530,6 +534,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<SelectMode>()
             .register_type::<TableRows>()
             .register_type::<SplitDivider>()
+            .register_type::<SplitPeek>()
+            .register_type::<SplitPeekSettings>()
             .register_type::<Tooltip>()
             .register_type::<Placement>()
             .register_type::<PopoverPanel>()
@@ -596,6 +602,7 @@ impl Plugin for GooeyStylePlugin {
                 Update,
                 (
                     (
+                        update_split_peeks,
                         (begin_entrances, update_motion).chain(),
                         mark_moving_parts,
                         (mark_press_scale, update_press_scale).chain(),
@@ -638,8 +645,13 @@ impl Plugin for GooeyStylePlugin {
                     (update_palette, update_comboboxes).chain(),
                     update_option_rows,
                     (update_choices, update_radials).chain(),
-                    dock::update_docks,
-                    dock::update_dock_drag,
+                    (
+                        dock::update_docks,
+                        dock::update_dock_drag,
+                        dock::start_dock_travel,
+                        dock::update_tab_reorder,
+                    )
+                        .chain(),
                     (update_tabs, update_tab_pages).chain(),
                     (update_split_glides, update_splits).chain(),
                     update_trees,

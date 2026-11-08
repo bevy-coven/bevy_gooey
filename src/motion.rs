@@ -13,8 +13,8 @@
 use bevy::prelude::*;
 
 use crate::model::{
-    DIALOG_SLIDE_PX, POPOVER_SLIDE_PX, Spring, SpringState, TOAST_SLIDE_PX, spring_settled,
-    spring_step,
+    DIALOG_SLIDE_PX, POPOVER_SLIDE_PX, Spring, SpringState, TOAST_SLIDE_PX, popover_scale,
+    spring_settled, spring_step,
 };
 use crate::popover::PopoverPanel;
 use crate::presence::{Arriving, Opacity};
@@ -413,13 +413,20 @@ pub fn begin_entrances(
             }
             continue;
         }
-        commands.entity(entity).insert(PopoverSlide {
+        // The slide, and with it the scale (`update_motion` writes it from the reach) and a fade, so
+        // the panel opens from its anchor as Rune's overlays do; a panel with an opacity of its own
+        // keeps it.
+        let mut panel = commands.entity(entity);
+        panel.insert(PopoverSlide {
             reach: SpringState {
                 value: POPOVER_SLIDE_PX,
                 velocity: 0.0,
             },
             spent: false,
         });
+        if !faded {
+            panel.insert(Arriving::begin());
+        }
     }
     for (entity, role, parent, faded) in &cards {
         if matches!(role, Role::Panel | Role::Palette)
@@ -468,8 +475,13 @@ pub fn update_motion(
     parents: Query<&ChildOf>,
     time: Option<Res<Time<Real>>>,
     mut commands: Commands,
-    mut tracks: Query<Track>,
-    mut popovers: Query<(Entity, &mut PopoverSlide, Option<&Visibility>)>,
+    mut tracks: Query<Track, Without<PopoverSlide>>,
+    mut popovers: Query<(
+        Entity,
+        &mut PopoverSlide,
+        &mut UiTransform,
+        Option<&Visibility>,
+    )>,
 ) {
     let delta = time.as_ref().map_or(0.0, |time| time.delta_secs());
     // With no clock the track jumps: nothing can say how long it has been. Reduced motion lands
@@ -552,7 +564,7 @@ pub fn update_motion(
         .motion
         .spring(MotionToken::Snappy)
         .scaled(settings.duration_scale);
-    for (entity, mut slide, visibility) in &mut popovers {
+    for (entity, mut slide, mut transform, visibility) in &mut popovers {
         // A spent slide is taken off a frame after it reaches its end, so the restyle that
         // [`crate::apply_skin`] makes for the change to 0 sees it.
         if slide.spent {
@@ -573,6 +585,12 @@ pub fn update_motion(
         };
         if slide.reach != next {
             slide.reach = next;
+        }
+        // The scale rides the slide: Bevy's `position_popover` owns the translation and never
+        // touches the scale, which a node takes about its own centre.
+        let scale = Vec2::splat(popover_scale(next.value));
+        if transform.scale != scale {
+            transform.scale = scale;
         }
         if next == SpringState::default() && !slide.spent {
             slide.spent = true;

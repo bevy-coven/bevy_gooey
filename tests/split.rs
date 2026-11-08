@@ -32,6 +32,13 @@ struct Writes(u32);
 
 fn app_sized(width: u32, height: u32) -> App {
     let mut app = App::new();
+    // Assumed owner exception (#76): these tests rest the pointer on a collapsed divider for real
+    // milliseconds, which would float the pane over the second one; `tests/split_peek.rs` proves the
+    // peek on a clock it sets.
+    app.insert_resource(SplitPeekSettings {
+        enabled: false,
+        ..default()
+    });
     app.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {
@@ -894,7 +901,8 @@ fn a_double_click_collapses_the_first_pane_and_a_second_gives_it_back() {
     click(&mut app, centre);
     assert!(
         (pane(&app, ui.first, H) - 80.0).abs() < 1.0,
-        "a double click collapses it"
+        "a double click collapses it: the pane is {} wide",
+        pane(&app, ui.first, H)
     );
     // The divider has moved with the pane. A third click in the same burst is not another
     // double click.

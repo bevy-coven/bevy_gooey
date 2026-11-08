@@ -12,6 +12,8 @@ use bevy_gooey::*;
 
 fn app(skin: GooeySkin) -> App {
     let mut app = App::new();
+    // Assumed owner exception (#76): a popover opens on a real-time clock here, and its entrance (a scale and a fade) would move what these tests read.
+    app.insert_resource(MotionSettings::off());
     app.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {

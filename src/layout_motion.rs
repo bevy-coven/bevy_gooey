@@ -72,6 +72,14 @@ pub struct TravelSpring(pub MotionToken);
 #[require(LayoutTravel)]
 pub struct MovesSmoothly;
 
+/// Where a new [`MovesSmoothly`] node was drawn a moment ago, so its first look in layout starts a
+/// travel from there instead of landing: its centre in physical window pixels, as the
+/// `UiGlobalTransform` of the node it replaces held it. A node a rebuild replaces (a dock's tabs are
+/// spawned again on every change) gets the place its old self was drawn at, and glides from there to
+/// where layout puts it. Taken off at that look; ignored under reduced or no motion, which land.
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
+pub struct TravelFrom(pub Vec2);
+
 /// What [`update_layout_motion`] keeps of a [`MovesSmoothly`] node: where layout last put its
 /// top-left corner inside its parent, logical px, and how far from there it is drawn now.
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
@@ -140,6 +148,7 @@ type Traveller = (
     Ref<'static, ComputedUiRenderTargetInfo>,
     &'static ChildOf,
     Option<&'static TravelSpring>,
+    Option<&'static TravelFrom>,
 );
 
 /// The shape of the tree a move is drawn over.
@@ -176,6 +185,7 @@ pub fn update_layout_motion(
     scopes: Query<&SkinScope>,
     time: Option<Res<Time<Real>>>,
     mut travellers: Query<Traveller, With<MovesSmoothly>>,
+    mut commands: Commands,
     frames: Frames,
     mut globals: Query<&mut UiGlobalTransform>,
     mut scratch: Local<Scratch>,
@@ -187,7 +197,7 @@ pub fn update_layout_motion(
     moves.clear();
     // Every corner is read before any drawing is moved, so a moving parent's own offset is never
     // read into its child's place.
-    for (entity, mut travel, node, own, target, parent, travel_spring) in &mut travellers {
+    for (entity, mut travel, node, own, target, parent, travel_spring, from) in &mut travellers {
         let (Ok(parent_node), Ok(parent_at), Ok(at)) = (
             nodes.get(parent.parent()),
             globals.get(parent.parent()),
@@ -250,7 +260,21 @@ pub fn update_layout_motion(
                 travel.placed = Some(placed);
             }
             Some(_) => {}
-            None => travel.placed = Some(placed),
+            None => {
+                travel.placed = Some(placed);
+                // A node that stands in for one that was drawn elsewhere starts from there.
+                if let Some(TravelFrom(was)) = from {
+                    let shift = (*was - at.translation) * scale;
+                    let offset = parent_space.matrix2.inverse() * shift;
+                    if offset.is_finite() {
+                        travel.offset[0].value = offset.x;
+                        travel.offset[1].value = offset.y;
+                    }
+                }
+            }
+        }
+        if from.is_some() {
+            commands.entity(entity).remove::<TravelFrom>();
         }
         if travel.at_rest() {
             continue;

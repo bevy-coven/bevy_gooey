@@ -2432,6 +2432,8 @@ fn split_pane(content: impl Bundle) -> impl Bundle {
             ..default()
         },
         Role::SplitPane,
+        // So the peek can tell the pointer is on a floating pane (Bevy counts what is under it).
+        Hovered::default(),
         content,
     )
 }
