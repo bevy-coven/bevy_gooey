@@ -2733,3 +2733,23 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Disk:** `./target` is 417 GB (`CARGO_TARGET_DIR` unset on this host) and `/home` is at 94% (234 GB free): an agent should approve a `cargo clean -p bevy_gooey` or a move to the shared target; not done here (never delete a cache unasked). The pass ran 40 minutes behind a loaded host.
 
 **Backlog:** wrapped tab strips stepping aside; reduced-motion peek fade-out; the press 0.95 cue for tabs; F6 into a collapsed pane (panes as `FocusRegion`s); deterministic captures under load.
+
+## Iteration 74 — 2026-11-08 — `GooeyFrames`: panels and buttons from nine-slice art; v0.47.0
+
+**Triage:** gooey issue list empty, no `grimoire-ui` issue open, #336 waits on the editor's pin. A gallery audit (dark, parchment, 1.5x text, 2560 px) found no defect in the crate (at 150% text on 720p the gallery's panel runs under the legend: the example's layout, not the widgets'). Section 4, item 1: Sanctuary's `src/ui/widgets.rs`/`theme.rs` hand-build nine-slice painted panels and buttons; gooey had no way to put art on a widget, the biggest gap against "looks flat next to shipping games". Runner-up: wrapped tab strips stepping aside.
+
+**Built:** `GooeyFrames { panel, button }` (a resource beside `GooeyFonts`, not serde), `Frame { image, slice }`, `update_frames` (right after `apply_skin`), `Framed`/`FrameLayer`, `Role::FrameArt`. The skin's state colours tint the art (the fill `apply_skin` wrote becomes the tint of an art layer, the flat fill is cleared), colour motion eases the tint, the focus ring stays over the art, layout is unchanged, a ghost button stays flat, a host's own `ImageNode` is left alone, `None` gives the fills back. `tests/frames.rs` (5), `examples/frames.rs` (procedural art), `docs/media/frames.gif`, guide section in `skins.md`, note `docs/research/frames.md`, README, AGENTS, CHANGELOG.
+
+**Found on the way:** the first build put an `ImageNode` on the widget itself and the art came out 24 px inset, because Bevy draws an image inside its node's padding (the tests passed: they compared sizes, not where the art was drawn; the capture showed it). The art is now a child layer at `ZIndex(-1)`, as Sanctuary's own `frame_layer` is. **Test-run cost:** my iterations 68 to 73 ran `cargo nextest run --all-features -E ...` without `--lib --tests`, which also builds every example in debug: that is a large part of `./target` being 417 GB. From this pass on use `--lib --tests` (as AGENTS.md says).
+
+**Sources:** Sanctuary `ui/widgets.rs`, `ui/theme.rs` (shipping game); Bevy `NodeImageMode::Sliced` docs (technical); *Do Players Prefer Integrated User Interfaces?* (craft, not quoted: Pending index in the note).
+
+**Critique and verdict** (`frames.gif`, dark and parchment stills): parchment reads as a worn paper plate with bevelled buttons and the ring crisp over the art; the first art was too dark and muddy under the tint (centre 0.8), brightened to 0.97. In the dark look the art is subtle by nature (a dark fill darkens it). GREAT for a first slice; panels and buttons only.
+
+**Perf:** nothing runs for a widget of another role, and a framed widget is read only when its fill changed; the host was loaded so no timing claimed.
+
+**Gate:** fmt, clippy (`type_complexity` in the test, aliased), nextest 1258/1258, doctests, check + wasm32, `doc -D warnings`. semver-checks: new `Role::FrameArt`: 0.46.0 → 0.47.0.
+
+**Demos:** all 43 GIFs re-recorded, all unchanged but the new `frames.gif`.
+
+**Backlog:** more roles in `GooeyFrames` (tab, toggle, slider rail, tooltip, menu panel, toast); frame corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane.
