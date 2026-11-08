@@ -283,7 +283,7 @@ fn open_context(app: &mut App) -> (Entity, Entity) {
         .query_filtered::<Entity, With<PrimaryWindow>>()
         .single(app.world())
         .expect("one primary window");
-    let mut key = |app: &mut App, key_code, state| {
+    let key = |app: &mut App, key_code, state| {
         app.world_mut().write_message(KeyboardInput {
             key_code,
             logical_key: Key::Unidentified(NativeKey::Unidentified),
