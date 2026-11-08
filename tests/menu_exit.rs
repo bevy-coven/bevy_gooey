@@ -232,3 +232,28 @@ fn with_no_motion_a_menu_comes_and_goes_in_a_frame() {
     assert!(!drawn(&app, panel), "hidden in the frame it closes");
     assert!(app.world().get::<Leaving>(panel).is_none());
 }
+
+/// The lit row's fill, as a straight sRGB red channel (the brightest of the skin's browns).
+fn row_red(app: &mut App, row: Entity) -> f32 {
+    let fill = app.world().get::<BackgroundColor>(row).expect("a fill").0;
+    Srgba::from(fill).red * Srgba::from(fill).alpha
+}
+
+#[test]
+fn the_lit_row_never_flashes_brighter_than_its_colour_while_the_menu_fades_in() {
+    let mut app = app(MotionSettings::default());
+    let rows = items(&mut app);
+    open(&mut app);
+    let mut seen = Vec::new();
+    for _ in 0..40 {
+        app.update();
+        seen.push(row_red(&mut app, rows[0]));
+    }
+    let settled = *seen.last().expect("frames");
+    let peak = seen.iter().copied().fold(0.0, f32::max);
+    assert!(settled > 0.0, "the row is lit");
+    assert!(
+        peak <= settled * 1.1 + 0.01,
+        "the row peaked at {peak} on its way to {settled}: {seen:?}"
+    );
+}

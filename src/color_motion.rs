@@ -76,9 +76,18 @@ impl Lane {
         let old = self.channels[3].value;
         let new = premultiplied(now)[3];
         if old > ALPHA_EPSILON {
+            // A channel is lightness (or a, or b) times alpha. The straight value keeps its place
+            // and its speed through the change of alpha: d(c)/dt = alpha * dL/dt + L * d(alpha)/dt,
+            // so the new speed is the old one with the alpha's own part taken out, scaled to the
+            // new alpha. Scaling the speed by `new / old` instead made a colour that moves while it
+            // fades in from nearly nothing start a hundred times too fast and overshoot its target
+            // (a menu's lit row flashed twice as bright as its colour as the menu faded in).
+            let ratio = new / old;
+            let alpha_speed = self.channels[3].velocity;
             for channel in &mut self.channels[..3] {
-                channel.value *= new / old;
-                channel.velocity *= new / old;
+                let straight = channel.value / old;
+                channel.velocity = ratio * (channel.velocity - straight * alpha_speed);
+                channel.value *= ratio;
             }
         }
         self.channels[3] = SpringState {
