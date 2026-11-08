@@ -463,12 +463,14 @@ pub(crate) fn divider_on_key_input(
     let step = |sign: f32| reading.moved(sign * SPLIT_KEY_STEP_PX);
     let key = input.input.key_code;
     // A step, Home or End while the pane peeks docks it first: the next press steps from there.
-    let moves = match (reading.axis, key) {
-        (SplitAxis::Horizontal, KeyCode::ArrowLeft | KeyCode::ArrowRight)
-        | (SplitAxis::Vertical, KeyCode::ArrowUp | KeyCode::ArrowDown)
-        | (_, KeyCode::Home | KeyCode::End) => true,
-        _ => false,
-    };
+    let moves = matches!(
+        (reading.axis, key),
+        (
+            SplitAxis::Horizontal,
+            KeyCode::ArrowLeft | KeyCode::ArrowRight
+        ) | (SplitAxis::Vertical, KeyCode::ArrowUp | KeyCode::ArrowDown)
+            | (_, KeyCode::Home | KeyCode::End)
+    );
     if moves && reading.peeking.is_some() {
         input.propagate(false);
         if !reading.disabled {

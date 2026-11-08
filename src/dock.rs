@@ -22,7 +22,7 @@ use bevy::ui_widgets::{ValueChange, observe};
 
 use crate::cancel::Cancel;
 use crate::dock_layout::{DockDropTarget, DockLayout, DockSkip};
-use crate::layout_motion::TravelFrom;
+use crate::layout_motion::{MovesSmoothly, TravelFrom};
 use crate::model::{
     DOCK_PANE_MIN_PX, DockZone, MIN_TARGET_PX, dock_drop_rect, dock_edge_zone, dock_neighbour,
     dock_tab_slot, dock_zone,
@@ -1053,7 +1053,11 @@ pub(crate) fn start_dock_travel(
 ) {
     for (entity, mut tab) in &mut tabs {
         if let Some(from) = tab.bypass_change_detection().from.take() {
-            commands.entity(entity).try_insert(TravelFrom(from));
+            // Marked here, not left to `mark_moving_parts`, which sees the new role a frame later:
+            // the first look in layout is the one that starts the glide.
+            commands
+                .entity(entity)
+                .try_insert((MovesSmoothly, TravelFrom(from)));
         }
     }
 }
