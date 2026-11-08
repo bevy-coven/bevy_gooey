@@ -163,6 +163,7 @@ mod elevation;
 mod feedback;
 mod field;
 mod hold;
+mod hover_group;
 mod icon;
 #[cfg(feature = "reflect")]
 mod inspector;
@@ -245,6 +246,7 @@ pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
 pub use hold::{
     HoldConfirmed, HoldProgress, HoldSettings, HoldToConfirm, hold_by_input, update_hold_bars,
 };
+pub use hover_group::{GroupHold, GroupReveal, HoverGroup, RevealTrack, update_group_reveals};
 pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
 #[cfg(feature = "reflect")]
 pub use inspector::{
@@ -533,6 +535,12 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TravelSpring>()
             .register_type::<ControlSize>()
             .register_type::<PressScale>()
+            .register_type::<HoverGroup>()
+            .register_type::<GroupReveal>()
+            .add_observer(hover_group::holds_on_press)
+            .add_observer(hover_group::holds_on_release)
+            .add_observer(hover_group::holds_on_drag_end)
+            .add_observer(hover_group::holds_on_cancel)
             .register_type::<HoldToConfirm>()
             .register_type::<HoldProgress>()
             .register_type::<HoldConfirmed>()
@@ -575,6 +583,7 @@ impl Plugin for GooeyStylePlugin {
                             begin_stays,
                             update_presence,
                             update_arrivals,
+                            update_group_reveals,
                             spread_opacity,
                         )
                             .chain(),

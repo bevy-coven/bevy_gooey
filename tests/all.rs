@@ -31,6 +31,7 @@ mod drag;
 mod elevation;
 mod field_problem;
 mod hold;
+mod hover_group;
 mod icon;
 mod inspect_mixed;
 mod inspector;

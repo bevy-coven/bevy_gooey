@@ -151,6 +151,27 @@ starts on has its knob at the end from its first frame.
 commands.spawn((panel(), MovesSmoothly, TravelSpring(MotionToken::Calm)));
 ```
 
+## Revealing on hover: `HoverGroup`
+
+```rust,ignore
+// A row whose close button shows only while the row is under the pointer or has focus.
+commands.spawn((
+    Node::default(),
+    HoverGroup,
+    children![label("Mixed.wav"), (button("x"), GroupReveal { rest: 0.0, hovered: 1.0 })],
+));
+```
+
+`GroupReveal { rest, hovered }` on a node under a `HoverGroup` sets the node's `Opacity` from its group: `rest`
+while the group is not hovered and `hovered` while it is, moving between them on a spring. It enters on
+`motion.snappy` and leaves on `motion.default`, and if the pointer comes back mid-way it carries on from where it
+is drawn. The group is hovered while the pointer is over it or anything in it, **while a press that began inside
+it is still held** (a drag that takes the pointer off the row keeps the row revealed until the button is let go),
+and **while it or anything in it has visible focus**, which reveals in that frame with no motion: a control that
+only hover reveals would be an invisible tab stop. Reduced motion fades straight over `motion.fade_seconds`, no
+motion lands, and a group that is settled writes nothing. The node's `Opacity` belongs to this while it has a
+`GroupReveal`.
+
 ## Colours that ease
 
 A hover, a focus ring, a selection, a disabled state and a skin change repaint on springs, in premultiplied
