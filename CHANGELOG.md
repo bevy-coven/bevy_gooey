@@ -11,6 +11,8 @@
 
 ### Fixed
 
+- A colour that moves while its alpha changes kept its speed scaled by the ratio of the alphas, so a fade in from nearly nothing started it a hundred times too fast: a menu's lit row flashed twice as bright as its colour as the menu faded in. `Lane::follow_alpha` now keeps the straight colour's own speed (`tests/menu_exit.rs`, mutation-checked).
+
 - A tooltip with a shortcut no longer flickers between two widths (#79): `centre_keycaps` added half the keycap's slack in physical pixels to a logical padding, so at a scale factor of 2 and a `UiScale` of 1.2 the cap grew past its square, which resized the box sized from it, which restyled the cap back. `tests/tooltip_cap.rs` holds the box and the cap still for 30 frames at four scales.
 ## [0.43.1] - 2026-11-07
 
