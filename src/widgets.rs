@@ -34,6 +34,7 @@ use crate::color::{
     ColorSwatch, ColorValue, SwatchHalf, color_on_key_input, color_on_text, color_self_update,
     swatch_on_activate,
 };
+use crate::combobox::ComboOption;
 use crate::dock::Dock;
 use crate::dock_layout::DockLayout;
 use crate::hold::{
@@ -3344,6 +3345,49 @@ pub fn status_progress(text: impl Into<String>, fraction: f32) -> impl Bundle {
             progress(fraction),
         ],
     )
+}
+
+/// A labelled field with a list of options under it that narrows as the player types: a desktop
+/// picker, where a [`select`] opens a card over the screen. The field shows the chosen option's
+/// label; typing, Down, Up or a click opens the list, typing narrows it with the command palette's
+/// fuzzy matcher ("par" finds "Paraguay"), Down and Up (or Ctrl+N and Ctrl+P) move the lit option
+/// and wrap past the ends, skipping disabled ones, and Enter or a click on an option chooses it:
+/// the field shows its label, the list closes and one [`ValueChange<String>`](crate::ValueChange)
+/// with the option's id is sent on the combobox (none when it was already the choice). Escape with
+/// the list open closes it and puts the chosen label back; a second Escape is an ordinary
+/// [`Cancel`](crate::Cancel). A press outside, or focus leaving the field, closes it too.
+///
+/// The state is [`ComboValue`](crate::ComboValue), the chosen id: set it to choose from code. With
+/// no option matching the list says "No option matches" and Enter chooses nothing. The list is a
+/// [`popover`] of a [`list`]: it scrolls, shows [`COMBO_ROWS`](crate::COMBO_ROWS) rows at a time and
+/// builds one row per option, so it is for tens or hundreds of options, not thousands. It is typed:
+/// a pad that cannot type chooses with a [`select`].
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     combobox("Country", [
+///         ComboOption::new("py", "Paraguay").detail("South America"),
+///         ComboOption::new("pa", "Panama"),
+///         ComboOption::new("fr", "France"),
+///     ]),
+///     ComboValue(Some("fr".into())),
+///     observe(|change: On<ValueChange<String>>| info!("country {}", change.value)),
+/// ));
+/// # }
+/// ```
+pub fn combobox(
+    label: impl Into<String>,
+    options: impl IntoIterator<Item = ComboOption>,
+) -> impl Bundle {
+    crate::combobox::combobox_bundle(label.into(), options.into_iter().collect())
+}
+
+/// The field row of a [`combobox`]: a [`text_input`]'s row, labelled.
+pub(crate) fn combo_field_row(label: String) -> impl Bundle {
+    text_row(Some(label), String::new(), Some(TEXT_INPUT_CHARS))
 }
 
 /// A row that chooses one of a list of options: a [`choice`] with up to eight, and above eight a

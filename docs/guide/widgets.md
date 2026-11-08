@@ -34,6 +34,7 @@ skin's, so changing `GooeySkin` restyles all of them that frame.
 | `binding` | a row that rebinds a key, a mouse button, a pad button or a key chord on the player's next press — see [rebinding](bindings.md) and [shortcuts](shortcuts.md) |
 | `prompt`, `prompts` | the "Esc Back" hints in the corner, in the words of the last device the player used — see [prompts](prompts.md) |
 | `text_input` | a row with a field the player types in — a caret, a selection, paste and IME on Bevy's own `TextInput`, a hint, and focus it never traps — see [text input](text-input.md) |
+| `combobox(label, options)` | a field with a list under it that narrows as the player types: Down, Ctrl+N and Ctrl+P walk it, Enter or a click chooses, one `ValueChange<String>` with the option's id — see [combobox](combobox.md) |
 | `number_field`, `vec_field` | a row with a number the player scrubs with a drag on its label, types, or steps with Up, Down and the D-pad, held to a range, with a mixed value for a multi-selection; `vec_field` is a row of them for a position — see [numbers](numbers.md) |
 
 ## A meter

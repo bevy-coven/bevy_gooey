@@ -167,6 +167,10 @@ pub struct FocusScopes<'w, 's> {
     /// the number (the value) and whose D-pad Left and Right do ([`crate::number_field`],
     /// [`crate::color_field`]).
     numbers: Query<'w, 's, (), Steppable>,
+    /// The text fields of a [`crate::combobox`], whose Up and Down keys walk its list.
+    combo_fields:
+        Query<'w, 's, &'static crate::text::TextInputOf, With<bevy::ui_widgets::TextInput>>,
+    combo_rows: Query<'w, 's, (), With<crate::combobox::ComboField>>,
     /// The radials, which take all four arrows and the D-pad as steps ([`crate::radial`]).
     radials: Query<'w, 's, (), (With<RadialCount>, Without<InteractionDisabled>)>,
     /// The text fields, which take the keys Left and Right themselves.
@@ -280,6 +284,13 @@ impl FocusScopes<'_, '_> {
     /// one takes nothing.
     fn types_text(&self, entity: Entity) -> bool {
         self.typing.contains(entity)
+    }
+
+    /// Whether `entity` is the text field of a combobox: Up and Down are its list's.
+    fn is_combo_field(&self, entity: Entity) -> bool {
+        self.combo_fields
+            .get(entity)
+            .is_ok_and(|of| self.combo_rows.contains(of.0))
     }
 
     /// Whether `entity` is an enabled text area, whose caret takes every arrow key.
@@ -546,6 +557,13 @@ pub fn navigate_by_input(
     // Up and Down on a number field step it (its observer); the D-pad's Up and Down still move
     // focus, its Left and Right step it (`gamepad_adjust`).
     let net_y = if from.is_some_and(|f| scopes.numbers.contains(f)) {
+        axis(pad(GamepadButton::DPadUp), pad(GamepadButton::DPadDown))
+    } else {
+        net_y
+    };
+    // Up and Down on a combobox's field walk its list (`combobox_by_input`), and never move focus off
+    // it; the D-pad's Up and Down still do (a pad cannot type, so it chooses with a `select`).
+    let net_y = if from.is_some_and(|f| scopes.is_combo_field(f)) {
         axis(pad(GamepadButton::DPadUp), pad(GamepadButton::DPadDown))
     } else {
         net_y

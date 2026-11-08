@@ -47,6 +47,8 @@ per subject. The README links each bullet to its page.
   button when the bar is too narrow.
 - [Status bar](status-bar.md) — `status_bar(left, right)`, `status_item(text)` with a `StatusKind` mark and a
   `StatusPriority`, `status_progress`: workspace state left, context right, the lowest priority hiding first.
+- [Combobox](combobox.md) — `combobox(label, options)`: a field with a list under it that narrows as the player types, the
+  lit option moved with Down, Ctrl+N and Ctrl+P, one `ValueChange<String>` with the option's id per choice.
 - [Select](select.md) — `select(label, options, selected)`: a choice up to eight options, a searchable list
   above, one `ValueChange<usize>` and "No option matches".
 - [Sections](sections.md) — `section(title, open, children)`: a header that folds a group of widgets out of layout

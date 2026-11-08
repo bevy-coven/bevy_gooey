@@ -150,6 +150,7 @@ mod choice;
 mod clicks;
 mod color;
 mod color_motion;
+mod combobox;
 mod confirm;
 mod context;
 mod control_size;
@@ -228,6 +229,10 @@ pub use color::{
     ColorValue, SwatchHalf, update_colors,
 };
 pub use color_motion::{ColorTrack, update_color_motion};
+pub use combobox::{
+    COMBO_ROWS, ComboField, ComboListOpen, ComboNote, ComboOption, ComboRow, ComboValue, Combobox,
+    combobox_by_input, keep_focus_on_escape, update_comboboxes,
+};
 pub use confirm::{Confirm, ConfirmButton, ConfirmChosen, confirm};
 pub use context::{ContextMenu, ContextTarget, context_by_key};
 pub use control_size::{CONTROL_LARGE_PX, CONTROL_REGULAR_PX, CONTROL_SMALL_PX, ControlSize};
@@ -375,14 +380,15 @@ pub use tooltip::{
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use type_select::TypedPrefix;
 pub use widgets::{
-    binding, button, card_grid, check_item, choice, color_field, command_palette, context_menu,
-    dialog, dock, heading, hold_button, icon, icon_button, interface_size, label, list, menu,
-    menu_bar, menu_item, menu_title, meter, motion_row, notification_center, number_field,
-    pad_style, panel, popover, popover_modal, primary_button, progress, prompt, prompts,
-    prompts_at, radial, radio_item, screen, section, select, separator, side_tab_page, side_tabs,
-    skin_preset, slider, slot_grid, spinner, split, status_bar, status_item, status_progress,
-    submenu, surface, tab_page, table, tabs, text_area, text_input, text_size, toast, toast_alert,
-    toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
+    binding, button, card_grid, check_item, choice, color_field, combobox, command_palette,
+    context_menu, dialog, dock, heading, hold_button, icon, icon_button, interface_size, label,
+    list, menu, menu_bar, menu_item, menu_title, meter, motion_row, notification_center,
+    number_field, pad_style, panel, popover, popover_modal, primary_button, progress, prompt,
+    prompts, prompts_at, radial, radio_item, screen, section, select, separator, side_tab_page,
+    side_tabs, skin_preset, slider, slot_grid, spinner, split, status_bar, status_item,
+    status_progress, submenu, surface, tab_page, table, tabs, text_area, text_input, text_size,
+    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
+    viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -539,6 +545,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TravelSpring>()
             .register_type::<ControlSize>()
             .register_type::<ScrollEdgeFade>()
+            .register_type::<ComboValue>()
             .register_type::<FadeEdge>()
             .register_type::<PressScale>()
             .register_type::<HoldToConfirm>()
@@ -613,7 +620,7 @@ impl Plugin for GooeyStylePlugin {
                     (update_prompts, place_prompts).chain(),
                     (update_vecs, update_numbers, update_colors).chain(),
                     update_text_inputs,
-                    update_palette,
+                    (update_palette, update_comboboxes).chain(),
                     update_option_rows,
                     (update_choices, update_radials).chain(),
                     dock::update_docks,
@@ -637,6 +644,12 @@ impl Plugin for GooeyStylePlugin {
                     .in_set(GooeySystems::Style),
             );
         app.add_observer(note_host_disable);
+        // The first Escape in an open combobox is its list's: focus is put back after Bevy's text
+        // input lets go of it.
+        app.add_systems(
+            PreUpdate,
+            keep_focus_on_escape.after(bevy::input_focus::InputFocusSystems::Dispatch),
+        );
         // Colours ease to what the skin wrote this frame, so it runs once every colour is written.
         app.add_systems(Update, update_color_motion.after(GooeySystems::Style));
         // The one system that is not in `Update`: it needs this frame's transforms.
@@ -791,7 +804,7 @@ impl Plugin for GooeyNavPlugin {
                     )
                         .chain(),
                     (page_lists.run_if(not_capturing), palette_by_input).chain(),
-                    bind_by_input,
+                    (bind_by_input, combobox_by_input).chain(),
                     catch_pointer,
                     (drag::track_drag, scroll_to_focus).chain(),
                     scroll_menus_to_focus,

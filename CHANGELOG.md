@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- A combobox (#73, `docs/research/combobox.md`, `docs/guide/combobox.md`): `combobox(label, options)` is a labelled field with a popover list under it that narrows as the player types (the palette's fuzzy matcher), Down, Up, Ctrl+N and Ctrl+P move the lit option over the enabled rows and wrap, Enter or a click chooses with one `ValueChange<String>` carrying the option's id (`ComboOption { id, label, detail, enabled }`, state `ComboValue`), and Escape closes the list before the second Escape cancels. Proved by `tests/combobox.rs`.
+
 ## [0.42.0] - 2026-11-07
 
 ### Added

@@ -151,8 +151,13 @@ pub(crate) fn text_on_key_input(
     coloured: Query<(), With<crate::color::ColorValue>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut lookup: crate::default_button::DefaultLookup,
+    open: Query<(), With<crate::combobox::ComboListOpen>>,
     mut commands: Commands,
 ) {
+    // An open combobox's list owns Enter: it chooses, and does not also submit.
+    if open.contains(input.focused_entity) {
+        return;
+    }
     if input.input.state != ButtonState::Pressed
         || input.input.repeat
         || !matches!(input.input.key_code, KeyCode::Enter | KeyCode::NumpadEnter)
