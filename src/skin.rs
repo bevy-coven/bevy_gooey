@@ -197,6 +197,9 @@ const TABLE_BAND_ALPHA: f32 = 0.5;
 /// target of its own.
 const TABLE_SORT_MARK_SCALE: f32 = 0.8;
 
+/// An LED's dot is this many body text sizes square.
+pub(crate) const LED_TEXT_SIZES: f32 = 1.1;
+
 /// The share of the window, on each side, that a dialog's scrim and a prompts legend keep clear: a
 /// TV may not show the outer 5%, so nothing a player must read or press stands there.
 pub(crate) const SAFE_EDGE_PERCENT: f32 = 5.0;
@@ -1801,6 +1804,11 @@ pub enum Role {
     Cooldown,
     /// The seconds left on a [`Role::Cooldown`], on a chip of the opaque surface in its middle.
     CooldownText,
+    /// An [`crate::led`]'s row: its dot, its label and its state word, a half gap apart.
+    Led,
+    /// An LED's dot: a square of `LED_TEXT_SIZES` body text sizes, its fill, frame, silhouette and
+    /// glow data written by [`crate::update_leds`] from the [`crate::LedState`].
+    LedDot,
     /// The one grid cell every page stands in, so the widget is as large as its largest page; not
     /// drawn.
     TabPages,
@@ -2962,6 +2970,8 @@ fn restyle(
         | Role::CardName
         | Role::CardLine
         | Role::Cooldown
+        | Role::Led
+        | Role::LedDot
         | Role::RadialIcon
         | Role::RadialText
         | Role::RadialCentre
@@ -3307,6 +3317,17 @@ fn restyle(
                 next.align_items = AlignItems::Center;
                 next.justify_content = JustifyContent::Center;
                 next.border_radius = radius;
+            }
+            Role::Led => {
+                next.align_items = AlignItems::Center;
+                next.column_gap = Val::Px(skin.gap * 0.5);
+            }
+            Role::LedDot => {
+                let side = Val::Px(skin.text_size * skin.text_scale * LED_TEXT_SIZES);
+                next.width = side;
+                next.height = side;
+                next.flex_shrink = 0.0;
+                next.border = UiRect::all(Val::Px(line));
             }
             Role::CooldownText => {
                 next.padding = UiRect::axes(Val::Px(skin.gap * 0.5), Val::Px(skin.gap * 0.25));

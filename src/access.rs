@@ -103,6 +103,7 @@ fn spec(role: Role) -> Spec {
         | Role::PaletteField
         | Role::SlotGrid
         | Role::CardGrid
+        | Role::Led
         | Role::FieldMessage => Spec::Group,
         Role::Heading
         | Role::Label
@@ -215,6 +216,7 @@ fn spec(role: Role) -> Spec {
         | Role::TabBadge
         | Role::Cooldown
         | Role::CooldownText
+        | Role::LedDot
         | Role::HoldTrack
         | Role::HoldFill
         | Role::RadialIcon

@@ -20,6 +20,7 @@ const LIFT_L: f32 = crate::model::PRIMARY_LIFT_L;
 
 /// The hue Warning takes from the danger colour, degrees of Oklch: amber.
 const WARNING_HUE_DEG: f32 = 80.0;
+const LIVE_HUE_DEG: f32 = 145.0;
 
 /// How many times a colour's chroma is pulled in to fit sRGB, and by how much each time.
 const GAMUT_STEPS: usize = 40;
@@ -185,10 +186,19 @@ impl GooeySkin {
 
     /// The caution colour: [`GooeySkin::danger`]'s lightness and chroma at an amber hue.
     pub fn warning(&self) -> Color {
+        self.at_hue_of_danger(WARNING_HUE_DEG)
+    }
+
+    /// The colour of something that is live and well: [`GooeySkin::danger`]'s lightness and chroma
+    /// at a green hue, pulled into sRGB as [`GooeySkin::warning`] is, so it stands as far from the
+    /// panel as the danger colour does. An [`crate::led`]'s lit disc.
+    pub fn live(&self) -> Color {
+        self.at_hue_of_danger(LIVE_HUE_DEG)
+    }
+
+    fn at_hue_of_danger(&self, hue: f32) -> Color {
         let mut lch = Oklcha::from(self.danger);
-        lch.hue = WARNING_HUE_DEG;
-        // Amber at the danger colour's chroma can fall outside sRGB: pull the chroma in until it fits,
-        // so the colour that is checked is the colour that is drawn.
+        lch.hue = hue;
         for _ in 0..GAMUT_STEPS {
             let c = Srgba::from(Color::from(lch));
             if [c.red, c.green, c.blue]

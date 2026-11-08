@@ -41,6 +41,7 @@ use crate::hold::{
     HoldToConfirm, hold_on_cancel, hold_on_drag_end, hold_on_press, hold_on_release,
 };
 use crate::icon::{Icon, IconSource};
+use crate::led::{Led, LedState, LedWord};
 use crate::list::ListView;
 use crate::menu::{MenuBar, MenuItem, MenuTitle, bar_on_cancel, menu_panel};
 use crate::meter::Meter;
@@ -3357,6 +3358,50 @@ pub fn status_progress(text: impl Into<String>, fraction: f32) -> impl Bundle {
             (Node::default(), Role::StatusMark, Pickable::IGNORE),
             (Text::new(text), Role::ButtonText, ONE_LINE),
             progress(fraction),
+        ],
+    )
+}
+
+/// A glowing dot that says whether something is live, with its label and the state in words: an
+/// ["Agent  live" row](crate::LedState). Write [`Led`](crate::Led) on it to change the state; each
+/// state has its own silhouette (a hollow ring, a disc, a rounded square, a diamond) and its word, so
+/// colour is never the only signal, and the glow of a busy one pulses unless motion is reduced.
+/// What "live" means is the game's: the widget draws the state it is given.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, agent: Query<Entity, With<Led>>) {
+/// commands.spawn(led("Agent", LedState::Busy));
+/// // Later, when the checks pass:
+/// for entity in &agent {
+///     commands.entity(entity).insert(Led(LedState::Live));
+/// }
+/// # }
+/// ```
+pub fn led(label: impl Into<String>, state: LedState) -> impl Bundle {
+    (
+        Node::default(),
+        Role::Led,
+        Led(state),
+        Pickable::IGNORE,
+        children![
+            (
+                Node::default(),
+                Role::LedDot,
+                BackgroundColor::default(),
+                BorderColor::default(),
+                BoxShadow::default(),
+                Pickable::IGNORE,
+            ),
+            (Text::new(label), Role::Label, ONE_LINE, Pickable::IGNORE),
+            (
+                Text::new(state.word()),
+                Role::Label,
+                ONE_LINE,
+                LedWord,
+                Pickable::IGNORE,
+            ),
         ],
     )
 }

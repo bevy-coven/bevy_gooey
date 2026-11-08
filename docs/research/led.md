@@ -21,10 +21,10 @@ A status lamp is lit, dark or blinking; a failed one is red and does not blink. 
 
 ## Model adopted
 
-- `led(label, state)`, a row: `Role::Led` root with `Led(LedState)` (the state, public, the game writes it), a `Role::LedDot` (a circle-sized node, layout from the skin: 0.9 body text sizes) and two `Role::Label` texts: the label and the state word (`LedWord`, `LedState::word()`: "off", "live", "busy", "failed").
+- `led(label, state)`, a row: `Role::Led` root with `Led(LedState)` (the state, public, the game writes it), a `Role::LedDot` (a circle-sized node, layout from the skin: 1.1 body text sizes) and two `Role::Label` texts: the label and the state word (`LedWord`, `LedState::word()`: "off", "live", "busy", "failed").
 - Silhouettes: **Off** a hollow ring in `outline`, **Live** a filled disc, **Busy** a filled rounded square, **Failed** a filled diamond (a rounded square turned 45 degrees and drawn at 0.78 so its diagonal is the dot's width).
 - Colours, all derived, no new skin field and no preset change: Live is `GooeySkin::live()` (the danger colour's lightness and chroma at a green hue, gamut-pulled like `warning()`), Busy is `warning()`, Failed is `danger`. Each holds 3:1 on the opaque panel in every preset (tested).
-- Glow: a `BoxShadow` of the LED's colour, blur 1.2 dot sizes, spread 0.15, alpha 0.55 (lit states). Busy's alpha pulses 0.2 to 0.7 on a 1.2 s sine of `Time<Real>`. Off has none.
+- Glow: a `BoxShadow` of the LED's colour, blur 1.6 dot sizes, spread 0.15, alpha 0.7 (lit states). Busy's alpha pulses 0.25 to 0.85 on a 1.2 s sine of `Time<Real>`. Off has none.
 - The fill, border, radius, rotation, shadow and word are **data written by `update_leds`** (like the cooldown's sweep), each only on a difference, so a settled LED writes nothing. `apply_skin` writes layout only.
 - `MotionSettings::lands_travel()` (reduced or off): the glow is steady at its middle alpha.
 
@@ -36,9 +36,9 @@ A lit lens: a saturated disc with a soft halo bleeding onto the panel, not a fla
 
 | Name | Value | Where from |
 |---|---|---|
-| `LED_TEXT_SIZES` | 0.9 | design default |
-| glow blur / spread / alpha | 1.2 dots / 0.15 dots / 0.55 | design default |
-| pulse | 1.2 s sine, alpha 0.2 to 0.7 | design default; under 1 Hz |
+| `LED_TEXT_SIZES` | 1.1 | design default |
+| glow blur / spread / alpha | 1.6 dots / 0.15 dots / 0.7 | design default |
+| pulse | 1.2 s sine, alpha 0.25 to 0.85 | design default; under 1 Hz |
 | live hue | 145 degrees (Oklch) | design default |
 
 ## Validation targets

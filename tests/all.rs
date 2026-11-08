@@ -40,6 +40,7 @@ mod inspector;
 mod large_text;
 mod layout_motion;
 mod leaf;
+mod led;
 mod lines;
 mod list;
 mod menu;

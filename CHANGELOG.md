@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `led(label, state)` (G-69, #80, `docs/research/led.md`, `docs/guide/status-bar.md`): a glowing dot that says whether something is live, with its label and the state in words. `Led(LedState)` on the row is the state (`Off` a hollow ring, `Live` a disc, `Busy` a rounded square whose glow pulses, `Failed` a diamond): every state has its own silhouette and word, so colour is never the only signal, and the pulse is steady under reduced or no motion. New `GooeySkin::live()` (the danger colour's lightness and chroma at a green hue, no new skin field), `Role::Led` and `Role::LedDot` (the dot's fill, glow and silhouette are data written by `update_leds`), `LedState`, `LedWord`. `examples/led.rs`, `docs/media/led.gif`.
+
 ## [0.44.2] - 2026-11-08
 
 ### Added

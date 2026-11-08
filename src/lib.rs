@@ -169,6 +169,7 @@ mod icon;
 #[cfg(feature = "reflect")]
 mod inspector;
 mod layout_motion;
+mod led;
 mod list;
 mod menu;
 mod meter;
@@ -266,6 +267,7 @@ pub use layout_motion::{
     LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelFrom, TravelSpring, mark_moving_parts,
     update_layout_motion,
 };
+pub use led::{Led, LedState, LedWord, update_leds};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
 pub use menu::{
     Disabled, MenuBar, MenuItem, MenuMarked, MenuOpen, MenuPanel, MenuTitle, fit_menus,
@@ -393,7 +395,7 @@ pub use type_select::{TypeSelectGroup, TypedPrefix};
 pub use widgets::{
     binding, button, card_grid, check_item, choice, color_field, combobox, command_palette,
     context_menu, dialog, dock, heading, hold_button, icon, icon_button, interface_size, label,
-    list, menu, menu_bar, menu_item, menu_title, meter, motion_row, notification_center,
+    led, list, menu, menu_bar, menu_item, menu_title, meter, motion_row, notification_center,
     number_field, pad_style, panel, popover, popover_modal, primary_button, progress, prompt,
     prompts, prompts_at, radial, radio_item, screen, section, select, separator, side_tab_page,
     side_tabs, skin_preset, slider, slot_grid, spinner, split, status_bar, status_item,
@@ -564,6 +566,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<FadeEdge>()
             .register_type::<PressScale>()
             .register_type::<Pop>()
+            .register_type::<Led>()
+            .register_type::<LedState>()
+            .register_type::<LedWord>()
             .register_type::<HoverGroup>()
             .register_type::<TypeSelectGroup>()
             .register_type::<GroupReveal>()
@@ -627,7 +632,7 @@ impl Plugin for GooeyStylePlugin {
                         update_field_problems,
                         update_progress,
                         update_spinners,
-                        update_cooldowns,
+                        (update_cooldowns, update_leds),
                         update_hold_bars,
                         (update_toggle_groups, fit_bars).chain(),
                         (update_sections, update_section_glides).chain(),

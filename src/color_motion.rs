@@ -178,7 +178,7 @@ struct Choice {
 fn is_data(role: &Role) -> bool {
     matches!(
         role,
-        Role::Tone(_) | Role::ColorSwatchHalf | Role::ColorArea | Role::ColorRail
+        Role::Tone(_) | Role::ColorSwatchHalf | Role::ColorArea | Role::ColorRail | Role::LedDot
     )
 }
 
