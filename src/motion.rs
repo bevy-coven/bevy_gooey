@@ -13,11 +13,13 @@
 use bevy::prelude::*;
 
 use crate::model::{
-    DIALOG_SLIDE_PX, POPOVER_SLIDE_PX, Spring, SpringState, spring_settled, spring_step,
+    DIALOG_SLIDE_PX, POPOVER_SLIDE_PX, Spring, SpringState, TOAST_SLIDE_PX, spring_settled,
+    spring_step,
 };
 use crate::popover::PopoverPanel;
 use crate::presence::{Arriving, Opacity};
 use crate::skin::{GooeySkin, Role, SkinScope, skin_of};
+use crate::toast::{Toast, ToastAnchor, ToastSettings};
 
 /// How much motion the player wants: the one switch for every motion the crate draws.
 ///
@@ -383,17 +385,22 @@ type NewPopover = (Entity, Has<Opacity>);
 /// A node that has just got a role or a parent and no motion of its own yet.
 type NewCardFilter = (Or<(Added<Role>, Added<ChildOf>)>, Without<MotionTarget>);
 
-/// Gives a dialog's card and each popover panel that appeared this frame its entrance, unless
-/// motion is off or the card already has a [`MotionTarget`]. A card is a `Panel` or `Palette`
+/// Gives a dialog's card, each popover panel and each toast that appeared this frame its entrance,
+/// unless motion is off or the card already has a [`MotionTarget`]. A card is a `Panel` or `Palette`
 /// whose parent is a scrim. Under [`MotionSettings::reduced`] the entrance is a fade in place
-/// ([`crate::Arriving`]) instead of a slide, for a node with no [`Opacity`] of its own. Runs in
-/// [`crate::GooeySystems::Style`], before [`update_motion`].
+/// ([`crate::Arriving`]) instead of a slide, for a node with no [`Opacity`] of its own. A toast
+/// starts [`TOAST_SLIDE_PX`] toward the window edge its stack is anchored to (below for a bottom
+/// anchor, above for a top one) and settles on the snappy spring while its own fade brings it in;
+/// under reduced motion it only fades, as it always did. Runs in [`crate::GooeySystems::Style`],
+/// before [`update_motion`].
 pub fn begin_entrances(
     settings: Res<MotionSettings>,
     mut commands: Commands,
     popovers: Query<NewPopover, (Added<PopoverPanel>, Without<PopoverSlide>)>,
     cards: Query<NewCard, NewCardFilter>,
     roles: Query<&Role>,
+    toasts: Query<Entity, (Added<Toast>, Without<MotionTarget>)>,
+    toast_settings: Option<Res<ToastSettings>>,
 ) {
     if settings.is_off() {
         return;
@@ -427,6 +434,24 @@ pub fn begin_entrances(
             commands
                 .entity(entity)
                 .insert(MotionTarget::default().entering_from(Vec2::new(0.0, DIALOG_SLIDE_PX)));
+        }
+    }
+    if !reduced {
+        let from_the_top = toast_settings.as_ref().is_some_and(|s| {
+            matches!(
+                s.anchor,
+                ToastAnchor::TopLeft | ToastAnchor::TopCenter | ToastAnchor::TopRight
+            )
+        });
+        let toward_the_edge = if from_the_top {
+            -TOAST_SLIDE_PX
+        } else {
+            TOAST_SLIDE_PX
+        };
+        for entity in &toasts {
+            commands
+                .entity(entity)
+                .insert(MotionTarget::default().entering_from(Vec2::new(0.0, toward_the_edge)));
         }
     }
 }

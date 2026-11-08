@@ -164,6 +164,7 @@ mod elevation;
 mod feedback;
 mod field;
 mod hold;
+mod hover_group;
 mod icon;
 #[cfg(feature = "reflect")]
 mod inspector;
@@ -251,6 +252,7 @@ pub use field::{FieldProblem, FieldProblemKind, update_field_problems};
 pub use hold::{
     HoldConfirmed, HoldProgress, HoldSettings, HoldToConfirm, hold_by_input, update_hold_bars,
 };
+pub use hover_group::{GroupHold, GroupReveal, HoverGroup, RevealTrack, update_group_reveals};
 pub use icon::{Icon, IconMissing, IconSize, IconSource, IconTone, update_icons};
 #[cfg(feature = "reflect")]
 pub use inspector::{
@@ -276,8 +278,8 @@ pub use model::{
     POPOVER_SLIDE_PX, PRIMARY_LIFT_L, PadStyle, RADIAL_DEAD_ZONE, RADIAL_STICK_PUSH,
     SPINNER_PERIOD_SECS, SPLIT_KEY_STEP_PX, SPRING_MAX_SETTLE_SECONDS, SPRING_REST_POSITION,
     SPRING_REST_SPEED, STATE_STEP, STICK_PUSH, Spring, SpringError, SpringState,
-    TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TYPE_AHEAD_SECS, TableStep, Toward,
-    area_values, bar_fit, box_outside, choice_next, choice_step, cie_lightness, clock_text,
+    TABLE_LEAST_COLUMN, TEXT_CONTRAST, TEXT_SIZE_STEPS, TOAST_SLIDE_PX, TYPE_AHEAD_SECS, TableStep,
+    Toward, area_values, bar_fit, box_outside, choice_next, choice_step, cie_lightness, clock_text,
     column_resize, composite, contrast_ratio, cooldown_sweep, cooldown_text, cooldown_words,
     dock_drop_rect, dock_edge_zone, dock_neighbour, dock_tab_slot, dock_zone, eta_words,
     format_number, fuzzy_score, hex_text, hold_seconds, hold_step, hsv_to_rgb, is_modifier_key,
@@ -548,6 +550,12 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ComboValue>()
             .register_type::<FadeEdge>()
             .register_type::<PressScale>()
+            .register_type::<HoverGroup>()
+            .register_type::<GroupReveal>()
+            .add_observer(hover_group::holds_on_press)
+            .add_observer(hover_group::holds_on_release)
+            .add_observer(hover_group::holds_on_drag_end)
+            .add_observer(hover_group::holds_on_cancel)
             .register_type::<HoldToConfirm>()
             .register_type::<HoldProgress>()
             .register_type::<HoldConfirmed>()
@@ -590,6 +598,7 @@ impl Plugin for GooeyStylePlugin {
                             begin_stays,
                             update_presence,
                             update_arrivals,
+                            update_group_reveals,
                             spread_opacity,
                         )
                             .chain(),

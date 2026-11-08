@@ -2411,6 +2411,9 @@ pub fn hold_step(progress: f32, dt: f32, seconds: f32, held: bool, instant: bool
 pub const DIALOG_SLIDE_PX: f32 = 12.0;
 /// How far a popover (a menu, a select list, a colour picker) slides from its anchor, logical px.
 pub const POPOVER_SLIDE_PX: f32 = 6.0;
+/// How far a toast starts from its place, toward the window edge its stack is anchored to, logical px.
+/// A toast is one or two lines of text with its padding, so this carries it from just past the edge.
+pub const TOAST_SLIDE_PX: f32 = 48.0;
 
 /// The least a spring's position may be off its target, logical px, for it to count as at rest:
 /// below the 1/64 px a layout snaps to, so the last snap is invisible. Rune's `PropClass::eps` for
