@@ -4,6 +4,7 @@
 
 ### Added
 
+- A sliding selection indicator for tabs and toggle groups (#68, `docs/research/selection-indicator.md`, `docs/guide/tabs.md`, `docs/guide/toolbars.md`): `toggle_group`, `tabs` and `side_tabs` spring one accent node (`SelectionIndicator`) from the old lit option's rect to the new one's on `motion.snappy`, retargeting mid-flight with no jump and landing within half a pixel; hidden at rest (the options' fills are as ever), clear over a raised strip while it travels (`Indicating`), never shown under reduced or no motion. Proved by `tests/selection_indicator.rs`.
 - Type-select in any focus group (#78, `docs/research/type-select.md`, `docs/guide/menus.md`): a public `TypeSelectGroup` marker on a container makes its focusable descendants (a `TabIndex`, shown, not disabled) type-select the way a `ListView`'s rows do, so a card grid, a project browser or a save list takes it. A row's words are its own text or the first text under it; the prefix, the pause and the repeated-letter rules are the list's, and a focused text field still takes the characters. Not built: a group that is a table or a tree (those keep their own cursor). Proved by `tests/type_select_group.rs`.
 
 ## [0.43.0] - 2026-11-07

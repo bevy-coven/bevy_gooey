@@ -67,6 +67,7 @@ mod scroll_glide;
 mod section;
 mod seed;
 mod select;
+mod selection_indicator;
 mod serde;
 mod shortcut;
 mod side_tabs;

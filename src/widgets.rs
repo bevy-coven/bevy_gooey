@@ -72,6 +72,7 @@ use crate::radial::{
 use crate::region::FocusRegion;
 use crate::section::{SectionHeader, SectionOpen, header_on_activate, section_self_update};
 use crate::select::{SELECT_HINT, SELECT_NO_MATCH, Select, select_on_activate};
+use crate::selection_indicator::{Indicating, selection_indicator};
 use crate::skin::Role;
 use crate::slots::{Slot, SlotGrid, SlotItems};
 use crate::split::{
@@ -2174,6 +2175,7 @@ pub(crate) fn tabs_in<B: Bundle>(
                     activation: TabActivation::Automatic,
                 },
                 Role::TabList,
+                Indicating::default(),
                 observe(tabs_on_select),
                 Children::spawn(SpawnIter(
                     labels.into_iter().map(|(label, extra)| tab(label, extra)),
@@ -2196,6 +2198,7 @@ pub(crate) fn tabs_in<B: Bundle>(
                 Role::TabPages,
                 pages,
             ));
+            parent.spawn(selection_indicator());
         })),
     )
 }
@@ -2238,20 +2241,24 @@ pub fn side_tabs(tabs: impl IntoIterator<Item = crate::SideTab>, selected: usize
         TabsValue(selected),
         TabsCount(count),
         observe(tabs_self_update),
-        children![(
-            Node {
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Stretch,
-                ..default()
-            },
-            TabList {
-                orientation: ControlOrientation::Vertical,
-                activation: TabActivation::Automatic,
-            },
-            Role::TabList,
-            observe(tabs_on_select),
-            Children::spawn(SpawnIter(tabs.into_iter().map(side_tab))),
-        )],
+        children![
+            (
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Stretch,
+                    ..default()
+                },
+                TabList {
+                    orientation: ControlOrientation::Vertical,
+                    activation: TabActivation::Automatic,
+                },
+                Role::TabList,
+                Indicating::default(),
+                observe(tabs_on_select),
+                Children::spawn(SpawnIter(tabs.into_iter().map(side_tab))),
+            ),
+            selection_indicator(),
+        ],
     )
 }
 
@@ -2266,6 +2273,7 @@ fn side_tab(tab: crate::SideTab) -> impl Bundle {
         },
         bevy::ui_widgets::Tab,
         Role::Tab,
+        Indicating::default(),
         crate::VerticalTab,
         Hovered::default(),
         AutoDirectionalNavigation::default(),
@@ -2306,6 +2314,7 @@ fn tab(label: String, extra: impl Bundle) -> impl Bundle {
         },
         bevy::ui_widgets::Tab,
         Role::Tab,
+        Indicating::default(),
         Hovered::default(),
         AutoDirectionalNavigation::default(),
         extra,
@@ -3196,6 +3205,7 @@ pub fn toggle_group(
     (
         Node::default(),
         Role::ToggleGroup,
+        Indicating::default(),
         ToggleGroupValue(selected),
         ToggleGroupCount(count),
         observe(group_self_update),
@@ -3209,6 +3219,7 @@ pub fn toggle_group(
                     },
                     bevy::ui_widgets::Button,
                     Role::GroupOption,
+                    Indicating::default(),
                     GroupIndex(index),
                     Hovered::default(),
                     TabIndex(0),
@@ -3227,6 +3238,7 @@ pub fn toggle_group(
                     }
                 }
             }
+            parent.spawn(selection_indicator());
         })),
     )
 }

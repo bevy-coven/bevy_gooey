@@ -17,6 +17,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use crate::MotionTokens;
 use crate::model::{Spring, SpringState, spring_settled, spring_step};
 use crate::motion::MotionSettings;
+use crate::selection_indicator::Indicating;
 use crate::skin::{GooeySkin, Role, SkinScope, skin_of};
 use crate::table::TableRow;
 
@@ -203,8 +204,10 @@ fn straight(channels: [f32; 4], target: Color) -> Color {
     ))
 }
 
-/// What holds a node's colours still: a press, a slider's or a scrollbar's drag, a rebound table row.
+/// What holds a node's colours still: a selection indicator that took an option over or gave it
+/// back, a press, a slider's or a scrollbar's drag, a rebound table row.
 type Holds<'w, 's> = (
+    Query<'w, 's, Ref<'static, Indicating>>,
     Query<'w, 's, (), With<Pressed>>,
     Query<'w, 's, &'static SliderDragState>,
     Query<'w, 's, &'static ScrollbarDragState>,
@@ -241,7 +244,7 @@ pub fn update_color_motion(
     holds: Holds,
     mut tracks: Query<Colored>,
 ) {
-    let (pressed, sliders, bars, rows) = holds;
+    let (indicating, pressed, sliders, bars, rows) = holds;
     let dt = time.as_ref().map_or(0.0, |time| time.delta_secs());
     let off = settings.is_off() || time.is_none();
     let reskinned = skin.is_changed() || !changed_scopes.is_empty();
@@ -267,6 +270,11 @@ pub fn update_color_motion(
             track.age += 1;
         }
         let held = || {
+            // An option the selection indicator has just taken over, or given back, lands: the
+            // indicator is what moves, and the fill must not fade over it.
+            if indicating.get(entity).is_ok_and(|mark| mark.is_changed()) {
+                return true;
+            }
             let mut at = entity;
             for _ in 0..=HELD_DEPTH {
                 if held_at(at) {

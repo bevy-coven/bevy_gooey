@@ -190,6 +190,7 @@ mod scroll_glide;
 mod section;
 mod seed;
 mod select;
+mod selection_indicator;
 mod shortcut;
 mod size_motion;
 mod skin;
@@ -340,6 +341,9 @@ pub use scroll_glide::{
 pub use section::{SectionHeader, SectionId, SectionOpen, SectionStates, update_sections};
 pub use seed::PaletteSeed;
 pub use select::{SELECT_FILTER_ABOVE, Select};
+pub use selection_indicator::{
+    Indicating, IndicatorPuck, SelectionIndicator, update_selection_indicators,
+};
 pub use shortcut::{ChordText, Modifiers, Platform, Shortcut, update_chord_texts};
 pub use size_motion::{SectionGlide, SplitGlide, update_section_glides, update_split_glides};
 pub use skin::{
@@ -548,6 +552,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ControlSize>()
             .register_type::<ScrollEdgeFade>()
             .register_type::<ComboValue>()
+            .register_type::<Indicating>()
             .register_type::<FadeEdge>()
             .register_type::<PressScale>()
             .register_type::<HoverGroup>()
@@ -645,7 +650,13 @@ impl Plugin for GooeyStylePlugin {
                         update_scroll_fades,
                     )
                         .chain(),
-                    (update_loading, elevation::give_elevation, apply_skin).chain(),
+                    (
+                        update_selection_indicators,
+                        update_loading,
+                        elevation::give_elevation,
+                        apply_skin,
+                    )
+                        .chain(),
                     update_meters,
                     update_sliders,
                     (update_lists, access::update_accessibility).chain(),

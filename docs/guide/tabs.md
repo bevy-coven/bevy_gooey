@@ -54,6 +54,7 @@ from they do nothing. Show your player the bumper prompt: not every game uses th
   text colour, not by hue alone (NN/g: "Use at least two selection indicators"). The strip is a row of
   equal columns as wide as the widest label, `min_target` high, with a button's focus ring, and the panel
   it stands in grows to fit the labels, never squeezing one.
+- **A selection indicator slides.** Changing the lit option springs one accent node from the old option's rect to the new one's on `motion.snappy` instead of swapping two fills; a change mid-flight turns round from where it is drawn. It is hidden at rest, so the options look as ever; reduced motion and no motion light the option at once. `SelectionIndicator` is its component and `Indicating` the mark on a strip and its options while it travels.
 - **Every page takes the room of the largest**, so turning a page moves nothing: not the strip, not the
   panel round it, and the player's hand does not follow a moving target. The price is blank room under a
   short page. The pages not shown are hidden, which keeps their room, hides them from the pointer and

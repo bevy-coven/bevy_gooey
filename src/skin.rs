@@ -30,6 +30,7 @@ use crate::model::{
 use crate::popover::{PopoverPanel, placement_of};
 use crate::presence::PresenceAlpha;
 use crate::prompt::PromptsAnchor;
+use crate::selection_indicator::Indicating;
 use crate::status::StatusKind;
 use crate::table::TableRow;
 use crate::toast::{Toast, ToastKind};
@@ -2066,6 +2067,9 @@ struct State {
     variant: ButtonVariant,
     /// The button is busy ([`crate::Loading`]): its spinner draws in its ink.
     holding: bool,
+    /// A selection indicator is travelling over this option's strip ([`Indicating`]): the option
+    /// draws clear, so the indicator is what shows.
+    indicating: bool,
     /// The control's own size, when it has one ([`ControlSize`]).
     control: Option<ControlSize>,
     /// A text area: its field holds lines, so a size is its least height and not one line's centre.
@@ -2103,6 +2107,7 @@ impl Default for State {
             primary: false,
             variant: ButtonVariant::Neutral,
             holding: false,
+            indicating: false,
             control: None,
             multi_line: false,
         }
@@ -2134,6 +2139,7 @@ type StateQuery = (
         Option<&'static ControlSize>,
         Option<&'static ButtonVariant>,
         Has<LoadingHold>,
+        Option<&'static Indicating>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -2177,6 +2183,7 @@ type Restyle = (
                 Changed<ControlSize>,
                 Changed<ButtonVariant>,
                 Added<LoadingHold>,
+                Changed<Indicating>,
             )>,
         )>,
     )>,
@@ -2317,6 +2324,7 @@ pub fn apply_skin(
                         control,
                         variant,
                         holding,
+                        indicating,
                     ),
                     row,
                     role,
@@ -2330,6 +2338,7 @@ pub fn apply_skin(
                             || bar.is_some_and(|d| d.dragging),
                         disabled: disabled && !holding,
                         holding,
+                        indicating: indicating.is_some_and(|mark| mark.0),
                         hovered: hovered.is_some_and(|h| h.0),
                         checked,
                         selected: selected || (checked && role == Some(&Role::GroupOption)),
@@ -2698,6 +2707,11 @@ fn restyle(
         // The selected tab is lit like everything that is on (a switch, a meter's fill): the
         // accent, with the text colour inverted on it, two cues by luminance and not by hue. The
         // others are a button's, full-contrast text on a visible fill, never faded.
+        // While the selection indicator travels the options are clear: its backdrop is the raised
+        // fill they had, and its puck the accent.
+        Role::Tab | Role::GroupOption if state.indicating && !state.disabled && !state.pressed => {
+            Some(Color::NONE)
+        }
         Role::Tab | Role::GroupOption => Some(if state.disabled {
             skin.surface
         } else if state.selected || state.pressed {
