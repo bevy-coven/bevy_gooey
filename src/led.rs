@@ -14,7 +14,7 @@ use crate::elevation::ShadowLayer;
 use crate::motion::MotionSettings;
 use crate::skin::{GooeySkin, LED_TEXT_SIZES, Role, SkinScope, skin_of};
 
-/// What an [`led`] says.
+/// What an [`led()`](crate::led) says.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect)]
 #[reflect(Debug, Default, PartialEq, Hash, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -31,7 +31,7 @@ pub enum LedState {
 }
 
 impl LedState {
-    /// The word an [`led`] shows beside its dot.
+    /// The word an [`led()`](crate::led) shows beside its dot.
     pub fn word(self) -> &'static str {
         match self {
             Self::Off => "off",
@@ -42,12 +42,12 @@ impl LedState {
     }
 }
 
-/// The state of an [`led`], on its row: write it and the dot and the word follow in the next frame.
+/// The state of an [`led()`](crate::led), on its row: write it and the dot and the word follow in the next frame.
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 pub struct Led(pub LedState);
 
-/// Marks the text that shows an [`led`]'s state word.
+/// Marks the text that shows an [`led()`](crate::led)'s state word.
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 pub struct LedWord;

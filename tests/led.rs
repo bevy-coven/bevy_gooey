@@ -50,18 +50,7 @@ fn app(settings: MotionSettings) -> App {
     .init_resource::<Writes>()
     .add_systems(
         Last,
-        |changed: Query<
-            (),
-            (
-                With<LedDotMarker>,
-                Or<(
-                    Changed<BackgroundColor>,
-                    Changed<BoxShadow>,
-                    Changed<UiTransform>,
-                )>,
-            ),
-        >,
-         mut n: ResMut<Writes>| {
+        |changed: Query<(), DotWritten>, mut n: ResMut<Writes>| {
             n.0 += changed.iter().count() as u32;
         },
     );
@@ -69,6 +58,16 @@ fn app(settings: MotionSettings) -> App {
     app.update();
     app
 }
+
+/// A dot whose fill, glow or transform changed.
+type DotWritten = (
+    With<LedDotMarker>,
+    Or<(
+        Changed<BackgroundColor>,
+        Changed<BoxShadow>,
+        Changed<UiTransform>,
+    )>,
+);
 
 /// Tags the dot so the write counter reads it alone.
 #[derive(Component)]
