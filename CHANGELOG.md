@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.50.1] - 2026-11-09
+
 ### Added
 
 - `GooeyFrames::track`: nine-slice art for every slider rail, switch track and hold button's track. The fill, thumb and knob keep the skin's colours over the art; a switch that is on is tinted by the accent. A patch release: `GooeyFrames` is `#[non_exhaustive]`.
