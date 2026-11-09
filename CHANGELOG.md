@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.6] - 2026-11-09
+
 ### Changed
 
 - `tests/split.rs` no longer sleeps 600 ms to age out a double click. Both clocks the behaviour rests on are wall clocks (this crate's `DoublePress` on `Time<Real>`, Bevy's picking interval on `Instant::now`), so a host under load failed the gate; the test now advances `Time<Real>` by four intervals, which the mutation check proves still gives the assertion its teeth. Tests only -- the package ships them, so it releases. See `docs/research/double-click-clock.md`.
