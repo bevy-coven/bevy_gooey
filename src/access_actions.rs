@@ -22,8 +22,8 @@ use bevy::input_focus::{FocusCause, InputFocus, InputFocusVisible};
 use bevy::prelude::*;
 use bevy::ui::InteractionDisabled;
 use bevy::ui_widgets::{
-    Activate, Button, Checkbox, SelectedTab, SetSliderValue, Slider, SliderValueChange, Tab,
-    TabList, ToggleChecked, ValueChange,
+    Activate, Button, Checkbox, Scrollbar, SelectedTab, SetSliderValue, Slider, SliderValueChange,
+    Tab, TabList, ToggleChecked, ValueChange,
 };
 
 use crate::choice::{ChoiceValue, Move, MoveChoice};
@@ -69,6 +69,13 @@ const FOLD: &[Action] = &[
     Action::Expand,
     Action::Collapse,
 ];
+/// A list's rail: a screen reader moves the list by steps or to a place, as the wheel and a drag do.
+pub(crate) const SCROLL: &[Action] = &[
+    Action::Focus,
+    Action::Increment,
+    Action::Decrement,
+    Action::SetValue,
+];
 /// A split's divider: a screen reader moves it by steps or to a value, as the arrows and a drag do.
 pub(crate) const SPLIT: &[Action] = &[
     Action::Focus,
@@ -101,6 +108,7 @@ pub(crate) struct Handles {
     open: Has<MenuOpen>,
     stop: Has<TabIndex>,
     divider: Has<SplitDivider>,
+    rail: Option<&'static Scrollbar>,
 }
 
 /// The actions `handles` takes: none while disabled. The one table the declaration and the
@@ -120,6 +128,8 @@ pub(crate) fn actions_of(handles: &HandlesItem) -> &'static [Action] {
         FOLD
     } else if handles.button || handles.hold || handles.checkbox || handles.tab {
         PRESS
+    } else if handles.rail.is_some() {
+        SCROLL
     } else if handles.divider {
         SPLIT
     } else if handles.stop {
@@ -143,6 +153,7 @@ pub(crate) struct Around<'w, 's> {
     sections: Query<'w, 's, &'static SectionOpen>,
     rows: Query<'w, 's, &'static TableRow>,
     trees: Query<'w, 's, &'static mut Table, (With<TreeView>, Without<InteractionDisabled>)>,
+    scrolls: Query<'w, 's, (&'static mut ScrollPosition, &'static ComputedNode)>,
 }
 
 /// Does what an assistive technology asked of a widget, through the widget's own event. A request
@@ -204,7 +215,9 @@ pub(crate) fn act_on_requests(
             }
             Action::Increment | Action::Decrement => {
                 let direction = if action == Action::Increment { 1 } else { -1 };
-                if handles.divider {
+                if let Some(rail) = handles.rail {
+                    scroll_by(rail.target, direction as f32, &mut around);
+                } else if handles.divider {
                     step_split(entity, direction as f32, &geometry, &mut commands);
                 } else if handles.number {
                     commands.trigger(NumberStepBy {
@@ -233,7 +246,9 @@ pub(crate) fn act_on_requests(
             }
             Action::SetValue => match &request.data {
                 Some(ActionData::NumericValue(value)) => {
-                    if handles.divider {
+                    if let Some(rail) = handles.rail {
+                        scroll_to(rail.target, *value as f32, &mut around);
+                    } else if handles.divider {
                         set_split(entity, *value as f32, &geometry, &mut commands);
                     } else if handles.slider {
                         commands.trigger(SetSliderValue {
@@ -336,4 +351,40 @@ fn set_split(divider: Entity, value: f32, geometry: &SplitGeometry, commands: &m
         value: want,
         is_final: true,
     });
+}
+
+/// Moves a list by `steps` of a whole viewport, as PageUp and PageDown do, held to its ends.
+fn scroll_by(view: Entity, steps: f32, around: &mut Around) {
+    let Some(travel) = travel_of(view, around) else {
+        return;
+    };
+    let Ok((mut position, node)) = around.scrolls.get_mut(view) else {
+        return;
+    };
+    let next = (node.scroll_position.y + steps * node.size().y).clamp(0.0, travel);
+    if (next - position.0.y).abs() > 0.5 {
+        position.0.y = next;
+    }
+}
+
+/// Puts a list's scroll at `fraction` of its travel: 0 is its top, 1 its bottom.
+fn scroll_to(view: Entity, fraction: f32, around: &mut Around) {
+    let Some(travel) = travel_of(view, around) else {
+        return;
+    };
+    let Ok((mut position, _)) = around.scrolls.get_mut(view) else {
+        return;
+    };
+    let next = fraction.clamp(0.0, 1.0) * travel;
+    if (next - position.0.y).abs() > 0.5 {
+        position.0.y = next;
+    }
+}
+
+/// How far a viewport can scroll, logical px: its content less its own height. `None` when nothing
+/// scrolls.
+fn travel_of(view: Entity, around: &Around) -> Option<f32> {
+    let (_, node) = around.scrolls.get(view).ok()?;
+    let travel = node.content_size().y - node.size().y;
+    (travel.is_finite() && travel > 0.5).then_some(travel)
 }

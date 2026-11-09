@@ -1383,3 +1383,70 @@ fn a_list_is_a_list_whose_rows_say_their_place() {
         assert_eq!(n.size_of_set(), Some(4));
     }
 }
+
+#[test]
+fn a_lists_rail_is_a_scrollbar_a_reader_can_move() {
+    use accesskit::Action as A;
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    let list = app
+        .world_mut()
+        .spawn((
+            list(
+                3.0,
+                Children::spawn(SpawnIter((0..20).map(|n| button(format!("Row {n}"))))),
+            ),
+            ChildOf(root),
+        ))
+        .id();
+    settle(&mut app);
+    let (view, rail) = {
+        let mut queue = std::collections::VecDeque::from([list]);
+        let (mut view, mut rail) = (None, None);
+        while let Some(entity) = queue.pop_front() {
+            if app.world().get::<ListView>(entity).is_some() {
+                view = Some(entity);
+            }
+            if app.world().get::<Role>(entity) == Some(&Role::ListRail) {
+                rail = Some(entity);
+            }
+            if let Some(kids) = app.world().get::<Children>(entity) {
+                queue.extend(kids.iter());
+            }
+        }
+        (view.expect("a viewport"), rail.expect("a rail"))
+    };
+    settle(&mut app);
+    // The rail is a scrollbar with a name and a place, and it declares the actions to move it.
+    let rail_node = node(&app, rail);
+    assert_eq!(rail_node.role(), accesskit::Role::ScrollBar);
+    assert_eq!(rail_node.label(), Some("Scroll"));
+    for action in [A::Focus, A::Increment, A::Decrement, A::SetValue] {
+        assert!(rail_node.supports_action(action), "it declares {action:?}");
+    }
+    // It stood at the top; a value moves the list there.
+    let at = |app: &App| {
+        app.world()
+            .get::<ScrollPosition>(view)
+            .map(|p| p.0.y)
+            .unwrap_or(0.0)
+    };
+    assert!(at(&app).abs() < 0.5, "it starts at the top");
+    act(
+        &mut app,
+        rail,
+        A::SetValue,
+        Some(accesskit::ActionData::NumericValue(1.0)),
+    );
+    settle(&mut app);
+    let bottom = at(&app);
+    assert!(bottom > 1.0, "SetValue 1 scrolled the list: {bottom}");
+    // A step goes back up by a viewport.
+    act(&mut app, rail, A::Decrement, None);
+    settle(&mut app);
+    assert!(
+        at(&app) < bottom - 1.0,
+        "Decrement went back up: {} from {bottom}",
+        at(&app)
+    );
+}

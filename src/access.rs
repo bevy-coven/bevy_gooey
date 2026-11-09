@@ -147,7 +147,8 @@ fn spec(role: Role) -> Spec {
         | Role::Radial
         | Role::SectionNote
         | Role::TableHeaderCell
-        | Role::ListView => Spec::Node,
+        | Role::ListView
+        | Role::ListRail => Spec::Node,
         Role::ButtonText
         | Role::MenuTitleText
         | Role::MeterFill
@@ -173,7 +174,6 @@ fn spec(role: Role) -> Spec {
         | Role::ShortcutBadge
         | Role::ToastMark
         | Role::ToastText
-        | Role::ListRail
         | Role::ListThumb
         | Role::TableSortUp
         | Role::TableSortDown
@@ -287,6 +287,7 @@ struct Wanted {
 /// ("Dismiss", "More"); a host's own [`AccessibleLabel`] replaces it.
 const DIVIDER: &str = "Divider";
 const COLUMN_EDGE: &str = "Resize column";
+const SCROLL_BAR: &str = "Scroll";
 const EMPTY_SLOT: &str = "Empty slot";
 const COLOUR_AREA: &str = "Saturation and brightness";
 const COMMAND_FIELD: &str = "Command";
@@ -313,6 +314,7 @@ pub(crate) struct Facts {
     swatch: Option<&'static ColorSwatch>,
     choice: Option<&'static ChoiceValue>,
     divider: Option<&'static SplitDivider>,
+    rail: Option<&'static bevy::ui_widgets::Scrollbar>,
     column: Option<&'static crate::table::TableHeaderCell>,
     cooldown: Option<&'static Cooldown>,
     handles: Handles,
@@ -332,6 +334,7 @@ pub(crate) struct Look<'w, 's> {
     trees: Query<'w, 's, (), With<TreeView>>,
     tables: Query<'w, 's, (&'static Table, Has<InteractionDisabled>)>,
     tooltips: Query<'w, 's, &'static Tooltip>,
+    scrolls: Query<'w, 's, (&'static ScrollPosition, &'static ComputedNode)>,
 }
 
 impl Look<'_, '_> {
@@ -350,6 +353,20 @@ impl Look<'_, '_> {
             here = up;
         }
         None
+    }
+
+    /// How far a viewport is scrolled, 0 at the top and 1 at the bottom. `None` when nothing
+    /// scrolls (a list whose rows fit, or a viewport not laid out yet).
+    fn scroll_fraction(&self, view: Entity) -> Option<f32> {
+        let (_position, node) = self.scrolls.get(view).ok()?;
+        let view_height = node.size().y;
+        let content_height = node.content_size().y;
+        let travel = content_height - view_height;
+        if !(travel.is_finite() && travel > 0.5) {
+            return None;
+        }
+        let scrolled = node.scroll_position.y;
+        Some((scrolled / travel).clamp(0.0, 1.0))
     }
 
     /// A `ListView`'s row count and its rows' entity, read from the one `Role::ListRows` column
@@ -581,6 +598,18 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
                 .ok()
                 .and_then(|_| look.list_rows(entity));
             wanted.size_of_set = rows.map(|(_, count)| count);
+        }
+        Role::ListRail => {
+            // The rail is the scrollbar of the list it stands beside: a reader can move it, so it
+            // says its place as a value from 0 (top) to 1 (bottom).
+            let view = facts.rail.map(|rail| rail.target);
+            wanted.role = Some(Ak::ScrollBar);
+            wanted.name = Some(SCROLL_BAR.to_owned());
+            if let Some(view) = view
+                && let Some(fraction) = look.scroll_fraction(view)
+            {
+                wanted.numeric = Some((f64::from(fraction), 0.0, 1.0));
+            }
         }
         Role::ToastAction => wanted.name = look.words(entity, names),
         // A table's rows are a pool of a dozen entities rebound while scrolling, so the whole
