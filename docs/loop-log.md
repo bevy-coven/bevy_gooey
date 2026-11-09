@@ -2797,3 +2797,17 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Gate:** fmt, clippy, nextest 1260/1260, doctests, check + wasm32, `doc -D warnings`, green on the first run. semver-checks: the `non_exhaustive` mark: 0.48.0 → 0.49.0. **Demos:** all 43 re-recorded: none changed (the theme, ladder and table GIFs are deterministic since iteration 76).
 
 **Backlog:** frames for tabs, toggle groups, toggles/sliders and text fields (art as a sibling layer, or the selection indicator's order); corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane.
+
+## Iteration 78 — 2026-11-09 — `GooeyFrames::field`: text fields drawn from art; v0.50.0
+
+**Triage:** gooey issue list empty, no `grimoire-ui` issue open, #336 waits on the editor's pin. The most visible gap left in `frames.gif` was the Name field beside framed buttons: one art language needs the fields too (settings and save screens are full of them). Runner-up: wrapped tab strips stepping aside.
+
+**Built:** `GooeyFrames::field`. Iteration 75 found that a child of Bevy's leaf-measured `EditableText` collapses the field, so the art layer is a child of the field's `Role::TextCell` (a plain container) and `Framed(layer)` stays on the field; the field's fill is cleared, its border (outline and focus ring) stays over the art, its size is unchanged (`tests/frames.rs`, 8 tests: the layer's parent is the cell, the tint equals the flat fill, same size, same border). `examples/frames.rs` frames the field; `frames.gif` re-recorded (the caret and ring over the art are in it).
+
+**Critique and verdict** (`frames.gif` frames, dark and parchment stills): the field reads as a recessed plate with the ring crisp and the caret visible; the outline at rest doubles the art's rim slightly (the field's own border is kept so the ring logic stays one path). GREAT for the mechanism.
+
+**Perf:** nothing runs for an unframed field. No timing claimed.
+
+**Gate:** fmt, clippy, nextest 1261/1261, doctests, check + wasm32, `doc -D warnings`. semver-checks: the public system `update_frames` takes 5 parameters instead of 4: 0.49.0 → 0.50.0 (a new `GooeyFrames` field alone would have been a patch: the struct is `non_exhaustive`). **Demos:** all 43 re-recorded, none changed beyond `frames.gif`.
+
+**Backlog:** frames for tabs, toggle groups, toggles and sliders (selection indicator order); corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane; consider making the public systems `pub(crate)` (every added system parameter is a major bump).

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.50.0] - 2026-11-09
+
+Breaking (pre-1.0, minor): the public system `update_frames` takes one more parameter (it reads parents now); a host that schedules it by hand is unaffected, one that calls it as a plain function is not.
+
 ### Added
 
 - `GooeyFrames::field`: nine-slice art for every text field. Bevy measures the field as a leaf, so the art is a layer of its cell behind it; the field's border (outline, focus ring) stays over the art and its size is unchanged. A patch release: `GooeyFrames` is `#[non_exhaustive]`.
