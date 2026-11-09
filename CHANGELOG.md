@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.12] - 2026-11-09
+
 ### Fixed
 
 - The gallery's two panels wrap and centre instead of running off the window at 200% text (WCAG 1.4.4, 1.4.10). The crate's widgets keep their 200% promise; its own showcase broke it one level up, and every 200% capture inherited the clipped labels.
