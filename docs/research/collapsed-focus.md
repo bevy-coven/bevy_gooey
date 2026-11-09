@@ -39,17 +39,19 @@ docks do the same thing by despawning what they do not show.
 
 ## Model adopted
 
-- **A collapsed first pane disables its subtree.** `update_splits` writes `InteractionDisabled` on
-  every focusable descendant of a pane that is collapsed to its minimum (not peeking), and takes the
-  marker off when the pane is restored. `InteractionDisabled` is already what `navigate_by_input`,
-  `FocusScopes` and `first_stop` treat as "not a stop", so one path serves Tab, the arrows, F6 and
-  the pad.
-- **`TabIndex` is kept, not removed**: a disabled widget keeps its index so restoring the pane gives
-  back the same order, and nothing has to remember it.
-- **Focus inside a collapsing pane goes to the divider**, which is the only control that can give the
-  pane back — the same rule the crate already gives a section's closing body (`update_sections`).
-- **A peeking pane is live.** While it floats it is on screen and fully usable; its content is
-  enabled, and Escape closes it.
+- **Each pane of a `split` is a [`crate::FocusRegion`]** (`FocusRegion::navigate()` on every
+  `Role::SplitPane`). F6 and Shift+F6 then reach a pane as they reach a viewport or a toolbar, and a
+  **collapsed** pane's first widget is a region's start — which is the thing that was missing: before
+  this, F6 cycled past the split entirely and only Tab found the collapsed pane's stops, so a player
+  who navigates by F6 could never get into a collapsed sidebar.
+- **Landing there peeks the pane.** The peek already opens for any visible focus inside the collapsed
+  pane (iteration 73), so the widget focus lands on is the widget the player sees; the region and the
+  peek are the same path, not two.
+- **The pane's stops are not disabled.** A first attempt disabled every tab stop in a collapsed pane
+  and moved focus to the divider. It was reverted: it contradicts the peek (which exists so a
+  keyboard or pad player *can* land in a collapsed pane and see what they landed on, and
+  `docs/guide/splits.md` promises exactly that), and the test that pins the peek's focus rule would
+  have had to be weakened. The gap was never "the stops exist", it was "F6 could not reach them".
 
 ## Parameters
 
@@ -61,20 +63,23 @@ docks do the same thing by despawning what they do not show.
 
 ## Validation targets
 
-- A collapsed first pane's widgets carry `InteractionDisabled`; Tab and F6 skip them and land on the
-  divider or in the second pane.
-- Focus inside the pane when it collapses moves to the divider in the same frame, with the ring
-  shown.
-- Restoring the pane removes `InteractionDisabled` from every widget it was put on, and nothing else
-  changes.
-- A peeking pane is not disabled: its widgets take focus and the pointer.
+- F6 from the second pane's widget lands on the **first** widget of a collapsed first pane
+  (`tests/split.rs::f6_reaches_a_collapsed_pane_and_peeks_it`; mutation-checked: removing the region
+  fails it).
+- That pane peeks around the landed widget, so the widget is on screen.
+- `tests/region.rs`, `tests/split_peek.rs` and the rest of `tests/split.rs` stay green (59 tests across
+  the three).
 - A settled split writes nothing.
 
 ## Deviations
 
-- **The pane keeps its widgets** rather than despawning them (docks do): a split's panes are the
-  game's own bundles, and a game's state lives in them. Disabling is the reversible half of the same
-  rule (design default).
+- **A collapsed pane's widgets stay reachable.** The alternative — disable them and move focus to the
+  divider — was built and measured this pass and reverted: it breaks the peek's whole purpose (a
+  keyboard player landing inside a collapsed pane and seeing it open around them), and the guide
+  promises that behaviour. F6 reaching the pane is the fix; hiding the pane would trade one
+  accessibility rule (focus is visible) for another (a region is reachable).
+- **F6 order is tree order**, so a split's panes come in spawn order, not visual order after a drag
+  (a design default, as for every region).
 
 ## Pending index
 
