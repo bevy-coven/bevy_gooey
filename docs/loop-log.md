@@ -2771,3 +2771,15 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Demos:** all 43 GIFs re-recorded. `theme.gif` and `ladder.gif` came out 1.7 and 3.7 mean diff over a quarter to a third of their frames again (the Theme row's colour easing against a loaded host's frame times): restored from the committed files; they need a fixed clock like `hotbar`'s to be deterministic (backlog).
 
 **Backlog:** deterministic captures for `theme`/`ladder`/`table` (a fixed clock); frames for tabs and toggle groups (needs the indicator layer ordering) and for text fields (needs the art as a sibling, not a child); corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane.
+
+## Iteration 76 — 2026-11-08 — Deterministic demo recordings; 419 GB of debug examples removed; no release
+
+**Triage:** gooey issue list empty, no `grimoire-ui` issue open, #336 waits on the editor's pin. **Disk first:** `/home` was at 98% (76 GB free) and `./target` was 539 GB, 419 GB of it `target/debug/examples`: every `cargo nextest run --all-features -E ...` of my iterations 68 to 75 also linked the 30 examples in debug (about 700 MB each, a new hash per rebuild). All of those files were written today by this session's runs (`find -size +20M -mtime -1`), so I deleted them (not the `.d` files, nor anything older, nor `release/`, `debug/deps`): 76 GB → 507 GB free. AGENTS.md now says to iterate only with `--lib --tests`.
+
+**Item:** `theme.gif`, `ladder.gif` and `table.gif` changed on every recording of a loaded host (colour easing against uneven frame times: 1.7 to 3.7 mean diff over a quarter to a third of the frames), which made "re-record every GIF" noisy for four passes. `GOOEY_FIXED_CLOCK=1` (gallery, ladder, table: a `TimeUpdateStrategy::ManualDuration` of 1/30 s) makes the recording a pure function of the keys; the three rows use it with `GOOEY_SHOT_EVERY=2` (real-time 15 fps). Proof: recorded twice, the second run is `same (mean diff 0.00, 0% of frames)` for all three; the whole set of 43 re-recorded afterwards is unchanged. The new files are 6.6, 5.7 and 6.0 s (were 4.3, 3.7 and 3.9) at the same frame size; the contact sheets show the same sequences.
+
+**No release:** nothing `cargo package --list` ships changed since v0.48.0 (examples, docs/media, AGENTS and the loop script are not in the package; checked against `git diff --name-only v0.48.0`). Gate: fmt, clippy `--all-targets --all-features -D warnings` (no `src/` change, so the tests, doctests and wasm check are those of 0.48.0).
+
+**Perf:** no code path changed; the gallery's default clock is untouched (the knob is opt-in, and its frame time reads 33.333, so it is never a performance number).
+
+**Backlog:** frames for tabs, toggle groups and text fields (art as a sibling layer); corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane.
