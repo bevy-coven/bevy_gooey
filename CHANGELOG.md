@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.17] - 2026-11-09
+
 ### Fixed
 
 - The crate no longer panics on a widget's first frame. A tooltip's box was born carrying `Popover::default()`, and Bevy's `position_popover` builds `Rect::from_center_size(anchor, size - border)` with no guard: on the frame a widget spawns, its `ComputedNode` is one layout behind, so `size - border` is negative and Bevy panics (`Rect size must be positive`, then `free(): invalid size`). Measured on `examples/inspector`, which hangs a tooltip on 60 rows and died on frame 1 every run. A box is now born **without** a `Popover`, and `apply_skin` inserts the placement it computes once the anchor is laid out (`restyle_sized_tooltips` marks the box for that restyle). Every tooltip, popover, menu, combobox and context-menu suite stays green (86 tests).
