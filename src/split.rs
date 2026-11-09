@@ -164,15 +164,15 @@ pub(crate) struct ToggleSplit {
 }
 
 /// What a divider's handlers need to know about its split.
-struct Reading {
-    root: Entity,
+pub(crate) struct Reading {
+    pub(crate) root: Entity,
     axis: SplitAxis,
-    fraction: f32,
-    min: SplitMin,
+    pub(crate) fraction: f32,
+    pub(crate) min: SplitMin,
     /// The room the panes share, in logical pixels: the split's length on its axis, less the
     /// divider's.
-    extent: f32,
-    disabled: bool,
+    pub(crate) extent: f32,
+    pub(crate) disabled: bool,
     /// The fraction a peeking first pane docks at (the one a restore gives back), `Some` exactly
     /// while the pane floats over the second one.
     peeking: Option<f32>,
@@ -180,7 +180,7 @@ struct Reading {
 
 impl Reading {
     /// The fraction `delta` logical pixels from here, held to the minimums.
-    fn moved(&self, delta: f32) -> f32 {
+    pub(crate) fn moved(&self, delta: f32) -> f32 {
         split_drag(
             self.fraction,
             delta,
@@ -227,7 +227,7 @@ impl SplitGeometry<'_, '_> {
         (!disabled).then_some(divider.axis)
     }
 
-    fn read(&self, divider: Entity) -> Option<Reading> {
+    pub(crate) fn read(&self, divider: Entity) -> Option<Reading> {
         let Ok((parent, divider_axis, node, disabled)) = self.dividers.get(divider) else {
             debug!(
                 "split divider {divider} is not read: it lacks a `ChildOf`, `SplitDivider` or \

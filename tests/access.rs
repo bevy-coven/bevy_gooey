@@ -1170,3 +1170,71 @@ fn a_radial_declares_and_takes_increment_and_decrement_and_wraps_like_the_arrow_
     assert_eq!(app.world().get::<RadialValue>(wheel), Some(&RadialValue(1)));
     assert_eq!(seen(&app).indices, [2, 0, 1], "one report a step");
 }
+
+#[test]
+fn a_splitters_node_takes_steps_and_a_value() {
+    use accesskit::Action as A;
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    let split = app
+        .world_mut()
+        .spawn((
+            split(
+                SplitAxis::Horizontal,
+                (panel(), children![label("A")]),
+                (panel(), children![label("B")]),
+            ),
+            SplitFraction(0.5),
+            SplitMin::new(80.0, 80.0),
+            ChildOf(root),
+        ))
+        .id();
+    settle(&mut app);
+    let divider = {
+        let mut stack = vec![split];
+        let mut found = None;
+        while let Some(entity) = stack.pop() {
+            if let Some(kids) = app.world().get::<Children>(entity) {
+                for &kid in &**kids {
+                    if app.world().get::<Role>(kid) == Some(&Role::SplitDivider) {
+                        found = Some(kid);
+                    }
+                    stack.push(kid);
+                }
+            }
+        }
+        found.expect("a divider")
+    };
+    settle(&mut app);
+    // The node is a splitter with a value, and it declares the actions a screen reader needs to
+    // move it: before this it declared none, so a reader could read the value and not change it.
+    let node = node(&app, divider);
+    assert_eq!(node.role(), accesskit::Role::Splitter);
+    for action in [A::Focus, A::Increment, A::Decrement, A::SetValue] {
+        assert!(node.supports_action(action), "it declares {action:?}");
+    }
+    assert!(!node.supports_action(A::Click), "a divider is not clicked");
+    // A step moves the fraction; the split's own ValueChange<f32> carries it.
+    let before = app.world().resource::<Seen>().numbers.len();
+    act(&mut app, divider, A::Increment, None);
+    let numbers = app.world().resource::<Seen>().numbers.clone();
+    assert_eq!(numbers.len(), before + 1, "one step, one change");
+    assert!(
+        numbers[before] > 0.5,
+        "Increment widens the first pane: {}",
+        numbers[before]
+    );
+    // A value lands on it, held to the minimums.
+    act(
+        &mut app,
+        divider,
+        A::SetValue,
+        Some(accesskit::ActionData::NumericValue(0.25)),
+    );
+    let numbers = app.world().resource::<Seen>().numbers.clone();
+    assert!(
+        (numbers[numbers.len() - 1] - 0.25).abs() < 0.01,
+        "SetValue puts the divider there: {:?}",
+        numbers.last()
+    );
+}

@@ -8,8 +8,9 @@
 //! action is declared only when it is handled, and a request for one that is not declared is
 //! ignored.
 
-use crate::model::radial_step;
+use crate::model::{SPLIT_KEY_STEP_PX, radial_step, split_clamp};
 use crate::radial::{RadialCount, RadialValue, point_at};
+use crate::split::{SplitDivider, SplitGeometry};
 use crate::table::{Table, TableRow};
 use crate::tree::{TreeView, toggle};
 use accesskit::{Action, ActionData};
@@ -68,6 +69,13 @@ const FOLD: &[Action] = &[
     Action::Expand,
     Action::Collapse,
 ];
+/// A split's divider: a screen reader moves it by steps or to a value, as the arrows and a drag do.
+pub(crate) const SPLIT: &[Action] = &[
+    Action::Focus,
+    Action::Increment,
+    Action::Decrement,
+    Action::SetValue,
+];
 
 /// A tree row that has children: it opens and shuts, and is no button (Left and Right are the
 /// tree's, `tree_by_input`).
@@ -92,6 +100,7 @@ pub(crate) struct Handles {
     item: Option<&'static MenuItem>,
     open: Has<MenuOpen>,
     stop: Has<TabIndex>,
+    divider: Has<SplitDivider>,
 }
 
 /// The actions `handles` takes: none while disabled. The one table the declaration and the
@@ -111,6 +120,8 @@ pub(crate) fn actions_of(handles: &HandlesItem) -> &'static [Action] {
         FOLD
     } else if handles.button || handles.hold || handles.checkbox || handles.tab {
         PRESS
+    } else if handles.divider {
+        SPLIT
     } else if handles.stop {
         FOCUS
     } else {
@@ -142,6 +153,7 @@ pub(crate) fn act_on_requests(
     mut focus: ResMut<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     widgets: Query<Handles>,
+    geometry: SplitGeometry,
     mut around: Around,
     mut commands: Commands,
 ) {
@@ -192,7 +204,9 @@ pub(crate) fn act_on_requests(
             }
             Action::Increment | Action::Decrement => {
                 let direction = if action == Action::Increment { 1 } else { -1 };
-                if handles.number {
+                if handles.divider {
+                    step_split(entity, direction as f32, &geometry, &mut commands);
+                } else if handles.number {
                     commands.trigger(NumberStepBy {
                         entity,
                         steps: direction as f32,
@@ -219,7 +233,9 @@ pub(crate) fn act_on_requests(
             }
             Action::SetValue => match &request.data {
                 Some(ActionData::NumericValue(value)) => {
-                    if handles.slider {
+                    if handles.divider {
+                        set_split(entity, *value as f32, &geometry, &mut commands);
+                    } else if handles.slider {
                         commands.trigger(SetSliderValue {
                             entity,
                             change: SliderValueChange::Absolute(*value as f32),
@@ -283,4 +299,41 @@ fn select_tab(tab: Entity, around: &Around, commands: &mut Commands) {
             is_final: true,
         });
     }
+}
+
+/// Moves a split's divider by `steps` of [`SPLIT_KEY_STEP_PX`], as the arrow keys do, held to the
+/// panes' minimums for the room the split has now.
+fn step_split(divider: Entity, steps: f32, geometry: &SplitGeometry, commands: &mut Commands) {
+    let Some(reading) = geometry.read(divider) else {
+        return;
+    };
+    if reading.disabled || reading.extent <= 0.0 {
+        return;
+    }
+    commands.trigger(ValueChange {
+        source: reading.root,
+        value: reading.moved(steps * SPLIT_KEY_STEP_PX),
+        is_final: true,
+    });
+}
+
+/// Puts a split's divider at `fraction`, held to its panes' minimums, as a drag does.
+fn set_split(divider: Entity, value: f32, geometry: &SplitGeometry, commands: &mut Commands) {
+    let Some(reading) = geometry.read(divider) else {
+        return;
+    };
+    if reading.disabled || reading.extent <= 0.0 {
+        return;
+    }
+    let want = split_clamp(
+        value.clamp(0.0, 1.0),
+        reading.extent,
+        reading.min.first,
+        reading.min.second,
+    );
+    commands.trigger(ValueChange {
+        source: reading.root,
+        value: want,
+        is_final: true,
+    });
 }
