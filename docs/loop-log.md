@@ -3018,3 +3018,27 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, nextest **1270/1270**, doctests, check + wasm32, `doc -D warnings`. Patch: 0.51.7 → 0.51.8. https://crates.io/crates/bevy_gooey/0.51.8
 
 **Backlog:** (1) list rows and tree nodes in the accessibility tree (Bevy's `ScrollArea` has no node); (2) `GooeyFrames` fields of their own for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (4) an unpinned frame-time line in every capture example that prints the load average; (5) a per-widget example page, so a capture never shows a stale neighbour.
+
+## Iteration 89 — 2026-11-09 — a toast is a live region; v0.51.9 tagged, publish refused with 429
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Item: the gap the last two accessibility passes kept pointing at — not what a reader can *ask*, but what it is *told*. `docs/guide/toasts.md` said "A toast is not announced to screen readers yet: it is visual only."
+
+**The defect, measured.** `Role::Toast` has had a node since the tree was written — `Ak::Status` or `Ak::Alert`, named with its words — and `node.live()` was `None` on both. A sighted player saw "Saved" slide in; a screen reader user heard nothing, because a toast has no focus and no place in the tab order and so its only channel is a live region.
+
+**Built:** `Ak::Alert` → `Live::Assertive`, `Ak::Status` → `Live::Polite`, from the same `ToastKind` that picks the mark's colour, so the two channels never disagree. `Wanted` gained `live`, `says` compares it and `write` sets it.
+
+**Measured honestly, including a test that proved less than it looked.** Removing the `says` comparison left the test **green** — a toast's node is added fresh, and a fresh node always goes through `write`; `Toast::kind` is private with no setter, so a toast's politeness cannot change in place today. The comparison is kept because it is the one place a stale node is caught and the next thing that can become live would otherwise keep `None`, but the note says plainly that this test does not exercise it. Removing the `write` call *does* fail the test, so the assertion bites on the value.
+
+**Sources:** WCAG 2.2 SC 4.1.3 Status Messages (technical), WCAG 2.2 SC 2.2.1 and ARIA politeness (technical), *Future design of accessibility in games: A design vocabulary* (craft, 10.1016/j.ijhcs.2019.06.010), Rune's toaster (shipping reference). Note: `docs/research/live-toasts.md`.
+
+**Critique:** not a visual change; the proof is the tree. Before: a node with words and no politeness. After: `Polite` for "Saved", `Assertive` for "Disk full". Verdict: GREAT.
+
+**Perf:** unpinned gallery `mean_ms` **22.541 and 22.484** at load average 1.5 — the same as iterations 86–88.
+
+**Demo:** no visual change; all 45 GIFs re-recorded, `0 updated`.
+
+**Gate:** fmt, clippy, nextest **1270/1270**, doctests, check + wasm32, `doc -D warnings`. `cargo semver-checks`: no update required, so 0.51.8 → 0.51.9.
+
+**Release: refused.** `cargo publish` answered **429 "You have published too many versions of this crate in the last 24 hours"** (nine releases today). Per the loop's rule this is logged once and not retried in this pass; the commit and tag **v0.51.9** are pushed, so the next pass publishes 0.51.9 and its audit will show this pass as `missing: release` until then.
+
+**Backlog:** (1) list rows and tree nodes in the accessibility tree (Bevy's `ScrollArea` has no node) — the largest remaining gap; (2) publish 0.51.9 when the 24-hour window allows; (3) `GooeyFrames` fields of their own for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that prints the load average.
