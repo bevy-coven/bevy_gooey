@@ -3042,3 +3042,27 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Release: refused.** `cargo publish` answered **429 "You have published too many versions of this crate in the last 24 hours"** (nine releases today). Per the loop's rule this is logged once and not retried in this pass; the commit and tag **v0.51.9** are pushed, so the next pass publishes 0.51.9 and its audit will show this pass as `missing: release` until then.
 
 **Backlog:** (1) list rows and tree nodes in the accessibility tree (Bevy's `ScrollArea` has no node) — the largest remaining gap; (2) publish 0.51.9 when the 24-hour window allows; (3) `GooeyFrames` fields of their own for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that prints the load average.
+
+## Iteration 90 — 2026-11-09 — a list, in the accessibility tree; v0.51.10 tagged, publish still 429
+
+**First job: last pass's refused publish.** Retried `cargo publish` for 0.51.9 and it answered **429** again — the 24-hour window that nine releases opened has not rolled yet. Logged once, not retried again (the rule); 0.51.9 is tagged and pushed, so a later pass publishes it.
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Item: the backlog's first and the largest gap the last three accessibility passes each recorded — a scrolling list had **no nodes at all**. `Role::List`, `Role::ListView` and `Role::ListRows` were all `Spec::Group`, and a list's rows are the game's own `button`s, so a reader met a flat run of names with no list and no count.
+
+**Built:** the viewport is an `Ak::List` whose `size_of_set` is the rows in its one `Role::ListRows` column (`Look::list_rows`); each row button inside that column is an `Ak::ListItem` with `position_in_set` its index there and the same set size (`Look::list_place`). Both facts are read from the column, never stored, so a game that inserts or removes rows does nothing. `tests/access.rs::a_list_is_a_list_whose_rows_say_their_place`, mutation-checked (removing `list_place` fails on the item role and the place). Checked that a table and a tree are a `table_bundle` with no `ListView`, so this pass's code never touches their pooled rows.
+
+**Two test-walk bugs of my own, found and fixed:** a stack-based walk yields children last-first, so row 0 read place 3; a breadth-first `VecDeque` walk visits them in spawn order.
+
+**Sources:** WCAG 2.2 SC 4.1.2 Name, Role, Value and SC 4.1.3 Status Messages (technical), *Future design of accessibility in games: A design vocabulary* (craft, 10.1016/j.ijhcs.2019.06.010), Rune's list (shipping reference), and this crate's own `Table`/`Row` nodes as the model to mirror. Note: `docs/research/list-nodes.md`.
+
+**Critique:** not a visual change; the proof is the tree. Before: a `Group` and four bare buttons. After: `List` with set size 4, each row a `ListItem` at 0–3 with the same size, in spawn order. Verdict: GREAT.
+
+**Perf:** unpinned gallery `mean_ms` **22.216 and 22.175** at load average 1.3 — the same as iterations 86–89.
+
+**Demo:** no visual change; all 45 GIFs re-recorded, `0 updated`.
+
+**Gate:** fmt, clippy, nextest **1271/1271**, doctests, check + wasm32, `doc -D warnings`. `cargo semver-checks`: no update required, so 0.51.9 → 0.51.10.
+
+**Release: refused again (429).** Both **v0.51.9** and **v0.51.10** are committed, tagged and pushed; crates.io still lists 0.51.8 as newest. The next pass publishes 0.51.10 (which includes 0.51.9's toast fix) as soon as the window allows, and this pass's audit will read `missing: release` until then.
+
+**Backlog:** (1) publish 0.51.10 once the 24-hour window rolls — the only outstanding ship; (2) `GooeyFrames` fields of their own for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (4) an unpinned frame-time line in every capture example that prints the load average; (5) the `Scrollbar`/`ScrollArea` rail still has no node of its own.
