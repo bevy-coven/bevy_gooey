@@ -162,8 +162,6 @@ pub(crate) fn wrapping_label(label: impl Into<String>) -> impl Bundle {
     )
 }
 
-/// A control's label that may break, for a row something else bounds.
-
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
 const SLIDER_STEPS: f32 = 20.0;
 
