@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-11-08
+
+Breaking (pre-1.0, minor): `GooeyFrames` gained `popup` since 0.47.0 (a host that built it with a literal and no `..default()` adds the field).
+
 ## [0.47.0] - 2026-11-08
 
 Breaking (pre-1.0, minor): `Role` gains `FrameArt`; a host that matches `Role` exhaustively adds an arm.

@@ -2753,3 +2753,21 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Demos:** all 43 GIFs re-recorded, all unchanged but the new `frames.gif`.
 
 **Backlog:** more roles in `GooeyFrames` (tab, toggle, slider rail, tooltip, menu panel, toast); frame corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane.
+
+## Iteration 75 — 2026-11-08 — `GooeyFrames` for what floats (tooltips, menus, toasts); v0.48.0
+
+**Triage:** gooey issue list empty, no `grimoire-ui` issue open, #336 waits on the editor's pin. The natural next step of iteration 74's backlog: one art language across the UI, so the frames reach what floats.
+
+**Built:** `GooeyFrames::popup` (tooltip, popover, menu panel, command palette, toast body; their outline goes with the fill, as a panel's). `tests/frames.rs` +1 (6 in all); `examples/frames.rs` gives the buttons tooltips in the same art; `frames.gif` re-recorded (8.7 s, tooltips opening beside the framed panel).
+
+**Found on the way:** a text field cannot be framed: Bevy measures an `EditableText` node as a leaf, and a child (the art layer) makes taffy ignore the measure, so the first try collapsed the field to 20 px. The capture showed it (the tests would not have: they compare roles' fills). `Role::TextField` is out; tabs and toggle groups are out because their selection indicator already lives at `ZIndex(-1)`; both recorded in the note's Deviations, the guide and AGENTS.
+
+**Critique and verdict** (`frames.gif` frames): tooltips and buttons share the plate; the Name field stays flat beside them (honest, documented). GREAT for the roles covered.
+
+**Perf:** a widget of an unframed role costs the same as before (read only when its fill changed). Host loaded; no timing claimed.
+
+**Gate:** fmt, clippy (`needless_range_loop` in the test, iterated), nextest 1259/1259, doctests, check + wasm32, `doc -D warnings`. semver-checks: `GooeyFrames.popup` added to a literal-constructible struct: 0.47.0 → 0.48.0.
+
+**Demos:** all 43 GIFs re-recorded. `theme.gif` and `ladder.gif` came out 1.7 and 3.7 mean diff over a quarter to a third of their frames again (the Theme row's colour easing against a loaded host's frame times): restored from the committed files; they need a fixed clock like `hotbar`'s to be deterministic (backlog).
+
+**Backlog:** deterministic captures for `theme`/`ladder`/`table` (a fixed clock); frames for tabs and toggle groups (needs the indicator layer ordering) and for text fields (needs the art as a sibling, not a child); corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane.
