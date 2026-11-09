@@ -3227,6 +3227,14 @@ fn restyle(
                 if in_dialog {
                     next.min_width = Val::Px(text_px * DIALOG_MIN_TEXT_SIZES);
                     next.max_width = Val::Px(text_px * DIALOG_MAX_TEXT_SIZES);
+                } else {
+                    // A screen panel never grows past the window less a margin, so at 200% text a
+                    // panel that would be wider wraps its rows instead of running off the screen (a
+                    // panel sizes to its own widest row; measured at 200% in a 1280x720 window).
+                    if let Some(window) = target {
+                        next.max_width =
+                            Val::Px((window.logical_size().x - 2.0 * skin.gap).max(0.0));
+                    }
                 }
             }
             // A disc as wide as it is high, in text sizes, so it grows with the player's text scale;

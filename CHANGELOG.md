@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A screen `panel()` never grows past the window less two gaps, so at 200% text a panel wider than the screen wraps its rows inside it instead of running off the right edge (WCAG 2.2 SC 1.4.4, 1.4.10). A dialog's panel keeps its text-size measure; at 100% nothing changes (no GIF moved).
+
 ## [0.51.12] - 2026-11-09
 
 ### Fixed
