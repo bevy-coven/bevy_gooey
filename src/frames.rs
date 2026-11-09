@@ -61,6 +61,11 @@ pub struct GooeyFrames {
     /// The frame of every [`crate::meter`] and [`crate::progress`] track: the art is drawn under the
     /// fill, which keeps the skin's colour (a meter's frame is its track, so its outline goes).
     pub meter: Option<Frame>,
+    /// The frame of every text field ([`crate::text_input`], a number or colour field's text). The
+    /// art is a layer of the field's cell, behind the field: Bevy measures the field itself as a
+    /// leaf, which a child would collapse. The field's border (outline and focus ring) stays over
+    /// the art.
+    pub field: Option<Frame>,
     /// The frame of what floats over the screen: a tooltip, a popover, a menu's panel, the command
     /// palette and a toast's body. Their outline goes, as a panel's does.
     pub popup: Option<Frame>,
@@ -72,6 +77,7 @@ impl GooeyFrames {
             Role::Panel => self.panel.as_ref(),
             Role::Button => self.button.as_ref(),
             Role::Meter => self.meter.as_ref(),
+            Role::TextField => self.field.as_ref(),
             Role::Tooltip | Role::Popover | Role::MenuPanel | Role::Palette | Role::ToastBody => {
                 self.popup.as_ref()
             }
@@ -126,6 +132,7 @@ pub fn update_frames(
     mut commands: Commands,
     mut nodes: Query<FramedNode, Without<FrameLayer>>,
     mut layers: Query<&mut ImageNode, With<FrameLayer>>,
+    parents: Query<&ChildOf>,
 ) {
     let everything = frames.is_changed();
     for (entity, role, mut fill, mut border, framed, host_image) in &mut nodes {
@@ -154,6 +161,11 @@ pub fn update_frames(
                     }
                     None if flat || host_image => continue,
                     None => {
+                        // A text field is a leaf to Bevy's layout: its art goes on its cell.
+                        let host = match role {
+                            Role::TextField => parents.get(entity).map_or(entity, ChildOf::parent),
+                            _ => entity,
+                        };
                         let layer = commands
                             .spawn((
                                 Node {
@@ -171,7 +183,7 @@ pub fn update_frames(
                                     .with_mode(frame.mode()),
                                 ZIndex(-1),
                                 Pickable::IGNORE,
-                                ChildOf(entity),
+                                ChildOf(host),
                             ))
                             .id();
                         commands.entity(entity).try_insert(Framed(layer));

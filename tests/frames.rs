@@ -263,8 +263,59 @@ fn what_floats_has_its_own_frame_and_an_unframed_role_stays_flat() {
             BorderColor::all(Color::NONE)
         );
     }
-    // A text field is measured as a leaf by Bevy, so a child layer would collapse it: it is flat.
+    // A text field has no frame of its own here: it was not given one.
     assert!(framed.world().get::<Framed>(ids[1][3]).is_none());
+}
+
+#[test]
+fn a_text_field_draws_its_art_on_its_cell_and_keeps_its_size() {
+    let mut flat = app();
+    let mut framed = app();
+    let art = art(&mut framed);
+    framed.world_mut().resource_mut::<GooeyFrames>().field = Some(Frame::new(art, 4.0));
+    let mut fields = Vec::new();
+    for app in [&mut flat, &mut framed] {
+        let row = app.world_mut().spawn(text_input("Name", "Camp 1")).id();
+        app.world_mut().spawn(screen()).add_child(row);
+        frames(app, 8);
+        let field = app
+            .world_mut()
+            .query_filtered::<Entity, With<bevy::ui_widgets::TextInput>>()
+            .single(app.world())
+            .expect("one field");
+        fields.push(field);
+    }
+    let framed_layer = framed.world().get::<Framed>(fields[1]).expect("framed").0;
+    let cell = framed
+        .world()
+        .get::<ChildOf>(fields[1])
+        .expect("cell")
+        .parent();
+    assert_eq!(
+        framed
+            .world()
+            .get::<ChildOf>(framed_layer)
+            .map(ChildOf::parent),
+        Some(cell),
+        "the layer is on the field's cell"
+    );
+    let image = layer(&framed, fields[1]).expect("framed");
+    assert_eq!(
+        image.color,
+        fill(&flat, fields[0]),
+        "the tint is the field's fill"
+    );
+    assert_eq!(fill(&framed, fields[1]), Color::NONE);
+    assert_eq!(
+        size(&framed, fields[1]),
+        size(&flat, fields[0]),
+        "the field keeps its size"
+    );
+    assert_eq!(
+        framed.world().get::<BorderColor>(fields[1]),
+        flat.world().get::<BorderColor>(fields[0]),
+        "its outline and ring stay"
+    );
 }
 
 #[test]

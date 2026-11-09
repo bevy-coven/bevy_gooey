@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `GooeyFrames::field`: nine-slice art for every text field. Bevy measures the field as a leaf, so the art is a layer of its cell behind it; the field's border (outline, focus ring) stays over the art and its size is unchanged. A patch release: `GooeyFrames` is `#[non_exhaustive]`.
+
 ## [0.49.0] - 2026-11-09
 
 Breaking (pre-1.0, minor): `GooeyFrames` is `#[non_exhaustive]` (and gained `meter`); assign its fields on the resource instead of a struct literal. Later roles will not break.

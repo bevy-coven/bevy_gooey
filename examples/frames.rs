@@ -1,7 +1,7 @@
 //! Art frames: a panel and its buttons drawn from nine-slice images. `GooeyFrames` holds the art; the
 //! skin's colours tint it, so the hover, press and disabled states, the focus ring and every
 //! contrast guarantee are the flat look's. The example draws its own art in code (a bevelled plate
-//! with rounded corners): the panel, the buttons, the meter and the tooltips; a game loads painted images instead. Enter
+//! with rounded corners): the panel, the buttons, the meter, the name field and the tooltips; a game loads painted images instead. Enter
 //! on the last button takes the frames away and gives the flat look back.
 //!
 //! Run `cargo run --release --example frames`.
@@ -209,6 +209,10 @@ fn setup(
     ));
     frames.meter = Some(Frame::new(
         images.add(plate(6.0, false, 0.0)),
+        ART_SLICE as f32 * 0.6,
+    ));
+    frames.field = Some(Frame::new(
+        images.add(plate(5.0, false, 0.0)),
         ART_SLICE as f32 * 0.6,
     ));
     frames.popup = Some(Frame::new(

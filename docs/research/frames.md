@@ -48,7 +48,7 @@ A menu panel with a painted border and a paper centre in the skin's colours, but
 
 ## Deviations
 
-- Panels, buttons and what floats (`popup`: tooltip, popover, menu panel, palette, toast body). **A text field is not framed**: Bevy measures an `EditableText` node as a leaf, and any child (the art layer) makes layout ignore that measure, which collapsed the field to 20 px in the first try. Tabs and toggle groups are not framed either: their selection indicator already lives at `ZIndex(-1)` under the options.
+- Panels, buttons and what floats (`popup`: tooltip, popover, menu panel, palette, toast body). **A text field's art goes on its cell** (`field`, added in iteration 78): Bevy measures an `EditableText` node as a leaf, and any child (the art layer) makes layout ignore that measure, which collapsed the field to 20 px in the first try; so the layer is a child of the field's `Role::TextCell` (a plain container) and the field's own border stays over it. Tabs and toggle groups are not framed either: their selection indicator already lives at `ZIndex(-1)` under the options.
 - First slice: panels and buttons only (superseded: see above). Tabs, toggles, sliders, tooltips, menus and the dialog's panel (a `Role::Panel`, so it is framed) follow the same mechanism and can join `GooeyFrames` field by field.
 - Corner size is in image pixels and is not scaled with `UiScale` (Bevy slices in node pixels): a game on a large UI scale supplies larger art or sets `slice` to the scaled size.
 
