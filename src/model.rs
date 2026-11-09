@@ -1330,8 +1330,9 @@ pub fn scroll_to_reveal(
 ///
 /// ```
 /// # use bevy_gooey::model::strip_columns;
-/// // Four 100 px cells and 8 px gaps in 460 px: three fit (3*100 + 2*8 = 316); a fourth would not.
-/// assert_eq!(strip_columns(460.0, 100.0, 8.0), 3);
+/// // Four 100 px cells and 8 px gaps in 420 px: three fit (3*100 + 2*8 = 316); a fourth would not
+/// // (4*100 + 3*8 = 424).
+/// assert_eq!(strip_columns(420.0, 100.0, 8.0), 3);
 /// // Exactly four fit in 424: 4*100 + 3*8.
 /// assert_eq!(strip_columns(424.0, 100.0, 8.0), 4);
 /// assert_eq!(strip_columns(50.0, 100.0, 8.0), 1);
