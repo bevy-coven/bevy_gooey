@@ -537,3 +537,50 @@ fn taking_the_segment_frame_away_gives_every_tab_its_fill_back() {
         assert!(layer(&framed, *art_tab).is_none(), "the art layer went");
     }
 }
+
+#[test]
+fn a_table_header_draws_the_buttons_art() {
+    let mut flat = app();
+    let mut framed = app();
+    let art = art(&mut framed);
+    framed.world_mut().resource_mut::<GooeyFrames>().button = Some(Frame::new(art, 4.0));
+    let mut headers = Vec::new();
+    for app in [&mut flat, &mut framed] {
+        let table = app
+            .world_mut()
+            .spawn(table(
+                vec![
+                    Column::new("Name").width(10.0),
+                    Column::new("When").width(8.0),
+                ],
+                vec![vec!["Meadow".to_string(), "12:40".to_string()]],
+            ))
+            .id();
+        app.world_mut().spawn(screen()).add_child(table);
+        frames(app, 8);
+        let mut found = Vec::new();
+        let mut stack = vec![table];
+        while let Some(entity) = stack.pop() {
+            if let Some(kids) = app.world().get::<Children>(entity) {
+                for &kid in &**kids {
+                    if app.world().get::<Role>(kid) == Some(&Role::TableHeaderCell) {
+                        found.push(kid);
+                    }
+                    stack.push(kid);
+                }
+            }
+        }
+        assert_eq!(found.len(), 2, "two header cells");
+        headers.push(found);
+    }
+    for (plain, art_cell) in headers[0].iter().zip(&headers[1]) {
+        let image = layer(&framed, *art_cell).expect("the header is framed");
+        assert_eq!(
+            image.color,
+            fill(&flat, *plain),
+            "the tint is the header's fill"
+        );
+        assert_eq!(fill(&framed, *art_cell), Color::NONE);
+        assert_eq!(size(&framed, *art_cell), size(&flat, *plain));
+    }
+}

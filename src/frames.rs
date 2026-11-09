@@ -56,7 +56,9 @@ impl Frame {
 pub struct GooeyFrames {
     /// The frame of every [`crate::panel`] (a dialog's too).
     pub panel: Option<Frame>,
-    /// The frame of every [`crate::button`] that has a fill at rest (a ghost button stays flat).
+    /// The frame of every [`crate::button`] that has a fill at rest (a ghost button stays flat), and of
+    /// every table header cell: the skin draws a header from a button's fill, hover and press, so it
+    /// takes a button's art, with its own border (the focus ring) over it.
     pub button: Option<Frame>,
     /// The frame of every [`crate::meter`] and [`crate::progress`] track: the art is drawn under the
     /// fill, which keeps the skin's colour (a meter's frame is its track, so its outline goes).
@@ -84,7 +86,7 @@ impl GooeyFrames {
     fn of(&self, role: Role) -> Option<&Frame> {
         match role {
             Role::Panel => self.panel.as_ref(),
-            Role::Button => self.button.as_ref(),
+            Role::Button | Role::TableHeaderCell => self.button.as_ref(),
             Role::Meter => self.meter.as_ref(),
             Role::SliderRail | Role::ToggleTrack | Role::HoldTrack => self.track.as_ref(),
             Role::TextField => self.field.as_ref(),

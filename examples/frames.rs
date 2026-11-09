@@ -251,6 +251,16 @@ fn setup(
                             Tooltip::new("Make tools from what you carry")
                         ),
                         (button("Map"), Tooltip::new("Where the camp stands")),
+                        table(
+                            vec![
+                                Column::new("Item").width(9.0),
+                                Column::new("When").width(7.0)
+                            ],
+                            vec![
+                                vec!["Meadow".to_string(), "12:40".to_string()],
+                                vec!["Harbour".to_string(), "09:15".to_string()],
+                            ],
+                        ),
                         text_input("Name", "Camp 1"),
                         slider("Volume", 0.6, 0.0..=1.0),
                         toggle("Subtitles", true),
