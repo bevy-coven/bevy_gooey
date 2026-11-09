@@ -3314,11 +3314,15 @@ Flaws left alone as out of scope: the body line is a `label` (already wrapping) 
 
 **Perf:** unpinned gallery `mean_ms` **22.408 / 22.588 / 22.604**, before 22.204 — inside noise.
 
-**Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. README at 251
+**Gate:** fmt, clippy, nextest **1274/1274**, doctests, check + wasm32, `doc -D warnings`. README at 251
 lines: the `prompts.gif` block (the same Quit dialog, also in `docs/guide/prompts.md`) gave way to the
 new still, so no demo was lost.
 
-**Backlog:** (1) publish after 18:52Z — now **ten** versions wait, 0.51.9–0.51.18; (2) `GooeyFrames`
+**Release:** v0.52.0 (a public `ControlText` component is a pre-1.0 minor bump), tagged and pushed;
+`cargo publish` answered **429** again (the window rolls at 18:52Z), so **eleven** versions wait:
+0.51.9–0.52.0.
+
+**Backlog:** (1) publish after 18:52Z — now **eleven** versions wait, 0.51.9–0.52.0; (2) `GooeyFrames`
 fields for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become
 `pub(crate)`; (4) `GOOEY_WIDTHS` in the other capture examples; (5) a dialog example built by hand
 (`dialog()` + `panel()`), now that the gallery has the `wide` staging to borrow.
