@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.51.0] - 2026-11-09
+
+Breaking (pre-1.0, minor): the public system `update_selection_indicators` takes one more parameter (it reads the strip's orientation now).
+
 ### Fixed
 
 - A wrapped tab strip no longer shrinks out of its card: `Role::TabList` keeps every row it wraps to (`flex_shrink: 0`), so a dock group at 200% text that holds several long tabs draws all of them instead of cutting the second and third row at the card's edge.
