@@ -3249,3 +3249,25 @@ So the crate's one writer of the placement requires the component to exist, and 
 **Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. **No package change**, so no release.
 
 **Backlog:** (1) the tooltip panic, with the design decision its note names; (2) publish the eight waiting versions after 18:52Z; (3) a control row that shrinks its label so a long label wraps; (4) `GooeyFrames` fields for a header and a status item; (5) `GooeySystems`-grain hooks so the systems can become `pub(crate)`.
+
+## Iteration 99 — 2026-11-09 — the first-frame panic is fixed, and the inspector records again
+
+**First job: the publish.** Not attempted at the head (the window rolls at 18:52Z); attempted once at the end for 0.51.17 and answered **429** as predicted. **Nine versions now wait**: 0.51.9–0.51.17.
+
+**The item: fix the crash iteration 97 found and four attempts failed at.** The root cause the last note named was structural — `apply_skin` reached a box's placement through `Styled`'s `floating: Option<(&mut Popover, …)>`, a tuple that only matches when the entity already has a `Popover`, while Bevy panics on any `Popover` whose anchor is not laid out. Both halves could not hold.
+
+**The fix: change what the tuple matches on.** `floating` is now `Option<(Option<&mut Popover>, Option<&TooltipBox>, Option<(&PopoverPanel, Option<&PopoverSlide>)>)>` — a box is recognised by *what it is*, not by carrying the component — and the placement is written with `commands.insert(next)` when the box has none. A tooltip's box is spawned with **no** `Popover` at all (`src/tooltip.rs`), so Bevy never places one before its anchor is laid out; `apply_skin` inserts the correct placement the frame the anchor is sized, and `restyle_sized_tooltips` marks the box for that restyle (the node that changes is its *parent*, which the box's own `Restyle` filter cannot see).
+
+**Evidence.** `examples/inspector` — which hung a tooltip on 60 rows and died on frame 1 every run — now runs **5 times in a row with zero panics**. Every popover-dependent suite is green: tooltip, tooltip_delay, tooltip_cap, popover, popover_entrance, menu, menu_exit, context_menu, combobox — **86 tests**. `inspector.gif` **records again**, and the first recording is a mean 0.11 grey levels from the stale file it replaces, so the visual result is unchanged as it should be; its stale marker is cleared from `docs/media/README.md`. All 45 GIFs re-recorded, `0 updated`.
+
+**One diagnostic worth recording:** my first stills of the inspector showed no tooltip and no focus ring, which looked like the fix had disabled tooltips. It had not: Tab from the window lands nowhere visible in that example (no `AutoFocus`), so the still never hovered or focused a widget with a tooltip. The pinned `tests/tooltip.rs` — "it opens to the right, one gap outside the panel" — is the evidence that tooltips work, and it was green throughout.
+
+**Sources:** Bevy `bevy_ui_widgets/src/popover.rs:130-150` and `bevy_math/src/rects/rect.rs:99-100` (technical), WCAG 2.2 SC 4.1.3 (technical), *Good Game Feel* (craft). Note: `docs/research/tooltip-first-frame.md`, now with the working fix in its Model adopted.
+
+**Critique:** a widget that killed the host process on its first frame now draws and records, tooltips open where they did, and nothing else moved (45 GIFs byte-identical). Verdict: **GREAT**.
+
+**Perf:** unpinned gallery `mean_ms` **22.496 and 22.386, load 1.62 and 1.57** — unchanged.
+
+**Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. 0.51.16 → 0.51.17, tagged; publish 429 (window 18:52Z).
+
+**Backlog:** (1) publish the nine waiting versions after 18:52Z, first thing; (2) a control row that shrinks its label so a long label wraps instead of widening the panel; (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) `GOOEY_WIDTHS` in the other capture examples.
