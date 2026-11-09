@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.7] - 2026-11-09
+
 ### Added
 
 - A split's divider declares the actions a screen reader needs to move it: Focus, Increment, Decrement and SetValue on its `Ak::Splitter` node. Before, the node carried the value and no way to change it. A step moves it by the arrows' own `SPLIT_KEY_STEP_PX`, a value is held to the panes' minimums as a drag is, and both end in the split's `ValueChange<f32>`, so a game's observer hears a screen reader's change exactly as it hears a drag.
