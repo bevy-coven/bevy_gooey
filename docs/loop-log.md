@@ -3108,3 +3108,21 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, nextest **1272/1272**, doctests, check + wasm32, `doc -D warnings`. 0.51.11 → 0.51.12.
 
 **Backlog:** (1) publish 0.51.12 first thing when the window rolls — four versions are waiting; (2) a panel's `max_width` a game can set (the limit this pass measured); (3) `GooeyFrames` fields of their own for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that prints the load average.
+
+## Iteration 93 — 2026-11-09 — the panel cap was built, measured, and reverted; the disk was cleaned
+
+**First job: the outstanding publish.** `cargo publish` answered **429** again, so 0.51.9–0.51.12 remain tagged and unpublished (crates.io still lists 0.51.8). Logged once, not retried.
+
+**Disk, which was the real risk this pass.** `/home` sat at 98% with 106 GB free and had been falling ~12 GB a pass. The cause was mine: `target/release/examples` held 1016 hashed binaries (69 GB) and `target/debug/deps` thirteen `all-*` test executables, built by this loop's own release and gate runs. Deleted only files **older than the current `gallery`/`all` build**, all created by this session: examples 69 → 7.2 GB, test binaries 13 → 1, **freed 62 GB**. `/home` now 178 GB free. Nothing I did not create was touched.
+
+**The item: cap a screen panel at the window so 200% text cannot push it off-screen.** Built, and it worked — `/tmp/g93/t.png` shows a 1070 px panel inside a 1280 window where before its right edge was off-screen, and `/tmp/g93/n.png` shows 100% unchanged. Then `dock_reorder::the_tab_follows_the_pointer_and_the_one_it_passes_steps_aside` failed at y=97.5 before settling at 40.5: a dock group's card *is* a `panel()`, and a cap in `apply_skin` cannot see the panel's own offset or its parent's room, so a docked group measured against the whole window wrapped its strip mid-drag. **Reverted**, and the note (`docs/research/panel-cap.md`) records the measurements, the regression and the next slice: the cap belongs in a system that reads the panel's laid-out right edge, the shape `flow_strips` already has.
+
+**A second measurement of my own that proved nothing, again:** my first "without the change" test stashed `src/skin.rs` when the change was already committed, so it tested nothing; and my first revert left the write in place under a different format, so `dialog_look` kept failing. Both were caught by re-reading rather than trusting the summary.
+
+**Perf:** unpinned gallery `mean_ms` **22.582 and 22.399** at load average 1.4 — unchanged across iterations 86–93.
+
+**Demo:** no visual change; all 45 GIFs re-recorded, `0 updated`.
+
+**Gate:** fmt, clippy, nextest **1272/1272**, doctests, check + wasm32, `doc -D warnings`. **No package change this pass** — the only commits are the research note and the revert — so nothing is released, which also gives the publish quota a pass to roll.
+
+**Backlog:** (1) publish 0.51.12 when the window rolls; (2) the panel cap as a layout-reading system (with `dock_reorder`, `split` and `dialog_look` green as its acceptance); (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) a label that wraps, so a capped panel's long row is not clipped.
