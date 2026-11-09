@@ -1238,3 +1238,68 @@ fn a_splitters_node_takes_steps_and_a_value() {
         numbers.last()
     );
 }
+
+#[test]
+fn a_header_cell_is_a_column_header_a_screen_reader_can_sort_with() {
+    use accesskit::Action as A;
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    let table = app
+        .world_mut()
+        .spawn((
+            table(
+                vec![
+                    Column::new("Name").width(9.0),
+                    Column::new("Qty").width(6.0),
+                ],
+                vec![
+                    vec!["Meadow".to_string(), "12".to_string()],
+                    vec!["Harbour".to_string(), "3".to_string()],
+                ],
+            ),
+            ChildOf(root),
+        ))
+        .id();
+    settle(&mut app);
+    let header = {
+        let mut stack = vec![table];
+        let mut found = None;
+        while let Some(entity) = stack.pop() {
+            if let Some(kids) = app.world().get::<Children>(entity) {
+                for &kid in &**kids {
+                    if app.world().get::<Role>(kid) == Some(&Role::TableHeaderCell) {
+                        found = Some(kid);
+                    }
+                    stack.push(kid);
+                }
+            }
+        }
+        found.expect("a header cell")
+    };
+    settle(&mut app);
+    // It is a column header with its own words, and it takes a Click: before this it was a
+    // container in the tree and a screen reader could not sort at all.
+    let header_node = node(&app, header);
+    assert_eq!(header_node.role(), accesskit::Role::ColumnHeader);
+    assert_eq!(header_node.label(), Some("Qty"));
+    assert!(header_node.supports_action(A::Click), "it takes a Click");
+    // Pressing it sorts by that column, and the node says so.
+    act(&mut app, header, A::Click, None);
+    assert_eq!(
+        app.world().get::<TableSort>(table).map(|sort| sort.column),
+        Some(Some(1)),
+        "the click sorted by Qty"
+    );
+    assert_eq!(
+        node(&app, header).sort_direction(),
+        Some(accesskit::SortDirection::Ascending),
+        "and the node reads ascending"
+    );
+    // A click again turns it round.
+    act(&mut app, header, A::Click, None);
+    assert_eq!(
+        node(&app, header).sort_direction(),
+        Some(accesskit::SortDirection::Descending),
+        "and the second reads descending"
+    );
+}

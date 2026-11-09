@@ -44,8 +44,10 @@ visible chevron and that state are drawn from one value. The crate already draws
   `Option<Option<..>>` so "no header" and "this column is not the sort" differ, and `says` compares it —
   without that comparison the node was never rewritten when only the sort changed (measured: the test
   failed with `None` against `Some(Ascending)`).
-- **`COLUMN` = Focus, Click** in `actions_of`, and a Click triggers `Activate` — the same event the
-  pointer's press and Enter send, so a game's `SortBy` observer hears a screen read the same way.
+- **No new action arm.** A header cell is already Bevy's `Button`, so `actions_of` gave it Focus and
+  Click before this pass and a Click already reached `Activate` — the sort worked. A `COLUMN` arm was
+  written and then removed: it was redundant, and the mutation that deleted it left every test green,
+  which is what proved it. The defect was the *node*, not the action.
 
 ## Parameters
 
@@ -61,17 +63,17 @@ visible chevron and that state are drawn from one value. The crate already draws
 - A header cell's node is `Ak::ColumnHeader`, named with its own words, and declares Click.
 - A Click sorts by that column, and the node then reads `Descending` after a second.
 - A column that is not the sort reads no direction (cleared, not stale).
-- Mutation-checked: removing the `COLUMN` arm fails on `supports_action`; removing the `says`
-  comparison fails on the direction.
+- Mutation-checked: removing the `says` comparison fails the direction assertion (it read `None`
+  against `Some(Ascending)` before that comparison was added); removing the `sort` wiring fails on the
+  role and the Click.
 
 ## Deviations
 
 - **No `Ak::SortDirection::Other`.** A table sorts by this crate's own `natural_cmp`, which is a normal
   ascending/descending; `Other` would claim a third order there is not (design default).
-- **A non-sortable column still declares Click**, as it already sends `Activate` and its observer simply
-  refuses. Declaring it and refusing is the crate's existing rule for a disabled control's actions
-  (none declared) applied to a sortable one (declared, no-op) — the smaller change, and a reader that
-  presses hears nothing happen rather than finding no press at all (design default).
+- **A non-sortable column still declares Click**, unchanged from before: it is a Bevy `Button` and its
+  observer refuses. A reader that presses hears nothing happen, as a pointer player does (design
+  default).
 
 ## Pending index
 

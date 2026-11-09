@@ -123,7 +123,6 @@ fn spec(role: Role) -> Spec {
         | Role::Table
         | Role::TableRow
         | Role::TableCell
-        | Role::TableHeaderCell
         | Role::TableEdge
         | Role::Tab
         | Role::TabPage
@@ -147,7 +146,8 @@ fn spec(role: Role) -> Spec {
         | Role::Slot
         | Role::SlotEmpty
         | Role::Radial
-        | Role::SectionNote => Spec::Node,
+        | Role::SectionNote
+        | Role::TableHeaderCell => Spec::Node,
         Role::ButtonText
         | Role::MenuTitleText
         | Role::MeterFill
@@ -270,6 +270,9 @@ struct Wanted {
     row_index: Option<usize>,
     row_count: Option<usize>,
     column_count: Option<usize>,
+    /// A column header's sort: `Some(None)` clears the state (this column is not the one sorted
+    /// by), `Some(Some(_))` sets it, and `None` is no header at all.
+    sort: Option<Option<accesskit::SortDirection>>,
     popup: bool,
     modal: bool,
     hidden: bool,
@@ -308,6 +311,7 @@ pub(crate) struct Facts {
     swatch: Option<&'static ColorSwatch>,
     choice: Option<&'static ChoiceValue>,
     divider: Option<&'static SplitDivider>,
+    column: Option<&'static crate::table::TableHeaderCell>,
     cooldown: Option<&'static Cooldown>,
     handles: Handles,
 }
@@ -315,6 +319,7 @@ pub(crate) struct Facts {
 /// The queries a name or a value is read through.
 #[derive(SystemParam)]
 pub(crate) struct Look<'w, 's> {
+    sorts: Query<'w, 's, &'static crate::table::TableSort>,
     texts: Query<'w, 's, &'static Text>,
     roles: Query<'w, 's, &'static Role>,
     children: Query<'w, 's, &'static Children>,
@@ -553,7 +558,25 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.role = Some(Ak::Cell);
             wanted.name = look.words(entity, names);
         }
-        Role::TableHeaderCell | Role::Tab => wanted.name = look.words(entity, names),
+        Role::TableHeaderCell => {
+            wanted.role = Some(Ak::ColumnHeader);
+            wanted.name = look.words(entity, names);
+            // The sort mark, as `update_tables` drew it: this column's direction, or neither.
+            if let Some(cell) = facts.column
+                && let Ok(sort) = look.sorts.get(cell.table)
+            {
+                wanted.sort = Some(match sort.column {
+                    Some(column) if column == cell.column && sort.descending => {
+                        Some(accesskit::SortDirection::Descending)
+                    }
+                    Some(column) if column == cell.column => {
+                        Some(accesskit::SortDirection::Ascending)
+                    }
+                    _ => None,
+                });
+            }
+        }
+        Role::Tab => wanted.name = look.words(entity, names),
         Role::TableEdge => {
             wanted.role = Some(Ak::Splitter);
             wanted.name = Some(COLUMN_EDGE.to_owned());
@@ -717,6 +740,7 @@ fn says(node: &Node_, wanted: &Wanted) -> bool {
         && wanted
             .column_count
             .is_none_or(|count| node.column_count() == Some(count))
+        && wanted.sort.is_none_or(|sort| node.sort_direction() == sort)
         && (!wanted.popup || node.has_popup() == Some(HasPopup::Menu))
         && node.is_modal() == wanted.modal
         && node.is_hidden() == wanted.hidden
@@ -773,6 +797,11 @@ fn write(node: &mut Node_, wanted: &Wanted) {
     }
     if let Some(count) = wanted.column_count {
         node.set_column_count(count);
+    }
+    match wanted.sort {
+        Some(Some(sort)) => node.set_sort_direction(sort),
+        Some(None) => node.clear_sort_direction(),
+        None => {}
     }
     if wanted.popup {
         node.set_has_popup(HasPopup::Menu);
