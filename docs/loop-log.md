@@ -2994,3 +2994,27 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, nextest **1269/1269**, doctests, check + wasm32, `doc -D warnings`. `cargo semver-checks`: no update required, so 0.51.6 → 0.51.7. https://crates.io/crates/bevy_gooey/0.51.7
 
 **Backlog:** (1) a table's header cell as a `Spec::Node` with a Click, so a screen reader can sort (found this pass); (2) a list's rows and a tree's nodes announced — Bevy's `ScrollArea` carries no node; (3) `GooeyFrames` fields of their own for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that also prints the load average.
+
+## Iteration 88 — 2026-11-09 — a sortable header a screen reader can actually sort; v0.51.8
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Item: the backlog's #1, the follow-up iteration 87's note found — `Role::TableHeaderCell` was `Spec::Group`, a container in the accessibility tree, so a screen reader walked past it into the rows. A keyboard or pointer player could sort; a reader could not.
+
+**Built:** the cell is a `Spec::Node` described as `Ak::ColumnHeader` with the column's own words, and its **sort direction is the one `update_tables` draws**: `Ascending` when this column is sorted by, `Descending` on the second press, and **cleared** for every other column. `Facts` gained the `TableHeaderCell` (its table and column), `Look` the `TableSort` query, and `Wanted::sort` is `Option<Option<..>>` so "no header" and "not this column" differ.
+
+**The bug inside the fix, found by the test:** the first version set the sort and the test still read `None` against `Some(Ascending)`. `says` — the comparison that decides whether a node is rewritten — did not compare the sort, so a sort-only change never reached `write`. Added, and the mutation that removes it fails.
+
+**A second thing written, then removed, because a mutation proved it empty:** a `COLUMN` action arm giving a header Cell/Click. It was redundant — a header cell is already Bevy's `Button`, so `actions_of` gave it Focus and Click before this pass, and a Click already reached `Activate`. Deleting the arm left all 36 access tests green, which is the proof. The defect was the node, not the action.
+
+**Sources:** *Future design of accessibility in games: A design vocabulary* (craft, 10.1016/j.ijhcs.2019.06.010), WCAG 2.2 SC 4.1.2 Name, Role, Value (technical), AccessKit 0.24 `lib.rs:517,2142` (`SortDirection`, `set_/clear_sort_direction`), Rune's table (shipping reference). Note: `docs/research/header-node.md`.
+
+**Critique:** not a visual change; the proof is the tree. Before: no node, sortable only by pointer and keys. After: `ColumnHeader`, named "Qty", ascending after one press, descending after two, cleared on the other column. Verdict: GREAT.
+
+**Follow-up found, not built:** a list's rows and a tree's nodes have no nodes at all — Bevy's `ScrollArea` carries none — so a screen reader cannot read a scrolling list of ten thousand rows. Recorded in the note.
+
+**Perf:** unpinned gallery `mean_ms` **22.572 and 22.159** at load average 2.3 — the same as iterations 86 and 87 (22.5–22.6). No regression.
+
+**Demo:** no visual change; all 45 GIFs re-recorded, `0 updated`.
+
+**Gate:** fmt, clippy, nextest **1270/1270**, doctests, check + wasm32, `doc -D warnings`. Patch: 0.51.7 → 0.51.8. https://crates.io/crates/bevy_gooey/0.51.8
+
+**Backlog:** (1) list rows and tree nodes in the accessibility tree (Bevy's `ScrollArea` has no node); (2) `GooeyFrames` fields of their own for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (4) an unpinned frame-time line in every capture example that prints the load average; (5) a per-widget example page, so a capture never shows a stale neighbour.
