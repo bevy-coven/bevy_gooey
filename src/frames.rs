@@ -39,7 +39,9 @@ impl Frame {
 /// The art a skin's widgets are drawn from. Nothing is set by default, and a widget with no frame
 /// draws its flat fill as before. Set it before the widgets appear, or at any time: a frame set
 /// later is applied to the widgets that restyle (a state change, a skin change) and a frame taken
-/// away gives every fill back.
+/// away gives every fill back. The struct is `#[non_exhaustive]`: start from the resource (or
+/// `GooeyFrames::default()`) and assign the fields you have art for, so a role added later is not a
+/// breaking change.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -50,11 +52,15 @@ impl Frame {
 /// # }
 /// ```
 #[derive(Resource, Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct GooeyFrames {
     /// The frame of every [`crate::panel`] (a dialog's too).
     pub panel: Option<Frame>,
     /// The frame of every [`crate::button`] that has a fill at rest (a ghost button stays flat).
     pub button: Option<Frame>,
+    /// The frame of every [`crate::meter`] and [`crate::progress`] track: the art is drawn under the
+    /// fill, which keeps the skin's colour (a meter's frame is its track, so its outline goes).
+    pub meter: Option<Frame>,
     /// The frame of what floats over the screen: a tooltip, a popover, a menu's panel, the command
     /// palette and a toast's body. Their outline goes, as a panel's does.
     pub popup: Option<Frame>,
@@ -65,6 +71,7 @@ impl GooeyFrames {
         match role {
             Role::Panel => self.panel.as_ref(),
             Role::Button => self.button.as_ref(),
+            Role::Meter => self.meter.as_ref(),
             Role::Tooltip | Role::Popover | Role::MenuPanel | Role::Palette | Role::ToastBody => {
                 self.popup.as_ref()
             }
@@ -78,6 +85,7 @@ impl GooeyFrames {
         matches!(
             role,
             Role::Panel
+                | Role::Meter
                 | Role::Tooltip
                 | Role::Popover
                 | Role::MenuPanel

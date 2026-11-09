@@ -266,3 +266,42 @@ fn what_floats_has_its_own_frame_and_an_unframed_role_stays_flat() {
     // A text field is measured as a leaf by Bevy, so a child layer would collapse it: it is flat.
     assert!(framed.world().get::<Framed>(ids[1][3]).is_none());
 }
+
+#[test]
+fn a_meter_track_draws_its_art_under_the_fill_and_keeps_the_fill() {
+    let mut flat = app();
+    let mut framed = app();
+    let art = art(&mut framed);
+    framed.world_mut().resource_mut::<GooeyFrames>().meter = Some(Frame::new(art, 6.0));
+    let mut tracks = Vec::new();
+    for app in [&mut flat, &mut framed] {
+        let bar = app.world_mut().spawn(meter(60.0, 100.0)).id();
+        app.world_mut().spawn(screen()).add_child(bar);
+        frames(app, 6);
+        tracks.push(bar);
+    }
+    let image = layer(&framed, tracks[1]).expect("the track is framed");
+    assert_eq!(
+        image.color,
+        fill(&flat, tracks[0]),
+        "the tint is the track's fill"
+    );
+    assert_eq!(fill(&framed, tracks[1]), Color::NONE);
+    assert_eq!(
+        size(&framed, tracks[1]),
+        size(&flat, tracks[0]),
+        "layout is the same"
+    );
+    // The fill keeps the skin's colour and its place: the art is under it.
+    let fills = |app: &App, bar: Entity| -> Vec<Color> {
+        app.world()
+            .get::<Children>(bar)
+            .into_iter()
+            .flat_map(|kids| kids.iter())
+            .filter(|kid| app.world().get::<Role>(*kid) == Some(&Role::MeterFill))
+            .filter_map(|kid| app.world().get::<BackgroundColor>(kid).map(|b| b.0))
+            .collect()
+    };
+    assert_eq!(fills(&framed, tracks[1]), fills(&flat, tracks[0]));
+    assert!(!fills(&framed, tracks[1]).is_empty());
+}

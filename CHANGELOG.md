@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `GooeyFrames::meter`: nine-slice art for the track of every `meter()` and `progress()`, under the fill (which keeps the skin's colour); the track's outline goes with its fill. `GooeyFrames` is now `#[non_exhaustive]`, so the next role's field is not a breaking change (assign fields on the resource; a struct literal outside the crate no longer compiles).
+
 ### Changed
 
 - `examples/gallery`, `ladder` and `table` take `GOOEY_FIXED_CLOCK=1` (every frame is 1/30 s of game time), and `theme.gif`, `ladder.gif` and `table.gif` are recorded with it: they differed on every recording of a loaded host (colour easing against uneven frame times) and now come out identical run to run. They are re-recorded at real-time playback (6.6, 5.7 and 6.0 s).

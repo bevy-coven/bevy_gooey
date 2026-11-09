@@ -296,7 +296,7 @@ project's `family/bevy_gooey.ron` into the same type while the editor runs.
 
 ## Art frames: `GooeyFrames`
 
-A skin is colours, and a game with painted art wants its panels and buttons drawn from that art. `GooeyFrames` (a resource, like `GooeyFonts`: images are the game's assets, not saved data) holds a nine-slice `Frame { image, slice }` for every `panel()` (a dialog's too), every `button()` that has a fill at rest (a ghost button stays flat) and, as `popup`, what floats: tooltips, popovers, menu panels, the command palette and toasts:
+A skin is colours, and a game with painted art wants its panels and buttons drawn from that art. `GooeyFrames` (a resource, like `GooeyFonts`: images are the game's assets, not saved data) holds a nine-slice `Frame { image, slice }` for every `panel()` (a dialog's too), every `button()` that has a fill at rest (a ghost button stays flat) as `meter`, the track of every `meter()` and `progress()` (the art under the fill, which keeps the skin's colour) and, as `popup`, what floats: tooltips, popovers, menu panels, the command palette and toasts. The struct is `#[non_exhaustive]`, so a role added later is not a breaking change: assign the fields you have art for on the resource.
 
 ```rust
 fn setup(mut frames: ResMut<GooeyFrames>, assets: Res<AssetServer>) {
