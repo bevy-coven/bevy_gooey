@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.11] - 2026-11-09
+
 ### Fixed
 
 - A list's rail is in the accessibility tree: an `Ak::ScrollBar` named "Scroll" whose value is how far the list is scrolled, declaring Focus, Increment, Decrement and SetValue. A reader could read a list's rows and never move it. A step moves one viewport (the Page keys' own step) and a value sets the fraction the rail's drag sets, both through `ScrollPosition` (WCAG 2.2 SC 2.1.1, 4.1.2).
