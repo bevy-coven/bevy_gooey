@@ -3186,3 +3186,36 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. 0.51.14 → 0.51.15, tagged; publish 429 (window 18:52Z).
 
 **Backlog:** (1) publish the seven waiting versions after 18:52Z, first thing; (2) a row that wraps its own text (`ONE_LINE`) so a long row folds rather than clips; (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that prints the load average, and `GOOEY_WIDTHS` in the other capture examples.
+
+## Iteration 97 — 2026-11-09 — `mean_ms` now carries its host load
+
+**First job: the publish.** Not attempted, and the reason is recorded: iteration 94 computed the quota window rolls at **18:52Z**; seven versions (0.51.9–0.51.15) are tagged and pushed and wait for it. A pass after that time publishes first.
+
+**The item: the perf number's missing context.** `mean_ms` was quoted in every pass's log with nothing about the machine it was measured on. The same interface reads **30.7 ms at load 25–46** and **22.4 ms at load 1.4** (iterations 86 and 95) — an 8 ms spread from the host alone, which is sixteen times the 0.5 ms gate. So the line now prints the host's 1-minute load average from `/proc/loadavg`, and `AGENTS.md` says to quote it and never to compare two frame times whose loads differ by more than a few.
+
+**Measured the moment it landed:** `gooey: frames 60 mean_ms 29.990 load 65.01` — 30 ms where the same build read 22.4 an hour earlier, with the load that explains it. That is exactly the false regression the line now prevents.
+
+**Built:** the load field in `gallery`, `ladder` and `table` (three capture examples, one shared shape), the CHANGELOG entry, and the corrected rule in `AGENTS.md`'s perf section — rewritten after a first attempt spliced a sentence into the middle of an existing one.
+
+**Sources:** this is a measurement-method change; the sources are the crate's own measurements above (technical), and the loop's rule that a claim needs an independent measurement. No craft claim is made.
+
+**Critique:** the line now reads `gooey: frames <n> mean_ms <x>[ (fixed clock: not a measurement)] load <l>` — the two facts that make the number interpretable. Verdict: GREAT.
+
+**Gate:** fmt, clippy, doctests, check + wasm32, `doc -D warnings` green. The suite failed **two `split` tests** at **load 65**; both pass alone at load 34, and the whole suite passed on the rerun. This is the iteration-80/85 flake class, and the new load figure is now the evidence for it rather than an inference.
+
+**Bug found, not fixed (the pass's honest remainder): `examples/inspector` panics on its first frame.**
+`GOOEY_FRAMES=30 target/release/examples/inspector` → `Rect size must be positive` at
+`bevy_math/src/rects/rect.rs:100`, then `double free or corruption`, every time, with no keys pressed. The
+backtrace puts it in **`bevy_ui_widgets::popover::position_popover`** with **no `bevy_gooey` frame in the
+stack**: Bevy builds `Rect::from_center_size(anchor, size - border)` with no guard
+(`bevy_ui_widgets/src/popover.rs:149`), and the inspector's tooltips hang off rows whose border is as large
+as their size on the frame they are spawned. The crate can avoid it by not giving a box its `Popover`
+until its anchor is laid out — but `apply_skin` is the one writer of `Popover` and computes the placement
+there, so the fix belongs inside it (skip the write while the anchor is unsized, rewrite it when sized),
+and that needs the anchor's `ComputedNode` threaded into `restyle`, whose tuple is at Bevy's 15-element
+limit. Attempted twice and reverted rather than shipped half-done: a remove-only gate would leave the box
+without a `Popover` forever, which is the "one path, no shim" rule broken. **The inspector GIF was not
+re-recorded this pass** and is unchanged from its last good state; `inspector.gif` is the one demo this
+loop cannot currently regenerate.
+
+**Backlog:** (1) publish the seven waiting versions after 18:52Z, first thing; (2) a control row that shrinks its label (`min_width: 0` on a flex child) so a long label wraps instead of widening the panel — the root cause this pass measured and deliberately did not change blind; (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) `GOOEY_WIDTHS` in the other capture examples.
