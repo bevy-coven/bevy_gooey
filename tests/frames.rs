@@ -391,15 +391,11 @@ fn slider_switch_and_hold_tracks_draw_their_art_and_keep_their_parts() {
             find(app, Role::HoldTrack),
         ]);
     }
-    for i in 0..3 {
-        let image = layer(&framed, roles[1][i]).expect("the track is framed");
-        assert_eq!(
-            image.color,
-            fill(&flat, roles[0][i]),
-            "tint is the flat fill"
-        );
-        assert_eq!(fill(&framed, roles[1][i]), Color::NONE);
-        assert_eq!(size(&framed, roles[1][i]), size(&flat, roles[0][i]));
+    for (&plain, &art) in roles[0].iter().zip(&roles[1]) {
+        let image = layer(&framed, art).expect("the track is framed");
+        assert_eq!(image.color, fill(&flat, plain), "tint is the flat fill");
+        assert_eq!(fill(&framed, art), Color::NONE);
+        assert_eq!(size(&framed, art), size(&flat, plain));
     }
     // A switch that is on is still lit by the accent: the tint, not a new colour.
     let on = layer(&framed, roles[1][1]).expect("framed").color;
