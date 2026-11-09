@@ -2869,3 +2869,23 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Disk:** `/home` 274 GB free at the end; nothing deleted this pass.
 
 **Backlog:** (1) frames for tabs and toggle groups (needs the strip restyle recorded in the note); (2) `GooeyFrames::strip` with that restyle; (3) a reduced-motion fade-out for the split peek; (4) F6 into a collapsed pane; (5) `update_selection_indicators` and friends are public and grow a parameter per feature — consider `pub(crate)`.
+
+## Iteration 82 — 2026-11-09 — art on every tab and toggle option; v0.51.2
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 still waits on the editor's pin. Item: the backlog's first, "frames for tabs and toggle groups" — the last flat surfaces in a painted interface, and the follow-up iteration 80's note named.
+
+**Built:** `GooeyFrames::segment` — a nine-slice frame for every `Role::Tab` (`tabs`, `side_tabs`, a dock's strip) and every `Role::GroupOption`. The art is a layer of the option at `ZIndex(-1)`, below its label; the fill `apply_skin` wrote becomes its tint and the flat fill is cleared, so a tab is art at rest, art under the hover mix, and art tinted by the accent while lit. `tests/frames.rs` (13 tests) holds it: every tab and option framed, tint equals the flat fill, the lit tab's tint is the accent and an unlit one's is not, sizes unchanged, and taking the frame away restores every fill and removes every layer.
+
+**Scope decision (assumed, recorded in the note):** `GooeyFrames::strip` — a layer under the whole strip, Rune's rail — was drafted and dropped. A strip's tabs are opaque at rest (`surface_raised`) and opaque when lit (the accent), so a layer under them shows only in the gutters; a rail that reads needs the rest segments transparent, which would cost the crate's second selection cue (fill plus text colour, `docs/guide/tabs.md`). Per the owner rule the conservative choice is the one that keeps the contrast rule, so the art goes on the segments, where the fill already is.
+
+**Sources:** *Good Game Feel* (craft, 10.26503/dl.v2018i1.936: consistency as its own category), *Do Players Prefer Integrated User Interfaces?* (craft/shipping, 10.26503/dl.v2011i1.514: drawn in the game's materials), Rune `crates/rune-kit/src/segmented.rs:80-140` (the strip as a layer, the lit segment raised, muted ink). Note: `docs/research/segment-frames.md`.
+
+**Critique** (`/tmp/g82/s2.png`, `final.png`): the two tabs are the same bevelled paper as the buttons, the Name field and the panel; the ring reads clearly over the art, the lit tab carries the accent through the tint, and the page text under it switches with no jump. One flaw: at the smallest slice the tab's bevel is a hair tighter than a button's (slice 0.45 of the plate's corner against a button's full corner) — it reads as a smaller control, which the tabs are. Verdict: GREAT.
+
+**Demo:** new `docs/media/segment-frames.gif` (480x858, 84 frames, 388 KB) from `examples/frames`, which now carries a Camp/Craft tab pair; row in `docs/media/README.md` with its exact command and `-crop`, and the skins guide shows it. `frames.gif` changed too (the example gained the tabs) and was re-recorded. Two regen failures on the new row were my own row format: the parser crops the frames itself, so an encode line that also crops double-crops, and a `palettegen` without `[p]paletteuse` writes nothing.
+
+**Gate:** fmt, clippy, nextest 1266/1266, doctests, check + wasm32, `doc -D warnings`. No public item changed shape (`segment` is a new field on a `#[non_exhaustive]` struct), so 0.51.1 → 0.51.2. https://crates.io/crates/bevy_gooey/0.51.2
+
+**Disk:** nothing deleted; `/home` 274 GB free.
+
+**Backlog:** (1) a reduced-motion fade-out for the split peek; (2) F6 into a collapsed pane; (3) `pub(crate)` on the public systems that grow a parameter per feature (each costs a breaking release); (4) frames on a text area's caret row and the table header (the last unframed roles); (5) the press cue for tabs.
