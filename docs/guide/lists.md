@@ -31,7 +31,7 @@ fn load_game(mut commands: Commands) {
 - **Its edges fade.** A `ScrollEdgeFade` (24 px, on every list and table viewport) draws a fade over the top edge while the content is scrolled down and over the bottom while there is more below, at strength `hidden px / 15` up to full, in the colour behind the list. An edge with nothing hidden under it draws nothing, and a fade never takes a click. `ScrollEdgeFade(0.0)` or removing the component takes the fades down.
 - PageUp and PageDown, and the pad's left and right triggers, move focus a viewport up or down the list in one press. Up and Down stay among a list's rows until they run out (rows the list has clipped lie further off than the button under it, so geometry alone would step out past them), and a row the list has clipped away is never the neighbour of a widget outside it.
 - To jump from code, set the `ScrollPosition` on the `ListView` entity (the first child of the list's root). A list builds every row it is given, so it is for tens of rows, not thousands; a list at its end does not scroll the panel behind it; a wheel notch is Bevy's 100 px.
-- A list is not announced to screen readers yet: Bevy's `ScrollArea` and `Scrollbar` carry no accessibility node.
+- **A list is in the accessibility tree**: its viewport is an `Ak::List` whose set size is the rows it holds, and each row is an `Ak::ListItem` with its place among them, read from the rows' own column so a game that inserts or removes rows does nothing. (Bevy's `ScrollArea` and `Scrollbar` still carry no node of their own; the rail is silent.)
 
 ## Typing a name
 

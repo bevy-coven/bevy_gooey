@@ -1314,3 +1314,72 @@ fn a_header_cell_is_a_column_header_a_screen_reader_can_sort_with() {
         "and the second reads descending"
     );
 }
+
+#[test]
+fn a_list_is_a_list_whose_rows_say_their_place() {
+    let mut app = app();
+    let root = app.world_mut().spawn(screen()).id();
+    let list = app
+        .world_mut()
+        .spawn((
+            list(
+                3.0,
+                Children::spawn(SpawnIter(
+                    ["Meadow", "Harbour", "Mill", "Cellar"]
+                        .into_iter()
+                        .map(button),
+                )),
+            ),
+            ChildOf(root),
+        ))
+        .id();
+    settle(&mut app);
+    // The viewport is an `Ak::List` that knows how many rows it holds...
+    let view = {
+        let mut stack = vec![list];
+        let mut found = None;
+        while let Some(entity) = stack.pop() {
+            if app.world().get::<ListView>(entity).is_some() {
+                found = Some(entity);
+            }
+            if let Some(kids) = app.world().get::<Children>(entity) {
+                stack.extend(kids.iter());
+            }
+        }
+        found.expect("the list's viewport")
+    };
+    settle(&mut app);
+    let node_ = node(&app, view);
+    assert_eq!(node_.role(), accesskit::Role::List);
+    assert_eq!(node_.size_of_set(), Some(4), "four rows, spawned or not");
+    // ...and each row is a list item with its place among them.
+    let rows: Vec<Entity> = {
+        // In tree order: a breadth-first walk visits each child list front to back.
+        let mut queue = std::collections::VecDeque::from([list]);
+        let mut found = Vec::new();
+        while let Some(entity) = queue.pop_front() {
+            if app.world().get::<Role>(entity) == Some(&Role::Button) {
+                found.push(entity);
+            }
+            if let Some(kids) = app.world().get::<Children>(entity) {
+                queue.extend(kids.iter());
+            }
+        }
+        found
+    };
+    assert_eq!(rows.len(), 4, "four row buttons");
+    for (index, row) in rows.iter().enumerate() {
+        let n = node(&app, *row);
+        assert_eq!(
+            n.role(),
+            accesskit::Role::ListItem,
+            "row {index} is a list item"
+        );
+        assert_eq!(
+            n.position_in_set(),
+            Some(index),
+            "row {index} says where it is"
+        );
+        assert_eq!(n.size_of_set(), Some(4));
+    }
+}

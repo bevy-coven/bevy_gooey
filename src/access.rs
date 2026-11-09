@@ -74,7 +74,6 @@ fn spec(role: Role) -> Spec {
         | Role::Prompt
         | Role::ShortcutLegend
         | Role::List
-        | Role::ListView
         | Role::ListRows
         | Role::TableView
         | Role::TableRows
@@ -147,7 +146,8 @@ fn spec(role: Role) -> Spec {
         | Role::SlotEmpty
         | Role::Radial
         | Role::SectionNote
-        | Role::TableHeaderCell => Spec::Node,
+        | Role::TableHeaderCell
+        | Role::ListView => Spec::Node,
         Role::ButtonText
         | Role::MenuTitleText
         | Role::MeterFill
@@ -335,6 +335,40 @@ pub(crate) struct Look<'w, 's> {
 }
 
 impl Look<'_, '_> {
+    /// An entity's place among a list's rows: the column, how many rows it holds, and which this one
+    /// is. `None` outside a list.
+    fn list_place(&self, entity: Entity) -> Option<(Entity, usize, usize)> {
+        let mut here = entity;
+        while let Ok(parent) = self.parents.get(here) {
+            let up = parent.parent();
+            if self.roles.get(up) == Ok(&Role::ListRows)
+                && let Ok(kids) = self.children.get(up)
+                && let Some(at) = kids.iter().position(|kid| kid == here)
+            {
+                return Some((up, kids.len(), at));
+            }
+            here = up;
+        }
+        None
+    }
+
+    /// A `ListView`'s row count and its rows' entity, read from the one `Role::ListRows` column
+    /// under it (a list's viewport holds that column, and the column holds the rows).
+    fn list_rows(&self, view: Entity) -> Option<(Entity, usize)> {
+        let mut pending = vec![view];
+        while let Some(entity) = pending.pop() {
+            if self.roles.get(entity) == Ok(&Role::ListRows)
+                && let Ok(kids) = self.children.get(entity)
+            {
+                return Some((entity, kids.len()));
+            }
+            if let Ok(kids) = self.children.get(entity) {
+                pending.extend(kids.iter());
+            }
+        }
+        None
+    }
+
     /// The words of every descendant of `root` whose role `want` accepts, in layout order, joined
     /// by a space. A popup, a tooltip and a section's body are another widget's words and are
     /// not entered.
@@ -453,6 +487,12 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
         }
         Role::Button => {
             wanted.name = look.name_of(entity);
+            // A list's row is a button the list owns: it reads as a list item with its place.
+            if let Some((_, count, at)) = look.list_place(entity) {
+                wanted.role = Some(Ak::ListItem);
+                wanted.position_in_set = Some(at);
+                wanted.size_of_set = Some(count);
+            }
             if facts.header
                 && let Some(parent) = look.parent(entity)
                 && let Ok(open) = look.sections.get(parent)
@@ -530,6 +570,17 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             } else {
                 accesskit::Live::Polite
             });
+        }
+        Role::ListView => {
+            // A list's rows are the column under it: the set's size and each row's place come from
+            // there, so a reader announces "row 3 of 40" whether or not the rows are spawned.
+            wanted.role = Some(Ak::List);
+            let rows = look
+                .parents
+                .get(entity)
+                .ok()
+                .and_then(|_| look.list_rows(entity));
+            wanted.size_of_set = rows.map(|(_, count)| count);
         }
         Role::ToastAction => wanted.name = look.words(entity, names),
         // A table's rows are a pool of a dozen entities rebound while scrolling, so the whole

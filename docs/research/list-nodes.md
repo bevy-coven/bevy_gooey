@@ -74,6 +74,6 @@ Rune pairs a list's container role with the item count and each row's index, so 
 ## Pending index
 
 - Nothing new: the corpus's craft stem and WCAG are the bar.
-- **Still open:** a tree's nodes are read from the table's pooled rows (iteration 46's `tree_place`), but a
-  `ListView` that holds a `TreeView` is not a list — worth a check that the two do not now fight over
-  `size_of_set`.
+- Checked, no conflict: `Role::ListView` is spawned only by `list()`. A table and a tree are a
+  `table_bundle`, which has no `ListView`, so their pooled rows keep `row_index` / `position_in_set` from
+  the table's own node and this pass's list code never sees them.
