@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A strip of tabs in a panel too narrow for one row now wraps. `update_tabs`'s strip is a grid of as many equal `1fr` columns as the room holds (`model::strip_columns`), counted from the widest label and the strip's gap, never more than the tabs it has; `flow_strips` writes the count only when it changes. At 200% text in a 760 px window a six-label strip is two equal columns by three rows, every label inside its tab and nothing outside the panel; before, the strip stayed one row and ran past the panel's edge. New example `examples/strip`, new demo `docs/media/wrapped-tabs.gif`.
+
 ## [0.51.0] - 2026-11-09
 
 Breaking (pre-1.0, minor): the public system `update_selection_indicators` takes one more parameter (it reads the strip's orientation now).

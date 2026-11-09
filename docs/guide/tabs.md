@@ -54,6 +54,15 @@ from they do nothing. Show your player the bumper prompt: not every game uses th
   text colour, not by hue alone (NN/g: "Use at least two selection indicators"). The strip is a row of
   equal columns as wide as the widest label, `min_target` high, with a button's focus ring, and the panel
   it stands in grows to fit the labels, never squeezing one.
+- **A strip that does not fit wraps.** The strip is a grid of as many equal columns as the room it is
+  given holds -- counted from the widest label, its own padding and the gap between tabs, and never more
+  than the tabs there are -- so at 200% text in a narrow panel a six-tab strip lays out two columns by
+  three rows instead of running past the panel's edge. Every cell in a row is the same width, which is
+  what a wrapping flex row could not do (its cells came out `[312, 284]` px) and `auto-fit` could not
+  either (taffy collapsed it to one column). `flow_strips` counts the columns and writes the grid only
+  when the count changes, so a settled strip writes nothing.
+
+  ![The strip example: six tabs at 200% text in the parchment look, two equal columns wide and three rows tall inside the panel, the ring on Interface](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/wrapped-tabs.gif)
 - **A selection indicator slides.** Changing the lit option springs one accent node from the old option's rect to the new one's on `motion.snappy` instead of swapping two fills; a change mid-flight turns round from where it is drawn. It is hidden at rest, so the options look as ever; reduced motion and no motion light the option at once, and so does a hop between two rows of a wrapped strip (the puck never crosses the gutter between rows). `SelectionIndicator` is its component and `Indicating` the mark on a strip and its options while it travels.
 - **Every page takes the room of the largest**, so turning a page moves nothing: not the strip, not the
   panel round it, and the player's hand does not follow a moving target. The price is blank room under a

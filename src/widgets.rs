@@ -2162,6 +2162,11 @@ pub(crate) fn tabs_in<B: Bundle>(
                         ..default()
                     }
                 } else {
+                    // Equal cells, as many to a row as the strip's width holds: `strip_columns`
+                    // counts them from the laid-out width of the labels, and one `1fr` track per
+                    // column makes every cell of a row the same width -- which `FlexWrap` could not
+                    // (a wrapped row's cells came out `[312, 284]` px) and `auto-fit` could not (it
+                    // collapsed to one column).
                     Node {
                         display: Display::Grid,
                         grid_template_columns: vec![RepeatedGridTrack::flex(
@@ -2319,7 +2324,9 @@ fn tab(label: String, extra: impl Bundle) -> impl Bundle {
         Hovered::default(),
         AutoDirectionalNavigation::default(),
         extra,
-        children![(Text::new(label), Role::TabText)],
+        // One line: a tab is a label's height, and a label that wrapped would make one tab
+        // taller than the strip it stands in.
+        children![(Text::new(label), ONE_LINE, Role::TabText)],
     )
 }
 

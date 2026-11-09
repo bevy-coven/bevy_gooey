@@ -1322,6 +1322,33 @@ pub fn scroll_to_reveal(
     want.clamp(0.0, max)
 }
 
+/// How many equal columns of `cell` fit across `width`, with `gap` between neighbours.
+///
+/// A wrapping tab strip is a grid of `count` equal tracks whose cells are at least their label, so
+/// the count is what fits: `count * cell + (count - 1) * gap <= width`. Never fewer than one. A
+/// width or a cell of nothing (no layout yet) answers one.
+///
+/// ```
+/// # use bevy_gooey::model::strip_columns;
+/// // Four 100 px cells and 8 px gaps in 460 px: three fit (3*100 + 2*8 = 316); a fourth would not.
+/// assert_eq!(strip_columns(460.0, 100.0, 8.0), 3);
+/// // Exactly four fit in 424: 4*100 + 3*8.
+/// assert_eq!(strip_columns(424.0, 100.0, 8.0), 4);
+/// assert_eq!(strip_columns(50.0, 100.0, 8.0), 1);
+/// ```
+pub fn strip_columns(width: f32, cell: f32, gap: f32) -> usize {
+    if !(width.is_finite() && cell.is_finite() && gap.is_finite()) || cell <= 0.0 || gap < 0.0 {
+        return 1;
+    }
+    // n cells need n*cell + (n-1)*gap, so n <= (width + gap) / (cell + gap).
+    let fit = ((width + gap) / (cell + gap)).floor();
+    if fit.is_finite() && fit >= 1.0 {
+        fit as usize
+    } else {
+        1
+    }
+}
+
 /// A scroll position moved on to the top of a row, so a list that follows focus always stands with a
 /// row flush at the top of its viewport, as it does at rest, and the row it cuts at the bottom is
 /// cut the same way at every step: `want` is where [`scroll_to_reveal`] asked to go from `scroll`,

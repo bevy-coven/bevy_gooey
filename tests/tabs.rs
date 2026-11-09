@@ -1171,6 +1171,74 @@ fn idle_tabs_write_nothing() {
 }
 
 #[test]
+fn a_strip_in_a_narrow_panel_wraps_into_equal_rows_and_keeps_every_label_inside_it() {
+    for (width, height) in [(1280, 720), (2560, 1440)] {
+        let mut app = app_sized(width, height);
+        app.world_mut().resource_mut::<GooeySkin>().text_scale = 2.0;
+        let narrow = width as f32 * 0.5;
+        let card = app
+            .world_mut()
+            .spawn((
+                Node {
+                    width: Val::Px(narrow),
+                    ..default()
+                },
+                children![(
+                    panel(),
+                    children![tabs(
+                        ["Accessibility", "Performance", "Network", "Accounts"],
+                        0,
+                        children![
+                            tab_page(children![label("a")]),
+                            tab_page(children![label("b")]),
+                            tab_page(children![label("c")]),
+                            tab_page(children![label("d")]),
+                        ]
+                    )]
+                )],
+            ))
+            .id();
+        app.world_mut().spawn(screen()).add_child(card);
+        settle(&mut app);
+        let panel = part(&app, card, Role::Panel);
+        let panel_rect = rect(&app, panel);
+        let tabs = parts(&app, panel, Role::Tab);
+        assert_eq!(tabs.len(), 4, "{width}: every tab is laid out");
+        let mut rows: Vec<(i64, Vec<f32>)> = Vec::new();
+        for tab in &tabs {
+            let at = rect(&app, *tab);
+            assert!(
+                at.min.x >= panel_rect.min.x - 0.5 && at.max.x <= panel_rect.max.x + 0.5,
+                "{width}: a tab left its panel: {at:?} outside {panel_rect:?}"
+            );
+            let text = rect(&app, children_of(app.world(), *tab)[0]);
+            assert!(
+                text.width() <= at.width() + 0.5,
+                "{width}: a label is wider than its tab ({text:?} in {at:?})"
+            );
+            let row = at.min.y.round() as i64;
+            match rows.last_mut() {
+                Some((y, cells)) if *y == row => cells.push(at.width()),
+                _ => rows.push((row, vec![at.width()])),
+            }
+        }
+        assert!(
+            rows.len() >= 2,
+            "{width}: a 200% strip in a {} px panel stayed on one row: {rows:?}",
+            narrow
+        );
+        for (row, cells) in &rows {
+            for cell in cells {
+                assert!(
+                    (cell - cells[0]).abs() <= 1.0,
+                    "{width}: row {row} is not equal cells: {cells:?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn a_long_label_widens_the_strip_and_is_never_squeezed_out_of_its_tab() {
     for (width, height) in [(1280, 720), (2560, 1440)] {
         let mut app = app_sized(width, height);

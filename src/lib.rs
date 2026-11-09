@@ -665,7 +665,7 @@ impl Plugin for GooeyStylePlugin {
                         dock::update_tab_reorder,
                     )
                         .chain(),
-                    (update_tabs, update_tab_pages).chain(),
+                    (update_tabs, update_tab_pages, tabs::flow_strips).chain(),
                     (update_split_glides, update_splits).chain(),
                     update_trees,
                     (

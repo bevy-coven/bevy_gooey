@@ -37,6 +37,21 @@ pub struct TabsValue(pub usize);
 #[reflect(Component, Default, Debug, PartialEq, Clone)]
 pub struct TabsCount(pub usize);
 
+/// What [`flow_strips`] reads of a strip: the node it writes, its tabs, its laid-out size and the
+/// column count it last wrote.
+type StripRow = (
+    Entity,
+    &'static mut Node,
+    &'static Children,
+    &'static ComputedNode,
+    Option<&'static mut StripColumns>,
+);
+
+/// The number of equal columns [`flow_strips`] last wrote into a strip, with the width it counted
+/// them for.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct StripColumns(pub u16, pub f32);
+
 /// A page of a [`crate::side_tabs`] strip that stands wherever the host puts it (a sidebar's
 /// pane beside it, a dock group): shown while the strip's [`TabsValue`] is `index`, hidden
 /// otherwise, by [`update_tab_pages`]. [`crate::side_tab_page`] spawns one.
@@ -151,6 +166,97 @@ pub(crate) fn tabs_on_select(
 pub(crate) fn tabs_self_update(change: On<ValueChange<usize>>, mut values: Query<&mut TabsValue>) {
     if let Ok(mut value) = values.get_mut(change.source) {
         value.set_if_neq(TabsValue(change.value));
+    }
+}
+
+/// Re-flows a strip's tabs into as many equal columns as its width holds, one track of `1fr` each.
+///
+/// A `tabs` strip outside a dock is a grid of `1fr` columns: equal cells, as wide as the widest
+/// label needs. That is right while one row holds them, and at 200% text in a narrow window it was
+/// not: the strip kept one row and ran out of the panel and the window. This counts the columns
+/// from the laid-out width of the widest label (`model::strip_columns`), writes that many tracks,
+/// and the grid wraps into rows of equal cells. A strip that already has the count writes nothing.
+/// Runs in [`crate::GooeySystems::Style`], after [`update_tabs`] and before
+/// [`crate::apply_skin`].
+pub(crate) fn flow_strips(
+    mut strips: Query<StripRow, With<Role>>,
+    roles: Query<&Role>,
+    layouts: Query<&ComputedNode>,
+    children: Query<&Children>,
+    labels: Query<&crate::Role>,
+    parents: Query<&ChildOf>,
+    mut commands: Commands,
+) {
+    for (entity, mut node, kids, computed, columns) in &mut strips {
+        if roles.get(entity) != Ok(&Role::TabList) || node.display != Display::Grid {
+            continue;
+        }
+        // The widest tab this strip needs, from the last frame's layout: its label and its own
+        // padding. Read from the LABEL, not the tab, because a tab squeezed by the row it is in
+        // reports the squeezed width and would keep the count from ever growing back.
+        let widest = kids
+            .iter()
+            .filter_map(|kid| {
+                let tab = layouts.get(kid).ok()?;
+                let label = children
+                    .get(kid)
+                    .ok()?
+                    .iter()
+                    .find(|&inner| labels.get(inner) == Ok(&Role::TabText))?;
+                let label = layouts.get(label).ok()?;
+                // The border and the padding are the tab's own air round its label.
+                let border = tab.border();
+                Some(label.size().x + border.min_inset.x + border.max_inset.x)
+            })
+            .fold(0.0f32, f32::max);
+        if widest <= 0.0 || computed.size().x <= 0.0 {
+            continue;
+        }
+        // The room the row must fit in: the window's width less the panel's own padding, however
+        // wide the panel has grown. A strip counted from its own width widened itself (it read a
+        // squeezed cell and made every tab wider, frame after frame).
+        let room = match parents.get(entity).ok() {
+            Some(parent) => layouts
+                .get(parent.parent())
+                .ok()
+                .map_or(computed.size().x, |node| {
+                    let border = node.border();
+                    node.size().x - border.min_inset.x - border.max_inset.x
+                }),
+            None => computed.size().x,
+        };
+        // Never more columns than there are tabs: a grid with 15 tracks and 3 tabs leaves 12
+        // empty cells and a strip far wider than its row. And never so many that a cell is
+        // narrower than the label it must hold: a cell of `minmax(0, 1fr)` CAN be narrower, so a
+        // count that ignored `widest` collapsed a four-tab strip into four rows.
+        let gap = match node.column_gap {
+            Val::Px(px) => px,
+            _ => 0.0,
+        };
+        let count = crate::model::strip_columns(room, widest, gap).min(kids.len());
+        let count = u16::try_from(count).unwrap_or(u16::MAX);
+        // Written only when the count or the width it was counted for moved: a strip that writes
+        // its grid every frame re-lays itself out every frame.
+        let width = computed.size().x;
+        match columns {
+            Some(last) if last.0 == count => {
+                continue;
+            }
+            Some(mut last) => {
+                last.0 = count;
+                last.1 = width;
+            }
+            None => {
+                commands.entity(entity).insert(StripColumns(count, width));
+            }
+        }
+        // `minmax(0, 1fr)`: a plain `1fr` track's least width is its cell's content, so the strip
+        // would grow to its labels instead of wrapping inside the room it was given.
+        node.grid_template_columns = vec![RepeatedGridTrack::minmax(
+            count,
+            MinTrackSizingFunction::Px(0.0),
+            MaxTrackSizingFunction::Fraction(1.0),
+        )];
     }
 }
 
