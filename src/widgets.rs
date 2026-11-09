@@ -96,10 +96,73 @@ use crate::toolbar::{
 use crate::tooltip::Tooltip;
 use crate::tree::{Tree, TreeNode, TreeView};
 
+/// The label of a control (the words beside a toggle, a slider, a choice or a binding row).
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct ControlText;
+
 /// A control's label is one line: the row is as wide as its label and its control need, so a label
 /// that wraps was wrapped by a rounding error in the row's width (a label 210 px wide in a row that
 /// came out a hair under 210 stood on two lines at 125% text, and the row was twice as tall).
 pub(crate) const ONE_LINE: TextLayout = TextLayout::new(Justify::Left, LineBreak::NoWrap);
+
+/// Lets a control's label break where something else bounds it: inside a dialog.
+///
+/// A control's label is [`ONE_LINE`] because its row is as wide as its label and its control need,
+/// and that is how a panel sized by its widest child comes out right. A dialog's panel is bounded
+/// instead (a `Role::Panel` under a `Role::Scrim` is given a `max_width`), and a label that cannot
+/// shrink runs out of it: measured, a **708 px** slider label in a row ending at 976 px started at
+/// 328 and ended at **1036**, 60 px outside a panel at 280..1000. So a label under a dialog's panel
+/// takes `WordBoundary` and the rest keep their exact one-line width.
+///
+/// It runs after [`crate::apply_skin`], which writes the rest of the text. Breaking is not free — a
+/// flex item's automatic minimum drops to its longest word, so the same label shrank to 210 px in a
+/// 539 px row and wrapped 3 px short of its 213 px line — which is why it is scoped to a dialog and
+/// not the label's bundle.
+pub(crate) fn wrap_bounded_labels(
+    mut labels: Query<(&ChildOf, &mut TextLayout), With<ControlText>>,
+    roles: Query<&Role>,
+    parents: Query<&ChildOf>,
+) {
+    for (parent, mut layout) in &mut labels {
+        let mut bounded = false;
+        let mut up = Some(parent.parent());
+        let mut guard = 0;
+        while let Some(entity) = up {
+            guard += 1;
+            if guard > 16 {
+                break;
+            }
+            if roles.get(entity) == Ok(&Role::Scrim) {
+                bounded = true;
+                break;
+            }
+            up = parents.get(entity).map(|p| p.parent()).ok();
+        }
+        let linebreak = if bounded {
+            LineBreak::WordBoundary
+        } else {
+            LineBreak::NoWrap
+        };
+        // `TextLayout` is not `PartialEq`; the one field that differs is compared itself.
+        if layout.linebreak != linebreak {
+            layout.linebreak = linebreak;
+        }
+    }
+}
+
+/// A control's label, as a control row draws it: the words, [`Role::ControlText`] and the marker
+/// [`wrap_bounded_labels`] writes through.
+pub(crate) fn wrapping_label(label: impl Into<String>) -> impl Bundle {
+    (
+        Text::new(label),
+        ONE_LINE,
+        Role::ControlText,
+        ControlText,
+        Pickable::IGNORE,
+    )
+}
+
+/// A control's label that may break, for a row something else bounds.
 
 /// How many keyboard or D-pad steps span a [`slider`]'s range.
 const SLIDER_STEPS: f32 = 20.0;
@@ -576,7 +639,7 @@ pub fn toggle(label: impl Into<String>, on: bool) -> impl Bundle {
         AutoDirectionalNavigation::default(),
         observe(checkbox_self_update),
         children![
-            (Text::new(label), ONE_LINE, Role::ControlText),
+            wrapping_label(label),
             (
                 Node {
                     align_items: AlignItems::Center,
@@ -640,7 +703,7 @@ pub fn slider(label: impl Into<String>, value: f32, range: RangeInclusive<f32>) 
                 },
                 Role::SliderHeader,
                 children![
-                    (Text::new(label), ONE_LINE, Role::ControlText),
+                    wrapping_label(label),
                     (
                         Text::new(slider_text(value, min, max)),
                         ONE_LINE,
@@ -736,12 +799,7 @@ pub fn choice<S: Into<String>>(
         observe(choice_on_activate),
         observe(choice_on_key_input),
         children![
-            (
-                Text::new(label),
-                ONE_LINE,
-                Role::ControlText,
-                Pickable::IGNORE
-            ),
+            wrapping_label(label),
             (
                 Node {
                     align_items: AlignItems::Center,
@@ -1236,12 +1294,7 @@ pub fn binding(label: impl Into<String>, value: Binding) -> impl Bundle {
         observe(binding_on_activate),
         observe(binding_on_key_input),
         children![
-            (
-                Text::new(label),
-                ONE_LINE,
-                Role::ControlText,
-                Pickable::IGNORE
-            ),
+            wrapping_label(label),
             (
                 Node {
                     display: Display::Grid,

@@ -380,3 +380,55 @@ fn a_screen_card_is_capped_under_the_window_at_every_text_step() {
         let _ = root;
     }
 }
+
+#[test]
+fn a_controls_label_wraps_inside_a_dialog_instead_of_running_outside_its_frame() {
+    // A row that decides its own width draws its label on one line (the test above). A row something
+    // else bounds — a dialog's panel has a `max_width` — has less room than the label's content, and
+    // a label that cannot shrink runs past the frame: measured 60 px outside a dialog's panel with a
+    // 708 px label in a row ending at 976 px. A control's label breaks between words instead.
+    let mut app = app();
+    let dialog = app.world_mut().spawn(dialog()).id();
+    let panel = app.world_mut().spawn(panel()).id();
+    app.world_mut().entity_mut(dialog).add_child(panel);
+    let long = "Show subtitles for spoken dialogue and important sound cues";
+    let longer = "Music volume, measured across every channel the game mixes";
+    for row in [
+        app.world_mut().spawn(heading("Settings")).id(),
+        app.world_mut().spawn(toggle(long, true)).id(),
+        app.world_mut().spawn(slider(longer, 0.7, 0.0..=1.0)).id(),
+        app.world_mut()
+            .spawn(choice(longer, ["Low", "Medium", "Ultra high"], 1))
+            .id(),
+        app.world_mut()
+            .spawn(binding(long, Binding::Key(KeyCode::Space)))
+            .id(),
+    ] {
+        app.world_mut().entity_mut(panel).add_child(row);
+    }
+    settle(&mut app);
+    let inside = rect(&app, panel);
+    let labels: Vec<(Entity, Rect)> = app
+        .world_mut()
+        .query::<(Entity, &Role)>()
+        .iter(app.world())
+        .filter(|(_, role)| **role == Role::ControlText)
+        .map(|(entity, _)| (entity, rect(&app, entity)))
+        .collect();
+    assert_eq!(labels.len(), 4, "one label per control");
+    for (entity, label) in &labels {
+        let outside = (inside.min.x - label.min.x).max(label.max.x - inside.max.x);
+        assert!(
+            outside <= 1.0,
+            "{entity:?} runs {outside:.1} px outside the dialog panel {inside:?} at {label:?}"
+        );
+    }
+    // ...and a label long enough to need it does break, rather than being squashed to one line.
+    let wrapped = labels
+        .iter()
+        .any(|(entity, _)| rect(&app, *entity).height() > 30.0);
+    assert!(
+        wrapped,
+        "a bounded row's label breaks between words: {labels:?}"
+    );
+}

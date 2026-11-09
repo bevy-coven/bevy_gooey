@@ -95,6 +95,65 @@ struct Health;
 #[derive(Resource)]
 struct HeldHealth(Option<f32>);
 
+/// Opens a hand-built dialog (`dialog()` and `panel()`, not `confirm`) whose control labels are
+/// longer than one line. A dialog's panel is bounded — it has a `max_width` — so its labels break
+/// between words inside the frame; the same rows on a screen would keep one line and widen their
+/// panel. `GOOEY_KEYS=wide` stages it.
+fn open_wide_dialog(commands: &mut Commands) {
+    let dialog = commands.spawn((dialog(), WideDialog)).id();
+    let panel = commands.spawn((panel(), ChildOf(dialog))).id();
+    commands.spawn((heading("Leave the game?"), ChildOf(panel)));
+    commands.spawn((
+        label("Progress since the last autosave is lost."),
+        ChildOf(panel),
+    ));
+    commands.spawn((
+        toggle(
+            "Do not ask this again when the game closes without saving",
+            false,
+        ),
+        ChildOf(panel),
+    ));
+    commands.spawn((
+        slider(
+            "Music volume, measured across every channel the game mixes",
+            0.7,
+            0.0..=1.0,
+        ),
+        ChildOf(panel),
+    ));
+    let menu = commands.spawn((menu(), ChildOf(panel))).id();
+    for text in ["Leave", "Stay"] {
+        commands.spawn((
+            button(text),
+            WideAnswer,
+            ChildOf(menu),
+            observe(dismiss_wide_dialog),
+        ));
+    }
+}
+
+/// Either answer to the long-label dialog closes it.
+fn dismiss_wide_dialog(
+    _: On<Activate>,
+    answers: Query<&WideAnswer>,
+    dialogs: Query<Entity, With<WideDialog>>,
+    mut commands: Commands,
+) {
+    let _ = answers;
+    for dialog in &dialogs {
+        commands.entity(dialog).despawn();
+    }
+}
+
+/// The long-label dialog, open or going.
+#[derive(Component)]
+struct WideDialog;
+
+/// One answer on the long-label dialog.
+#[derive(Component)]
+struct WideAnswer;
+
 /// The open Quit dialog.
 #[derive(Component)]
 struct QuitDialog;
@@ -170,6 +229,9 @@ enum Staged {
     Alert,
     /// Spawn a toast long enough to wrap.
     Long,
+    /// Open a dialog built by hand from `dialog()` and `panel()`, with a control row whose label
+    /// cannot fit on one line. A dialog's panel is bounded, so its labels break inside it.
+    Wide,
     /// A primary click on the Quality choice's back arrow.
     Back,
     /// A primary click on the Quality choice's forward arrow.
@@ -349,6 +411,7 @@ fn main() {
                         "toast" => Some(Staged::Toast),
                         "alert" => Some(Staged::Alert),
                         "long" => Some(Staged::Long),
+                        "wide" => Some(Staged::Wide),
                         "plug" => Some(Staged::Plug),
                         "legend" => Some(Staged::Legend),
                         "name" => Some(Staged::Name),
@@ -1116,6 +1179,9 @@ fn stage_keys(
             commands.spawn(toast(
                 "Quest updated: bring the lighthouse keeper three crates of lamp oil",
             ));
+        }
+        Some(Staged::Wide) if state == ButtonState::Pressed => {
+            open_wide_dialog(&mut commands);
         }
         _ => {}
     }

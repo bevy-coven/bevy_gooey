@@ -19,6 +19,16 @@ fn options(mut commands: Commands) {
 - A **choice** is a row: the label on the left, the selected option on the right between two chevrons, for a setting with a few named values (Low, Medium, High). It is one tab stop. With it focused, Left and Right (keys or the D-pad, a held direction repeating as a slider's does) step to the previous and next option and stop at the ends (the chevron that cannot step is dimmed, and a press at an end changes nothing and says nothing), Home and End jump to the ends, and Up and Down still move focus on, so a pad steps a column of settings with no mode to enter. A click on a chevron steps once, on release; Enter, Space, South and a click anywhere else on the row cycle to the next option and wrap round, so one repeated press reaches every option. Every option takes the widest one's room, so the chevrons never move under a thumb. The selected index is `ChoiceValue` on the entity (write one to move it from code; no `ValueChange` comes back for that), and `ValueChange<usize>` fires once per change. Observe that, not `Activate`: only a cycle is an `Activate`.
 - A **slider** is a row: the label and the value (a percentage for a range of 0 to 1, the number otherwise) over a rail with a thumb. The whole row is the target: a click puts the thumb under the pointer and a drag goes on from there. With it focused, Left and Right step by a twentieth of the range (insert a `SliderStep` to change it), Home and End jump to the ends, and Up and Down still move focus on. The D-pad does the same, and a held direction repeats after 0.4 s at 12 steps a second (`PAD_REPEAT_DELAY`, `PAD_REPEAT_RATE`), so a pad player never presses A to select the slider nor holds a button to keep it. `ValueChange<f32>` fires as the value moves (`is_final` is false until the drag ends); read the value from `SliderValue`, or write one to move the slider.
 - All three are targets at least `min_target` high (a choice's chevrons are `min_target` wide too), show the same focus ring as a button, and grow with `text_scale`.
+- **A long label.** A control's label is one line while its row decides the panel's width, which is what a screen's panel does: the panel is as wide as its widest child. A dialog's panel is bounded instead (it has a `max_width`), so a label too long for it **breaks between words inside the frame** rather than running past the panel's edge:
+
+```rust,ignore
+commands.spawn((dialog(), children![panel(children![
+    toggle("Do not ask this again when the game closes without saving", false),
+    slider("Music volume, measured across every channel the game mixes", 0.7, 0.0..=1.0),
+])]));
+```
+
+  Nothing to do: the row under a dialog's scrim takes `LineBreak::WordBoundary` and the rest keep their exact one-line width (`wrap_bounded_labels`, after `apply_skin`). The control beside a two-line label stays on the row's centre line, so the row still reads as one control with a caption. `tests/large_text.rs` holds both halves: every label inside a dialog panel at 1280×720, and every control's text one line high at each 5% from 100% to 200% text outside one.
 
 ## Control sizes
 

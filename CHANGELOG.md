@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A control's label inside a dialog breaks between words instead of running past the dialog panel's frame. A label was one line everywhere (`LineBreak::NoWrap`), which is right while its row decides the panel's width, but a dialog's panel is bounded: measured, a 708 px slider label in a row ending at 976 px ran to 1036, **60 px outside** a panel at 280..1000, and its words were drawn over the screen behind. A label with a `Role::Scrim` at or above it now takes `LineBreak::WordBoundary` (`wrap_bounded_labels`, in `GooeySystems::Style` after `apply_skin`); every label outside a dialog keeps its exact one-line width, held at each 5% from 100% to 200% text by `tests/large_text.rs`. The row's control stays centred against a two-line label.
+
 ## [0.51.17] - 2026-11-09
 
 ### Fixed

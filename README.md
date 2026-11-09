@@ -210,13 +210,13 @@ grow everything to 200%, and Controller renames the pad's buttons.
 
 *Motion: a hit drops a `meter()`'s fill to the new value in that frame and leaves the lost length behind it in the skin's danger colour for 0.45 s before it drains, a heal rises up with no trail, a dialog's card rises 12 px and a menu or popover opens 6 px out of its anchor, each on a spring from the skin's motion palette (`GooeySkin::motion`) that carries on from where it is drawn if it is interrupted, all on real time with nothing to write; `MotionSettings::reduced()` is the player's "reduce motion" (nothing travels, fades stay) and `off()` makes every one instant, and `MotionTarget` does the same for your own panel. Recorded with `GOOEY_MOTION=2` and `GOOEY_KEYS=hit,hit,heal,hit` (twice slower, so the trail reads in a GIF); the dialog's rise is in the [motion guide](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/motion.md), the inventory's demo in its [guide](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/inventory.md), the radial menu's in [its own](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/radial.md).*
 
-![The gallery's settings panel and the Quit dialog over it, with the legend in the bottom-left corner: it reads "Enter Select, Esc Back" in rounded keycaps, "A Select, B Back" in round ones after a pad button is pressed, and back to keys on the next key; the Quit dialog has its own legend above the dimmed screen, which turns to the pad's the same way](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/prompts.gif)
-
-*Prompts: `prompts()` holds `prompt("Select", Prompt::SELECT)` and `prompt("Back", Prompt::BACK)`; the keycaps follow the last device the player used, and the legend moves nothing on the screen. It stands bottom-left; `prompts_at(PromptsAnchor::BottomRight)` (or a centre or top anchor) puts it where your own HUD leaves room.*
-
 ![The Quit dialog in the dark and the parchment preset: the title "Leave the game?", a line of body, and the choices Leave and Stay in a framed panel over the dimmed screen, the ring on Stay](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dialog.png)
 
 *The dialog in both presets, 540 px wide here, the width of its line of body (a dialog is 420 to 720 px at the default size and grows with the text size); its edge is the skin's `outline` colour.*
+
+![A dialog holding a toggle and a slider whose labels are longer than its panel, in the dark and the parchment preset: both labels break between words inside the frame, the switch centred against its two lines](https://raw.githubusercontent.com/bevy-coven/bevy_gooey/main/docs/media/dialog-label.png)
+
+*Its panel is bounded, so a control's label too long for it breaks between words inside the frame; on a screen, where the panel is as wide as its widest child, the same label stays on one line.*
 
 ## Part of the Coven
 

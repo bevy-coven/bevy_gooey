@@ -3271,3 +3271,54 @@ So the crate's one writer of the placement requires the component to exist, and 
 **Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. 0.51.16 → 0.51.17, tagged; publish 429 (window 18:52Z).
 
 **Backlog:** (1) publish the nine waiting versions after 18:52Z, first thing; (2) a control row that shrinks its label so a long label wraps instead of widening the panel; (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) `GOOEY_WIDTHS` in the other capture examples.
+
+## Iteration 100 — 2026-11-09 — a control's label breaks inside a dialog
+
+**The item.** No issue was open in either repository, so the pick came from iteration 99's backlog at
+number 2, and it beat the runner-up (`GooeyFrames` fields for a header and a status item) because it is
+class 1 on the ranking — a widget that is *wrong*: its words are drawn outside its frame.
+
+**What was wrong, measured.** A control row's label was `LineBreak::NoWrap` everywhere, which is right
+while the row decides the panel's width (a screen's panel is as wide as its widest child, and
+`tests/large_text.rs` holds that promise at every 5% from 100% to 200% text). A dialog's panel is
+bounded instead — `Role::Panel` under `Role::Scrim` gets a `max_width` of 21 to 36 body text sizes — so
+a longer label had nowhere to go: **a 708 px slider label in a row ending at 976 px started at 328 and
+ended at 1036, 60 px outside a panel at 280..1000**, its words drawn over the screen behind
+(`/tmp/g100/before-wide.png`). A probe test measured it before any code changed.
+
+**The fix.** One rule, one writer: `wrap_bounded_labels` (`src/widgets.rs`, `GooeySystems::Style`
+straight after `apply_skin`) walks up a label's `ChildOf` chain for a `Role::Scrim` and writes
+`TextLayout::linebreak` — `WordBoundary` inside a dialog, `NoWrap` outside — comparing the one field
+because `TextLayout` is not `PartialEq`. The four control rows (toggle, slider, choice, binding) draw
+their label through `wrapping_label`, which carries the new `ControlText` marker. Nothing else changed:
+no colour, size, gap or target.
+
+**The trap that cost an hour, for the log:** the obvious fix — `min_width: 0` plus `WordBoundary` on
+every label — *passed the new test and failed the protected one*. With `WordBoundary` a flex item's
+automatic minimum drops to its longest **word**, so "Interface size" shrank to 210 px in a 539 px row
+and wrapped 3 px short of its own 213 px line at 1.25× text. The two promises genuinely conflict at one
+break rule; scoping the switch to a bounded container is what satisfies both.
+
+**Sources.** *Good Game Feel* (craft, quoted: "You should be able to estimate from the juiciness of each
+action the utility of that action"), WCAG 2.2 SC 1.4.4, 1.4.10 and failure F69 "text or controls clipped,
+truncated or obscured" (technical), a shipping-game studio write-up on a game UI whose panels size to
+content and whose dialogs clamp (shipping-game), and the CSS Flexbox *automatic minimum size* rule
+(technical, layout). Note: `docs/research/label-wrapping.md`.
+
+**Critique and verdict.** Evidence `/tmp/g100/before/c2.png` (before) and
+`docs/media/dialog-label.png` (after), at 1280×720: before, both long labels ran through the panel's
+right edge and "saving"/"mixes" were drawn outside it; after, both break between words inside the frame,
+the switch stays centred against its two lines and the slider's readout stays on the first line.
+Flaws left alone as out of scope: the body line is a `label` (already wrapping) and the accent is on
+"Stay" (`Confirm`'s safe choice). Verdict: **GREAT**.
+
+**Perf:** unpinned gallery `mean_ms` **22.408 / 22.588 / 22.604**, before 22.204 — inside noise.
+
+**Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. README at 251
+lines: the `prompts.gif` block (the same Quit dialog, also in `docs/guide/prompts.md`) gave way to the
+new still, so no demo was lost.
+
+**Backlog:** (1) publish after 18:52Z — now **ten** versions wait, 0.51.9–0.51.18; (2) `GooeyFrames`
+fields for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become
+`pub(crate)`; (4) `GOOEY_WIDTHS` in the other capture examples; (5) a dialog example built by hand
+(`dialog()` + `panel()`), now that the gallery has the `wide` staging to borrow.

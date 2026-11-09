@@ -681,7 +681,7 @@ impl Plugin for GooeyStylePlugin {
                         update_loading,
                         elevation::give_elevation,
                         apply_skin,
-                        update_frames,
+                        (widgets::wrap_bounded_labels, update_frames).chain(),
                     )
                         .chain(),
                     update_meters,
