@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.8] - 2026-11-09
+
 ### Fixed
 
 - A sortable column's header had no accessibility node of its own: `Role::TableHeaderCell` was a container in the tree, so a screen reader walked past it into the rows and could not sort, while a keyboard or pointer player could. It is now an `Ak::ColumnHeader` named with the column's words, and its sort direction is the one `update_tables` draws: ascending, descending, or cleared for a column that is not the sort. The press itself already worked (the cell is a Bevy `Button`).
