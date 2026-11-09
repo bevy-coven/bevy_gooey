@@ -2950,3 +2950,25 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, the full suite **1268/1268** (a first run at load 46 failed two `split` double-click tests on their real-clock sleeps; they pass alone and in the rerun at load 25 — the same flake class iteration 80 logged), doctests, check + wasm32, `doc -D warnings`. Examples ship in the package, so this releases: 0.51.4 → 0.51.5. https://crates.io/crates/bevy_gooey/0.51.5
 
 **Backlog — rewritten, each item verified against the source this pass:** (1) `GooeyFrames` fields of their own for a table header and a status item, if a skin wants different materials (the only framing gap left); (2) the `split` suite's real-clock sleeps made deterministic with `TimeUpdateStrategy::ManualDuration` in its `app()`, so a loaded host cannot fail the gate (this pass's flake); (3) a per-widget example page so a capture never picks up a stale neighbour; (4) the press cue for tabs remains closed unless the owner wants it against Rune's example; (5) `GooeySystems`-grain hooks for anything a consumer must order against, so the systems themselves can become `pub(crate)` without breaking `bevy_cauldron`.
+
+## Iteration 86 — 2026-11-09 — the double-click test stopped sleeping; v0.51.6
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Item: the backlog's second, and the only one this loop caused itself — `tests/split.rs` ended a double-click test with `thread::sleep(600 ms)` to age out the burst, and the gate failed that test at load 46 in iterations 80 and 85. A gate that fails on load is not a gate.
+
+**Why it was a flake, measured:** both clocks the behaviour rests on are wall clocks. This crate's `DoublePress` pairs on `Time<Real>` within `PointerSettings::double_click_seconds` (0.5 s, `src/clicks.rs`), and Bevy's picking compares `Instant::now()` against `PickingSettings::multi_click_interval` (`bevy_picking/src/events.rs:835,1056`). Neither follows `TimeUpdateStrategy`, so a fixed sleep measures the host.
+
+**Two attempts; the first was wrong and the mutation check caught it.** Setting `multi_click_interval` to `Duration::ZERO` "aged out" the burst — and made the following assertion vacuous: deleting the second click then still passed, because one click already restored the pane. Reverted. The shipped version asks for the interval, installs a fresh `Time<Real>`, advances it four intervals, moves the pointer off the divider for a frame, then clicks twice; deleting the second click now fails with "and again gives it back".
+
+**Evidence:** `tests/split.rs` holds no `thread::sleep` (`grep -c` 0 across `tests/`), the split module passes 33/33, and the **full suite passed twice back to back, 1268/1268 each**, at load average 6.5 falling from 20.8 — the same suite that failed at load 46.
+
+**Sources:** Bevy `bevy_picking` (technical), `src/clicks.rs` (this crate's pairing), *A Survey on Metamorphic Testing*, IEEE TSE 2016, `10.1109/TSE.2016.2532875` (the corpus's testing stem: evidence must hold for the same reason on another run). Note: `docs/research/double-click-clock.md`.
+
+**Critique:** not a visual change; the proof is two consecutive clean full-suite runs plus a mutation that fails. Verdict: GREAT.
+
+**Perf:** unpinned gallery `mean_ms` **22.638 and 22.469** (load average ~6; iteration 85's 30.7 at load 25–46 was the same interface on a busier host — a reminder to quote load with the number). No regression: nothing in `src/` changed.
+
+**Demo:** no visual change; all 45 GIFs re-recorded, `0 updated`.
+
+**Gate:** fmt (a first run caught a `rustfmt` layout in the new test, fixed), clippy, nextest 1268/1268, doctests, check + wasm32, `doc -D warnings`. Tests ship in the package, so this releases: 0.51.5 → 0.51.6. https://crates.io/crates/bevy_gooey/0.51.6
+
+**Backlog:** (1) `GooeyFrames` fields of their own for a table header and a status item — the only framing gap left; (2) a per-widget example page, so a capture never shows a stale neighbour; (3) the press cue for tabs stays closed unless the owner wants it against Rune's example; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that also prints the load average, so the number is never read without its host.
