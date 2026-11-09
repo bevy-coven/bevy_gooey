@@ -147,8 +147,10 @@ This repository, [`bevy-coven/bevy_gooey`](https://github.com/bevy-coven/bevy_go
 `Time<Real>`, so every fixed-clock run prints **`mean_ms 33.333`** whatever the interface costs — the
 recording harness's constant, not a measurement. Measured, same binary, same host: real clock 30.709 and
 31.179 ms; fixed clock 33.333 and 33.333. **Take the performance number from a run WITHOUT
-`GOOEY_FIXED_CLOCK`** (the line now says `(fixed clock: not a measurement)` when it is pinned), quote
-that figure in the log, and never compare two pinned numbers. `docs/research/perf-gate.md`.
+`GOOEY_FIXED_CLOCK`** — the line now says `(fixed clock: not a measurement)` when it is pinned — and
+**quote the `load` the same line prints** (iteration 97): the same interface reads 30.7 ms at load 25-46
+and 22.4 at load 1.4. Never compare two pinned numbers, and never compare two frame times whose loads
+differ by more than a few. `docs/research/perf-gate.md`.
 
 ## Build and test
 

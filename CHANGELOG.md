@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `examples/gallery`, `ladder` and `table` print the host's 1-minute load average beside `mean_ms`. The same interface measured 30.7 ms at load 25-46 and 22.4 ms at load 1.4, so a frame time quoted without its load invites a false regression.
+
 ## [0.51.15] - 2026-11-09
 
 ### Added

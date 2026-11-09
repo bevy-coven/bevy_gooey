@@ -291,7 +291,14 @@ fn capture(
         } else {
             ""
         };
-        println!("gooey: frames {} mean_ms {mean:.3}{note}", c.at);
+        // The host's load beside the number: iteration 86 measured 30.7 ms at load 25-46 and 22.4 at
+        // load 1.4 for the same interface, so a frame time without its load cannot be compared.
+        let load = std::fs::read_to_string("/proc/loadavg")
+            .ok()
+            .and_then(|s| s.split_whitespace().next().map(str::to_owned))
+            .map(|one| format!(" load {one}"))
+            .unwrap_or_default();
+        println!("gooey: frames {} mean_ms {mean:.3}{note}{load}", c.at);
     }
     if let Some(dir) = c.dir.clone() {
         let every = c.every.max(1);
