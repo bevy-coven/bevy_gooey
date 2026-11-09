@@ -2972,3 +2972,25 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt (a first run caught a `rustfmt` layout in the new test, fixed), clippy, nextest 1268/1268, doctests, check + wasm32, `doc -D warnings`. Tests ship in the package, so this releases: 0.51.5 → 0.51.6. https://crates.io/crates/bevy_gooey/0.51.6
 
 **Backlog:** (1) `GooeyFrames` fields of their own for a table header and a status item — the only framing gap left; (2) a per-widget example page, so a capture never shows a stale neighbour; (3) the press cue for tabs stays closed unless the owner wants it against Rune's example; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that also prints the load average, so the number is never read without its host.
+
+## Iteration 87 — 2026-11-09 — a splitter a screen reader can move; v0.51.7
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. The backlog's first item (frame fields of its own for a header and a status item) is speculative — no skin has asked — so I went looking for a real defect instead: captured the gallery in both skins, measured the meter fill (70% of the track, exact) and its fill/danger colours (accent `140,41,31` vs danger `178,31,26`, distinct), and found nothing wrong by eye. Then read the crate's own admitted gaps.
+
+**The gap, measured.** `docs/guide/splits.md` said a split "has no accessibility node yet". That was half true: `Role::SplitDivider` has had `Ak::Splitter`, the name "Divider" and its fraction as a value since `access.rs` was written — so a reader reads "Divider, 50 percent" — but `actions_of` had **no arm for it**, so `supports_action` was false for every action and a platform's adjust gesture did nothing. The arrows work for a keyboard, a drag for a pointer, and a screen reader had neither.
+
+**Built:** `SPLIT` = Focus, Increment, Decrement, SetValue on every enabled divider, through `SplitGeometry::read` — the crate's one reader of a divider's split. A step is the arrows' own `SPLIT_KEY_STEP_PX` via `Reading::moved`; a value is `split_clamp(value, …)`, the drag's own hold to the minimums; both end in the split's `ValueChange<f32>`, so a game's observer hears a screen reader's change exactly as it hears a drag. `tests/access.rs::a_splitters_node_takes_steps_and_a_value`, mutation-checked (removing the `SPLIT` arm fails on the first `supports_action`). `split.rs`'s `Reading` gained `pub(crate)` on `read`, `moved`, `root`, `fraction`, `min`, `extent` and `disabled` — no public API change.
+
+**Sources:** *Future design of accessibility in games: A design vocabulary* (craft, 10.1016/j.ijhcs.2019.06.010), WCAG 2.2 SC 4.1.2 Name, Role, Value (technical), Rune's adjustable controls (shipping reference). Note: `docs/research/splitter-actions.md`.
+
+**Critique:** not a visual change; the proof is the tree. Before: Splitter, name, value, zero actions. After: Splitter, name, value, four actions, and a step or a value moves the panes. Verdict: GREAT. The one thing left out, deliberately: no Click (a double click collapses; collapsing is already reachable by setting the value to the minimum, and a toggling Click would be a second path to one state).
+
+**Follow-up found, not built:** a table's header cell is `Spec::Group` in `access.rs` — a container in the tree — so sorting has no Click for a screen reader either. Recorded in the note's Pending index and `AGENTS.md`.
+
+**Perf:** unpinned gallery `mean_ms` **22.193 and 22.480** at load average 2.3 — the same as iteration 86's 22.6 at load 6. No regression (nothing in the render path changed).
+
+**Demo:** no visual change; all 45 GIFs re-recorded, `0 updated`.
+
+**Gate:** fmt, clippy, nextest **1269/1269**, doctests, check + wasm32, `doc -D warnings`. `cargo semver-checks`: no update required, so 0.51.6 → 0.51.7. https://crates.io/crates/bevy_gooey/0.51.7
+
+**Backlog:** (1) a table's header cell as a `Spec::Node` with a Click, so a screen reader can sort (found this pass); (2) a list's rows and a tree's nodes announced — Bevy's `ScrollArea` carries no node; (3) `GooeyFrames` fields of their own for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that also prints the load average.
