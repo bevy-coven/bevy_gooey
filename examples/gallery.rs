@@ -23,8 +23,10 @@
 //!   as at 1280x720).
 //!
 //! Capture mode, for a still and a frame time: `GOOEY_FRAMES=<n>` saves a screenshot at frame `n` to
-//! `GOOEY_FIXED_CLOCK=1` makes every frame 1/30 s of game time (a deterministic recording; the
-//! frame time then reads 33.333). `GOOEY_SHOT` (default `gallery.png`), prints `gooey: frames <n> mean_ms <x>` (the mean frame time
+//! `GOOEY_FIXED_CLOCK=1` makes every frame 1/30 s (a deterministic recording). **It also pins the frame
+//! time**: a run with it reports `mean_ms 33.333`, which is the clock, not a measurement, and the line
+//! says so. Take the frame time from a run **without** it (`docs/research/perf-gate.md`).
+//! `GOOEY_SHOT` (default `gallery.png`), prints `gooey: frames <n> mean_ms <x>` (the mean frame time
 //! over frames 20..n) and exits 10 frames later. `GOOEY_SHOT_DIR=<dir>` also keeps every
 //! `GOOEY_SHOT_EVERY`th frame (`GOOEY_SHOT_FROM`, default frame 30) there as `f_%04d.png`, and prints
 //! `gooey: kept <n> frames in <dir>`: those frames are a GIF's, and the still stays one file.
@@ -729,7 +731,15 @@ fn capture(
         } else {
             0.0
         };
-        println!("gooey: frames {} mean_ms {mean:.3}", c.at);
+        // A fixed clock pins `Time<Real>`'s delta, so its mean is a constant, not a measurement: say
+        // so, or a later pass quotes 33.333 as a baseline (docs/research/perf-gate.md).
+        let pinned = std::env::var_os("GOOEY_FIXED_CLOCK").is_some();
+        let note = if pinned {
+            " (fixed clock: not a measurement)"
+        } else {
+            ""
+        };
+        println!("gooey: frames {} mean_ms {mean:.3}{note}", c.at);
     }
     if let Some(dir) = c.dir.clone() {
         let every = c.every.max(1);

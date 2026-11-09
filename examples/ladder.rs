@@ -232,7 +232,14 @@ fn capture(
         } else {
             0.0
         };
-        println!("gooey: frames {} mean_ms {mean:.3}", c.at);
+        // A fixed clock pins `Time<Real>`'s delta: the mean is a constant, not a measurement
+        // (`docs/research/perf-gate.md`).
+        let note = if std::env::var_os("GOOEY_FIXED_CLOCK").is_some() {
+            " (fixed clock: not a measurement)"
+        } else {
+            ""
+        };
+        println!("gooey: frames {} mean_ms {mean:.3}{note}", c.at);
     }
     if let Some(dir) = c.dir.clone() {
         let every = c.every.max(1);

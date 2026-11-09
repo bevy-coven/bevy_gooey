@@ -141,6 +141,15 @@ This repository, [`bevy-coven/bevy_gooey`](https://github.com/bevy-coven/bevy_go
 - `tests/palette.rs` — the command palette, in the same headless window, driven by real `KeyboardInput`, `PointerInput` and raw gamepad events: "opn prj" ranks "Open Project" first among 200 and Enter sends one `RunCommand` with focus back on the opener, an empty query's recents-then-alphabetical order, a recent match ahead of a better score, "No command matches" and Enter running nothing, a disabled command's reason where the chord is and neither Enter nor a click running it (focus stays in the field), a command switched on while open, Up and Down moving the lit row with focus in the field (and typing after Up appending, mutation-checked: without the `TextEnd` the text came out "xopen"), wrapping, PageDown and PageUp, "n of m", a changed query lighting the first match, Enter running the lit row, Escape closing with focus back, the pointer lighting a row and a click running it once, a click on the card's padding keeping focus and one on the scrim closing, the D-pad and South, a shorter list pulling the lit row in, the card and every row inside the window and a target high at 1x, 1.5x and 2x text with the card's top standing still, contrast of every word and the ring in all four looks, nothing written while idle.
 - `docs/research/` — the research note and the corpus. `docs/loop-log.md` — the loop's log and backlog.
 
+## Frame time is measured without the fixed clock (iteration 85)
+
+`GOOEY_FIXED_CLOCK=1` installs `TimeUpdateStrategy::ManualDuration(33_333 µs)`, and `capture` divides
+`Time<Real>`, so every fixed-clock run prints **`mean_ms 33.333`** whatever the interface costs — the
+recording harness's constant, not a measurement. Measured, same binary, same host: real clock 30.709 and
+31.179 ms; fixed clock 33.333 and 33.333. **Take the performance number from a run WITHOUT
+`GOOEY_FIXED_CLOCK`** (the line now says `(fixed clock: not a measurement)` when it is pinned), quote
+that figure in the log, and never compare two pinned numbers. `docs/research/perf-gate.md`.
+
 ## Build and test
 
 **While iterating run `cargo nextest run --all-features --lib --tests -E 'test(<file>::)'`, never without `--lib --tests`**: a bare `--all-features` also links all 30 examples in debug (700 MB each, a new hashed copy per rebuild): one pass of that wrote 419 GB into `target/debug/examples` and filled the disk (2026-11-08; the files were removed, `*.d` kept).
