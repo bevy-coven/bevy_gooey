@@ -46,20 +46,14 @@ not a hue change, so it survives a colour-blind player and a dark room.
 
 ## Model adopted
 
-- **`GooeyFrames::strip`** (already documented): art on the `Role::TabList`, under the indicator's
-  backdrop.
 - **`GooeyFrames::segment`** (new): art on every `Role::Tab` and `Role::GroupOption`, at
   `ZIndex(-1)` on the option itself (below its own text, above the strip's art). A framed segment
   clears its fill so the art shows; the skin's fill becomes the tint exactly as on a button.
-- **The indicator draws at rest when the strip has art.** A strip with a layer needs its lit segment
-  raised, or the lit one is only a tint. `SelectionIndicator` already holds a puck sized to the lit
-  option's rect; `update_selection_indicators` currently hides it whenever it is not travelling.
-  With `GooeyFrames::strip` set it stays drawn on the lit option, hidden only while it travels (the
-  travelling case already draws it).
-- **The indicator's backdrop goes when the strip has art**, or it would paint `surface_raised` over
-  the layer: `apply_skin` cannot see `GooeyFrames`, so `flow_strips`-time code must not own it —
-  `update_frames` writes the backdrop clear on a strip it frames, and puts it back when the frame is
-  taken away.
+- **The layer under the strip is not shipped.** `GooeyFrames::strip` was drafted and dropped: a
+  strip's tabs are opaque at rest (`surface_raised`) and opaque when lit (the accent), so a layer
+  under them shows only in the gaps between them, and a rail that reads (Rune's) needs the rest
+  segments transparent — the restyle this crate's two-cue contrast rule forbids (see Deviations).
+  The art therefore goes where the fill is: on the segments themselves.
 
 ## Parameters
 
@@ -72,14 +66,13 @@ not a hue change, so it survives a colour-blind player and a dark room.
 
 ## Validation targets
 
-- With `strip` and `segment` set, a `tabs` strip's `Role::TabList` carries a `FrameLayer` at
-  `ZIndex(-2)` and every `Role::Tab` one at `-1`, each tinted by the fill the flat look gives it.
+- With `segment` set, every `Role::Tab` and `Role::GroupOption` carries a `FrameLayer` tinted by the
+  fill the flat look gives it, and its own fill is cleared.
+- The lit tab's tint is the accent, an unlit one's is not: the art follows the state with no second
+  path.
 - A framed tab's laid-out size equals the unframed one's, and its label is still on it.
-- With a strip frame set, the indicator is drawn on the lit tab **at rest** (not hidden), its backdrop
-  has no fill, and it still slides on a change.
-- A `toggle_group` takes the same two fields.
-- Taking the frames away restores every fill, the backdrop, and the indicator's rest state.
-- A settled framed strip writes nothing.
+- Taking the frames away restores every fill and removes every layer.
+- A settled framed strip writes nothing (`tests/frames.rs`).
 
 ## Deviations
 

@@ -65,6 +65,11 @@ pub struct GooeyFrames {
     /// is drawn under the fill, the knob and the thumb, which keep the skin's colours (a track's
     /// frame is its edge, so its outline goes). A switch's track is tinted by the accent while on.
     pub track: Option<Frame>,
+    /// The frame of every tab ([`crate::tabs`], [`crate::side_tabs`], a dock's strip) and every
+    /// [`crate::toggle_group`] option: the segments. The art is a layer of the option at
+    /// `ZIndex(-1)`, below its label, tinted by the fill the state would have, so a tab is art at
+    /// rest, art tinted by the hover mix, and art tinted by the accent when it is the lit one.
+    pub segment: Option<Frame>,
     /// The frame of every text field ([`crate::text_input`], a number or colour field's text). The
     /// art is a layer of the field's cell, behind the field: Bevy measures the field itself as a
     /// leaf, which a child would collapse. The field's border (outline and focus ring) stays over
@@ -83,6 +88,7 @@ impl GooeyFrames {
             Role::Meter => self.meter.as_ref(),
             Role::SliderRail | Role::ToggleTrack | Role::HoldTrack => self.track.as_ref(),
             Role::TextField => self.field.as_ref(),
+            Role::Tab | Role::GroupOption => self.segment.as_ref(),
             Role::Tooltip | Role::Popover | Role::MenuPanel | Role::Palette | Role::ToastBody => {
                 self.popup.as_ref()
             }

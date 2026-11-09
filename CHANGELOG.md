@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `GooeyFrames::segment`: nine-slice art for every tab (`tabs`, `side_tabs`, a dock's strip) and every `toggle_group` option. The art is a layer of the option, tinted by the fill its state would have, so the lit tab carries the accent through the art. A patch release: `GooeyFrames` is `#[non_exhaustive]`.
+
 ## [0.51.1] - 2026-11-09
 
 ### Fixed

@@ -402,3 +402,138 @@ fn slider_switch_and_hold_tracks_draw_their_art_and_keep_their_parts() {
     let skin = framed.world().resource::<GooeySkin>();
     assert_eq!(on, skin.accent);
 }
+
+#[test]
+fn tabs_and_toggle_group_options_draw_their_art_tinted_by_their_state() {
+    let mut flat = app();
+    let mut framed = app();
+    let art = art(&mut framed);
+    {
+        let mut frames = framed.world_mut().resource_mut::<GooeyFrames>();
+        frames.segment = Some(Frame::new(art.clone(), 4.0));
+    }
+    let mut found = Vec::new();
+    for app in [&mut flat, &mut framed] {
+        let card = app
+            .world_mut()
+            .spawn((
+                panel(),
+                children![
+                    tabs(
+                        ["Audio", "Display", "Controls"],
+                        0,
+                        children![
+                            tab_page(children![label("a")]),
+                            tab_page(children![label("b")]),
+                            tab_page(children![label("c")]),
+                        ]
+                    ),
+                    toggle_group([GroupOption::text("Edit"), GroupOption::text("Play")], 0)
+                ],
+            ))
+            .id();
+        app.world_mut().spawn(screen()).add_child(card);
+        frames(app, 10);
+        let tabs: Vec<Entity> = {
+            let mut q = app.world_mut().query::<(Entity, &Role)>();
+            q.iter(app.world())
+                .filter(|(_, r)| **r == Role::Tab)
+                .map(|(e, _)| e)
+                .collect()
+        };
+        let options: Vec<Entity> = {
+            let mut q = app.world_mut().query::<(Entity, &Role)>();
+            q.iter(app.world())
+                .filter(|(_, r)| **r == Role::GroupOption)
+                .map(|(e, _)| e)
+                .collect()
+        };
+        assert_eq!(tabs.len(), 3, "three tabs");
+        assert_eq!(options.len(), 2, "two options");
+        found.push((tabs, options));
+    }
+    let (flat_tabs, flat_options) = found[0].clone();
+    let (framed_tabs, framed_options) = found[1].clone();
+    for (plain, art_tab) in flat_tabs.iter().zip(&framed_tabs) {
+        let image = layer(&framed, *art_tab).expect("the tab is framed");
+        assert_eq!(
+            image.color,
+            fill(&flat, *plain),
+            "the tint is the tab's fill"
+        );
+        assert_eq!(
+            fill(&framed, *art_tab),
+            Color::NONE,
+            "the flat fill is cleared"
+        );
+        assert_eq!(
+            size(&framed, *art_tab),
+            size(&flat, *plain),
+            "the tab keeps its size"
+        );
+    }
+    // The lit tab is tinted by the accent, the others by their rest or hover fill: the art follows
+    // the state without a second path.
+    let skin = flat.world().resource::<GooeySkin>();
+    let lit = fill(&flat, flat_tabs[0]);
+    assert_eq!(lit, skin.accent, "the lit tab draws the accent");
+    assert_eq!(layer(&framed, framed_tabs[0]).expect("framed").color, lit);
+    assert_ne!(
+        layer(&framed, framed_tabs[1]).expect("framed").color,
+        lit,
+        "an unlit tab is not the accent"
+    );
+    for (plain, option) in flat_options.iter().zip(&framed_options) {
+        let image = layer(&framed, *option).expect("the option is framed");
+        assert_eq!(
+            image.color,
+            fill(&flat, *plain),
+            "the tint is the option's fill"
+        );
+        assert_eq!(fill(&framed, *option), Color::NONE);
+    }
+}
+
+#[test]
+fn taking_the_segment_frame_away_gives_every_tab_its_fill_back() {
+    let mut flat = app();
+    let mut framed = app();
+    let art = art(&mut framed);
+    framed.world_mut().resource_mut::<GooeyFrames>().segment = Some(Frame::new(art, 4.0));
+    let mut roots = Vec::new();
+    for app in [&mut flat, &mut framed] {
+        let card = app
+            .world_mut()
+            .spawn((
+                panel(),
+                children![tabs(
+                    ["Audio", "Display"],
+                    0,
+                    children![
+                        tab_page(children![label("a")]),
+                        tab_page(children![label("b")]),
+                    ]
+                )],
+            ))
+            .id();
+        app.world_mut().spawn(screen()).add_child(card);
+        frames(app, 8);
+        let mut q = app.world_mut().query::<(Entity, &Role)>();
+        roots.push(
+            q.iter(app.world())
+                .filter(|(_, r)| **r == Role::Tab)
+                .map(|(e, _)| e)
+                .collect::<Vec<_>>(),
+        );
+    }
+    framed.world_mut().resource_mut::<GooeyFrames>().segment = None;
+    frames(&mut framed, 4);
+    for (plain, art_tab) in roots[0].iter().zip(&roots[1]) {
+        assert_eq!(
+            fill(&framed, *art_tab),
+            fill(&flat, *plain),
+            "the fill is back"
+        );
+        assert!(layer(&framed, *art_tab).is_none(), "the art layer went");
+    }
+}

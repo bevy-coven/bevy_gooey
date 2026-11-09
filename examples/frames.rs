@@ -215,6 +215,10 @@ fn setup(
         images.add(plate(3.0, false, 0.0)),
         ART_SLICE as f32 * 0.4,
     ));
+    frames.segment = Some(Frame::new(
+        images.add(plate(4.0, false, 0.0)),
+        ART_SLICE as f32 * 0.45,
+    ));
     frames.field = Some(Frame::new(
         images.add(plate(5.0, false, 0.0)),
         ART_SLICE as f32 * 0.6,
@@ -250,6 +254,14 @@ fn setup(
                         text_input("Name", "Camp 1"),
                         slider("Volume", 0.6, 0.0..=1.0),
                         toggle("Subtitles", true),
+                        tabs(
+                            ["Camp", "Craft"],
+                            0,
+                            children![
+                                tab_page(children![label("Where the fire is")]),
+                                tab_page(children![label("What you carry")]),
+                            ]
+                        ),
                         label("Stamina"),
                         meter(70.0, 100.0),
                         (
