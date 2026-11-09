@@ -292,4 +292,5 @@ the scope off so it joins the left one.
 ```
 
 A game sets the resource at start-up (`app.insert_resource(GooeySkin::parchment())`); Dark Factory reads a
-project's `family/bevy_gooey.ron` into the same type while the editor runs.
+project's `family/bevy_gooey/GooeySkin.ron` into the same type while the editor runs, and so does a game
+that adds `bevy_blueprint`'s `BlueprintLivePlugin`.
