@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.52.1] - 2026-11-09
+
 ### Added
 
 - `GooeyFrames::card`: the frame of every `card_grid` cell. A card is the largest flat surface a game screen has (an inventory, a shop, a character select, a deck builder), and it was the one surface that took no art beside panels, buttons, meters, tracks, segments, fields and popups. The art is drawn under the card's picture, name and lines and tinted by the card's own state, so a chosen card carries the accent through its art and a disabled one keeps a quieter frame; the card's `outline` goes while its focus ring and chosen ring stay over it. `examples/cards` draws it with `GOOEY_ART=1`.

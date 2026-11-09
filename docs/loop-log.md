@@ -3326,3 +3326,53 @@ new still, so no demo was lost.
 fields for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become
 `pub(crate)`; (4) `GOOEY_WIDTHS` in the other capture examples; (5) a dialog example built by hand
 (`dialog()` + `panel()`), now that the gallery has the `wide` staging to borrow.
+
+## Iteration 101 — 2026-11-09 — a card grid draws from art
+
+**Orient.** No open issue in either repository (an empty list, not a failed lookup), so the item came
+from the backlog. Two parked branches existed and both are **stale**: `wiggum/parked-pass-90` builds
+`ChordGlyphs`/`update_chord_texts`, which are already on `main` (shipped with #45), and
+`wiggum/parked-pass-23` rewrites `nav.rs`, which shipped in iterations 12-20. Neither was adopted, per
+the stale rule; neither was deleted.
+
+**The pick, and the runner-up.** `GooeyFrames` already drew panels, buttons, meters, tracks, segments,
+text fields and popups — every surface *except* a card grid's cells. A card is the largest flat surface
+a game screen has (an inventory, a shop, a character select, a deck builder), so an unframed card is a
+big flat rectangle beside framed chrome: class 4 on the ranking, and the widest gap left in the frames
+feature. Runner-up was a heading frame, which is a text role and would have changed a text node's look
+rather than a surface's.
+
+**The change, one field.** `GooeyFrames::card` (`src/frames.rs`) — one `of` arm and one `replaces_outline`
+entry, because the frame machinery (`FrameLayer` at `ZIndex(-1)`, tinted by the fill `apply_skin` wrote)
+is already generic over the role. A chosen card carries the accent *through* its art, a disabled one
+keeps a quieter frame, and the card's `outline` goes while its focus and chosen rings stay. No colour,
+size, gap or target changed, and the field is empty by default, so an app that sets no frames is
+byte-identical.
+
+**Sources.** *Good Game Feel* (craft, quoted: "This consistency also extends to other game elements,
+i.e., providing a consistent, believable game world that contributes to a positive player experience"),
+WCAG 2.2 SC 1.4.11 *Non-text contrast* for the chosen card's ring (technical), Rune's kit, where every
+surface — a card included — is drawn from one frame image (shipping-game feel), and Bevy's `ImageNode`
+plus the crate's own `FrameLayer` mechanism (technical). Note: `docs/research/card-frames.md`.
+
+**Demo.** `examples/cards` gained `GOOEY_ART=1`, which frames its cells with a rounded plate the example
+draws itself, so the demo needs no art files; `docs/media/card-frames.gif` is 65 frames at 15 fps showing
+four cards, the ring moving from Harbour to the chosen Keep. A first attempt added the grid to
+`examples/frames` instead and **overflowed that example's own 720 px demo**, so it was reverted: a demo
+must not break the demo beside it.
+
+**Critique and verdict.** `/tmp/g101/cmp.png` is the flat grid above the framed one, same window and
+skin: flat cards are plain rectangles, framed ones have a bright rim and an inner groove and read as
+physical cards; `/tmp/g101/pc.png` is the parchment look, where the same rim holds and the disabled
+Ruins keeps its own quieter edge. The chosen card's accent is saturated in both the flat and framed
+captures, so that contrast is **pre-existing** on the chosen-card look and not this change's. Verdict:
+**GREAT**.
+
+**Perf:** `examples/cards` `mean_ms` **22.718** framed against the flat build, load ~1.6 — unchanged; the
+gallery was not touched, so the gate's frame cost stands.
+
+**Gate:** fmt, clippy, nextest **1275/1275**, doctests, check + wasm32, `doc -D warnings`.
+
+**Backlog:** (1) publish after 18:52Z — **twelve** versions wait, 0.51.9–0.52.1; (2) a heading frame;
+(3) `GooeyFrames` for a status item; (4) `GooeySystems`-grain hooks so the systems can become
+`pub(crate)`; (5) `GOOEY_WIDTHS` in the other capture examples.
