@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.13] - 2026-11-09
+
 ### Fixed
 
 - A screen's own `panel()` never grows past the window less two gaps, so at 200% text it wraps inside the screen instead of running off its right edge (WCAG 2.2 SC 1.4.4, 1.4.10). A panel in a dock group, a split pane or a dialog is container-sized and is untouched, which is what made iteration 93's blanket cap break a dock drag.
