@@ -3066,3 +3066,23 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Release: refused again (429).** Both **v0.51.9** and **v0.51.10** are committed, tagged and pushed; crates.io still lists 0.51.8 as newest. The next pass publishes 0.51.10 (which includes 0.51.9's toast fix) as soon as the window allows, and this pass's audit will read `missing: release` until then.
 
 **Backlog:** (1) publish 0.51.10 once the 24-hour window rolls — the only outstanding ship; (2) `GooeyFrames` fields of their own for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (4) an unpinned frame-time line in every capture example that prints the load average; (5) the `Scrollbar`/`ScrollArea` rail still has no node of its own.
+
+## Iteration 91 — 2026-11-09 — a list's rail, as the control that scrolls it; v0.51.11 tagged, publish 429 (third pass)
+
+**First job: the outstanding publish.** Retried `cargo publish` for 0.51.10 at the start of the pass and again at the end for 0.51.11: **429 both times** — "you have published too many versions of this crate in the last 24 hours". crates.io still lists **0.51.8** as newest; 0.51.9, 0.51.10 and 0.51.11 are committed, tagged and pushed, waiting. Per the rule this is logged once per pass and not retried again. Worth recording as a constraint rather than a failure: **the loop's "release every pass" rule cannot be honoured while a pass ships a version more than roughly once every two and a half hours** — nine releases inside one 24-hour window exhausted the quota, and the loop's pass cadence is faster than the quota. A later pass publishes 0.51.11 (which carries the toast and list fixes) when the window rolls.
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Item: the half iteration 90 left — a list's rows and count are in the tree now, and the rail that scrolls them was `Spec::Hidden`, so a reader could read the first rows and never reach row 20.
+
+**Built:** `Role::ListRail` is an `Ak::ScrollBar` named "Scroll", `numeric` = how far the list is scrolled (0 top, 1 bottom), read from Bevy's `Scrollbar.target` (the viewport) and that viewport's `ComputedNode` — the same two numbers the thumb is drawn from. `SCROLL` = Focus, Increment, Decrement, SetValue: a step moves one viewport (the Page keys' own step), a value sets the fraction a drag sets, both through `ScrollPosition`. `tests/access.rs::a_lists_rail_is_a_scrollbar_a_reader_can_move`, mutation-checked twice (removing the `SCROLL` arm fails on the declared actions; making `scroll_to` a no-op fails on the scroll assertion). The thumb stays silent: it is drawn by Bevy from layout and is no control.
+
+**Sources:** WCAG 2.2 SC 2.1.1 Keyboard and SC 4.1.2 Name, Role, Value (technical), *Future design of accessibility in games: A design vocabulary* (craft, 10.1016/j.ijhcs.2019.06.010), AccessKit's `ScrollBar` role and Rune's scrolling region (technical / shipping reference). Note: `docs/research/scroll-rail.md`.
+
+**Critique:** not a visual change; the proof is the tree. Before: the rail had no node at all. After: `ScrollBar`, "Scroll", a value from 0 to 1, four actions, and `SetValue` 1 lands the list at its bottom. Verdict: GREAT.
+
+**Perf:** unpinned gallery `mean_ms` **22.339 and 22.244** at load average 2.0 — the same across iterations 86–91.
+
+**Demo:** no visual change; all 45 GIFs re-recorded, `0 updated`.
+
+**Gate:** fmt, clippy, nextest **1272/1272**, doctests, check + wasm32, `doc -D warnings`. No public item changed shape, so 0.51.10 → 0.51.11.
+
+**Backlog:** (1) **publish 0.51.11** when the 24-hour window rolls — three versions are waiting and the loop cannot pace itself faster than the quota, so a later pass should publish first and take its item second; (2) `GooeyFrames` fields of their own for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (4) an unpinned frame-time line in every capture example that prints the load average; (5) a game wiring its own Bevy `ScrollArea` still scrolls silently.
