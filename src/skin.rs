@@ -3364,9 +3364,13 @@ fn restyle(
             }
             Role::SectionNote => next.padding = UiRect::left(Val::Px(skin.pad() * 1.5)),
             // The strip's tabs stand a gap apart like a menu's buttons, and each is a button's size.
+            // The strip keeps every row it wraps to: a dock group's page area grows under it, and a
+            // strip that could shrink was cut off by its own card (measured at 200% text in a narrow
+            // group: three rows, the second and third outside the card).
             Role::TabList => {
                 next.column_gap = Val::Px(skin.gap);
                 next.row_gap = Val::Px(skin.gap);
+                next.flex_shrink = 0.0;
             }
             Role::Button
             | Role::Tab

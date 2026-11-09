@@ -391,11 +391,21 @@ fn a_hop_between_two_rows_of_a_wrapped_strip_lands_instead_of_crossing_the_gap()
         rows.windows(2).any(|w| (w[0] - w[1]).abs() > 1.0),
         "a 360 px group at 200% text wrapped its strip: {rows:?}"
     );
-    let host = app
+    // Every row the strip wrapped to is inside its group's card, not cut at the card's edge.
+    let card = app
         .world()
         .get::<ChildOf>(list)
-        .expect("strip's tabs")
+        .expect("strip's parent")
         .parent();
+    let card_rect = rect(&app, card);
+    for &t in &tabs {
+        let at = rect(&app, t);
+        assert!(
+            at.min.y >= card_rect.min.y - 0.5 && at.max.y <= card_rect.max.y + 0.5,
+            "a wrapped row of the strip is cut by its card: {at:?} outside {card_rect:?}"
+        );
+    }
+    let host = card;
     let indicator = indicator_of(&mut app, host);
     let first_row = rows[0];
     let hop = rows

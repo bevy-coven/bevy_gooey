@@ -50,6 +50,9 @@ is why wrapping is this crate's to get right.
   puck.
 - **A vertical strip is untouched.** `side_tabs` puts every option on a row of its own, so a row test
   there would land every step; the rule is gated on `TabList::orientation == Horizontal`.
+- **A strip keeps its rows.** `Role::TabList` now carries `flex_shrink: 0`: a dock group's card is a
+  column whose page area grows, and a strip that could shrink was cut at the card's edge (measured at
+  200% text in a 760 px window: three rows, the second and third outside the card).
 - **Within a row nothing changes**: the puck springs on the snappy spring, as before.
 
 ## What great looks like
@@ -72,7 +75,8 @@ frame; and a three-tab strip one row wide still slides its puck between neighbou
 - A hop to the second row leaves the puck undrawn and `SelectionIndicator::is_moving()` false in the
   frame the lit tab changes, with that tab carrying `Indicating(false)` and Bevy's `Selected`.
 - A `side_tabs` step still travels (`tests/selection_indicator.rs::tabs_and_side_tabs_travel_too`).
-- The strip's own layout is unchanged: `tests/tabs.rs` and `tests/side_tabs.rs` stay green.
+- A strip keeps every row it wraps to inside its group's card at 200% text.
+- The strip's own layout is unchanged otherwise: `tests/tabs.rs` and `tests/side_tabs.rs` stay green.
 
 ## Deviations
 

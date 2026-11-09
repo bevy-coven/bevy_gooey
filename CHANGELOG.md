@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- A wrapped tab strip no longer shrinks out of its card: `Role::TabList` keeps every row it wraps to (`flex_shrink: 0`), so a dock group at 200% text that holds several long tabs draws all of them instead of cutting the second and third row at the card's edge.
 - A dock's tab strip wraps at 200% text, and the selection puck used to spring from the last tab of one row to the first of the next, drawn in the gutter between them. It now lands on the target when the two options are on different rows of a horizontal strip, and the lit tab draws its own accent fill in that frame. A vertical `side_tabs` strip is unchanged.
 
 ## [0.50.1] - 2026-11-09
