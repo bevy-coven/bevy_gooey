@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.5] - 2026-11-09
+
 ### Changed
 
 - `examples/gallery`, `examples/ladder` and `examples/table` say `(fixed clock: not a measurement)` on their `gooey: frames … mean_ms` line when `GOOEY_FIXED_CLOCK` is set. That run's mean is the manual clock's constant (33.333), not the interface's cost; the number to quote comes from a run without it (measured: 30.709 and 31.179 ms against 33.333 and 33.333). Examples only -- no library code changed, but the package ships `examples/`, so it releases.
