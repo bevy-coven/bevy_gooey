@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.10] - 2026-11-09
+
 ### Fixed
 
 - A list is in the accessibility tree: its viewport is an `Ak::List` whose set size is the rows it holds, and each row button is an `Ak::ListItem` carrying its place. Before, all three list roles were containers, so a screen reader read a flat run of button names with no list and no count (WCAG 2.2 SC 4.1.2).
