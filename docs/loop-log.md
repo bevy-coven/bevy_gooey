@@ -2849,3 +2849,23 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Disk:** the host hit 100% twice (`/home` 64 KB free at the worst); the research note was truncated to zero bytes by the first and rewritten. Reclaimed ~10 GB from this clone's own debug test binaries and rlibs only; `/home` is at 300 GB free now, then 8 GB again under other agents' load.
 
 **Backlog:** (1) per-row equal cells for a wrapping non-dock strip; (2) `GooeyFrames::strip` with the restyle it needs; (3) frames for tabs and toggle groups; (4) a reduced-motion fade-out for the split peek; (5) F6 into a collapsed pane.
+
+## Iteration 81 — 2026-11-09 — a tab strip too narrow for one row wraps into equal columns; v0.51.1
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 still waits on the editor's pin. Item: the backlog's first, "per-row equal cells for a wrapping non-dock strip" — the last measured case of text running outside the window (gallery at 200% in 760 px, iteration 80).
+
+**Built:** `flow_strips` (Style, chained after `update_tabs`) plus engine-free `model::strip_columns(width, cell, gap)`. A `tabs` strip's grid now carries as many equal `minmax(0, 1fr)` columns as the room it is given holds, counted from the widest label's width plus its tab's own border/padding and the strip's `column_gap`, and never more than there are tabs. Measured: a six-label strip at 200% text in a 760 px window lays out two equal columns by three rows, every label inside its tab and nothing outside the panel. Four wrong turns, all measured and corrected in-pass: `1fr` (a track's least width is its content, so the strip widened itself to 2300 px — the click test caught it), counting from the strip's own width (self-reinforcing), `1fr` without the gap (cells too narrow, a four-tab strip collapsed to four rows), and no cap on the count (15 tracks for 3 tabs).
+
+**Performance:** `flow_strips` writes the grid only when the column count changes (`StripColumns` records the last count), and a settled strip writes nothing — the `Writes` count in `tests/tabs.rs` is unchanged.
+
+**Sources:** *Good Game Feel* (craft, 10.26503/dl.v2018i1.936), *Promoting Hotkey use through rehearsal with ExposeHK* (technical, 10.1145/2470654.2470735), Rune `crates/rune-kit/src/segmented.rs:18-140` (the reference: "equal segments over a layer with a sliding raised indicator", "as wide as the widest label needs"). Note: `docs/research/segmented-strip.md`.
+
+**Critique** (`/tmp/g81/wsamp2.png`, `strip3.png`): two equal columns, three rows, the cells of each row identical to the pixel, the lit tab accent with `accent_text`, the ring crisp on Audio as Down walks it, nothing outside the panel. One flaw: with only five labels the third row is a single cell in the left column, leaving a hole on the right — that is what an odd count of equal columns looks like and reads as deliberate. Verdict: GREAT.
+
+**Demo:** new `docs/media/wrapped-tabs.gif` (700x500, 40 frames, 42 KB) from the new `examples/strip`, captioned with its exact command and row in `docs/media/README.md`; the guide's tabs section shows it. All 43 existing GIFs re-recorded unchanged (`0 updated`).
+
+**Gate:** fmt, clippy, nextest 1264/1264, doctests 269/269 (one doctest of my own had wrong arithmetic — 420 px, not 460, holds three 100 px cells and two 8 px gaps — fixed), check + wasm32, `doc -D warnings`. semver: no public item changed shape (`flow_strips` is `pub(crate)`), so 0.51.0 → 0.51.1. https://crates.io/crates/bevy_gooey/0.51.1
+
+**Disk:** `/home` 274 GB free at the end; nothing deleted this pass.
+
+**Backlog:** (1) frames for tabs and toggle groups (needs the strip restyle recorded in the note); (2) `GooeyFrames::strip` with that restyle; (3) a reduced-motion fade-out for the split peek; (4) F6 into a collapsed pane; (5) `update_selection_indicators` and friends are public and grow a parameter per feature — consider `pub(crate)`.
