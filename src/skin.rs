@@ -2270,6 +2270,7 @@ pub fn apply_skin(
     states: Query<StateQuery>,
     parents: Query<&ChildOf>,
     children: Query<&Children>,
+    roles: Query<&Role>,
     mut styled: Query<Styled>,
 ) {
     if skin.is_changed() {
@@ -2453,6 +2454,7 @@ pub fn apply_skin(
                 state_of(entity),
                 parent.map(state_of),
                 owner_of(entity),
+                parent.is_some_and(|p| roles.get(p) == Ok(&Role::Screen)),
             );
         }
         return;
@@ -2547,6 +2549,7 @@ pub fn apply_skin(
             state_of(entity),
             parent.map(state_of),
             owner_of(entity),
+            parent.is_some_and(|p| roles.get(p) == Ok(&Role::Screen)),
         );
     }
 }
@@ -2583,6 +2586,10 @@ fn restyle(
     state: State,
     parent: Option<State>,
     owner: State,
+    // The node stands directly on a `Role::Screen`: a panel there is the screen's own card, the only
+    // panel the window's width can crowd (a dock group's, a split pane's and a dialog's all stand in
+    // a container that sizes them).
+    parent_screen: bool,
 ) {
     let skin = look.skin;
     let scale = target.map_or(1.0, |t| t.scale_factor());
@@ -3227,6 +3234,15 @@ fn restyle(
                 if in_dialog {
                     next.min_width = Val::Px(text_px * DIALOG_MIN_TEXT_SIZES);
                     next.max_width = Val::Px(text_px * DIALOG_MAX_TEXT_SIZES);
+                } else if parent_screen {
+                    // A screen's own card never grows past the window less a margin, so at 200% text
+                    // it wraps rather than running off the screen. A panel in a dock group, a split
+                    // pane or a dialog is sized by its container and is left alone (iteration 93
+                    // measured a cap here breaking a dock drag).
+                    if let Some(window) = target {
+                        next.max_width =
+                            Val::Px((window.logical_size().x - 2.0 * skin.gap).max(0.0));
+                    }
                 }
             }
             // A disc as wide as it is high, in text sizes, so it grows with the player's text scale;

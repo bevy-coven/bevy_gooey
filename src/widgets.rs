@@ -201,7 +201,9 @@ pub fn screen() -> impl Bundle {
     )
 }
 
-/// A framed, padded column on the skin's surface colour.
+/// A framed, padded column on the skin's surface colour. One standing directly on a [`screen`] is as
+/// wide as its widest row up to the window less two gaps, then wraps; a panel inside a dock group, a
+/// [`split`] pane or a dialog is sized by that container and has no such cap.
 ///
 /// ```
 /// # use bevy::prelude::*;

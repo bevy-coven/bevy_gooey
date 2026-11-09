@@ -275,7 +275,15 @@ fn a_dialog_panel_is_framed_in_the_outline_and_a_screens_panel_is_not() {
         let node = app.world().get::<Node>(on_screen).expect("a node");
         assert_eq!(node.padding, UiRect::all(Val::Px(skin.padding)));
         assert_eq!(node.row_gap, Val::Px(skin.gap));
-        assert_eq!((node.min_width, node.max_width), (Val::Auto, Val::Auto));
+        // A screen's own card is capped at the window less two gaps so at 200% text it wraps rather
+        // than running off the screen (iteration 94); a panel in a dock group, a split pane or a
+        // dialog has no such cap, because its container sizes it.
+        assert_eq!(node.min_width, Val::Auto);
+        assert!(
+            matches!(node.max_width, Val::Px(px) if px > 0.0 && px <= 1280.0),
+            "a screen panel's max width is the window, got {:?}",
+            node.max_width
+        );
     }
 }
 
