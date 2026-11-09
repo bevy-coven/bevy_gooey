@@ -2930,3 +2930,23 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, nextest 1268/1268, doctests, check + wasm32, `doc -D warnings`. Patch: 0.51.3 → 0.51.4. https://crates.io/crates/bevy_gooey/0.51.4
 
 **Backlog:** (1) `pub(crate)` on the parameter-growing public systems (the release tax is real: three minor bumps in six passes); (2) a `GooeyFrames` field for a table header of its own, if a skin wants a different header material; (3) the press cue for tabs is closed unless the owner wants it against Rune's example; (4) the meter's trail at the track's end when a value is full; (5) a stripped-down `examples/` page per widget so a capture never shows a stale neighbour again.
+
+## Iteration 85 — 2026-11-09 — the frame-time gate was measuring a constant; v0.51.5
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Four backlog items were checked against the tree first, and **all four were already done or wrong**: `pub(crate)` on the systems is unsafe (a consumer orders `before(bevy_gooey::update_color_motion)`); the meter's trail at a full value is guarded (`next.trail > next.fill` else `ZERO`); a split's F6 order already follows layout (iteration 83's test walks from the second pane back to the first); a wrapped strip needs no write on a resize that keeps its column count. Two passes in a row have now found the backlog unreliable.
+
+**The real finding.** Three passes this session quoted the gallery's `mean_ms` as a performance baseline, and it was always **33.333** — the constant `TimeUpdateStrategy::ManualDuration(33_333 µs)` pins on `Time<Real>`, which is what `capture` divides. Measured this pass, same binary and host, 120 frames, twice each: **real clock 30.709 and 31.179 ms; fixed clock 33.333 and 33.333.** So the section 7 gate's "no regression over 0.5 ms" has been passing vacuously for the pinned runs.
+
+**Built:** deterministic recording and measurement are now two runs. `GOOEY_FIXED_CLOCK=1` is unchanged for every GIF; the capture line in `gallery`, `ladder` and `table` appends `(fixed clock: not a measurement)` when it is pinned, so no later pass can quote it as a baseline. `docs/research/perf-gate.md` records both measurements and the rule; `AGENTS.md` carries it above "Build and test".
+
+**Sources:** Bevy 0.20 `TimeUpdateStrategy` (technical), *Good Game Feel* (craft: the delivered frame is what a player feels), Rune's capture harness (shipping reference: pinned clock for recordings, a separate unpinned pass for frame time).
+
+**Critique:** not a visual change; the proof is two pairs of numbers from one binary (`mean_ms 33.333 (fixed clock: not a measurement)` against `mean_ms 30.871`). Verdict: GREAT — the gate now has a signal it can fail on.
+
+**Perf:** unpinned gallery `mean_ms` **30.709 / 31.179 / 30.871** across three runs, load average 25–46. This is the first real baseline the log has. (Earlier passes' 33.333 figures are retracted; they measured the harness.)
+
+**Demo:** no visual change; all 45 GIFs re-recorded, `0 updated`, which is itself the evidence that the library is untouched.
+
+**Gate:** fmt, clippy, the full suite **1268/1268** (a first run at load 46 failed two `split` double-click tests on their real-clock sleeps; they pass alone and in the rerun at load 25 — the same flake class iteration 80 logged), doctests, check + wasm32, `doc -D warnings`. Examples ship in the package, so this releases: 0.51.4 → 0.51.5. https://crates.io/crates/bevy_gooey/0.51.5
+
+**Backlog — rewritten, each item verified against the source this pass:** (1) `GooeyFrames` fields of their own for a table header and a status item, if a skin wants different materials (the only framing gap left); (2) the `split` suite's real-clock sleeps made deterministic with `TimeUpdateStrategy::ManualDuration` in its `app()`, so a loaded host cannot fail the gate (this pass's flake); (3) a per-widget example page so a capture never picks up a stale neighbour; (4) the press cue for tabs remains closed unless the owner wants it against Rune's example; (5) `GooeySystems`-grain hooks for anything a consumer must order against, so the systems themselves can become `pub(crate)` without breaking `bevy_cauldron`.
