@@ -11,12 +11,12 @@ use bevy::picking::events::PointerPress;
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::ui::{ComputedUiRenderTargetInfo, OverrideClip, UiGlobalTransform};
-use bevy::ui_widgets::popover::Popover;
 
 use crate::binding::BindingSettings;
 use crate::shortcut::{ChordText, Shortcut};
 use crate::skin::Role;
 use crate::text::TextInputOf;
+use bevy::ui_widgets::popover::Popover;
 
 /// How long the pointer rests on a widget before its tooltip opens, seconds: a desktop's half a second,
 /// so moving across a toolbar does not flash a row of tooltips (Rune's `help_delay`).
@@ -66,7 +66,8 @@ pub struct TooltipDwell {
 /// widget in a menu; a long line wraps to fit the room beside the widget. It sits one
 /// [`crate::GooeySkin::gap`] outside the panel the widget is in (its padding and border), drawn as
 /// a small raised panel with a shadow. Adding it spawns the box as a hidden child, styled as
-/// [`Role::Tooltip`] and placed by Bevy's `Popover`.
+/// [`Role::Tooltip`], placed by Bevy's `Popover` once its widget is laid out (`apply_skin` inserts the
+/// placement; a box that carried one at spawn panicked Bevy on the widget's first frame).
 ///
 /// The box is a view of this component: removing it removes the box, and inserting a new
 /// `Tooltip` over this one, or editing its text in place, changes the line the box shows (an
@@ -172,7 +173,11 @@ fn sync_box(world: &mut World, entity: Entity) {
                         ..default()
                     },
                     Role::Tooltip,
-                    Popover::default(),
+                    // Born without a `Popover`: Bevy places every one it sees, and on the frame a
+                    // widget is spawned its `ComputedNode` is a layout behind, so `size - border` is
+                    // negative and `position_popover` panics ("Rect size must be positive", measured on
+                    // `examples/inspector`, iteration 97). `apply_skin` inserts the placement once the
+                    // anchor is laid out.
                     // A tooltip beside a row of a scrolling list stands outside the list, so the
                     // list's clip must not reach it.
                     OverrideClip,
@@ -212,6 +217,29 @@ fn keycap(shortcut: Shortcut, words: String) -> impl Bundle {
 }
 
 /// Copies each [`Tooltip`]'s text and shortcut into its box when the `Tooltip` changed: a new
+/// Marks a tooltip box for a restyle the frame its anchor is first laid out.
+///
+/// A box is spawned without a `Popover` (Bevy's `position_popover` panics on an anchor whose border is
+/// as big as its size, which is what a widget looks like on its first frame — iteration 97), and
+/// [`crate::apply_skin`] inserts the placement once the anchor is sized. The box is not otherwise
+/// restyled then: the node that changed is its *parent*, and `Changed<ComputedNode>` in `Restyle`
+/// filters the box. Writing the box's `Role` is the crate's own invalidation for that, and it writes
+/// only while the anchor is sized and the box has no `Popover` yet, so a settled tooltip costs nothing.
+#[allow(clippy::type_complexity)]
+pub fn restyle_sized_tooltips(
+    mut boxes: Query<(&ChildOf, &mut Role), (With<TooltipBox>, Without<Popover>)>,
+    anchors: Query<&ComputedNode>,
+) {
+    for (parent, mut role) in &mut boxes {
+        if anchors
+            .get(parent.parent())
+            .is_ok_and(|node| node.size().x > 1.0 && node.size().y > 1.0)
+        {
+            role.set_changed();
+        }
+    }
+}
+
 /// `Tooltip` inserted over the old one, or an edit in place (a reflection-driven inspector makes
 /// one, and no component hook runs for it). The keycap is spawned when a shortcut appears and
 /// despawned when it goes. Writes only when the line differs. Runs in

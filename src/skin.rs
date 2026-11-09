@@ -1959,8 +1959,11 @@ type Styled = (
     Option<&'static mut BorderColor>,
     Option<&'static mut TextColor>,
     Option<&'static mut TextFont>,
+    // A box is recognised by *what it is* (a tooltip's box, or a popover's panel), never by carrying a
+    // `Popover`: the placement below is written by inserting one, so a box can be spawned without it and
+    // Bevy's `position_popover` never sees an unlaid-out anchor (which it panics on — iteration 97).
     Option<(
-        &'static mut Popover,
+        Option<&'static mut Popover>,
         Option<&'static TooltipBox>,
         Option<(&'static PopoverPanel, Option<&'static PopoverSlide>)>,
     )>,
@@ -2271,6 +2274,8 @@ pub fn apply_skin(
     parents: Query<&ChildOf>,
     children: Query<&Children>,
     roles: Query<&Role>,
+    anchors: Query<&ComputedNode>,
+    mut commands: Commands,
     mut styled: Query<Styled>,
 ) {
     if skin.is_changed() {
@@ -2455,6 +2460,12 @@ pub fn apply_skin(
                 parent.map(state_of),
                 owner_of(entity),
                 on_screen(parent, &roles, &parents),
+                parent.is_some_and(|p| {
+                    anchors
+                        .get(p)
+                        .is_ok_and(|node| node.size().x > 1.0 && node.size().y > 1.0)
+                }),
+                &mut commands,
             );
         }
         return;
@@ -2550,6 +2561,12 @@ pub fn apply_skin(
             parent.map(state_of),
             owner_of(entity),
             on_screen(parent, &roles, &parents),
+            parent.is_some_and(|p| {
+                anchors
+                    .get(p)
+                    .is_ok_and(|node| node.size().x > 1.0 && node.size().y > 1.0)
+            }),
+            &mut commands,
         );
     }
 }
@@ -2581,6 +2598,7 @@ fn on_screen(parent: Option<Entity>, roles: &Query<&Role>, parents: &Query<&Chil
         .is_ok_and(|up| roles.get(up.parent()) == Ok(&Role::Screen))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn restyle(
     (
         entity,
@@ -2607,6 +2625,10 @@ fn restyle(
     // screen's own card, the only panel the window's width can crowd (a dock group's, a split pane's
     // and a dialog's all stand in a container that sizes them).
     parent_screen: bool,
+    // The box's anchor is laid out: Bevy's `position_popover` panics on an anchor whose border is as
+    // big as its size, which is what every widget looks like on the frame it is spawned.
+    anchor_sized: bool,
+    commands: &mut Commands,
 ) {
     let skin = look.skin;
     let scale = target.map_or(1.0, |t| t.scale_factor());
@@ -4401,7 +4423,10 @@ fn restyle(
         shadow.set_if_neq(skin.elevation.box_shadow(level, state.alpha * alpha));
     }
 
-    if let Some((mut popover, tip, panel)) = floating {
+    if let Some((popover, tip, panel)) = floating {
+        if !anchor_sized {
+            return;
+        }
         let next = if let Some(tip) = tip {
             // One spacing step outside the panel a widget usually sits in (its padding and border),
             // so the tooltip never straddles that panel's edge. `Popover` measures from inside the
@@ -4417,8 +4442,15 @@ fn restyle(
         } else {
             return;
         };
-        if *popover != next {
-            *popover = next;
+        // The placement is written by inserting a `Popover`, so a box is born without one and Bevy
+        // never places it before its anchor is laid out — that panic is the reason this is an insert
+        // rather than a field the widget must already carry (iteration 97).
+        match popover {
+            Some(mut popover) if *popover != next => *popover = next,
+            Some(_) => {}
+            None => {
+                commands.entity(entity).insert(next);
+            }
         }
     }
 }

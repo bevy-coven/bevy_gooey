@@ -389,8 +389,8 @@ pub use toolbar::{
     update_toggle_groups,
 };
 pub use tooltip::{
-    TOOLTIP_DELAY_SECONDS, Tooltip, TooltipBox, TooltipDwell, TooltipSettings, show_tooltips,
-    update_tooltip_text,
+    TOOLTIP_DELAY_SECONDS, Tooltip, TooltipBox, TooltipDwell, TooltipSettings,
+    restyle_sized_tooltips, show_tooltips, update_tooltip_text,
 };
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use type_select::{TypeSelectGroup, TypedPrefix};
@@ -649,6 +649,7 @@ impl Plugin for GooeyStylePlugin {
                         (drag::update_drag_visuals, drag::update_drop_candidates).chain(),
                     )
                         .chain(),
+                    restyle_sized_tooltips,
                     update_tooltip_text,
                     show_tooltips,
                     update_bindings,
