@@ -201,9 +201,7 @@ pub fn screen() -> impl Bundle {
     )
 }
 
-/// A framed, padded column on the skin's surface colour. It is as wide as its widest row, up to the
-/// window less two gaps (`skin.gap`): past that its rows wrap, so a panel at 200% text is never wider
-/// than the screen. A dialog's panel keeps its own text-size measure instead.
+/// A framed, padded column on the skin's surface colour.
 ///
 /// ```
 /// # use bevy::prelude::*;
