@@ -584,3 +584,75 @@ fn a_table_header_draws_the_buttons_art() {
         assert_eq!(size(&framed, *art_cell), size(&flat, *plain));
     }
 }
+
+#[test]
+fn a_cards_cell_draws_from_art_under_its_picture_and_its_outline_goes() {
+    // A card grid is the largest flat surface a game screen has, and it was the one surface that took
+    // no art beside panels, buttons, meters, tracks, segments, fields and popups. Its own fill is
+    // still the state's, the art is tinted by it, the `outline` goes (the art has its own edge) and
+    // the chosen ring stays.
+    let cards_of = |app: &mut App| -> Vec<Entity> {
+        let mut query = app.world_mut().query::<(Entity, &Role)>();
+        query
+            .iter(app.world())
+            .filter(|(_, role)| **role == Role::CardCell)
+            .map(|(entity, _)| entity)
+            .collect()
+    };
+    let build = |app: &mut App| {
+        let grid = app
+            .world_mut()
+            .spawn(card_grid(vec![
+                Card::new("Alder").line("12 in stock"),
+                Card::new("Birch").line("4 in stock"),
+            ]))
+            .id();
+        app.world_mut().spawn(screen()).add_child(grid);
+        frames(app, 6);
+    };
+
+    // One app with the card's art set, one with no frames at all.
+    let mut framed = app();
+    let host = art(&mut framed);
+    build(&mut framed);
+    let mut set = GooeyFrames::default();
+    set.card = Some(Frame::new(host, 10.0));
+    framed.insert_resource(set);
+    frames(&mut framed, 4);
+    let cards = cards_of(&mut framed);
+    assert_eq!(cards.len(), 2, "two cards");
+    for card in &cards {
+        let tint = layer(&framed, *card)
+            .expect("a card with art draws a layer")
+            .color;
+        assert!(
+            Srgba::from(tint).alpha > 0.0,
+            "the art is tinted by the card's own fill"
+        );
+        assert!(
+            Srgba::from(fill(&framed, *card)).alpha <= 0.0,
+            "the flat fill is cleared: the art carries it"
+        );
+        let border = framed
+            .world()
+            .get::<BorderColor>(*card)
+            .map(|colour| colour.top);
+        assert!(
+            border.is_none_or(|c| Srgba::from(c).alpha <= 0.0),
+            "the outline goes: the art has its own edge"
+        );
+    }
+
+    let mut flat = app();
+    build(&mut flat);
+    for card in cards_of(&mut flat) {
+        assert!(
+            layer(&flat, card).is_none(),
+            "no frames set: a card stays flat"
+        );
+        assert!(
+            Srgba::from(fill(&flat, card)).alpha > 0.0,
+            "and keeps the fill the skin gives it"
+        );
+    }
+}

@@ -12,6 +12,8 @@
 //! `high_contrast` or `tool`, `GOOEY_TEXT_SCALE=<f>` and `GOOEY_SIZE=<w>x<h>` set the start.
 //! `GOOEY_KEYS=tab,…` presses one key every `GOOEY_KEY_EVERY` (default 10) frames from frame 30
 //! as real keyboard input (`tab`, `up`, `down`, `left`, `right`, `enter`).
+//! `GOOEY_ART=1` draws each card from a `GooeyFrames::card` (a rounded plate made here) instead of a
+//! flat fill, so the demo shows what art does to a card.
 
 use bevy::asset::RenderAssetUsages;
 use bevy::input::ButtonState;
@@ -109,6 +111,55 @@ fn main() {
     app.run();
 }
 
+/// The side of a card's art, image pixels, and the size of its corners.
+const CARD_ART_SIDE: u32 = 32;
+const CARD_ART_SLICE: u32 = 9;
+
+/// A rounded plate for a card's edge in light neutrals (the skin tints it by the card's state): a
+/// bright rim, a darker groove inside it and a soft centre. Drawn here, so the example needs no art
+/// files.
+fn plate() -> Image {
+    let side = CARD_ART_SIDE as usize;
+    let radius = CARD_ART_SLICE as f32;
+    let mut pixels = vec![0u8; side * side * 4];
+    for y in 0..side {
+        for x in 0..side {
+            let (fx, fy) = (x as f32 + 0.5, y as f32 + 0.5);
+            let (dx, dy) = (
+                (fx - side as f32 / 2.0).abs() - (side as f32 / 2.0 - radius),
+                (fy - side as f32 / 2.0).abs() - (side as f32 / 2.0 - radius),
+            );
+            let outside = (dx.max(0.0).powi(2) + dy.max(0.0).powi(2)).sqrt() + dx.max(dy).min(0.0);
+            let depth = radius - outside;
+            let (value, alpha) = if depth < 0.0 {
+                (0.0, 0.0)
+            } else if depth < 1.2 {
+                (1.0, 1.0)
+            } else if depth < 2.4 {
+                (0.86, 1.0)
+            } else if depth < 3.4 {
+                (0.46, 1.0)
+            } else {
+                (0.96, 1.0)
+            };
+            let byte = (value * 255.0) as u8;
+            let at = (y * side + x) * 4;
+            pixels[at..at + 4].copy_from_slice(&[byte, byte, byte, (alpha * 255.0) as u8]);
+        }
+    }
+    Image::new(
+        Extent3d {
+            width: CARD_ART_SIDE,
+            height: CARD_ART_SIDE,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        pixels,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+    )
+}
+
 /// A flat swatch standing in for a map's thumbnail.
 fn swatch(images: &mut Assets<Image>, rgb: [u8; 3]) -> Handle<Image> {
     images.add(Image::new_fill(
@@ -125,8 +176,15 @@ fn swatch(images: &mut Assets<Image>, rgb: [u8; 3]) -> Handle<Image> {
 }
 
 /// A panel of the two actions over the maps.
-fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
+fn setup(
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
+    mut frames: ResMut<GooeyFrames>,
+) {
     commands.spawn(Camera2d);
+    if std::env::var_os("GOOEY_ART").is_some() {
+        frames.card = Some(Frame::new(images.add(plate()), CARD_ART_SLICE as f32));
+    }
     let maps = [
         Card::new("Harbour")
             .image(swatch(&mut images, [52, 96, 128]))

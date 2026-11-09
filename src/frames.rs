@@ -63,6 +63,12 @@ pub struct GooeyFrames {
     /// The frame of every [`crate::meter`] and [`crate::progress`] track: the art is drawn under the
     /// fill, which keeps the skin's colour (a meter's frame is its track, so its outline goes).
     pub meter: Option<Frame>,
+    /// The frame of every [`crate::card_grid`] cell: a picture, a name and a few lines on a card. The
+    /// art is drawn under the card's own children, tinted by the fill the state would have (the
+    /// surface, the hover mix, the accent while chosen, the disabled surface), so a chosen card is
+    /// art under the accent. The card's `outline` goes (the art has its own edge); its focus ring and
+    /// the ring a chosen card carries stay over it.
+    pub card: Option<Frame>,
     /// The frame of every slider's rail, switch's track and [`crate::hold_button`]'s track: the art
     /// is drawn under the fill, the knob and the thumb, which keep the skin's colours (a track's
     /// frame is its edge, so its outline goes). A switch's track is tinted by the accent while on.
@@ -86,6 +92,7 @@ impl GooeyFrames {
     fn of(&self, role: Role) -> Option<&Frame> {
         match role {
             Role::Panel => self.panel.as_ref(),
+            Role::CardCell => self.card.as_ref(),
             Role::Button | Role::TableHeaderCell => self.button.as_ref(),
             Role::Meter => self.meter.as_ref(),
             Role::SliderRail | Role::ToggleTrack | Role::HoldTrack => self.track.as_ref(),
@@ -104,6 +111,7 @@ impl GooeyFrames {
         matches!(
             role,
             Role::Panel
+                | Role::CardCell
                 | Role::Meter
                 | Role::SliderRail
                 | Role::ToggleTrack
