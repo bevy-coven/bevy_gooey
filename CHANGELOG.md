@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `examples/gallery`, `ladder` and `table` take `GOOEY_FIXED_CLOCK=1` (every frame is 1/30 s of game time), and `theme.gif`, `ladder.gif` and `table.gif` are recorded with it: they differed on every recording of a loaded host (colour easing against uneven frame times) and now come out identical run to run. They are re-recorded at real-time playback (6.6, 5.7 and 6.0 s).
+
 ## [0.48.0] - 2026-11-08
 
 Breaking (pre-1.0, minor): `GooeyFrames` gained `popup` since 0.47.0 (a host that built it with a literal and no `..default()` adds the field).

@@ -7,7 +7,8 @@
 //! Run `cargo run --release --example table`.
 //!
 //! Capture mode, for a still and a GIF: `GOOEY_FRAMES=<n>` saves a screenshot at frame `n` to
-//! `GOOEY_SHOT` (default `table.png`), prints `gooey: frames <n> mean_ms <x>` and exits 10 frames
+//! `GOOEY_FIXED_CLOCK=1` makes every frame 1/30 s of game time (a deterministic recording; the
+//! frame time then reads 33.333). `GOOEY_SHOT` (default `table.png`), prints `gooey: frames <n> mean_ms <x>` and exits 10 frames
 //! later; `GOOEY_SHOT_DIR=<dir>` also keeps every `GOOEY_SHOT_EVERY`th frame from `GOOEY_SHOT_FROM`
 //! (default 30) there as `f_%04d.png` (the directory must exist). `GOOEY_SKIN=parchment`,
 //! `high_contrast` or `tool`, `GOOEY_TEXT_SCALE=<f>` and `GOOEY_SIZE=<w>x<h>` set the start;
@@ -133,6 +134,13 @@ fn main() {
         (follow_background, readout, capture, stage.after(capture)),
     );
     if let Some(at) = env("GOOEY_FRAMES") {
+        // GOOEY_FIXED_CLOCK=1: every frame is 1/30 s of game time, whatever the host's load, so a
+        // recording of an easing interface is the same each time (the frame time then reads 33.333).
+        if std::env::var_os("GOOEY_FIXED_CLOCK").is_some() {
+            app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_micros(33_333),
+            ));
+        }
         app.insert_resource(Capture {
             at,
             shot: std::env::var("GOOEY_SHOT").unwrap_or_else(|_| "table.png".into()),
