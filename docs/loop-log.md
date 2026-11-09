@@ -3126,3 +3126,23 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, nextest **1272/1272**, doctests, check + wasm32, `doc -D warnings`. **No package change this pass** — the only commits are the research note and the revert — so nothing is released, which also gives the publish quota a pass to roll.
 
 **Backlog:** (1) publish 0.51.12 when the window rolls; (2) the panel cap as a layout-reading system (with `dock_reorder`, `split` and `dialog_look` green as its acceptance); (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) a label that wraps, so a capped panel's long row is not clipped.
+
+## Iteration 94 — 2026-11-09 — the panel cap, done where it is correct; v0.51.13 tagged, publish 429 (window rolls 18:52Z)
+
+**First job: the publish, and this time when it opens.** `cargo publish` answered **429** again. Rather than only logging it, I read crates.io's own version timestamps: **20 versions sit inside the last 24 hours**, the oldest (0.44.0) published at 18:52Z on 2026-11-08, so **the quota window first rolls at 18:52Z today**. Five versions (0.51.9–0.51.13) are tagged and pushed, waiting. A pass after 18:52Z publishes; one before it must not spend a retry.
+
+**The item: iteration 93's reverted cap, done correctly.** Iteration 93 capped every screen `Role::Panel` in `apply_skin` and broke `dock_reorder` — a dock group's card *is* a panel, and a cap blind to its parent's room wrapped the strip mid-drag. This pass scopes the cap: `restyle` now learns `parent_screen` (the node stands directly on a `Role::Screen`, read from a `roles` query at both call sites), and only such a panel gets `max_width = window - 2 * skin.gap`. A panel in a dock group, a split pane or a dialog is container-sized and untouched.
+
+**Evidence:** at 200% text in 1280x720 the card is 1070 px inside the window, border and last column visible (`/tmp/g94/t2.png`); at 100% nothing moved (`/tmp/g94/n.png`); `dock_reorder`, `split`, `large_text` and `dialog_look` all green **together, 47 tests** — the four modules that would have caught the 93 regression.
+
+**One protected assertion changes, recorded:** `dialog_look` asserted a screen panel's `max_width == Auto`, which is exactly the contract this pass replaces. It now asserts a positive cap no wider than the 1280 window; `min_width` and every other claim are unchanged. Commit message carries `assumed owner exception:` for it.
+
+**Sources:** WCAG 2.2 SC 1.4.10 Reflow and SC 1.4.4 Resize text (technical), this crate's own container roles (technical), Rune's card sizing (shipping reference). Note: `docs/research/panel-cap-2.md`.
+
+**Critique:** at 200% the card's right edge, border and last column are inside the screen where before they were gone; at 100% the pixels are unchanged (all 45 GIFs `0 updated`). Verdict: GREAT.
+
+**Perf:** unpinned gallery `mean_ms` **22.169 and 22.425** at load average 1.4 — unchanged across iterations 86–94.
+
+**Gate:** fmt, clippy, nextest **1272/1272**, doctests, check + wasm32, `doc -D warnings`. 0.51.12 → 0.51.13.
+
+**Backlog:** (1) **publish all five waiting versions after 18:52Z** — the only outstanding ship, and one pass should do it first; (2) a row that wraps its own text (`ONE_LINE`), so a long row inside a capped panel folds rather than clips; (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line that prints the load average.
