@@ -270,6 +270,8 @@ struct Wanted {
     row_index: Option<usize>,
     row_count: Option<usize>,
     column_count: Option<usize>,
+    /// A toast's live region: `Some` interrupts or waits, `None` is not a toast.
+    live: Option<accesskit::Live>,
     /// A column header's sort: `Some(None)` clears the state (this column is not the one sorted
     /// by), `Some(Some(_))` sets it, and `None` is no header at all.
     sort: Option<Option<accesskit::SortDirection>>,
@@ -521,6 +523,13 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
                 .is_some_and(|toast| toast.kind() == ToastKind::Alert);
             wanted.role = Some(if alert { Ak::Alert } else { Ak::Status });
             wanted.name = look.words(entity, |role| role == Role::ToastText);
+            // A toast appears by itself: a live region is how a screen reader is told, and an alert
+            // interrupts while a plain toast waits its turn (WCAG 4.1.3, Status Messages).
+            wanted.live = Some(if alert {
+                accesskit::Live::Assertive
+            } else {
+                accesskit::Live::Polite
+            });
         }
         Role::ToastAction => wanted.name = look.words(entity, names),
         // A table's rows are a pool of a dozen entities rebound while scrolling, so the whole
@@ -741,6 +750,7 @@ fn says(node: &Node_, wanted: &Wanted) -> bool {
             .column_count
             .is_none_or(|count| node.column_count() == Some(count))
         && wanted.sort.is_none_or(|sort| node.sort_direction() == sort)
+        && wanted.live.is_none_or(|live| node.live() == Some(live))
         && (!wanted.popup || node.has_popup() == Some(HasPopup::Menu))
         && node.is_modal() == wanted.modal
         && node.is_hidden() == wanted.hidden
@@ -802,6 +812,9 @@ fn write(node: &mut Node_, wanted: &Wanted) {
         Some(Some(sort)) => node.set_sort_direction(sort),
         Some(None) => node.clear_sort_direction(),
         None => {}
+    }
+    if let Some(live) = wanted.live {
+        node.set_live(live);
     }
     if wanted.popup {
         node.set_has_popup(HasPopup::Menu);

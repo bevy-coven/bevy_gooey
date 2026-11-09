@@ -484,6 +484,17 @@ fn a_toast_is_a_status_and_an_alert_is_an_alert() {
             (Ak::Status, "Saved".to_owned())
         ]
     );
+    // A toast appears by itself, so it is a live region: an alert interrupts and a plain toast
+    // waits its turn. Without this a screen reader never heard either.
+    for (entity, _) in &toasts {
+        let node = node(&app, *entity);
+        let live = node.live();
+        let label = node.label().unwrap_or_default();
+        match label {
+            "Disk full" => assert_eq!(live, Some(accesskit::Live::Assertive)),
+            _ => assert_eq!(live, Some(accesskit::Live::Polite)),
+        }
+    }
 }
 
 #[test]

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A toast is a live region: `Ak::Alert` is `Live::Assertive` and `Ak::Status` is `Live::Polite`, so a screen reader announces a message that appears without focus (WCAG 2.2 SC 4.1.3, Status Messages). Before, the node carried the words and no politeness, so a sighted player saw "Saved" slide in and a screen reader user heard nothing.
+
 ## [0.51.8] - 2026-11-09
 
 ### Fixed

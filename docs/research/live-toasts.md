@@ -57,8 +57,13 @@ the visual changes, and a reader hears the message the player sees.
 
 - A plain toast's node has `Live::Polite` and an alert's `Live::Assertive`, beside the roles and names
   the existing test already checks.
-- Mutation-checked: removing the `says` comparison fails the assertion (the node keeps `None`), and
-  removing the `write` call fails it the same way.
+- **Measured and recorded:** removing the `says` comparison does **not** fail this test, because a
+  toast's node is added fresh and a fresh node always goes through `write` — the comparison only
+  matters for a node that is re-described, and a toast's `kind` is private with no setter, so its
+  politeness cannot change in place today. The field is compared anyway: `says` is the one place a
+  stale node is caught, and the next thing that can become live (a `ToastKind` setter, or a widget that
+  turns into an alert) would otherwise keep `None`. Verified the other way: removing the `write` call
+  does fail the test, so the assertion bites on the value itself.
 
 ## Deviations
 
