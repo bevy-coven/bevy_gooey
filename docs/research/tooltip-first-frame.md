@@ -68,9 +68,28 @@ attempt failed a different way, and the failures are the value of this note:
 remove-and-restore path at all — one writer, no latch, no default to overwrite. That also deletes a
 `Popover::default()` whose placement nothing ever wanted.
 
+### Fourth attempt, and the actual root cause
+
+4. **Spawn the box with no `Popover` at all** (`src/tooltip.rs:175`), leaving `apply_skin` to write one.
+   Also failed `in_a_row_a_tooltip_opens_below_clear_of_its_neighbours`, and the reason is the design
+   itself: `apply_skin` reaches a box's placement through `Styled`'s
+   `floating: Option<(&mut Popover, Option<&TooltipBox>, …)>` — the tuple **only matches when the entity
+   already has a `Popover`**. Take it off at spawn and no placement is ever written; the box is drawn
+   unpositioned.
+
+So the conflict is structural: the crate's one writer of the placement requires the component to exist,
+and Bevy panics when the component exists on an unsized anchor. A fix must break that either by making
+`floating` a `Query` that can *insert* (a `ParamSet` or a separate writer for boxes without a `Popover`),
+or by holding the box's `Display::None` and adding the `Popover` through `commands` the frame the anchor is
+sized — i.e. `apply_skin` writes placement through two paths, which the crate's one-path rule then needs a
+different shape for. That is a design decision for a pass with room to run the full gate twice, not a
+patch at the end of a pass.
+
 ## Validation targets for that slice
 
-- `examples/inspector` runs to its capture frame with no panic, ten runs in a row.
+- `examples/inspector` runs to its capture frame with no panic, ten runs in a row (`GOOEY_FRAMES=140
+  GOOEY_KEYS=tab,down,down,down`: 0 panics in 3 runs of the current tree **only when tooltips are the
+  thing removed**, so this target is unmet).
 - `tests/tooltip.rs` (10 tests), `tooltip_delay` and `tooltip_cap` stay green.
 - A tooltip opens beside its widget, below it in a row, and flips at the window's edge — the three pinned
   behaviours above.
