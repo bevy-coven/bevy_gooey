@@ -211,6 +211,10 @@ fn setup(
         images.add(plate(6.0, false, 0.0)),
         ART_SLICE as f32 * 0.6,
     ));
+    frames.track = Some(Frame::new(
+        images.add(plate(3.0, false, 0.0)),
+        ART_SLICE as f32 * 0.4,
+    ));
     frames.field = Some(Frame::new(
         images.add(plate(5.0, false, 0.0)),
         ART_SLICE as f32 * 0.6,
@@ -244,6 +248,8 @@ fn setup(
                         ),
                         (button("Map"), Tooltip::new("Where the camp stands")),
                         text_input("Name", "Camp 1"),
+                        slider("Volume", 0.6, 0.0..=1.0),
+                        toggle("Subtitles", true),
                         label("Stamina"),
                         meter(70.0, 100.0),
                         (

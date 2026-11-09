@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- `GooeyFrames::track`: nine-slice art for every slider rail, switch track and hold button's track. The fill, thumb and knob keep the skin's colours over the art; a switch that is on is tinted by the accent. A patch release: `GooeyFrames` is `#[non_exhaustive]`.
+
+### Fixed
+
+- The frames guide and research note said frame corners are not scaled by `UiScale`; they are (measured), the text now says so.
+
 ## [0.50.0] - 2026-11-09
 
 Breaking (pre-1.0, minor): the public system `update_frames` takes one more parameter (it reads parents now); a host that schedules it by hand is unaffected, one that calls it as a plain function is not.

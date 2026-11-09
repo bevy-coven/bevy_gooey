@@ -356,3 +356,53 @@ fn a_meter_track_draws_its_art_under_the_fill_and_keeps_the_fill() {
     assert_eq!(fills(&framed, tracks[1]), fills(&flat, tracks[0]));
     assert!(!fills(&framed, tracks[1]).is_empty());
 }
+
+#[test]
+fn slider_switch_and_hold_tracks_draw_their_art_and_keep_their_parts() {
+    let mut flat = app();
+    let mut framed = app();
+    let art = art(&mut framed);
+    framed.world_mut().resource_mut::<GooeyFrames>().track = Some(Frame::new(art, 3.0));
+    let mut roles = Vec::new();
+    for app in [&mut flat, &mut framed] {
+        let column = app
+            .world_mut()
+            .spawn(screen())
+            .with_children(|c| {
+                c.spawn(slider("Volume", 0.4, 0.0..=1.0));
+                c.spawn(toggle("Subtitles", true));
+                c.spawn(hold_button("Delete", 1.0));
+            })
+            .id();
+        frames(app, 8);
+        let find = |app: &mut App, role: Role| -> Entity {
+            let mut q = app.world_mut().query::<(Entity, &Role)>();
+            let hits: Vec<Entity> = q
+                .iter(app.world())
+                .filter(|(e, r)| **r == role && app.world().get::<ChildOf>(*e).is_some())
+                .map(|(e, _)| e)
+                .collect();
+            assert!(!hits.is_empty(), "{role:?} under {column:?}");
+            hits[0]
+        };
+        roles.push([
+            find(app, Role::SliderRail),
+            find(app, Role::ToggleTrack),
+            find(app, Role::HoldTrack),
+        ]);
+    }
+    for i in 0..3 {
+        let image = layer(&framed, roles[1][i]).expect("the track is framed");
+        assert_eq!(
+            image.color,
+            fill(&flat, roles[0][i]),
+            "tint is the flat fill"
+        );
+        assert_eq!(fill(&framed, roles[1][i]), Color::NONE);
+        assert_eq!(size(&framed, roles[1][i]), size(&flat, roles[0][i]));
+    }
+    // A switch that is on is still lit by the accent: the tint, not a new colour.
+    let on = layer(&framed, roles[1][1]).expect("framed").color;
+    let skin = framed.world().resource::<GooeySkin>();
+    assert_eq!(on, skin.accent);
+}
