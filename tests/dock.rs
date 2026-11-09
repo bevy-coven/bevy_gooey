@@ -5,13 +5,14 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use bevy::camera::NormalizedRenderTarget;
+use bevy::camera::{ImageRenderTarget, NormalizedRenderTarget, RenderTarget};
 use bevy::input::ButtonState;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input_focus::{FocusCause, InputFocus, InputFocusVisible};
 use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
+use bevy::render::render_resource::TextureFormat;
 use bevy::render::settings::WgpuSettings;
 use bevy::ui::{ComputedNode, UiGlobalTransform};
 use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
@@ -100,7 +101,17 @@ fn at(app: &App, layout: Vec2) -> Vec2 {
     layout * app.world().resource::<UiScale>().0
 }
 
+/// Where the pointer is: the window unless the test draws the interface into an image.
+#[derive(Resource)]
+struct PointerOn(NormalizedRenderTarget);
+
 fn location(app: &mut App, at: Vec2) -> Location {
+    if let Some(on) = app.world().get_resource::<PointerOn>() {
+        return Location {
+            target: on.0.clone(),
+            position: at,
+        };
+    }
     let window = window(app);
     Location {
         target: NormalizedRenderTarget::Window(
@@ -921,4 +932,96 @@ fn a_strip_too_narrow_for_its_tabs_wraps_them_and_every_tab_stays_in_the_group()
         panic!("a group")
     };
     assert_eq!(panels, ["b", "c", "a", "d"]);
+}
+
+// ---- the editor's composition: a dock nested in a flex row, drawn into an image (#38) ----
+
+/// **A dock that fills a flex-grown hole, drawn into a render image at a UI scale**, which is how
+/// `bevy_grimoire`'s editor has it. The host measured the divider of exactly this split at 29 x 582
+/// px, hovered, `pressing = 1`, `dragging = 1`, and `SplitFraction` stayed at the 0.22 it authored.
+#[test]
+fn a_divider_in_a_dock_that_fills_a_flex_row_and_is_drawn_into_an_image_moves() {
+    let mut app = app();
+    app.world_mut().resource_mut::<UiScale>().0 = 1.2;
+    let handle = app
+        .world_mut()
+        .resource_mut::<Assets<Image>>()
+        .add(Image::new_target_texture(
+            1800,
+            1406,
+            TextureFormat::Bgra8UnormSrgb,
+            None,
+        ));
+    let target = RenderTarget::Image(ImageRenderTarget {
+        handle,
+        scale_factor: 1.0,
+    });
+    let normalized = target
+        .clone()
+        .normalize(None)
+        .expect("an image target");
+    app.world_mut()
+        .spawn((Camera2d, target, IsDefaultUiCamera));
+    app.world_mut().insert_resource(PointerOn(normalized));
+    // The hole the world shows through: `flex_grow` and no `BackgroundColor`, exactly the editor's.
+    for (id, title) in [("a", "Alpha"), ("b", "Bravo"), ("c", "Charlie")] {
+        app.world_mut()
+            .resource_mut::<PanelRegistry>()
+            .register(id, title, |page| {
+                page.with_child(label("x"));
+            });
+    }
+    let hole = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Row,
+            ..default()
+        })
+        .id();
+    let slot = app
+        .world_mut()
+        .spawn((
+            Node {
+                flex_grow: 1.0,
+                min_width: Val::Px(0.0),
+                min_height: Val::Px(0.0),
+                ..default()
+            },
+            children![dock(DockLayout::split(
+                H,
+                0.22,
+                DockLayout::group(["a"]),
+                DockLayout::split(
+                    H,
+                    0.78,
+                    DockLayout::group(["b"]),
+                    DockLayout::group(["c"]),
+                ),
+            ))],
+        ))
+        .id();
+    app.world_mut().entity_mut(hole).add_child(slot);
+    settle(&mut app);
+    settle(&mut app);
+    let mut dividers = app.world_mut().query::<(Entity, &SplitDivider, &ComputedNode)>();
+    let found: Vec<(Entity, Rect)> = dividers
+        .iter(app.world())
+        .map(|(e, _, _)| (e, rect(&app, e)))
+        .collect();
+    assert!(!found.is_empty(), "the dock has a divider");
+    let (divider, start) = found[0];
+    assert!(
+        start.width() > 1.0 && start.height() > 1.0,
+        "the divider is laid out, not a sliver: {start:?}"
+    );
+    let split = app.world().get::<ChildOf>(divider).expect("a parent").parent();
+    let before = app.world().get::<SplitFraction>(split).expect("a split").0;
+    drag(&mut app, divider, Vec2::new(100.0, 0.0));
+    let after = app.world().get::<SplitFraction>(split).expect("a split").0;
+    assert!(
+        (after - before).abs() > 1e-3,
+        "a 100 px drag moved the fraction {before} -> {after}"
+    );
 }
