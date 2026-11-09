@@ -2783,3 +2783,17 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Perf:** no code path changed; the gallery's default clock is untouched (the knob is opt-in, and its frame time reads 33.333, so it is never a performance number).
 
 **Backlog:** frames for tabs, toggle groups and text fields (art as a sibling layer); corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane.
+
+## Iteration 77 — 2026-11-09 — `GooeyFrames::meter`, and `GooeyFrames` is non_exhaustive; v0.49.0
+
+**Triage:** gooey issue list empty, no `grimoire-ui` issue open, #336 waits on the editor's pin. A HUD meter is the widget painted-art games frame most (health and stamina bars), and frames reached panels, buttons and popups only. Runner-up: frames for tabs and toggle groups (blocked by the selection indicator's layer).
+
+**Built:** `GooeyFrames::meter` frames the track of `meter()` and `progress()` (the art sits under the fill, which keeps its skin colour; the track's outline goes with its fill). `tests/frames.rs` +1 (7): same layout, tint equal to the flat track's fill, the fill child unchanged. `examples/frames.rs` gets a Stamina meter; `frames.gif` re-recorded (8.7 s, 640×379). **API:** `GooeyFrames` is now `#[non_exhaustive]` so every later role's field is a patch release (this and 0.48.0 were both minor only because of the new field): hosts assign fields on the resource, as the docs already show.
+
+**Critique and verdict** (`frames.gif`, still): the meter's track reads as a thin plate rim around the red fill; thinner than the buttons' rim because the art's corner is 0.6 of the others (a 20 px track cannot hold a 10 px corner). Fine for a first meter frame; a real game supplies art drawn for a short bar. GREAT as a mechanism, the example's art is a placeholder for it.
+
+**Perf:** unframed roles unchanged; no timing claimed (host loaded).
+
+**Gate:** fmt, clippy, nextest 1260/1260, doctests, check + wasm32, `doc -D warnings`, green on the first run. semver-checks: the `non_exhaustive` mark: 0.48.0 → 0.49.0. **Demos:** all 43 re-recorded: none changed (the theme, ladder and table GIFs are deterministic since iteration 76).
+
+**Backlog:** frames for tabs, toggle groups, toggles/sliders and text fields (art as a sibling layer, or the selection indicator's order); corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane.

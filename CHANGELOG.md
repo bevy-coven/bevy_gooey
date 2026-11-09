@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-11-09
+
+Breaking (pre-1.0, minor): `GooeyFrames` is `#[non_exhaustive]` (and gained `meter`); assign its fields on the resource instead of a struct literal. Later roles will not break.
+
 ### Added
 
 - `GooeyFrames::meter`: nine-slice art for the track of every `meter()` and `progress()`, under the fill (which keeps the skin's colour); the track's outline goes with its fill. `GooeyFrames` is now `#[non_exhaustive]`, so the next role's field is not a breaking change (assign fields on the resource; a struct literal outside the crate no longer compiles).
