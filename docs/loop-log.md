@@ -2811,3 +2811,19 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Gate:** fmt, clippy, nextest 1261/1261, doctests, check + wasm32, `doc -D warnings`. semver-checks: the public system `update_frames` takes 5 parameters instead of 4: 0.49.0 → 0.50.0 (a new `GooeyFrames` field alone would have been a patch: the struct is `non_exhaustive`). **Demos:** all 43 re-recorded, none changed beyond `frames.gif`.
 
 **Backlog:** frames for tabs, toggle groups, toggles and sliders (selection indicator order); corners scaled by `UiScale`; wrapped tab strips stepping aside; reduced-motion peek fade-out; F6 into a collapsed pane; consider making the public systems `pub(crate)` (every added system parameter is a major bump).
+
+## Iteration 79 — 2026-11-09 — `GooeyFrames::track`; frame corners follow `UiScale` (measured); v0.50.1
+
+**Triage:** bevy_gooey's issue list is empty, no `grimoire-ui` issue is open, #336 still waits on the editor's pin. Item 2 of the ranked backlog was "scale frame corners with `UiScale`": measured it, and the premise was **wrong** — the 2560x1440 capture halved matches the 1280x720 one frame for frame (RMSE 0.0697, i.e. texture noise), because Bevy slices a node by its size in logical pixels. So that item is closed as no work, the note in `docs/research/frames.md` and `docs/guide/skins.md` that said the opposite is corrected, and the pass spent its item on frames for the rest of the flat surfaces.
+
+**Built:** `GooeyFrames::track` — every slider rail, switch track and hold button's track can be drawn from nine-slice art, tinted by the fill the skin wrote (a switch that is on stays accent-tinted, so the art carries the state). Their outlines go, as a panel's does. `tests/frames.rs` (9 tests now) holds the three roles: art layer present, tint equals the flat fill, flat fill cleared, layout unchanged, accent tint on an "on" switch. `examples/frames.rs` gained a Volume slider and a Subtitles switch between the Name field and the Stamina meter.
+
+**Critique** (`/tmp/g79/both.png`, `gs5.png`): at zoom the rail and switch read as the same bevelled plate as the panel and the buttons, the switch's knob still moves and the accent tint shows through the art. The switch's corners are squarer than the flat pill (art slice 0.4 of the plate's corner, over a 2-control-high track); it reads as deliberate, not broken. Verdict: GREAT.
+
+**Gate:** fmt, clippy `-D warnings`, nextest 1262/1262, doctests, check + wasm32, `doc -D warnings`. semver-checks: no semver update required (0.50.0 → 0.50.1, a `#[non_exhaustive]` struct gained a field).
+
+**Disk incident:** the host hit 100% (`/home` at 246 MB free) mid-gate — not this loop's doing alone (a 1 TB `~/.cargo-target-shared` other agents use). Reclaimed 62 GB from this clone's own build cache only: ten `all-*` test executables and eleven `bevy_gooey-*` binaries built today, all `libbevy_gooey-*.rlib` but the newest two, and 338 hashed example binaries older than the current `gallery` (11 GB → 78 GB `release/examples`). One gate step re-ran after the lint fix; every other step of that gate run was green.
+
+**Demos:** all 43 GIFs re-recorded; `frames.gif` changed (the two new rows, the crop deepened to 760x610, and a new key script that walks the new rows: four Downs to Volume, three Rights, Down to Subtitles, Enter, Down to Flat look, Enter).
+
+**Backlog:** frames for tabs and toggle groups (needs a sibling layer or the selection indicator's order); wrapped tab strips stepping aside; a reduced-motion fade-out for the split peek; F6 into a collapsed pane; the press cue for tabs. Also worth a pass: the public systems (`update_frames` and its 4-parameter siblings) are a breaking change every time they grow — consider `pub(crate)`.
