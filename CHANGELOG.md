@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Each pane of a `split` is a `FocusRegion`, so F6 and Shift+F6 reach it like a viewport or a toolbar. A collapsed pane's first widget is then a region's start, and landing on it peeks the pane (which is what makes the widget visible), so a keyboard or pad player can get into a collapsed sidebar at all -- before, F6 cycled past the split and only Tab found its stops.
+
 ## [0.51.2] - 2026-11-09
 
 ### Added

@@ -2440,6 +2440,10 @@ fn split_pane(content: impl Bundle) -> impl Bundle {
             ..default()
         },
         Role::SplitPane,
+        // A pane is a part of the screen F6 can reach, the same as a viewport or a toolbar: a
+        // collapsed pane's first widget is then a region's start, and landing on it peeks the pane
+        // (the widget the player lands on is the one they see).
+        FocusRegion::navigate(),
         // So the peek can tell the pointer is on a floating pane (Bevy counts what is under it).
         Hovered::default(),
         content,

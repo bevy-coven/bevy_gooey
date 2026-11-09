@@ -55,8 +55,8 @@ far edge, above it, and the second pane keeps the room it had). It stays while t
 the edge, and slides back when the pointer has been off them for `grace_seconds` (0.15 s) or Escape is pressed
 (WCAG 1.4.13: hoverable, persistent, dismissible). Enter, South or a double press on the divider docks it where
 it floats (no glide: it is already that wide), and a drag, an arrow, Home, End or the D-pad on the divider docks it
-first and goes on from there. A visible focus inside the collapsed pane peeks it too (Tab or an arrow into it: a keyboard or pad player sees
-the widget they land on, where it was clipped before); the divider's own focus does not, or a pane collapsed with
+first and goes on from there. A visible focus inside the collapsed pane peeks it too (Tab, F6 or an arrow into it: each pane is a `FocusRegion`, so F6 reaches
+a collapsed pane's first widget, and a keyboard or pad player sees the widget they land on, where it was clipped before); the divider's own focus does not, or a pane collapsed with
 Enter on it would come straight back. A pointer that was already on the edge when the pane collapsed has to leave
 and come back before it peeks. `SplitPeek::is_open` says whether one floats; `SplitPeekSettings { enabled: false, .. }`
 turns it off. Under reduced motion it fades in with no slide and goes at once, and with no motion it comes and goes

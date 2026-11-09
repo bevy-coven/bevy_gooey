@@ -1171,3 +1171,104 @@ fn the_frame_a_split_is_spawned_in_has_its_panes_in_their_ratio() {
         a.width() + b.width() + divider.width()
     );
 }
+
+#[test]
+fn f6_reaches_a_collapsed_pane_and_peeks_it() {
+    let mut app = app();
+    let container = app
+        .world_mut()
+        .spawn((
+            Node {
+                width: Val::Px(800.0),
+                height: Val::Px(400.0),
+                ..default()
+            },
+            children![(
+                split(
+                    H,
+                    (panel(), children![button("Sidebar action")]),
+                    (panel(), children![button("Main action")]),
+                ),
+                SplitFraction(0.4),
+                SplitMin::new(80.0, 0.0),
+            )],
+        ))
+        .id();
+    settle(&mut app);
+    let split = child_of(&app, container);
+    let divider = {
+        let mut stack = vec![split];
+        let mut found = None;
+        while let Some(entity) = stack.pop() {
+            if let Some(kids) = app.world().get::<Children>(entity) {
+                for &kid in &**kids {
+                    if app.world().get::<Role>(kid) == Some(&Role::SplitDivider) {
+                        found = Some(kid);
+                    }
+                    stack.push(kid);
+                }
+            }
+        }
+        found.expect("a divider")
+    };
+    // Collapse the first pane from its divider.
+    let centre = rect(&app, divider).center();
+    click(&mut app, centre);
+    click(&mut app, centre);
+    settle(&mut app);
+    assert!(
+        (pane(&app, child_of(&app, split), H) - 80.0).abs() < 1.0,
+        "the first pane is collapsed"
+    );
+    // F6 from the second pane's button reaches the collapsed pane's own button (its first stop),
+    // and landing there peeks the pane, so the player sees the widget they landed on.
+    let main = {
+        let mut stack = vec![
+            *app.world()
+                .get::<Children>(split)
+                .expect("panes")
+                .last()
+                .expect("two"),
+        ];
+        let mut found = None;
+        while let Some(entity) = stack.pop() {
+            if app.world().get::<Role>(entity) == Some(&Role::Button) {
+                found = Some(entity);
+            }
+            if let Some(kids) = app.world().get::<Children>(entity) {
+                stack.extend(kids.iter());
+            }
+        }
+        found.expect("the second pane's button")
+    };
+    focus(&mut app, main);
+    tap(&mut app, KeyCode::F6);
+    settle(&mut app);
+    let reached = focused(&app);
+    let in_first = reached.is_some_and(|e| {
+        let mut at = e;
+        loop {
+            match app.world().get::<ChildOf>(at) {
+                Some(parent) if parent.parent() == child_of(&app, split) => break true,
+                Some(parent) => at = parent.parent(),
+                None => break false,
+            }
+        }
+    });
+    assert!(
+        in_first,
+        "F6 goes to the collapsed pane's first widget, not past it: {reached:?}"
+    );
+    let peek = app.world().get::<SplitPeek>(split).expect("a peek");
+    assert!(
+        peek.is_open() || !peek_enabled(&app),
+        "and the pane peeks around it, so the widget is on screen"
+    );
+}
+
+/// Whether the app's split peeks at all (it is off under no motion, as the crate's tests run).
+fn peek_enabled(app: &App) -> bool {
+    app.world()
+        .get_resource::<SplitPeekSettings>()
+        .is_some_and(|s| s.enabled)
+}
