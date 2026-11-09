@@ -395,7 +395,14 @@ fn setup(mut commands: Commands) {
         children![(
             Node {
                 column_gap: Val::Px(24.0),
+                row_gap: Val::Px(24.0),
+                // Two auto-width panels side by side at 100%, stacked when the player's text size
+                // makes them wider than the window: a gallery that overflows its own window is not
+                // the 200% promise the crate makes.
+                flex_wrap: FlexWrap::Wrap,
+                justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
+                max_width: Val::Percent(100.0),
                 ..default()
             },
             children![
