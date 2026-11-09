@@ -33,9 +33,17 @@ width. No shipping interface lets a settings panel grow past its window because 
 
 ## Model adopted
 
-- **A screen panel's `max_width` is the window less two gaps**, read from the layout target exactly as a
-  popover's already is (`src/skin.rs:3532`). A dialog panel keeps its own text-size measure; only the
-  screen case gains the cap.
+- **Attempted and reverted: a screen panel's `max_width` = the window less two gaps**, read from the layout
+  target as a popover's is. It fixed the 200% overflow — `/tmp/g93/t.png` shows the panel inside the window —
+  and it **broke a dock drag**: `tests/dock_reorder.rs::the_tab_follows_the_pointer_and_the_one_it_passes_steps_aside`
+  failed with a tab landing at y=97.5 (a second row) before settling at 40.5. A dock group's card is a
+  `panel()`, so the cap reached it; a cap in `apply_skin` cannot see the panel's own offset or the room its
+  parent gives it, so a docked group measured against the whole window wraps its strip mid-drag. Reverted
+  rather than patched around: the cap belongs where the panel's laid-out position is known, which is a
+  system and a frame of latency, not `apply_skin`.
+- **The next slice** is that system: cap a panel only when its own right edge would pass the window's, read
+  from the last frame's layout — the same shape as `flow_strips`, and it must not touch a panel inside a
+  sized container (a dock group, a split pane, a dialog).
 - **Nothing else changes.** The panel still sizes to its content below the cap, so at 100% the layout is
   identical (the re-recorded GIFs are the evidence); above the cap the rows wrap, which is what a panel
   with a long label at 200% should do.
@@ -51,9 +59,10 @@ width. No shipping interface lets a settings panel grow past its window because 
 
 ## Validation targets
 
-- At 200% text in 1280x720, a panel's right edge is inside the window.
-- At 100% the gallery's pixels are unchanged (no GIF changes).
-- A dialog's panel keeps its measure, and `tests/dialog_look.rs` stays green.
+- Measured before and after the reverted attempt: at 200% text in 1280x720 the panel's right edge moved
+  inside the window (`/tmp/g93/t.png`), and at 100% the layout did not change (`/tmp/g93/n.png`).
+- The attempt failed its second target: `dock_reorder`'s drag broke. Any future cap must keep
+  `tests/dock_reorder.rs` and `tests/split.rs` green **and** fix the 200% overflow.
 
 ## Deviations
 
