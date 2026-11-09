@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.51.4] - 2026-11-09
+
 ### Added
 
 - A table's header cells draw the `GooeyFrames::button` frame. The skin already styles a `Role::TableHeaderCell` with a button's fill, hover and press, so it now takes a button's art too, with its own border (the focus ring) over it. A patch release: no public item changed shape.
