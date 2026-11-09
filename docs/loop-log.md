@@ -2889,3 +2889,21 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Disk:** nothing deleted; `/home` 274 GB free.
 
 **Backlog:** (1) a reduced-motion fade-out for the split peek; (2) F6 into a collapsed pane; (3) `pub(crate)` on the public systems that grow a parameter per feature (each costs a breaking release); (4) frames on a text area's caret row and the table header (the last unframed roles); (5) the press cue for tabs.
+
+## Iteration 83 — 2026-11-09 — F6 reaches a split's panes, so a collapsed one can be entered; v0.51.3
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Item from the backlog: F6 into a collapsed pane. A `split`'s panes were not `FocusRegion`s at all, so F6 and Shift+F6 cycled straight past a split and only Tab could find a collapsed pane's stops — a keyboard or pad player navigating the modern way could never get into a collapsed sidebar.
+
+**Built:** `FocusRegion::navigate()` on every `Role::SplitPane`. A collapsed pane's first widget is then a region's start, and landing on it peeks the pane (iteration 73's rule), so the widget focus lands on is the widget the player sees. `tests/split.rs::f6_reaches_a_collapsed_pane_and_peeks_it`, mutation-checked: removing the region fails it.
+
+**Reverted, measured:** the first attempt disabled every tab stop in a collapsed pane and moved focus to the divider. It compiled, passed its own test and was wrong: `docs/guide/splits.md` promises that a visible focus inside a collapsed pane peeks it, precisely so a keyboard or pad player *can* land there and see what they landed on. That is the peek's whole purpose, and the pinned test `tabs_and_side_tabs_travel_too`'s sibling in `tests/split_peek.rs` enforces it. So the stops stay and the missing piece was reachability, not visibility. Recorded in the note's Deviations.
+
+**Sources:** *Future design of accessibility in games* (craft, 10.1016/j.ijhcs.2019.06.010), *Removing the HUD* (craft/shipped study, 10.1145/2793107.2793120), WCAG 2.2 SC 2.4.3/2.4.7 (technical), Bevy's `tab_navigation` (technical). Note: `docs/research/collapsed-focus.md`.
+
+**Critique:** at the split example's own geometry (`/tmp` scratch, the split example at 1280x720), F6 from the Viewport lands on the sidebar's first stop and the sidebar slides out around it with its shadow, the ring on the landed widget, the Viewport unmoved; leaving it peeks back. Verdict: GREAT — the one thing a player needs (a way in) exists, and the peek already made the destination visible.
+
+**Demo:** no new media. The change is a keyboard path across two already-recorded GIFs (`split.gif` shows Enter collapsing the sidebar, `split-peek.gif` shows a focus inside the collapsed pane opening it); neither frame set would change, so both were re-recorded unchanged. `presence.gif` reported a 2.59-grey-level change on 28% of frames — a fade captured a frame apart, not a change — and was restored to the committed file.
+
+**Gate:** fmt, clippy, nextest 1267/1267, doctests, check + wasm32, `doc -D warnings`. Nothing public changed shape (a component added to an existing bundle), so 0.51.2 → 0.51.3. https://crates.io/crates/bevy_gooey/0.51.3
+
+**Backlog:** (1) `pub(crate)` on the public systems that grow a parameter per feature (each costs a breaking release); (2) frames on a text area's caret row and the table header (the last unframed roles); (3) the press cue for tabs; (4) a wrapped strip's rows getting equal cells after a reflow as well as at spawn; (5) the split's panes are F6 regions in spawn order, not visual order — a region order that follows the layout would be truer after a drag.
