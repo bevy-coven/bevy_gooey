@@ -2827,3 +2827,25 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Demos:** all 43 GIFs re-recorded; `frames.gif` changed (the two new rows, the crop deepened to 760x610, and a new key script that walks the new rows: four Downs to Volume, three Rights, Down to Subtitles, Enter, Down to Flat look, Enter).
 
 **Backlog:** frames for tabs and toggle groups (needs a sibling layer or the selection indicator's order); wrapped tab strips stepping aside; a reduced-motion fade-out for the split peek; F6 into a collapsed pane; the press cue for tabs. Also worth a pass: the public systems (`update_frames` and its 4-parameter siblings) are a breaking change every time they grow — consider `pub(crate)`.
+
+## Iteration 80 — 2026-11-09 — a puck that never crosses the gap between rows; a wrapped strip keeps its rows; v0.51.0
+
+**Triage:** bevy_gooey's issue list is empty, no `grimoire-ui` issue is open, #336 still waits on the editor's pin. Parked branch `wiggum/parked-pass-90-20261106-230008` is a stale pass-90 tree (23,000 deleted lines against main) — ignored. The pick: the backlog's "wrapped tab strips stepping aside", the second item; the first (frames for tabs/groups) turned out to need a restyle of the strip, recorded below.
+
+**Built (two slices, both measured):**
+1. **The selection puck lands across rows.** A dock's strip already wraps; at 200% text in a 360 px group it puts each long title on its own row (rows at 77/158/239/319 px). The puck used to spring from the last tab of one row to the first of the next, drawn in the gutter where no tab is. `update_selection_indicators` now compares the two options' laid-out rows and, on a **horizontal** strip, lands instead of springing; a vertical `side_tabs` strip is exempt (there every option is a row, and the exemption was caught by `tabs_and_side_tabs_travel_too` failing). `tests/selection_indicator.rs::a_hop_between_two_rows_of_a_wrapped_strip_lands_instead_of_crossing_the_gap`.
+2. **A wrapped strip keeps every row inside its card.** The group card's page area grows under the strip and `Role::TabList` could shrink, so at 200% in a 760 px window the second and third rows were cut at the card's edge (seen in `/tmp/g80/d5`). `flex_shrink: 0` on the strip; the same test asserts every wrapped row is inside the card.
+
+**Not shipped, measured, and recorded in `docs/research/segmented-strip.md`:** three attempts to make a *non-dock* strip wrap — flex-wrap with equal growth (unequal cells, `[312, 284]` px), `auto-fit minmax(min-content, 1fr)` (taffy collapsed it to one column, four rows), `auto-fit minmax(min-content, min-content)` (the strip stopped growing to its labels) — all reverted, with a follow-up named (per-row equal cells). `GooeyFrames::strip` was drafted and reverted: a strip's tabs have no fill to tint, so art under them shows only in the gutters; Rune's rail needs the rest segments transparent, a restyle.
+
+**Sources:** *Good Game Feel* (craft, `10.26503_dl.v2018i1.936`), *Promoting Hotkey use through rehearsal with ExposeHK* (technical, `10.1145/2470654.2470735`), Rune `crates/rune-kit/src/segmented.rs:18-140` (the owner's reference). All in the note.
+
+**Critique:** the landing reads correctly at zoom (`/tmp/g80/d4/c.png` before the shrink fix, `/tmp/g80/d5/c.png` after): no shape in the gutter, each row's tab lit in its own frame. The strip still overflows a very narrow group at 200% because the dock's own pane minimum is smaller than three rows of tabs — logged as the wrap follow-up, not fixed here. Verdict: GREAT for the landing; NOT YET for a non-dock strip's wrap (not shipped, said so).
+
+**Demo:** no new media. The only captures of the wrapped strip are 200%-in-760px dock shots, which show the dock's own layout limit rather than a showcase; all 43 GIFs were re-recorded unchanged (`0 updated`). The behaviour is invisible at 1x, where no strip wraps.
+
+**Gate:** fmt, clippy, nextest 1263/1263 (one `split` double-click flake in the parallel run at load 149, green alone and in the rerun), doctests, check + wasm32, `doc -D warnings`. semver-checks: `update_selection_indicators` takes 13 parameters, so 0.50.1 → 0.51.0.
+
+**Disk:** the host hit 100% twice (`/home` 64 KB free at the worst); the research note was truncated to zero bytes by the first and rewritten. Reclaimed ~10 GB from this clone's own debug test binaries and rlibs only; `/home` is at 300 GB free now, then 8 GB again under other agents' load.
+
+**Backlog:** (1) per-row equal cells for a wrapping non-dock strip; (2) `GooeyFrames::strip` with the restyle it needs; (3) frames for tabs and toggle groups; (4) a reduced-motion fade-out for the split peek; (5) F6 into a collapsed pane.
