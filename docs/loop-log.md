@@ -3219,3 +3219,7 @@ re-recorded this pass** and is unchanged from its last good state; `inspector.gi
 loop cannot currently regenerate.
 
 **Backlog:** (1) publish the seven waiting versions after 18:52Z, first thing; (2) a control row that shrinks its label (`min_width: 0` on a flex child) so a long label wraps instead of widening the panel — the root cause this pass measured and deliberately did not change blind; (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) `GOOEY_WIDTHS` in the other capture examples.
+
+**Ship:** 0.51.15 → **0.51.16**, tagged and pushed; `cargo publish` answered **429** (the window rolls at 18:52Z, so eight versions now wait: 0.51.9–0.51.16). `inspector.gif` marked stale in `docs/media/README.md` with the reason, since its example cannot be run; the other 44 GIFs re-recorded, `0 updated`.
+
+**Perf with the new load figure:** `mean_ms` **22.443 and 22.566, load 1.41** — against 29.990 at load 65 on the same build an hour earlier.
