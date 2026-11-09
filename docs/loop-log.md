@@ -3376,3 +3376,10 @@ gallery was not touched, so the gate's frame cost stands.
 **Backlog:** (1) publish after 18:52Z — **twelve** versions wait, 0.51.9–0.52.1; (2) a heading frame;
 (3) `GooeyFrames` for a status item; (4) `GooeySystems`-grain hooks so the systems can become
 `pub(crate)`; (5) `GOOEY_WIDTHS` in the other capture examples.
+
+**Disk.** 106 GB free at orient, **86 GB at the end**. `target` is 133 GB, of which `target/release/examples`
+is **33 GB** and 102 of its 198 binaries were written in the last two hours (this pass built `gallery`,
+`cards` and `frames`; earlier passes today built the rest). This is the clone's build cache, which the
+rules protect, so **nothing was deleted**: shrinking it (e.g. the unused release example binaries) needs
+the owner's word, because it removes artifacts no single pass created. The three leftover worktrees
+`~/g17_base`, `~/g17_parked` and `~/g17s_base` are 1.8 MB each and clean; listed, left.
