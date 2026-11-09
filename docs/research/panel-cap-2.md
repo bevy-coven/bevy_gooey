@@ -85,8 +85,9 @@ container. The rule is "fit the room you were given", which is exactly the disti
   so its panels' parent is a plain layout `Node`, not the `Screen`; `on_screen` now accepts a `Screen` or a
   node-with-no-`Role` whose parent is one. `tests/large_text.rs::a_screen_card_is_capped_under_the_window_at_every_text_step`
   holds the cap at 1.0, 1.25, 1.5 and 2.0, through a wrapping row, asserting 1152 px in a 1280 window.
-- **Measured and still open:** the gallery at 150% still shows content reaching x=1261 of 1280. A probe
-  built from the gallery's own nesting reported its panels at **316 and 322 px** with `max Px(1152)`, so
-  the cap *is* applied there; the wide element in the capture is therefore not those two panels and has
-  not been identified. The next slice is to name it (the toast stack, the legend at a top anchor, or a
-  row inside a card) with a print of every `Role` and its laid-out width at 150%.
+- **Closed in iteration 96, and the answer was "nothing is wrong".** The 19 px right margin at 150% is the
+  gallery's own layout: its row is 1244 px inside a 1280 window, centred (content runs x=17 to x=1262), and
+  its cards are 546 px — well under the 1152 cap. A new capture knob, `GOOEY_WIDTHS=1`, prints every node
+  whose right edge passes the window's at the capture frame; at 150% and at 200% it prints **nothing**. A
+  picture cannot settle "is this clipped?" — a clipped widget still draws its visible pixels — so the
+  pixel measurement in iteration 95 was the wrong instrument, and its "still open" was a false alarm.

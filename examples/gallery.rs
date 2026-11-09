@@ -30,6 +30,8 @@
 //! over frames 20..n) and exits 10 frames later. `GOOEY_SHOT_DIR=<dir>` also keeps every
 //! `GOOEY_SHOT_EVERY`th frame (`GOOEY_SHOT_FROM`, default frame 30) there as `f_%04d.png`, and prints
 //! `gooey: kept <n> frames in <dir>`: those frames are a GIF's, and the still stays one file.
+//! `GOOEY_WIDTHS=1` prints every node that reaches past the window's right edge at the capture frame
+//! (role, `Name`, width), which proves a large-text layout keeps everything on screen.
 //! `GOOEY_A11Y=1` stands in for a connected screen reader and prints the accessibility tree at the
 //! capture frame, one `gooey: a11y` line per node: its role, name, value and flags.
 //! `GOOEY_SKIN=parchment`, `high_contrast`, `tool`, `desk` or `desk_light` starts in that skin;
@@ -265,6 +267,7 @@ fn main() {
             log_feedback,
             capture,
             dump_accessibility.after(capture),
+            dump_widths.after(capture),
             stage_keys.after(capture),
             stage_legend.after(capture),
         ),
@@ -641,6 +644,42 @@ fn follow_background(skin: Res<GooeySkin>, mut clear: ResMut<ClearColor>) {
 fn log_feedback(mut feedback: MessageReader<UiFeedback>) {
     for f in feedback.read() {
         info!("gooey: feedback {:?}", f.kind);
+    }
+}
+
+/// `GOOEY_WIDTHS=1`: at the capture frame, print every node that reaches past the window's right edge, with
+/// its role, its `Name` if it has one, and its laid-out width. A picture cannot settle "is this clipped?",
+/// because a clipped widget still draws its visible pixels; this can. Run it at `GOOEY_TEXT_SCALE=1.5` and
+/// `2` to prove a large-text layout keeps everything on screen.
+fn dump_widths(
+    capture: Option<Res<Capture>>,
+    window: Query<&Window, With<PrimaryWindow>>,
+    ui_scale: Res<UiScale>,
+    nodes: Query<(Entity, Option<&Role>, &ComputedNode, &UiGlobalTransform)>,
+    names: Query<&Name>,
+) {
+    let Some(capture) = capture else {
+        return;
+    };
+    if std::env::var_os("GOOEY_WIDTHS").is_none() || capture.frame != capture.at {
+        return;
+    }
+    let Ok(window) = window.single() else {
+        return;
+    };
+    let width = window.width() / ui_scale.0;
+    for (entity, role, node, at) in &nodes {
+        let size = node.size() / ui_scale.0;
+        let right = at.translation.x / ui_scale.0 + size.x * 0.5;
+        // Anything past the window's right edge: a clip no measurement of the picture can prove, because
+        // a cropped widget still has pixels. `GOOEY_WIDTHS=1`.
+        if right > width + 0.5 && size.x > 1.0 {
+            let name = names.get(entity).map(|n| n.as_str()).unwrap_or("(no name)");
+            info!(
+                "gooey: over {role:?} {name} {entity:?} right {right:.1} of {width:.0}, width {:.1}",
+                size.x
+            );
+        }
     }
 }
 

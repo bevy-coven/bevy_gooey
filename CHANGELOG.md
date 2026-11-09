@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `examples/gallery` takes `GOOEY_WIDTHS=1`: at the capture frame it prints every node whose right edge passes the window's, with its role, `Name` and laid-out width. A picture cannot prove a widget is not clipped, because a clipped widget still draws; this can. It reports nothing at `GOOEY_TEXT_SCALE=1.5` or `2`, which closes iteration 95's open question.
+
 ## [0.51.14] - 2026-11-09
 
 ## [0.51.13] - 2026-11-09
