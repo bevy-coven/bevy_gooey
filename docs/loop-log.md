@@ -3223,3 +3223,29 @@ loop cannot currently regenerate.
 **Ship:** 0.51.15 → **0.51.16**, tagged and pushed; `cargo publish` answered **429** (the window rolls at 18:52Z, so eight versions now wait: 0.51.9–0.51.16). `inspector.gif` marked stale in `docs/media/README.md` with the reason, since its example cannot be run; the other 44 GIFs re-recorded, `0 updated`.
 
 **Perf with the new load figure:** `mean_ms` **22.443 and 22.566, load 1.41** — against 29.990 at load 65 on the same build an hour earlier.
+
+## Iteration 98 — 2026-11-09 — the inspector's crash: four fixes tried, none kept, root cause found
+
+**First job: the publish.** Not attempted — iteration 94 computed the quota window rolls at **18:52Z**, and eight versions (0.51.9–0.51.16) wait for it. Nothing in `src/` changed this pass, so nothing new is waiting behind them.
+
+**The item: fix the first-frame panic iteration 97 found.** `examples/inspector` crashes every run — `Rect size must be positive`, then `free(): invalid size` — inside **Bevy's** `bevy_ui_widgets::popover::position_popover`, with no crate frame in the stack. Bevy does `Rect::from_center_size(anchor, size - border)` with no guard; on the frame a widget is spawned its `ComputedNode` is a layout behind, so the size goes negative. The inspector hangs a tooltip on 60 rows and fields, so it dies on frame 1.
+
+**Four fixes, each tested and each reverted.** All four broke a pinned tooltip test or the tooltip entirely; the tree is back at the last GREAT state, green at 1273/1273.
+1. Skip the whole restyle when the anchor is unsized — never styled the box (`Role::Popover`'s `Display::Flex` lives inside `restyle`).
+2. Take the `Popover` off and `return` — latched off for good, because `Changed<ComputedNode>` filters *the box*, not its parent (`-245 px, wanted 27`).
+3. Do that plus a system that `set_changed`s the box's `Role` — the box got a `Popover` back but the *default* one the box is spawned with, so the tooltip sat on the widget's own top edge instead of below it.
+4. Spawn the box with **no** `Popover` at all — and that exposed the **structural root cause**: `apply_skin` reaches a box's placement through `Styled`'s `floating: Option<(&mut Popover, …)>`, a tuple that **only matches when the entity already has a `Popover`**. Remove it at spawn and no placement is ever written.
+
+So the crate's one writer of the placement requires the component to exist, and Bevy panics when it does. Breaking that needs either a second writer path or a different shape for `floating` — a design decision, not an end-of-pass patch. **Recorded in full in `docs/research/tooltip-first-frame.md`** with the backtrace, Bevy's exact lines, all four attempts and the next slice.
+
+**Consequence:** `inspector.gif` stays stale (its row in `docs/media/README.md` already says so). No GIF re-record was possible for it, and nothing else changed, so the other 44 were not re-recorded either — `src/` is byte-identical to the last release.
+
+**Sources:** Bevy `bevy_ui_widgets/src/popover.rs:130-150` and `bevy_math/src/rects/rect.rs:99-100` (technical), WCAG 2.2 SC 4.1.3 (technical), *Good Game Feel* (craft). Note: `docs/research/tooltip-first-frame.md`.
+
+**Critique:** the pass ships a diagnosis, not a fix. Verdict: **FAIL for the feature** (the crash stands), **GREAT for the research** (four measured attempts and the root cause, so the next pass starts from a diagnosis rather than a guess).
+
+**Perf:** unpinned gallery `mean_ms` **22.337 and 22.472, load 4.94** — unchanged.
+
+**Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. **No package change**, so no release.
+
+**Backlog:** (1) the tooltip panic, with the design decision its note names; (2) publish the eight waiting versions after 18:52Z; (3) a control row that shrinks its label so a long label wraps; (4) `GooeyFrames` fields for a header and a status item; (5) `GooeySystems`-grain hooks so the systems can become `pub(crate)`.
