@@ -8,7 +8,7 @@ Breaking (pre-1.0, minor): `Role` gains `FrameArt`; a host that matches `Role` e
 
 ### Added
 
-- `GooeyFrames` (`docs/research/frames.md`, `docs/guide/skins.md`): nine-slice art for every `panel()` and `button()`, in a resource beside `GooeyFonts` (`Frame { image, slice }`; nothing is set by default). The skin's state colours tint the art, the focus ring stays over it, layout is unchanged, a ghost button stays flat and a widget with an image of the game's own is left alone. New `update_frames`, `Framed`, `FrameLayer`, `Role::FrameArt`; `examples/frames.rs` draws its own art in code; `docs/media/frames.gif`. Found in Sanctuary's hand-built nine-slice panels.
+- `GooeyFrames` (`docs/research/frames.md`, `docs/guide/skins.md`): nine-slice art for every `panel()`, `button()` and what floats (`popup`: tooltip, popover, menu panel, palette, toast body), in a resource beside `GooeyFonts` (`Frame { image, slice }`; nothing is set by default). The skin's state colours tint the art, the focus ring stays over it, layout is unchanged, a ghost button stays flat and a widget with an image of the game's own is left alone. New `update_frames`, `Framed`, `FrameLayer`, `Role::FrameArt`; `examples/frames.rs` draws its own art in code; `docs/media/frames.gif`. Found in Sanctuary's hand-built nine-slice panels.
 
 ## [0.46.0] - 2026-11-08
 

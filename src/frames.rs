@@ -55,6 +55,9 @@ pub struct GooeyFrames {
     pub panel: Option<Frame>,
     /// The frame of every [`crate::button`] that has a fill at rest (a ghost button stays flat).
     pub button: Option<Frame>,
+    /// The frame of what floats over the screen: a tooltip, a popover, a menu's panel, the command
+    /// palette and a toast's body. Their outline goes, as a panel's does.
+    pub popup: Option<Frame>,
 }
 
 impl GooeyFrames {
@@ -62,8 +65,25 @@ impl GooeyFrames {
         match role {
             Role::Panel => self.panel.as_ref(),
             Role::Button => self.button.as_ref(),
+            Role::Tooltip | Role::Popover | Role::MenuPanel | Role::Palette | Role::ToastBody => {
+                self.popup.as_ref()
+            }
             _ => None,
         }
+    }
+
+    /// Whether the role's outline is the frame the art replaces (a button's border is also its focus
+    /// ring, so it stays).
+    fn replaces_outline(role: Role) -> bool {
+        matches!(
+            role,
+            Role::Panel
+                | Role::Tooltip
+                | Role::Popover
+                | Role::MenuPanel
+                | Role::Palette
+                | Role::ToastBody
+        )
     }
 }
 
@@ -88,9 +108,9 @@ type FramedNode = (
 );
 
 /// Draws the widgets of a framed role from their frame: the fill [`crate::apply_skin`] just wrote
-/// becomes the tint of an art layer under the widget's children and the flat fill is cleared; a
-/// panel's outline is cleared too (the art has its own edge), while a button's border, its focus
-/// ring, stays over the art. A node is read only when its fill, its role or the frames changed,
+/// becomes the tint of an art layer under the widget's children and the flat fill is cleared; the
+/// outline of a panel, tooltip, popover, menu or toast is cleared too (the art has its own edge),
+/// while a button's border, its focus ring, stays over the art. A node is read only when its fill, its role or the frames changed,
 /// and written only on a difference. Runs in [`crate::GooeySystems::Style`], after
 /// [`crate::apply_skin`].
 pub fn update_frames(
@@ -151,7 +171,7 @@ pub fn update_frames(
                 }
                 if !flat {
                     fill.set_if_neq(BackgroundColor(Color::NONE));
-                    if role == Role::Panel {
+                    if GooeyFrames::replaces_outline(role) {
                         border.set_if_neq(BorderColor::all(Color::NONE));
                     }
                 }

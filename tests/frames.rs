@@ -221,3 +221,48 @@ fn a_settled_framed_interface_writes_nothing() {
     frames(&mut framed, 30);
     assert_eq!(framed.world().resource::<Writes>().0, before);
 }
+
+#[test]
+fn what_floats_has_its_own_frame_and_an_unframed_role_stays_flat() {
+    let mut flat = app();
+    let mut framed = app();
+    let art = art(&mut framed);
+    framed.world_mut().resource_mut::<GooeyFrames>().popup = Some(Frame::new(art, 6.0));
+    let mut ids = Vec::new();
+    for app in [&mut flat, &mut framed] {
+        let tip = app.world_mut().spawn((Node::default(), Role::Tooltip)).id();
+        let menu = app
+            .world_mut()
+            .spawn((Node::default(), Role::MenuPanel))
+            .id();
+        let toast = app
+            .world_mut()
+            .spawn((Node::default(), Role::ToastBody))
+            .id();
+        let field = app
+            .world_mut()
+            .spawn((Node::default(), Role::TextField))
+            .id();
+        frames(app, 6);
+        ids.push([tip, menu, toast, field]);
+    }
+    for i in 0..3 {
+        let image = layer(&framed, ids[1][i]).expect("framed");
+        assert_eq!(
+            image.color,
+            fill(&flat, ids[0][i]),
+            "role {i}: the tint is the fill"
+        );
+        assert_eq!(fill(&framed, ids[1][i]), Color::NONE);
+        // The outline goes with the fill: the art has its own edge.
+        assert_eq!(
+            *framed
+                .world()
+                .get::<BorderColor>(ids[1][i])
+                .expect("border"),
+            BorderColor::all(Color::NONE)
+        );
+    }
+    // A text field is measured as a leaf by Bevy, so a child layer would collapse it: it is flat.
+    assert!(framed.world().get::<Framed>(ids[1][3]).is_none());
+}
