@@ -18,6 +18,7 @@
 use bevy::picking::Pickable;
 use bevy::prelude::*;
 use bevy::ui::{Checked, ComputedNode, Selected, UiGlobalTransform};
+use bevy::ui_widgets::{ControlOrientation, TabList};
 
 use crate::model::{SPRING_REST_POSITION, SpringState, spring_settled, spring_step};
 use crate::motion::{MotionSettings, MotionToken};
@@ -139,6 +140,7 @@ pub fn update_selection_indicators(
     mut pucks: Query<(&mut Node, &mut BackgroundColor), With<IndicatorPuck>>,
     mut backdrops: Query<&mut BackgroundColor, Without<IndicatorPuck>>,
     mut marks: Query<&mut Indicating>,
+    lists: Query<&TabList>,
 ) {
     let delta = time.as_ref().map_or(0.0, |time| time.delta_secs());
     let travels = time.is_some() && !settings.lands_travel();
@@ -184,7 +186,33 @@ pub fn update_selection_indicators(
         };
 
         if state.lit != lit {
-            if state.placed && travels {
+            // A strip that wraps puts its options on two rows; the puck is one shape on one
+            // option, so a hop between rows lands instead of sliding across the gap between them
+            // (the same rule reduced motion gives every step).
+            let row = |e: Entity| {
+                // Physical px, as `corner` reads them; half a row's height apart is another row.
+                layouts.get(e).ok().map(|(option, at, ..)| {
+                    (
+                        at.translation.y,
+                        option.size().y * option.inverse_scale_factor(),
+                    )
+                })
+            };
+            // Only a horizontal strip's rows mean a wrap: a vertical strip puts every option on a
+            // row of its own, and there a step is a step.
+            let wraps = lists
+                .get(holder)
+                .is_ok_and(|list| list.orientation == ControlOrientation::Horizontal);
+            let other_row = match (
+                wraps,
+                state.placed,
+                state.lit.and_then(row),
+                lit.and_then(row),
+            ) {
+                (true, true, Some((a, _)), Some((b, _))) => (a - b).abs() > 1.0,
+                _ => false,
+            };
+            if state.placed && travels && !other_row {
                 // The lanes stay where they are drawn, so a change mid-flight turns from there.
                 state.moving = true;
             } else {

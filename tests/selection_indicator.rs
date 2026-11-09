@@ -340,6 +340,95 @@ fn tabs_and_side_tabs_travel_too() {
 }
 
 #[test]
+fn a_hop_between_two_rows_of_a_wrapped_strip_lands_instead_of_crossing_the_gap() {
+    let mut app = app(MotionSettings::default());
+    app.world_mut().resource_mut::<GooeySkin>().text_scale = 2.0;
+    // Four long titles in one dock group: a narrow group wraps its strip, as a dock does.
+    for (id, title) in [
+        ("a", "Accessibility"),
+        ("b", "Performance"),
+        ("c", "Network"),
+        ("d", "Accounts"),
+    ] {
+        app.world_mut()
+            .resource_mut::<PanelRegistry>()
+            .register(id, title, |page| {
+                page.with_child(label("page"));
+            });
+    }
+    let container = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(360.0),
+            height: Val::Px(600.0),
+            ..default()
+        })
+        .with_child(dock(DockLayout::group(["a", "b", "c", "d"])))
+        .id();
+    app.world_mut().spawn(screen()).add_child(container);
+    for _ in 0..12 {
+        app.update();
+    }
+    // The group's strip, and its tabs in the order they stand.
+    let mut found = Vec::new();
+    let mut stack = vec![container];
+    while let Some(entity) = stack.pop() {
+        if let Some(kids) = app.world().get::<Children>(entity) {
+            for &kid in &**kids {
+                if app.world().get::<Role>(kid) == Some(&Role::TabList) {
+                    found.push(kid);
+                }
+                stack.push(kid);
+            }
+        }
+    }
+    let groups = found;
+    let list = *groups.first().expect("the group's strip");
+    let tabs = options_of(&app, list);
+    assert_eq!(tabs.len(), 4, "four tabs");
+    let rows: Vec<f32> = tabs.iter().map(|&t| rect(&app, t).min.y).collect();
+    assert!(
+        rows.windows(2).any(|w| (w[0] - w[1]).abs() > 1.0),
+        "a 360 px group at 200% text wrapped its strip: {rows:?}"
+    );
+    let host = app
+        .world()
+        .get::<ChildOf>(list)
+        .expect("strip's tabs")
+        .parent();
+    let indicator = indicator_of(&mut app, host);
+    let first_row = rows[0];
+    let hop = rows
+        .iter()
+        .position(|&y| y > first_row + 1.0)
+        .expect("a second row");
+    app.world_mut().get_mut::<TabsValue>(host).expect("value").0 = hop;
+    app.update();
+    app.update();
+    let (_, shown) = drawn(&app, indicator);
+    // It landed: the puck is not drawn between the rows, and the tab that is lit draws its own
+    // accent fill in the same frame (`Indicating` off is what lets `apply_skin` do that).
+    assert!(!shown, "the puck is not left crossing the gap between rows");
+    assert!(
+        !app.world()
+            .get::<SelectionIndicator>(indicator)
+            .expect("the indicator")
+            .is_moving(),
+        "the hop landed instead of travelling"
+    );
+    let lit = tabs[hop];
+    assert_eq!(
+        app.world().get::<Indicating>(lit),
+        Some(&Indicating(false)),
+        "the lit tab is drawn lit at once, not cleared behind a travelling puck"
+    );
+    assert!(
+        app.world().get::<bevy::ui::Selected>(lit).is_some(),
+        "Bevy's Selected marks the lit tab"
+    );
+}
+
+#[test]
 fn reduced_motion_and_no_motion_never_show_the_indicator() {
     for motion in [MotionSettings::reduced(), MotionSettings::off()] {
         let mut app = app(motion.clone());
