@@ -3086,3 +3086,25 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, nextest **1272/1272**, doctests, check + wasm32, `doc -D warnings`. No public item changed shape, so 0.51.10 → 0.51.11.
 
 **Backlog:** (1) **publish 0.51.11** when the 24-hour window rolls — three versions are waiting and the loop cannot pace itself faster than the quota, so a later pass should publish first and take its item second; (2) `GooeyFrames` fields of their own for a header and a status item; (3) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (4) an unpinned frame-time line in every capture example that prints the load average; (5) a game wiring its own Bevy `ScrollArea` still scrolls silently.
+
+## Iteration 92 — 2026-11-09 — the gallery stops clipping at 200% text; v0.51.12 tagged, publish 429 (fourth pass)
+
+**First job: the outstanding publish.** `cargo publish` for 0.51.11 answered **429** again at the head of the pass. crates.io still shows **0.51.8**; 0.51.9 through 0.51.12 are tagged and pushed. Logged once, not retried. The quota is per 24 hours and the loop now ships faster than that, so **a later pass must publish first and take its item second**, and should expect to publish only when the window has rolled.
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Item chosen by looking rather than by the backlog: captured the gallery at `GOOEY_TEXT_SCALE=2` and at 2560x1440, and at 200% the second panel ran off the right edge with its labels cut — "Autosa…", "Meadow, 1…".
+
+**The defect, measured.** `examples/gallery.rs` put its two panels in a row with `align_items: Center` and no wrap, so at a text size `tests/large_text.rs` promises the *widgets* support, the *showcase* overflowed its window. Every 200% capture inherited it.
+
+**Built:** `flex_wrap: Wrap`, `row_gap` = `column_gap`, `justify_content: Center` and `max_width: 100%` on the gallery's root row. At 100% the two panels are side by side exactly as before — the re-recorded GIFs are byte-identical, `0 updated` of 45 — and past that they stack, centred, inside the window. Verified at 200% in both 1280x720 and 1280x1600: no panel crosses the right edge.
+
+**A limit recorded, not hidden:** one panel alone is wider than a 640 px side at 200%, because a crate panel sizes to its own content. A game that hits that caps its panel's width; the gallery does not, and this pass does not change panel sizing.
+
+**Sources:** WCAG 2.2 SC 1.4.4 Resize text and SC 1.4.10 Reflow (technical), *Good Game Feel* (craft), and the crate's own `tests/large_text.rs` as the promise the showcase was breaking one level up. Note: `docs/research/gallery-wrap.md`.
+
+**Critique** (`/tmp/g92/t2.png` before, `/tmp/g92/t2b.png` and `tall_s.png` after): before, the second panel's labels were cut and the legend clipped; after, one column at 200%, centred, every label whole. Verdict: GREAT.
+
+**Perf:** unpinned gallery `mean_ms` **22.357 and 22.201** at load average 1.4 — unchanged across iterations 86–92.
+
+**Gate:** fmt, clippy, nextest **1272/1272**, doctests, check + wasm32, `doc -D warnings`. 0.51.11 → 0.51.12.
+
+**Backlog:** (1) publish 0.51.12 first thing when the window rolls — four versions are waiting; (2) a panel's `max_width` a game can set (the limit this pass measured); (3) `GooeyFrames` fields of their own for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that prints the load average.
