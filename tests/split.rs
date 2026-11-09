@@ -921,8 +921,7 @@ fn a_double_click_collapses_the_first_pane_and_a_second_gives_it_back() {
         .world()
         .resource::<PointerSettings>()
         .double_click_seconds;
-    app.world_mut()
-        .insert_resource(Time::<Real>::default());
+    app.world_mut().insert_resource(Time::<Real>::default());
     app.world_mut()
         .resource_mut::<Time<Real>>()
         .advance_by(std::time::Duration::from_secs_f32(seconds * 4.0));
