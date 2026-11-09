@@ -2907,3 +2907,26 @@ Owner brief for this run: only the grimoire epic #330 (UI-R0, "feel like Rune");
 **Gate:** fmt, clippy, nextest 1267/1267, doctests, check + wasm32, `doc -D warnings`. Nothing public changed shape (a component added to an existing bundle), so 0.51.2 → 0.51.3. https://crates.io/crates/bevy_gooey/0.51.3
 
 **Backlog:** (1) `pub(crate)` on the public systems that grow a parameter per feature (each costs a breaking release); (2) frames on a text area's caret row and the table header (the last unframed roles); (3) the press cue for tabs; (4) a wrapped strip's rows getting equal cells after a reflow as well as at spawn; (5) the split's panes are F6 regions in spawn order, not visual order — a region order that follows the layout would be truer after a drag.
+
+## Iteration 84 — 2026-11-09 — a table's header cells draw the button frame; v0.51.4
+
+**Triage:** no open bevy_gooey issues, no `grimoire-ui` issue, #336 waits on the editor's pin. Four candidates from the backlog were checked against the tree and found **already done or wrong**, in this order, which is the pass's real finding:
+
+1. *Press cue for tabs* — Rune applies `press_scale` only to cards, tiles and list rows (`crates/rune/src/runtime/tests/picture_scale.rs`, `layout_hover.rs`), never to its kit's buttons or tabs, so the note's "buttons do not get it, as in Rune" holds. Adding it to tabs would contradict the reference the owner named.
+2. *Frames on a text area* — a `text_area`'s *field* already carries `Role::TextField`, so it was framed by iteration 78. A test written for it passed against a mutation that removed the mapping, which proved it was a no-op; reverted.
+3. *A wrapped strip re-flowing after a resize* — the grid encodes only a column count, and `flow_strips` writes when that count changes; a resize that keeps the count needs no write. Re-measured, not a bug.
+4. *Art on a table's header* — **genuinely open**: `Role::TableHeaderCell` shares a button's fill, hover, press and border arms in `apply_skin` but was absent from `GooeyFrames`' map. Shipped.
+
+Along the way the meter's edge and a keycap both looked wrong at 300% upscale and measured correct (pixel samples: the ring, then the amber fill, at the track's ends) — recorded so a later pass does not chase them again.
+
+**Built:** `Role::TableHeaderCell` joins `Role::Button` in `GooeyFrames::button`. A header is already styled as a button, so it takes a button's art with its own border (the focus ring) over it. `tests/frames.rs::a_table_header_draws_the_buttons_art`, mutation-checked (removing the map entry fails it). `examples/frames.rs` gained a two-column table, and `docs/media/framed-header.gif` shows the ring over the header's art and Right sorting it.
+
+**Sources:** *Good Game Feel* (craft), *Do Players Prefer Integrated User Interfaces?* (craft/shipping), Rune `crates/rune/src/el/visuals.rs:345-355` and its table (shipping reference), `src/skin.rs:2655,3067` (this crate's own shared arm). Note: `docs/research/header-frame.md`.
+
+**Critique** (`/tmp/g84/s.png`, `last.png`): the header cells read as the same bevelled paper as the buttons above them, the focus ring is crisp over the art, sorting moves the rows with no layout jump, and the table sits in the panel as one family. The one flaw: the two header cells are separated by the `TableEdge` grip, so the art is two plates rather than one strip — which is what a resizable table's headers are. Verdict: GREAT.
+
+**Demo:** new `docs/media/framed-header.gif` (480x864, 90 frames, row with crop and command in `docs/media/README.md`), shown in the skins guide. `frames.gif` and `segment-frames.gif` changed with the example's new table and were re-recorded; `segment-frames.gif`'s caption now says it shows the table too, and its stale byte size was dropped.
+
+**Gate:** fmt, clippy, nextest 1268/1268, doctests, check + wasm32, `doc -D warnings`. Patch: 0.51.3 → 0.51.4. https://crates.io/crates/bevy_gooey/0.51.4
+
+**Backlog:** (1) `pub(crate)` on the parameter-growing public systems (the release tax is real: three minor bumps in six passes); (2) a `GooeyFrames` field for a table header of its own, if a skin wants a different header material; (3) the press cue for tabs is closed unless the owner wants it against Rune's example; (4) the meter's trail at the track's end when a value is full; (5) a stripped-down `examples/` page per widget so a capture never shows a stale neighbour again.
