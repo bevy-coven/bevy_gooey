@@ -75,3 +75,18 @@ container. The rule is "fit the room you were given", which is exactly the disti
 - Nothing new: WCAG and this crate's own layout are the bar.
 - **Measured, not fixed:** a row still does not wrap its own text (`ONE_LINE`), so a long row inside a
   capped panel is clipped rather than folded. That is the backlog's next item.
+
+## Iteration 95 addendum — the margin, a deeper parent test, and what is still open
+
+- **The margin was too tight.** At 150% text the cap left the card 19 px from the window edge — less than
+  the legend's own 5% safe edge beside it. The cap is now `window - 2 * (window * SAFE_EDGE_PERCENT / 100)`,
+  the legend's rule, so a full-width card keeps the margin a prompt bar does.
+- **A panel is capped one plain node down too.** The gallery writes `screen() { Node { .. } children![panel()] }`,
+  so its panels' parent is a plain layout `Node`, not the `Screen`; `on_screen` now accepts a `Screen` or a
+  node-with-no-`Role` whose parent is one. `tests/large_text.rs::a_screen_card_is_capped_under_the_window_at_every_text_step`
+  holds the cap at 1.0, 1.25, 1.5 and 2.0, through a wrapping row, asserting 1152 px in a 1280 window.
+- **Measured and still open:** the gallery at 150% still shows content reaching x=1261 of 1280. A probe
+  built from the gallery's own nesting reported its panels at **316 and 322 px** with `max Px(1152)`, so
+  the cap *is* applied there; the wide element in the capture is therefore not those two panels and has
+  not been identified. The next slice is to name it (the toast stack, the legend at a top anchor, or a
+  row inside a card) with a print of every `Role` and its laid-out width at 150%.

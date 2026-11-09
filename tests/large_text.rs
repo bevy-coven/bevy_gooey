@@ -336,3 +336,47 @@ fn a_controls_text_is_one_line_at_every_text_size_from_100_to_200_percent() {
         }
     }
 }
+
+#[test]
+fn a_screen_card_is_capped_under_the_window_at_every_text_step() {
+    for scale in [1.0_f32, 1.25, 1.5, 2.0] {
+        let mut app = app();
+        app.world_mut().resource_mut::<GooeySkin>().text_scale = scale;
+        // The shape a game writes, and the gallery's own: a plain row under the screen, a card in it.
+        let root = app
+            .world_mut()
+            .spawn((
+                screen(),
+                children![(
+                    Node {
+                        flex_wrap: FlexWrap::Wrap,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        max_width: Val::Percent(100.0),
+                        column_gap: Val::Px(24.0),
+                        ..default()
+                    },
+                    children![panel()]
+                )],
+            ))
+            .id();
+        settle(&mut app);
+        let card = {
+            let mut q = app.world_mut().query::<(Entity, &Role)>();
+            q.iter(app.world())
+                .find(|(_, role)| **role == Role::Panel)
+                .map(|(e, _)| e)
+                .expect("a panel")
+        };
+        let node = app.world().get::<Node>(card).expect("a node");
+        let px = match node.max_width {
+            Val::Px(px) => px,
+            other => panic!("scale {scale}: a screen card is capped, got {other:?}"),
+        };
+        assert!(
+            (px - 1280.0 * 0.9).abs() < 1.0,
+            "scale {scale}: the cap is the window less 5% each side, got {px}"
+        );
+        let _ = root;
+    }
+}

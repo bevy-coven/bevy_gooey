@@ -2454,7 +2454,7 @@ pub fn apply_skin(
                 state_of(entity),
                 parent.map(state_of),
                 owner_of(entity),
-                parent.is_some_and(|p| roles.get(p) == Ok(&Role::Screen)),
+                on_screen(parent, &roles, &parents),
             );
         }
         return;
@@ -2549,7 +2549,7 @@ pub fn apply_skin(
             state_of(entity),
             parent.map(state_of),
             owner_of(entity),
-            parent.is_some_and(|p| roles.get(p) == Ok(&Role::Screen)),
+            on_screen(parent, &roles, &parents),
         );
     }
 }
@@ -2562,6 +2562,23 @@ fn problem_colour(skin: &GooeySkin, kind: Option<FieldProblemKind>) -> Color {
         Some(FieldProblemKind::Warning) => skin.accent,
         None => Color::NONE,
     }
+}
+
+/// Whether `parent` is a screen or a plain layout node standing on one: the screen's own card, as a
+/// game writes `screen() { Node { .. } children![panel()] }` (the gallery does exactly that).
+fn on_screen(parent: Option<Entity>, roles: &Query<&Role>, parents: &Query<&ChildOf>) -> bool {
+    let Some(parent) = parent else {
+        return false;
+    };
+    if roles.get(parent) == Ok(&Role::Screen) {
+        return true;
+    }
+    if roles.get(parent).is_ok() {
+        return false;
+    }
+    parents
+        .get(parent)
+        .is_ok_and(|up| roles.get(up.parent()) == Ok(&Role::Screen))
 }
 
 fn restyle(
@@ -2586,9 +2603,9 @@ fn restyle(
     state: State,
     parent: Option<State>,
     owner: State,
-    // The node stands directly on a `Role::Screen`: a panel there is the screen's own card, the only
-    // panel the window's width can crowd (a dock group's, a split pane's and a dialog's all stand in
-    // a container that sizes them).
+    // The node's parent is a `Role::Screen` or a plain layout node under one: a panel there is the
+    // screen's own card, the only panel the window's width can crowd (a dock group's, a split pane's
+    // and a dialog's all stand in a container that sizes them).
     parent_screen: bool,
 ) {
     let skin = look.skin;
@@ -3235,13 +3252,15 @@ fn restyle(
                     next.min_width = Val::Px(text_px * DIALOG_MIN_TEXT_SIZES);
                     next.max_width = Val::Px(text_px * DIALOG_MAX_TEXT_SIZES);
                 } else if parent_screen {
-                    // A screen's own card never grows past the window less a margin, so at 200% text
-                    // it wraps rather than running off the screen. A panel in a dock group, a split
-                    // pane or a dialog is sized by its container and is left alone (iteration 93
-                    // measured a cap here breaking a dock drag).
+                    // A screen's own card never grows past the window less the legend's own safe edge
+                    // on each side, so at large text it wraps rather than running off the screen or
+                    // crowding the edge (2 * gap measured 12 px of margin at 150%, tighter than the
+                    // legend beside it). A panel in a dock group, a split pane or a dialog is sized by
+                    // its container and is left alone (iteration 93 measured a cap there breaking a
+                    // dock drag).
                     if let Some(window) = target {
-                        next.max_width =
-                            Val::Px((window.logical_size().x - 2.0 * skin.gap).max(0.0));
+                        let edge = window.logical_size().x * SAFE_EDGE_PERCENT / 100.0;
+                        next.max_width = Val::Px((window.logical_size().x - 2.0 * edge).max(0.0));
                     }
                 }
             }
