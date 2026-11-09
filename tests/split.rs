@@ -909,8 +909,25 @@ fn a_double_click_collapses_the_first_pane_and_a_second_gives_it_back() {
     let centre = rect(&app, ui.divider).center();
     click(&mut app, centre);
     assert!((pane(&app, ui.first, H) - 80.0).abs() < 1.0);
-    // After the interval Bevy counts clicks from one again.
-    std::thread::sleep(std::time::Duration::from_millis(600));
+    // After the interval the crate counts clicks from one again. Both this crate's `DoublePress`
+    // (on `Time<Real>`) and Bevy's picking interval (on `Instant::now`) are wall clocks, so a host
+    // under load made a fixed sleep a flake: instead, move the pointer off the divider for one
+    // frame with the clock stepped past the interval, which is what a player's own pause does.
+    app.world_mut()
+        .resource_mut::<MotionSettings>()
+        .duration_scale = 1.0;
+    let away = rect(&app, ui.a).center();
+    let seconds = app
+        .world()
+        .resource::<PointerSettings>()
+        .double_click_seconds;
+    app.world_mut()
+        .insert_resource(Time::<Real>::default());
+    app.world_mut()
+        .resource_mut::<Time<Real>>()
+        .advance_by(std::time::Duration::from_secs_f32(seconds * 4.0));
+    point_at(&mut app, away);
+    app.update();
     click(&mut app, centre);
     click(&mut app, centre);
     assert!(
