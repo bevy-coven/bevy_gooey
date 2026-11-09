@@ -3166,3 +3166,23 @@ Along the way the meter's edge and a keycap both looked wrong at 300% upscale an
 **Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. 0.51.13 → 0.51.14, tagged; publish 429 (window 18:52Z).
 
 **Backlog:** (1) **name the wide element in the gallery at 150%** (the NOT YET above) — a print of every `Role` and width; (2) publish the six waiting versions after 18:52Z, first thing; (3) a row that wraps its own text so a long row folds rather than clips; (4) `GooeyFrames` fields for a header and a status item; (5) `GooeySystems`-grain hooks so the systems can become `pub(crate)`.
+
+## Iteration 96 — 2026-11-09 — closing iteration 95's open question: nothing is clipped
+
+**First job: the publish.** Only one attempt, at the end (0.51.15). 429 as predicted — the window rolls at 18:52Z. Seven versions now wait (0.51.9–0.51.15), all tagged and pushed.
+
+**The item: name the wide element iteration 95 left open, or prove there is none.** Instead of guessing, I added a capture knob: `GOOEY_WIDTHS=1` prints every node whose right edge passes the window's at the capture frame, with its role, `Name` and laid-out width. That is a measurement no picture can make: a clipped widget still draws its visible pixels, so "does it reach 1261 of 1280?" was the wrong instrument.
+
+**The answer, and it retracts last pass's NOT YET.** At `GOOEY_TEXT_SCALE=1.5` and at `2.0` the knob prints **zero** overflowing nodes. Widening it to "the widest few" named the players: the gallery's row (no `Role`) is **1244 px in a 1280 window**, content running x=17 to x=1262 — centred, 17 px each side; its Load-game card is **546 px**, far under the 1152 cap. So the 19 px margin is the gallery's own centred layout, not a clip, and **nothing in the gallery was ever overflowing at 150%**. Iteration 95's pixel measurement mistook "the last few pixels of a centred row" for "content past the edge".
+
+**Shipped:** the knob (`examples/gallery`, documented in its module doc), the CHANGELOG entry, and the correction in `docs/research/panel-cap-2.md`.
+
+**Sources:** this is a measurement-method correction, so the sources are the crate's own: Bevy's `ComputedNode` and `UiGlobalTransform` (technical) and the loop's own rule that a claim needs an independent measurement. No new craft source is claimed.
+
+**Critique:** the knob outputs nothing when the layout is right and names role, `Name`, width and the window when it is wrong — the diagnostic a later pass should reach for before writing another pixel-measurement script. Verdict: GREAT.
+
+**Perf:** unpinned gallery `mean_ms` **22.429 and 22.365** at load average 1.8 — unchanged across iterations 86–96.
+
+**Gate:** fmt, clippy, nextest **1273/1273**, doctests, check + wasm32, `doc -D warnings`. 0.51.14 → 0.51.15, tagged; publish 429 (window 18:52Z).
+
+**Backlog:** (1) publish the seven waiting versions after 18:52Z, first thing; (2) a row that wraps its own text (`ONE_LINE`) so a long row folds rather than clips; (3) `GooeyFrames` fields for a header and a status item; (4) `GooeySystems`-grain hooks so the systems can become `pub(crate)`; (5) an unpinned frame-time line in every capture example that prints the load average, and `GOOEY_WIDTHS` in the other capture examples.
