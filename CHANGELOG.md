@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A split's panes are no longer marked as interface while the split is open. Since v0.44.0 (G-62, the collapsed pane's peek) every `split_pane` carried a `Hovered`, so a host that tells the interface from the world behind it by "is any node with `Hovered` under the pointer" found a pane over its whole viewport and took every click meant for the world as a click on the interface: in bevy_grimoire's editor, whose map stands in a pane, 26 of the tests that click the map failed on this crate's v0.45.1. The peek now puts `Hovered` on the first pane only while the split is collapsed (when it first sees the collapse) and takes it off when the split is restored; a second pane and an open split's panes carry none. `tests/split_pane_hover.rs` holds it.
+
 ## [0.52.1] - 2026-11-09
 
 ### Added

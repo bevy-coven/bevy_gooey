@@ -2497,8 +2497,10 @@ fn split_pane(content: impl Bundle) -> impl Bundle {
         // collapsed pane's first widget is then a region's start, and landing on it peeks the pane
         // (the widget the player lands on is the one they see).
         FocusRegion::navigate(),
-        // So the peek can tell the pointer is on a floating pane (Bevy counts what is under it).
-        Hovered::default(),
+        // **No `Hovered` here.** A pane that carried one marked itself as an interface node for every host that asks "is any
+        // `Hovered` node under the pointer" to tell the interface from the world behind it: a pane that holds a game's viewport
+        // then swallowed every click meant for the world. The peek puts `Hovered` on the first pane only while the split is
+        // collapsed (`update_split_peeks`), and a collapsed pane has no size to swallow anything with.
         content,
     )
 }

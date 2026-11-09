@@ -83,7 +83,9 @@ pub struct SplitPeek {
     /// Escape closed the peek and the pointer has not left since: it does not open again until it
     /// has.
     dismissed: bool,
-    /// The split was collapsed when last looked at, so a collapse is seen once.
+    /// The split was collapsed when last looked at, so a collapse is seen once. It is also exactly when the first pane
+    /// carries the [`Hovered`] the peek reads: put there on the collapse, taken off when the split is not collapsed, so an
+    /// open split's panes are not marked as interface (see `split_pane`).
     armed: bool,
 }
 
@@ -120,10 +122,19 @@ type Peeked = (
 type PartRead = (
     &'static Role,
     &'static ComputedNode,
-    &'static Hovered,
+    Option<&'static Hovered>,
     Has<InteractionDisabled>,
     &'static UiTransform,
 );
+
+/// A split's first pane: its first child that is a [`Role::SplitPane`].
+fn first_pane(children: &Children, parts: &Query<PartRead>) -> Option<Entity> {
+    children.iter().find(|child| {
+        parts
+            .get(*child)
+            .is_ok_and(|(role, ..)| matches!(role, Role::SplitPane))
+    })
+}
 
 /// Opens, holds and closes each collapsed split's peek. Runs in [`crate::GooeySystems::Style`],
 /// before [`crate::update_motion`] (the slide in is a [`MotionTarget`] it gives the pane) and
@@ -159,6 +170,9 @@ pub fn update_split_peeks(
         if peek.phase == Phase::Idle && (saved.is_none() || glide.is_some()) {
             if peek.armed {
                 peek.armed = false;
+                if let Some(pane) = first_pane(children, &parts) {
+                    commands.entity(pane).try_remove::<Hovered>();
+                }
             }
             continue;
         }
@@ -204,16 +218,22 @@ pub fn update_split_peeks(
                 .as_ref()
                 .and_then(|f| f.get())
                 .is_some_and(|f| parents.iter_ancestors(f).any(|a| a == pane));
-        let touching = bar_hover.get() || pane_hover.get() || focused_in;
+        let touching = bar_hover.is_some_and(Hovered::get)
+            || pane_hover.is_some_and(Hovered::get)
+            || focused_in;
         // The pointer already on the edge when the pane gets collapsed (the double press that did
         // it) has not come to it: the peek waits for it to leave and return.
         if collapsed && !peek.armed {
             peek.armed = true;
+            // The pane is marked as hoverable for as long as it is collapsed, and not before: a mark on an open
+            // pane would make a host that asks "is any `Hovered` node under the pointer" take it for interface.
+            commands.entity(pane).try_insert(Hovered::default());
             if touching {
                 peek.dismissed = true;
             }
         } else if !collapsed && peek.armed {
             peek.armed = false;
+            commands.entity(pane).try_remove::<Hovered>();
         }
         // A dismissal ends once the pointer is off the edge for good (not while the pane slides
         // away under it).
