@@ -246,19 +246,19 @@ fn what_floats_has_its_own_frame_and_an_unframed_role_stays_flat() {
         frames(app, 6);
         ids.push([tip, menu, toast, field]);
     }
-    for i in 0..3 {
-        let image = layer(&framed, ids[1][i]).expect("framed");
+    for (i, (&flat_id, &framed_id)) in ids[0].iter().zip(&ids[1]).take(3).enumerate() {
+        let image = layer(&framed, framed_id).expect("framed");
         assert_eq!(
             image.color,
-            fill(&flat, ids[0][i]),
+            fill(&flat, flat_id),
             "role {i}: the tint is the fill"
         );
-        assert_eq!(fill(&framed, ids[1][i]), Color::NONE);
+        assert_eq!(fill(&framed, framed_id), Color::NONE);
         // The outline goes with the fill: the art has its own edge.
         assert_eq!(
             *framed
                 .world()
-                .get::<BorderColor>(ids[1][i])
+                .get::<BorderColor>(framed_id)
                 .expect("border"),
             BorderColor::all(Color::NONE)
         );
