@@ -78,6 +78,7 @@ mod select;
 mod selection_indicator;
 mod serde;
 mod shortcut;
+mod side_tab_icons;
 mod side_tabs;
 mod size_motion;
 mod skin;

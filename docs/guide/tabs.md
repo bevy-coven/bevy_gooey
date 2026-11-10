@@ -116,6 +116,36 @@ commands.entity(pane).with_children(|pane| {
 - **State.** `TabsValue` and `ValueChange<usize>` on the entity `side_tabs` returns, exactly as for
   `tabs`.
 
+## An icon-only strip, an activity bar
+
+`side_tabs_icons(tabs, selected)` is the same strip with pictures instead of words: a narrow column of
+square targets, a workshop's workspaces, a tool's activity bar. A `SideTab` carries both, so one list
+serves either look:
+
+```rust
+let bar = commands
+    .spawn(side_tabs_icons(
+        [
+            SideTab::new("Files").icon(IconSource::Image(server.load("files.png"))),
+            SideTab::new("Search").icon(IconSource::Image(server.load("search.png"))),
+            SideTab::new("Source Control").icon(IconSource::Image(server.load("branch.png"))),
+            SideTab::new("Problems").count(4).icon(IconSource::Image(server.load("warn.png"))),
+        ],
+        0,
+    ))
+    .id();
+```
+
+- **Every tab names itself.** The label opens as a `Tooltip` on hover and on focus, is the tab's
+  accessible name, and is what its page is for — the picture never has to be guessed at.
+- **A tab with no `icon` shows its label's first letter**, so a half-filled strip is never empty
+  squares.
+- **A badge is a corner pill.** `SideTab::count(n)` shows a count and hides it at zero; `badge("New")`
+  takes any short words. It is drawn in the tab's top-right corner, over the picture's corner.
+- **Everything else is `side_tabs`'s**: `TabsValue` and `ValueChange<usize>` on the entity it returns,
+  Up and Down and the D-pad stepping it, Left and Right leaving it, `side_tab_page` for its pages
+  anywhere, and the sliding indicator on the selected tab.
+
 ## What it does not do yet
 
 A tab that is disabled or closable, a strip that scrolls (NN/g: "The fewer tabs, the

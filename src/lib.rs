@@ -376,8 +376,8 @@ pub use table::{
     TableSelection, TableSort, TableWidths, table_by_input, update_tables,
 };
 pub use tabs::{
-    SideTab, TabPageOf, TabsCount, TabsValue, VerticalTab, land_tab_focus, step_tabs,
-    update_tab_pages, update_tabs,
+    CornerBadge, IconTab, SideTab, TabPageOf, TabsCount, TabsValue, VerticalTab, land_tab_focus,
+    step_tabs, update_tab_pages, update_tabs,
 };
 pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
@@ -404,10 +404,10 @@ pub use widgets::{
     image_box, interface_size, label, led, list, menu, menu_bar, menu_item, menu_title, meter,
     motion_row, notification_center, number_field, overlay, pad_style, panel, popover,
     popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial, radio_item, row,
-    screen, section, select, separator, side_tab_page, side_tabs, skin_preset, slider, slot_grid,
-    spinner, split, status_bar, status_item, status_progress, submenu, surface, tab_page, table,
-    tabs, text_area, text_area_fill, text_input, text_size, toast, toast_alert, toggle,
-    toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
+    screen, section, select, separator, side_tab_page, side_tabs, side_tabs_icons, skin_preset,
+    slider, slot_grid, spinner, split, status_bar, status_item, status_progress, submenu, surface,
+    tab_page, table, tabs, text_area, text_area_fill, text_input, text_size, toast, toast_alert,
+    toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -527,6 +527,10 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TabsValue>()
             .register_type::<TabPageOf>()
             .register_type::<VerticalTab>()
+            .register_type::<IconTab>()
+            .register_type::<CornerBadge>()
+            .register_type::<IconTab>()
+            .register_type::<CornerBadge>()
             .register_type::<TabsCount>()
             .register_type::<ChoiceCount>()
             .register_type::<RadialValue>()

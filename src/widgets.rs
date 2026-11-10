@@ -2604,6 +2604,129 @@ fn side_tab(tab: crate::SideTab) -> impl Bundle {
     )
 }
 
+/// A [`side_tabs`] strip of pictures: an activity bar's workspaces, a narrow column of tabs where each
+/// is its [`crate::SideTab::icon`], its name opens as a tooltip on hover and on focus, and its
+/// [`crate::SideTab::badge`] is a small pill at its top-right corner (a count, or "New"). A tab with
+/// no picture shows its label's first letter, and a badge of zero shows nothing.
+///
+/// Everything else is [`side_tabs`]'s: the entity holds [`crate::TabsValue`] and reports each change
+/// the player makes as a `ValueChange<usize>` on itself, Up and Down (and the D-pad) step it, Left and
+/// Right leave it for the page beside it, [`side_tab_page`] spawns a page anywhere, and the selected
+/// tab keeps the sliding indicator.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, server: Res<AssetServer>) {
+/// let bar = commands
+///     .spawn(side_tabs_icons(
+///         [
+///             SideTab::new("Files").icon(IconSource::Image(server.load("files.png"))),
+///             SideTab::new("Search").icon(IconSource::Image(server.load("search.png"))),
+///             SideTab::new("Source Control").icon(IconSource::Image(server.load("branch.png"))),
+///             SideTab::new("Problems").count(4).icon(IconSource::Image(server.load("warn.png"))),
+///         ],
+///         0,
+///     ))
+///     .id();
+/// commands.spawn(side_tab_page(bar, 0, children![label("Your files")]));
+/// # }
+/// ```
+pub fn side_tabs_icons(
+    tabs: impl IntoIterator<Item = crate::SideTab>,
+    selected: usize,
+) -> impl Bundle {
+    let tabs: Vec<crate::SideTab> = tabs.into_iter().collect();
+    let count = tabs.len();
+    let selected = selected.min(count.saturating_sub(1));
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            align_self: AlignSelf::FlexStart,
+            ..default()
+        },
+        Role::Tabs,
+        TabsValue(selected),
+        TabsCount(count),
+        observe(tabs_self_update),
+        children![
+            (
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    // Stretched, so the strip is as wide as its widest square and the sliding
+                    // indicator has a box to cover; each tab centres its own picture.
+                    align_items: AlignItems::Stretch,
+                    ..default()
+                },
+                TabList {
+                    orientation: ControlOrientation::Vertical,
+                    activation: TabActivation::Automatic,
+                },
+                Role::TabList,
+                Indicating::default(),
+                observe(tabs_on_select),
+                Children::spawn(SpawnIter(tabs.into_iter().map(icon_tab))),
+            ),
+            selection_indicator(),
+        ],
+    )
+}
+
+/// One tab of a [`side_tabs_icons`] strip: a square target holding the picture (or the label's first
+/// letter), its name on a tooltip, and a badge at its top-right corner.
+fn icon_tab(tab: crate::SideTab) -> impl Bundle {
+    let name = tab.label.clone();
+    let initial = tab
+        .label
+        .chars()
+        .next()
+        .map(|first| first.to_uppercase().to_string())
+        .unwrap_or_default();
+    let picture = tab.icon.clone();
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Tab,
+        Role::IconTab,
+        crate::IconTab,
+        Indicating::default(),
+        crate::VerticalTab,
+        Hovered::default(),
+        AutoDirectionalNavigation::default(),
+        Tooltip::new(&tab.label),
+        // A name is the tab's accessible name whatever it draws: the picture is decoration and the
+        // letter a stand-in, so neither is read twice.
+        AccessibleLabel(name),
+        Children::spawn(SpawnWith(move |parts: &mut RelatedSpawner<ChildOf>| {
+            match picture {
+                Some(source) => {
+                    // `icon()` carries `Pickable::IGNORE` itself: a picture is decoration.
+                    parts.spawn(icon(source));
+                }
+                None => {
+                    parts.spawn((Text::new(initial), Role::TabText, ONE_LINE));
+                }
+            }
+            if let Some(badge) = tab.badge {
+                parts.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        ..default()
+                    },
+                    Text::new(badge),
+                    Role::CornerBadge,
+                    crate::CornerBadge,
+                    ONE_LINE,
+                    Pickable::IGNORE,
+                ));
+            }
+        })),
+    )
+}
+
 /// A page of a [`side_tabs`] strip, spawned wherever the host wants it: a column of widgets spaced
 /// like a [`menu`], shown while `tabs` (the entity [`side_tabs`] returned) has `index` selected and
 /// hidden otherwise. Focus left on a page the strip turns away from moves to the shown page's first

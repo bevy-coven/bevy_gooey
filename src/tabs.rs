@@ -70,35 +70,74 @@ pub struct TabPageOf {
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 pub struct VerticalTab;
 
-/// One tab of a [`crate::side_tabs`] strip: its label, left-aligned, and an optional badge at its
-/// end ("3" new items).
+/// Marks a tab of a [`crate::side_tabs_icons`] strip: a square target the size of a button, its
+/// picture centred in it (or its label's first letter), and no label of its own.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct IconTab;
+
+/// Marks the badge of a [`crate::side_tabs_icons`] tab: set in its top-right corner as a small pill
+/// rather than at the end of a row of words.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct CornerBadge;
+
+/// One tab of a [`crate::side_tabs`] strip: its label, an optional picture and an optional badge at
+/// its end ("3" new items).
 ///
 /// ```
 /// # use bevy_gooey::*;
 /// let news = SideTab::new("What's new").badge("3");
 /// assert_eq!(news.badge.as_deref(), Some("3"));
+/// let files = SideTab::new("Files").badge("0");
+/// assert_eq!(files.badge, None, "a count of none shows nothing");
 /// ```
-#[derive(Clone, Debug, Default, PartialEq, Eq, Reflect)]
+#[derive(Clone, Debug, Default, PartialEq, Reflect)]
 #[reflect(Debug, Default, PartialEq, Clone)]
 pub struct SideTab {
-    /// The tab's words.
+    /// The tab's words: shown beside the picture, or alone, and always the tab's name for a screen
+    /// reader and its tooltip.
     pub label: String,
-    /// A short text at the tab's end, a count or "New"; none by default.
+    /// The tab's picture, drawn instead of its words in an icon-only strip
+    /// ([`crate::side_tabs_icons`]); a tab with no picture shows the label's first letter there.
+    pub icon: Option<crate::IconSource>,
+    /// A short text at the tab's end, a count or "New"; none by default. A count of zero is none:
+    /// [`SideTab::count`] is the form that takes a number.
     pub badge: Option<String>,
 }
 
 impl SideTab {
-    /// A tab called `label`, with no badge.
+    /// A tab called `label`, with no picture and no badge.
     pub fn new(label: impl Into<String>) -> Self {
         Self {
             label: label.into(),
+            icon: None,
             badge: None,
         }
     }
 
-    /// The badge at the tab's end.
+    /// The tab's picture: the tab becomes an icon in a [`crate::side_tabs_icons`] strip, and keeps
+    /// its words beside it in a [`crate::side_tabs`] one.
+    #[must_use]
+    pub fn icon(mut self, source: crate::IconSource) -> Self {
+        self.icon = Some(source);
+        self
+    }
+
+    /// The badge at the tab's end, from its text. An empty text is no badge, and neither is a count
+    /// of nothing ("0"): a badge means "something needs you", so zero hides it.
+    #[must_use]
     pub fn badge(mut self, text: impl Into<String>) -> Self {
-        self.badge = Some(text.into());
+        let text = text.into();
+        let counted_zero = text.trim().parse::<f64>().is_ok_and(|count| count == 0.0);
+        self.badge = (!text.is_empty() && !counted_zero).then_some(text);
+        self
+    }
+
+    /// The badge at the tab's end, from a count: zero is no badge at all.
+    #[must_use]
+    pub fn count(mut self, count: usize) -> Self {
+        self.badge = (count > 0).then(|| count.to_string());
         self
     }
 }

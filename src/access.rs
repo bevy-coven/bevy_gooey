@@ -153,7 +153,8 @@ fn spec(role: Role) -> Spec {
         | Role::SectionNote
         | Role::TableHeaderCell
         | Role::ListView
-        | Role::ListRail => Spec::Node,
+        | Role::ListRail
+        | Role::IconTab => Spec::Node,
         Role::ButtonText
         | Role::MenuTitleText
         | Role::MeterFill
@@ -219,6 +220,7 @@ fn spec(role: Role) -> Spec {
         | Role::CardName
         | Role::CardLine
         | Role::TabBadge
+        | Role::CornerBadge
         | Role::Cooldown
         | Role::CooldownText
         | Role::LedDot
@@ -242,6 +244,7 @@ fn names(role: Role) -> bool {
             | Role::MenuTitleText
             | Role::TabText
             | Role::TabBadge
+            | Role::CornerBadge
             | Role::MenuText
             | Role::TableCellText
             | Role::ToastActionText
@@ -670,7 +673,7 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
                 });
             }
         }
-        Role::Tab => wanted.name = look.words(entity, names),
+        Role::Tab | Role::IconTab => wanted.name = look.name_of(entity),
         Role::TableEdge => {
             wanted.role = Some(Ak::Splitter);
             wanted.name = Some(COLUMN_EDGE.to_owned());
