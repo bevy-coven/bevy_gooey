@@ -33,7 +33,7 @@ use crate::nav::show_focus;
 use crate::pop::Lift;
 use crate::skin::{GooeySkin, Role, SkinScope, skin_of};
 use crate::split::{SplitFraction, SplitMin};
-use crate::widgets::{dock_body, panel, split_in, tab_page, tabs_in};
+use crate::widgets::{dock_body, dock_drop, dock_ghost, panel, split_in, tab_page, tabs_in};
 
 /// How far right of and below the pointer the ghost of a dragged tab is drawn, in logical pixels.
 const GHOST_OFFSET_PX: f32 = 14.0;
@@ -177,6 +177,9 @@ pub(crate) struct DockShown {
     layout: Option<DockLayout>,
     root: Option<Entity>,
     pages: HashMap<String, Entity>,
+    /// The body the layout is built in, so a host that despawned it is noticed even when the layout
+    /// did not change.
+    body: Option<Entity>,
     /// The panel whose tab takes focus, and whether the strips have been rebuilt since it moved.
     refocus: Option<(String, bool)>,
     /// Where each tab was drawn (its centre, physical window px) when the tree was last rebuilt, so
@@ -190,6 +193,15 @@ pub(crate) struct DockShown {
 pub(crate) struct DockNode {
     dock: Entity,
     path: Vec<bool>,
+}
+
+/// Which of a dock's three parts stand among its children (found by [`update_docks`]: a host may
+/// have spawned the bare `Dock` with none of them).
+#[derive(Default)]
+struct Parts {
+    body: Option<Entity>,
+    drop_area: Option<Entity>,
+    ghost: Option<Entity>,
 }
 
 /// A dock's group: the card that holds a strip of tabs and their pages.
@@ -265,30 +277,65 @@ pub(crate) fn update_docks(
     mut commands: Commands,
 ) {
     for (entity, dock, mut shown, kids) in &mut docks {
-        if shown.built && !dock.is_changed() && !registry.is_changed() {
+        let body_stands = shown.body.is_some_and(|body| {
+            kids.iter()
+                .flat_map(|kids| kids.iter())
+                .any(|kid| kid == body)
+        });
+        if shown.built && body_stands && !dock.is_changed() && !registry.is_changed() {
             continue;
         }
         // A dock the host spawned bare (its own `Node` on the entity, a `Dock` beside it: a bottom
-        // strip, a sidebar) grows the body the layout is built in, as `dock()`'s bundle does. The
-        // host keeps everything it put on the dock, a `DropTarget` included.
-        let body = match kids
-            .into_iter()
-            .flat_map(|kids| kids.iter())
-            .find(|&kid| roles.get(kid) == Ok(&Role::DockBody))
-        {
-            Some(body) => body,
-            // Deferred commands run in the order they were queued, so the body stands before the
-            // tree is put in it: a bare dock is built in the frame it is first seen.
+        // strip, a sidebar) grows the parts `dock()`'s bundle brings: the body the layout is built
+        // in, and the two a tab drag needs (the landing it lights and the ghost by the pointer).
+        // Whichever is missing is added beside what the host put there and left alone — its `Node`,
+        // its `DropTarget`, its own children — and `Role::Dock` goes on the dock itself if the host
+        // did not set it, so a host-placed dock is a dock in every way.
+        let mut found = Parts::default();
+        for kid in kids.iter().flat_map(|kids| kids.iter()) {
+            match roles.get(kid) {
+                Ok(Role::DockBody) => found.body = Some(kid),
+                Ok(Role::DockDrop) => found.drop_area = Some(kid),
+                Ok(Role::DockGhost) => found.ghost = Some(kid),
+                _ => {}
+            }
+        }
+        // Deferred commands run in the order they were queued, so the body stands before the tree
+        // is put in it: a bare dock is built in the frame it is first seen.
+        let (body, fresh) = match found.body {
+            Some(body) => (body, false),
             None => {
                 let body = commands.spawn(dock_body()).id();
                 commands.entity(entity).add_child(body);
-                body
+                (body, true)
             }
         };
+        if found.drop_area.is_none() {
+            let landing = commands.spawn(dock_drop()).id();
+            commands.entity(entity).add_child(landing);
+        }
+        if found.ghost.is_none() {
+            let ghost = commands.spawn(dock_ghost()).id();
+            commands.entity(entity).add_child(ghost);
+        }
+        if roles.get(entity) != Ok(&Role::Dock) {
+            commands.entity(entity).insert(Role::Dock);
+        }
         let (layout, skipped) = dock.0.prune(|id| registry.contains(id));
-        if shown.built && layout == shown.layout {
+        // A body that has just been spawned holds nothing, whatever the dock had built before (a host
+        // that despawned it, or a dock whose first frame is this one): the tree is built into it.
+        if shown.built && !fresh && layout == shown.layout {
             continue;
         }
+        if fresh {
+            // The body that went took its tree and its pages with it (`ChildOf` despawns its
+            // descendants), so nothing of the old build is kept: the layout is built afresh.
+            shown.built = false;
+            shown.root = None;
+            shown.pages.clear();
+            shown.departed.clear();
+        }
+        shown.body = Some(body);
         let wanted = layout.as_ref().map(DockLayout::panels).unwrap_or_default();
         let mut pages = HashMap::new();
         for (id, page) in std::mem::take(&mut shown.pages) {

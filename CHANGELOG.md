@@ -8,7 +8,7 @@
 
 ### Changed
 
-- A dock the host places itself now shows its panels. `dock(layout)` brings the `Role::DockBody` its layout is built in, so a host that spawned a bare `Dock(layout)` on its own node — a bottom strip under a map, a sidebar beside a tree — had no body, and `update_docks` returned early: no registered panel was ever built. `update_docks` now grows the body on a dock that has none, in the same frame it first sees it, and leaves the host's own `Node`, its `DropTarget<T>` and any other child exactly as written; a dock with no panel registered for its layout builds an empty body and reports each id as `DockPanelSkipped`. One path for a dock, whichever way it was spawned. `tests/dock_body.rs` holds it (6 tests).
+- A dock the host places itself now shows its panels. `dock(layout)` brings the `Role::DockBody` its layout is built in, so a host that spawned a bare `Dock(layout)` on its own node — a bottom strip under a map, a sidebar beside a tree — had no body, and `update_docks` returned early: no registered panel was ever built. `update_docks` now grows the parts `dock()`'s bundle brings that the node lacks — the body the layout is built in, the landing a carried tab lights and the card that follows the pointer, and `Role::Dock` itself — in the same frame it first sees the dock, and leaves the host's own `Node`, its `DropTarget<T>` and any other child exactly as written; a body the host despawns grows again with its panels rebuilt into it; a dock with no panel registered for its layout builds an empty body and reports each id as `DockPanelSkipped`. One path for a dock, whichever way it was spawned. `tests/dock_body.rs` holds it (9 tests).
 
 ### Fixed
 

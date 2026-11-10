@@ -2799,35 +2799,14 @@ pub fn dock(layout: DockLayout) -> impl Bundle {
         },
         Role::Dock,
         Dock(layout),
-        children![
-            dock_body(),
-            (
-                Node {
-                    display: Display::None,
-                    position_type: PositionType::Absolute,
-                    ..default()
-                },
-                Role::DockDrop,
-                Pickable::IGNORE,
-            ),
-            (
-                Node {
-                    display: Display::None,
-                    position_type: PositionType::Absolute,
-                    ..default()
-                },
-                Text::new(""),
-                Role::DockGhost,
-                Pickable::IGNORE,
-            ),
-        ],
+        children![dock_body(), dock_drop(), dock_ghost()],
     )
 }
 
 /// The part of a dock the layout is built in: one grid cell of `1fr`, so the node the layout is
-/// built as fills the dock whatever it is. [`dock`] spawns one; a host that spawns a bare
-/// [`Dock`](crate::Dock) on its own node (a bottom strip, a sidebar) gets one from
-/// [`crate::update_docks`], the first frame that dock is seen, so its registered panels are shown.
+/// built as fills the dock whatever it is. [`dock`] spawns one, and so does
+/// `update_docks` for a host that spawned a bare [`Dock`](crate::Dock) on a node of its own (a
+/// bottom strip, a sidebar): `dock_parts`, the one list of the three, adds whichever is missing.
 pub(crate) fn dock_body() -> impl Bundle {
     (
         Node {
@@ -2839,6 +2818,34 @@ pub(crate) fn dock_body() -> impl Bundle {
             ..default()
         },
         Role::DockBody,
+    )
+}
+
+/// The part of the dock the panel a tab is carried over will take, lit while the tab is carried:
+/// absolute and hidden at rest, so it moves nothing, and drawn by `update_dock_drag`.
+pub(crate) fn dock_drop() -> impl Bundle {
+    (
+        Node {
+            display: Display::None,
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        Role::DockDrop,
+        Pickable::IGNORE,
+    )
+}
+
+/// The card that follows the pointer while a tab is carried, with the panel's title on it.
+pub(crate) fn dock_ghost() -> impl Bundle {
+    (
+        Node {
+            display: Display::None,
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        Text::new(""),
+        Role::DockGhost,
+        Pickable::IGNORE,
     )
 }
 

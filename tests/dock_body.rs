@@ -5,11 +5,13 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use bevy::camera::NormalizedRenderTarget;
+use bevy::picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
 use bevy::ui::UiGlobalTransform;
-use bevy::window::WindowResolution;
+use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
 use bevy_gooey::*;
 
@@ -86,6 +88,45 @@ fn rect(app: &App, entity: Entity) -> Rect {
 }
 
 /// The panels of the registry, registered once per app: a title and how often its page was filled.
+fn window(app: &mut App) -> Entity {
+    app.world_mut()
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(app.world())
+        .expect("one primary window")
+}
+
+/// A pointer position for a point of the layout: the layout is the window's size over `UiScale`.
+fn at(app: &App, layout: Vec2) -> Vec2 {
+    layout * app.world().resource::<UiScale>().0
+}
+
+fn location(app: &mut App, at: Vec2) -> Location {
+    let window = window(app);
+    Location {
+        target: NormalizedRenderTarget::Window(
+            WindowRef::Entity(window)
+                .normalize(None)
+                .expect("a window ref"),
+        ),
+        position: at,
+    }
+}
+
+fn pointer(app: &mut App, at: Vec2, action: PointerAction) {
+    let position = location(app, at);
+    app.world_mut().write_message(PointerInput {
+        pointer_id: PointerId::Mouse,
+        location: position,
+        action,
+    });
+    app.update();
+}
+
+fn point_at(app: &mut App, at: Vec2) {
+    pointer(app, at, PointerAction::Move { delta: Vec2::ZERO });
+    app.update();
+}
+
 fn register(app: &mut App, id: &'static str, title: &'static str) -> Arc<AtomicUsize> {
     let spawned = Arc::new(AtomicUsize::new(0));
     let count = spawned.clone();
@@ -184,10 +225,71 @@ fn the_body_fills_the_hosts_node_and_leaves_it_alone() {
     );
 }
 
-/// The dock is still the host's to make a drop target: the body grows inside it and takes nothing
-/// away from what the host put on the dock.
+/// The host's own children stand beside the grown body, untouched, and the dock carries the crate's
+/// own `Role::Dock` so every dock is a dock.
 #[test]
-fn the_host_can_still_make_a_bare_dock_a_drop_target() {
+fn the_hosts_children_stand_beside_the_grown_body() {
+    let mut app = app();
+    register(&mut app, "reload", "Reload");
+    let world = app.world_mut();
+    let dock = world
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Px(220.0),
+            flex_direction: FlexDirection::Column,
+            ..default()
+        })
+        .id();
+    // The host's own bits, before the dock exists as one: a header label and its own child.
+    let header = world.spawn(label("Reloading")).id();
+    world.entity_mut(dock).add_child(header);
+    world.entity_mut(dock).insert((
+        Dock(DockLayout::group(["reload"])),
+        DropTarget::<String>::new(),
+    ));
+    let root = world
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            ..default()
+        })
+        .id();
+    world.entity_mut(root).add_children(&[dock]);
+    world.spawn(screen()).add_child(root);
+    settle(&mut app);
+
+    let kids = children(&app, dock);
+    assert!(kids.contains(&header), "the host's label is still a child");
+    assert_eq!(
+        app.world()
+            .get::<Children>(dock)
+            .expect("children")
+            .iter()
+            .filter(|&kid| kid == header)
+            .count(),
+        1,
+        "exactly once"
+    );
+    assert!(
+        app.world().get::<Node>(header).expect("a node").display != Display::None,
+        "and it is still shown"
+    );
+    assert!(
+        part(&app, dock, Role::DockBody).is_some(),
+        "with a body too"
+    );
+    assert_eq!(
+        app.world().get::<Role>(dock),
+        Some(&Role::Dock),
+        "the dock carries the crate's role, which the host did not set"
+    );
+}
+
+/// A piece dropped on a bare dock reaches the host's own `DropTarget`, which still stands on the
+/// dock after its body grew.
+#[test]
+fn a_drop_on_a_bare_dock_reaches_the_hosts_target() {
     let mut app = app();
     register(&mut app, "reload", "Reload");
     let dock = bottom_strip(&mut app, DockLayout::group(["reload"]));
@@ -195,14 +297,192 @@ fn the_host_can_still_make_a_bare_dock_a_drop_target() {
         app.world().get::<DropTarget<String>>(dock).is_some(),
         "the host's target is still on the dock"
     );
-    assert!(
-        app.world().get::<DropTarget<String>>(dock).is_some(),
-        "and only one target, never a second on its body"
+
+    #[derive(Resource, Default)]
+    struct Heard(Vec<String>);
+    app.init_resource::<Heard>();
+    app.add_observer(|dropped: On<Dropped<String>>, mut heard: ResMut<Heard>| {
+        heard.0.push(dropped.payload.clone());
+    });
+
+    // A source beside the dock, let go over the middle of the dock's card.
+    let world = app.world_mut();
+    let source = world
+        .spawn((
+            Node {
+                width: Val::Px(60.0),
+                height: Val::Px(30.0),
+                ..default()
+            },
+            DragPayload("a piece".to_owned()),
+        ))
+        .id();
+    let holder = world
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Px(60.0),
+            ..default()
+        })
+        .add_child(source)
+        .id();
+    // The dock moves under the holder: a column of the holder over the strip.
+    let root = world
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            ..default()
+        })
+        .id();
+    let parent = world
+        .get::<ChildOf>(dock)
+        .expect("the dock's parent")
+        .parent();
+    world.entity_mut(dock).remove::<ChildOf>();
+    world.entity_mut(root).add_children(&[holder, dock]);
+    world.entity_mut(parent).add_child(root);
+    settle(&mut app);
+
+    let from = at(&app, rect(&app, source).center());
+    let to = at(
+        &app,
+        rect(&app, part(&app, dock, Role::DockBody).expect("a body")).center(),
     );
-    let body = part(&app, dock, Role::DockBody).expect("a body");
+    point_at(&mut app, from);
+    pointer(&mut app, from, PointerAction::Press(PointerButton::Primary));
+    // Past the lift distance first, then over the dock: the lift is 6 px of travel.
+    pointer(
+        &mut app,
+        from + Vec2::X * 12.0,
+        PointerAction::Move {
+            delta: Vec2::X * 12.0,
+        },
+    );
+    settle(&mut app);
+    pointer(&mut app, to, PointerAction::Move { delta: to - from });
+    settle(&mut app);
+    pointer(&mut app, to, PointerAction::Release(PointerButton::Primary));
+    settle(&mut app);
+
+    assert_eq!(
+        app.world().resource::<Heard>().0,
+        vec!["a piece".to_owned()],
+        "the drop reached the host's target on the dock"
+    );
+}
+
+/// A body the host despawned grows again, and the dock builds its panels into the new one rather
+/// than skipping the rebuild because the layout it holds did not change.
+#[test]
+fn a_despawned_body_grows_again_with_its_panels() {
+    let mut app = app();
+    register(&mut app, "reload", "Reload");
+    let dock = bottom_strip(&mut app, DockLayout::group(["reload"]));
+    let first = part(&app, dock, Role::DockBody).expect("a body");
+    assert!(part(&app, dock, Role::TabPage).is_some(), "with a page");
+
+    app.world_mut().entity_mut(first).despawn();
+    settle(&mut app);
+
+    let body = part(&app, dock, Role::DockBody).expect("a new body");
+    assert_ne!(body, first, "a new one");
+    let page = part(&app, dock, Role::TabPage).expect("the panel is built into it again");
     assert!(
-        app.world().get::<DropTarget<String>>(body).is_none(),
-        "the body the dock grew carries none of the host's targets"
+        descendants(&app, body).contains(&page),
+        "the page stands under the new body"
+    );
+}
+
+/// **The acceptance the review found missing:** a tab dragged in a host-placed dock shows the
+/// landing the panel will take and the card with its title, so rearranging a bottom dock looks like
+/// rearranging any other.
+#[test]
+fn a_tab_dragged_in_a_bare_dock_lights_a_landing_and_carries_its_title() {
+    let mut app = app();
+    register(&mut app, "reload", "Reload");
+    register(&mut app, "output", "Output");
+    let dock = bottom_strip(
+        &mut app,
+        DockLayout::split(
+            SplitAxis::Horizontal,
+            0.5,
+            DockLayout::group(["reload", "output"]),
+            DockLayout::group(["reload"]),
+        ),
+    );
+
+    // The dock's own parts: the landing it lights and the ghost it carries, both hidden at rest.
+    let landing = part(&app, dock, Role::DockDrop).expect("the dock grew a landing");
+    let ghost = part(&app, dock, Role::DockGhost).expect("and a ghost");
+    assert_eq!(
+        app.world().get::<Node>(landing).expect("a node").display,
+        Display::None,
+        "hidden until a tab is carried"
+    );
+    assert_eq!(
+        app.world().get::<Node>(ghost).expect("a node").display,
+        Display::None
+    );
+
+    // Pick up the "Reload" tab and carry it towards the other group.
+    let tab = descendants(&app, dock)
+        .into_iter()
+        .find(|&e| {
+            app.world().get::<Role>(e) == Some(&Role::TabText)
+                && app.world().get::<Text>(e).map(|t| t.0.clone()) == Some("Reload".to_owned())
+        })
+        .map(|text| app.world().get::<ChildOf>(text).expect("a tab").parent())
+        .expect("the Reload tab");
+    let from = at(&app, rect(&app, tab).center());
+    point_at(&mut app, from);
+    pointer(&mut app, from, PointerAction::Press(PointerButton::Primary));
+    // Past the lift distance, towards the other group's card.
+    let to = Vec2::new(from.x + 220.0, from.y);
+    pointer(
+        &mut app,
+        from,
+        PointerAction::Move {
+            delta: Vec2::X * 4.0,
+        },
+    );
+    pointer(&mut app, to, PointerAction::Move { delta: to - from });
+    pointer(&mut app, to, PointerAction::Move { delta: Vec2::X });
+    settle(&mut app);
+
+    let landing_node = app.world().get::<Node>(landing).expect("a node");
+    assert_eq!(
+        landing_node.display,
+        Display::Flex,
+        "the landing is lit while the tab is carried"
+    );
+    assert!(
+        landing_node.width != Val::Auto,
+        "with the part it will take"
+    );
+    let ghost_node = app.world().get::<Node>(ghost).expect("a node");
+    assert_eq!(
+        ghost_node.display,
+        Display::Flex,
+        "the ghost follows the pointer"
+    );
+    let words = app
+        .world()
+        .get::<Text>(ghost)
+        .map(|text| text.0.clone())
+        .unwrap_or_default();
+    assert_eq!(words, "Reload", "carrying the tab's own title");
+
+    // Let go: the overlay goes back to hidden and the panel moved.
+    pointer(&mut app, to, PointerAction::Release(PointerButton::Primary));
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(landing).expect("a node").display,
+        Display::None,
+        "nothing is lit once it is let go"
+    );
+    assert_eq!(
+        app.world().get::<Node>(ghost).expect("a node").display,
+        Display::None
     );
 }
 
