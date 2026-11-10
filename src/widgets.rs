@@ -184,6 +184,11 @@ const TEXT_INPUT_CHARS: f32 = 17.0;
 /// How many character advances wide a [`text_area`]'s field is: a text input's and a half.
 const TEXT_AREA_CHARS: f32 = 26.0;
 
+/// How far a filling area's rail stands from its field, logical px: the lane is beside the text, not
+/// over it. A layout gap is the builder's, like every other `Node` in a text row; the rail's own look
+/// stays `apply_skin`'s.
+const AREA_RAIL_GAP_PX: f32 = 4.0;
+
 /// A text field's caret, as a share of the font size: 2 px at the body size, a hair thinner than
 /// Bevy's 0.2 so it does not cover a letter's stem.
 const TEXT_CARET_WIDTH: f32 = 0.1;
@@ -1570,17 +1575,30 @@ pub fn text_area(label: impl Into<String>, value: impl Into<String>, rows: usize
 /// other way — `TextInputValue`, `ValueChange<String>`, `TextLimit`, `TextHint`, `FieldProblem`,
 /// `TextEditing` — and a very long line wraps rather than panning.
 ///
+/// A row already carries its `Node`, so the room comes from the host: spawn a column with the height
+/// to give and put the row in it — the row takes what the column leaves after its label.
+///
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_gooey::*;
 /// # fn setup(mut commands: Commands) {
-/// commands.spawn((
-///     text_area_fill("Guide", "", 5),
-///     Node {
-///         flex_grow: 1.0,
+/// commands
+///     .spawn(Node {
+///         flex_direction: FlexDirection::Column,
+///         width: Val::Percent(100.0),
+///         height: Val::Percent(100.0),
 ///         ..default()
-///     },
-/// ));
+///     })
+///     .with_children(|host| {
+///         host.spawn((
+///             text_area_fill("Guide", "", 10),
+///             observe(|change: On<ValueChange<String>>| {
+///                 if change.is_final {
+///                     info!("{} characters", change.value.chars().count());
+///                 }
+///             }),
+///         ));
+///     });
 /// # }
 /// ```
 pub fn text_area_fill(
@@ -1793,7 +1811,7 @@ fn text_row_as(
                         Node {
                             flex_shrink: 0.0,
                             align_self: AlignSelf::Stretch,
-                            margin: UiRect::left(Val::Px(4.0)),
+                            margin: UiRect::left(Val::Px(AREA_RAIL_GAP_PX)),
                             ..default()
                         },
                         Role::ListRail,
@@ -2675,7 +2693,12 @@ pub fn side_tabs_icons(
 /// One tab of a [`side_tabs_icons`] strip: a square target holding the picture (or the label's first
 /// letter), its name on a tooltip, and a badge at its top-right corner.
 fn icon_tab(tab: crate::SideTab) -> impl Bundle {
-    let name = tab.label.clone();
+    // The name a reader hears: the label, and the badge's count after it — the corner pill is
+    // decoration to the eye but it is the one thing that says what still needs the player.
+    let name = match &tab.badge {
+        Some(badge) => format!("{} ({badge})", tab.label),
+        None => tab.label.clone(),
+    };
     let initial = tab
         .label
         .chars()
@@ -2711,11 +2734,9 @@ fn icon_tab(tab: crate::SideTab) -> impl Bundle {
                 }
             }
             if let Some(badge) = tab.badge {
+                // The pill's corner is `apply_skin`'s (`Role::CornerBadge`): one owner of where it
+                // stands, so a host's own skin can move it.
                 parts.spawn((
-                    Node {
-                        position_type: PositionType::Absolute,
-                        ..default()
-                    },
                     Text::new(badge),
                     Role::CornerBadge,
                     crate::CornerBadge,

@@ -315,3 +315,27 @@ fn the_strip_is_a_narrow_column_of_square_targets_with_the_badge_in_the_corner()
         .find(|&kid| app.world().get::<SelectionIndicator>(kid).is_some());
     assert!(indicator.is_some(), "the strip has its selection indicator");
 }
+/// A tab's badge is part of what a screen reader hears: the corner pill is the one cue that says what
+/// still needs the player, so the announced name is the label and then the count.
+#[test]
+fn a_badged_tab_announces_its_label_and_its_count() {
+    let mut app = app();
+    app.world_mut()
+        .resource_mut::<bevy::a11y::AccessibilityRequested>()
+        .set(true);
+    let ui = bar(&mut app, 0);
+    settle(&mut app);
+
+    let name = |app: &App, tab: Entity| {
+        app.world()
+            .get::<bevy::a11y::AccessibilityNode>(tab)
+            .map(|node| node.0.label().unwrap_or_default().to_owned())
+            .unwrap_or_default()
+    };
+    assert_eq!(
+        name(&app, ui.tabs[3]),
+        "Debug (4)",
+        "the label and its badge"
+    );
+    assert_eq!(name(&app, ui.tabs[0]), "Files", "a tab with no badge");
+}

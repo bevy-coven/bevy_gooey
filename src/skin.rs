@@ -131,6 +131,12 @@ const LIST_PADDING_FACTOR: f32 = 1.2;
 /// A list's rail is this many line weights wide, and its thumb is as wide.
 const RAIL_LINES: f32 = 2.0;
 
+/// An icon-only tab's picture sits inside this much of its square (a `pad` fraction), and its corner
+/// badge stands this far past the tab's corner and is this many small text sizes wide at least.
+const ICON_TAB_PAD: f32 = 0.6;
+const CORNER_BADGE_OFFSET: f32 = 0.5;
+const CORNER_BADGE_TEXT_SIZES: f32 = 1.2;
+
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
 
@@ -3409,9 +3415,9 @@ fn restyle(
                 if *role == Role::CornerBadge {
                     next.margin = UiRect::ZERO;
                     next.position_type = PositionType::Absolute;
-                    next.right = Val::Px(-skin.pad() * 0.5);
-                    next.top = Val::Px(-skin.pad() * 0.5);
-                    next.min_width = Val::Px(skin.type_size(1) * 1.2);
+                    next.right = Val::Px(-skin.pad() * CORNER_BADGE_OFFSET);
+                    next.top = Val::Px(-skin.pad() * CORNER_BADGE_OFFSET);
+                    next.min_width = Val::Px(skin.type_size(1) * CORNER_BADGE_TEXT_SIZES);
                     next.justify_content = JustifyContent::Center;
                     next.align_items = AlignItems::Center;
                 }
@@ -3532,7 +3538,7 @@ fn restyle(
                 };
                 if *role == Role::IconTab {
                     next.width = Val::Px(skin.target());
-                    next.padding = UiRect::all(Val::Px(skin.pad() * 0.6));
+                    next.padding = UiRect::all(Val::Px(skin.pad() * ICON_TAB_PAD));
                 }
                 // An icon beside the label stands half a gap from it; a lone label has no use for it.
                 if *role == Role::Button {

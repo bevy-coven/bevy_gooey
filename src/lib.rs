@@ -383,7 +383,7 @@ pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
     track_text_editing, update_text_inputs,
 };
-pub use text_area::{AreaRail, AreaThumb, TextAreaFill};
+pub use text_area::TextAreaFill;
 pub use toast::{
     Toast, ToastAction, ToastAnchor, ToastBundle, ToastButton, ToastInset, ToastKind, ToastLog,
     ToastLogEntry, ToastSettings, ToastStack, update_toasts,
@@ -527,8 +527,6 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TabsValue>()
             .register_type::<TabPageOf>()
             .register_type::<VerticalTab>()
-            .register_type::<IconTab>()
-            .register_type::<CornerBadge>()
             .register_type::<IconTab>()
             .register_type::<CornerBadge>()
             .register_type::<TabsCount>()

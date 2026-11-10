@@ -40,13 +40,15 @@ use crate::text::TextInputOf;
 pub struct TextAreaFill;
 
 /// The rail of the field `0`: the lane a press or a drag scrolls the text along, shown while there
-/// is more text than the field draws.
+/// is more text than the field draws. Part of what a filling area spawns; a host never builds one and
+/// reads none, so it is the crate's own.
 #[derive(Component, Clone, Copy, Debug)]
-pub struct AreaRail(pub Entity);
+pub(crate) struct AreaRail(pub Entity);
 
 /// The thumb of the field `0`: the share of the text the field shows, and how far along it stands.
+/// The crate's own, like [`AreaRail`].
 #[derive(Component, Clone, Copy, Debug)]
-pub struct AreaThumb(pub Entity);
+pub(crate) struct AreaThumb(pub Entity);
 
 /// What the pointer is over, in a filling area: the rail, the thumb, or the field itself.
 type PointerOver = (
@@ -340,10 +342,12 @@ type Area = (
 /// rail shows while there is more text than the field draws with its thumb the share shown, standing
 /// where the field stands.
 ///
-/// Runs in [`crate::GooeySystems::Style`] after [`crate::apply_skin`], so it reads this frame's
-/// layout. Every write is on a difference — the viewport only when the caret moved out of it, a
-/// rail's `Visibility` and its thumb's `Node` only when the answer changed — so a settled area costs
-/// a comparison and no write.
+/// Runs in [`crate::GooeySystems::Style`] **before** [`crate::apply_skin`] (chained with
+/// [`area_on_scroll`]), so a rail the wheel or the rail itself just scrolled is dressed in the same
+/// frame, and a node this writes is never overwritten by the restyle that follows. Every write is on
+/// a difference — the viewport only when the caret moved out of it, a rail's `Visibility`/`Display`
+/// and its thumb's `Node` only when the answer changed — so a settled area costs a comparison and no
+/// write.
 pub(crate) fn update_area_rails(
     mut areas: Query<Area>,
     fills: Query<(), With<TextAreaFill>>,

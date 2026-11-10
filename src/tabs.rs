@@ -98,8 +98,8 @@ pub struct SideTab {
     /// The tab's words: shown beside the picture, or alone, and always the tab's name for a screen
     /// reader and its tooltip.
     pub label: String,
-    /// The tab's picture, drawn instead of its words in an icon-only strip
-    /// ([`crate::side_tabs_icons`]); a tab with no picture shows the label's first letter there.
+    /// The tab's picture. [`crate::side_tabs_icons`] draws it, or the label's first letter when it
+    /// is `None`; a plain [`crate::side_tabs`] ignores it and draws the label.
     pub icon: Option<crate::IconSource>,
     /// A short text at the tab's end, a count or "New"; none by default. A count of zero is none:
     /// [`SideTab::count`] is the form that takes a number.
@@ -116,8 +116,9 @@ impl SideTab {
         }
     }
 
-    /// The tab's picture: the tab becomes an icon in a [`crate::side_tabs_icons`] strip, and keeps
-    /// its words beside it in a [`crate::side_tabs`] one.
+    /// The tab's picture. It is drawn by [`crate::side_tabs_icons`], the icon-only strip; a plain
+    /// [`crate::side_tabs`] draws the label and the badge only and **ignores** the icon, so one list
+    /// of `SideTab`s can serve either strip without a second copy of the data.
     #[must_use]
     pub fn icon(mut self, source: crate::IconSource) -> Self {
         self.icon = Some(source);

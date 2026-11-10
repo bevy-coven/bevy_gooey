@@ -551,3 +551,44 @@ fn a_full_dock_keeps_its_one_body() {
         .collect();
     assert_eq!(bodies.len(), 1, "one body, not two");
 }
+
+/// A role the host picked itself is kept: the dock grows its parts and takes `Role::Dock` only when
+/// there is no role at all, never replacing one the host wrote.
+#[test]
+fn a_hosts_own_role_on_the_dock_is_left_alone() {
+    let mut app = app();
+    register(&mut app, "reload", "Reload");
+    let world = app.world_mut();
+    // A host that styles its own node with a role of its own (a split's pane, a surface): the dock
+    // must not overwrite it.
+    let dock = world
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Px(220.0),
+                ..default()
+            },
+            Role::Surface(1),
+            Dock(DockLayout::group(["reload"])),
+        ))
+        .id();
+    world.spawn(screen()).add_child(dock);
+    settle(&mut app);
+
+    assert_eq!(
+        app.world().get::<Role>(dock),
+        Some(&Role::Surface(1)),
+        "the host's own role stands"
+    );
+    // And the dock still grew the parts its layout needs.
+    let kids: Vec<Entity> = app
+        .world()
+        .get::<Children>(dock)
+        .map(|kids| kids.iter().collect())
+        .unwrap_or_default();
+    assert!(
+        kids.iter()
+            .any(|&kid| app.world().get::<Role>(kid) == Some(&Role::DockBody)),
+        "the body is there: the dock is a dock"
+    );
+}

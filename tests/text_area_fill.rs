@@ -93,6 +93,22 @@ fn rect(app: &App, entity: Entity) -> Rect {
     Rect::from_center_size(at, size)
 }
 
+/// The box inside the field's border and padding, in the window's own pixels: where the text is drawn,
+/// and the only part of a field Bevy turns into a caret.
+fn content_rect(app: &App, entity: Entity) -> Rect {
+    let node = app.world().get::<ComputedNode>(entity).expect("laid out");
+    let at = app
+        .world()
+        .get::<UiGlobalTransform>(entity)
+        .expect("placed")
+        .translation;
+    let inside = node.content_box();
+    Rect {
+        min: at + inside.min,
+        max: at + inside.max,
+    }
+}
+
 fn window(app: &mut App) -> Entity {
     app.world_mut()
         .query_filtered::<Entity, With<PrimaryWindow>>()
@@ -262,7 +278,17 @@ fn text_height(app: &App, field: Entity) -> f32 {
 /// and the last line is in the field because the viewport has reached the bottom of the text.
 #[test]
 fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field() {
+    /// Every `ValueChange<String>` the document sent, with whether it ended the edit.
+    #[derive(Resource, Default)]
+    struct Heard(Vec<(String, bool)>);
+
     let mut app = fresh_app();
+    app.init_resource::<Heard>();
+    app.add_observer(
+        |change: On<ValueChange<String>>, mut heard: ResMut<Heard>| {
+            heard.0.push((change.value.clone(), change.is_final));
+        },
+    );
     let bench = new_bench(&mut app, 40, note());
     let field = bench.field;
 
@@ -278,6 +304,10 @@ fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field()
         0.0,
         "a fresh area rests at its top"
     );
+
+    // Focus before the scroll: Bevy reveals the caret on the frame focus arrives, so a field focused
+    // after the wheel would be scrolled back to its caret first.
+    focus_on(&mut app, field);
 
     // Wheeling to the end: a hundred lines a turn (the same input as a mouse spun hard, not 400
     // frames of layout).
@@ -303,6 +333,74 @@ fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field()
         view.offset.y,
         room = view.size.y
     );
+
+    // The issue's second half: **types at the end and the value-change event carries the whole
+    // text**. The player's own way to the end of a scrolled document is a click on its last line: the
+    // caret lands there, inside the line the view is standing on.
+    let inside = content_rect(&app, field);
+    let last_line = Vec2::new(inside.min.x + 6.0, inside.max.y - 6.0);
+    pointer(&mut app, last_line, PointerAction::Move { delta: Vec2::X });
+    pointer(
+        &mut app,
+        last_line,
+        PointerAction::Press(PointerButton::Primary),
+    );
+    pointer(
+        &mut app,
+        last_line,
+        PointerAction::Release(PointerButton::Primary),
+    );
+    settle(&mut app);
+    let caret_at_end = app
+        .world()
+        .get::<TextLayoutInfo>(field)
+        .expect("a layout")
+        .cursor
+        .expect("a caret")
+        .1;
+    let height = text_height(&app, field);
+    assert!(
+        caret_at_end.center().y > height * 0.9,
+        "the click put the caret at the document's end: {caret_at_end:?} of {height}"
+    );
+
+    // One character typed there lands in the last line, and the change carries all of it.
+    type_char(&mut app, '!');
+    settle(&mut app);
+    let text = text_of(&app, field);
+    let tail = &text[text.len() - 40..];
+    assert!(
+        tail.contains('!') && text.contains("the very last line"),
+        "the character went in at the end: {tail:?}"
+    );
+    let view = viewport(&app, field);
+    let caret = app
+        .world()
+        .get::<TextLayoutInfo>(field)
+        .expect("a layout")
+        .cursor
+        .expect("a caret")
+        .1;
+    let farthest = (text_height(&app, field) - view.size.y).max(0.0);
+    assert!(
+        caret.center().y >= view.offset.y - 1.0
+            && caret.center().y <= view.offset.y + view.size.y + 1.0,
+        "the caret is inside the viewport: {caret:?} of offset {} size {}",
+        view.offset.y,
+        view.size.y
+    );
+    assert!(
+        view.offset.y > farthest - view.size.y * 0.2,
+        "and the view stands at the text's end: {} of {farthest}",
+        view.offset.y
+    );
+    let heard = app.world().resource::<Heard>();
+    assert_eq!(
+        heard.0.last().map(|(t, _)| t.as_str()),
+        Some(text.as_str()),
+        "the last change carries the whole 64 KiB document"
+    );
+    assert!(text.len() > FILE_CHARS - 32, "all of it, still");
 }
 
 /// A wheel turn over a filled area scrolls it, and over a short one (nothing below the field) moves
