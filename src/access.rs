@@ -56,6 +56,11 @@ enum Spec {
 fn spec(role: Role) -> Spec {
     match role {
         Role::Screen
+        | Role::Row
+        | Role::Column
+        | Role::Cell
+        | Role::ImageBox
+        | Role::Overlay
         | Role::Panel
         | Role::Surface(_)
         | Role::Tone(_)

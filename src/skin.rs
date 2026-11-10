@@ -20,6 +20,7 @@ use crate::drag::{DropCandidate, DropRefusing};
 use crate::elevation::{Elevation, ElevationLevel};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
 use crate::icon::{IconSize, IconTone};
+use crate::layout::{BoxSize, CellWidth, LayoutGap};
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
@@ -1949,6 +1950,20 @@ pub enum Role {
     ToastActionText,
     /// A section's "Empty": [`GooeySkin::text_muted`], in the body's place while it holds nothing.
     SectionNote,
+    /// A [`crate::row`]: a flex row whose children stand a [`LayoutGap`](crate::LayoutGap) of the
+    /// skin's gap apart; not drawn.
+    Row,
+    /// A [`crate::column`]: a flex column a [`LayoutGap`](crate::LayoutGap) apart; not drawn.
+    Column,
+    /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
+    /// drawn, so a label column lines up down a list of rows.
+    Cell,
+    /// An [`crate::image_box`]: a picture of a fixed size, cut to its box; not drawn but the
+    /// picture itself, so a box that has not loaded keeps its room and draws nothing.
+    ImageBox,
+    /// An [`crate::overlay`]: a box its first child sizes, its later children stacked over it; not
+    /// drawn.
+    Overlay,
 }
 
 type Styled = (
@@ -2088,6 +2103,12 @@ struct State {
     control: Option<ControlSize>,
     /// A text area: its field holds lines, so a size is its least height and not one line's centre.
     multi_line: bool,
+    /// A layout row's or column's gap, as a multiple of the skin's gap ([`crate::LayoutGap`]).
+    layout_gap: f32,
+    /// A layout cell's width, in body text sizes ([`crate::CellWidth`]); no width (0) collapses it.
+    cell: f32,
+    /// A layout image box's size, logical px.
+    image: Vec2,
 }
 
 impl Default for State {
@@ -2124,6 +2145,9 @@ impl Default for State {
             indicating: false,
             control: None,
             multi_line: false,
+            layout_gap: 1.0,
+            cell: 0.0,
+            image: Vec2::ZERO,
         }
     }
 }
@@ -2154,6 +2178,9 @@ type StateQuery = (
         Option<&'static ButtonVariant>,
         Has<LoadingHold>,
         Option<&'static Indicating>,
+        Option<&'static LayoutGap>,
+        Option<&'static CellWidth>,
+        Option<&'static BoxSize>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -2198,6 +2225,9 @@ type Restyle = (
                 Changed<ButtonVariant>,
                 Added<LoadingHold>,
                 Changed<Indicating>,
+                Changed<LayoutGap>,
+                Changed<CellWidth>,
+                Changed<BoxSize>,
             )>,
         )>,
     )>,
@@ -2342,6 +2372,9 @@ pub fn apply_skin(
                         variant,
                         holding,
                         indicating,
+                        gap,
+                        cell,
+                        image,
                     ),
                     row,
                     role,
@@ -2388,6 +2421,9 @@ pub fn apply_skin(
                         }),
                         control: control.copied(),
                         multi_line: role == Some(&Role::TextArea),
+                        layout_gap: gap.map_or(1.0, |gap| gap.0),
+                        cell: cell.map_or(0.0, |cell| cell.0),
+                        image: image.map_or(Vec2::ZERO, |image| image.0),
                     }
                 },
             )
@@ -2959,6 +2995,11 @@ fn restyle(
         // meet on it the contrast they are checked at on the panel.
         Role::TextField => Some(skin.solid_surface()),
         Role::Screen
+        | Role::Row
+        | Role::Column
+        | Role::Cell
+        | Role::ImageBox
+        | Role::Overlay
         | Role::Menu
         | Role::Heading
         | Role::Label
@@ -4174,6 +4215,41 @@ fn restyle(
             // The safe area: a long body wraps at the dialog's maximum width or squeezes it in,
             // and nothing of it ever reaches the bezel.
             Role::Scrim => next.padding = UiRect::all(Val::Percent(SAFE_EDGE_PERCENT)),
+            // The layout primitives: a row and a column put the skin's gap between their children
+            // (`LayoutGap` times it, so `row(1.0)` is the panel's own rhythm), never a caller's
+            // number; children stand on the cross axis's start unless the host says otherwise.
+            Role::Row => {
+                next.column_gap = Val::Px(state.layout_gap * skin.gap);
+                // A row is as wide as the room it is given and squeezes its cells rather than pushing
+                // out of that room: a flex item's automatic minimum is its content's, which is what
+                // an unsqueezed row of cells measured.
+                next.min_width = Val::ZERO;
+            }
+            Role::Column => {
+                next.row_gap = Val::Px(state.layout_gap * skin.gap);
+                next.min_width = Val::ZERO;
+            }
+            // A cell is a fixed width in body text sizes, cuts what does not fit, and shrinks
+            // before it ever runs onto its neighbour; a cell of no width draws nothing at all.
+            Role::Cell => {
+                next.width = Val::Px(text_px * state.cell.max(0.0));
+                next.min_width = Val::ZERO;
+                next.flex_shrink = 1.0;
+                next.overflow = Overflow::clip();
+            }
+            // A picture of its own size, cut to its box, and never squeezed by a narrow row. Stacked
+            // over another in an overlay it is that child's box, which `stack_overlays` gives it, so
+            // its own size is not written there.
+            Role::ImageBox if next.position_type != PositionType::Absolute => {
+                next.width = Val::Px(state.image.x.max(0.0));
+                next.height = Val::Px(state.image.y.max(0.0));
+                next.flex_shrink = 0.0;
+                next.overflow = Overflow::clip();
+            }
+            Role::ImageBox => {
+                next.flex_shrink = 0.0;
+                next.overflow = Overflow::clip();
+            }
             _ => {}
         }
         node.set_if_neq(next);

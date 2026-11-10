@@ -103,6 +103,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   chrome next to a game's skin):
   `GooeySkin::from_seed(PaletteSeed { background, text, accent })` derives a whole checked skin from three colours, `GooeySkin::desk()` is a desktop tool's neutral look built that way, and `elevation` holds its shadows as CSS-style data:
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
+- **Lay a tool's panel out without a `Node` literal** — `row(1.0)`, `column(1.0)`, `cell(7.0)`, `image_box(plot, size)` and `overlay()` build a bench's slot rows, its label columns and its plot with the hover readout stacked on it, their gaps and widths taken from the skin so an interface size or a theme moves all of it ([layout](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/layout.md)).
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
   and says each change once in `ValueChange`, `ControlSize::Small`, `Regular` or `Large` makes a control 24, 28 or 36 px tall under a compact skin ([controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md)), `binding("Jump", Binding::Key(KeyCode::Space))` rebinds a

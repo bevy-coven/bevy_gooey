@@ -169,6 +169,7 @@ mod hover_group;
 mod icon;
 #[cfg(feature = "reflect")]
 mod inspector;
+mod layout;
 mod layout_motion;
 mod led;
 mod list;
@@ -265,6 +266,7 @@ pub use inspector::{
     InspectMixed, InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange,
     build_inspectors, inspector, sync_inspect_mixed, sync_inspectors,
 };
+pub use layout::{BoxSize, CellWidth, LayoutGap, stack_overlays};
 pub use layout_motion::{
     LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelFrom, TravelSpring, mark_moving_parts,
     update_layout_motion,
@@ -395,15 +397,15 @@ pub use tooltip::{
 pub use tree::{Tree, TreeNode, TreeToggled, tree_by_input, update_trees};
 pub use type_select::{TypeSelectGroup, TypedPrefix};
 pub use widgets::{
-    binding, button, card_grid, check_item, choice, color_field, combobox, command_palette,
-    context_menu, dialog, dock, heading, hold_button, icon, icon_button, interface_size, label,
-    led, list, menu, menu_bar, menu_item, menu_title, meter, motion_row, notification_center,
-    number_field, pad_style, panel, popover, popover_modal, primary_button, progress, prompt,
-    prompts, prompts_at, radial, radio_item, screen, section, select, separator, side_tab_page,
-    side_tabs, skin_preset, slider, slot_grid, spinner, split, status_bar, status_item,
-    status_progress, submenu, surface, tab_page, table, tabs, text_area, text_input, text_size,
-    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
-    viewport,
+    binding, button, card_grid, cell, check_item, choice, color_field, column, combobox,
+    command_palette, context_menu, dialog, dock, heading, hold_button, icon, icon_button,
+    image_box, interface_size, label, led, list, menu, menu_bar, menu_item, menu_title, meter,
+    motion_row, notification_center, number_field, overlay, pad_style, panel, popover,
+    popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial, radio_item, row,
+    screen, section, select, separator, side_tab_page, side_tabs, skin_preset, slider, slot_grid,
+    spinner, split, status_bar, status_item, status_progress, submenu, surface, tab_page, table,
+    tabs, text_area, text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar,
+    toolbar_separator, tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -467,6 +469,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<ButtonVariant>()
             .register_type::<Loading>()
             .register_type::<Role>()
+            .register_type::<LayoutGap>()
+            .register_type::<CellWidth>()
+            .register_type::<BoxSize>()
             .register_type::<Meter>()
             .register_type::<WorldAnchor>()
             .register_type::<AnchorPinned>()
@@ -681,6 +686,7 @@ impl Plugin for GooeyStylePlugin {
                         update_loading,
                         elevation::give_elevation,
                         apply_skin,
+                        stack_overlays,
                         (widgets::wrap_bounded_labels, update_frames).chain(),
                     )
                         .chain(),

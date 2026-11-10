@@ -39,6 +39,7 @@ mod icon;
 mod inspect_mixed;
 mod inspector;
 mod large_text;
+mod layout;
 mod layout_motion;
 mod leaf;
 mod led;

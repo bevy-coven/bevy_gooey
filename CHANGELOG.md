@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `row(gap)`, `column(gap)`, `cell(width)`, `image_box(handle, size)` and `overlay()`: a panel's layout from widgets, with its spacing taken from the skin, so a tool's screen is built with no `Node` literal in it. A row and a column stand their children `gap` multiples of `GooeySkin::gap` apart (`LayoutGap`, so `row(1.0)` is the panel's own rhythm and an interface-size change moves all of it); `cell(width)` is a fixed-width label column in body text sizes that cuts what does not fit and shrinks in a narrow row rather than overlapping its neighbour; `image_box` is a picture of a set size that keeps its box while it is being written and draws nothing when it has not loaded; `overlay()` stacks its later children on its first, filling it (`stack_overlays`), for a hover readout over a plot. A zero-width cell takes no room. `tests/layout.rs` holds all of it; research `docs/research/layout-primitives.md`; guide [layout](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/layout.md).
+
 ### Fixed
 
 - A split's panes are no longer marked as interface while the split is open. Since v0.44.0 (G-62, the collapsed pane's peek) every `split_pane` carried a `Hovered`, so a host that tells the interface from the world behind it by "is any node with `Hovered` under the pointer" found a pane over its whole viewport and took every click meant for the world as a click on the interface: in bevy_grimoire's editor, whose map stands in a pane, 26 of the tests that click the map failed on this crate's v0.45.1. The peek now puts `Hovered` on the first pane only while the split is collapsed (when it first sees the collapse) and takes it off when the split is restored; a second pane and an open split's panes carry none. `tests/split_pane_hover.rs` holds it.

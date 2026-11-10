@@ -311,6 +311,130 @@ pub fn surface(level: u8) -> impl Bundle {
     )
 }
 
+/// A row of widgets with the skin's gap between them: a toolbar's line, a label beside its value, a
+/// list row. The gap is `gap` multiples of [`GooeySkin::gap`](crate::GooeySkin::gap), so `row(1.0)` sits on the same
+/// rhythm as a panel's own children; `row(0.0)` is no gap. Its children stretch to its height, as a
+/// plain flex row's do, while a child with a height of its own (an [`image_box`]) keeps it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((row(1.0), children![icon_button(IconSource::Image(default()), Tooltip::new("Grid")), button("Bake")]));
+/// # }
+/// ```
+pub fn row(gap: f32) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Row,
+            ..default()
+        },
+        Role::Row,
+        crate::LayoutGap(gap),
+    )
+}
+
+/// A stack of rows, the skin's gap between them: a panel's body, a form, a list of readings.
+/// `gap` is in multiples of [`GooeySkin::gap`](crate::GooeySkin::gap), as for [`row`]; the column is as wide as its widest
+/// row.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((column(1.0), children![label("Rig"), row(1.0), label("Slots")]));
+/// # }
+/// ```
+pub fn column(gap: f32) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::Stretch,
+            ..default()
+        },
+        Role::Column,
+        crate::LayoutGap(gap),
+    )
+}
+
+/// A box of a fixed width, in body text sizes, so a label column lines up down a list of rows: the
+/// words start at one edge whatever they say, and what does not fit is cut rather than drawn over
+/// the next column.
+///
+/// A width of zero (or less) collapses the cell: it takes no room and draws nothing of what it
+/// holds. A row narrower than its cells shrinks them, in order, and they never overlap.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((row(1.0), children![(cell(7.0), children![label("0 - clip 14")]), label("free x1.00")]));
+/// # }
+/// ```
+pub fn cell(width: f32) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Cell,
+        crate::CellWidth(width),
+    )
+}
+
+/// A picture of a fixed size, so a plot, a thumbnail or a chart holds its room while it is being
+/// written: the box is `size` logical px whatever its image is, and an image that has not loaded
+/// draws nothing and still keeps the box. It is never squeezed by a narrow row.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, plot: Handle<Image>) {
+/// commands.spawn(image_box(plot, Vec2::new(320.0, 160.0)));
+/// # }
+/// ```
+pub fn image_box(image: Handle<Image>, size: Vec2) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        ImageNode {
+            image,
+            image_mode: NodeImageMode::Stretch,
+            ..default()
+        },
+        Role::ImageBox,
+        crate::BoxSize(size),
+        Pickable::IGNORE,
+    )
+}
+
+/// A box its first child sizes, with every later child stacked over it: a hover image over a plot,
+/// a readout over a chart, a badge over a thumbnail. The stacked children fill the box and take no
+/// room of their own (see [`crate::stack_overlays`]), so the overlay is exactly as large as what it
+/// covers.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, plot: Handle<Image>, hover: Handle<Image>) {
+/// commands.spawn((overlay(), children![
+///     image_box(plot, Vec2::new(320.0, 160.0)),
+///     image_box(hover, Vec2::new(320.0, 160.0)),
+/// ]));
+/// # }
+/// ```
+pub fn overlay() -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Overlay,
+    )
+}
+
 /// A column of buttons, stretched to the widest.
 ///
 /// ```
