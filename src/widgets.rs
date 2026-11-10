@@ -1564,6 +1564,42 @@ pub fn text_area(label: impl Into<String>, value: impl Into<String>, rows: usize
     )
 }
 
+/// A [`text_area`] that fills its host: the field is as tall as the room the row's parent gives it
+/// (and its `rows` a least height), its own rail runs down its right while there is more text than
+/// it draws, and the wheel, the rail and the arrow keys scroll it. It is the fixed area in every
+/// other way — `TextInputValue`, `ValueChange<String>`, `TextLimit`, `TextHint`, `FieldProblem`,
+/// `TextEditing` — and a very long line wraps rather than panning.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn setup(mut commands: Commands) {
+/// commands.spawn((
+///     text_area_fill("Guide", "", 5),
+///     Node {
+///         flex_grow: 1.0,
+///         ..default()
+///     },
+/// ));
+/// # }
+/// ```
+pub fn text_area_fill(
+    label: impl Into<String>,
+    value: impl Into<String>,
+    rows: usize,
+) -> impl Bundle {
+    (
+        text_row_as(
+            Role::TextArea,
+            Some(label.into()),
+            value.into(),
+            Some(TEXT_AREA_CHARS),
+            RowKind::Fill(rows.max(1)),
+        ),
+        crate::text_area::TextAreaFill,
+    )
+}
+
 /// The row under [`text_input`]: a label if it has one and the field, which is `chars` character
 /// advances wide, or fills the room its parent leaves when `chars` is `None` (a command palette's
 /// field has no label and the card's whole width).
@@ -1577,13 +1613,17 @@ pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>)
 }
 
 /// What a text row is for: text, a number (Up and Down step its field and the text cursor is over
-/// it, so the row's own resize cursor, the scrub's, is on its label and padding only) or a colour
-/// (a swatch between the label and the field, and Escape puts the colour's text back).
+/// it, so the row's own resize cursor, the scrub's, is on its label and padding only), a colour
+/// (a swatch between the label and the field, and Escape puts the colour's text back) or a filling
+/// area (a field as tall as its host, with a rail of its own).
 #[derive(Clone, Copy)]
 enum RowKind {
     Text,
     /// A field `usize` lines high: Enter adds a line.
     Area(usize),
+    /// A field as tall as its host, scrolled by its rail and the wheel: `<rows>` is its least
+    /// height.
+    Fill(usize),
     Number,
     Colour(Srgba),
 }
@@ -1597,7 +1637,8 @@ fn text_row_as(
     kind: RowKind,
 ) -> impl Bundle {
     let fills = chars.is_none();
-    let area = matches!(kind, RowKind::Area(_));
+    let area = matches!(kind, RowKind::Area(_) | RowKind::Fill(_));
+    let filling = matches!(kind, RowKind::Fill(_));
     (
         Node {
             flex_direction: if area {
@@ -1615,11 +1656,20 @@ fn text_row_as(
             } else {
                 AlignItems::Center
             },
-            width: if fills {
+            width: if fills || filling {
                 Val::Percent(100.0)
             } else {
                 Val::Auto
             },
+            // A filling area takes the room its host leaves and gives nothing back: it is the one
+            // widget whose height is its parent's, so a scroll pane of text grows with the window.
+            flex_grow: if filling { 1.0 } else { 0.0 },
+            align_self: if filling {
+                AlignSelf::Stretch
+            } else {
+                AlignSelf::Auto
+            },
+            min_height: Val::ZERO,
             ..default()
         },
         role,
@@ -1641,7 +1691,16 @@ fn text_row_as(
             }
             row.spawn((
                 Node {
-                    flex_grow: if fills { 1.0 } else { 0.0 },
+                    flex_grow: if fills || filling { 1.0 } else { 0.0 },
+                    // A filling area's cell is a row stretched to the row's height, holding its
+                    // field and its rail side by side; a fixed row's cell is the one line's box.
+                    flex_direction: if filling {
+                        FlexDirection::Row
+                    } else {
+                        FlexDirection::Column
+                    },
+                    align_items: AlignItems::Stretch,
+                    min_height: Val::ZERO,
                     ..default()
                 },
                 Role::TextCell,
@@ -1649,8 +1708,13 @@ fn text_row_as(
             .with_children(|cell| {
                 let mut field = cell.spawn((
                     Node {
-                        flex_shrink: 0.0,
-                        flex_grow: if fills { 1.0 } else { 0.0 },
+                        flex_shrink: if fills || filling { 1.0 } else { 0.0 },
+                        flex_grow: if fills || filling { 1.0 } else { 0.0 },
+                        // A filling area's field is its cell's height (the cell stretches to the
+                        // host): the text scrolls inside it rather than making it as tall as the
+                        // text.
+                        min_width: Val::ZERO,
+                        min_height: Val::ZERO,
                         overflow: Overflow::clip(),
                         ..default()
                     },
@@ -1658,14 +1722,19 @@ fn text_row_as(
                     EditableText {
                         visible_width: chars,
                         visible_lines: match kind {
-                            RowKind::Area(rows) => Some(rows as f32),
+                            RowKind::Area(rows) | RowKind::Fill(rows) => Some(rows as f32),
                             _ => Some(1.0),
                         },
                         allow_newlines: area,
                         cursor_width: TEXT_CARET_WIDTH,
                         ..EditableText::new(&value)
                     },
-                    if area {
+                    if filling {
+                        // A very long line wraps at the field's width (`WordOrCharacter`: a word
+                        // with no break opportunity in it still breaks), so there is no horizontal
+                        // scrolling to find.
+                        TextLayout::new(Justify::Left, LineBreak::WordOrCharacter)
+                    } else if area {
                         TextLayout::default()
                     } else {
                         TextLayout::no_wrap()
@@ -1683,6 +1752,9 @@ fn text_row_as(
                     RowKind::Area(_) => {
                         field.insert(AreaField);
                     }
+                    RowKind::Fill(_) => {
+                        field.insert(AreaField);
+                    }
                     RowKind::Number => {
                         field.insert((
                             NumberInput,
@@ -1695,6 +1767,37 @@ fn text_row_as(
                     RowKind::Colour(_) => {
                         field.insert((SelectAllOnFocus, observe(color_on_key_input)));
                     }
+                }
+                if let RowKind::Fill(_) = kind {
+                    // The rail stands beside the field, not over it: a lane the text does not run
+                    // under, and the one node a press on the lane lands on (a later sibling draws
+                    // over an earlier one, so an absolute rail would be under the field).
+                    let field_id = field.id();
+                    cell.spawn((
+                        Node {
+                            flex_shrink: 0.0,
+                            align_self: AlignSelf::Stretch,
+                            margin: UiRect::left(Val::Px(4.0)),
+                            ..default()
+                        },
+                        Role::ListRail,
+                        crate::text_area::AreaRail(field_id),
+                        Hovered::default(),
+                        Visibility::Hidden,
+                        children![(
+                            Node {
+                                width: Val::Percent(100.0),
+                                flex_shrink: 0.0,
+                                ..default()
+                            },
+                            Role::ListThumb,
+                            crate::text_area::AreaThumb(field_id),
+                            // The rail is the lane: a press anywhere on it scrolls there, so the
+                            // thumb never takes the pointer.
+                            Pickable::IGNORE,
+                            Hovered::default(),
+                        )],
+                    ));
                 }
                 cell.spawn((
                     Node {

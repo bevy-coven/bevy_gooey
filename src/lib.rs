@@ -205,6 +205,7 @@ mod status;
 mod table;
 mod tabs;
 mod text;
+mod text_area;
 mod toast;
 mod toolbar;
 mod tooltip;
@@ -382,6 +383,7 @@ pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
     track_text_editing, update_text_inputs,
 };
+pub use text_area::{AreaRail, AreaThumb, TextAreaFill, scroll_text_areas};
 pub use toast::{
     Toast, ToastAction, ToastAnchor, ToastBundle, ToastButton, ToastInset, ToastKind, ToastLog,
     ToastLogEntry, ToastSettings, ToastStack, update_toasts,
@@ -404,8 +406,8 @@ pub use widgets::{
     popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial, radio_item, row,
     screen, section, select, separator, side_tab_page, side_tabs, skin_preset, slider, slot_grid,
     spinner, split, status_bar, status_item, status_progress, submenu, surface, tab_page, table,
-    tabs, text_area, text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar,
-    toolbar_separator, tree, vec_field, viewport,
+    tabs, text_area, text_area_fill, text_input, text_size, toast, toast_alert, toggle,
+    toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -512,6 +514,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<TextInputValue>()
             .register_type::<TextHint>()
             .register_type::<TextLimit>()
+            .register_type::<TextAreaFill>()
             .register_type::<TextEditing>()
             .register_type::<NumberValue>()
             .register_type::<NumberStep>()
@@ -611,6 +614,9 @@ impl Plugin for GooeyStylePlugin {
             .add_observer(toast::toast_on_activate)
             .add_observer(toast::toast_button_removed)
             .add_observer(text::text_on_edit)
+            .add_observer(text_area::rail_on_press)
+            .add_observer(text_area::rail_on_acquire)
+            .add_observer(text_area::rail_on_drag)
             .init_resource::<TooltipSettings>()
             .register_type::<TooltipSettings>()
             .add_observer(tooltip::tooltip_on_press)
@@ -664,6 +670,7 @@ impl Plugin for GooeyStylePlugin {
                     update_text_inputs,
                     (update_palette, update_comboboxes).chain(),
                     update_option_rows,
+                    text_area::area_on_scroll,
                     (update_choices, update_radials).chain(),
                     (
                         dock::update_docks,
@@ -691,8 +698,7 @@ impl Plugin for GooeyStylePlugin {
                         (widgets::wrap_bounded_labels, update_frames).chain(),
                     )
                         .chain(),
-                    update_meters,
-                    update_sliders,
+                    (update_meters, update_sliders, scroll_text_areas).chain(),
                     (update_lists, access::update_accessibility).chain(),
                 )
                     .chain()
