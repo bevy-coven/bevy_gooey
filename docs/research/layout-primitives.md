@@ -48,7 +48,8 @@ size, not as text flowed into whatever room is left.
   rhythm as a panel's own `row_gap`, and a step of `GooeySkin::text_scale` moves all of it. `row`
   leaves its children in the row's own stretch, so a control fills the line's height; `column`
   stretches its children to the widest.
-- **`cell(width)`** is a fixed width in **body text sizes** (an `em`: `Column::width`'s unit, so it
+- **`cell(width)`** is a row (its children stretch to its height, a label and a value side by side;
+  a stack inside it is a `column`), a fixed width in **body text sizes** (an `em`: `Column::width`'s unit, so it
   grows with the player's text size), `min_width: 0` and `flex_shrink: 1`, with `overflow: clip`.
   A row narrower than its cells shrinks them in order and they never overlap. A cell of no width
   takes none and draws none of its words.
@@ -57,10 +58,15 @@ size, not as text flowed into whatever room is left.
   being written keeps its room; a handle with nothing loaded draws nothing and keeps the box. Its
   picture is `Pickable::IGNORE`, as every picture is: the plot's own wrapper takes the pointer
   (`RelativeCursorPosition` on the box still works, since the box is the node under it).
-- **`overlay()`** is a box its first child sizes; `stack_overlays` puts every later child
-  `Absolute` at 0,0 filling it, in `GooeySystems::Style` right after `apply_skin`, so the rule is the
-  last word on the boxes and an overlay of any two widgets stacks. The first child is the only one
-  in the flow, so the overlay is exactly its size.
+- **`overlay()`** is a box its first child sizes (`align_self: FlexStart`, so a taller sibling does
+  not stretch it); `stack_overlays` puts every later child `Absolute` at 0,0 filling it, in
+  `GooeySystems::Style` **right before `apply_skin`**, so one restyle draws the first child in the
+  flow, a stacked child in the overlay's box, and a child that has just stopped being either in its
+  own. **The stacking is a component (`OverlayStacked`) and is undone**: a child that becomes the
+  overlay's first one, because the one before it was despawned or moved out, has it taken off and
+  sizes the overlay again, and a child moved to another parent is laid out where it lands (a
+  stacked child left `Absolute` in a row would have measured `390` tall in the row that wanted
+  `378`). The first child is the only one in the flow, so the overlay is exactly its size.
 
 ## Parameters
 
@@ -68,7 +74,7 @@ size, not as text flowed into whatever room is left.
 |---|---|---|
 |`row`/`column` gap|`LayoutGap × GooeySkin::gap`|one rhythm with a panel's own children|
 |`cell` width|body text sizes (`text_px × CellWidth`)|`Column::width`'s unit; grows with the player's text scale|
-|`cell` squeeze|`flex_shrink: 1`, `min_width: 0`|CSS's flexbox default, made explicit: it beats overlapping|
+|`cell` squeeze|`flex_shrink: 1`, `min_width: 0`|flexbox shrinks every item in proportion to its width, so cells give way together and never overlap; `image_box` is `flex_shrink: 0`, so the cells around a picture take the squeeze|
 |`image_box`|`NodeImageMode::Stretch`, `flex_shrink: 0`|a picture is never squeezed; its box is its size|
 |`overlay` children|`Absolute`, 0, 0, 100% × 100%|CSS absolute positioning in an `Absolute` parent (which taffy sizes to the parent's padding box)|
 

@@ -312,9 +312,14 @@ pub fn surface(level: u8) -> impl Bundle {
 }
 
 /// A row of widgets with the skin's gap between them: a toolbar's line, a label beside its value, a
-/// list row. The gap is `gap` multiples of [`GooeySkin::gap`](crate::GooeySkin::gap), so `row(1.0)` sits on the same
-/// rhythm as a panel's own children; `row(0.0)` is no gap. Its children stretch to its height, as a
-/// plain flex row's do, while a child with a height of its own (an [`image_box`]) keeps it.
+/// list row. The gap is `gap` multiples of [`GooeySkin::gap`](crate::GooeySkin::gap), so `row(1.0)`
+/// sits on the same rhythm as a panel's own children; `row(0.0)` is no gap.
+///
+/// A row is as wide as the room it is given and never pushes out of it: when its children do not
+/// fit, every [`cell`] in it shrinks by the same share of its width (`flex_shrink: 1` on each, which
+/// flexbox divides in proportion to their widths), and an [`image_box`] never shrinks at all, so a
+/// picture keeps its size and the cells give way around it. A cell that shrinks cuts what does not
+/// fit rather than running onto its neighbour.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -335,8 +340,9 @@ pub fn row(gap: f32) -> impl Bundle {
 }
 
 /// A stack of rows, the skin's gap between them: a panel's body, a form, a list of readings.
-/// `gap` is in multiples of [`GooeySkin::gap`](crate::GooeySkin::gap), as for [`row`]; the column is as wide as its widest
-/// row.
+/// `gap` is in multiples of [`GooeySkin::gap`](crate::GooeySkin::gap), as for [`row`]. Its children
+/// stretch to its width; like a [`row`] it is as wide as the room it is given and no wider, so a
+/// long row inside it is cut rather than pushing the column past its host.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -359,10 +365,13 @@ pub fn column(gap: f32) -> impl Bundle {
 
 /// A box of a fixed width, in body text sizes, so a label column lines up down a list of rows: the
 /// words start at one edge whatever they say, and what does not fit is cut rather than drawn over
-/// the next column.
+/// the next column. What it holds stands in a row, stretched to its height (a label and a value side
+/// by side); put a [`column()`] inside it for a stack.
 ///
-/// A width of zero (or less) collapses the cell: it takes no room and draws nothing of what it
-/// holds. A row narrower than its cells shrinks them, in order, and they never overlap.
+/// A width of zero (or less) collapses the cell: it takes no room, **no gap stands where it would
+/// be** (a gap is only drawn between two cells that are there), and nothing it holds is drawn. In a
+/// [`row`] narrower than its children every cell shrinks by the same share of its width and they
+/// never overlap; an [`image_box`] beside them never shrinks.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -374,7 +383,7 @@ pub fn column(gap: f32) -> impl Bundle {
 pub fn cell(width: f32) -> impl Bundle {
     (
         Node {
-            flex_direction: FlexDirection::Column,
+            flex_direction: FlexDirection::Row,
             ..default()
         },
         Role::Cell,
@@ -384,7 +393,12 @@ pub fn cell(width: f32) -> impl Bundle {
 
 /// A picture of a fixed size, so a plot, a thumbnail or a chart holds its room while it is being
 /// written: the box is `size` logical px whatever its image is, and an image that has not loaded
-/// draws nothing and still keeps the box. It is never squeezed by a narrow row.
+/// draws nothing and still keeps the box. It is never squeezed by a narrow row: the cells beside it
+/// give way first, and it is cut at its own box rather than growing.
+///
+/// **It takes no pointer** (`Pickable::IGNORE`, as every picture in this crate does), so a plot that
+/// reads the cursor keeps a wrapper of its own with `RelativeCursorPosition` and `Hovered` on it, or
+/// an [`overlay`]'s first child is that wrapper.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -412,7 +426,7 @@ pub fn image_box(image: Handle<Image>, size: Vec2) -> impl Bundle {
 
 /// A box its first child sizes, with every later child stacked over it: a hover image over a plot,
 /// a readout over a chart, a badge over a thumbnail. The stacked children fill the box and take no
-/// room of their own (see [`crate::stack_overlays`]), so the overlay is exactly as large as what it
+/// room of their own (the crate stacks them), so the overlay is exactly as large as what it
 /// covers.
 ///
 /// ```
@@ -429,6 +443,8 @@ pub fn overlay() -> impl Bundle {
     (
         Node {
             flex_direction: FlexDirection::Column,
+            // Its first child gives it its size, so it never stretches to a taller sibling's.
+            align_self: AlignSelf::FlexStart,
             ..default()
         },
         Role::Overlay,

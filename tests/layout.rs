@@ -77,6 +77,19 @@ fn width(app: &App, entity: Entity) -> f32 {
     r - l
 }
 
+/// A tree in reading order: the entity, then all its descendants depth first.
+fn tree(app: &App, root: Entity) -> Vec<Entity> {
+    let mut out = vec![root];
+    let mut stack = vec![root];
+    while let Some(entity) = stack.pop() {
+        for child in children(app, entity).into_iter().rev() {
+            out.push(child);
+            stack.push(child);
+        }
+    }
+    out
+}
+
 fn children(app: &App, entity: Entity) -> Vec<Entity> {
     app.world()
         .get::<Children>(entity)
@@ -90,7 +103,7 @@ fn gap_px(step: f32) -> f32 {
 }
 
 /// The rig bench's slot row, built from the primitives and from nothing else: a label cell, a plot
-/// image box and the plot's hover image in an overlay.
+/// image box and the plot's hover image stacked in an overlay.
 fn slot_row(app: &mut App) -> Entity {
     let plot = image(app);
     let hover = image(app);
@@ -115,10 +128,13 @@ fn slot_row(app: &mut App) -> Entity {
     row
 }
 
-/// The same row as the editor hand-built it, from `Node` literals.
+/// The same row as the editor hand-built it (`anim_tab.rs` ~1409-1441), from `Node` literals: a
+/// fixed-width label, the plot, and a relative wrapper holding the plot again with the hover image
+/// absolute at 0/0 over it; the three stand a gap apart.
 fn hand_built_row(app: &mut App) -> Entity {
     let plot = image(app);
     let hover = image(app);
+    let size = Vec2::new(120.0, 60.0);
     let world = app.world_mut();
     let row = world
         .spawn(Node {
@@ -139,30 +155,41 @@ fn hand_built_row(app: &mut App) -> Entity {
             ));
             row.spawn((
                 Node {
-                    width: Val::Px(120.0),
-                    height: Val::Px(60.0),
+                    width: Val::Px(size.x),
+                    height: Val::Px(size.y),
                     flex_shrink: 0.0,
                     ..default()
                 },
                 ImageNode::new(plot),
             ));
-            row.spawn((
-                Node {
-                    width: Val::Px(120.0),
-                    height: Val::Px(60.0),
-                    flex_shrink: 0.0,
-                    ..default()
-                },
-                children![(
+            // The editor's wrapper: relative, holding the plot and the hover image stacked on it.
+            row.spawn(Node {
+                width: Val::Px(size.x),
+                height: Val::Px(size.y),
+                flex_shrink: 0.0,
+                ..default()
+            })
+            .with_children(|wrap| {
+                wrap.spawn((
                     Node {
-                        width: Val::Px(120.0),
-                        height: Val::Px(60.0),
-                        flex_shrink: 0.0,
+                        width: Val::Px(size.x),
+                        height: Val::Px(size.y),
+                        ..default()
+                    },
+                    ImageNode::new(hover.clone()),
+                ));
+                wrap.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(0.0),
+                        top: Val::Px(0.0),
+                        width: Val::Px(size.x),
+                        height: Val::Px(size.y),
                         ..default()
                     },
                     ImageNode::new(hover),
-                )],
-            ));
+                ));
+            });
         })
         .id();
     let panel = world.spawn(panel()).add_child(row).id();
@@ -184,18 +211,36 @@ fn a_slot_row_built_from_primitives_lays_out_as_the_hand_built_one() {
     let b = children(&hand, literal);
     assert_eq!(a.len(), 3, "a label cell, an image box and an overlay");
     assert_eq!(b.len(), 3);
-    for (index, (mine, theirs)) in a.iter().zip(&b).enumerate() {
-        let (m, t) = (rect(&built, *mine), rect(&hand, *theirs));
+
+    // Every node of both trees, in step: the row's own children and all their descendants (a
+    // cell's label, an overlay's two pictures), so a box one level down is held too.
+    let mine = tree(&built, primitives);
+    let theirs = tree(&hand, literal);
+    assert_eq!(
+        mine.len(),
+        theirs.len(),
+        "the same nodes: {} against {}",
+        mine.len(),
+        theirs.len()
+    );
+    for (index, (a, b)) in mine.iter().zip(&theirs).enumerate() {
+        let (m, t) = (rect(&built, *a), rect(&hand, *b));
         for (side, (x, y)) in [(m.0, t.0), (m.1, t.1), (m.2, t.2), (m.3, t.3)]
             .into_iter()
             .enumerate()
         {
             assert!(
                 (x - y).abs() < 0.5,
-                "child {index}, edge {side}: {x} vs {y}"
+                "node {index} of {} ({a:?} against {b:?}), edge {side}: {x} vs {y}",
+                mine.len()
             );
         }
     }
+    // The overlay's third child is the hover picture, and it covers the plot exactly.
+    let overlay = a[2];
+    let stacked = children(&built, overlay);
+    assert_eq!(stacked.len(), 2);
+    assert_eq!(rect(&built, stacked[0]), rect(&built, stacked[1]));
 
     // The gap between the first two is the skin's own gap, not a number of the caller's.
     let gap = rect(&built, a[1]).0 - rect(&built, a[0]).2;
@@ -215,7 +260,8 @@ fn a_slot_row_built_from_primitives_lays_out_as_the_hand_built_one() {
     assert!(((box_size.3 - box_size.1) - 60.0).abs() < 0.5);
 }
 
-/// A row narrows its cells rather than letting them run past it, and no cell ever stands on another.
+/// A row narrows its cells rather than letting them run past it, both shrink by the same share (they
+/// are the same width), and no cell ever stands on another.
 #[test]
 fn a_row_narrower_than_its_cells_shrinks_them_and_never_overlaps() {
     let mut app = app();
@@ -254,6 +300,12 @@ fn a_row_narrower_than_its_cells_shrinks_them_and_never_overlaps() {
         right,
         rect(&app, narrow)
     );
+    assert!(
+        ((left.2 - left.0) - (right.2 - right.0)).abs() < 0.5,
+        "equal cells shrink by the same share: {:?} {:?}",
+        left,
+        right
+    );
     let (_l, _, r, _) = rect(&app, narrow);
     assert!(
         right.2 <= r + 0.5,
@@ -261,32 +313,43 @@ fn a_row_narrower_than_its_cells_shrinks_them_and_never_overlaps() {
     );
 }
 
-/// A cell given no width takes none and draws none of its words.
+/// A cell given no width takes none, draws none of its words, and leaves no gap beside it.
 #[test]
 fn a_zero_width_cell_collapses_and_draws_nothing() {
     let mut app = app();
     let world = app.world_mut();
     let holder = world
-        .spawn((
-            row(1.0),
-            children![(cell(0.0), children![label("invisible")])],
-        ))
+        .spawn(row(1.0))
+        .with_children(|row| {
+            row.spawn((cell(4.0), children![label("left")]));
+            row.spawn((cell(0.0), children![label("invisible")]));
+            row.spawn((cell(4.0), children![label("right")]));
+        })
         .id();
     world.spawn(screen()).add_child(holder);
     settle(&mut app);
 
     let cells = children(&app, holder);
-    let cell = cells[0];
-    assert_eq!(width(&app, cell), 0.0, "a zero-width cell takes no room");
-    let node = app.world().get::<Node>(cell).expect("a node");
-    assert_eq!(
-        node.overflow.x,
-        OverflowAxis::Clip,
-        "what a cell cannot show is cut, not drawn over its neighbour"
+    let empty = cells[1];
+    assert_eq!(width(&app, empty), 0.0, "a zero-width cell takes no room");
+    // Nothing it holds is drawn: its label's box is empty of room.
+    let label = children(&app, empty)[0];
+    let (l, t, r, b) = rect(&app, label);
+    assert!(
+        (r - l) <= 0.5 && (b - t) <= 0.5,
+        "the words inside are drawn into nothing: {l}..{r} by {t}..{b}"
     );
+    // And no gap stands where it would be: the two cells that are there are one gap apart.
+    let gap = rect(&app, cells[2]).0 - rect(&app, cells[0]).2;
+    assert!(
+        (gap - gap_px(1.0)).abs() < 0.5,
+        "one gap between the cells that are shown, not two: {gap}"
+    );
+    assert_eq!(cells.len(), 3, "it is still the row's child");
 }
 
-/// An image that has not loaded keeps its box, so a bench never reflows while a plot is written.
+/// An image that has not loaded keeps its box, draws nothing, and is never squeezed by a narrow
+/// row: the cells beside it give way first.
 #[test]
 fn an_unloaded_image_keeps_its_size_and_draws_nothing() {
     let mut app = app();
@@ -296,21 +359,54 @@ fn an_unloaded_image_keeps_its_size_and_draws_nothing() {
         .load("no such plot.png");
     let world = app.world_mut();
     let holder = world
-        .spawn(image_box(missing.clone(), Vec2::new(200.0, 80.0)))
+        .spawn(row(1.0))
+        .with_children(|row| {
+            row.spawn((cell(10.0), children![label("a long label in the way")]));
+            row.spawn(image_box(missing.clone(), Vec2::new(200.0, 80.0)));
+            row.spawn((cell(10.0), children![label("another long label")]));
+        })
         .id();
-    world.spawn(screen()).add_child(holder);
+    let room = world
+        .spawn(Node {
+            width: Val::Px(320.0),
+            min_width: Val::Px(320.0),
+            max_width: Val::Px(320.0),
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .id();
+    world.entity_mut(room).add_child(holder);
+    world.spawn(screen()).add_child(room);
     settle(&mut app);
 
-    let (l, t, r, b) = rect(&app, holder);
-    assert!(((r - l) - 200.0).abs() < 0.5, "the box keeps its width");
-    assert!(((b - t) - 80.0).abs() < 0.5, "the box keeps its height");
-    let drawn = app.world().get::<ImageNode>(holder).expect("a picture");
-    assert_eq!(drawn.image, missing, "the handle it was given");
-    let assets = app.world().resource::<Assets<Image>>();
+    let cells = children(&app, holder);
+    let (l, t, r, b) = rect(&app, cells[1]);
     assert!(
-        assets.get(&missing).is_none(),
-        "nothing is loaded for it, so nothing can draw"
+        ((r - l) - 200.0).abs() < 0.5,
+        "the box keeps its width in a row with 120 px to spare: {} of 200",
+        r - l
     );
+    assert!(((b - t) - 80.0).abs() < 0.5, "and its height: {}", b - t);
+    // Nothing is drawn in it: the handle is one Bevy has no image for, and the node draws no
+    // background of its own (a box is the picture and nothing else).
+    let drawn = app
+        .world()
+        .get::<ImageNode>(cells[1])
+        .expect("the box's node");
+    assert_eq!(drawn.image, missing, "the handle it was given");
+    let fill = app.world().get::<BackgroundColor>(cells[1]);
+    assert!(
+        fill.is_none() || fill.is_some_and(|fill| fill.0 == Color::NONE),
+        "no fill stands in for the missing picture: {fill:?}"
+    );
+    // The cells gave way instead: both are narrower than their ten text sizes.
+    for cell in [cells[0], cells[2]] {
+        assert!(
+            width(&app, cell) < GooeySkin::dark().text_size * 10.0 - 1.0,
+            "a cell gave way: {}",
+            width(&app, cell)
+        );
+    }
 }
 
 /// An overlay stacks what comes after its first child exactly on top of it, and the first child is
@@ -355,6 +451,152 @@ fn an_overlay_stacks_its_later_children_on_the_first() {
             .position_type,
         PositionType::Absolute,
         "the stacked child is out of the flow, so it adds no room"
+    );
+}
+
+/// An overlay whose first child is despawned is the size of its new first child, in the flow: the
+/// stacking of a child that becomes first is given back.
+#[test]
+fn despawning_an_overlays_first_child_leaves_the_next_one_in_the_flow() {
+    let mut app = app();
+    let under = image(&mut app);
+    let over = image(&mut app);
+    let world = app.world_mut();
+    let first = world.spawn(image_box(under, Vec2::new(160.0, 90.0))).id();
+    let second = world
+        .spawn(image_box(over.clone(), Vec2::new(160.0, 90.0)))
+        .id();
+    let third = world.spawn(image_box(over, Vec2::new(160.0, 90.0))).id();
+    let overlay = world
+        .spawn(overlay())
+        .add_children(&[first, second, third])
+        .id();
+    world.spawn(screen()).add_child(overlay);
+    settle(&mut app);
+    assert!(((rect(&app, overlay).2 - rect(&app, overlay).0) - 160.0).abs() < 0.5);
+
+    // The picture a plot is rebuilt from: the first child goes.
+    app.world_mut().entity_mut(first).despawn();
+    settle(&mut app);
+    let now = children(&app, overlay);
+    assert_eq!(now.len(), 2);
+    assert_eq!(now[0], second, "the picture that followed it is first now");
+    assert_eq!(
+        app.world()
+            .get::<Node>(now[0])
+            .expect("a node")
+            .position_type,
+        PositionType::Relative,
+        "and it is back in the flow"
+    );
+    let (l, t, r, b) = rect(&app, overlay);
+    assert!(
+        ((r - l) - 160.0).abs() < 0.5 && ((b - t) - 90.0).abs() < 0.5,
+        "the overlay is the new first child's size: {l}..{r} by {t}..{b}"
+    );
+    assert!(
+        app.world().get::<OverlayStacked>(now[0]).is_none(),
+        "and carries no stacking"
+    );
+    assert!(
+        app.world().get::<OverlayStacked>(now[1]).is_some(),
+        "while the one over it still does"
+    );
+}
+
+/// A stacked child moved out of its overlay is back in the flow wherever it lands, and the overlay
+/// it left is still its first child's size.
+#[test]
+fn a_stacked_child_moved_out_is_in_the_flow_again() {
+    let mut app = app();
+    let under = image(&mut app);
+    let over = image(&mut app);
+    let world = app.world_mut();
+    let base = world.spawn(image_box(under, Vec2::new(140.0, 70.0))).id();
+    let stacked = world
+        .spawn(image_box(over.clone(), Vec2::new(140.0, 70.0)))
+        .id();
+    let overlay = world.spawn(overlay()).add_children(&[base, stacked]).id();
+    let elsewhere = world.spawn(row(0.0)).id();
+    world.spawn(screen()).add_child(overlay);
+    settle(&mut app);
+    assert!(app.world().get::<OverlayStacked>(stacked).is_some());
+
+    // Moved into a row, where it is an item of that row and must be laid out as one.
+    let second = app
+        .world_mut()
+        .spawn(image_box(over, Vec2::new(140.0, 70.0)))
+        .id();
+    app.world_mut()
+        .entity_mut(elsewhere)
+        .add_children(&[stacked, second]);
+    settle(&mut app);
+
+    let node = app.world().get::<Node>(stacked).expect("a node");
+    assert_eq!(
+        node.position_type,
+        PositionType::Relative,
+        "back in the flow"
+    );
+    assert_eq!(node.width, Val::Px(140.0), "its own size again");
+    assert!(app.world().get::<OverlayStacked>(stacked).is_none());
+    let (l, _, r, _) = rect(&app, stacked);
+    assert!(((r - l) - 140.0).abs() < 0.5, "and drawn at it");
+    // The row places it after the other, not on top of it.
+    let (l2, _, _, _) = rect(&app, second);
+    assert!(l2 > r - 0.5, "the two stand side by side: {r} then {l2}");
+    // And the overlay it left is unchanged.
+    assert!(((rect(&app, overlay).2 - rect(&app, overlay).0) - 140.0).abs() < 0.5);
+}
+
+/// In a row short of room a cell gives way before an image box, which is never squeezed.
+#[test]
+fn a_cell_gives_way_before_an_image_box() {
+    let mut app = app();
+    let plot = image(&mut app);
+    let world = app.world_mut();
+    let row = world
+        .spawn(row(1.0))
+        .with_children(|row| {
+            row.spawn((
+                cell(12.0),
+                children![label("a label far too long for this line")],
+            ));
+            row.spawn(image_box(plot, Vec2::new(200.0, 80.0)));
+        })
+        .id();
+    let room = world
+        .spawn(Node {
+            width: Val::Px(260.0),
+            min_width: Val::Px(260.0),
+            max_width: Val::Px(260.0),
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .id();
+    world.entity_mut(room).add_child(row);
+    world.spawn(screen()).add_child(room);
+    settle(&mut app);
+
+    let items = children(&app, row);
+    let box_width = width(&app, items[1]);
+    let cell_width = width(&app, items[0]);
+    assert!(
+        (box_width - 200.0).abs() < 0.5,
+        "the picture is its own size: {box_width}"
+    );
+    assert!(
+        cell_width < GooeySkin::dark().text_size * 12.0 - 1.0,
+        "the cell took the squeeze: {cell_width}"
+    );
+    assert!(
+        cell_width > 0.0,
+        "and is still there, a gap apart from the picture: {cell_width}"
+    );
+    let gap = rect(&app, items[1]).0 - rect(&app, items[0]).2;
+    assert!(
+        (gap - gap_px(1.0)).abs() < 0.5,
+        "one gap between them: {gap}"
     );
 }
 

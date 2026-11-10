@@ -20,7 +20,7 @@ use crate::drag::{DropCandidate, DropRefusing};
 use crate::elevation::{Elevation, ElevationLevel};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
 use crate::icon::{IconSize, IconTone};
-use crate::layout::{BoxSize, CellWidth, LayoutGap};
+use crate::layout::{BoxSize, CellWidth, LayoutGap, OverlayStacked};
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
@@ -2109,6 +2109,8 @@ struct State {
     cell: f32,
     /// A layout image box's size, logical px.
     image: Vec2,
+    /// An overlay's child drawn over its first one: another system owns its box.
+    stacked: bool,
 }
 
 impl Default for State {
@@ -2148,6 +2150,7 @@ impl Default for State {
             layout_gap: 1.0,
             cell: 0.0,
             image: Vec2::ZERO,
+            stacked: false,
         }
     }
 }
@@ -2181,6 +2184,7 @@ type StateQuery = (
         Option<&'static LayoutGap>,
         Option<&'static CellWidth>,
         Option<&'static BoxSize>,
+        Has<OverlayStacked>,
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -2228,6 +2232,7 @@ type Restyle = (
                 Changed<LayoutGap>,
                 Changed<CellWidth>,
                 Changed<BoxSize>,
+                Added<OverlayStacked>,
             )>,
         )>,
     )>,
@@ -2250,7 +2255,11 @@ type Removals<'w, 's> = (
     RemovedComponents<'w, 's, PrimaryButton>,
     RemovedComponents<'w, 's, ControlSize>,
     RemovedComponents<'w, 's, ButtonVariant>,
-    RemovedComponents<'w, 's, LoadingHold>,
+    // A nested pair: a SystemParam tuple holds 16 (removals are one each), and this one is at it.
+    (
+        RemovedComponents<'w, 's, LoadingHold>,
+        RemovedComponents<'w, 's, OverlayStacked>,
+    ),
 );
 
 /// Whether a role is a widget whose parts follow its state: they are restyled with it.
@@ -2334,7 +2343,7 @@ pub fn apply_skin(
         unprimed,
         unsized_controls,
         unvaried,
-        unheld,
+        (unheld, unstacked),
     ) = &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -2375,6 +2384,7 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
+                        stacked,
                     ),
                     row,
                     role,
@@ -2424,6 +2434,7 @@ pub fn apply_skin(
                         layout_gap: gap.map_or(1.0, |gap| gap.0),
                         cell: cell.map_or(0.0, |cell| cell.0),
                         image: image.map_or(Vec2::ZERO, |image| image.0),
+                        stacked,
                     }
                 },
             )
@@ -2484,6 +2495,7 @@ pub fn apply_skin(
         unsized_controls.clear();
         unvaried.clear();
         unheld.clear();
+        unstacked.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -2535,6 +2547,7 @@ pub fn apply_skin(
     dirty.extend(unsized_controls.read());
     dirty.extend(unvaried.read());
     dirty.extend(unheld.read());
+    dirty.extend(unstacked.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -4230,23 +4243,34 @@ fn restyle(
                 next.min_width = Val::ZERO;
             }
             // A cell is a fixed width in body text sizes, cuts what does not fit, and shrinks
-            // before it ever runs onto its neighbour; a cell of no width draws nothing at all.
-            Role::Cell => {
-                next.width = Val::Px(text_px * state.cell.max(0.0));
+            // before it ever runs onto its neighbour. A cell of no width is not shown at all, so it
+            // takes no room and no gap stands where it would be; stacked in an overlay it is the
+            // first child's box, which `stack_overlays` owns.
+            Role::Cell if !state.stacked => {
+                // A width of none is not shown at all (`Display::None`), which is what takes its
+                // room and the gap beside it out of the row; a cell of width 0 still laid out is an
+                // item the row draws a gap around.
+                let width = text_px * state.cell.max(0.0);
+                next.display = if width > 0.0 {
+                    Display::Flex
+                } else {
+                    Display::None
+                };
+                next.width = Val::Px(width);
                 next.min_width = Val::ZERO;
                 next.flex_shrink = 1.0;
                 next.overflow = Overflow::clip();
             }
-            // A picture of its own size, cut to its box, and never squeezed by a narrow row. Stacked
-            // over another in an overlay it is that child's box, which `stack_overlays` gives it, so
-            // its own size is not written there.
-            Role::ImageBox if next.position_type != PositionType::Absolute => {
+            // A picture of its own size, cut to its box, and never squeezed by a narrow row: a cell
+            // beside it gives way first. Stacked over another in an overlay it is that child's box,
+            // which `stack_overlays` owns.
+            Role::ImageBox if !state.stacked => {
                 next.width = Val::Px(state.image.x.max(0.0));
                 next.height = Val::Px(state.image.y.max(0.0));
                 next.flex_shrink = 0.0;
                 next.overflow = Overflow::clip();
             }
-            Role::ImageBox => {
+            Role::Cell | Role::ImageBox => {
                 next.flex_shrink = 0.0;
                 next.overflow = Overflow::clip();
             }

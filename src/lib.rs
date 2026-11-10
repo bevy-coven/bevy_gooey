@@ -266,7 +266,7 @@ pub use inspector::{
     InspectMixed, InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange,
     build_inspectors, inspector, sync_inspect_mixed, sync_inspectors,
 };
-pub use layout::{BoxSize, CellWidth, LayoutGap, stack_overlays};
+pub use layout::{BoxSize, CellWidth, LayoutGap, OverlayStacked};
 pub use layout_motion::{
     LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelFrom, TravelSpring, mark_moving_parts,
     update_layout_motion,
@@ -472,6 +472,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<LayoutGap>()
             .register_type::<CellWidth>()
             .register_type::<BoxSize>()
+            .register_type::<OverlayStacked>()
             .register_type::<Meter>()
             .register_type::<WorldAnchor>()
             .register_type::<AnchorPinned>()
@@ -685,8 +686,8 @@ impl Plugin for GooeyStylePlugin {
                         update_selection_indicators,
                         update_loading,
                         elevation::give_elevation,
+                        layout::stack_overlays,
                         apply_skin,
-                        stack_overlays,
                         (widgets::wrap_bounded_labels, update_frames).chain(),
                     )
                         .chain(),
