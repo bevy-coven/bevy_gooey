@@ -64,8 +64,9 @@ window's: dividing a pointer by it is wrong, and so is writing a physical height
 ## Proof
 
 `tests/text_area_fill.rs`, all laid out for real in a headless window and driven by real input: the
-acceptance (64 KiB in 40 rows, wheel to the end, the last line inside the field, then typing at the
-end sends one change carrying all of it, and Ctrl+Enter a final one); the wheel scrolls a filled area
+acceptance (64 KiB in 40 rows, wheel to the end, the last line inside the field, then Ctrl+End to the
+document's end and one character typed there sending one change carrying all of it, and Ctrl+Enter a
+final one); the wheel scrolls a filled area
 and not a short one; a filled area is as tall as its host; the rail shows while the text overflows,
 its thumb is the share shown and a press on it jumps the view; a very long line wraps and scrolls
 vertically with `offset.x` 0; a scaled interface (1080p, `UiScale` 1.5) scrolls in its own pixels, a

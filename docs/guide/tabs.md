@@ -142,6 +142,8 @@ let bar = commands
   squares.
 - **A badge is a corner pill.** `SideTab::count(n)` shows a count and hides it at zero; `badge("New")`
   takes any short words. It is drawn in the tab's top-right corner, over the picture's corner.
+- **A plain `side_tabs` ignores `icon`**: it draws the label and the badge, so one list of
+  `SideTab`s serves either strip and a host switching look needs no second copy of the data.
 - **Everything else is `side_tabs`'s**: `TabsValue` and `ValueChange<usize>` on the entity it returns,
   Up and Down and the D-pad stepping it, Left and Right leaving it, `side_tab_page` for its pages
   anywhere, and the sliding indicator on the selected tab.
@@ -149,8 +151,10 @@ let bar = commands
 ## What it does not do yet
 
 A tab that is disabled or closable, a strip that scrolls (NN/g: "The fewer tabs, the
-better"; a game that needs more takes a `choice` or a `list`), icons in tabs, and a "Tab, 1 of 3,
-selected" narration for screen readers (Bevy's `TabList` and `Tab` carry their accessibility roles; the
+better"; a game that needs more takes a `choice` or a `list`, and an icon strip with more tabs than its
+window is the host's to put in a `list`, as a label strip is), icons in a **label** strip (a plain
+`side_tabs` draws each tab's words and badge and ignores its `icon`), and a "Tab, 1 of 3, selected"
+narration for screen readers (Bevy's `TabList` and `Tab` carry their accessibility roles; the
 position in the set is on the backlog with the slider's and the list's). Activation is automatic (focus
 selects, as the WAI-ARIA tabs pattern recommends for pages with no latency); a game that wants manual
 activation sets `TabList::activation` on the strip.

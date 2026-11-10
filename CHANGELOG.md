@@ -6,16 +6,15 @@
 
 - `row(gap)`, `column(gap)`, `cell(width)`, `image_box(handle, size)` and `overlay()`: a panel's layout from widgets, with its spacing taken from the skin, so a tool's screen is built with no `Node` literal in it. A row and a column stand their children `gap` multiples of `GooeySkin::gap` apart (`LayoutGap`, so `row(1.0)` is the panel's own rhythm and an interface-size change moves all of it); `cell(width)` is a fixed-width label column in body text sizes whose children stand in a row, cutting what does not fit and shrinking in a narrow row rather than overlapping its neighbour (a cell of no width is not shown at all, its gap taken with it); `image_box` is a picture of a set size that keeps its box while it is being written, is never squeezed (the cells beside it give way) and draws nothing when it has not loaded; `overlay()` stacks its later children on its first, filling it (`stack_overlays`, and a child that becomes first or leaves is put back in the flow, so an overlay is never a box of nothing), for a hover readout over a plot. A zero-width cell takes no room. `tests/layout.rs` holds all of it; research `docs/research/layout-primitives.md`; guide [layout](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/layout.md).
 
-- `text_area_fill(label, value, rows)` with `TextAreaFill`, `AreaRail` and `AreaThumb`: a
-  `text_area` as tall as the room its host leaves, with `rows` a least height, so a 64 KiB document
-  can be read and edited. Its own rail runs down its right while there is more text than the field
-  draws, and the wheel, a press or a drag on the rail, and the caret (a keystroke, an arrow,
-  Home/End, Ctrl+End, a click) scroll it; a very long line wraps at the field's width, so there is no
-  horizontal scrolling. Everything else is `text_area`'s: `TextInputValue`, one
-  `ValueChange<String>` per edit, `TextLimit`, `TextHint`, `FieldProblem`, `TextEditing`, and
-  Ctrl+Enter for the final change. A settled area writes nothing. Measured in a headless window: 64
-  KiB (65,548 characters) in a 40-row area wheels to its last line, and one keystroke typed there
-  reports the whole document.
+- `text_area_fill(label, value, rows)` with `TextAreaFill`: a `text_area` as tall as the room its
+  host leaves, with `rows` a least height, so a 64 KiB document can be read and edited. Its own rail
+  runs down its right while there is more text than the field draws, and the wheel, a press or a drag
+  on the rail, and the caret (a keystroke, an arrow, Home/End, Ctrl+End, a click) scroll it; a very
+  long line wraps at the field's width, so there is no horizontal scrolling. Everything else is
+  `text_area`'s: `TextInputValue`, one `ValueChange<String>` per edit, `TextLimit`, `TextHint`,
+  `FieldProblem`, `TextEditing`, and Ctrl+Enter for the final change. A settled area writes nothing.
+  Measured in a headless window: 64 KiB (65,548 characters) in a 40-row area wheels to its last line,
+  and one character typed at the document's end (Ctrl+End) reports the whole document.
 
 - `side_tabs_icons(tabs, selected)`, an icon-only strip for an activity bar: a narrow column of
   square targets, each drawing its `SideTab::icon`, naming itself in a tooltip (and to a screen

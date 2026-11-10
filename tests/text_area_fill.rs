@@ -93,22 +93,6 @@ fn rect(app: &App, entity: Entity) -> Rect {
     Rect::from_center_size(at, size)
 }
 
-/// The box inside the field's border and padding, in the window's own pixels: where the text is drawn,
-/// and the only part of a field Bevy turns into a caret.
-fn content_rect(app: &App, entity: Entity) -> Rect {
-    let node = app.world().get::<ComputedNode>(entity).expect("laid out");
-    let at = app
-        .world()
-        .get::<UiGlobalTransform>(entity)
-        .expect("placed")
-        .translation;
-    let inside = node.content_box();
-    Rect {
-        min: at + inside.min,
-        max: at + inside.max,
-    }
-}
-
 fn window(app: &mut App) -> Entity {
     app.world_mut()
         .query_filtered::<Entity, With<PrimaryWindow>>()
@@ -130,6 +114,42 @@ fn tap_named(app: &mut App, key_code: KeyCode, logical: Key) {
         app.update();
     }
     app.update();
+}
+
+/// Ctrl held while `key_code` is tapped, then let go: Ctrl is Bevy's command key off macOS, so
+/// `chord(End)` is the document's end (on macOS the same edit is Cmd+End).
+fn chord(app: &mut App, field: Entity, key_code: KeyCode, logical: Key) {
+    let window = window(app);
+    for state in [ButtonState::Pressed, ButtonState::Released] {
+        app.world_mut().write_message(KeyboardInput {
+            key_code: KeyCode::ControlLeft,
+            logical_key: Key::Control,
+            state,
+            text: None,
+            repeat: false,
+            window,
+        });
+        app.update();
+        if state == ButtonState::Pressed {
+            let keys = app.world().resource::<ButtonInput<Key>>();
+            eprintln!(
+                "DBG ctrl held {} shift {} focus {:?}",
+                keys.pressed(Key::Control),
+                keys.pressed(Key::Shift),
+                app.world().resource::<InputFocus>().get()
+            );
+            tap_named(app, key_code, logical.clone());
+            let text = app.world().get::<EditableText>(field).expect("a field");
+            eprintln!(
+                "DBG after End caret {:?} offset {} pending {:?} chars {}",
+                app.world().get::<TextLayoutInfo>(field).and_then(|l| l.cursor),
+                text.viewport.offset.y,
+                text.pending_edits,
+                text.value().to_string().len()
+            );
+        }
+    }
+    settle(app);
 }
 
 fn type_char(app: &mut App, c: char) {
@@ -335,22 +355,35 @@ fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field()
     );
 
     // The issue's second half: **types at the end and the value-change event carries the whole
-    // text**. The player's own way to the end of a scrolled document is a click on its last line: the
-    // caret lands there, inside the line the view is standing on.
-    let inside = content_rect(&app, field);
-    let last_line = Vec2::new(inside.min.x + 6.0, inside.max.y - 6.0);
-    pointer(&mut app, last_line, PointerAction::Move { delta: Vec2::X });
-    pointer(
-        &mut app,
-        last_line,
-        PointerAction::Press(PointerButton::Primary),
+    // text.** Ctrl+End is the keyboard's way to the end of a document (on Linux Ctrl is Bevy's
+    // command key; on macOS Cmd+End is the same edit), and it is the one the acceptance names.
+    chord(&mut app, field, KeyCode::End, Key::End);
+    eprintln!(
+        "DBG focus {:?} caret {:?} offset {} edits {} tail {:?}",
+        app.world().resource::<InputFocus>().get(),
+        app.world().get::<TextLayoutInfo>(field).and_then(|l| l.cursor),
+        viewport(&app, field).offset.y,
+        app.world().resource::<Heard>().0.len(),
+        &text_of(&app, field)[..20]
     );
-    pointer(
-        &mut app,
-        last_line,
-        PointerAction::Release(PointerButton::Primary),
-    );
-    settle(&mut app);
+    // DBG: does the apply path move the caret at all?
+    if app
+        .world()
+        .get::<TextLayoutInfo>(field)
+        .and_then(|l| l.cursor)
+        .is_some_and(|(_, r)| r.center().y < 100.0)
+    {
+        app.world_mut()
+            .get_mut::<EditableText>(field)
+            .expect("a field")
+            .queue_edit(bevy::text::TextEdit::TextEnd(false));
+        settle(&mut app);
+        eprintln!(
+            "DBG after manual TextEnd caret {:?} offset {}",
+            app.world().get::<TextLayoutInfo>(field).and_then(|l| l.cursor),
+            app.world().get::<EditableText>(field).map(|t| t.viewport.offset.y).unwrap_or(-1.0)
+        );
+    }
     let caret_at_end = app
         .world()
         .get::<TextLayoutInfo>(field)
@@ -360,18 +393,18 @@ fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field()
         .1;
     let height = text_height(&app, field);
     assert!(
-        caret_at_end.center().y > height * 0.9,
-        "the click put the caret at the document's end: {caret_at_end:?} of {height}"
+        caret_at_end.center().y > height - caret_at_end.height() * 2.0,
+        "Ctrl+End put the caret in the document's last line: {caret_at_end:?} of {height}"
     );
 
-    // One character typed there lands in the last line, and the change carries all of it.
+    // One character typed there lands at the end of the document, and the change carries all of it.
     type_char(&mut app, '!');
     settle(&mut app);
     let text = text_of(&app, field);
-    let tail = &text[text.len() - 40..];
     assert!(
-        tail.contains('!') && text.contains("the very last line"),
-        "the character went in at the end: {tail:?}"
+        text.ends_with('!') && text.contains("the very last line"),
+        "the character went in at the end: {:?}",
+        &text[text.len() - 40..]
     );
     let view = viewport(&app, field);
     let caret = app

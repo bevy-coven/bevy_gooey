@@ -23,6 +23,8 @@ as wide as its labels.
 - **`SideTab` gains `icon: Option<IconSource>`** (`IconSource` is the crate's own, from G-21), so the
   data a tab carries is the same for both strips: a label that is always its name, an optional picture,
   an optional badge.
+- **A plain `side_tabs` ignores `icon`** and draws the label and the badge, so one list of
+  `SideTab`s serves either strip.
 - **`SideTab::count(usize)` and a zero badge.** `badge("0")` stores `None`, and `count(0)` is `None`:
   a count of nothing draws nothing, which is the rule the issue states, in the one place a badge is
   built rather than in the drawing code. `badge("")` is also no badge.
@@ -31,9 +33,11 @@ as wide as its labels.
   the D-pad step it, Left and Right leave it), the same `side_tab_page` for its pages anywhere, and
   the same `SelectionIndicator`, so nothing about focus or selection is a second path.
 - **Each tab is `Role::IconTab`**: a square target the size of a button (`GooeySkin::target()`), its
-  picture centred in it, `Tooltip`ed with the label and an `AccessibleLabel` of the same text, so a
-  screen reader hears the name and the picture is decoration. The badge is `Role::CornerBadge`: the
-  `Role::TabBadge` pill, made absolute and placed at the tab's top-right corner.
+  picture centred in it, `Tooltip`ed with the label and an `AccessibleLabel` of the label **and its
+  badge's count** ("Debug (4)"), so a screen reader hears the name and what still needs the player
+  while the picture is decoration. The badge is `Role::CornerBadge`: the `Role::TabBadge` pill, made
+  absolute and placed at the tab's top-right corner — placed by `apply_skin` only, so a host's own
+  skin can move it.
 - **No icon falls back to the label's first letter** (upper-cased), in `Role::TabText`, so a strip is
   never a column of empty squares.
 
@@ -64,5 +68,6 @@ were classified, which is the check that keeps a new role from going silent.
 third selected — `TabsValue`, `Selected`, one `ValueChange` when Down selects the fourth — every tab
 drawing its icon and naming itself in a tooltip, one badge on the fourth with the text "4", the strip
 narrow); the edge cases (no icon shows the label's initial "F" with the whole name in its tooltip; a
-badge of "0" shows nothing while "7" shows); and the shape (square targets in one column, the badge at
-the tab's top-right, the strip's selection indicator present).
+badge of "0" shows nothing while "7" shows); the shape (square targets in one column, the badge at the
+tab's top-right, the strip's selection indicator present); and the announced name ("Debug (4)" for a
+badged tab, the bare label for one without).
