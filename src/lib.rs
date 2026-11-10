@@ -383,7 +383,7 @@ pub use text::{
     TextEdited, TextEditing, TextHint, TextInputOf, TextInputValue, TextLimit, is_text_editing,
     track_text_editing, update_text_inputs,
 };
-pub use text_area::{AreaRail, AreaThumb, TextAreaFill, scroll_text_areas};
+pub use text_area::{AreaRail, AreaThumb, TextAreaFill};
 pub use toast::{
     Toast, ToastAction, ToastAnchor, ToastBundle, ToastButton, ToastInset, ToastKind, ToastLog,
     ToastLogEntry, ToastSettings, ToastStack, update_toasts,
@@ -670,7 +670,7 @@ impl Plugin for GooeyStylePlugin {
                     update_text_inputs,
                     (update_palette, update_comboboxes).chain(),
                     update_option_rows,
-                    text_area::area_on_scroll,
+                    (text_area::area_on_scroll, text_area::update_area_rails).chain(),
                     (update_choices, update_radials).chain(),
                     (
                         dock::update_docks,
@@ -698,7 +698,7 @@ impl Plugin for GooeyStylePlugin {
                         (widgets::wrap_bounded_labels, update_frames).chain(),
                     )
                         .chain(),
-                    (update_meters, update_sliders, scroll_text_areas).chain(),
+                    (update_meters, update_sliders).chain(),
                     (update_lists, access::update_accessibility).chain(),
                 )
                     .chain()

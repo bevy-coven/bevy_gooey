@@ -181,6 +181,16 @@ fn point_at(app: &mut App, at: Vec2) {
     pointer(app, at, PointerAction::Move { delta: Vec2::ZERO });
 }
 
+/// A node the crate wrote this frame: a rail's lane or the thumb in it.
+type LaneWritten = Or<(Changed<Node>, Changed<Visibility>)>;
+
+/// How many frames wrote something, over the `Writes` test.
+#[derive(Resource, Default)]
+pub struct Writes {
+    lanes: u32,
+    offset: u32,
+}
+
 /// A note of about `FILE_CHARS` characters, one short numbered line each, ending in a named line.
 fn note() -> String {
     let mut text = String::with_capacity(FILE_CHARS + 32);
@@ -278,9 +288,9 @@ fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field()
 
     let view = viewport(&app, field);
     let height = text_height(&app, field);
-    // The furthest the field may scroll, from this frame's own measurements.
-    let room = rect(&app, field).height();
-    let farthest = (height - room).max(0.0);
+    // The furthest the field may scroll, from this frame's own measurements: the text's height less
+    // the part of it the field draws (Bevy's own viewport size, not the field's border box).
+    let farthest = (height - view.size.y).max(0.0);
     assert!(view.offset.y > 0.0, "the wheel scrolled it");
     assert!(
         view.size.y < height,
@@ -289,8 +299,9 @@ fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field()
     );
     assert!(
         (view.offset.y - farthest).abs() < 2.0,
-        "the viewport stands at the text's end: offset {} against {farthest} ({height} of {room})",
-        view.offset.y
+        "the viewport stands at the text's end: offset {} against {farthest} ({height} tall, {room} drawn)",
+        view.offset.y,
+        room = view.size.y
     );
 }
 
@@ -355,9 +366,11 @@ fn a_filled_area_is_as_tall_as_its_host() {
     );
 }
 
-/// Typing at the end of 64 KiB keeps the caret in view, and the final change carries the whole text.
+/// Typing keeps the caret in view: the wheel may leave the view anywhere, and the moment the player
+/// types (or steps) the caret moves, the view comes back to it. And an edit reports the whole text;
+/// Ctrl+Enter reports it once, final.
 #[test]
-fn typing_at_the_end_keeps_the_caret_in_view_and_sends_the_whole_text() {
+fn typing_keeps_the_caret_in_view_and_sends_the_whole_text() {
     let mut app = fresh_app();
     #[derive(Resource, Default)]
     struct Heard(Vec<(String, bool)>);
@@ -370,45 +383,41 @@ fn typing_at_the_end_keeps_the_caret_in_view_and_sends_the_whole_text() {
     let bench = new_bench(&mut app, 20, note());
     let field = bench.field;
     focus_on(&mut app, field);
+    let caret_at = |app: &App| {
+        app.world()
+            .get::<TextLayoutInfo>(field)
+            .expect("a layout")
+            .cursor
+            .expect("a caret")
+            .1
+    };
+    assert!(
+        caret_at(&app).min.y < 100.0,
+        "a fresh area's caret is at the document's start: {:?}",
+        caret_at(&app)
+    );
 
-    // To the end of the document the way a player gets there: wheel down, then click the line the
-    // field ends on.
+    // Wheel to the document's end: the view leaves the caret far behind.
     let middle = rect(&app, field).center();
     for _ in 0..60 {
         wheel(&mut app, middle, 100.0);
     }
-    let field_rect = rect(&app, field);
-    let last_line = Vec2::new(field_rect.center().x, field_rect.max.y - 12.0);
-    pointer(&mut app, last_line, PointerAction::Move { delta: Vec2::X });
-    pointer(
-        &mut app,
-        last_line,
-        PointerAction::Press(PointerButton::Primary),
-    );
-    pointer(
-        &mut app,
-        last_line,
-        PointerAction::Release(PointerButton::Primary),
-    );
-    settle(&mut app);
-
-    let before = viewport(&app, field);
-    type_char(&mut app, '!');
-    type_char(&mut app, '!');
-    settle(&mut app);
-
-    let after = viewport(&app, field);
-    let caret = app
-        .world()
-        .get::<TextLayoutInfo>(field)
-        .expect("a layout")
-        .cursor
-        .expect("a caret")
-        .1;
+    let away = viewport(&app, field);
     assert!(
-        after.offset.y >= before.offset.y - 0.5,
-        "the viewport followed the caret: {} then {}",
-        before.offset.y,
+        away.offset.y > 1_000.0,
+        "the wheel took the view down: {}",
+        away.offset.y
+    );
+
+    // One keystroke: the caret moves, and the view comes back to it.
+    type_char(&mut app, '!');
+    settle(&mut app);
+    let after = viewport(&app, field);
+    let caret = caret_at(&app);
+    assert!(
+        (after.offset.y - away.offset.y).abs() > 1.0,
+        "the view followed the caret: {} then {}",
+        away.offset.y,
         after.offset.y
     );
     assert!(
@@ -420,11 +429,6 @@ fn typing_at_the_end_keeps_the_caret_in_view_and_sends_the_whole_text() {
     );
 
     let text = text_of(&app, field);
-    assert!(
-        text.contains("!!"),
-        "two characters went in: {:?}",
-        &text[text.len() - 40..]
-    );
     assert_eq!(
         app.world()
             .resource::<Heard>()
@@ -432,10 +436,11 @@ fn typing_at_the_end_keeps_the_caret_in_view_and_sends_the_whole_text() {
             .last()
             .map(|(t, _)| t.as_str()),
         Some(text.as_str()),
-        "an edit reports the whole text"
+        "one edit reports the whole text"
     );
+    assert!(text.len() > FILE_CHARS - 32, "all 64 KiB of it");
 
-    // Ctrl+Enter ends the edit: one final change, and it carries all of it.
+    // Ctrl+Enter ends the edit: one final change, carrying all of it.
     let first = window(&mut app);
     app.world_mut().write_message(KeyboardInput {
         key_code: KeyCode::ControlLeft,
@@ -464,7 +469,6 @@ fn typing_at_the_end_keeps_the_caret_in_view_and_sends_the_whole_text() {
         .find(|(_, final_)| *final_)
         .expect("a final change");
     assert_eq!(value, &text_of(&app, field), "the whole text, unchanged");
-    assert!(value.len() > FILE_CHARS - 32, "and all 64 KiB of it");
 }
 
 /// The rail of a filled area: it shows while the text is longer than the field, its thumb is the
@@ -576,4 +580,147 @@ fn a_very_long_line_wraps_and_scrolls_vertically() {
     let after = viewport(&app, field);
     assert!(after.offset.y > 0.0, "the wheel scrolls it");
     assert_eq!(after.offset.x, 0.0);
+}
+
+/// A window whose shorter side is 1080 px: the interface is drawn at 1.5 (the default reference
+/// side is 720), so every node is 1.5 device pixels per skin pixel and a pointer's window pixels
+/// are not the field's layout pixels.
+fn tall_app() -> App {
+    let mut app = App::new();
+    app.add_plugins((
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: WindowResolution::new(1920, 1080).with_scale_factor_override(1.0),
+                    ..default()
+                }),
+                ..default()
+            })
+            .set(RenderPlugin {
+                render_creation: WgpuSettings {
+                    backends: None,
+                    ..default()
+                }
+                .into(),
+                ..default()
+            })
+            .disable::<WinitPlugin>(),
+        GooeyPlugins,
+    ));
+    app.world_mut().spawn(Camera2d);
+    app
+}
+
+/// The scroll of a filled area is measured in the same pixels as its text and its viewport,
+/// whatever the interface's scale: a press a quarter down the rail lands a quarter into the text,
+/// and the wheel stops at the text's last line rather than past it.
+#[test]
+fn a_scaled_interface_scrolls_its_text_by_its_own_pixels() {
+    let mut app = tall_app();
+    let bench = new_bench(&mut app, 8, note());
+    let ui_scale = app.world().resource::<UiScale>().0;
+    assert!(
+        (ui_scale - 1.5).abs() < 0.01,
+        "1080p over a 720 reference draws the interface at 1.5: {ui_scale}"
+    );
+    let host = app
+        .world()
+        .get::<ChildOf>(bench.row)
+        .expect("a parent")
+        .parent();
+    let rail = part(&app, host, Role::ListRail);
+    // A node's rect is in physical px and a pointer's position in the window's logical px, which the
+    // window's own scale factor is the one between (`UiScale` is already in both).
+    let primary = window(&mut app);
+    let window_scale = app
+        .world()
+        .get::<Window>(primary)
+        .expect("a window")
+        .scale_factor();
+    let rail_rect = rect(&app, rail);
+    let rail_logical = Rect::from_center_size(
+        rail_rect.center() / window_scale,
+        rail_rect.size() / window_scale,
+    );
+
+    let view = viewport(&app, bench.field);
+    let farthest = (text_height(&app, bench.field) - view.size.y).max(0.0);
+    assert!(
+        farthest > 100.0,
+        "there is a long way to scroll: {farthest}"
+    );
+
+    // A quarter of the way down the rail is a quarter of the way into the text.
+    let spot = Vec2::new(
+        rail_logical.center().x,
+        rail_logical.min.y + rail_logical.height() * 0.25,
+    );
+    pointer(&mut app, spot, PointerAction::Move { delta: Vec2::X });
+    pointer(&mut app, spot, PointerAction::Press(PointerButton::Primary));
+    pointer(
+        &mut app,
+        spot,
+        PointerAction::Release(PointerButton::Primary),
+    );
+    settle(&mut app);
+    let quarter = viewport(&app, bench.field).offset.y;
+    assert!(
+        (quarter / farthest - 0.25).abs() < 0.1,
+        "a press a quarter down the rail lands a quarter in: {quarter} of {farthest}"
+    );
+
+    // The wheel to the end stops where the text ends: the last line's bottom is the field's.
+    let middle = rect(&app, bench.field).center() / window_scale;
+    for _ in 0..60 {
+        wheel(&mut app, middle, 100.0);
+    }
+    let view = viewport(&app, bench.field);
+    let farthest = (text_height(&app, bench.field) - view.size.y).max(0.0);
+    assert!(
+        (view.offset.y - farthest).abs() < 2.0,
+        "the wheel reaches the text's end: {} of {farthest}",
+        view.offset.y
+    );
+}
+
+/// A settled area costs nothing: thirty frames of a still field write no rail node, and never move the
+/// viewport. (Bevy marks `EditableText` changed every caret blink, so that is not what is counted.)
+#[test]
+fn a_settled_area_writes_nothing() {
+    let mut app = fresh_app();
+    let bench = new_bench(&mut app, 8, note());
+    let host = app
+        .world()
+        .get::<ChildOf>(bench.row)
+        .expect("a parent")
+        .parent();
+    let rail = part(&app, host, Role::ListRail);
+    let thumb = part(&app, rail, Role::ListThumb);
+    settle(&mut app);
+
+    app.init_resource::<Writes>();
+    app.add_systems(
+        Update,
+        move |lanes: Query<Entity, LaneWritten>,
+              field: Single<&EditableText>,
+              mut writes: ResMut<Writes>| {
+            writes.lanes += lanes
+                .iter()
+                .filter(|lane| *lane == rail || *lane == thumb)
+                .count() as u32;
+            if field.viewport.offset != Vec2::ZERO {
+                writes.offset += 1;
+            }
+        },
+    );
+    // The counting system's own first run sees every component as changed (its tick starts at
+    // zero): one frame primes it, and the count starts from there.
+    app.update();
+    *app.world_mut().resource_mut::<Writes>() = Writes::default();
+    for _ in 0..30 {
+        app.update();
+    }
+    let writes = app.world().resource::<Writes>();
+    assert_eq!(writes.lanes, 0, "no rail node was written");
+    assert_eq!(writes.offset, 0, "the viewport did not move");
 }

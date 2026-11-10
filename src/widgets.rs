@@ -1690,34 +1690,50 @@ fn text_row_as(
                 row.spawn(color_swatch(root, colour));
             }
             row.spawn((
-                Node {
-                    flex_grow: if fills || filling { 1.0 } else { 0.0 },
-                    // A filling area's cell is a row stretched to the row's height, holding its
-                    // field and its rail side by side; a fixed row's cell is the one line's box.
-                    flex_direction: if filling {
-                        FlexDirection::Row
-                    } else {
-                        FlexDirection::Column
-                    },
-                    align_items: AlignItems::Stretch,
-                    min_height: Val::ZERO,
-                    ..default()
+                // A filling area's cell is a row stretched to the row's height, holding its field
+                // and its rail side by side, and it never shrinks under its content; a fixed row's
+                // cell is the one line's box, exactly as every text row's was (a `min_width` of 0
+                // here let a hex field shrink and scroll by 114 px, which `tests/color.rs` holds
+                // against).
+                if filling {
+                    Node {
+                        flex_grow: 1.0,
+                        flex_direction: FlexDirection::Row,
+                        align_items: AlignItems::Stretch,
+                        min_height: Val::ZERO,
+                        ..default()
+                    }
+                } else {
+                    Node {
+                        flex_grow: if fills { 1.0 } else { 0.0 },
+                        ..default()
+                    }
                 },
                 Role::TextCell,
             ))
             .with_children(|cell| {
-                let mut field = cell.spawn((
+                // A filling area's field is its cell's height (the cell stretches to the host): the
+                // text scrolls inside it rather than making it as tall as the text. Nothing else
+                // about a fixed row's field changes.
+                let field_node = if filling {
                     Node {
-                        flex_shrink: if fills || filling { 1.0 } else { 0.0 },
-                        flex_grow: if fills || filling { 1.0 } else { 0.0 },
-                        // A filling area's field is its cell's height (the cell stretches to the
-                        // host): the text scrolls inside it rather than making it as tall as the
-                        // text.
+                        flex_shrink: 1.0,
+                        flex_grow: 1.0,
                         min_width: Val::ZERO,
                         min_height: Val::ZERO,
                         overflow: Overflow::clip(),
                         ..default()
-                    },
+                    }
+                } else {
+                    Node {
+                        flex_shrink: 0.0,
+                        flex_grow: if fills { 1.0 } else { 0.0 },
+                        overflow: Overflow::clip(),
+                        ..default()
+                    }
+                };
+                let mut field = cell.spawn((
+                    field_node,
                     TextInput,
                     EditableText {
                         visible_width: chars,
@@ -1753,7 +1769,7 @@ fn text_row_as(
                         field.insert(AreaField);
                     }
                     RowKind::Fill(_) => {
-                        field.insert(AreaField);
+                        field.insert((AreaField, crate::text_area::AreaCaret::default()));
                     }
                     RowKind::Number => {
                         field.insert((
