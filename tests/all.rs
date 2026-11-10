@@ -13,6 +13,7 @@ mod button_variant;
 mod cancel;
 mod card;
 mod choice;
+mod code_editor;
 mod color;
 mod color_motion;
 mod combobox;

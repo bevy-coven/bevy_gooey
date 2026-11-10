@@ -148,6 +148,8 @@ mod cancel;
 mod card;
 mod choice;
 mod clicks;
+mod code_buffer;
+mod code_editor;
 mod color;
 mod color_motion;
 mod combobox;
@@ -231,6 +233,15 @@ pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use card::{Card, CardCursor, CardGrid, CardRef, CardSelection, update_card_grids};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use clicks::{ClickCount, DoublePress, PointerSettings};
+pub use code_buffer::{
+    CodeBuffer, CodeEdit, CodeIndent, CodeMove, CodePos, CodeSelection, GROUP_PAUSE_S, UNDO_DEPTH,
+    byte_at_display, display_col, display_width, expand_slice,
+};
+pub use code_editor::{
+    CARET_BLINK_PERIOD_S, CARET_SPRING_FRACTION, CODE_LINE_EM, CODE_MIN_LINES,
+    CODE_SELECTION_ALPHA, CodeEditor, CodeEditorSettings, CodeEditorValue, CodeIndentation,
+    PERF_BUDGET, code_editor,
+};
 pub use color::{
     AreaMarker, ColorArea, ColorPicker, ColorRail, ColorRefused, ColorStrip, ColorSwatch,
     ColorValue, SwatchHalf, update_colors,
@@ -577,6 +588,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Pop>()
             .register_type::<Lift>()
             .register_type::<Led>()
+            .init_resource::<CodeEditorSettings>()
+            .register_type::<CodeEditorSettings>()
+            .register_type::<CodeEditorValue>()
             .register_type::<LedState>()
             .register_type::<LedWord>()
             .register_type::<HoverGroup>()
@@ -698,6 +712,19 @@ impl Plugin for GooeyStylePlugin {
                     .chain()
                     .in_set(GooeySystems::Style),
             );
+        // The code editor reads the wheel, marks its focus for the host, and lays out its window
+        // onto the text, all before the skin writes what the rows look like.
+        app.add_systems(
+            Update,
+            (
+                code_editor::code_on_wheel,
+                code_editor::mark_code_editing,
+                code_editor::update_code_editors,
+            )
+                .chain()
+                .in_set(GooeySystems::Style)
+                .before(apply_skin),
+        );
         app.add_observer(note_host_disable);
         // The first Escape in an open combobox is its list's: focus is put back after Bevy's text
         // input lets go of it.

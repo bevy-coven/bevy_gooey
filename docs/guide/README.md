@@ -29,6 +29,8 @@ per subject. The README links each bullet to its page.
   why a field never traps focus.
 - [Text area](text-input.md#a-text-area) — `text_area(label, value, rows)`: the text input several lines high, Enter
   for a line, Ctrl+Enter or Cmd+Enter to end the edit, the arrow keys the caret's.
+- [Code editor](code-editor.md) — `code_editor(label, text)`: a gutter, a caret on a spring, selection by word and line,
+  undo grouped by word and pause, a clipboard, IME, Tab indentation, `CodeEditorValue`, and 20,000 lines for the price of 20.
 - [Numbers](numbers.md) — `number_field(label, value, step, range)` and `vec_field`: a number the player
   scrubs with a drag, types or steps with the keys and the D-pad, held to a range, `MixedValue` for a
   multi-selection, and the reason a typed expression is refused.

@@ -152,6 +152,7 @@ fn spec(role: Role) -> Spec {
         | Role::Radial
         | Role::SectionNote
         | Role::TableHeaderCell
+        | Role::CodeEditor
         | Role::ListView
         | Role::ListRail => Spec::Node,
         Role::ButtonText
@@ -222,6 +223,16 @@ fn spec(role: Role) -> Spec {
         | Role::Cooldown
         | Role::CooldownText
         | Role::LedDot
+        | Role::CodeGutter
+        | Role::CodeGutterRows
+        | Role::CodeNumber
+        | Role::CodeNumberLit
+        | Role::CodeArea
+        | Role::CodeContent
+        | Role::CodeText
+        | Role::CodeLineLit
+        | Role::CodeSelection
+        | Role::CodeCaret
         | Role::FrameArt
         | Role::HoldTrack
         | Role::HoldFill
@@ -310,6 +321,7 @@ pub(crate) struct Facts {
     capturing: Has<Capturing>,
     header: Has<SectionHeader>,
     area: Has<AreaField>,
+    code: Option<&'static crate::code_editor::CodeEditor>,
     item: Option<&'static MenuItem>,
     toast: Option<&'static Toast>,
     meter: Option<&'static Meter>,
@@ -676,6 +688,10 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.name = Some(COLUMN_EDGE.to_owned());
         }
         Role::TabPage => wanted.role = Some(Ak::TabPanel),
+        Role::CodeEditor => {
+            wanted.role = Some(Ak::MultilineTextInput);
+            wanted.name = facts.code.map(|code| code.label().to_owned());
+        }
         Role::TextField => {
             if facts.area {
                 wanted.role = Some(Ak::MultilineTextInput);

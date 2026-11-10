@@ -14,6 +14,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use crate::binding::Capturing;
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
+use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
 use crate::color_motion::ColorTrack;
 use crate::control_size::ControlSize;
 use crate::drag::{DropCandidate, DropRefusing};
@@ -1507,6 +1508,8 @@ pub struct GooeyFonts {
     pub body: FontSource,
     /// Headings.
     pub heading: FontSource,
+    /// The monospace face the code editor draws in: one column per character.
+    pub mono: FontSource,
 }
 
 /// What a widget is, which decides how [`apply_skin`] styles it. Every widget function puts one on
@@ -1813,6 +1816,31 @@ pub enum Role {
     /// An LED's dot: a square of `LED_TEXT_SIZES` body text sizes, its fill, frame, silhouette and
     /// glow data written by [`crate::update_leds`] from the [`crate::LedState`].
     LedDot,
+    /// A [`crate::code_editor`]: a filled, framed box (the focus ring while it has focus) holding
+    /// a gutter and a text area side by side; what it draws is data written by
+    /// [`crate::update_code_editors`].
+    CodeEditor,
+    /// The editor's gutter, left of the text: the line numbers, on the editor's own fill and
+    /// divided from the text by a line.
+    CodeGutter,
+    /// The column of line numbers in the gutter, moved with the scroll.
+    CodeGutterRows,
+    /// A line number, in [`GooeySkin::text_muted`], right-aligned in the gutter.
+    CodeNumber,
+    /// The number of the line the caret is on, in [`GooeySkin::text`].
+    CodeNumberLit,
+    /// The text area: clips the lines and holds the caret, the current-line band and the selection.
+    CodeArea,
+    /// The column of text lines in the area, moved with the scroll.
+    CodeContent,
+    /// One line of text, in the monospace face ([`GooeyFonts::mono`]) and [`GooeySkin::text`].
+    CodeText,
+    /// The band behind the current line: [`GooeySkin::surface_raised`].
+    CodeLineLit,
+    /// A band of selection on one line: [`GooeySkin::accent`], let through so the text shows.
+    CodeSelection,
+    /// The editor's caret: [`GooeySkin::text`], a few device pixels wide.
+    CodeCaret,
     /// The one grid cell every page stands in, so the widget is as large as its largest page; not
     /// drawn.
     TabPages,
@@ -3007,6 +3035,13 @@ fn restyle(
         // The field is an outlined box in the panel's own colour, so the typed text and the hint
         // meet on it the contrast they are checked at on the panel.
         Role::TextField => Some(skin.solid_surface()),
+        // The editor and its gutter are the field's own colour, so the text meets on it the
+        // contrast it is checked at on the panel; the current line is one step up, the selection
+        // the accent let through, and the caret the text colour.
+        Role::CodeEditor | Role::CodeGutter => Some(skin.solid_surface()),
+        Role::CodeLineLit => Some(skin.surface_raised),
+        Role::CodeSelection => Some(skin.accent.with_alpha(CODE_SELECTION_ALPHA)),
+        Role::CodeCaret => Some(skin.text),
         Role::Screen
         | Role::Row
         | Role::Column
@@ -3110,6 +3145,12 @@ fn restyle(
         | Role::Spinner
         | Role::ToggleGroup
         | Role::StatusGroup
+        | Role::CodeGutterRows
+        | Role::CodeNumber
+        | Role::CodeNumberLit
+        | Role::CodeArea
+        | Role::CodeContent
+        | Role::CodeText
         | Role::PaletteCount => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
@@ -3291,7 +3332,8 @@ fn restyle(
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         // The swatch and the area are framed in the outline and wear the ring when focused: what
         // they hold is any colour, so the frame is what a panel's 3:1 is measured on.
-        Role::ColorSwatch | Role::ColorArea | Role::Viewport => {
+        Role::CodeGutter => Some(BorderColor::all(skin.surface_raised)),
+        Role::ColorSwatch | Role::ColorArea | Role::Viewport | Role::CodeEditor => {
             Some(BorderColor::all(if look.focused == Some(entity) {
                 skin.focus_ring
             } else {
@@ -3858,6 +3900,65 @@ fn restyle(
             Role::Viewport => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
+            }
+            // The editor is a row of its gutter and its text, framed, clipping what is drawn
+            // beyond; its height is the host's, never under a few lines.
+            Role::CodeEditor => {
+                let code = CodeMetrics::of(skin, scale);
+                next.flex_direction = FlexDirection::Row;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.overflow = Overflow::clip();
+                next.min_width = Val::Px(0.0);
+                next.min_height = Val::Px(code.line_px * CODE_MIN_LINES);
+            }
+            // The gutter's width is the editor's data (it grows with the digits of the last line).
+            Role::CodeGutter => {
+                next.flex_shrink = 0.0;
+                next.overflow = Overflow::clip();
+                next.border = UiRect::right(Val::Px(line));
+            }
+            Role::CodeGutterRows => {
+                next.position_type = PositionType::Absolute;
+                next.left = Val::Px(0.0);
+                next.right = Val::Px(0.0);
+                next.flex_direction = FlexDirection::Column;
+            }
+            Role::CodeArea => {
+                next.flex_grow = 1.0;
+                next.min_width = Val::Px(0.0);
+                next.overflow = Overflow::clip();
+            }
+            Role::CodeContent => {
+                next.position_type = PositionType::Absolute;
+                next.flex_direction = FlexDirection::Column;
+            }
+            Role::CodeText => {
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px);
+                next.flex_shrink = 0.0;
+            }
+            Role::CodeNumber | Role::CodeNumberLit => {
+                let code = CodeMetrics::of(skin, scale);
+                next.height = Val::Px(code.line_px);
+                next.width = Val::Percent(100.0);
+                next.padding = UiRect::right(Val::Px(code.pad_px));
+                next.flex_shrink = 0.0;
+            }
+            Role::CodeLineLit => {
+                next.position_type = PositionType::Absolute;
+                next.left = Val::Px(0.0);
+                next.right = Val::Px(0.0);
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px);
+            }
+            Role::CodeSelection => {
+                next.position_type = PositionType::Absolute;
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px);
+            }
+            Role::CodeCaret => {
+                let code = CodeMetrics::of(skin, scale);
+                next.position_type = PositionType::Absolute;
+                next.width = Val::Px(code.caret_px);
+                next.height = Val::Px(code.line_px);
             }
             Role::ColorArea => {
                 next.min_height = Val::Px(COLOR_AREA_HEIGHT_PX);
@@ -4456,6 +4557,8 @@ fn restyle(
             Some((color, &look.fonts.body, skin.text_size))
         }
         Role::TextHint => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
+        Role::CodeText | Role::CodeNumberLit => Some((skin.text, &look.fonts.mono, skin.text_size)),
+        Role::CodeNumber => Some((skin.text_muted, &look.fonts.mono, skin.text_size)),
         Role::MenuText => Some((menu_ink(owner, skin), &look.fonts.body, skin.text_size)),
         // Muted at rest; the label's ink once the row is lit (muted is not held against the
         // hovered fill), so a chord is always as readable as the label beside it.
