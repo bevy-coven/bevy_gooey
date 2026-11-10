@@ -2909,7 +2909,7 @@ pub fn dock(layout: DockLayout) -> impl Bundle {
 /// The part of a dock the layout is built in: one grid cell of `1fr`, so the node the layout is
 /// built as fills the dock whatever it is. [`dock`] spawns one, and so does
 /// `update_docks` for a host that spawned a bare [`Dock`](crate::Dock) on a node of its own (a
-/// bottom strip, a sidebar): `dock_parts`, the one list of the three, adds whichever is missing.
+/// bottom strip, a sidebar), beside [`dock_drop`] and [`dock_ghost`], which a tab drag needs.
 pub(crate) fn dock_body() -> impl Bundle {
     (
         Node {
