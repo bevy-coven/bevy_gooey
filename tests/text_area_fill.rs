@@ -116,14 +116,19 @@ fn tap_named(app: &mut App, key_code: KeyCode, logical: Key) {
     app.update();
 }
 
-/// Ctrl held while `key_code` is tapped, then let go: Ctrl is Bevy's command key off macOS, so
-/// `chord(End)` is the document's end (on macOS the same edit is Cmd+End).
-fn chord(app: &mut App, field: Entity, key_code: KeyCode, logical: Key) {
+/// The platform's command key held while `key_code` is tapped, then let go: Ctrl off macOS and Cmd
+/// on it, which is Bevy's own split, so `chord(End)` is the document's end on both.
+fn chord(app: &mut App, key_code: KeyCode, logical: Key) {
     let window = window(app);
+    let (command_code, command_key) = if cfg!(target_os = "macos") {
+        (KeyCode::SuperLeft, Key::Super)
+    } else {
+        (KeyCode::ControlLeft, Key::Control)
+    };
     for state in [ButtonState::Pressed, ButtonState::Released] {
         app.world_mut().write_message(KeyboardInput {
-            key_code: KeyCode::ControlLeft,
-            logical_key: Key::Control,
+            key_code: command_code,
+            logical_key: command_key.clone(),
             state,
             text: None,
             repeat: false,
@@ -131,22 +136,7 @@ fn chord(app: &mut App, field: Entity, key_code: KeyCode, logical: Key) {
         });
         app.update();
         if state == ButtonState::Pressed {
-            let keys = app.world().resource::<ButtonInput<Key>>();
-            eprintln!(
-                "DBG ctrl held {} shift {} focus {:?}",
-                keys.pressed(Key::Control),
-                keys.pressed(Key::Shift),
-                app.world().resource::<InputFocus>().get()
-            );
             tap_named(app, key_code, logical.clone());
-            let text = app.world().get::<EditableText>(field).expect("a field");
-            eprintln!(
-                "DBG after End caret {:?} offset {} pending {:?} chars {}",
-                app.world().get::<TextLayoutInfo>(field).and_then(|l| l.cursor),
-                text.viewport.offset.y,
-                text.pending_edits,
-                text.value().to_string().len()
-            );
         }
     }
     settle(app);
@@ -228,14 +218,17 @@ pub struct Writes {
 }
 
 /// A note of about `FILE_CHARS` characters, one short numbered line each, ending in a named line.
+/// It stays **under** 65,536 bytes: Bevy's text layout (parley) loses the caret's place in a text
+/// past that, so a caret at its end reads as `len - 65536`, and 64 KiB is the issue's own size.
 fn note() -> String {
-    let mut text = String::with_capacity(FILE_CHARS + 32);
+    const LAST: &str = "the very last line";
+    let mut text = String::with_capacity(FILE_CHARS);
     let mut line = 0;
-    while text.len() + 12 < FILE_CHARS {
+    while text.len() + 12 + LAST.len() < FILE_CHARS {
         text.push_str(&format!("line {line}\n"));
         line += 1;
     }
-    text.push_str("the very last line");
+    text.push_str(LAST);
     text
 }
 
@@ -326,9 +319,15 @@ fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field()
     );
 
     // Focus before the scroll: Bevy reveals the caret on the frame focus arrives, so a field focused
-    // after the wheel would be scrolled back to its caret first.
+    // after the wheel would be scrolled back to its caret first. Then the caret goes to the top
+    // (Ctrl+Home), so the wheel and the caret are two different places, as they are for a reader.
     focus_on(&mut app, field);
-
+    chord(&mut app, KeyCode::Home, Key::Home);
+    assert_eq!(
+        viewport(&app, field).offset.y,
+        0.0,
+        "Ctrl+Home put the caret and the view at the top"
+    );
     // Wheeling to the end: a hundred lines a turn (the same input as a mouse spun hard, not 400
     // frames of layout).
     let middle = rect(&app, field).center();
@@ -357,33 +356,7 @@ fn sixty_four_kibibytes_wheel_to_the_end_and_the_last_line_is_inside_the_field()
     // The issue's second half: **types at the end and the value-change event carries the whole
     // text.** Ctrl+End is the keyboard's way to the end of a document (on Linux Ctrl is Bevy's
     // command key; on macOS Cmd+End is the same edit), and it is the one the acceptance names.
-    chord(&mut app, field, KeyCode::End, Key::End);
-    eprintln!(
-        "DBG focus {:?} caret {:?} offset {} edits {} tail {:?}",
-        app.world().resource::<InputFocus>().get(),
-        app.world().get::<TextLayoutInfo>(field).and_then(|l| l.cursor),
-        viewport(&app, field).offset.y,
-        app.world().resource::<Heard>().0.len(),
-        &text_of(&app, field)[..20]
-    );
-    // DBG: does the apply path move the caret at all?
-    if app
-        .world()
-        .get::<TextLayoutInfo>(field)
-        .and_then(|l| l.cursor)
-        .is_some_and(|(_, r)| r.center().y < 100.0)
-    {
-        app.world_mut()
-            .get_mut::<EditableText>(field)
-            .expect("a field")
-            .queue_edit(bevy::text::TextEdit::TextEnd(false));
-        settle(&mut app);
-        eprintln!(
-            "DBG after manual TextEnd caret {:?} offset {}",
-            app.world().get::<TextLayoutInfo>(field).and_then(|l| l.cursor),
-            app.world().get::<EditableText>(field).map(|t| t.viewport.offset.y).unwrap_or(-1.0)
-        );
-    }
+    chord(&mut app, KeyCode::End, Key::End);
     let caret_at_end = app
         .world()
         .get::<TextLayoutInfo>(field)

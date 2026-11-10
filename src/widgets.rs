@@ -12,7 +12,7 @@ use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::cursor::EntityCursor;
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
-use bevy::text::{EditableText, Justify, LineBreak, TextCursorStyle};
+use bevy::text::{EditableText, Justify, LineBreak, TextCursorStyle, TextEdit};
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui::{Checked, FixedNode};
 use bevy::ui_widgets::{
@@ -1750,19 +1750,25 @@ fn text_row_as(
                         ..default()
                     }
                 };
+                let mut text = EditableText {
+                    visible_width: chars,
+                    visible_lines: match kind {
+                        RowKind::Area(rows) | RowKind::Fill(rows) => Some(rows as f32),
+                        _ => Some(1.0),
+                    },
+                    allow_newlines: area,
+                    cursor_width: TEXT_CARET_WIDTH,
+                    ..EditableText::new(&value)
+                };
+                if filling {
+                    // A document opens at its top, caret and view: `EditableText::new` puts the
+                    // caret at the text's end, which a long text would scroll to at once.
+                    text.queue_edit(TextEdit::TextStart(false));
+                }
                 let mut field = cell.spawn((
                     field_node,
                     TextInput,
-                    EditableText {
-                        visible_width: chars,
-                        visible_lines: match kind {
-                            RowKind::Area(rows) | RowKind::Fill(rows) => Some(rows as f32),
-                            _ => Some(1.0),
-                        },
-                        allow_newlines: area,
-                        cursor_width: TEXT_CARET_WIDTH,
-                        ..EditableText::new(&value)
-                    },
+                    text,
                     if filling {
                         // A very long line wraps at the field's width (`WordOrCharacter`: a word
                         // with no break opportunity in it still breaks), so there is no horizontal

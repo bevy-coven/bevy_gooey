@@ -60,6 +60,9 @@ window's: dividing a pointer by it is wrong, and so is writing a physical height
   gives the row nothing gets a field `rows` lines high rather than one of none.
 - **Paste of 64 KiB is Bevy's own path** (a `TextEdit::Paste` respects `TextLimit`), unchanged by this
   module: the acceptance test types at the end of a 64 KiB document and reads the whole text back.
+- **A text past 65,536 bytes loses its caret's place in Bevy's layout** (measured: a 65,558-byte text
+  with its caret sent to the end read back as byte 22). The acceptance document is 64 KiB, which is
+  under it; past it Ctrl+End and the caret's reveal at the end are Bevy's to fix, not this module's.
 
 ## Proof
 
