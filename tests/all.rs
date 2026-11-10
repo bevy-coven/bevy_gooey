@@ -27,6 +27,7 @@ mod desk;
 mod dialog;
 mod dialog_look;
 mod dock;
+mod dock_body;
 mod dock_reorder;
 mod double_press;
 mod drag;

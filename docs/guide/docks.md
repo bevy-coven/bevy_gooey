@@ -48,5 +48,16 @@ fn workbench(mut commands: Commands, mut panels: ResMut<PanelRegistry>) {
 - **Motion** (`docs/research/tab-reorder.md`): a tab carried within its strip follows the pointer (and leaves the strip's row with it); the tabs it passes step aside on the snappy spring, so a gap stands where it would land, and layout does not change until the drop. At the drop (and for a keyboard move, or any change to the layout) the rebuilt tabs glide from where each was drawn (`TravelFrom`, see [motion](motion.md)); Escape sends everything home on its spring. Reduced or no motion lands them. A wrapped (two-row) strip drops as before.
 - **Saving.** Each change the player makes is one `DockLayoutChanged { entity, layout }` on the dock: a tab dropped or moved by key, a tab picked (`selected`), a divider let go (every key step is one). The layout in it is what is shown, and is also in `Dock`. A divider drag reports when it ends, not on every move.
 - **Looks and sizes.** A group is a `panel()` with a tab strip that keeps each tab as wide as its label and wraps to a second row when the group is too narrow, so every tab can be seen and reached. Dividers are the [split's](splits.md), each pane at least 96 px (`DOCK_PANE_MIN_PX`). A pane's content that is wider or taller than the pane is clipped, as in any split; a group's page fills the group.
+- **A dock the host places itself.** `dock(layout)` is a bundle that fills its parent and brings its own body. To put a dock somewhere its own size — a bottom strip under the map, a sidebar beside the tree — spawn the bare state on a node of your own and give it its own `Node` and whatever else you want on it:
+
+  ```rust
+  commands.spawn((
+      Node { width: Val::Percent(100.0), height: Val::Px(200.0), flex_shrink: 0.0, ..default() },
+      Dock(DockLayout::group(["reload", "output"])),
+      DropTarget::<PathBuf>::new(),
+  ));
+  ```
+
+  `update_docks` grows the body the layout is built in (a `Role::DockBody` child filling your node) the first frame it sees the dock, so the registered panels appear inside it and the rest is left exactly as you wrote it: your `Node`, your `DropTarget`, your own children. A dock with no panel registered for its layout builds an empty body and reports each id as `DockPanelSkipped`, never nothing at all.
 - **Not here:** floating windows, closing a tab, a tab strip that scrolls, and a pad's way to move a tab (the D-pad moves focus and Enter picks a tab).
 - `model::dock_zone`, `dock_edge_zone`, `dock_drop_rect`, `dock_tab_slot` and `dock_neighbour` are the engine-free maths of the drop: which zone a point is in, where the landing is drawn and which group is next to another. `DockLayout::moved(panel, &DockDropTarget)` is the edit itself, on plain data: the layout after a drop, or `None` when it changes nothing.

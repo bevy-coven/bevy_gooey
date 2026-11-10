@@ -33,7 +33,7 @@ use crate::nav::show_focus;
 use crate::pop::Lift;
 use crate::skin::{GooeySkin, Role, SkinScope, skin_of};
 use crate::split::{SplitFraction, SplitMin};
-use crate::widgets::{panel, split_in, tab_page, tabs_in};
+use crate::widgets::{dock_body, panel, split_in, tab_page, tabs_in};
 
 /// How far right of and below the pointer the ghost of a dragged tab is drawn, in logical pixels.
 const GHOST_OFFSET_PX: f32 = 14.0;
@@ -259,7 +259,7 @@ pub(crate) fn adopt(entities: Vec<Entity>) -> impl Bundle {
 /// change costs nothing.
 pub(crate) fn update_docks(
     registry: Res<PanelRegistry>,
-    mut docks: Query<(Entity, Ref<Dock>, &mut DockShown, &Children)>,
+    mut docks: Query<(Entity, Ref<Dock>, &mut DockShown, Option<&Children>)>,
     roles: Query<&Role>,
     tabs: Query<(&DockTab, &UiGlobalTransform)>,
     mut commands: Commands,
@@ -268,16 +268,27 @@ pub(crate) fn update_docks(
         if shown.built && !dock.is_changed() && !registry.is_changed() {
             continue;
         }
+        // A dock the host spawned bare (its own `Node` on the entity, a `Dock` beside it: a bottom
+        // strip, a sidebar) grows the body the layout is built in, as `dock()`'s bundle does. The
+        // host keeps everything it put on the dock, a `DropTarget` included.
+        let body = match kids
+            .into_iter()
+            .flat_map(|kids| kids.iter())
+            .find(|&kid| roles.get(kid) == Ok(&Role::DockBody))
+        {
+            Some(body) => body,
+            // Deferred commands run in the order they were queued, so the body stands before the
+            // tree is put in it: a bare dock is built in the frame it is first seen.
+            None => {
+                let body = commands.spawn(dock_body()).id();
+                commands.entity(entity).add_child(body);
+                body
+            }
+        };
         let (layout, skipped) = dock.0.prune(|id| registry.contains(id));
         if shown.built && layout == shown.layout {
             continue;
         }
-        let Some(body) = kids
-            .iter()
-            .find(|&kid| roles.get(kid) == Ok(&Role::DockBody))
-        else {
-            continue;
-        };
         let wanted = layout.as_ref().map(DockLayout::panels).unwrap_or_default();
         let mut pages = HashMap::new();
         for (id, page) in std::mem::take(&mut shown.pages) {

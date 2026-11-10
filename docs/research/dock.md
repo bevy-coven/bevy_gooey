@@ -64,6 +64,7 @@ A workbench: groups are quiet panels with a strip of tabs on top, split by the s
 - **A new split is half and half** whatever the old fraction was; ImGui keeps the old node's size. Design default.
 - **The keyboard's way moves a panel by direction**, not to any chosen place: it reaches every group and the edges (and repeats), which is what the criterion asks. Assumed decision (on the issue).
 - **No pad way**: a dock is an editor's widget; the D-pad already moves focus and Enter on a tab selects it. Open.
+- **A host's node is its own, and the dock's body is the dock's (#85, 2026-11-10).** `dock(layout)` brings a body, so a dock the host places itself — a bottom strip under a map, a sidebar beside a tree — had no way in: the editor spawned a bare `Dock` on its own node and `update_docks` found no `Role::DockBody` and returned early, so no registered panel was ever built. The body is now grown by `update_docks` when a dock has none, in the same frame (deferred commands run in order, so the tree goes into it before the flush ends), and the host's `Node`, its `DropTarget<T>` and any other child are left exactly as written. A design default rather than a second constructor: one path for a dock, whichever way it was spawned, so `tests/dock.rs`'s eleven tests and this one cannot diverge.
 
 ## Pending index
 

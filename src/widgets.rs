@@ -2800,19 +2800,7 @@ pub fn dock(layout: DockLayout) -> impl Bundle {
         Role::Dock,
         Dock(layout),
         children![
-            // One grid cell of `1fr`, so the node the layout is built as fills the dock whatever
-            // it is.
-            (
-                Node {
-                    display: Display::Grid,
-                    grid_template_columns: vec![GridTrack::flex(1.0)],
-                    grid_template_rows: vec![GridTrack::flex(1.0)],
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    ..default()
-                },
-                Role::DockBody,
-            ),
+            dock_body(),
             (
                 Node {
                     display: Display::None,
@@ -2833,6 +2821,24 @@ pub fn dock(layout: DockLayout) -> impl Bundle {
                 Pickable::IGNORE,
             ),
         ],
+    )
+}
+
+/// The part of a dock the layout is built in: one grid cell of `1fr`, so the node the layout is
+/// built as fills the dock whatever it is. [`dock`] spawns one; a host that spawns a bare
+/// [`Dock`](crate::Dock) on its own node (a bottom strip, a sidebar) gets one from
+/// [`crate::update_docks`], the first frame that dock is seen, so its registered panels are shown.
+pub(crate) fn dock_body() -> impl Bundle {
+    (
+        Node {
+            display: Display::Grid,
+            grid_template_columns: vec![GridTrack::flex(1.0)],
+            grid_template_rows: vec![GridTrack::flex(1.0)],
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+        Role::DockBody,
     )
 }
 
