@@ -107,6 +107,7 @@ fn spec(role: Role) -> Spec {
         | Role::PaletteField
         | Role::SlotGrid
         | Role::CardGrid
+        | Role::CodeFind
         | Role::Led
         | Role::FieldMessage => Spec::Group,
         Role::Heading
@@ -233,6 +234,26 @@ fn spec(role: Role) -> Spec {
         | Role::CodeLineLit
         | Role::CodeSelection
         | Role::CodeCaret
+        | Role::CodeNote
+        | Role::CodeNoteText
+        | Role::CodeCompletion
+        | Role::CodeCompletionRow
+        | Role::CodeCompletionRowLit
+        | Role::CodeCompletionLabel
+        | Role::CodeCompletionDetail
+        | Role::CodeSyntax(_)
+        | Role::CodeSquiggle(_)
+        | Role::CodeMark(_)
+        | Role::CodeExternal
+        | Role::CodeMinimap
+        | Role::CodeMinimapBar
+        | Role::CodeMinimapBand
+        | Role::CodeMinimapMark(_)
+        | Role::CodeGuide
+        | Role::CodeBracket
+        | Role::CodeChevron
+        | Role::CodeFindMatch
+        | Role::CodeFindMatchLit
         | Role::FrameArt
         | Role::HoldTrack
         | Role::HoldFill

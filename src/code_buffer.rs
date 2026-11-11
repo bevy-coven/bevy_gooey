@@ -22,6 +22,9 @@ pub const GROUP_PAUSE_S: f64 = 1.0;
 /// How many undo groups a buffer keeps; the oldest goes first.
 pub const UNDO_DEPTH: usize = 1000;
 
+/// How many lines [`CodeBuffer::matching_bracket`] looks across before it gives up.
+pub const BRACKET_SCAN_LINES: usize = 2_000;
+
 /// A place in the text: a line, and a byte offset into that line's content.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CodePos {
@@ -76,6 +79,9 @@ pub enum CodeMove {
     Up(usize),
     /// This many lines down, keeping the display column the caret last stood at.
     Down(usize),
+    /// To this line, keeping the display column the caret last stood at: a move by rows when
+    /// some lines are folded away.
+    ToLine(usize),
 }
 
 /// A selection or caret: where it began and where it is now. They are equal for a bare caret.
@@ -311,6 +317,30 @@ impl CodeBuffer {
         self.lines.get(line).map_or("", String::as_str)
     }
 
+    /// The byte offset each line starts at in [`CodeBuffer::text`].
+    pub fn line_starts(&self) -> Vec<usize> {
+        let mut at = 0;
+        self.lines
+            .iter()
+            .map(|line| {
+                let start = at;
+                at += line.len();
+                start
+            })
+            .collect()
+    }
+
+    /// Replaces the text between two places with `text` as one undo step (a completion, a
+    /// replacement); the caret goes to the end of what went in. Returns whether the text changed.
+    pub fn replace_span(&mut self, a: CodePos, b: CodePos, text: &str, now: f64) -> bool {
+        let (a, b) = (self.clamp(a.min(b)), self.clamp(a.max(b)));
+        if a == b && text.is_empty() {
+            return false;
+        }
+        self.replace(a, b, text, Kind::Block, now);
+        true
+    }
+
     /// The line break a new line takes: the first the loaded text had, else `"\n"`.
     pub fn newline(&self) -> &'static str {
         self.newline
@@ -528,6 +558,15 @@ impl CodeBuffer {
             CodeMove::LineEnd => CodePos::new(head.line, self.line(head.line).len()),
             CodeMove::DocStart => CodePos::default(),
             CodeMove::DocEnd => self.end(),
+            CodeMove::ToLine(line) => {
+                keeps_column = true;
+                let want = self
+                    .want
+                    .unwrap_or_else(|| display_col(self.line(head.line), head.col, self.tab_width));
+                self.want = Some(want);
+                let line = line.min(self.lines.len() - 1);
+                CodePos::new(line, byte_at_display(self.line(line), want, self.tab_width))
+            }
             CodeMove::Up(lines) | CodeMove::Down(lines) => {
                 keeps_column = true;
                 let up = matches!(movement, CodeMove::Up(_));
@@ -557,6 +596,79 @@ impl CodeBuffer {
         if !extend {
             self.selection.anchor = target;
         }
+    }
+
+    /// The bracket pair the caret is at: the bracket just after it, else the one just before it,
+    /// and the one that closes or opens it, as the places of the two brackets (the first in the
+    /// text first). `()`, `[]` and `{}`; brackets of other kinds in between are not counted, and
+    /// the search stops after [`BRACKET_SCAN_LINES`] lines, so a stray bracket in a huge file costs
+    /// a bounded look. The text is not read as a language: a bracket in a string counts.
+    ///
+    /// ```
+    /// use bevy_gooey::{CodeBuffer, CodePos};
+    /// let mut buffer = CodeBuffer::new("f(a[1], (b))");
+    /// buffer.select(CodePos::new(0, 1), CodePos::new(0, 1));
+    /// assert_eq!(buffer.matching_bracket(), Some((CodePos::new(0, 1), CodePos::new(0, 11))));
+    /// ```
+    pub fn matching_bracket(&self) -> Option<(CodePos, CodePos)> {
+        const PAIRS: [(char, char); 3] = [('(', ')'), ('[', ']'), ('{', '}')];
+        let caret = self.selection.head;
+        let text = self.line(caret.line);
+        let after = text[caret.col..].chars().next().map(|c| (c, caret.col));
+        let before = text[..caret.col]
+            .chars()
+            .next_back()
+            .map(|c| (c, caret.col - c.len_utf8()));
+        let (bracket, col) = [after, before]
+            .into_iter()
+            .flatten()
+            .find(|(c, _)| PAIRS.iter().any(|&(open, close)| *c == open || *c == close))?;
+        let here = CodePos::new(caret.line, col);
+        let &(open, close) = PAIRS.iter().find(|&&(o, c)| bracket == o || bracket == c)?;
+        let forward = bracket == open;
+        let mut depth = 0usize;
+        let mut scanned = 0usize;
+        if forward {
+            let mut line = here.line;
+            let mut start = col;
+            while line < self.lines.len() && scanned <= BRACKET_SCAN_LINES {
+                let text = self.line(line);
+                for (i, c) in text[start..].char_indices() {
+                    if c == open {
+                        depth += 1;
+                    } else if c == close {
+                        depth -= 1;
+                        if depth == 0 {
+                            return Some((here, CodePos::new(line, start + i)));
+                        }
+                    }
+                }
+                line += 1;
+                start = 0;
+                scanned += 1;
+            }
+        } else {
+            let mut line = here.line as isize;
+            let mut end = col + close.len_utf8();
+            while line >= 0 && scanned <= BRACKET_SCAN_LINES {
+                let text = self.line(line as usize);
+                let upto = end.min(text.len());
+                for (i, c) in text[..upto].char_indices().rev() {
+                    if c == close {
+                        depth += 1;
+                    } else if c == open {
+                        depth -= 1;
+                        if depth == 0 {
+                            return Some((CodePos::new(line as usize, i), here));
+                        }
+                    }
+                }
+                line -= 1;
+                end = usize::MAX;
+                scanned += 1;
+            }
+        }
+        None
     }
 
     /// Selects the whole text.

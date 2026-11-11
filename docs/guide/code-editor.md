@@ -81,3 +81,35 @@ The rows are a pool of a screenful and two entities, re-pointed at other lines a
 - Wide (CJK) characters take one column.
 - Assistive technology is told the editor's role (a multi-line text input) and its label, not its text: mirroring a 2 MB file into the accessibility tree on every edit is a cost no player asked for. A host that needs the text reads `CodeEditorValue`.
 - Syntax colours, diagnostics, completion, edits from elsewhere, a minimap, folding and find and replace are the code editor's next issues (G-72 and G-73).
+
+## What the host draws onto it
+
+The editor stays language-agnostic: the host knows its language and its schema, says *where* and *what*, and the editor draws it. Every one of these is a component on the editor, and the ones that describe the text carry the **revision** (`CodeEditorValue::revision`) they were computed for; the editor draws them only while the text is still at that revision, so they are **never drawn on new text**. A host that answers `ValueChange<String>` in its observer sends them in the same frame.
+
+```rust
+fn decorate(
+    change: On<ValueChange<String>>,
+    values: Query<&CodeEditorValue>,
+    mut commands: Commands,
+) {
+    let Ok(value) = values.get(change.source) else { return };
+    commands.entity(change.source).insert((
+        Highlights::new(value.revision(), [(0..4, SyntaxRole::Key)]),
+        Diagnostics::new(value.revision(), [Diagnostic::new(6..9, CodeSeverity::Error, "unknown name")]),
+        FoldRanges::new(value.revision(), [1..5]),
+    ));
+}
+```
+
+- **`Highlights`**: byte ranges of the text, each a `SyntaxRole` (`Key`, `String`, `Number`, `Keyword`, `Comment`, `Reference`, `Function`, `Type`, `Operator`, `Error`). The colours are the skin's, `GooeySkin::syntax(role)`, derived from its seeds like `warning()` and `live()` and held at the text-contrast bar (7:1 when the skin's text holds it) on the editor's ground in every preset, which `problems()` checks.
+- **`Diagnostics`**: a wave under each range, a mark in the gutter (and the minimap), and the message in a note on hover (after `CODE_HOVER_DELAY_S`) or on **Cmd or Ctrl+.** at the caret. `GooeySkin::severity` gives each `CodeSeverity` its colour.
+- **Completion**: the editor sends `CodeCompletionRequested { prefix, offset, trigger }` (Ctrl+Space, a letter, digit or underscore typed with no list open, or a character of `CodeEditorSettings::completion_triggers`); answer by inserting `CodeCompletions { anchor, items }` on the editor. The list opens under the caret, narrows by what is typed after `anchor` (the crate's fuzzy matcher), Up and Down move the lit row, **Enter or Tab** chooses (one undo step), Escape closes it. Each `CompletionItem` has a `detail` line and an optional `insert` text.
+- **Hover**: after the pointer rests, the editor shows a diagnostic there, or sends `CodeHoverRequested` and shows your `CodeHover { revision, range, text }`.
+- **Edits from elsewhere**: `editor.apply_external_edit(&[CodeEdit::new(range, text)], CodeAuthor::new("Ada", colour))`. The edit lands without moving the player's caret or selection (both stay on the text they were on, an edit inside a selection included), lines added above the view move the scroll so the text in view stays put, the changed lines glide in tinted in the author's colour, and the tint fades over `EXTERNAL_EDIT_FADE_S`. The player's undo history is dropped (a person's undo never rewrites someone else's text). `CodeEditorValue` has the new text the same frame, with no `ValueChange`.
+
+## Navigating a long file
+
+- **`CodeMinimap`** on the editor draws the text small down the right edge: a bar a line as long as the line, the part in view as a band that follows the glided scroll, and the diagnostics marked. Press or drag it to scroll.
+- **Folding**: give `FoldRanges` (line ranges `start..end`: the header `start` stays, `start + 1..end` hides). A chevron shows in the gutter on each header (click it), and **Cmd or Ctrl+Shift+[** and **]** close and open the fold at the caret. The lines after a fold move up by the folded height, the caret cannot rest in a fold (it goes to the header), Up and Down walk rows.
+- **Indent guides** stand at each indent level, and the **matching bracket** of `()`, `[]` and `{}` at the caret is lit (`CodeBuffer::matching_bracket`).
+- **Find and replace**: **Cmd or Ctrl+F** opens the bar (seeded with a one-line selection), **Cmd or Ctrl+Alt+F** with the replace field. A query, case, whole-word and regular-expression options (the crate's own engine: no look-around, no back-references; the replacement may use `$1`), a count ("3 of 10"), Previous and Next, Replace, **Replace all as one undo step**. `CodeFind` on the editor holds it (`open`, `query`, `options`, `count()`, `current()`, `error()`); `find_all` and `replace_edits` are the engine-free searching.
