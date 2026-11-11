@@ -1818,7 +1818,7 @@ pub enum Role {
     LedDot,
     /// A [`crate::code_editor`]: a filled, framed box (the focus ring while it has focus) holding
     /// a gutter and a text area side by side; what it draws is data written by
-    /// [`crate::update_code_editors`].
+    /// the editor's update system.
     CodeEditor,
     /// The editor's gutter, left of the text: the line numbers, on the editor's own fill and
     /// divided from the text by a line.

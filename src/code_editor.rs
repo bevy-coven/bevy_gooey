@@ -847,7 +847,7 @@ type PartItem = (
 /// before [`crate::apply_skin`].
 ///
 /// Everything it writes it writes only on a difference, so a settled editor costs a look.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub(crate) fn update_code_editors(
     mut editors: Query<(
         Entity,
@@ -1350,10 +1350,7 @@ pub(crate) fn update_code_editors(
                 }
             }
             let number_entity = editor.parts.numbers[slot];
-            if let Ok((_, mut node, text, _, row, mut role)) = parts
-                .get_mut(number_entity)
-                .map(|(a, b, c, d, e, f)| (a, b, c, d, e, f))
-            {
+            if let Ok((_, mut node, text, _, row, mut role)) = parts.get_mut(number_entity) {
                 set_display(
                     &mut node,
                     if slot < needed {
