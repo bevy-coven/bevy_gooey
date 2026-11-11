@@ -8,11 +8,12 @@
 
 - `text_area_fill(label, value, rows)` with `TextAreaFill`: a `text_area` as tall as the room its
   host leaves, with `rows` a least height, so a 64 KiB document can be read and edited. Its own rail
-  runs down its right while there is more text than the field draws, and the wheel, a press or a drag
-  on the rail, and the caret (a keystroke, an arrow, Home/End, Ctrl+End, a click) scroll it; a very
-  long line wraps at the field's width, so there is no horizontal scrolling. A filled area opens at
-  the top of its text, caret and view. Everything else is
-  `text_area`'s: `TextInputValue`, one `ValueChange<String>` per edit, `TextLimit`, `TextHint`,
+  runs down its right while there is more text than the field draws — the crate's own, so a host
+  builds and reads none of it; its look is the `list`'s (`Role::ListRail` and `Role::ListThumb`) —
+  and the wheel, a press or a drag on the rail, and the caret (a keystroke, an arrow, Home/End,
+  Ctrl+End, a click) scroll it; a very long line wraps at the field's width, so there is no
+  horizontal scrolling. A filled area opens at the top of its text, caret and view. Everything else
+  is `text_area`'s: `TextInputValue`, one `ValueChange<String>` per edit, `TextLimit`, `TextHint`,
   `FieldProblem`, `TextEditing`, and Ctrl+Enter for the final change. A settled area writes nothing.
   Measured in a headless window: 64 KiB (65,528 characters) in a 40-row area wheels to its last line,
   and one character typed at the document's end (Ctrl+Home, the wheel, then Ctrl+End) reports the
