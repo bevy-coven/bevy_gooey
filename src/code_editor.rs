@@ -29,7 +29,7 @@ use bevy::picking::Pickable;
 use bevy::picking::events::{PointerDrag, PointerDragEnd, PointerPress};
 use bevy::picking::pointer::PointerButton;
 use bevy::prelude::*;
-use bevy::text::{LineBreak, TextLayout};
+use bevy::text::{LineBreak, TextLayout, TextSpan};
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui::{ComputedNode, ComputedUiRenderTargetInfo, InteractionDisabled, UiGlobalTransform};
 use bevy::ui_widgets::{ValueChange, observe};
@@ -40,6 +40,10 @@ use crate::code_buffer::{
     CodeBuffer, CodeIndent, CodeMove, CodePos, byte_at_display, display_col, display_width,
     expand_slice,
 };
+use crate::code_decor::{Highlights, line_runs};
+use crate::code_decor::{CodeCompletions, CompletionTrigger};
+use crate::code_fold::FoldMap;
+use crate::code_overlay::{FoldRequest, Overlay, code_on_move, code_on_out};
 use crate::model::{SpringState, snap_line_width, snap_text_size, spring_settled, spring_step};
 use crate::motion::{MotionSettings, MotionToken};
 use crate::region::FocusRegion;
@@ -87,12 +91,25 @@ pub struct CodeEditorSettings {
     /// wants the system's own sets it from the platform's caret blink time; zero or less is a
     /// steady caret.
     pub blink_period_s: f32,
+    /// Typing one of these characters asks the host for completions
+    /// ([`CodeCompletionRequested`](crate::CodeCompletionRequested) with
+    /// [`CompletionTrigger::Character`](crate::CompletionTrigger::Character)). Default `".:"`.
+    pub completion_triggers: String,
+    /// Whether typing a letter, a digit or an underscore, with no list open, asks the host for
+    /// completions ([`CompletionTrigger::Typing`](crate::CompletionTrigger::Typing)). Default
+    /// true; a host that never answers loses nothing by it.
+    pub complete_while_typing: bool,
 }
+
+/// The characters that ask for completions by default.
+pub const DEFAULT_COMPLETION_TRIGGERS: &str = ".:";
 
 impl Default for CodeEditorSettings {
     fn default() -> Self {
         Self {
             blink_period_s: CARET_BLINK_PERIOD_S,
+            completion_triggers: DEFAULT_COMPLETION_TRIGGERS.to_owned(),
+            complete_while_typing: true,
         }
     }
 }
@@ -193,36 +210,78 @@ pub(crate) struct CodePart {
     kind: PartKind,
 }
 
+impl CodePart {
+    /// The editor this is a part of.
+    pub(crate) fn editor_entity(&self) -> Entity {
+        self.editor
+    }
+}
+
 /// What a pool row shows, so it is written only when that changes.
 #[derive(Component, Clone, Debug, Default, PartialEq)]
 pub(crate) struct RowShown {
     line: usize,
     first_col: usize,
     tab: usize,
+    styled: u64,
     cols: usize,
     revision: u64,
     lit: bool,
 }
 
+impl RowShown {
+    /// The line the row draws, `usize::MAX` for none.
+    pub(crate) fn line_shown(&self) -> usize {
+        self.line
+    }
+}
+
+/// The spans a text row draws its coloured runs in: pooled children of the row, re-pointed as the
+/// row is.
+#[derive(Component, Clone, Debug, Default)]
+pub(crate) struct RowSpans(pub(crate) Vec<Entity>);
+
 /// The entities of an editor's parts, in slot order.
 #[derive(Clone, Debug, Default)]
-struct Parts {
-    gutter: Option<Entity>,
-    gutter_rows: Option<Entity>,
-    area: Option<Entity>,
-    area_rows: Option<Entity>,
-    probe: Option<Entity>,
-    line_lit: Option<Entity>,
-    caret: Option<Entity>,
-    numbers: Vec<Entity>,
-    texts: Vec<Entity>,
-    bands: Vec<Entity>,
+pub(crate) struct Parts {
+    pub(crate) gutter: Option<Entity>,
+    pub(crate) gutter_rows: Option<Entity>,
+    pub(crate) area: Option<Entity>,
+    pub(crate) area_rows: Option<Entity>,
+    pub(crate) probe: Option<Entity>,
+    pub(crate) line_lit: Option<Entity>,
+    pub(crate) caret: Option<Entity>,
+    pub(crate) numbers: Vec<Entity>,
+    pub(crate) texts: Vec<Entity>,
+    pub(crate) bands: Vec<Entity>,
+}
+
+/// Where the view stands this frame, written by [`update_code_editors`] for the systems that draw
+/// over it ([`crate::code_overlay`]): all in skin px.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct View {
+    pub(crate) ready: bool,
+    /// The first display row drawn, and the first display column.
+    pub(crate) first_row: usize,
+    pub(crate) first_col: usize,
+    /// How many columns a row draws, how many display rows the text has, and how many are pooled.
+    pub(crate) cols: usize,
+    pub(crate) rows: usize,
+    pub(crate) needed: usize,
+    pub(crate) shown: Vec2,
+    pub(crate) pad: f32,
+    pub(crate) advance: f32,
+    pub(crate) line_px: f32,
+    pub(crate) gutter_w: f32,
+    pub(crate) area: Vec2,
+    pub(crate) scale: f32,
+    pub(crate) skin_text: f32,
 }
 
 /// Where the pointer last pressed or dragged: written by the observers, read by
 /// [`update_code_editors`], which has the geometry.
 #[derive(Clone, Copy, Debug)]
-enum Gesture {
+pub(crate) enum Gesture {
     /// The press, and how many quick presses it is in a run (1, 2, 3).
     Press(Vec2),
     /// The pointer while the primary button is held.
@@ -231,7 +290,7 @@ enum Gesture {
 
 /// How a held press selects: by character, word or line.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Unit {
+pub(crate) enum Unit {
     Char,
     Word,
     Line,
@@ -247,37 +306,46 @@ enum Unit {
     bevy::picking::hover::Hovered
 )]
 pub struct CodeEditor {
-    label: String,
-    buffer: CodeBuffer,
+    pub(crate) label: String,
+    pub(crate) buffer: CodeBuffer,
     /// The [`CodeEditorValue`] revision the buffer holds.
-    synced: u64,
+    pub(crate) synced: u64,
     /// The buffer revision the value holds.
-    published: u64,
+    pub(crate) published: u64,
     /// The scroll the view draws, and its goal, each in skin px from the text's top-left.
-    shown_x: SpringState,
-    shown_y: SpringState,
-    goal: Vec2,
+    pub(crate) shown_x: SpringState,
+    pub(crate) shown_y: SpringState,
+    pub(crate) goal: Vec2,
     /// Whether the next frame brings the caret into view.
-    reveal: bool,
+    pub(crate) reveal: bool,
     /// The caret as drawn, in the text's own px (before the scroll).
-    caret_x: SpringState,
-    caret_y: SpringState,
-    caret_primed: bool,
+    pub(crate) caret_x: SpringState,
+    pub(crate) caret_y: SpringState,
+    pub(crate) caret_primed: bool,
     /// Seconds since the player last did something, which restarts the blink.
-    blink: f32,
-    advance: f32,
-    line_px: f32,
-    area: Vec2,
-    gesture: Option<Gesture>,
-    unit: Unit,
+    pub(crate) blink: f32,
+    pub(crate) advance: f32,
+    pub(crate) line_px: f32,
+    pub(crate) area: Vec2,
+    pub(crate) gesture: Option<Gesture>,
+    pub(crate) unit: Unit,
     /// The first end of what a held press selects by word or line.
-    pivot: Option<(CodePos, CodePos)>,
-    pending_paste: Option<ClipboardRead>,
-    preedit: String,
-    parts: Parts,
-    scan: bool,
+    pub(crate) pivot: Option<(CodePos, CodePos)>,
+    pub(crate) pending_paste: Option<ClipboardRead>,
+    pub(crate) preedit: String,
+    pub(crate) parts: Parts,
+    pub(crate) scan: bool,
     /// The widest line, in columns, for the buffer revision and tab width it was measured at.
-    longest: ((u64, usize), usize),
+    pub(crate) longest: ((u64, usize), usize),
+    /// The lines the closed folds hide, and the headers the player closed.
+    pub(crate) fold: FoldMap,
+    pub(crate) folded: std::collections::BTreeSet<usize>,
+    pub(crate) fold_dirty: bool,
+    pub(crate) view: View,
+    /// The byte offset each line starts at, for the buffer revision it was measured at.
+    pub(crate) starts: (u64, Vec<usize>),
+    /// What is drawn over the text and what the host and the player asked of it.
+    pub(crate) overlay: Overlay,
 }
 
 impl CodeEditor {
@@ -306,6 +374,12 @@ impl CodeEditor {
             parts: Parts::default(),
             scan: true,
             longest: ((u64::MAX, 0), 0),
+            fold: FoldMap::default(),
+            folded: std::collections::BTreeSet::new(),
+            fold_dirty: false,
+            view: View::default(),
+            starts: (u64::MAX, Vec::new()),
+            overlay: Overlay::default(),
         }
     }
 
@@ -357,10 +431,56 @@ impl CodeEditor {
     }
 
     /// The player did something to the text or the caret: the caret shows steady and comes into view.
-    fn touched(&mut self) {
+    pub(crate) fn touched(&mut self) {
         self.reveal = true;
         self.blink = 0.0;
         self.preedit.clear();
+        if !self.overlay.note_request {
+            self.overlay.note_pinned = false;
+        }
+    }
+
+    /// Moves the caret `n` rows up or down; a line a closed fold hides is no row.
+    pub(crate) fn move_rows(&mut self, up: bool, n: usize, extend: bool) {
+        let rows = self.fold.rows(self.buffer.len_lines());
+        let row = self.fold.row_of(self.buffer.caret().line);
+        let target = if up {
+            row.checked_sub(n)
+        } else {
+            Some(row + n).filter(|&row| row < rows)
+        };
+        match target {
+            Some(row) => self
+                .buffer
+                .move_to(CodeMove::ToLine(self.fold.line_at(row)), extend),
+            None if up => self.buffer.move_to(CodeMove::DocStart, extend),
+            None => self.buffer.move_to(CodeMove::DocEnd, extend),
+        }
+    }
+
+    /// A caret a closed fold hides goes to the end of the fold's header line.
+    pub(crate) fn keep_caret_out_of_folds(&mut self) {
+        let caret = self.buffer.caret();
+        if let Some(header) = self.fold.header_of(caret.line) {
+            let end = CodePos::new(header, self.buffer.line(header).len());
+            let selection = self.buffer.selection();
+            let anchor = if selection.is_empty() {
+                end
+            } else {
+                selection.anchor
+            };
+            self.buffer.select(anchor, end);
+        }
+    }
+
+    /// Asks to close (or open) the fold at the caret's line.
+    pub(crate) fn fold_at_caret(&mut self, fold: bool) {
+        let line = self.buffer.caret().line;
+        self.overlay.fold_requests.push(if fold {
+            FoldRequest::Fold(line)
+        } else {
+            FoldRequest::Unfold(line)
+        });
     }
 
     fn page(&self) -> usize {
@@ -456,6 +576,8 @@ pub fn code_editor(label: impl Into<String>, text: impl Into<String>) -> impl Bu
         observe(code_on_press),
         observe(code_on_drag),
         observe(code_on_drag_end),
+        observe(code_on_move),
+        observe(code_on_out),
         Children::spawn(bevy::ecs::spawn::SpawnWith(
             move |parts: &mut bevy::ecs::relationship::RelatedSpawner<ChildOf>| {
                 let editor = parts.target_entity();
@@ -549,7 +671,7 @@ fn is_text(text: &str) -> bool {
 
 /// Sends the editor's text out after a change: [`CodeEditorValue`] takes it (a new revision) and
 /// one [`ValueChange<String>`] says so; `is_final` sends one even if nothing changed.
-fn publish(
+pub(crate) fn publish(
     root: Entity,
     editor: &mut CodeEditor,
     value: &mut CodeEditorValue,
@@ -562,6 +684,8 @@ fn publish(
         value.revision += 1;
         editor.synced = value.revision;
         editor.published = editor.buffer.revision();
+        // The text moved under the tint: lines are not where the marks say.
+        editor.overlay.external.clear();
     }
     if changed || is_final {
         commands.trigger(ValueChange::<String> {
@@ -578,13 +702,17 @@ fn code_on_key(
     mut event: On<FocusedInput<KeyboardInput>>,
     keys: Res<ButtonInput<KeyCode>>,
     time: Option<Res<Time<Real>>>,
-    mut editors: Query<(&mut CodeEditor, &mut CodeEditorValue), Without<InteractionDisabled>>,
+    mut editors: Query<
+        (&mut CodeEditor, &mut CodeEditorValue, Option<&CodeCompletions>),
+        Without<InteractionDisabled>,
+    >,
     clipboard: Option<ResMut<Clipboard>>,
+    settings: Option<Res<CodeEditorSettings>>,
     mut focus: ResMut<InputFocus>,
     mut commands: Commands,
 ) {
     let root = event.event_target();
-    let Ok((mut editor, mut value)) = editors.get_mut(root) else {
+    let Ok((mut editor, mut value, completions)) = editors.get_mut(root) else {
         return;
     };
     let key = &event.input;
@@ -600,8 +728,59 @@ fn code_on_key(
     let command = ctrl || sup;
     let mut clipboard = clipboard;
     let page = editor.page();
+
+    // An open completion list takes the keys that choose and close.
+    if editor.overlay.completion.is_open() && !command {
+        let len = editor.overlay.completion.filtered.len();
+        let mut taken = true;
+        match key.key_code {
+            KeyCode::ArrowDown => {
+                let next = (editor.overlay.completion.selected + 1) % len;
+                editor.overlay.completion.selected = next;
+            }
+            KeyCode::ArrowUp => {
+                let next = (editor.overlay.completion.selected + len - 1) % len;
+                editor.overlay.completion.selected = next;
+            }
+            KeyCode::Enter | KeyCode::NumpadEnter | KeyCode::Tab => {
+                let chosen = completions.and_then(|c| {
+                    let item = editor
+                        .overlay
+                        .completion
+                        .filtered
+                        .get(editor.overlay.completion.selected)
+                        .and_then(|&i| c.items.get(i))?;
+                    Some((c.anchor, item.text().to_owned()))
+                });
+                if let Some((anchor, text)) = chosen {
+                    let from = editor.buffer.pos_at(anchor);
+                    let caret = editor.buffer.caret();
+                    editor.buffer.replace_span(from, caret, &text, now);
+                    editor.overlay.completion.filtered.clear();
+                    commands.entity(root).remove::<CodeCompletions>();
+                    event.propagate(false);
+                    editor.touched();
+                    publish(root, &mut editor, &mut value, false, &mut commands);
+                    return;
+                }
+                taken = false;
+            }
+            KeyCode::Escape => {
+                editor.overlay.completion.filtered.clear();
+                commands.entity(root).remove::<CodeCompletions>();
+            }
+            _ => taken = false,
+        }
+        if taken {
+            event.propagate(false);
+            editor.blink = 0.0;
+            return;
+        }
+    }
+
     let mut final_save = false;
     let mut handled = true;
+    let mut asks_completion = None;
     match key.key_code {
         KeyCode::ArrowLeft | KeyCode::ArrowRight => {
             let left = key.key_code == KeyCode::ArrowLeft;
@@ -617,16 +796,14 @@ fn code_on_key(
         }
         KeyCode::ArrowUp | KeyCode::ArrowDown => {
             let up = key.key_code == KeyCode::ArrowUp;
-            let movement = match (sup, up) {
-                (true, true) => CodeMove::DocStart,
-                (true, false) => CodeMove::DocEnd,
-                (false, true) => CodeMove::Up(1),
-                (false, false) => CodeMove::Down(1),
-            };
-            editor.buffer.move_to(movement, shift);
+            match (sup, up) {
+                (true, true) => editor.buffer.move_to(CodeMove::DocStart, shift),
+                (true, false) => editor.buffer.move_to(CodeMove::DocEnd, shift),
+                (false, up) => editor.move_rows(up, 1, shift),
+            }
         }
-        KeyCode::PageUp => editor.buffer.move_to(CodeMove::Up(page), shift),
-        KeyCode::PageDown => editor.buffer.move_to(CodeMove::Down(page), shift),
+        KeyCode::PageUp => editor.move_rows(true, page, shift),
+        KeyCode::PageDown => editor.move_rows(false, page, shift),
         KeyCode::Home if ctrl => editor.buffer.move_to(CodeMove::DocStart, shift),
         KeyCode::End if ctrl => editor.buffer.move_to(CodeMove::DocEnd, shift),
         KeyCode::Home => editor.buffer.move_to(CodeMove::Home, shift),
@@ -648,9 +825,19 @@ fn code_on_key(
             }
         }
         KeyCode::Escape => {
-            focus.clear();
-            handled = false;
+            if editor.overlay.note.is_some() {
+                // The first Escape puts away the note; the next lets go of focus.
+                editor.overlay.note_pinned = false;
+                editor.overlay.resting = None;
+            } else {
+                focus.clear();
+                handled = false;
+            }
         }
+        KeyCode::Space if ctrl => asks_completion = Some(CompletionTrigger::Manual),
+        KeyCode::Period if command => editor.overlay.note_request = true,
+        KeyCode::BracketLeft if command && shift => editor.fold_at_caret(true),
+        KeyCode::BracketRight if command && shift => editor.fold_at_caret(false),
         KeyCode::KeyA if command => editor.buffer.select_all(),
         KeyCode::KeyC if command => {
             if let (true, Some(clipboard)) = (editor.buffer.has_selection(), clipboard.as_mut()) {
@@ -683,13 +870,29 @@ fn code_on_key(
         _ => match key.text.as_deref() {
             Some(text) if is_text(text) => {
                 editor.buffer.insert(text, now);
+                let typed = text.chars().next_back();
+                let triggers = settings
+                    .as_deref()
+                    .map_or(DEFAULT_COMPLETION_TRIGGERS, |s| s.completion_triggers.as_str());
+                let auto = settings.as_deref().is_none_or(|s| s.complete_while_typing);
+                if let Some(c) = typed {
+                    if auto && (c.is_alphanumeric() || c == '_') && !editor.overlay.completion.is_open() {
+                        asks_completion = Some(CompletionTrigger::Typing);
+                    } else if triggers.contains(c) {
+                        asks_completion = Some(CompletionTrigger::Character);
+                    }
+                }
             }
             _ => handled = false,
         },
     }
     if handled {
         event.propagate(false);
+        editor.keep_caret_out_of_folds();
         editor.touched();
+        if let Some(trigger) = asks_completion {
+            editor.overlay.complete_request = Some(trigger);
+        }
         publish(root, &mut editor, &mut value, final_save, &mut commands);
     }
 }
@@ -839,6 +1042,7 @@ type PartItem = (
     Option<&'static mut Visibility>,
     Option<&'static mut RowShown>,
     &'static mut Role,
+    Option<&'static mut RowSpans>,
 );
 
 /// The whole editor, once a frame: takes what the host and the player asked for (a replaced text,
@@ -856,6 +1060,7 @@ pub(crate) fn update_code_editors(
         &CodeIndentation,
         Option<&ComputedUiRenderTargetInfo>,
         Option<&ClickCount>,
+        Option<&Highlights>,
     )>,
     mut parts: Query<PartItem>,
     scan: Query<(Entity, &CodePart)>,
@@ -870,6 +1075,7 @@ pub(crate) fn update_code_editors(
     ui_scale: Option<Res<UiScale>>,
     mut ime: Option<MessageReader<Ime>>,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
+    mut spans: Query<(&mut TextSpan, &mut Role), Without<CodePart>>,
     mut commands: Commands,
 ) {
     let settings = settings.as_deref().cloned().unwrap_or_default();
@@ -885,7 +1091,7 @@ pub(crate) fn update_code_editors(
         .map(|ime| ime.read().cloned().collect())
         .unwrap_or_default();
     let mut ime_focus = None;
-    for (root, mut editor_mut, mut value, indentation, target, clicks) in &mut editors {
+    for (root, mut editor_mut, mut value, indentation, target, clicks, highlights) in &mut editors {
         let Some(target) = target else {
             continue;
         };
@@ -894,6 +1100,15 @@ pub(crate) fn update_code_editors(
         let look = skin_of(&skin, root, &scopes, &parents);
         let m = CodeMetrics::of(look, target.scale_factor());
 
+        // An edit made from elsewhere reaches the host's copy in this frame, with no event.
+        if editor.overlay.external_dirty {
+            editor.overlay.external_dirty = false;
+            value.text = editor.buffer.text();
+            value.revision += 1;
+            editor.synced = value.revision;
+            editor.published = editor.buffer.revision();
+            editor.starts.0 = u64::MAX;
+        }
         // What the host wrote, and what the editor is told to do about indenting.
         if value.revision != editor.synced {
             editor.buffer.load(&value.text);
@@ -974,6 +1189,8 @@ pub(crate) fn update_code_editors(
         editor.area = size;
         let tab = editor.buffer.tab_width();
         let lines = editor.buffer.len_lines();
+        let fold = editor.fold.clone();
+        let rows = fold.rows(lines);
         let pad = m.pad_px;
 
         // IME and a paste that was still on its way.
@@ -1032,7 +1249,8 @@ pub(crate) fn update_code_editors(
                 .map_or(0.0, |(node, _)| to_skin(node.size().x, node));
             let x = local.x - gutter_w - pad + editor.shown_x.value;
             let y = local.y + editor.shown_y.value;
-            let line = ((y / m.line_px).floor().max(0.0) as usize).min(lines - 1);
+            let row = ((y / m.line_px).floor().max(0.0) as usize).min(rows - 1);
+            let line = fold.line_at(row);
             let col = (x / advance + 0.5).floor().max(0.0) as usize;
             let at = CodePos::new(line, byte_at_display(editor.buffer.line(line), col, tab));
             match gesture {
@@ -1109,7 +1327,10 @@ pub(crate) fn update_code_editors(
             shown_line.insert_str(caret.col, &editor.preedit.clone());
         }
         let caret_col = display_col(&shown_line, caret.col + editor.preedit.len(), tab);
-        let caret_target = Vec2::new(caret_col as f32 * advance, caret.line as f32 * m.line_px);
+        let caret_target = Vec2::new(
+            caret_col as f32 * advance,
+            fold.row_of(caret.line) as f32 * m.line_px,
+        );
 
         // The view: how far it may go, where the caret asks it to be, and the glide there.
         let longest = if editor.longest.0 == (editor.buffer.revision(), tab) {
@@ -1121,7 +1342,7 @@ pub(crate) fn update_code_editors(
         };
         let max = Vec2::new(
             (longest as f32 * advance + 2.0 * pad + advance - size.x).max(0.0),
-            (lines as f32 * m.line_px - size.y).max(0.0),
+            (rows as f32 * m.line_px - size.y).max(0.0),
         );
         if editor.reveal {
             editor.reveal = false;
@@ -1224,6 +1445,22 @@ pub(crate) fn update_code_editors(
         let digits = lines.to_string().len().max(2);
         let gutter_w = (digits as f32 + 2.0) * advance;
         let revision = editor.buffer.revision();
+        editor.view = View {
+            ready: true,
+            first_row: first,
+            first_col,
+            cols,
+            rows,
+            needed,
+            shown,
+            pad,
+            advance,
+            line_px: m.line_px,
+            gutter_w,
+            area: size,
+            scale: target.scale_factor(),
+            skin_text: look.text_size * look.text_scale,
+        };
 
         // Grow the pools.
         if editor.parts.texts.len() < needed {
@@ -1235,6 +1472,7 @@ pub(crate) fn update_code_editors(
                         Role::CodeText,
                         TextLayout::new(Justify::Left, LineBreak::NoWrap),
                         RowShown::default(),
+                        RowSpans::default(),
                         CodePart {
                             editor: root,
                             kind: PartKind::Text(slot),
@@ -1308,11 +1546,20 @@ pub(crate) fn update_code_editors(
             set_px(&mut node.left, pad - frac.x);
         }
 
+        let highlights = highlights.filter(|highlights| highlights.revision() == value.revision);
+        if highlights.is_some() && editor.starts.0 != revision {
+            editor.starts = (revision, editor.buffer.line_starts());
+        }
         for slot in 0..editor.parts.texts.len() {
-            let line = first + slot;
-            let shown_row = slot < needed && line < lines;
+            let row = first + slot;
+            let line = if slot < needed && row < rows {
+                fold.line_at(row)
+            } else {
+                lines
+            };
+            let shown_row = line < lines;
             let text_entity = editor.parts.texts[slot];
-            if let Ok((_, mut node, text, _, row, _)) = parts.get_mut(text_entity) {
+            if let Ok((_, mut node, text, _, row_state, _, pool)) = parts.get_mut(text_entity) {
                 set_display(
                     &mut node,
                     if slot < needed {
@@ -1321,7 +1568,12 @@ pub(crate) fn update_code_editors(
                         Display::None
                     },
                 );
-                if let (Some(mut text), Some(mut row)) = (text, row) {
+                if let (Some(mut text), Some(mut row_state), Some(mut pool)) =
+                    (text, row_state, pool)
+                {
+                    let styled = shown_row
+                        && highlights.is_some()
+                        && (editor.preedit.is_empty() || line != caret.line);
                     let want = RowShown {
                         line: if shown_row { line } else { usize::MAX },
                         first_col,
@@ -1332,27 +1584,89 @@ pub(crate) fn update_code_editors(
                         } else {
                             u64::MAX
                         },
+                        styled: if styled {
+                            highlights.map_or(0, Highlights::id)
+                        } else {
+                            0
+                        },
                         lit: false,
                     };
-                    if *row != want {
-                        let string = if !shown_row {
-                            String::new()
-                        } else if !editor.preedit.is_empty() && line == caret.line {
-                            expand_slice(&shown_line, first_col, first_col + cols, tab)
+                    if *row_state != want {
+                        if let (true, Some(highlights)) = (styled, highlights) {
+                            let runs = line_runs(
+                                editor.buffer.line(line),
+                                editor.starts.1.get(line).copied().unwrap_or(0),
+                                highlights.spans(),
+                                tab,
+                                first_col,
+                                first_col + cols,
+                            );
+                            if !text.0.is_empty() {
+                                text.0.clear();
+                            }
+                            for (i, run) in runs.iter().enumerate() {
+                                let role = run.role.map_or(Role::CodeText, Role::CodeSyntax);
+                                if let Some(&span) = pool.0.get(i) {
+                                    if let Ok((mut span_text, mut span_role)) = spans.get_mut(span)
+                                    {
+                                        if span_text.0 != run.text {
+                                            span_text.0.clone_from(&run.text);
+                                        }
+                                        if *span_role != role {
+                                            *span_role = role;
+                                        }
+                                    }
+                                } else {
+                                    let span = commands
+                                        .spawn((
+                                            TextSpan(run.text.clone()),
+                                            TextFont::default(),
+                                            TextColor::default(),
+                                            role,
+                                            ChildOf(text_entity),
+                                        ))
+                                        .id();
+                                    pool.0.push(span);
+                                }
+                            }
+                            for &span in pool.0.iter().skip(runs.len()) {
+                                if let Ok((mut span_text, _)) = spans.get_mut(span)
+                                    && !span_text.0.is_empty()
+                                {
+                                    span_text.0.clear();
+                                }
+                            }
                         } else {
-                            expand_slice(editor.buffer.line(line), first_col, first_col + cols, tab)
-                        };
-                        if text.0 != string {
-                            text.0 = string;
+                            let string = if !shown_row {
+                                String::new()
+                            } else if !editor.preedit.is_empty() && line == caret.line {
+                                expand_slice(&shown_line, first_col, first_col + cols, tab)
+                            } else {
+                                expand_slice(
+                                    editor.buffer.line(line),
+                                    first_col,
+                                    first_col + cols,
+                                    tab,
+                                )
+                            };
+                            if text.0 != string {
+                                text.0 = string;
+                            }
+                            for &span in &pool.0 {
+                                if let Ok((mut span_text, _)) = spans.get_mut(span)
+                                    && !span_text.0.is_empty()
+                                {
+                                    span_text.0.clear();
+                                }
+                            }
                         }
-                        *row = want;
+                        *row_state = want;
                     }
                 }
             }
             let number_entity = editor.parts.numbers[slot];
-            if let Ok((_, mut node, text, _, row, mut role)) = parts
-                .get_mut(number_entity)
-                .map(|(a, b, c, d, e, f)| (a, b, c, d, e, f))
+            if let Ok((_, mut node, text, _, row_state, mut role, _)) =
+                parts.get_mut(number_entity)
             {
                 set_display(
                     &mut node,
@@ -1371,16 +1685,17 @@ pub(crate) fn update_code_editors(
                 if *role != wanted_role {
                     *role = wanted_role;
                 }
-                if let (Some(mut text), Some(mut row)) = (text, row) {
+                if let (Some(mut text), Some(mut row_state)) = (text, row_state) {
                     let want = RowShown {
                         line: if shown_row { line } else { usize::MAX },
                         first_col: 0,
                         tab: 0,
                         cols: digits,
                         revision: 0,
+                        styled: 0,
                         lit,
                     };
-                    if *row != want {
+                    if *row_state != want {
                         let string = if shown_row {
                             (line + 1).to_string()
                         } else {
@@ -1389,7 +1704,7 @@ pub(crate) fn update_code_editors(
                         if text.0 != string {
                             text.0 = string;
                         }
-                        *row = want;
+                        *row_state = want;
                     }
                 }
             }
@@ -1406,7 +1721,7 @@ pub(crate) fn update_code_editors(
                         set_display(&mut node, Display::Flex);
                         set_px(&mut node.left, pad + from as f32 * advance - shown.x);
                         set_px(&mut node.width, (to - from) as f32 * advance);
-                        set_px(&mut node.top, line as f32 * m.line_px - shown.y);
+                        set_px(&mut node.top, row as f32 * m.line_px - shown.y);
                     }
                     _ => set_display(&mut node, Display::None),
                 }
@@ -1415,7 +1730,10 @@ pub(crate) fn update_code_editors(
         if let Some(lit_entity) = editor.parts.line_lit
             && let Ok((_, mut node, ..)) = parts.get_mut(lit_entity)
         {
-            set_px(&mut node.top, caret.line as f32 * m.line_px - shown.y);
+            set_px(
+                &mut node.top,
+                fold.row_of(caret.line) as f32 * m.line_px - shown.y,
+            );
         }
         if let Some(caret_entity) = editor.parts.caret
             && let Ok((_, mut node, _, visibility, ..)) = parts.get_mut(caret_entity)

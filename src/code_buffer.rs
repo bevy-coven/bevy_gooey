@@ -76,6 +76,9 @@ pub enum CodeMove {
     Up(usize),
     /// This many lines down, keeping the display column the caret last stood at.
     Down(usize),
+    /// To this line, keeping the display column the caret last stood at: a move by rows when
+    /// some lines are folded away.
+    ToLine(usize),
 }
 
 /// A selection or caret: where it began and where it is now. They are equal for a bare caret.
@@ -311,6 +314,30 @@ impl CodeBuffer {
         self.lines.get(line).map_or("", String::as_str)
     }
 
+    /// The byte offset each line starts at in [`CodeBuffer::text`].
+    pub fn line_starts(&self) -> Vec<usize> {
+        let mut at = 0;
+        self.lines
+            .iter()
+            .map(|line| {
+                let start = at;
+                at += line.len();
+                start
+            })
+            .collect()
+    }
+
+    /// Replaces the text between two places with `text` as one undo step (a completion, a
+    /// replacement); the caret goes to the end of what went in. Returns whether the text changed.
+    pub fn replace_span(&mut self, a: CodePos, b: CodePos, text: &str, now: f64) -> bool {
+        let (a, b) = (self.clamp(a.min(b)), self.clamp(a.max(b)));
+        if a == b && text.is_empty() {
+            return false;
+        }
+        self.replace(a, b, text, Kind::Block, now);
+        true
+    }
+
     /// The line break a new line takes: the first the loaded text had, else `"\n"`.
     pub fn newline(&self) -> &'static str {
         self.newline
@@ -528,6 +555,15 @@ impl CodeBuffer {
             CodeMove::LineEnd => CodePos::new(head.line, self.line(head.line).len()),
             CodeMove::DocStart => CodePos::default(),
             CodeMove::DocEnd => self.end(),
+            CodeMove::ToLine(line) => {
+                keeps_column = true;
+                let want = self
+                    .want
+                    .unwrap_or_else(|| display_col(self.line(head.line), head.col, self.tab_width));
+                self.want = Some(want);
+                let line = line.min(self.lines.len() - 1);
+                CodePos::new(line, byte_at_display(self.line(line), want, self.tab_width))
+            }
             CodeMove::Up(lines) | CodeMove::Down(lines) => {
                 keeps_column = true;
                 let up = matches!(movement, CodeMove::Up(_));
