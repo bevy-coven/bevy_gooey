@@ -6,8 +6,38 @@
 
 - `row(gap)`, `column(gap)`, `cell(width)`, `image_box(handle, size)` and `overlay()`: a panel's layout from widgets, with its spacing taken from the skin, so a tool's screen is built with no `Node` literal in it. A row and a column stand their children `gap` multiples of `GooeySkin::gap` apart (`LayoutGap`, so `row(1.0)` is the panel's own rhythm and an interface-size change moves all of it); `cell(width)` is a fixed-width label column in body text sizes whose children stand in a row, cutting what does not fit and shrinking in a narrow row rather than overlapping its neighbour (a cell of no width is not shown at all, its gap taken with it); `image_box` is a picture of a set size that keeps its box while it is being written, is never squeezed (the cells beside it give way) and draws nothing when it has not loaded; `overlay()` stacks its later children on its first, filling it (`stack_overlays`, and a child that becomes first or leaves is put back in the flow, so an overlay is never a box of nothing), for a hover readout over a plot. A zero-width cell takes no room. `tests/layout.rs` holds all of it; research `docs/research/layout-primitives.md`; guide [layout](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/layout.md).
 
+- `text_area_fill(label, value, rows)` with `TextAreaFill`: a `text_area` as tall as the room its
+  host leaves, with `rows` a least height, so a 64 KiB document can be read and edited. Its own rail
+  runs down its right while there is more text than the field draws — the crate's own, so a host
+  builds and reads none of it; its look is the `list`'s (`Role::ListRail` and `Role::ListThumb`) —
+  and the wheel, a press or a drag on the rail, and the caret (a keystroke, an arrow, Home/End,
+  Ctrl+End, a click) scroll it; a very long line wraps at the field's width, so there is no
+  horizontal scrolling. A filled area opens at the top of its text, caret and view. Everything else
+  is `text_area`'s: `TextInputValue`, one `ValueChange<String>` per edit, `TextLimit`, `TextHint`,
+  `FieldProblem`, `TextEditing`, and Ctrl+Enter for the final change. A settled area writes nothing.
+  Measured in a headless window: 64 KiB (65,528 characters) in a 40-row area wheels to its last line,
+  and one character typed at the document's end (Ctrl+Home, the wheel, then Ctrl+End) reports the
+  whole document. A text of more than 65,536 bytes is outside that: Bevy's text layout loses the
+  caret's place past it, so a caret at its end reads as the length less 65,536.
+
+- `side_tabs_icons(tabs, selected)`, an icon-only strip for an activity bar: a narrow column of
+  square targets, each drawing its `SideTab::icon`, naming itself in a tooltip (and to a screen
+  reader, with its badge's count), and showing its badge as a corner pill. A tab with no icon shows
+  its label's first letter; `SideTab::count(n)` is the badge from a number, and a count of zero shows
+  nothing. Focus, selection, `side_tab_page`, `TabsValue`/`ValueChange<usize>` and the sliding
+  indicator are `side_tabs`'s own. New public roles `IconTab` and `CornerBadge`, and the markers of
+  the same names.
+- `SideTab::icon` and `SideTab::count`.
+
 ### Changed
 
+- **Breaking:** `SideTab` gains the public field `icon: Option<IconSource>` and loses `Eq` (an
+  `IconSource` is an image handle or an atlas, which is `PartialEq` only). A tab built with
+  `SideTab::new`, `label` or `badge` is unaffected; a struct literal that names every field needs
+  `..Default::default()` or the new field. A plain `side_tabs` ignores `icon` and draws its label, so
+  one list of `SideTab`s serves either strip.
+- `SideTab::badge` draws no badge for an empty text **or for a count of zero** ("0"), in a plain
+  `side_tabs` too: a badge means "something needs you", so nothing is drawn when there is nothing.
 - A dock the host places itself now shows its panels. `dock(layout)` brings the `Role::DockBody` its layout is built in, so a host that spawned a bare `Dock(layout)` on its own node — a bottom strip under a map, a sidebar beside a tree — had no body, and `update_docks` returned early: no registered panel was ever built. `update_docks` now grows the parts `dock()`'s bundle brings that the node lacks — the body the layout is built in, the landing a carried tab lights and the card that follows the pointer, and `Role::Dock` itself — in the same frame it first sees the dock, and leaves the host's own `Node`, its `DropTarget<T>` and any other child exactly as written; a body the host despawns grows again with its panels rebuilt into it; a dock with no panel registered for its layout builds an empty body and reports each id as `DockPanelSkipped`. One path for a dock, whichever way it was spawned. `tests/dock_body.rs` holds it (9 tests).
 
 ### Fixed

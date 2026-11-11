@@ -12,7 +12,7 @@ use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::cursor::EntityCursor;
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
-use bevy::text::{EditableText, Justify, LineBreak, TextCursorStyle};
+use bevy::text::{EditableText, Justify, LineBreak, TextCursorStyle, TextEdit};
 use bevy::ui::auto_directional_navigation::AutoDirectionalNavigation;
 use bevy::ui::{Checked, FixedNode};
 use bevy::ui_widgets::{
@@ -183,6 +183,11 @@ const TEXT_INPUT_CHARS: f32 = 17.0;
 
 /// How many character advances wide a [`text_area`]'s field is: a text input's and a half.
 const TEXT_AREA_CHARS: f32 = 26.0;
+
+/// How far a filling area's rail stands from its field, logical px: the lane is beside the text, not
+/// over it. A layout gap is the builder's, like every other `Node` in a text row; the rail's own look
+/// stays `apply_skin`'s.
+const AREA_RAIL_GAP_PX: f32 = 4.0;
 
 /// A text field's caret, as a share of the font size: 2 px at the body size, a hair thinner than
 /// Bevy's 0.2 so it does not cover a letter's stem.
@@ -1564,6 +1569,55 @@ pub fn text_area(label: impl Into<String>, value: impl Into<String>, rows: usize
     )
 }
 
+/// A [`text_area`] that fills its host: the field is as tall as the room the row's parent gives it
+/// (and its `rows` a least height), its own rail runs down its right while there is more text than
+/// it draws, and the wheel, the rail and the arrow keys scroll it. It is the fixed area in every
+/// other way — `TextInputValue`, `ValueChange<String>`, `TextLimit`, `TextHint`, `FieldProblem`,
+/// `TextEditing` — and a very long line wraps rather than panning.
+///
+/// A row already carries its `Node`, so the room comes from the host: spawn a column with the height
+/// to give and put the row in it — the row takes what the column leaves after its label.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn setup(mut commands: Commands) {
+/// commands
+///     .spawn(Node {
+///         flex_direction: FlexDirection::Column,
+///         width: Val::Percent(100.0),
+///         height: Val::Percent(100.0),
+///         ..default()
+///     })
+///     .with_children(|host| {
+///         host.spawn((
+///             text_area_fill("Guide", "", 10),
+///             observe(|change: On<ValueChange<String>>| {
+///                 if change.is_final {
+///                     info!("{} characters", change.value.chars().count());
+///                 }
+///             }),
+///         ));
+///     });
+/// # }
+/// ```
+pub fn text_area_fill(
+    label: impl Into<String>,
+    value: impl Into<String>,
+    rows: usize,
+) -> impl Bundle {
+    (
+        text_row_as(
+            Role::TextArea,
+            Some(label.into()),
+            value.into(),
+            Some(TEXT_AREA_CHARS),
+            RowKind::Fill(rows.max(1)),
+        ),
+        crate::text_area::TextAreaFill,
+    )
+}
+
 /// The row under [`text_input`]: a label if it has one and the field, which is `chars` character
 /// advances wide, or fills the room its parent leaves when `chars` is `None` (a command palette's
 /// field has no label and the card's whole width).
@@ -1577,13 +1631,17 @@ pub(crate) fn text_row(label: Option<String>, value: String, chars: Option<f32>)
 }
 
 /// What a text row is for: text, a number (Up and Down step its field and the text cursor is over
-/// it, so the row's own resize cursor, the scrub's, is on its label and padding only) or a colour
-/// (a swatch between the label and the field, and Escape puts the colour's text back).
+/// it, so the row's own resize cursor, the scrub's, is on its label and padding only), a colour
+/// (a swatch between the label and the field, and Escape puts the colour's text back) or a filling
+/// area (a field as tall as its host, with a rail of its own).
 #[derive(Clone, Copy)]
 enum RowKind {
     Text,
     /// A field `usize` lines high: Enter adds a line.
     Area(usize),
+    /// A field as tall as its host, scrolled by its rail and the wheel: `<rows>` is its least
+    /// height.
+    Fill(usize),
     Number,
     Colour(Srgba),
 }
@@ -1597,7 +1655,8 @@ fn text_row_as(
     kind: RowKind,
 ) -> impl Bundle {
     let fills = chars.is_none();
-    let area = matches!(kind, RowKind::Area(_));
+    let area = matches!(kind, RowKind::Area(_) | RowKind::Fill(_));
+    let filling = matches!(kind, RowKind::Fill(_));
     (
         Node {
             flex_direction: if area {
@@ -1615,11 +1674,20 @@ fn text_row_as(
             } else {
                 AlignItems::Center
             },
-            width: if fills {
+            width: if fills || filling {
                 Val::Percent(100.0)
             } else {
                 Val::Auto
             },
+            // A filling area takes the room its host leaves and gives nothing back: it is the one
+            // widget whose height is its parent's, so a scroll pane of text grows with the window.
+            flex_grow: if filling { 1.0 } else { 0.0 },
+            align_self: if filling {
+                AlignSelf::Stretch
+            } else {
+                AlignSelf::Auto
+            },
+            min_height: Val::ZERO,
             ..default()
         },
         role,
@@ -1640,32 +1708,73 @@ fn text_row_as(
                 row.spawn(color_swatch(root, colour));
             }
             row.spawn((
-                Node {
-                    flex_grow: if fills { 1.0 } else { 0.0 },
-                    ..default()
+                // A filling area's cell is a row stretched to the row's height, holding its field
+                // and its rail side by side, and it never shrinks under its content; a fixed row's
+                // cell is the one line's box, exactly as every text row's was (a `min_width` of 0
+                // here let a hex field shrink and scroll by 114 px, which `tests/color.rs` holds
+                // against).
+                if filling {
+                    Node {
+                        flex_grow: 1.0,
+                        flex_direction: FlexDirection::Row,
+                        align_items: AlignItems::Stretch,
+                        min_height: Val::ZERO,
+                        ..default()
+                    }
+                } else {
+                    Node {
+                        flex_grow: if fills { 1.0 } else { 0.0 },
+                        ..default()
+                    }
                 },
                 Role::TextCell,
             ))
             .with_children(|cell| {
-                let mut field = cell.spawn((
+                // A filling area's field is its cell's height (the cell stretches to the host): the
+                // text scrolls inside it rather than making it as tall as the text. Nothing else
+                // about a fixed row's field changes.
+                let field_node = if filling {
+                    Node {
+                        flex_shrink: 1.0,
+                        flex_grow: 1.0,
+                        min_width: Val::ZERO,
+                        min_height: Val::ZERO,
+                        overflow: Overflow::clip(),
+                        ..default()
+                    }
+                } else {
                     Node {
                         flex_shrink: 0.0,
                         flex_grow: if fills { 1.0 } else { 0.0 },
                         overflow: Overflow::clip(),
                         ..default()
+                    }
+                };
+                let mut text = EditableText {
+                    visible_width: chars,
+                    visible_lines: match kind {
+                        RowKind::Area(rows) | RowKind::Fill(rows) => Some(rows as f32),
+                        _ => Some(1.0),
                     },
+                    allow_newlines: area,
+                    cursor_width: TEXT_CARET_WIDTH,
+                    ..EditableText::new(&value)
+                };
+                if filling {
+                    // A document opens at its top, caret and view: `EditableText::new` puts the
+                    // caret at the text's end, which a long text would scroll to at once.
+                    text.queue_edit(TextEdit::TextStart(false));
+                }
+                let mut field = cell.spawn((
+                    field_node,
                     TextInput,
-                    EditableText {
-                        visible_width: chars,
-                        visible_lines: match kind {
-                            RowKind::Area(rows) => Some(rows as f32),
-                            _ => Some(1.0),
-                        },
-                        allow_newlines: area,
-                        cursor_width: TEXT_CARET_WIDTH,
-                        ..EditableText::new(&value)
-                    },
-                    if area {
+                    text,
+                    if filling {
+                        // A very long line wraps at the field's width (`WordOrCharacter`: a word
+                        // with no break opportunity in it still breaks), so there is no horizontal
+                        // scrolling to find.
+                        TextLayout::new(Justify::Left, LineBreak::WordOrCharacter)
+                    } else if area {
                         TextLayout::default()
                     } else {
                         TextLayout::no_wrap()
@@ -1683,6 +1792,9 @@ fn text_row_as(
                     RowKind::Area(_) => {
                         field.insert(AreaField);
                     }
+                    RowKind::Fill(_) => {
+                        field.insert((AreaField, crate::text_area::AreaCaret::default()));
+                    }
                     RowKind::Number => {
                         field.insert((
                             NumberInput,
@@ -1695,6 +1807,37 @@ fn text_row_as(
                     RowKind::Colour(_) => {
                         field.insert((SelectAllOnFocus, observe(color_on_key_input)));
                     }
+                }
+                if let RowKind::Fill(_) = kind {
+                    // The rail stands beside the field, not over it: a lane the text does not run
+                    // under, and the one node a press on the lane lands on (a later sibling draws
+                    // over an earlier one, so an absolute rail would be under the field).
+                    let field_id = field.id();
+                    cell.spawn((
+                        Node {
+                            flex_shrink: 0.0,
+                            align_self: AlignSelf::Stretch,
+                            margin: UiRect::left(Val::Px(AREA_RAIL_GAP_PX)),
+                            ..default()
+                        },
+                        Role::ListRail,
+                        crate::text_area::AreaRail(field_id),
+                        Hovered::default(),
+                        Visibility::Hidden,
+                        children![(
+                            Node {
+                                width: Val::Percent(100.0),
+                                flex_shrink: 0.0,
+                                ..default()
+                            },
+                            Role::ListThumb,
+                            crate::text_area::AreaThumb(field_id),
+                            // The rail is the lane: a press anywhere on it scrolls there, so the
+                            // thumb never takes the pointer.
+                            Pickable::IGNORE,
+                            Hovered::default(),
+                        )],
+                    ));
                 }
                 cell.spawn((
                     Node {
@@ -2485,6 +2628,132 @@ fn side_tab(tab: crate::SideTab) -> impl Bundle {
     )
 }
 
+/// A [`side_tabs`] strip of pictures: an activity bar's workspaces, a narrow column of tabs where each
+/// is its [`crate::SideTab::icon`], its name opens as a tooltip on hover and on focus, and its
+/// [`crate::SideTab::badge`] is a small pill at its top-right corner (a count, or "New"). A tab with
+/// no picture shows its label's first letter, and a badge of zero shows nothing.
+///
+/// Everything else is [`side_tabs`]'s: the entity holds [`crate::TabsValue`] and reports each change
+/// the player makes as a `ValueChange<usize>` on itself, Up and Down (and the D-pad) step it, Left and
+/// Right leave it for the page beside it, [`side_tab_page`] spawns a page anywhere, and the selected
+/// tab keeps the sliding indicator.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, server: Res<AssetServer>) {
+/// let bar = commands
+///     .spawn(side_tabs_icons(
+///         [
+///             SideTab::new("Files").icon(IconSource::Image(server.load("files.png"))),
+///             SideTab::new("Search").icon(IconSource::Image(server.load("search.png"))),
+///             SideTab::new("Source Control").icon(IconSource::Image(server.load("branch.png"))),
+///             SideTab::new("Problems").count(4).icon(IconSource::Image(server.load("warn.png"))),
+///         ],
+///         0,
+///     ))
+///     .id();
+/// commands.spawn(side_tab_page(bar, 0, children![label("Your files")]));
+/// # }
+/// ```
+pub fn side_tabs_icons(
+    tabs: impl IntoIterator<Item = crate::SideTab>,
+    selected: usize,
+) -> impl Bundle {
+    let tabs: Vec<crate::SideTab> = tabs.into_iter().collect();
+    let count = tabs.len();
+    let selected = selected.min(count.saturating_sub(1));
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            align_self: AlignSelf::FlexStart,
+            ..default()
+        },
+        Role::Tabs,
+        TabsValue(selected),
+        TabsCount(count),
+        observe(tabs_self_update),
+        children![
+            (
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    // Stretched, so the strip is as wide as its widest square and the sliding
+                    // indicator has a box to cover; each tab centres its own picture.
+                    align_items: AlignItems::Stretch,
+                    ..default()
+                },
+                TabList {
+                    orientation: ControlOrientation::Vertical,
+                    activation: TabActivation::Automatic,
+                },
+                Role::TabList,
+                Indicating::default(),
+                observe(tabs_on_select),
+                Children::spawn(SpawnIter(tabs.into_iter().map(icon_tab))),
+            ),
+            selection_indicator(),
+        ],
+    )
+}
+
+/// One tab of a [`side_tabs_icons`] strip: a square target holding the picture (or the label's first
+/// letter), its name on a tooltip, and a badge at its top-right corner.
+fn icon_tab(tab: crate::SideTab) -> impl Bundle {
+    // The name a reader hears: the label, and the badge's count after it — the corner pill is
+    // decoration to the eye but it is the one thing that says what still needs the player.
+    let name = match &tab.badge {
+        Some(badge) => format!("{} ({badge})", tab.label),
+        None => tab.label.clone(),
+    };
+    let initial = tab
+        .label
+        .chars()
+        .next()
+        .map(|first| first.to_uppercase().to_string())
+        .unwrap_or_default();
+    let picture = tab.icon.clone();
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Tab,
+        Role::IconTab,
+        crate::IconTab,
+        Indicating::default(),
+        crate::VerticalTab,
+        Hovered::default(),
+        AutoDirectionalNavigation::default(),
+        Tooltip::new(&tab.label),
+        // A name is the tab's accessible name whatever it draws: the picture is decoration and the
+        // letter a stand-in, so neither is read twice.
+        AccessibleLabel(name),
+        Children::spawn(SpawnWith(move |parts: &mut RelatedSpawner<ChildOf>| {
+            match picture {
+                Some(source) => {
+                    // `icon()` carries `Pickable::IGNORE` itself: a picture is decoration.
+                    parts.spawn(icon(source));
+                }
+                None => {
+                    parts.spawn((Text::new(initial), Role::TabText, ONE_LINE));
+                }
+            }
+            if let Some(badge) = tab.badge {
+                // The pill's corner is `apply_skin`'s (`Role::CornerBadge`): one owner of where it
+                // stands, so a host's own skin can move it.
+                parts.spawn((
+                    Text::new(badge),
+                    Role::CornerBadge,
+                    crate::CornerBadge,
+                    ONE_LINE,
+                    Pickable::IGNORE,
+                ));
+            }
+        })),
+    )
+}
+
 /// A page of a [`side_tabs`] strip, spawned wherever the host wants it: a column of widgets spaced
 /// like a [`menu`], shown while `tabs` (the entity [`side_tabs`] returned) has `index` selected and
 /// hidden otherwise. Focus left on a page the strip turns away from moves to the shown page's first
@@ -2806,7 +3075,7 @@ pub fn dock(layout: DockLayout) -> impl Bundle {
 /// The part of a dock the layout is built in: one grid cell of `1fr`, so the node the layout is
 /// built as fills the dock whatever it is. [`dock`] spawns one, and so does
 /// `update_docks` for a host that spawned a bare [`Dock`](crate::Dock) on a node of its own (a
-/// bottom strip, a sidebar): `dock_parts`, the one list of the three, adds whichever is missing.
+/// bottom strip, a sidebar), beside [`dock_drop`] and [`dock_ghost`], which a tab drag needs.
 pub(crate) fn dock_body() -> impl Bundle {
     (
         Node {

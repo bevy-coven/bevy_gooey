@@ -131,6 +131,12 @@ const LIST_PADDING_FACTOR: f32 = 1.2;
 /// A list's rail is this many line weights wide, and its thumb is as wide.
 const RAIL_LINES: f32 = 2.0;
 
+/// An icon-only tab's picture sits inside this much of its square (a `pad` fraction), and its corner
+/// badge stands this far past the tab's corner and is this many small text sizes wide at least.
+const ICON_TAB_PAD: f32 = 0.6;
+const CORNER_BADGE_OFFSET: f32 = 0.5;
+const CORNER_BADGE_TEXT_SIZES: f32 = 1.2;
+
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
 
@@ -1791,6 +1797,12 @@ pub enum Role {
     /// A [`crate::side_tabs`] tab's badge at its end ("3"): a pill of the opaque surface with the
     /// text's ink in the skin's small size, the same on a lit tab.
     TabBadge,
+    /// A [`crate::side_tabs_icons`] tab: a [`Role::Tab`] that is a square target (a button's height
+    /// on each side) for its picture, since it has no label to be wide for.
+    IconTab,
+    /// A corner badge of a [`crate::side_tabs_icons`] tab: a [`Role::TabBadge`] set in the tab's
+    /// top-right corner, over the picture's corner.
+    CornerBadge,
     /// A card's picture across its width at 16:9, on a [`GooeySkin::surface_raised`] placeholder;
     /// half transparent on a disabled card.
     CardImage,
@@ -2793,7 +2805,7 @@ fn restyle(
             skin.solid_surface()
         }),
         Role::CardImage => Some(skin.surface_raised),
-        Role::TabBadge => Some(skin.solid_surface()),
+        Role::TabBadge | Role::CornerBadge => Some(skin.solid_surface()),
         Role::Slot => Some(if state.refusing {
             skin.surface
         } else if state.pressed {
@@ -2815,10 +2827,12 @@ fn restyle(
         // others are a button's, full-contrast text on a visible fill, never faded.
         // While the selection indicator travels the options are clear: its backdrop is the raised
         // fill they had, and its puck the accent.
-        Role::Tab | Role::GroupOption if state.indicating && !state.disabled && !state.pressed => {
+        Role::Tab | Role::IconTab | Role::GroupOption
+            if state.indicating && !state.disabled && !state.pressed =>
+        {
             Some(Color::NONE)
         }
-        Role::Tab | Role::GroupOption => Some(if state.disabled {
+        Role::Tab | Role::IconTab | Role::GroupOption => Some(if state.disabled {
             skin.surface
         } else if state.selected || state.pressed {
             skin.accent
@@ -3164,7 +3178,12 @@ fn restyle(
         } else {
             Color::NONE
         })),
-        Role::Button | Role::Tab | Role::GroupOption | Role::StatusItem | Role::TableHeaderCell
+        Role::Button
+        | Role::Tab
+        | Role::IconTab
+        | Role::GroupOption
+        | Role::StatusItem
+        | Role::TableHeaderCell
             if look.focused == Some(entity) =>
         {
             Some(BorderColor::all(skin.focus_ring))
@@ -3172,9 +3191,12 @@ fn restyle(
         Role::Button if state.variant.is_framed() && !state.disabled => {
             Some(BorderColor::all(skin.outline))
         }
-        Role::Button | Role::Tab | Role::GroupOption | Role::StatusItem | Role::TableHeaderCell => {
-            Some(BorderColor::all(Color::NONE))
-        }
+        Role::Button
+        | Role::Tab
+        | Role::IconTab
+        | Role::GroupOption
+        | Role::StatusItem
+        | Role::TableHeaderCell => Some(BorderColor::all(Color::NONE)),
         // The ring on the cursor's row; a sort mark is drawn in its header's ink.
         Role::TableRow => Some(BorderColor::all(if state.focused {
             skin.focus_ring
@@ -3384,10 +3406,21 @@ fn restyle(
                 next.row_gap = Val::Px(skin.gap * 0.25);
                 next.overflow = Overflow::clip();
             }
-            Role::TabBadge => {
+            Role::TabBadge | Role::CornerBadge => {
                 next.padding = UiRect::horizontal(Val::Px(skin.pad() * 0.5));
                 next.margin = UiRect::left(Val::Px(skin.gap));
                 next.border_radius = BorderRadius::MAX;
+                // A corner badge stands over its tab's top-right corner rather than at the end of a
+                // row of words, so it is placed against the tab's own box.
+                if *role == Role::CornerBadge {
+                    next.margin = UiRect::ZERO;
+                    next.position_type = PositionType::Absolute;
+                    next.right = Val::Px(-skin.pad() * CORNER_BADGE_OFFSET);
+                    next.top = Val::Px(-skin.pad() * CORNER_BADGE_OFFSET);
+                    next.min_width = Val::Px(skin.type_size(1) * CORNER_BADGE_TEXT_SIZES);
+                    next.justify_content = JustifyContent::Center;
+                    next.align_items = AlignItems::Center;
+                }
             }
             Role::CardImage => {
                 next.width = Val::Percent(100.0);
@@ -3485,6 +3518,7 @@ fn restyle(
             }
             Role::Button
             | Role::Tab
+            | Role::IconTab
             | Role::GroupOption
             | Role::TableHeaderCell
             | Role::ToastAction => {
@@ -3495,12 +3529,17 @@ fn restyle(
                     Val::Px(air(set_px * LIST_LINE_TEXT_SIZES, skin.pad() * 0.6)),
                 );
                 // A tab shares its strip equally and never narrower than its own label and
-                // padding (`Val::Auto`), so a long label is not squeezed out of its tab.
+                // padding (`Val::Auto`), so a long label is not squeezed out of its tab; an
+                // icon-only tab is a square target, as it has no label to be wide for.
                 next.min_width = if *role == Role::Tab {
                     Val::Auto
                 } else {
                     Val::Px(skin.target())
                 };
+                if *role == Role::IconTab {
+                    next.width = Val::Px(skin.target());
+                    next.padding = UiRect::all(Val::Px(skin.pad() * ICON_TAB_PAD));
+                }
                 // An icon beside the label stands half a gap from it; a lone label has no use for it.
                 if *role == Role::Button {
                     next.column_gap = Val::Px(skin.gap * 0.5);
@@ -4378,7 +4417,9 @@ fn restyle(
             skin.heading_size * wheel_px / text_px,
         )),
         // A badge's count is read on its own pill, lit tab or not.
-        Role::TabBadge => Some((skin.text, &look.fonts.body, skin.type_scale[1])),
+        Role::TabBadge | Role::CornerBadge => {
+            Some((skin.text, &look.fonts.body, skin.type_scale[1]))
+        }
         // A card's words follow the card: muted when disabled, the accent's text when chosen or
         // pressed; a line is quiet at rest and the text under the pointer, where the muted ink
         // is not held to the hovered fill.

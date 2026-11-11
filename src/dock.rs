@@ -318,7 +318,7 @@ pub(crate) fn update_docks(
             let ghost = commands.spawn(dock_ghost()).id();
             commands.entity(entity).add_child(ghost);
         }
-        if roles.get(entity) != Ok(&Role::Dock) {
+        if roles.get(entity).is_err() {
             commands.entity(entity).insert(Role::Dock);
         }
         let (layout, skipped) = dock.0.prune(|id| registry.contains(id));
