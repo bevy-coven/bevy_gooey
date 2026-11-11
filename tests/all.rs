@@ -29,7 +29,6 @@ mod dialog_look;
 mod dock;
 mod dock_body;
 mod dock_reorder;
-mod dock_role;
 mod double_press;
 mod drag;
 mod elevation;
