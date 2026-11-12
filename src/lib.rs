@@ -148,6 +148,15 @@ mod cancel;
 mod card;
 mod choice;
 mod clicks;
+mod code_buffer;
+mod code_decor;
+mod code_editor;
+mod code_find;
+mod code_fold;
+mod code_overlay;
+mod code_regex;
+mod code_search;
+mod code_syntax;
 mod color;
 mod color_motion;
 mod combobox;
@@ -232,6 +241,28 @@ pub use cancel::{Cancel, CancelScope, cancel_by_input};
 pub use card::{Card, CardCursor, CardGrid, CardRef, CardSelection, update_card_grids};
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use clicks::{ClickCount, DoublePress, PointerSettings};
+pub use code_buffer::{
+    BRACKET_SCAN_LINES, CodeBuffer, CodeEdit, CodeEditError, CodeIndent, CodeMove, CodePos,
+    CodeSelection, GROUP_PAUSE_S, UNDO_DEPTH, byte_at_display, display_col, display_width,
+    expand_slice,
+};
+pub use code_decor::{
+    CodeAuthor, CodeCompletionRequested, CodeCompletions, CodeHover, CodeHoverRequested,
+    CodeSeverity, CompletionItem, CompletionTrigger, Diagnostic, Diagnostics, EXTERNAL_EDIT_FADE_S,
+    EXTERNAL_EDIT_GLIDE_PX, EXTERNAL_EDIT_GLIDE_S, EXTERNAL_TINT_ALPHA, FoldRanges, Highlights,
+    Run, SyntaxRole, line_runs,
+};
+pub use code_editor::{
+    CARET_BLINK_PERIOD_S, CARET_SPRING_FRACTION, CODE_LINE_EM, CODE_MIN_LINES,
+    CODE_SELECTION_ALPHA, CodeEditor, CodeEditorSettings, CodeEditorValue, CodeIndentation,
+    DEFAULT_COMPLETION_TRIGGERS, PERF_BUDGET, code_editor,
+};
+pub use code_find::{
+    FIND_LIMIT, FIND_WORK_BASE, FIND_WORK_PER_BYTE, FindError, FindOptions, find_all, replace_edits,
+};
+pub use code_fold::FoldMap;
+pub use code_overlay::{CODE_HOVER_DELAY_S, COMPLETION_ROWS, CodeMinimap};
+pub use code_search::CodeFind;
 pub use color::{
     AreaMarker, ColorArea, ColorPicker, ColorRail, ColorRefused, ColorStrip, ColorSwatch,
     ColorValue, SwatchHalf, update_colors,
@@ -582,6 +613,11 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Pop>()
             .register_type::<Lift>()
             .register_type::<Led>()
+            .register_type::<CodeEditorSettings>()
+            .register_type::<CodeEditorValue>()
+            .register_type::<SyntaxRole>()
+            .register_type::<CodeSeverity>()
+            .register_type::<CompletionTrigger>()
             .register_type::<LedState>()
             .register_type::<LedWord>()
             .register_type::<HoverGroup>()
@@ -706,6 +742,22 @@ impl Plugin for GooeyStylePlugin {
                     .chain()
                     .in_set(GooeySystems::Style),
             );
+        // The code editor reads the wheel, marks its focus for the host, and lays out its window
+        // onto the text, all before the skin writes what the rows look like.
+        app.add_systems(
+            Update,
+            (
+                code_editor::code_on_wheel,
+                code_editor::mark_code_editing,
+                code_overlay::update_code_folds,
+                code_editor::update_code_editors,
+                code_overlay::update_code_overlays,
+                code_search::update_code_find,
+            )
+                .chain()
+                .in_set(GooeySystems::Style)
+                .before(apply_skin),
+        );
         app.add_observer(note_host_disable);
         // The first Escape in an open combobox is its list's: focus is put back after Bevy's text
         // input lets go of it.

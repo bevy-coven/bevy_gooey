@@ -48,6 +48,7 @@ bevy = { version = "0.20.0", default-features = false, features = [
     "bevy_picking",     # Hovered, PointerOver/PointerOut for tooltips
     "ui_picking",       # picking backend for UI nodes
     "bevy_window",      # the window the UI lays out in
+    "bevy_clipboard",   # the clipboard resource the code editor copies and pastes through
     "bevy_log",         # warn! for a skin that fails its own checks
     "std",
 ] }

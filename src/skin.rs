@@ -14,6 +14,13 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use crate::binding::Capturing;
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
+use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
+use crate::code_overlay::{
+    BRACKET_ALPHA, BRACKET_RADIUS, CODE_COMPLETION_EM, CODE_NOTE_EM, CODE_NOTE_PAD,
+    COMPLETION_EDGE_LINES, COMPLETION_ROW_PAD, FIND_BAR_GAP, FIND_BAR_PAD, MARK_DOT, MARK_INSET,
+    MATCH_ALPHA, MATCH_LIT_ALPHA, MINIMAP_BAND_ALPHA, MINIMAP_BAND_EDGE_ALPHA, MINIMAP_BAR_ALPHA,
+    MINIMAP_BAR_PX, MINIMAP_EM, MINIMAP_GROUND_ALPHA, MINIMAP_MARK_PX, SQUIGGLE_HEIGHT,
+};
 use crate::color_motion::ColorTrack;
 use crate::control_size::ControlSize;
 use crate::drag::{DropCandidate, DropRefusing};
@@ -988,7 +995,11 @@ impl GooeySkin {
             .variant_pairs()
             .into_iter()
             .map(|(pair, ink, backing)| (pair, ink, backing, TEXT_CONTRAST));
-        for (pair, a, b, needed) in pairs.into_iter().chain(edge).chain(variants) {
+        let syntax = self
+            .syntax_pairs()
+            .into_iter()
+            .map(|(pair, ink, ground)| (pair, ink, ground, TEXT_CONTRAST));
+        for (pair, a, b, needed) in pairs.into_iter().chain(edge).chain(variants).chain(syntax) {
             let needed = needed.max(floor);
             let ratio = contrast_ratio(a, b);
             // A NaN colour gives a NaN ratio, which is reported, not passed.
@@ -1513,6 +1524,8 @@ pub struct GooeyFonts {
     pub body: FontSource,
     /// Headings.
     pub heading: FontSource,
+    /// The monospace face the code editor draws in: one column per character.
+    pub mono: FontSource,
 }
 
 /// What a widget is, which decides how [`apply_skin`] styles it. Every widget function puts one on
@@ -1825,6 +1838,74 @@ pub enum Role {
     /// An LED's dot: a square of `LED_TEXT_SIZES` body text sizes, its fill, frame, silhouette and
     /// glow data written by [`crate::update_leds`] from the [`crate::LedState`].
     LedDot,
+    /// A [`crate::code_editor`]: a filled, framed box (the focus ring while it has focus) holding
+    /// a gutter and a text area side by side; what it draws is data written by
+    /// the editor's update system.
+    CodeEditor,
+    /// The editor's gutter, left of the text: the line numbers, on the editor's own fill and
+    /// divided from the text by a line.
+    CodeGutter,
+    /// The column of line numbers in the gutter, moved with the scroll.
+    CodeGutterRows,
+    /// A line number, in [`GooeySkin::text_muted`], right-aligned in the gutter.
+    CodeNumber,
+    /// The number of the line the caret is on, in [`GooeySkin::text`].
+    CodeNumberLit,
+    /// The text area: clips the lines and holds the caret, the current-line band and the selection.
+    CodeArea,
+    /// The column of text lines in the area, moved with the scroll.
+    CodeContent,
+    /// One line of text, in the monospace face ([`GooeyFonts::mono`]) and [`GooeySkin::text`].
+    CodeText,
+    /// The band behind the current line: [`GooeySkin::surface_raised`].
+    CodeLineLit,
+    /// A band of selection on one line: [`GooeySkin::accent`], let through so the text shows.
+    CodeSelection,
+    /// The editor's caret: [`GooeySkin::text`], a few device pixels wide.
+    CodeCaret,
+    /// A note for a diagnostic or a hover, and the completion list: small framed panels over the
+    /// text, on the editor's own ground.
+    CodeNote,
+    /// The words in a note, in the body face.
+    CodeNoteText,
+    /// The completion list's panel.
+    CodeCompletion,
+    /// One row of the completion list.
+    CodeCompletionRow,
+    /// The lit row of the completion list: one step up, with the accent along its edge.
+    CodeCompletionRowLit,
+    /// What a completion item is called, in the mono face.
+    CodeCompletionLabel,
+    /// What a completion item is, in the skin's small muted text.
+    CodeCompletionDetail,
+    /// A span of code of one [`crate::SyntaxRole`], in the colour [`GooeySkin::syntax`] gives it.
+    CodeSyntax(crate::SyntaxRole),
+    /// The wave under a [`crate::Diagnostic`]'s range, in its severity's colour.
+    CodeSquiggle(crate::CodeSeverity),
+    /// A diagnostic's mark in the gutter, in its severity's colour.
+    CodeMark(crate::CodeSeverity),
+    /// The tint of the lines someone else edited: the author's colour, written as data.
+    CodeExternal,
+    /// The minimap down the editor's right edge.
+    CodeMinimap,
+    /// One line of the minimap, as long as the line.
+    CodeMinimapBar,
+    /// The band over the minimap that is the part in view.
+    CodeMinimapBand,
+    /// A diagnostic's mark on the minimap, in its severity's colour.
+    CodeMinimapMark(crate::CodeSeverity),
+    /// An indent guide: a quiet vertical line at an indent level.
+    CodeGuide,
+    /// The brackets that match, lit.
+    CodeBracket,
+    /// A fold's chevron in the gutter.
+    CodeChevron,
+    /// The find and replace bar over the editor's top right corner.
+    CodeFind,
+    /// A match of the find bar's query.
+    CodeFindMatch,
+    /// The match the find bar is on.
+    CodeFindMatchLit,
     /// The one grid cell every page stands in, so the widget is as large as its largest page; not
     /// drawn.
     TabPages,
@@ -3021,6 +3102,24 @@ fn restyle(
         // The field is an outlined box in the panel's own colour, so the typed text and the hint
         // meet on it the contrast they are checked at on the panel.
         Role::TextField => Some(skin.solid_surface()),
+        // The editor and its gutter are the field's own colour, so the text meets on it the
+        // contrast it is checked at on the panel; the current line is one step up, the selection
+        // the accent let through, and the caret the text colour.
+        Role::CodeEditor | Role::CodeGutter => Some(skin.solid_surface()),
+        Role::CodeLineLit => Some(skin.surface_raised),
+        Role::CodeSelection => Some(skin.accent.with_alpha(CODE_SELECTION_ALPHA)),
+        Role::CodeCaret => Some(skin.text),
+        Role::CodeNote | Role::CodeCompletion | Role::CodeFind => Some(skin.solid_surface()),
+        Role::CodeCompletionRowLit => Some(skin.surface_raised),
+        Role::CodeCompletionRow => Some(Color::NONE),
+        Role::CodeMark(severity) | Role::CodeMinimapMark(severity) => Some(skin.severity(*severity)),
+        Role::CodeMinimap => Some(skin.surface_raised.with_alpha(MINIMAP_GROUND_ALPHA)),
+        Role::CodeMinimapBar => Some(skin.text_muted.with_alpha(MINIMAP_BAR_ALPHA)),
+        Role::CodeMinimapBand => Some(skin.accent.with_alpha(MINIMAP_BAND_ALPHA)),
+        Role::CodeGuide => Some(skin.surface_raised),
+        Role::CodeBracket => Some(skin.accent.with_alpha(BRACKET_ALPHA)),
+        Role::CodeFindMatch => Some(skin.warning().with_alpha(MATCH_ALPHA)),
+        Role::CodeFindMatchLit => Some(skin.accent.with_alpha(MATCH_LIT_ALPHA)),
         Role::Screen
         | Role::Row
         | Role::Column
@@ -3124,6 +3223,19 @@ fn restyle(
         | Role::Spinner
         | Role::ToggleGroup
         | Role::StatusGroup
+        | Role::CodeGutterRows
+        | Role::CodeNumber
+        | Role::CodeNumberLit
+        | Role::CodeArea
+        | Role::CodeContent
+        | Role::CodeText
+        | Role::CodeSyntax(_)
+        | Role::CodeSquiggle(_)
+        | Role::CodeNoteText
+        | Role::CodeCompletionLabel
+        | Role::CodeCompletionDetail
+        | Role::CodeChevron
+        | Role::CodeExternal
         | Role::PaletteCount => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
@@ -3313,7 +3425,20 @@ fn restyle(
         Role::SliderThumb => Some(BorderColor::all(skin.solid_surface())),
         // The swatch and the area are framed in the outline and wear the ring when focused: what
         // they hold is any colour, so the frame is what a panel's 3:1 is measured on.
-        Role::ColorSwatch | Role::ColorArea | Role::Viewport => {
+        Role::CodeGutter => Some(BorderColor::all(skin.surface_raised)),
+        Role::CodeNote | Role::CodeCompletion | Role::CodeFind => {
+            Some(BorderColor::all(skin.outline))
+        }
+        Role::CodeCompletionRowLit => Some(BorderColor {
+            left: skin.accent,
+            ..BorderColor::all(Color::NONE)
+        }),
+        Role::CodeCompletionRow => Some(BorderColor::all(Color::NONE)),
+        Role::CodeBracket => Some(BorderColor::all(skin.accent)),
+        Role::CodeMinimapBand => Some(BorderColor::all(
+            skin.accent.with_alpha(MINIMAP_BAND_EDGE_ALPHA),
+        )),
+        Role::ColorSwatch | Role::ColorArea | Role::Viewport | Role::CodeEditor => {
             Some(BorderColor::all(if look.focused == Some(entity) {
                 skin.focus_ring
             } else {
@@ -3897,6 +4022,165 @@ fn restyle(
             Role::Viewport => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
+            }
+            // The editor is a row of its gutter and its text, framed, clipping what is drawn
+            // beyond; its height is the host's, never under a few lines.
+            Role::CodeEditor => {
+                let code = CodeMetrics::of(skin, scale);
+                next.flex_direction = FlexDirection::Row;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.overflow = Overflow::clip();
+                next.min_width = Val::Px(0.0);
+                next.min_height = Val::Px(code.line_px * CODE_MIN_LINES);
+            }
+            // The gutter's width is the editor's data (it grows with the digits of the last line).
+            Role::CodeGutter => {
+                next.flex_shrink = 0.0;
+                next.overflow = Overflow::clip();
+                next.border = UiRect::right(Val::Px(line));
+            }
+            Role::CodeGutterRows => {
+                next.position_type = PositionType::Absolute;
+                next.left = Val::Px(0.0);
+                next.right = Val::Px(0.0);
+                next.flex_direction = FlexDirection::Column;
+            }
+            Role::CodeArea => {
+                next.flex_grow = 1.0;
+                next.min_width = Val::Px(0.0);
+                next.overflow = Overflow::clip();
+            }
+            Role::CodeContent => {
+                next.position_type = PositionType::Absolute;
+                next.flex_direction = FlexDirection::Column;
+            }
+            Role::CodeText => {
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px);
+                next.flex_shrink = 0.0;
+            }
+            Role::CodeNumber | Role::CodeNumberLit => {
+                let code = CodeMetrics::of(skin, scale);
+                next.height = Val::Px(code.line_px);
+                next.width = Val::Percent(100.0);
+                next.padding = UiRect::right(Val::Px(code.pad_px));
+                next.flex_shrink = 0.0;
+            }
+            Role::CodeLineLit => {
+                next.position_type = PositionType::Absolute;
+                next.left = Val::Px(0.0);
+                next.right = Val::Px(0.0);
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px);
+            }
+            Role::CodeSelection => {
+                next.position_type = PositionType::Absolute;
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px);
+            }
+            // A note and the completion list are small panels over the text: framed, padded, on
+            // the editor's own ground.
+            Role::CodeNote => {
+                next.position_type = PositionType::Absolute;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad() * CODE_NOTE_PAD.0),
+                    Val::Px(skin.pad() * CODE_NOTE_PAD.1),
+                );
+                next.max_width = Val::Px(text_px * CODE_NOTE_EM);
+            }
+            Role::CodeCompletion => {
+                next.position_type = PositionType::Absolute;
+                next.flex_direction = FlexDirection::Column;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.min_width = Val::Px(text_px * CODE_COMPLETION_EM);
+            }
+            Role::CodeCompletionRow | Role::CodeCompletionRowLit => {
+                let code = CodeMetrics::of(skin, scale);
+                next.height = Val::Px(code.line_px);
+                next.flex_direction = FlexDirection::Row;
+                next.align_items = AlignItems::Center;
+                next.justify_content = JustifyContent::SpaceBetween;
+                next.column_gap = Val::Px(skin.gap);
+                next.padding = UiRect::horizontal(Val::Px(code.pad_px * COMPLETION_ROW_PAD));
+                next.border = UiRect::left(Val::Px(line * COMPLETION_EDGE_LINES));
+            }
+            Role::CodeCompletionLabel | Role::CodeCompletionDetail => next.flex_shrink = 0.0,
+            Role::CodeMark(_) => {
+                let code = CodeMetrics::of(skin, scale);
+                next.position_type = PositionType::Absolute;
+                next.left = Val::Px(code.pad_px * MARK_INSET);
+                next.width = Val::Px(code.line_px * MARK_DOT);
+                next.height = Val::Px(code.line_px * MARK_DOT);
+                next.border_radius = BorderRadius::MAX;
+            }
+            Role::CodeSquiggle(_) => {
+                next.position_type = PositionType::Absolute;
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px * SQUIGGLE_HEIGHT);
+                next.overflow = Overflow::clip();
+            }
+            Role::CodeExternal => {
+                next.position_type = PositionType::Absolute;
+                next.left = Val::Px(0.0);
+                next.right = Val::Px(0.0);
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px);
+            }
+            Role::CodeMinimap => {
+                let code = CodeMetrics::of(skin, scale);
+                next.position_type = PositionType::Absolute;
+                next.top = Val::Px(0.0);
+                next.bottom = Val::Px(0.0);
+                next.right = Val::Px(0.0);
+                next.width = Val::Px(code.font_px * MINIMAP_EM);
+                next.overflow = Overflow::clip();
+            }
+            Role::CodeMinimapBar => {
+                next.position_type = PositionType::Absolute;
+                next.height = Val::Px(MINIMAP_BAR_PX);
+            }
+            Role::CodeMinimapBand => {
+                next.position_type = PositionType::Absolute;
+                next.left = Val::Px(0.0);
+                next.right = Val::Px(0.0);
+                next.border = UiRect::all(Val::Px(line));
+            }
+            Role::CodeMinimapMark(_) => {
+                next.position_type = PositionType::Absolute;
+                next.right = Val::Px(0.0);
+                next.width = Val::Px(MINIMAP_MARK_PX);
+                next.height = Val::Px(MINIMAP_BAR_PX * 2.0);
+            }
+            Role::CodeGuide => {
+                next.position_type = PositionType::Absolute;
+                next.width = Val::Px(line);
+            }
+            Role::CodeBracket => {
+                let code = CodeMetrics::of(skin, scale);
+                next.position_type = PositionType::Absolute;
+                next.height = Val::Px(code.line_px);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = BorderRadius::all(Val::Px(skin.radius * BRACKET_RADIUS));
+            }
+            Role::CodeChevron => next.position_type = PositionType::Absolute,
+            Role::CodeFind => {
+                next.position_type = PositionType::Absolute;
+                next.flex_direction = FlexDirection::Column;
+                next.top = Val::Px(skin.gap * FIND_BAR_GAP);
+                next.right = Val::Px(skin.gap * FIND_BAR_GAP);
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad() * FIND_BAR_PAD));
+                next.row_gap = Val::Px(skin.gap * FIND_BAR_GAP);
+            }
+            Role::CodeFindMatch | Role::CodeFindMatchLit => {
+                next.position_type = PositionType::Absolute;
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px);
+            }
+            Role::CodeCaret => {
+                let code = CodeMetrics::of(skin, scale);
+                next.position_type = PositionType::Absolute;
+                next.width = Val::Px(code.caret_px);
+                next.height = Val::Px(code.line_px);
             }
             Role::ColorArea => {
                 next.min_height = Val::Px(COLOR_AREA_HEIGHT_PX);
@@ -4497,6 +4781,16 @@ fn restyle(
             Some((color, &look.fonts.body, skin.text_size))
         }
         Role::TextHint => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
+        Role::CodeText | Role::CodeNumberLit => Some((skin.text, &look.fonts.mono, skin.text_size)),
+        Role::CodeNumber => Some((skin.text_muted, &look.fonts.mono, skin.text_size)),
+        Role::CodeSyntax(role) => Some((skin.syntax(*role), &look.fonts.mono, skin.text_size)),
+        Role::CodeSquiggle(severity) => {
+            Some((skin.severity(*severity), &look.fonts.mono, skin.text_size))
+        }
+        Role::CodeNoteText => Some((skin.text, &look.fonts.body, skin.text_size)),
+        Role::CodeCompletionLabel => Some((skin.text, &look.fonts.mono, skin.text_size)),
+        Role::CodeCompletionDetail => Some((skin.text_muted, &look.fonts.body, skin.type_scale[1])),
+        Role::CodeChevron => Some((skin.text_muted, &look.fonts.mono, skin.text_size)),
         Role::MenuText => Some((menu_ink(owner, skin), &look.fonts.body, skin.text_size)),
         // Muted at rest; the label's ink once the row is lit (muted is not held against the
         // hovered fill), so a chord is always as readable as the label beside it.
