@@ -49,6 +49,9 @@ pub struct ListView {
     pub rows: f32,
 }
 
+/// What a rail can scroll: a list's viewport or a tab strip's list.
+type Scrolls = Or<(With<ListView>, With<TabScroll>)>;
+
 /// Shows each list's rail (and each scrolling tab strip's, [`crate::TabScroll`]) only while its
 /// content does not fit, the way a browser's bar comes and
 /// goes: `Display::None` when there is nowhere to scroll, so it costs no draw and no hit test.
@@ -58,7 +61,7 @@ pub struct ListView {
 /// its rail one frame later. Runs in [`crate::GooeySystems::Style`].
 pub fn update_lists(
     mut rails: Query<(&Role, &Scrollbar, &mut Node)>,
-    views: Query<&ComputedNode, Or<(With<ListView>, With<TabScroll>)>>,
+    views: Query<&ComputedNode, Scrolls>,
 ) {
     for (role, bar, mut node) in &mut rails {
         if *role != Role::ListRail {
