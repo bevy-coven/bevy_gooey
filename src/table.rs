@@ -1098,15 +1098,16 @@ pub fn update_tables(
         let fresh = !cache.built;
         // A source that can say what changed since the table last looked (a `Tree` relabelled or
         // appended to) is patched, not rebuilt: its keys and order are kept and only the rows the
-        // change added are read. Anything else (a sort, a removal, the first frame, a source with
-        // no answer, a count that does not add up, a row put at or above the one on top, whose
-        // place the rebuild keeps) takes the rebuild.
+        // change added are read. Anything else (a sort, whose order a relabel can change; a
+        // removal, the first frame, a source with no answer, a count that does not add up, a row
+        // put at or above the one on top, whose place the rebuild keeps) takes the rebuild.
         let sorted = sort.column.filter(|&c| c < columns).is_some();
         let patch = if fresh || sort.is_changed() || !table.is_changed() {
             None
         } else {
             match table.source.change_since(cache.seen) {
-                Some(RowChange::Unchanged | RowChange::Texts) => Some((0, 0)),
+                Some(RowChange::Unchanged) => Some((0, 0)),
+                Some(RowChange::Texts) if !sorted => Some((0, 0)),
                 Some(RowChange::Inserted { row, count })
                     if count == 0 || (!sorted && row > cache.first && row <= cache.keys.len()) =>
                 {

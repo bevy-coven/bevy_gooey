@@ -1094,6 +1094,25 @@ fn read_tree(tree: &Tree, keys: &[u64]) -> Vec<String> {
     out
 }
 
+/// A subtree for the model: two or three children (a leaf at the bottom), each open or closed at
+/// random, `depth` levels of them, so a closed child sits between shown siblings.
+fn grow(depth: u32, next_key: &mut u64, roll: &mut dyn FnMut(usize) -> usize) -> Model {
+    let key = *next_key;
+    *next_key += 1;
+    let mut node = Model {
+        key,
+        label: format!("n{key}"),
+        open: roll(2) == 0,
+        children: Vec::new(),
+    };
+    if depth > 0 && roll(4) != 0 {
+        for _ in 0..2 + roll(2) {
+            node.children.push(grow(depth - 1, next_key, roll));
+        }
+    }
+    node
+}
+
 #[test]
 fn a_tree_changed_in_place_is_the_tree_built_whole() {
     let mut tree = Tree::default();
@@ -1106,7 +1125,7 @@ fn a_tree_changed_in_place_is_the_tree_built_whole() {
         ((seed >> 33) as usize) % n
     };
     let mut next_key = 1_u64;
-    for step in 0..120 {
+    for step in 0..150 {
         let mut keys = Vec::new();
         Model::keys(&roots, &mut keys);
         match (roll(8), keys.is_empty()) {
@@ -1117,22 +1136,7 @@ fn a_tree_changed_in_place_is_the_tree_built_whole() {
                 } else {
                     Some(keys[roll(keys.len())])
                 };
-                let mut node = Model {
-                    key: next_key,
-                    label: format!("n{next_key}"),
-                    open: roll(2) == 0,
-                    children: Vec::new(),
-                };
-                next_key += 1;
-                if roll(3) == 0 {
-                    node.children.push(Model {
-                        key: next_key,
-                        label: format!("n{next_key}"),
-                        open: roll(2) == 0,
-                        children: Vec::new(),
-                    });
-                    next_key += 1;
-                }
+                let node = grow(2, &mut next_key, &mut roll);
                 let added = node.node();
                 assert!(tree.insert(parent, added), "step {step}");
                 match parent {
@@ -1452,4 +1456,40 @@ fn a_relabel_or_an_append_is_patched_into_the_table_and_a_removal_is_read_again_
         read >= rows_in_all,
         "a removal reads every row again: {read}"
     );
+}
+
+#[test]
+fn a_relabelled_or_appended_row_of_a_sorted_table_takes_its_place_in_the_sort() {
+    let mut app = app();
+    // Flat nodes b d a e c (keys 1 to 5), sorted by their text.
+    let nodes: Vec<TreeNode> = [(1, "b"), (2, "d"), (3, "a"), (4, "e"), (5, "c")]
+        .into_iter()
+        .map(|(key, text)| TreeNode::new(key, text))
+        .collect();
+    app.world_mut().spawn((
+        panel(),
+        children![table([Column::new("Name")], Tree::new(nodes))],
+    ));
+    settle(&mut app);
+    let table_entity = the_tree(&mut app);
+    *app.world_mut()
+        .get_mut::<TableSort>(table_entity)
+        .expect("a sort") = TableSort {
+        column: Some(0),
+        descending: false,
+    };
+    settle(&mut app);
+    assert_eq!(keys(&mut app), vec![3, 1, 5, 2, 4], "a b c d e");
+    edit(&mut app, |t| {
+        assert!(t.relabel(1, "z"));
+    });
+    assert_eq!(
+        keys(&mut app),
+        vec![3, 5, 2, 4, 1],
+        "b became z and moved last"
+    );
+    edit(&mut app, |t| {
+        assert!(t.insert(None, TreeNode::new(6, "aa")));
+    });
+    assert_eq!(keys(&mut app), vec![3, 6, 5, 2, 4, 1], "aa sorts second");
 }

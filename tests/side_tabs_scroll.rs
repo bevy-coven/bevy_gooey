@@ -420,3 +420,62 @@ fn a_reveal_glides_when_motion_is_on_and_lands_where_it_was_asked() {
     );
     assert!(in_sight(&app, &ui, ui.tabs[9]));
 }
+
+#[test]
+fn focus_put_on_a_tab_before_the_strip_is_laid_out_is_revealed_when_it_is() {
+    let mut app = app();
+    let host = app
+        .world_mut()
+        .spawn(Node {
+            height: Val::Px(HOST_HEIGHT),
+            flex_direction: FlexDirection::Column,
+            ..default()
+        })
+        .id();
+    let strip = app.world_mut().spawn(side_tabs_icons(labels(12), 0)).id();
+    app.world_mut().entity_mut(host).add_child(strip);
+    app.world_mut().spawn(screen()).add_child(host);
+    let list = app.world().get::<Children>(strip).expect("the list")[0];
+    let tabs: Vec<Entity> = app
+        .world()
+        .get::<Children>(list)
+        .expect("tabs")
+        .iter()
+        .collect();
+    // No frame has run: nothing is laid out yet.
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(tabs[11], FocusCause::Navigated);
+    app.world_mut().insert_resource(InputFocusVisible(true));
+    settle(&mut app);
+    let ui = Bar { strip, list, tabs };
+    assert!(
+        in_sight(&app, &ui, ui.tabs[11]),
+        "the focused last tab is in sight at scroll {}",
+        scroll_of(&app, ui.list)
+    );
+}
+
+#[test]
+fn tabs_taken_away_while_scrolled_to_the_end_leave_the_strip_in_range_and_revealing() {
+    let mut app = app();
+    let ui = bar(&mut app, 12, 0);
+    let over = rect(&app, ui.tabs[1]).center();
+    for _ in 0..14 {
+        wheel(&mut app, over, 1.0);
+    }
+    for &tab in &ui.tabs[6..] {
+        app.world_mut().entity_mut(tab).despawn();
+    }
+    settle(&mut app);
+    assert!(
+        scroll_of(&app, ui.list) <= max_scroll(&app, ui.list) + 1.0,
+        "the scroll {} is within what is left, {}",
+        scroll_of(&app, ui.list),
+        max_scroll(&app, ui.list)
+    );
+    app.world_mut().entity_mut(ui.strip).insert(TabsValue(0));
+    settle(&mut app);
+    assert!(in_sight(&app, &ui, ui.tabs[0]), "tab 0 is brought back");
+    assert_eq!(scroll_of(&app, ui.list), 0.0);
+}

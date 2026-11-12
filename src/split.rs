@@ -205,6 +205,10 @@ pub(crate) struct Reading {
     peeking: Option<f32>,
 }
 
+/// How near its smallest, in logical px, a first pane counts as collapsed: half a pixel, under what
+/// a divider can be dragged to or a layout rounds to.
+const COLLAPSED_SLACK_PX: f32 = 0.5;
+
 impl Reading {
     /// The fraction `delta` logical pixels from here, held to the minimums.
     pub(crate) fn moved(&self, delta: f32) -> f32 {
@@ -223,9 +227,10 @@ impl Reading {
         split_clamp(to, self.extent, self.min.first, self.min.second)
     }
 
-    /// Whether the first pane is at its smallest, which is what collapsed means.
+    /// Whether the first pane is at its smallest, which is what collapsed means: within
+    /// [`COLLAPSED_SLACK_PX`] of it.
     fn is_collapsed(&self) -> bool {
-        (self.fraction - self.end(false)) * self.extent < 0.5
+        (self.fraction - self.end(false)) * self.extent < COLLAPSED_SLACK_PX
     }
 }
 

@@ -224,7 +224,8 @@ impl Tree {
         let count = flat.len();
         let depths: Vec<u32> = flat.iter().map(|f| f.depth).collect();
         let open: Vec<bool> = flat.iter().map(|f| f.open).collect();
-        let ends: Vec<usize> = tree_ends(&depths).into_iter().map(|e| e + at).collect();
+        // The new subtree's own ends, relative to its first node: `tree_visible` walks by them.
+        let ends = tree_ends(&depths);
         // The new nodes are shown when the parent is shown and open, and then as far as their own
         // open states go.
         let visible =
@@ -268,6 +269,7 @@ impl Tree {
 
         let shown_count = new_shown.len();
         self.shown.splice(row..row, new_shown);
+        let ends: Vec<usize> = ends.into_iter().map(|e| e + at).collect();
         self.ends.splice(at..at, ends);
         for (i, f) in flat.iter().enumerate() {
             self.by_key.insert(f.key, at + i);
