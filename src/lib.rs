@@ -605,7 +605,6 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Pop>()
             .register_type::<Lift>()
             .register_type::<Led>()
-            .init_resource::<CodeEditorSettings>()
             .register_type::<CodeEditorSettings>()
             .register_type::<CodeEditorValue>()
             .register_type::<SyntaxRole>()

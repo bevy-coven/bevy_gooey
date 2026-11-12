@@ -78,7 +78,9 @@ pub const CODE_SELECTION_ALPHA: f32 = 0.35;
 /// How many columns the caret keeps between itself and the edge of the view when it is revealed.
 const REVEAL_COLUMNS: f32 = 3.0;
 
-/// The settings of every [`code_editor`], a resource [`crate::GooeyStylePlugin`] inits.
+/// The settings of every [`code_editor`]: a resource a host inserts to change them. With none in
+/// the world every editor takes the defaults, so the crate adds no resource until a host wants
+/// one.
 ///
 /// ```
 /// # use bevy_gooey::CodeEditorSettings;

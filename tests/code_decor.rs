@@ -525,6 +525,76 @@ fn a_diagnostic_is_a_squiggle_under_its_range_a_gutter_mark_and_a_note_on_ctrl_d
     assert!(by_role(&app, Role::CodeNoteText).is_empty());
 }
 
+#[derive(Resource, Default)]
+struct HoverAsked(Vec<(usize, u64)>);
+
+#[test]
+fn a_hover_is_asked_for_by_offset_and_revision_answered_by_the_host_and_dropped_with_the_text() {
+    let mut app = app_with(MotionSettings::off());
+    app.init_resource::<HoverAsked>();
+    app.add_observer(
+        |request: On<CodeHoverRequested>, mut asked: ResMut<HoverAsked>| {
+            asked.0.push((request.offset, request.revision));
+        },
+    );
+    let editor = editor_of(&mut app, "let x = oops;");
+    let revision = value(&app, editor).revision();
+    let note_text = |app: &App| -> Vec<String> {
+        descendants(app.world(), editor)
+            .into_iter()
+            .filter(|&e| app.world().get::<Role>(e) == Some(&Role::CodeNoteText) && shown(app, e))
+            .filter_map(|e| app.world().get::<Text>(e).map(|t| t.0.clone()))
+            .collect()
+    };
+    // The caret on a word, Ctrl+. : the editor asks the host what it says about that offset.
+    app.world_mut()
+        .get_mut::<CodeEditor>(editor)
+        .expect("editor")
+        .select(CodePos::new(0, 9), CodePos::new(0, 9));
+    settle(&mut app);
+    chord(
+        &mut app,
+        KeyCode::ControlLeft,
+        KeyCode::Period,
+        Key::Character(".".into()),
+    );
+    assert_eq!(
+        app.world().resource::<HoverAsked>().0,
+        vec![(9, revision)],
+        "asked once, for the offset and the revision"
+    );
+    assert!(
+        note_text(&app).is_empty(),
+        "nothing to say until the host answers"
+    );
+    settle(&mut app);
+    assert_eq!(
+        app.world().resource::<HoverAsked>().0.len(),
+        1,
+        "a caret at rest asks once"
+    );
+    // The host answers for that revision: its words show in a note, and stay while the caret is
+    // over the range.
+    app.world_mut().entity_mut(editor).insert(CodeHover {
+        revision,
+        range: 8..12,
+        text: "oops: a name nobody defined".to_owned(),
+    });
+    settle(&mut app);
+    assert_eq!(
+        note_text(&app),
+        vec!["oops: a name nobody defined".to_owned()]
+    );
+    // The text moves on: an answer for the old revision is never drawn on the new text.
+    type_str(&mut app, "z");
+    assert_ne!(value(&app, editor).revision(), revision);
+    settle(&mut app);
+    assert!(
+        note_text(&app).is_empty(),
+        "an answer for an old revision is dropped"
+    );
+}
+
 #[test]
 fn every_syntax_colour_holds_the_contrast_bar_in_every_preset() {
     for preset in SkinPreset::ALL {
