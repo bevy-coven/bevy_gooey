@@ -16,12 +16,13 @@ use bevy::text::{LineBreak, TextLayout};
 use bevy::ui::{ComputedNode, UiGlobalTransform};
 
 use crate::code_buffer::{
-    CodeBuffer, CodeEdit, CodePos, byte_at_display, display_col, display_width,
+    CodeBuffer, CodeEdit, CodeEditError, CodePos, LineEdit, byte_at_display, display_col,
+    display_width,
 };
 use crate::code_decor::{
     CodeAuthor, CodeCompletionRequested, CodeCompletions, CodeHover, CodeHoverRequested,
-    CodeSeverity, CompletionTrigger, Diagnostics, EXTERNAL_EDIT_FADE_S, EXTERNAL_EDIT_GLIDE_PX,
-    EXTERNAL_EDIT_GLIDE_S, EXTERNAL_TINT_ALPHA, FoldRanges,
+    CodeSeverity, CompletionItem, CompletionTrigger, Diagnostics, EXTERNAL_EDIT_FADE_S,
+    EXTERNAL_EDIT_GLIDE_PX, EXTERNAL_EDIT_GLIDE_S, EXTERNAL_TINT_ALPHA, FoldRanges,
 };
 use crate::code_editor::{CodeEditor, CodeEditorValue, CodePart, RowShown};
 use crate::code_fold::FoldMap;
@@ -51,8 +52,30 @@ pub(crate) const MINIMAP_MARK_PX: f32 = 3.0;
 pub(crate) const MINIMAP_GROUND_ALPHA: f32 = 0.35;
 pub(crate) const MINIMAP_BAR_ALPHA: f32 = 0.55;
 pub(crate) const MINIMAP_BAND_ALPHA: f32 = 0.2;
+/// The band's frame, twice as opaque as its fill.
+pub(crate) const MINIMAP_BAND_EDGE_ALPHA: f32 = MINIMAP_BAND_ALPHA * 2.0;
 /// The lit brackets' fill, opacity.
 pub(crate) const BRACKET_ALPHA: f32 = 0.25;
+/// A note's padding across and down, of the skin's own padding.
+pub(crate) const CODE_NOTE_PAD: (f32, f32) = (0.8, 0.4);
+/// A completion row's padding across, of the code's padding.
+pub(crate) const COMPLETION_ROW_PAD: f32 = 0.6;
+/// The accent edge of the lit completion row, in border widths.
+pub(crate) const COMPLETION_EDGE_LINES: f32 = 2.0;
+/// A diagnostic's gutter dot sits this far in from the gutter's edge, of the code's padding.
+pub(crate) const MARK_INSET: f32 = 0.3;
+/// A diagnostic's gutter dot is this wide and high, of a line.
+pub(crate) const MARK_DOT: f32 = 0.35;
+/// A squiggle is this high, of a line.
+pub(crate) const SQUIGGLE_HEIGHT: f32 = 0.5;
+/// A lit bracket's corners, of the skin's radius.
+pub(crate) const BRACKET_RADIUS: f32 = 0.5;
+/// The find bar's distance from the editor's corner, and the gap in it, of the skin's gap.
+pub(crate) const FIND_BAR_GAP: f32 = 0.5;
+/// The find bar's padding, of the skin's padding.
+pub(crate) const FIND_BAR_PAD: f32 = 0.6;
+/// How far the pointer may drift, in px, and still be resting for a hover.
+pub(crate) const REST_SLOP_PX: f32 = 2.0;
 /// A find match's fill, and the current match's, opacities.
 pub(crate) const MATCH_ALPHA: f32 = 0.3;
 pub(crate) const MATCH_LIT_ALPHA: f32 = 0.55;
@@ -95,6 +118,9 @@ pub(crate) struct Completion {
     pub(crate) selected: usize,
     pub(crate) first: usize,
     pub(crate) prefix: String,
+    /// The host's items `filtered` indexes into, as they were when it was narrowed: a new answer
+    /// with other items narrows again, whatever the prefix.
+    pub(crate) items: Vec<CompletionItem>,
     pub(crate) panel: Option<Entity>,
     pub(crate) rows: Vec<(Entity, Entity, Entity)>,
 }
@@ -164,8 +190,21 @@ pub(crate) fn update_code_folds(
     for (mut editor_mut, value, ranges) in &mut editors {
         let editor = &mut *editor_mut;
         let mut dirty = false;
+        // The text moved under the folds: they follow it, so a fold stays on the lines it was
+        // made on, until the host answers for the new revision.
+        let edits = editor.buffer.take_line_edits();
+        if !edits.is_empty() {
+            dirty |= follow_the_text(
+                &edits,
+                &mut editor.folded,
+                &mut editor.overlay.available_folds,
+            ) && (!editor.folded.is_empty() || !editor.fold.is_empty());
+        }
+        // The host's ranges are for the text as the host knows it: while an edit from elsewhere is
+        // waiting to reach `CodeEditorValue` they are for the text before it.
         if let Some(ranges) = ranges
             && ranges.revision() == value.revision()
+            && !editor.overlay.external_dirty
             && editor.overlay.available_folds != ranges.ranges()
         {
             editor.overlay.available_folds = ranges.ranges().to_vec();
@@ -239,6 +278,55 @@ pub(crate) fn update_code_folds(
     }
 }
 
+/// Renumbers `folded` (header lines) and `available` (the host's ranges) for what `edits` did to
+/// the line numbers: before an edit, nothing moves; after it, by the lines it added; a line the
+/// edit began on keeps its number; a fold whose header the edit took away is dropped. Returns
+/// whether anything changed.
+fn follow_the_text(
+    edits: &[LineEdit],
+    folded: &mut std::collections::BTreeSet<usize>,
+    available: &mut Vec<Range<usize>>,
+) -> bool {
+    let (folds_before, ranges_before) = (folded.clone(), available.clone());
+    for edit in edits {
+        match *edit {
+            LineEdit::Reset => {
+                folded.clear();
+                available.clear();
+            }
+            LineEdit::Splice {
+                first,
+                removed,
+                inserted,
+            } => {
+                let after = first + removed;
+                let shift = |line: usize| line + inserted - removed;
+                let line_of = |line: usize| match line {
+                    l if l < first => Some(l),
+                    l if l >= after => Some(shift(l)),
+                    l if l == first => Some(first),
+                    _ => None,
+                };
+                let end_of = |end: usize| match end {
+                    e if e <= first => e,
+                    e if e >= after => shift(e),
+                    _ => first + inserted,
+                };
+                *folded = folded.iter().filter_map(|&line| line_of(line)).collect();
+                *available = available
+                    .iter()
+                    .filter_map(|range| {
+                        let start = line_of(range.start)?;
+                        let end = end_of(range.end);
+                        (end > start + 1).then_some(start..end)
+                    })
+                    .collect();
+            }
+        }
+    }
+    *folded != folds_before || *available != ranges_before
+}
+
 impl CodeEditor {
     /// Applies edits made by someone else (`range` is in byte offsets of the text as it stands) with
     /// `author`'s colour. Applied together, they land without moving the player's caret or
@@ -253,21 +341,32 @@ impl CodeEditor {
     /// (a person's undo never rewrites someone else's text). A later edit by the player clears the
     /// tint.
     ///
+    /// # Errors
+    ///
+    /// A [`CodeEditError`] when a range is inverted, past the text, inside a character or a line
+    /// break, or overlaps another: the text, the caret and the tint are left as they were, and the
+    /// host decides what to do with an edit it got wrong.
+    ///
     /// ```
     /// # use bevy::prelude::*;
     /// # use bevy_gooey::*;
     /// fn remote(mut editors: Query<&mut CodeEditor>) {
     ///     for mut editor in &mut editors {
-    ///         editor.apply_external_edit(
-    ///             &[CodeEdit::new(0..0, "// from Ada\n")],
-    ///             CodeAuthor::new("Ada", Color::srgb(0.9, 0.5, 0.2)),
-    ///         );
+    ///         let edit = CodeEdit::new(0..0, "// from Ada\n");
+    ///         let author = CodeAuthor::new("Ada", Color::srgb(0.9, 0.5, 0.2));
+    ///         if let Err(why) = editor.apply_external_edit(&[edit], author) {
+    ///             warn!("an edit was refused: {why}");
+    ///         }
     ///     }
     /// }
     /// ```
-    pub fn apply_external_edit(&mut self, edits: &[CodeEdit], author: CodeAuthor) {
+    pub fn apply_external_edit(
+        &mut self,
+        edits: &[CodeEdit],
+        author: CodeAuthor,
+    ) -> Result<(), CodeEditError> {
         if edits.is_empty() {
-            return;
+            return Ok(());
         }
         // Lines added above the first line in view move the scroll, so the text in view stays put.
         let first_visible = self.fold.line_at(self.view.first_row);
@@ -280,7 +379,7 @@ impl CodeEditor {
                 above += edit.text.matches('\n').count() as isize - removed;
             }
         }
-        let touched = self.buffer.apply_external(edits);
+        let touched = self.buffer.apply_external(edits)?;
         let mut at = 0;
         while at < touched.len() {
             let first = touched[at];
@@ -303,6 +402,7 @@ impl CodeEditor {
             self.goal.y = (self.goal.y + dy).max(0.0);
             self.shown_y.value = (self.shown_y.value + dy).max(0.0);
         }
+        Ok(())
     }
 }
 
@@ -319,7 +419,7 @@ pub(crate) fn code_on_move(
     let now = time.map_or(0.0, |time| time.elapsed_secs_f64());
     let at = moved.pointer.position;
     match editor.overlay.resting {
-        Some(resting) if resting.at.distance(at) < 2.0 => {}
+        Some(resting) if resting.at.distance(at) < REST_SLOP_PX => {}
         _ => editor.overlay.resting = Some(Resting { at, since: now }),
     }
 }
@@ -806,7 +906,6 @@ pub(crate) fn update_code_overlays(
             &boxes,
             &mut commands,
         );
-        let _ = lines;
     }
 }
 
@@ -1247,8 +1346,12 @@ fn update_completion(
                 .all(|c| c.is_alphanumeric() || c == '_');
         if valid {
             let prefix = line[anchor.col..caret.col].to_owned();
-            if prefix != editor.overlay.completion.prefix || !editor.overlay.completion.is_open() {
-                if prefix != editor.overlay.completion.prefix {
+            let renewed = completions.items != editor.overlay.completion.items;
+            if renewed
+                || prefix != editor.overlay.completion.prefix
+                || !editor.overlay.completion.is_open()
+            {
+                if renewed || prefix != editor.overlay.completion.prefix {
                     editor.overlay.completion.selected = 0;
                     editor.overlay.completion.first = 0;
                 }
@@ -1267,6 +1370,7 @@ fn update_completion(
                 scored.sort_by_key(|&(_, score)| std::cmp::Reverse(score));
                 editor.overlay.completion.filtered = scored.into_iter().map(|(i, _)| i).collect();
                 editor.overlay.completion.prefix = prefix;
+                editor.overlay.completion.items = completions.items.clone();
             }
             open = editor.overlay.completion.is_open();
         } else {
@@ -1277,6 +1381,7 @@ fn update_completion(
         let completion = &mut editor.overlay.completion;
         completion.filtered.clear();
         completion.prefix.clear();
+        completion.items.clear();
         if let Some(panel) = completion.panel.take() {
             commands.entity(panel).despawn();
             completion.rows.clear();

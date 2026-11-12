@@ -241,8 +241,9 @@ pub use card::{Card, CardCursor, CardGrid, CardRef, CardSelection, update_card_g
 pub use choice::{ChoiceCount, ChoiceValue, update_choices};
 pub use clicks::{ClickCount, DoublePress, PointerSettings};
 pub use code_buffer::{
-    BRACKET_SCAN_LINES, CodeBuffer, CodeEdit, CodeIndent, CodeMove, CodePos, CodeSelection,
-    GROUP_PAUSE_S, UNDO_DEPTH, byte_at_display, display_col, display_width, expand_slice,
+    BRACKET_SCAN_LINES, CodeBuffer, CodeEdit, CodeEditError, CodeIndent, CodeMove, CodePos,
+    CodeSelection, GROUP_PAUSE_S, UNDO_DEPTH, byte_at_display, display_col, display_width,
+    expand_slice,
 };
 pub use code_decor::{
     CodeAuthor, CodeCompletionRequested, CodeCompletions, CodeHover, CodeHoverRequested,
@@ -255,7 +256,9 @@ pub use code_editor::{
     CODE_SELECTION_ALPHA, CodeEditor, CodeEditorSettings, CodeEditorValue, CodeIndentation,
     DEFAULT_COMPLETION_TRIGGERS, PERF_BUDGET, code_editor,
 };
-pub use code_find::{FIND_LIMIT, FindError, FindOptions, find_all, replace_edits};
+pub use code_find::{
+    FIND_LIMIT, FIND_WORK_BASE, FIND_WORK_PER_BYTE, FindError, FindOptions, find_all, replace_edits,
+};
 pub use code_fold::FoldMap;
 pub use code_overlay::{CODE_HOVER_DELAY_S, COMPLETION_ROWS, CodeMinimap};
 pub use code_search::CodeFind;

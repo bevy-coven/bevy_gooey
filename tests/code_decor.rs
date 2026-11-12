@@ -2,6 +2,7 @@
 //! test sets: syntax colours read from the glyph runs, edits from elsewhere that keep the player's
 //! caret and fade, completion chosen by typing and Enter, and diagnostics with their note.
 
+use std::ops::Range;
 use std::time::Duration;
 
 use bevy::input::ButtonState;
@@ -275,7 +276,8 @@ fn an_edit_from_elsewhere_keeps_the_caret_on_its_character_and_its_lines_are_tin
         .apply_external_edit(
             &[CodeEdit::new(0..0, "zero\n")],
             CodeAuthor::new("Ada", ada),
-        );
+        )
+        .expect("a valid edit");
     app.update();
     app.update();
     let buffer = app
@@ -332,7 +334,8 @@ fn an_edit_inside_the_players_selection_keeps_the_selection_on_the_same_text() {
         .apply_external_edit(
             &[CodeEdit::new(4..4, "mut ")],
             CodeAuthor::new("Bo", Color::WHITE),
-        );
+        )
+        .expect("a valid edit");
     settle(&mut app);
     let editor_ref = app.world().get::<CodeEditor>(editor).expect("editor");
     assert_eq!(editor_ref.buffer().selected_text(), "value");
@@ -523,6 +526,135 @@ fn a_diagnostic_is_a_squiggle_under_its_range_a_gutter_mark_and_a_note_on_ctrl_d
     // The next key puts it away.
     tap(&mut app, KeyCode::ArrowRight, Key::ArrowRight);
     assert!(by_role(&app, Role::CodeNoteText).is_empty());
+}
+
+#[test]
+fn a_new_answer_with_other_items_replaces_the_list_whatever_the_prefix() {
+    let mut app = app_with(MotionSettings::off());
+    app.add_observer(
+        |request: On<CodeCompletionRequested>, mut commands: Commands| {
+            commands.entity(request.entity).insert(CodeCompletions {
+                anchor: request.offset - request.prefix.len(),
+                items: vec![
+                    CompletionItem::new("map"),
+                    CompletionItem::new("max"),
+                    CompletionItem::new("match"),
+                    CompletionItem::new("mix"),
+                ],
+            });
+        },
+    );
+    let editor = editor_of(&mut app, "");
+    type_str(&mut app, "m");
+    let labels = |app: &App| -> Vec<String> {
+        descendants(app.world(), editor)
+            .into_iter()
+            .filter(|&e| app.world().get::<Role>(e) == Some(&Role::CodeCompletionLabel))
+            .filter_map(|e| app.world().get::<Text>(e).map(|t| t.0.clone()))
+            .filter(|t| !t.is_empty())
+            .collect()
+    };
+    assert_eq!(labels(&app).len(), 4);
+    // The host answers again for the same word with other items (a slower answer, a refined one):
+    // the prefix is the same, the rows are the new items' and Enter chooses from them.
+    app.world_mut().entity_mut(editor).insert(CodeCompletions {
+        anchor: 0,
+        items: vec![
+            CompletionItem::new("minor"),
+            CompletionItem::new("alpha"),
+            CompletionItem::new("major"),
+        ],
+    });
+    settle(&mut app);
+    let mut shown = labels(&app);
+    shown.sort();
+    assert_eq!(
+        shown,
+        vec!["major".to_owned(), "minor".to_owned()],
+        "the new items that match, not the old indices"
+    );
+    tap(&mut app, KeyCode::Enter, Key::Enter);
+    let chosen = value(&app, editor).text().to_owned();
+    assert!(
+        chosen == "minor" || chosen == "major",
+        "Enter chose one of the new items: {chosen:?}"
+    );
+}
+
+#[test]
+fn a_diagnostic_for_an_old_revision_is_dropped_never_drawn_on_new_text() {
+    let mut app = app_with(MotionSettings::off());
+    let editor = editor_of(&mut app, "let x = oops;");
+    let revision = value(&app, editor).revision();
+    app.world_mut().entity_mut(editor).insert(Diagnostics::new(
+        revision,
+        [Diagnostic::new(8..12, CodeSeverity::Error, "no such name")],
+    ));
+    settle(&mut app);
+    let marks = |app: &App| -> usize {
+        descendants(app.world(), editor)
+            .into_iter()
+            .filter(|&e| {
+                matches!(
+                    app.world().get::<Role>(e),
+                    Some(Role::CodeSquiggle(_) | Role::CodeMark(_))
+                ) && shown(app, e)
+            })
+            .count()
+    };
+    assert_eq!(marks(&app), 2, "a squiggle and a gutter mark");
+    type_str(&mut app, "z");
+    assert_ne!(value(&app, editor).revision(), revision);
+    assert_eq!(
+        marks(&app),
+        0,
+        "the old diagnostic is gone with the old text"
+    );
+    // The ctrl+. note is gone with it too.
+    chord(
+        &mut app,
+        KeyCode::ControlLeft,
+        KeyCode::Period,
+        Key::Character(".".into()),
+    );
+    assert!(
+        descendants(app.world(), editor)
+            .into_iter()
+            .all(|e| app.world().get::<Role>(e) != Some(&Role::CodeNoteText) || !shown(&app, e))
+    );
+}
+
+#[test]
+fn an_edit_from_elsewhere_that_names_text_that_is_not_there_is_refused_and_changes_nothing() {
+    let mut app = app_with(MotionSettings::off());
+    let editor = editor_of(&mut app, "let é = 1;\nlast");
+    let revision = value(&app, editor).revision();
+    let author = || CodeAuthor::new("Ada", Color::WHITE);
+    let refusals = [
+        (
+            vec![CodeEdit::new(Range { start: 6, end: 2 }, "x")],
+            "starts after it ends",
+        ),
+        (vec![CodeEdit::new(0..99, "x")], "past the text"),
+        // Byte 5 is inside the é (bytes 4 and 5).
+        (vec![CodeEdit::new(0..5, "x")], "inside a character"),
+        (
+            vec![CodeEdit::new(0..3, "x"), CodeEdit::new(2..3, "y")],
+            "overlap",
+        ),
+    ];
+    for (edits, why) in refusals {
+        let outcome = app
+            .world_mut()
+            .get_mut::<CodeEditor>(editor)
+            .expect("editor")
+            .apply_external_edit(&edits, author());
+        let error = outcome.expect_err(why);
+        assert!(error.to_string().contains(why), "{error} for {why}");
+        settle(&mut app);
+        assert_eq!(value(&app, editor).text(), "let é = 1;\nlast");
+        assert_eq!(value(&app, editor).revision(), revision, "nothing happened");
+    }
 }
 
 #[derive(Resource, Default)]

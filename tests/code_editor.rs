@@ -790,11 +790,10 @@ fn a_ten_thousand_character_line_is_drawn_by_the_columns_in_view_only() {
 #[test]
 fn a_20000_line_file_scrolls_within_the_perf_budget_of_a_20_line_one() {
     let mut small = app();
-    let small_editor = editor_of(&mut small, &lines(20));
+    editor_of(&mut small, &lines(20));
     let mut big = app();
-    let big_editor = editor_of(&mut big, &lines(20_000));
-    let measure = |app: &mut App, editor: Entity| -> f64 {
-        let over = rect(app, editor).center();
+    editor_of(&mut big, &lines(20_000));
+    let measure = |app: &mut App| -> f64 {
         let mut times = Vec::new();
         for round in 0..3 {
             for frame in 0..40 {
@@ -817,20 +816,15 @@ fn a_20000_line_file_scrolls_within_the_perf_budget_of_a_20_line_one() {
                 times.push(began.elapsed().as_secs_f64());
             }
         }
-        let _ = over;
         times.sort_by(|a, b| a.total_cmp(b));
         times[times.len() / 2]
     };
     // Warm both, then take the better of three measurements of each (load makes a run slower,
     // never faster).
-    measure(&mut small, small_editor);
-    measure(&mut big, big_editor);
-    let small_ms = (0..3)
-        .map(|_| measure(&mut small, small_editor))
-        .fold(f64::MAX, f64::min);
-    let big_ms = (0..3)
-        .map(|_| measure(&mut big, big_editor))
-        .fold(f64::MAX, f64::min);
+    measure(&mut small);
+    measure(&mut big);
+    let small_ms = (0..3).map(|_| measure(&mut small)).fold(f64::MAX, f64::min);
+    let big_ms = (0..3).map(|_| measure(&mut big)).fold(f64::MAX, f64::min);
     let ratio = big_ms / small_ms.max(1e-9);
     assert!(
         ratio <= f64::from(PERF_BUDGET),

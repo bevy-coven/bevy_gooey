@@ -25,6 +25,11 @@ const SYNTAX_CHROMA: (f32, f32) = (0.08, 0.16);
 /// How much chroma is kept at each step of pulling a colour into sRGB.
 const SYNTAX_GAMUT_PULL: f32 = 0.92;
 
+/// How many times a colour is moved back toward the text's lightness looking for the contrast bar.
+const SYNTAX_LIGHTNESS_STEPS: usize = 24;
+/// How many times a colour's chroma is pulled in looking for sRGB.
+const SYNTAX_GAMUT_STEPS: usize = 24;
+
 /// A role's hue, degrees of Oklch.
 fn hue(role: SyntaxRole) -> f32 {
     match role {
@@ -86,9 +91,9 @@ impl GooeySkin {
         let ground_l = Oklcha::from(ground).lightness;
         let chroma = base_chroma.clamp(SYNTAX_CHROMA.0, SYNTAX_CHROMA.1);
         let mut lightness = text.lightness + (ground_l - text.lightness) * SYNTAX_L_SHIFT;
-        for _ in 0..24 {
+        for _ in 0..SYNTAX_LIGHTNESS_STEPS {
             let mut lch = Oklcha::new(lightness, chroma, hue, 1.0);
-            for _ in 0..24 {
+            for _ in 0..SYNTAX_GAMUT_STEPS {
                 if in_gamut(Color::from(lch)) {
                     break;
                 }

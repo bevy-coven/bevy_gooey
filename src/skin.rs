@@ -16,9 +16,10 @@ use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
 use crate::code_overlay::{
-    BRACKET_ALPHA, CODE_COMPLETION_EM, CODE_NOTE_EM, MATCH_ALPHA, MATCH_LIT_ALPHA,
-    MINIMAP_BAND_ALPHA, MINIMAP_BAR_ALPHA, MINIMAP_BAR_PX, MINIMAP_EM, MINIMAP_GROUND_ALPHA,
-    MINIMAP_MARK_PX,
+    BRACKET_ALPHA, BRACKET_RADIUS, CODE_COMPLETION_EM, CODE_NOTE_EM, CODE_NOTE_PAD,
+    COMPLETION_EDGE_LINES, COMPLETION_ROW_PAD, FIND_BAR_GAP, FIND_BAR_PAD, MARK_DOT, MARK_INSET,
+    MATCH_ALPHA, MATCH_LIT_ALPHA, MINIMAP_BAND_ALPHA, MINIMAP_BAND_EDGE_ALPHA, MINIMAP_BAR_ALPHA,
+    MINIMAP_BAR_PX, MINIMAP_EM, MINIMAP_GROUND_ALPHA, MINIMAP_MARK_PX, SQUIGGLE_HEIGHT,
 };
 use crate::color_motion::ColorTrack;
 use crate::control_size::ControlSize;
@@ -3413,7 +3414,7 @@ fn restyle(
         Role::CodeCompletionRow => Some(BorderColor::all(Color::NONE)),
         Role::CodeBracket => Some(BorderColor::all(skin.accent)),
         Role::CodeMinimapBand => Some(BorderColor::all(
-            skin.accent.with_alpha(MINIMAP_BAND_ALPHA * 2.0),
+            skin.accent.with_alpha(MINIMAP_BAND_EDGE_ALPHA),
         )),
         Role::ColorSwatch | Role::ColorArea | Role::Viewport | Role::CodeEditor => {
             Some(BorderColor::all(if look.focused == Some(entity) {
@@ -4042,7 +4043,10 @@ fn restyle(
                 next.position_type = PositionType::Absolute;
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding = UiRect::axes(Val::Px(skin.pad() * 0.8), Val::Px(skin.pad() * 0.4));
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad() * CODE_NOTE_PAD.0),
+                    Val::Px(skin.pad() * CODE_NOTE_PAD.1),
+                );
                 next.max_width = Val::Px(text_px * CODE_NOTE_EM);
             }
             Role::CodeCompletion => {
@@ -4059,21 +4063,21 @@ fn restyle(
                 next.align_items = AlignItems::Center;
                 next.justify_content = JustifyContent::SpaceBetween;
                 next.column_gap = Val::Px(skin.gap);
-                next.padding = UiRect::horizontal(Val::Px(code.pad_px * 0.6));
-                next.border = UiRect::left(Val::Px(line * 2.0));
+                next.padding = UiRect::horizontal(Val::Px(code.pad_px * COMPLETION_ROW_PAD));
+                next.border = UiRect::left(Val::Px(line * COMPLETION_EDGE_LINES));
             }
             Role::CodeCompletionLabel | Role::CodeCompletionDetail => next.flex_shrink = 0.0,
             Role::CodeMark(_) => {
                 let code = CodeMetrics::of(skin, scale);
                 next.position_type = PositionType::Absolute;
-                next.left = Val::Px(code.pad_px * 0.3);
-                next.width = Val::Px(code.line_px * 0.35);
-                next.height = Val::Px(code.line_px * 0.35);
+                next.left = Val::Px(code.pad_px * MARK_INSET);
+                next.width = Val::Px(code.line_px * MARK_DOT);
+                next.height = Val::Px(code.line_px * MARK_DOT);
                 next.border_radius = BorderRadius::MAX;
             }
             Role::CodeSquiggle(_) => {
                 next.position_type = PositionType::Absolute;
-                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px * 0.5);
+                next.height = Val::Px(CodeMetrics::of(skin, scale).line_px * SQUIGGLE_HEIGHT);
                 next.overflow = Overflow::clip();
             }
             Role::CodeExternal => {
@@ -4116,18 +4120,18 @@ fn restyle(
                 next.position_type = PositionType::Absolute;
                 next.height = Val::Px(code.line_px);
                 next.border = UiRect::all(Val::Px(line));
-                next.border_radius = BorderRadius::all(Val::Px(skin.radius * 0.5));
+                next.border_radius = BorderRadius::all(Val::Px(skin.radius * BRACKET_RADIUS));
             }
             Role::CodeChevron => next.position_type = PositionType::Absolute,
             Role::CodeFind => {
                 next.position_type = PositionType::Absolute;
                 next.flex_direction = FlexDirection::Column;
-                next.top = Val::Px(skin.gap * 0.5);
-                next.right = Val::Px(skin.gap * 0.5);
+                next.top = Val::Px(skin.gap * FIND_BAR_GAP);
+                next.right = Val::Px(skin.gap * FIND_BAR_GAP);
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
-                next.padding = UiRect::all(Val::Px(skin.pad() * 0.6));
-                next.row_gap = Val::Px(skin.gap * 0.5);
+                next.padding = UiRect::all(Val::Px(skin.pad() * FIND_BAR_PAD));
+                next.row_gap = Val::Px(skin.gap * FIND_BAR_GAP);
             }
             Role::CodeFindMatch | Role::CodeFindMatchLit => {
                 next.position_type = PositionType::Absolute;

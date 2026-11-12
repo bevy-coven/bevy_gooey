@@ -75,6 +75,18 @@ pub const CARET_BLINK_PERIOD_S: f32 = 1.06;
 /// How opaque the selection's accent is, so the text shows through it.
 pub const CODE_SELECTION_ALPHA: f32 = 0.35;
 
+/// A column is this share of the font size when the probe has no width yet.
+const MONO_ADVANCE_EM: f32 = 0.6;
+/// The caret keeps this share of the view's height clear of its edge (at most a line) when revealed.
+const REVEAL_VIEW_SHARE: f32 = 0.25;
+/// The caret is lit for this share of a blink period.
+const BLINK_LIT_SHARE: f32 = 0.5;
+/// Rows and columns drawn past what the view needs, so a scroll never shows a gap.
+const POOL_SPARE_ROWS: usize = 2;
+const POOL_SPARE_COLS: usize = 3;
+/// The gutter is the line numbers' digits and this many columns of air.
+const GUTTER_SPARE_COLS: f32 = 2.0;
+
 /// How many columns the caret keeps between itself and the edge of the view when it is revealed.
 const REVEAL_COLUMNS: f32 = 3.0;
 
@@ -107,12 +119,15 @@ pub struct CodeEditorSettings {
 /// The characters that ask for completions by default.
 pub const DEFAULT_COMPLETION_TRIGGERS: &str = ".:";
 
+/// Whether typing a word asks for completions by default.
+const DEFAULT_COMPLETE_WHILE_TYPING: bool = true;
+
 impl Default for CodeEditorSettings {
     fn default() -> Self {
         Self {
             blink_period_s: CARET_BLINK_PERIOD_S,
             completion_triggers: DEFAULT_COMPLETION_TRIGGERS.to_owned(),
-            complete_while_typing: true,
+            complete_while_typing: DEFAULT_COMPLETE_WHILE_TYPING,
         }
     }
 }
@@ -888,7 +903,9 @@ fn code_on_key(
                     .map_or(DEFAULT_COMPLETION_TRIGGERS, |s| {
                         s.completion_triggers.as_str()
                     });
-                let auto = settings.as_deref().is_none_or(|s| s.complete_while_typing);
+                let auto = settings
+                    .as_deref()
+                    .map_or(DEFAULT_COMPLETE_WHILE_TYPING, |s| s.complete_while_typing);
                 if let Some(c) = typed {
                     if auto
                         && (c.is_alphanumeric() || c == '_')
@@ -1201,7 +1218,7 @@ pub(crate) fn update_code_editors(
         let advance = if probe_width > 0.0 {
             probe_width / NUMBER_PROBE.len() as f32
         } else {
-            m.font_px * 0.6
+            m.font_px * MONO_ADVANCE_EM
         };
         editor.advance = advance;
         editor.line_px = m.line_px;
@@ -1309,13 +1326,7 @@ pub(crate) fn update_code_editors(
                     };
                     match editor.unit {
                         Unit::Char => {
-                            let anchor = editor.buffer.selection().anchor;
-                            let extend = false;
-                            if extend {
-                                editor.buffer.select(anchor, at);
-                            } else {
-                                editor.buffer.select(at, at);
-                            }
+                            editor.buffer.select(at, at);
                             editor.pivot = Some((at, at));
                         }
                         Unit::Word => {
@@ -1335,13 +1346,11 @@ pub(crate) fn update_code_editors(
                         let (anchor, head) = match editor.unit {
                             Unit::Char => (first, at),
                             Unit::Word => {
-                                let mut probe = editor.buffer.clone();
-                                probe.select_word_at(at);
-                                let sel = probe.selection();
+                                let (start, end) = editor.buffer.word_range_at(at);
                                 if at < first {
-                                    (last, sel.start())
+                                    (last, start)
                                 } else {
-                                    (first, sel.end())
+                                    (first, end)
                                 }
                             }
                             Unit::Line => {
@@ -1394,7 +1403,7 @@ pub(crate) fn update_code_editors(
         );
         if editor.reveal {
             editor.reveal = false;
-            let margin_y = m.line_px.min(size.y / 4.0);
+            let margin_y = m.line_px.min(size.y * REVEAL_VIEW_SHARE);
             let margin_x = REVEAL_COLUMNS * advance;
             let window = Vec2::new((size.x - 2.0 * pad).max(advance), size.y);
             let mut goal = editor.goal;
@@ -1479,7 +1488,9 @@ pub(crate) fn update_code_editors(
         }
         editor.blink += delta;
         let lit = focused
-            && (!glides || blink_period <= 0.0 || editor.blink % blink_period < blink_period * 0.5);
+            && (!glides
+                || blink_period <= 0.0
+                || editor.blink % blink_period < blink_period * BLINK_LIT_SHARE);
 
         // The rows in view.
         let first = (shown.y / m.line_px).floor().max(0.0) as usize;
@@ -1488,10 +1499,10 @@ pub(crate) fn update_code_editors(
             shown.y - first as f32 * m.line_px,
         );
         let first_col = (shown.x / advance).floor().max(0.0) as usize;
-        let cols = ((size.x - pad) / advance).ceil().max(1.0) as usize + 3;
-        let needed = (size.y / m.line_px).ceil().max(1.0) as usize + 2;
+        let cols = ((size.x - pad) / advance).ceil().max(1.0) as usize + POOL_SPARE_COLS;
+        let needed = (size.y / m.line_px).ceil().max(1.0) as usize + POOL_SPARE_ROWS;
         let digits = lines.to_string().len().max(2);
-        let gutter_w = (digits as f32 + 2.0) * advance;
+        let gutter_w = (digits as f32 + GUTTER_SPARE_COLS) * advance;
         let revision = editor.buffer.revision();
         editor.view = View {
             ready: true,

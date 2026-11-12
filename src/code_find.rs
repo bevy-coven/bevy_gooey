@@ -11,7 +11,7 @@
 use std::ops::Range;
 
 use crate::code_buffer::{CodeBuffer, CodeEdit, CodePos};
-use crate::code_regex::Regex;
+use crate::code_regex::{MatchError, Regex};
 
 /// How many matches a search keeps; a text with more is searched no further, so a one-letter query
 /// over a huge file stays quick.
@@ -33,17 +33,40 @@ pub struct FindOptions {
 pub enum FindError {
     /// The regular expression did not compile; the reason, as the engine says it.
     Regex(String),
+    /// The pattern took more work than a scan may spend (a nested repeat that backtracks without
+    /// end): no answer is given, rather than a wrong "no matches".
+    TooMuchWork,
+    /// The pattern recursed too deep on a long line.
+    TooDeep,
 }
 
 impl std::fmt::Display for FindError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Regex(reason) => write!(f, "{reason}"),
+            Self::TooMuchWork => write!(f, "this pattern takes too long to search"),
+            Self::TooDeep => write!(f, "this pattern recurses too deep on a long line"),
         }
     }
 }
 
 impl std::error::Error for FindError {}
+
+impl From<MatchError> for FindError {
+    fn from(why: MatchError) -> Self {
+        match why {
+            MatchError::TooMuchWork => Self::TooMuchWork,
+            MatchError::TooDeep => Self::TooDeep,
+        }
+    }
+}
+
+/// The steps a regular-expression scan may take whatever the size of the text.
+pub const FIND_WORK_BASE: usize = 1_000_000;
+
+/// The steps a scan may take for each byte of text, on top of [`FIND_WORK_BASE`]: a plain pattern
+/// takes a handful a byte, so what is over this is a pattern that backtracks.
+pub const FIND_WORK_PER_BYTE: usize = 40;
 
 /// One match: where it starts and ends, and what a replacement makes of it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -123,6 +146,11 @@ fn scan(
         .then(|| build_regex(query, options))
         .transpose()?;
     let mut hits = Vec::new();
+    let mut budget = FIND_WORK_BASE
+        + FIND_WORK_PER_BYTE
+            * (0..buffer.len_lines())
+                .map(|line| buffer.line(line).len())
+                .sum::<usize>();
     'lines: for line in 0..buffer.len_lines() {
         let text = buffer.line(line);
         if text.is_empty() && regex.is_none() {
@@ -135,7 +163,7 @@ fn scan(
         };
         match &regex {
             Some(regex) => {
-                for caps in regex.captures(text) {
+                for caps in regex.captures(text, &mut budget)? {
                     let (start, end) = caps.whole();
                     let replaced = replacement.map(|template| caps.expand(template, text));
                     hits.push(at(start, end, replaced));
@@ -182,14 +210,14 @@ pub fn find_all(
 
 /// The edits a replace-all of `query` by `replacement` is, over byte offsets of the whole text:
 /// give them to [`CodeBuffer::replace_ranges`] for one undo step. In a regular expression the
-/// replacement may name groups (`$1`, `${name}`).
+/// replacement may name groups (`$1`, `${1}`).
 ///
 /// ```
 /// use bevy_gooey::{CodeBuffer, FindOptions, replace_edits};
 /// let mut buffer = CodeBuffer::new("let a = 1;\nlet b = 2;");
 /// let options = FindOptions { regex: true, ..FindOptions::default() };
 /// let edits = replace_edits(&buffer, r"let (\w+)", "var $1", options).unwrap();
-/// buffer.replace_ranges(&edits, 0.0);
+/// buffer.replace_ranges(&edits, 0.0).unwrap();
 /// assert_eq!(buffer.text(), "var a = 1;\nvar b = 2;");
 /// assert!(buffer.undo());
 /// assert_eq!(buffer.text(), "let a = 1;\nlet b = 2;");
@@ -276,7 +304,7 @@ mod tests {
         let edits = replace_edits(&buffer, "é", "e", FindOptions::default()).expect("edits");
         assert_eq!(edits.len(), 2);
         let mut buffer = buffer;
-        buffer.replace_ranges(&edits, 0.0);
+        buffer.replace_ranges(&edits, 0.0).unwrap();
         assert_eq!(buffer.text(), "hello he");
     }
 
@@ -284,7 +312,7 @@ mod tests {
     fn replace_all_is_one_undo_step_across_lines_and_crlf() {
         let mut buffer = CodeBuffer::new("a\r\nb a\r\na");
         let edits = replace_edits(&buffer, "a", "xyz", FindOptions::default()).expect("edits");
-        assert!(buffer.replace_ranges(&edits, 0.0));
+        assert!(buffer.replace_ranges(&edits, 0.0).unwrap());
         assert_eq!(buffer.text(), "xyz\r\nb xyz\r\nxyz");
         assert!(buffer.undo());
         assert_eq!(buffer.text(), "a\r\nb a\r\na");

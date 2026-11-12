@@ -310,22 +310,31 @@ pub(crate) fn update_code_find(
                         replace_edits(&editor.buffer, &find.query, &find.replacement, find.options)
                         && let Some(edit) = edits.get(at)
                     {
-                        editor
+                        match editor
                             .buffer
-                            .replace_ranges(std::slice::from_ref(edit), now);
-                        editor.touched();
-                        publish(root, editor, &mut value, false, &mut commands);
-                        find.key = None;
+                            .replace_ranges(std::slice::from_ref(edit), now)
+                        {
+                            Ok(_) => {
+                                editor.touched();
+                                publish(root, editor, &mut value, false, &mut commands);
+                                find.key = None;
+                            }
+                            Err(why) => find.error = Some(why.to_string()),
+                        }
                     }
                 }
                 FindAction::ReplaceAll if n > 0 => {
                     if let Ok(edits) =
                         replace_edits(&editor.buffer, &find.query, &find.replacement, find.options)
                     {
-                        editor.buffer.replace_ranges(&edits, now);
-                        editor.touched();
-                        publish(root, editor, &mut value, false, &mut commands);
-                        find.key = None;
+                        match editor.buffer.replace_ranges(&edits, now) {
+                            Ok(_) => {
+                                editor.touched();
+                                publish(root, editor, &mut value, false, &mut commands);
+                                find.key = None;
+                            }
+                            Err(why) => find.error = Some(why.to_string()),
+                        }
                     }
                 }
                 FindAction::Close => {

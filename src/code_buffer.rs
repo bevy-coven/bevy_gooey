@@ -179,6 +179,58 @@ impl CodeEdit {
     }
 }
 
+/// Why a batch of [`CodeEdit`]s was refused: the text is not touched.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CodeEditError {
+    /// The range's start is after its end.
+    Inverted {
+        /// Which edit of the batch.
+        index: usize,
+    },
+    /// The range reaches past the end of the text.
+    PastTheEnd {
+        /// Which edit of the batch.
+        index: usize,
+    },
+    /// An end of the range is inside a character.
+    InsideCharacter {
+        /// Which edit of the batch.
+        index: usize,
+    },
+    /// An end of the range is inside a line break (between a carriage return and its line feed).
+    InsideLineBreak {
+        /// Which edit of the batch.
+        index: usize,
+    },
+    /// Two ranges share text.
+    Overlap {
+        /// The earlier edit of the batch.
+        first: usize,
+        /// The later one.
+        second: usize,
+    },
+}
+
+impl std::fmt::Display for CodeEditError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Inverted { index } => write!(f, "edit {index}: the range starts after it ends"),
+            Self::PastTheEnd { index } => write!(f, "edit {index}: the range is past the text"),
+            Self::InsideCharacter { index } => {
+                write!(f, "edit {index}: the range is inside a character")
+            }
+            Self::InsideLineBreak { index } => {
+                write!(f, "edit {index}: the range is inside a line break")
+            }
+            Self::Overlap { first, second } => {
+                write!(f, "edits {first} and {second} overlap")
+            }
+        }
+    }
+}
+
+impl std::error::Error for CodeEditError {}
+
 /// The text of a code editor: its lines, caret, selection and undo history. See the module docs.
 ///
 /// ```
@@ -204,7 +256,27 @@ pub struct CodeBuffer {
     revision: u64,
     tab_width: usize,
     indent: CodeIndent,
+    /// What was done to the lines since [`CodeBuffer::take_line_edits`], so what stands on a line
+    /// number (a fold) can follow the text.
+    line_edits: Vec<LineEdit>,
 }
+
+/// What an edit did to the line numbers: the lines after it are renumbered, a line it began on
+/// keeps its number.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum LineEdit {
+    /// `removed` lines from `first` (the first is where the edit began) became `inserted` lines.
+    Splice {
+        first: usize,
+        removed: usize,
+        inserted: usize,
+    },
+    /// The whole text was replaced, or too much happened to follow.
+    Reset,
+}
+
+/// How many line edits are kept before they are given up for a [`LineEdit::Reset`].
+const LINE_EDIT_LOG: usize = 4096;
 
 impl Default for CodeBuffer {
     fn default() -> Self {
@@ -269,6 +341,7 @@ impl CodeBuffer {
             revision: 0,
             tab_width: 4,
             indent: CodeIndent::default(),
+            line_edits: Vec::new(),
         };
         buffer.load(text);
         buffer
@@ -286,6 +359,8 @@ impl CodeBuffer {
             _ => "\n",
         };
         self.lines = lines;
+        self.line_edits.clear();
+        self.line_edits.push(LineEdit::Reset);
         self.undo.clear();
         self.redo.clear();
         self.joins = false;
@@ -295,6 +370,11 @@ impl CodeBuffer {
             head: self.clamp(self.selection.head),
         };
         self.revision += 1;
+    }
+
+    /// What was done to the line numbers since the last call, oldest first.
+    pub(crate) fn take_line_edits(&mut self) -> Vec<LineEdit> {
+        std::mem::take(&mut self.line_edits)
     }
 
     /// The whole text, every line with the terminator it has.
@@ -676,9 +756,9 @@ impl CodeBuffer {
         self.select(CodePos::default(), self.end());
     }
 
-    /// Selects the word at `pos`: the run of one class under it (the one before it at a line's
-    /// end); nothing on an empty line.
-    pub fn select_word_at(&mut self, pos: CodePos) {
+    /// The word at `pos`: the run of one class under it (the one before it at a line's end); an
+    /// empty range at `pos` on an empty line. It changes nothing.
+    pub fn word_range_at(&self, pos: CodePos) -> (CodePos, CodePos) {
         let pos = self.clamp(pos);
         let text = self.line(pos.line);
         let at = text[pos.col..]
@@ -686,8 +766,7 @@ impl CodeBuffer {
             .next()
             .or_else(|| text[..pos.col].chars().next_back());
         let Some(kind) = at.map(class) else {
-            self.select(pos, pos);
-            return;
+            return (pos, pos);
         };
         let mut start = pos.col;
         for (i, c) in text[..pos.col].char_indices().rev() {
@@ -703,7 +782,13 @@ impl CodeBuffer {
             }
             end = pos.col + i + c.len_utf8();
         }
-        self.select(CodePos::new(pos.line, start), CodePos::new(pos.line, end));
+        (CodePos::new(pos.line, start), CodePos::new(pos.line, end))
+    }
+
+    /// Selects the word at `pos` ([`CodeBuffer::word_range_at`]); nothing on an empty line.
+    pub fn select_word_at(&mut self, pos: CodePos) {
+        let (start, end) = self.word_range_at(pos);
+        self.select(start, end);
     }
 
     /// Selects `line` whole, with its line break (the last line, to its end).
@@ -729,6 +814,17 @@ impl CodeBuffer {
         pieces[0].insert_str(0, &prefix);
         pieces[last].push_str(&suffix);
         let end = end_after(a, text);
+        if self.line_edits.len() >= LINE_EDIT_LOG {
+            self.line_edits.clear();
+            self.line_edits.push(LineEdit::Reset);
+        }
+        if self.line_edits != [LineEdit::Reset] {
+            self.line_edits.push(LineEdit::Splice {
+                first: a.line,
+                removed: b.line - a.line + 1,
+                inserted: pieces.len(),
+            });
+        }
         self.lines.splice(a.line..=b.line, pieces);
         end
     }
@@ -1013,19 +1109,23 @@ impl CodeBuffer {
     /// replace-all. Ranges must not overlap; they are applied last first, so each is in the
     /// text's own offsets. The selection goes to the end of the last replacement. Returns whether
     /// anything changed.
-    pub fn replace_ranges(&mut self, edits: &[CodeEdit], now: f64) -> bool {
-        let mut edits: Vec<&CodeEdit> = edits.iter().collect();
-        edits.sort_by_key(|edit| edit.range.start);
-        if edits.is_empty() {
-            return false;
+    ///
+    /// # Errors
+    ///
+    /// A [`CodeEditError`] when a range is inverted, past the text, inside a character or a line
+    /// break, or overlaps another; the text is not touched.
+    pub fn replace_ranges(&mut self, edits: &[CodeEdit], now: f64) -> Result<bool, CodeEditError> {
+        let placed = self.place(edits)?;
+        if placed.is_empty() {
+            return Ok(false);
         }
         let before = self.selection;
-        let mut group = Vec::new();
+        let mut group = Vec::with_capacity(placed.len());
         let mut end = before.head;
-        for edit in edits.iter().rev() {
-            let a = self.pos_at(edit.range.start);
-            let b = self.pos_at(edit.range.end);
-            let inserted = with_breaks(&edit.text, self.newline);
+        // Last first: each place was read from the text as it stood, and one below another is
+        // not moved by it.
+        for &(index, a, b) in placed.iter().rev() {
+            let inserted = with_breaks(&edits[index].text, self.newline);
             let removed = self.text_between(a, b);
             end = self.splice(a, b, &inserted);
             group.push(Replace {
@@ -1053,7 +1153,59 @@ impl CodeBuffer {
             self.undo.remove(0);
         }
         self.joins = false;
-        true
+        Ok(true)
+    }
+
+    /// The place at `offset` given the line starts: an offset inside a line break is the end of
+    /// that line's content, past the text its end.
+    fn pos_in(&self, starts: &[usize], offset: usize) -> CodePos {
+        let line = starts
+            .partition_point(|&start| start <= offset)
+            .saturating_sub(1);
+        self.clamp(CodePos::new(line, offset - starts[line]))
+    }
+
+    /// Checks `edits` against the text and returns each one's place, sorted by where it starts:
+    /// `(index in edits, start, end)`.
+    fn place(&self, edits: &[CodeEdit]) -> Result<Vec<(usize, CodePos, CodePos)>, CodeEditError> {
+        let starts = self.line_starts();
+        let total = starts
+            .last()
+            .map_or(0, |last| last + self.lines.last().map_or(0, String::len));
+        let strict = |index: usize, offset: usize| -> Result<CodePos, CodeEditError> {
+            if offset > total {
+                return Err(CodeEditError::PastTheEnd { index });
+            }
+            let line = starts.partition_point(|&start| start <= offset) - 1;
+            let col = offset - starts[line];
+            let text = self.line(line);
+            if col > text.len() {
+                return Err(CodeEditError::InsideLineBreak { index });
+            }
+            if !text.is_char_boundary(col) {
+                return Err(CodeEditError::InsideCharacter { index });
+            }
+            Ok(CodePos::new(line, col))
+        };
+        let mut placed = Vec::with_capacity(edits.len());
+        for (index, edit) in edits.iter().enumerate() {
+            if edit.range.start > edit.range.end {
+                return Err(CodeEditError::Inverted { index });
+            }
+            placed.push((
+                index,
+                strict(index, edit.range.start)?,
+                strict(index, edit.range.end)?,
+            ));
+        }
+        placed.sort_by_key(|&(index, ..)| (edits[index].range.start, index));
+        for pair in placed.windows(2) {
+            let (first, second) = (pair[0].0, pair[1].0);
+            if edits[first].range.end > edits[second].range.start {
+                return Err(CodeEditError::Overlap { first, second });
+            }
+        }
+        Ok(placed)
     }
 
     /// Undoes the last step, taking the selection back to what it was. Returns whether there was one.
@@ -1120,39 +1272,46 @@ impl CodeBuffer {
     /// none sees another's change). The caret and the selection stay on the text they were on, the
     /// history is dropped (a person's undo never rewrites someone else's text), and the revision
     /// moves. Returns the lines the edits changed, in the text as it is now.
-    pub fn apply_external(&mut self, edits: &[CodeEdit]) -> Vec<usize> {
-        let mut edits: Vec<CodeEdit> = edits
+    ///
+    /// # Errors
+    ///
+    /// A [`CodeEditError`] when a range is inverted, past the text, inside a character or a line
+    /// break, or overlaps another; the text is not touched.
+    pub fn apply_external(&mut self, edits: &[CodeEdit]) -> Result<Vec<usize>, CodeEditError> {
+        let order = self.place(edits)?;
+        let edits_sorted: Vec<CodeEdit> = order
             .iter()
-            .map(|edit| CodeEdit::new(edit.range.clone(), with_breaks(&edit.text, self.newline)))
+            .map(|&(index, ..)| {
+                let edit = &edits[index];
+                CodeEdit::new(edit.range.clone(), with_breaks(&edit.text, self.newline))
+            })
             .collect();
-        edits.sort_by_key(|edit| edit.range.start);
         let (mut anchor, mut head) = (
             self.offset_of(self.selection.anchor),
             self.offset_of(self.selection.head),
         );
         // Last first: each edit is in the original offsets, and one below an offset moves it.
-        for edit in edits.iter().rev() {
+        for edit in edits_sorted.iter().rev() {
             anchor = Self::shifted(anchor, edit);
             head = Self::shifted(head, edit);
         }
-        let mut placed: Vec<Range<usize>> = Vec::with_capacity(edits.len());
+        let mut placed: Vec<Range<usize>> = Vec::with_capacity(edits_sorted.len());
         let mut delta = 0isize;
-        for edit in &edits {
+        for edit in &edits_sorted {
             let start = (edit.range.start as isize + delta) as usize;
             placed.push(start..start + edit.text.len());
             delta += edit.text.len() as isize - (edit.range.end - edit.range.start) as isize;
         }
-        for edit in edits.iter().rev() {
-            let a = self.pos_at(edit.range.start);
-            let b = self.pos_at(edit.range.end);
+        for (edit, &(_, a, b)) in edits_sorted.iter().zip(&order).rev() {
             self.splice(a, b, &edit.text);
         }
         // The lines now holding what the edits put there; a break the edit ended on leaves the
         // line after it as it was.
+        let starts = self.line_starts();
         let mut touched = Vec::new();
         for range in &placed {
-            let first = self.pos_at(range.start);
-            let last = self.pos_at(range.end);
+            let first = self.pos_in(&starts, range.start);
+            let last = self.pos_in(&starts, range.end);
             let to = if range.is_empty() || (last.col == 0 && last.line > first.line) {
                 last.line.saturating_sub(usize::from(!range.is_empty()))
             } else {
@@ -1168,10 +1327,10 @@ impl CodeBuffer {
         self.want = None;
         self.revision += 1;
         self.selection = CodeSelection {
-            anchor: self.pos_at(anchor),
-            head: self.pos_at(head),
+            anchor: self.pos_in(&starts, anchor),
+            head: self.pos_in(&starts, head),
         };
-        touched
+        Ok(touched)
     }
 }
 
@@ -1382,14 +1541,16 @@ mod tests {
             CodeEdit::new(4..5, "xx"),
             CodeEdit::new(8..9, "xx"),
         ];
-        assert!(buffer.replace_ranges(&found, 0.0));
+        assert!(buffer.replace_ranges(&found, 0.0).unwrap());
         assert_eq!(buffer.text(), "xx b xx b xx");
         assert!(buffer.undo());
         assert_eq!(buffer.text(), "a b a b a");
 
         let mut buffer = CodeBuffer::new("one\ntwo\nthree");
         buffer.select(CodePos::new(2, 2), CodePos::new(2, 2));
-        let touched = buffer.apply_external(&[CodeEdit::new(0..0, "zero\n")]);
+        let touched = buffer
+            .apply_external(&[CodeEdit::new(0..0, "zero\n")])
+            .unwrap();
         assert_eq!(buffer.text(), "zero\none\ntwo\nthree");
         assert_eq!(buffer.caret(), CodePos::new(3, 2));
         assert_eq!(touched, vec![0]);
@@ -1401,9 +1562,136 @@ mod tests {
         let mut buffer = CodeBuffer::new("let value = 10;");
         buffer.select(CodePos::new(0, 4), CodePos::new(0, 9));
         assert_eq!(buffer.selected_text(), "value");
-        buffer.apply_external(&[CodeEdit::new(4..4, "mut ")]);
+        buffer
+            .apply_external(&[CodeEdit::new(4..4, "mut ")])
+            .unwrap();
         assert_eq!(buffer.selected_text(), "value");
-        buffer.apply_external(&[CodeEdit::new(14..15, "")]);
+        buffer.apply_external(&[CodeEdit::new(14..15, "")]).unwrap();
         assert_eq!(buffer.selected_text(), "value");
+    }
+
+    #[test]
+    fn a_batch_of_edits_that_names_text_that_is_not_there_is_refused_and_changes_nothing() {
+        let text = "ab\r\ncé\nlast";
+        // Offsets: a0 b1 \r2 \n3 c4 é5-6 \n7 l8 a9 s10 t11, end 12.
+        let cases: Vec<(Vec<CodeEdit>, CodeEditError)> = vec![
+            (
+                vec![CodeEdit::new(Range { start: 5, end: 2 }, "x")],
+                CodeEditError::Inverted { index: 0 },
+            ),
+            (
+                vec![CodeEdit::new(0..1, "x"), CodeEdit::new(0..13, "x")],
+                CodeEditError::PastTheEnd { index: 1 },
+            ),
+            (
+                vec![CodeEdit::new(6..7, "x")],
+                CodeEditError::InsideCharacter { index: 0 },
+            ),
+            (
+                vec![CodeEdit::new(3..4, "x")],
+                CodeEditError::InsideLineBreak { index: 0 },
+            ),
+            (
+                vec![CodeEdit::new(0..5, "x"), CodeEdit::new(4..5, "y")],
+                CodeEditError::Overlap {
+                    first: 0,
+                    second: 1,
+                },
+            ),
+        ];
+        for (edits, want) in cases {
+            let mut buffer = CodeBuffer::new(text);
+            buffer.select(CodePos::new(2, 1), CodePos::new(2, 3));
+            let revision = buffer.revision();
+            assert_eq!(buffer.replace_ranges(&edits, 0.0), Err(want), "{edits:?}");
+            assert_eq!(buffer.apply_external(&edits), Err(want), "{edits:?}");
+            assert_eq!(buffer.text(), text, "{edits:?}: the text is untouched");
+            assert_eq!(buffer.revision(), revision);
+            assert_eq!(buffer.selected_text(), "as");
+            assert!(!buffer.can_undo());
+        }
+        // The same bytes, said right, are taken: an insertion at the very end, two touching edits.
+        let mut buffer = CodeBuffer::new(text);
+        assert_eq!(
+            buffer.replace_ranges(&[CodeEdit::new(12..12, "!"), CodeEdit::new(0..2, "A")], 0.0),
+            Ok(true)
+        );
+        assert_eq!(buffer.text(), "A\r\ncé\nlast!");
+        assert_eq!(
+            buffer.apply_external(&[CodeEdit::new(0..1, "x"), CodeEdit::new(1..1, "y")]),
+            Ok(vec![0])
+        );
+        assert_eq!(buffer.text(), "xy\r\ncé\nlast!");
+    }
+
+    #[test]
+    fn replace_all_costs_what_the_number_of_hits_does_not_its_square() {
+        // One edit a line, over ten and a hundred thousand lines: linear work is about ten times
+        // more; the old two linear lookups an edit were a hundred times.
+        let time = |lines: usize| {
+            let text = "a\n".repeat(lines);
+            (0..3)
+                .map(|_| {
+                    let mut buffer = CodeBuffer::new(&text);
+                    let edits: Vec<CodeEdit> = (0..lines)
+                        .map(|i| CodeEdit::new(i * 2..i * 2 + 1, "b"))
+                        .collect();
+                    let began = std::time::Instant::now();
+                    assert_eq!(buffer.replace_ranges(&edits, 0.0), Ok(true));
+                    let took = began.elapsed().as_secs_f64();
+                    assert_eq!(buffer.line(lines - 1), "b");
+                    let began = std::time::Instant::now();
+                    let touched = buffer.apply_external(&edits).expect("valid");
+                    assert_eq!(touched.len(), lines);
+                    took.max(began.elapsed().as_secs_f64())
+                })
+                .fold(f64::MAX, f64::min)
+        };
+        let small = time(10_000);
+        let big = time(100_000);
+        assert!(
+            big < small * 40.0,
+            "100,000 lines took {big:.3} s to 10,000 lines' {small:.3} s: not linear"
+        );
+    }
+
+    #[test]
+    fn the_word_under_a_place_is_read_without_touching_the_buffer() {
+        let buffer = CodeBuffer::new("let value_1 = 3;");
+        let revision = buffer.revision();
+        assert_eq!(
+            buffer.word_range_at(CodePos::new(0, 6)),
+            (CodePos::new(0, 4), CodePos::new(0, 11))
+        );
+        assert_eq!(buffer.revision(), revision);
+        assert_eq!(buffer.selection().head, CodePos::default());
+    }
+
+    #[test]
+    fn the_line_numbers_an_edit_moved_are_told_to_whoever_keeps_them() {
+        let mut buffer = CodeBuffer::new("a\nb\nc\n");
+        buffer.take_line_edits();
+        buffer.insert("x", 0.0);
+        assert_eq!(
+            buffer.take_line_edits(),
+            vec![LineEdit::Splice {
+                first: 0,
+                removed: 1,
+                inserted: 1
+            }]
+        );
+        buffer
+            .apply_external(&[CodeEdit::new(0..0, "new\n")])
+            .unwrap();
+        assert_eq!(
+            buffer.take_line_edits(),
+            vec![LineEdit::Splice {
+                first: 0,
+                removed: 1,
+                inserted: 2
+            }]
+        );
+        buffer.load("other");
+        assert_eq!(buffer.take_line_edits(), vec![LineEdit::Reset]);
     }
 }

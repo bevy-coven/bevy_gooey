@@ -3,18 +3,35 @@
 //! not a whole engine).
 //!
 //! **Syntax:** literals, `.` (any character but a line break), classes (`[abc]`, `[a-z]`, `[^x]`,
-//! with `\d`, `\w`, `\s` inside), the escapes `\d \D \w \W \s \S \b \B \n \t \r` and an escaped
+//! with `\d`, `\w`, `\s` inside), the escapes `\d \D \w \W \s \S \b \B \t` and an escaped
 //! punctuation mark, the anchors `^` and `$`, groups `(..)` and `(?:..)`, alternation `|`, and the
 //! quantifiers `*`, `+`, `?`, `{n}`, `{n,}` and `{n,m}`, each lazy with a trailing `?`. There is no
 //! look-around and no back-reference. A replacement may use `$1` (a group), `${1}` and `$$`.
+//! **A backslash before any other letter or digit is an error**, never a literal: `\1`, `\p`, `\A`,
+//! `\x41` are not supported, and `\n` and `\r` are refused because a line is matched without its
+//! break, so they could never match.
 //!
-//! It backtracks, over one line at a time, with a step budget ([`STEP_LIMIT`]) per attempt: a
-//! pattern that would take longer finds nothing on that line instead of hanging the editor.
-//! A repeat of one character (`.*`, `\d+`, `[a-z]*`) is counted, not recursed, so a long line
-//! cannot overflow the stack.
+//! It backtracks, over one line at a time. Work is bounded three ways, and each is a
+//! [`MatchError`], never a quiet "no match": one attempt may take [`STEP_LIMIT`] steps, a whole
+//! scan has a budget the caller passes, and the recursion may go [`DEPTH_LIMIT`] deep, so a minified
+//! line cannot overflow the stack. A repeat of one character (`.*`, `\d+`, `[a-z]*`) is counted,
+//! not recursed.
 
 /// How many steps one attempt at one start position may take before it is given up.
 pub const STEP_LIMIT: usize = 200_000;
+
+/// How deep the matcher may recurse before it gives up: a repeat of a group or an alternation
+/// recurses a few frames an iteration, and a long line must not take the stack with it.
+pub const DEPTH_LIMIT: usize = 1_500;
+
+/// Why a scan stopped without an answer.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MatchError {
+    /// An attempt, or the whole scan, used up its steps.
+    TooMuchWork,
+    /// The pattern recursed past [`DEPTH_LIMIT`] on a long line.
+    TooDeep,
+}
 
 #[derive(Clone, Debug)]
 enum ClassItem {
@@ -260,10 +277,7 @@ impl Parser<'_> {
                 'S' => Node::Space(false),
                 'b' => Node::WordEdge(true),
                 'B' => Node::WordEdge(false),
-                'n' => Node::Char('\n'),
-                't' => Node::Char('\t'),
-                'r' => Node::Char('\r'),
-                other => Node::Char(other),
+                other => Node::Char(literal(other)?),
             },
             other => Node::Char(other),
         })
@@ -313,10 +327,7 @@ impl Parser<'_> {
                         items.push(ClassItem::Space(false));
                         continue;
                     }
-                    'n' => '\n',
-                    't' => '\t',
-                    'r' => '\r',
-                    other => other,
+                    other => literal(other)?,
                 },
                 other => other,
             };
@@ -324,7 +335,7 @@ impl Parser<'_> {
             if ahead.next() == Some('-') && ahead.peek().is_some_and(|&e| e != ']') {
                 self.chars.next();
                 let hi = match self.chars.next() {
-                    Some('\\') => self.escape()?,
+                    Some('\\') => literal(self.escape()?)?,
                     Some(h) => h,
                     None => return Err("a class is missing its closing bracket".into()),
                 };
@@ -340,6 +351,19 @@ impl Parser<'_> {
     }
 }
 
+/// The character a backslash before `c` stands for, outside the classes the parser handles: a tab,
+/// or an escaped mark. A letter or digit the engine does not know is refused, not taken as itself.
+fn literal(c: char) -> Result<char, String> {
+    match c {
+        't' => Ok('\t'),
+        'n' | 'r' => Err(format!(
+            "`\\{c}` cannot match: a search looks at one line at a time, without its break"
+        )),
+        c if c.is_alphanumeric() => Err(format!("`\\{c}` is not supported")),
+        c => Ok(c),
+    }
+}
+
 fn is_word(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
@@ -349,6 +373,10 @@ struct State<'a> {
     chars: &'a [char],
     caps: Vec<Option<(usize, usize)>>,
     steps: usize,
+    /// Steps this attempt may take: [`STEP_LIMIT`], or what the scan has left.
+    allowed: usize,
+    depth: usize,
+    failed: Option<MatchError>,
     insensitive: bool,
 }
 
@@ -403,9 +431,24 @@ fn single(node: &Node) -> bool {
 
 fn go<'a>(node: &Node, i: usize, st: &mut State<'a>, k: Next<'_, 'a>) -> bool {
     st.steps += 1;
-    if st.steps > STEP_LIMIT {
+    if st.failed.is_some() {
         return false;
     }
+    if st.steps > st.allowed {
+        st.failed = Some(MatchError::TooMuchWork);
+        return false;
+    }
+    if st.depth >= DEPTH_LIMIT {
+        st.failed = Some(MatchError::TooDeep);
+        return false;
+    }
+    st.depth += 1;
+    let matched = step(node, i, st, k);
+    st.depth -= 1;
+    matched
+}
+
+fn step<'a>(node: &Node, i: usize, st: &mut State<'a>, k: Next<'_, 'a>) -> bool {
     match node {
         Node::Char(_)
         | Node::Any
@@ -529,8 +572,10 @@ impl Regex {
         })
     }
 
-    /// Every non-overlapping, non-empty match in `text`, in order.
-    pub fn captures(&self, text: &str) -> Vec<Captures> {
+    /// Every non-overlapping, non-empty match in `text`, in order. `budget` is the steps the whole
+    /// scan has left: this takes what it uses from it, and gives [`MatchError::TooMuchWork`] when an
+    /// attempt, or the scan, runs it out.
+    pub fn captures(&self, text: &str, budget: &mut usize) -> Result<Vec<Captures>, MatchError> {
         let chars: Vec<char> = text.chars().collect();
         // The byte offset of each character, and of the end.
         let mut bytes: Vec<usize> = text.char_indices().map(|(i, _)| i).collect();
@@ -542,6 +587,9 @@ impl Regex {
                 chars: &chars,
                 caps: vec![None; self.groups + 1],
                 steps: 0,
+                allowed: STEP_LIMIT.min(*budget),
+                depth: 0,
+                failed: None,
                 insensitive: self.insensitive,
             };
             let mut end = None;
@@ -550,6 +598,10 @@ impl Regex {
                 st.caps[0] = Some((at, j));
                 true
             });
+            *budget = budget.saturating_sub(st.steps);
+            if let Some(why) = st.failed {
+                return Err(why);
+            }
             match (matched, end) {
                 (true, Some(end)) if end > at => {
                     let ranges = st
@@ -563,7 +615,7 @@ impl Regex {
                 _ => at += 1,
             }
         }
-        found
+        Ok(found)
     }
 }
 
@@ -571,10 +623,16 @@ impl Regex {
 mod tests {
     use super::*;
 
+    /// A budget nothing here runs out of.
+    fn plenty() -> usize {
+        usize::MAX
+    }
+
     fn spans(pattern: &str, text: &str) -> Vec<(usize, usize)> {
         Regex::new(pattern, false)
             .expect("a pattern")
-            .captures(text)
+            .captures(text, &mut plenty())
+            .expect("within budget")
             .iter()
             .map(Captures::whole)
             .collect()
@@ -602,7 +660,7 @@ mod tests {
     #[test]
     fn case_unicode_and_empty_matches() {
         let re = Regex::new("hé", true).expect("pattern");
-        let found = re.captures("HÉ hé");
+        let found = re.captures("HÉ hé", &mut plenty()).expect("within budget");
         assert_eq!(
             found.iter().map(Captures::whole).collect::<Vec<_>>(),
             vec![(0, 3), (4, 7)]
@@ -615,7 +673,7 @@ mod tests {
     fn groups_and_replacements() {
         let re = Regex::new(r"let (\w+) = (\d+)", false).expect("pattern");
         let text = "let a = 1; let bb = 22";
-        let found = re.captures(text);
+        let found = re.captures(text, &mut plenty()).expect("within budget");
         assert_eq!(found.len(), 2);
         assert_eq!(found[1].expand("$2 -> ${1}$$", text), "22 -> bb$");
         assert_eq!(found[0].expand("$9|$x", text), "|$x");
@@ -628,5 +686,57 @@ mod tests {
         }
         let long = "x".repeat(200_000);
         assert_eq!(spans(".*", &long), vec![(0, 200_000)]);
+    }
+
+    #[test]
+    fn an_escape_the_engine_does_not_know_is_refused_not_taken_as_a_literal() {
+        for bad in [
+            r"\1", r"\p{L}", r"\A", r"\z", r"\x41", r"\k<a>", r"\<", r"[\1]", r"[a-\x]",
+        ] {
+            // `\<` is punctuation: it is a literal, the others are errors.
+            let built = Regex::new(bad, false);
+            if bad == r"\<" {
+                assert!(built.is_ok());
+            } else {
+                let why = built.expect_err(bad);
+                assert!(why.contains("not supported"), "{bad}: {why}");
+            }
+        }
+        for line_break in [r"a\nb", r"\r", r"[^\n]"] {
+            let why = Regex::new(line_break, false).expect_err(line_break);
+            assert!(why.contains("one line at a time"), "{line_break}: {why}");
+        }
+        assert_eq!(spans(r"a\.b\t", "a.b\t axb\t"), vec![(0, 4)]);
+    }
+
+    #[test]
+    fn work_is_bounded_and_the_bound_is_an_error_not_no_match() {
+        let re = Regex::new("(a*)*b", false).expect("pattern");
+        let text = "a".repeat(60);
+        assert_eq!(
+            re.captures(&text, &mut plenty()),
+            Err(MatchError::TooMuchWork),
+            "one attempt is cut off at STEP_LIMIT"
+        );
+        // A scan budget is spent across lines: the second call finds it gone.
+        let plain = Regex::new(r"\d+", false).expect("pattern");
+        let mut budget = 30;
+        assert!(plain.captures("1 22 333", &mut budget).is_ok());
+        assert!(budget < 30, "what a line uses comes off the budget");
+        assert_eq!(
+            plain.captures(&"1 ".repeat(500), &mut budget),
+            Err(MatchError::TooMuchWork)
+        );
+    }
+
+    #[test]
+    fn a_long_line_under_a_recursing_pattern_is_an_error_not_a_stack_overflow() {
+        let long = "ab".repeat(20_000);
+        let re = Regex::new("(?:ab)+", false).expect("pattern");
+        assert_eq!(re.captures(&long, &mut plenty()), Err(MatchError::TooDeep));
+        let alt = Regex::new("(a|b)*", false).expect("pattern");
+        assert_eq!(alt.captures(&long, &mut plenty()), Err(MatchError::TooDeep));
+        // Short enough, it is just a match.
+        assert_eq!(spans("(?:ab)+", &"ab".repeat(100)), vec![(0, 200)]);
     }
 }
