@@ -2571,36 +2571,63 @@ pub(crate) fn tabs_in<B: Bundle>(
 /// # }
 /// ```
 pub fn side_tabs(tabs: impl IntoIterator<Item = crate::SideTab>, selected: usize) -> impl Bundle {
+    side_strip(AlignSelf::Auto, tabs, selected, side_tab)
+}
+
+/// What [`side_tabs`] and [`side_tabs_icons`] share: a `Role::Tabs` root holding the strip's state,
+/// the strip (Bevy's vertical `TabList`, first child) that is its own scrolling viewport
+/// ([`crate::TabScroll`]), the rail that shows while the tabs do not fit, and the sliding
+/// indicator (last child). The root is never taller than a host's height (`max_height` 100%), so a
+/// strip with more tabs than room scrolls and one with room is as tall as its tabs.
+fn side_strip<F, B>(
+    align: AlignSelf,
+    tabs: impl IntoIterator<Item = crate::SideTab>,
+    selected: usize,
+    make: F,
+) -> impl Bundle
+where
+    F: Fn(crate::SideTab) -> B + Send + Sync + 'static,
+    B: Bundle,
+{
     let tabs: Vec<crate::SideTab> = tabs.into_iter().collect();
     let count = tabs.len();
     let selected = selected.min(count.saturating_sub(1));
     (
         Node {
             flex_direction: FlexDirection::Column,
+            align_self: align,
+            min_height: Val::Px(0.0),
+            max_height: Val::Percent(100.0),
             ..default()
         },
         Role::Tabs,
         TabsValue(selected),
         TabsCount(count),
         observe(tabs_self_update),
-        children![
-            (
-                Node {
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Stretch,
-                    ..default()
-                },
-                TabList {
-                    orientation: ControlOrientation::Vertical,
-                    activation: TabActivation::Automatic,
-                },
-                Role::TabList,
-                Indicating::default(),
-                observe(tabs_on_select),
-                Children::spawn(SpawnIter(tabs.into_iter().map(side_tab))),
-            ),
-            selection_indicator(),
-        ],
+        Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
+            let strip = parent
+                .spawn((
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Stretch,
+                        // The viewport: it takes what the root leaves it and scrolls the rest.
+                        overflow: Overflow::scroll_y(),
+                        ..default()
+                    },
+                    TabList {
+                        orientation: ControlOrientation::Vertical,
+                        activation: TabActivation::Automatic,
+                    },
+                    Role::TabList,
+                    crate::TabScroll::default(),
+                    Indicating::default(),
+                    observe(tabs_on_select),
+                    Children::spawn(SpawnIter(tabs.into_iter().map(make))),
+                ))
+                .id();
+            parent.spawn(list_rail(strip));
+            parent.spawn(selection_indicator());
+        })),
     )
 }
 
@@ -2611,6 +2638,8 @@ fn side_tab(tab: crate::SideTab) -> impl Bundle {
         Node {
             justify_content: JustifyContent::SpaceBetween,
             align_items: AlignItems::Center,
+            // A strip that scrolls squeezes nothing: each tab keeps the size it has.
+            flex_shrink: 0.0,
             ..default()
         },
         bevy::ui_widgets::Tab,
@@ -2660,40 +2689,10 @@ pub fn side_tabs_icons(
     tabs: impl IntoIterator<Item = crate::SideTab>,
     selected: usize,
 ) -> impl Bundle {
-    let tabs: Vec<crate::SideTab> = tabs.into_iter().collect();
-    let count = tabs.len();
-    let selected = selected.min(count.saturating_sub(1));
-    (
-        Node {
-            flex_direction: FlexDirection::Column,
-            align_self: AlignSelf::FlexStart,
-            ..default()
-        },
-        Role::Tabs,
-        TabsValue(selected),
-        TabsCount(count),
-        observe(tabs_self_update),
-        children![
-            (
-                Node {
-                    flex_direction: FlexDirection::Column,
-                    // Stretched, so the strip is as wide as its widest square and the sliding
-                    // indicator has a box to cover; each tab centres its own picture.
-                    align_items: AlignItems::Stretch,
-                    ..default()
-                },
-                TabList {
-                    orientation: ControlOrientation::Vertical,
-                    activation: TabActivation::Automatic,
-                },
-                Role::TabList,
-                Indicating::default(),
-                observe(tabs_on_select),
-                Children::spawn(SpawnIter(tabs.into_iter().map(icon_tab))),
-            ),
-            selection_indicator(),
-        ],
-    )
+    // A narrow strip beside its pages: as wide as its widest square, not stretched to the host.
+    // Its list stretches its tabs, so the strip is as wide as its widest square and the sliding
+    // indicator has a box to cover; each tab centres its own picture.
+    side_strip(AlignSelf::FlexStart, tabs, selected, icon_tab)
 }
 
 /// One tab of a [`side_tabs_icons`] strip: a square target holding the picture (or the label's first
@@ -2716,6 +2715,8 @@ fn icon_tab(tab: crate::SideTab) -> impl Bundle {
         Node {
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
+            // A strip that scrolls squeezes nothing: each tab keeps the size it has.
+            flex_shrink: 0.0,
             ..default()
         },
         bevy::ui_widgets::Tab,
@@ -2883,7 +2884,6 @@ pub(crate) fn split_in(axis: SplitAxis, first: impl Bundle, second: impl Bundle)
         Split::new(axis),
         Role::Split,
         observe(split_self_update),
-        observe(collapse_split),
         observe(collapse_split),
         children![split_pane(first), split_divider(axis), split_pane(second)],
     )

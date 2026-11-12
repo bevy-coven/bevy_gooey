@@ -3510,11 +3510,15 @@ fn restyle(
             // The strip's tabs stand a gap apart like a menu's buttons, and each is a button's size.
             // The strip keeps every row it wraps to: a dock group's page area grows under it, and a
             // strip that could shrink was cut off by its own card (measured at 200% text in a narrow
-            // group: three rows, the second and third outside the card).
+            // group: three rows, the second and third outside the card). A strip that scrolls
+            // (`TabScroll`, the vertical strips) is the exception: it takes the room its host leaves
+            // it and scrolls the rest.
             Role::TabList => {
                 next.column_gap = Val::Px(skin.gap);
                 next.row_gap = Val::Px(skin.gap);
-                next.flex_shrink = 0.0;
+                if next.overflow.y != OverflowAxis::Scroll {
+                    next.flex_shrink = 0.0;
+                }
             }
             Role::Button
             | Role::Tab

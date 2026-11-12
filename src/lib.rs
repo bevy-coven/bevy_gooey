@@ -202,6 +202,7 @@ mod slots;
 mod split;
 mod split_peek;
 mod status;
+mod tab_scroll;
 mod table;
 mod tabs;
 mod text;
@@ -371,6 +372,7 @@ pub use split::{
 };
 pub use split_peek::{SplitPeek, SplitPeekSettings, update_split_peeks};
 pub use status::{StatusBar, StatusItem, StatusKind, StatusPriority};
+pub use tab_scroll::{TabScroll, scroll_tabs_to_reveal};
 pub use table::{
     Column, RowActivated, RowChange, RowSource, SelectMode, SortBy, Table, TableCursor, TableRow,
     TableRows, TableSelection, TableSort, TableWidths, table_by_input, update_tables,
@@ -681,7 +683,13 @@ impl Plugin for GooeyStylePlugin {
                         dock::update_tab_reorder,
                     )
                         .chain(),
-                    (update_tabs, update_tab_pages, tabs::flow_strips).chain(),
+                    (
+                        update_tabs,
+                        update_tab_pages,
+                        tabs::flow_strips,
+                        scroll_tabs_to_reveal,
+                    )
+                        .chain(),
                     (update_split_glides, update_splits).chain(),
                     update_trees,
                     (
