@@ -2884,6 +2884,7 @@ pub(crate) fn split_in(axis: SplitAxis, first: impl Bundle, second: impl Bundle)
         Role::Split,
         observe(split_self_update),
         observe(collapse_split),
+        observe(collapse_split),
         children![split_pane(first), split_divider(axis), split_pane(second)],
     )
 }

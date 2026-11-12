@@ -372,8 +372,8 @@ pub use split::{
 pub use split_peek::{SplitPeek, SplitPeekSettings, update_split_peeks};
 pub use status::{StatusBar, StatusItem, StatusKind, StatusPriority};
 pub use table::{
-    Column, RowActivated, RowSource, SelectMode, SortBy, Table, TableCursor, TableRow, TableRows,
-    TableSelection, TableSort, TableWidths, table_by_input, update_tables,
+    Column, RowActivated, RowChange, RowSource, SelectMode, SortBy, Table, TableCursor, TableRow,
+    TableRows, TableSelection, TableSort, TableWidths, table_by_input, update_tables,
 };
 pub use tabs::{
     CornerBadge, IconTab, SideTab, TabPageOf, TabsCount, TabsValue, VerticalTab, land_tab_focus,

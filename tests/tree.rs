@@ -1005,3 +1005,451 @@ fn each_row_shows_the_label_of_its_node_and_follows_the_tree() {
     });
     assert_eq!(labels(&mut app), ["World", "Terrain", "Hill", "Cave"]);
 }
+
+// Relabel and append in place (G-78): a change that touches one node costs one node.
+
+#[test]
+fn a_relabel_changes_one_label_and_says_whether_it_did() {
+    let mut tree = Tree::new(scene());
+    assert!(tree.relabel(2, "now: Camera"));
+    assert_eq!(tree.label(2), Some("now: Camera"));
+    assert_eq!(tree.label(1), Some("World"), "no other label moved");
+    assert_eq!(tree.cell(1, 0), "now: Camera", "and the row shows it");
+    assert!(
+        !tree.relabel(2, "now: Camera"),
+        "the same text is no change"
+    );
+    assert!(!tree.relabel(99, "x"), "no such node");
+    // A hidden node (under the closed Lights) is relabelled too, and keeps its place.
+    assert!(tree.relabel(4, "Star"));
+    assert_eq!(tree.label(4), Some("Star"));
+    assert_eq!(tree.len(), 6);
+}
+
+/// A node of the plain model the tree is held against.
+#[derive(Clone)]
+struct Model {
+    key: u64,
+    label: String,
+    open: bool,
+    children: Vec<Model>,
+}
+
+impl Model {
+    fn node(&self) -> TreeNode {
+        let node = TreeNode::new(self.key, self.label.clone())
+            .children(self.children.iter().map(Model::node));
+        if self.open { node.expanded() } else { node }
+    }
+
+    fn find(list: &mut [Model], key: u64) -> Option<&mut Model> {
+        for model in list {
+            if model.key == key {
+                return Some(model);
+            }
+            if let Some(found) = Model::find(&mut model.children, key) {
+                return Some(found);
+            }
+        }
+        None
+    }
+
+    fn keys(list: &[Model], out: &mut Vec<u64>) {
+        for model in list {
+            out.push(model.key);
+            Model::keys(&model.children, out);
+        }
+    }
+
+    fn take(list: &mut Vec<Model>, key: u64) -> bool {
+        if let Some(at) = list.iter().position(|m| m.key == key) {
+            list.remove(at);
+            return true;
+        }
+        list.iter_mut().any(|m| Model::take(&mut m.children, key))
+    }
+}
+
+/// What a tree shows and keeps, through its public face: every shown row, every open node, and the
+/// subtree each node takes with it when it is removed (which is what its depths and ends say).
+fn read_tree(tree: &Tree, keys: &[u64]) -> Vec<String> {
+    let mut out = vec![format!(
+        "{} nodes, {} shown, open {:?}",
+        tree.node_count(),
+        tree.len(),
+        tree.open_keys()
+    )];
+    for row in 0..tree.len() {
+        out.push(format!("{}={}", tree.key(row), tree.cell(row, 0)));
+    }
+    for &key in keys {
+        let mut cut = tree.clone();
+        cut.remove(key);
+        let mut shown = Vec::new();
+        for row in 0..cut.len() {
+            shown.push(cut.key(row));
+        }
+        out.push(format!("without {key}: {} {shown:?}", cut.node_count()));
+    }
+    out
+}
+
+#[test]
+fn a_tree_changed_in_place_is_the_tree_built_whole() {
+    let mut tree = Tree::default();
+    let mut roots: Vec<Model> = Vec::new();
+    let mut seed = 0x2545_f491_u64;
+    let mut roll = move |n: usize| {
+        seed = seed
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        ((seed >> 33) as usize) % n
+    };
+    let mut next_key = 1_u64;
+    for step in 0..120 {
+        let mut keys = Vec::new();
+        Model::keys(&roots, &mut keys);
+        match (roll(8), keys.is_empty()) {
+            // Mostly appends: under a node, or last among the roots, one node or a small subtree.
+            (0..=3, _) | (_, true) => {
+                let parent = if keys.is_empty() || roll(4) == 0 {
+                    None
+                } else {
+                    Some(keys[roll(keys.len())])
+                };
+                let mut node = Model {
+                    key: next_key,
+                    label: format!("n{next_key}"),
+                    open: roll(2) == 0,
+                    children: Vec::new(),
+                };
+                next_key += 1;
+                if roll(3) == 0 {
+                    node.children.push(Model {
+                        key: next_key,
+                        label: format!("n{next_key}"),
+                        open: roll(2) == 0,
+                        children: Vec::new(),
+                    });
+                    next_key += 1;
+                }
+                let added = node.node();
+                assert!(tree.insert(parent, added), "step {step}");
+                match parent {
+                    None => roots.push(node),
+                    Some(key) => Model::find(&mut roots, key)
+                        .expect("a parent")
+                        .children
+                        .push(node),
+                }
+            }
+            (4, _) => {
+                let key = keys[roll(keys.len())];
+                assert!(tree.relabel(key, format!("r{step}")), "step {step}");
+                Model::find(&mut roots, key).expect("a node").label = format!("r{step}");
+            }
+            (5, _) => {
+                let key = keys[roll(keys.len())];
+                let open = roll(2) == 0;
+                let model = Model::find(&mut roots, key).expect("a node");
+                assert_eq!(tree.set_open(key, open), model.open != open, "step {step}");
+                model.open = open;
+            }
+            _ => {
+                let key = keys[roll(keys.len())];
+                assert!(tree.remove(key), "step {step}");
+                assert!(Model::take(&mut roots, key));
+            }
+        }
+        let mut keys = Vec::new();
+        Model::keys(&roots, &mut keys);
+        let whole = Tree::new(roots.iter().map(Model::node));
+        assert_eq!(
+            read_tree(&tree, &keys),
+            read_tree(&whole, &keys),
+            "after step {step}"
+        );
+    }
+}
+
+/// What a change to the tree costs the frame after it: the time of the change and of the `Update`
+/// schedule that follows (every system this crate runs, in a headless app with the whole interface
+/// on screen), less the same schedule at rest. Bevy's layout and extraction (`PostUpdate`) are not
+/// this crate's and are left out: they cost the same for any row whose text or place changes, and
+/// are run between the trials so the next one starts from a settled interface.
+///
+/// A host is never quiet, so this is the best of `WINDOWS` windows, each the median of `PER_WINDOW`
+/// changed frames less the median of as many idle ones taken in turn with them (a stall that lands
+/// on a window is a bad window, not a bad answer).
+fn frame_after(app: &mut App, mut change: impl FnMut(&mut Tree, usize)) -> Duration {
+    use std::time::Instant;
+    const WINDOWS: usize = 5;
+    const PER_WINDOW: usize = 15;
+    let median = |mut times: Vec<Duration>| {
+        times.sort();
+        times[times.len() / 2]
+    };
+    let table = the_tree(app);
+    let mut trial = 0;
+    (0..WINDOWS)
+        .map(|_| {
+            let (mut idle, mut changed) = (Vec::new(), Vec::new());
+            for _ in 0..PER_WINDOW {
+                let start = Instant::now();
+                app.world_mut().run_schedule(Update);
+                idle.push(start.elapsed());
+                settle(app);
+
+                let start = Instant::now();
+                let mut at = app.world_mut().get_mut::<Table>(table).expect("a table");
+                change(at.source_mut::<Tree>().expect("a tree"), trial);
+                trial += 1;
+                app.world_mut().run_schedule(Update);
+                changed.push(start.elapsed());
+                settle(app);
+            }
+            median(changed).saturating_sub(median(idle))
+        })
+        .min()
+        .expect("windows")
+}
+
+/// The most a frame may cost for a change of one node: the issue's 0.5 ms.
+const ONE_NODE_BUDGET: Duration = Duration::from_micros(500);
+
+#[test]
+fn relabelling_one_node_of_ten_thousand_costs_under_half_a_millisecond_a_frame() {
+    let mut app = app();
+    spawn(&mut app, forest(), ());
+    // A node on screen: its row shows the new text.
+    let shown = keys(&mut app)[3];
+    let cost = frame_after(&mut app, |tree, trial| {
+        assert!(tree.relabel(shown, format!("now: {trial}")));
+    });
+    let row = row_of(&mut app, shown);
+    assert!(
+        text_of(&app, label_of(&app, row)).starts_with("now: "),
+        "the row shows the label"
+    );
+    assert!(cost < ONE_NODE_BUDGET, "a relabel costs {cost:?} a frame");
+}
+
+#[test]
+fn appending_one_node_to_ten_thousand_costs_under_half_a_millisecond_a_frame() {
+    let mut app = app();
+    spawn(&mut app, forest(), ());
+    let last_root = 1_000_000;
+    let cost = frame_after(&mut app, |tree, trial| {
+        let key = last_root + trial as u64;
+        assert!(tree.insert(None, TreeNode::new(key, format!("Step {trial}"))));
+    });
+    let table = the_tree(&mut app);
+    let tree = app
+        .world()
+        .get::<Table>(table)
+        .and_then(|t| t.source::<Tree>())
+        .expect("a tree");
+    assert!(tree.contains(last_root + 74), "the nodes are in");
+    assert!(cost < ONE_NODE_BUDGET, "an append costs {cost:?} a frame");
+}
+
+#[test]
+fn a_node_appended_last_is_the_last_row_and_the_view_stays_where_it_was() {
+    let mut app = app();
+    let tree = spawn(&mut app, forest(), ());
+    let forest_len = app.world().get::<Table>(tree).expect("a table").len();
+    scroll_to(&mut app, 3000.0);
+    let before = keys(&mut app);
+    edit(&mut app, |t| {
+        assert!(t.insert(None, TreeNode::new(999_999, "Newest")));
+    });
+    assert_eq!(keys(&mut app), before, "the rows in view are the same ones");
+    let rows = app.world().get::<Table>(tree).expect("a table").len();
+    assert_eq!(rows, forest_len + 1, "one more row");
+    scroll_to(&mut app, 100_000_000.0);
+    assert_eq!(
+        keys(&mut app).last(),
+        Some(&999_999),
+        "the new node is last"
+    );
+    let row = row_of(&mut app, 999_999);
+    assert_eq!(text_of(&app, label_of(&app, row)), "Newest");
+    // The cursor can reach it: End goes to the last shown node.
+    focus(&mut app, tree);
+    tap(&mut app, KeyCode::End);
+    assert_eq!(cursor(&mut app), Some(999_999));
+}
+
+#[test]
+fn a_relabelled_row_shows_its_new_text_and_keeps_the_selection_and_the_cursor() {
+    let mut app = app();
+    let tree = spawn_scene(&mut app);
+    app.world_mut()
+        .get_mut::<TableSelection>(tree)
+        .expect("selection")
+        .0 = [3].into_iter().collect();
+    app.world_mut().get_mut::<TableCursor>(tree).expect("c").0 = Some(3);
+    settle(&mut app);
+    edit(&mut app, |t| {
+        assert!(t.relabel(3, "now: Lights"));
+        assert!(t.relabel(6, "now: Cube"));
+    });
+    let row = row_of(&mut app, 3);
+    assert_eq!(text_of(&app, label_of(&app, row)), "now: Lights");
+    let row = row_of(&mut app, 6);
+    assert_eq!(text_of(&app, label_of(&app, row)), "now: Cube");
+    let row = row_of(&mut app, 2);
+    assert_eq!(
+        text_of(&app, label_of(&app, row)),
+        "Camera",
+        "the rest as they were"
+    );
+    assert_eq!(cursor(&mut app), Some(3));
+    assert_eq!(selected(&mut app), vec![3]);
+}
+
+#[test]
+fn a_child_added_to_a_shown_end_node_gives_it_a_chevron_and_a_closed_parents_child_shows_nothing() {
+    let mut app = app();
+    spawn_scene(&mut app);
+    let chevrons = |app: &mut App, key: u64| {
+        let row = row_of(app, key);
+        let twisty = twisty_of(app, row);
+        let both = app.world().get::<Children>(twisty).expect("chevrons");
+        let flags: Vec<bool> = both
+            .iter()
+            .map(|c| app.world().get::<Node>(c).expect("node").display != Display::None)
+            .collect();
+        (flags[0], flags[1])
+    };
+    assert_eq!(
+        chevrons(&mut app, 2),
+        (false, false),
+        "Camera is an end node"
+    );
+    edit(&mut app, |t| {
+        assert!(t.insert(Some(2), TreeNode::new(50, "Lens")));
+    });
+    assert_eq!(
+        chevrons(&mut app, 2),
+        (true, false),
+        "Camera has a child, closed"
+    );
+    assert_eq!(
+        keys(&mut app),
+        vec![1, 2, 3, 6, 7, 9],
+        "closed, so the child is not a row"
+    );
+    edit(&mut app, |t| {
+        t.set_open(2, true);
+    });
+    assert_eq!(keys(&mut app), vec![1, 2, 50, 3, 6, 7, 9]);
+    // Under an open parent the new child is a row at once, among the rows in view.
+    edit(&mut app, |t| {
+        assert!(t.insert(Some(2), TreeNode::new(51, "Flash")));
+    });
+    assert_eq!(keys(&mut app), vec![1, 2, 50, 51, 3, 6, 7, 9]);
+}
+
+#[test]
+fn a_node_added_above_the_view_keeps_the_row_at_the_top_where_it_was() {
+    let mut app = app();
+    spawn(&mut app, forest(), ());
+    scroll_to(&mut app, 5000.0);
+    let top = keys(&mut app)[0];
+    // The first zone's subtree ends far above the view: its new child is a row above it.
+    edit(&mut app, |t| {
+        assert!(t.insert(Some(1), TreeNode::new(777_777, "Above")));
+    });
+    assert_eq!(keys(&mut app)[0], top, "the player's place held");
+}
+
+/// A tree the table reads through a wrapper that counts the keys it is asked for: a table that
+/// rebuilds asks for one per row, a table that patches asks for the rows that were added.
+struct Counting {
+    tree: Tree,
+    keys_read: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+}
+
+impl RowSource for Counting {
+    fn len(&self) -> usize {
+        self.tree.len()
+    }
+
+    fn cell(&self, row: usize, column: usize) -> std::borrow::Cow<'_, str> {
+        self.tree.cell(row, column)
+    }
+
+    fn key(&self, row: usize) -> u64 {
+        self.keys_read
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.tree.key(row)
+    }
+
+    fn revision(&self) -> u64 {
+        self.tree.revision()
+    }
+
+    fn change_since(&self, seen: u64) -> Option<RowChange> {
+        self.tree.change_since(seen)
+    }
+}
+
+#[test]
+fn a_relabel_or_an_append_is_patched_into_the_table_and_a_removal_is_read_again_row_by_row() {
+    use std::sync::atomic::Ordering::Relaxed;
+    let mut app = app();
+    let keys_read = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let rows = Counting {
+        tree: Tree::new(forest()),
+        keys_read: keys_read.clone(),
+    };
+    let rows_in_all = rows.len();
+    app.world_mut()
+        .spawn((panel(), children![table([Column::new("Name")], rows)]));
+    settle(&mut app);
+    let table = the_tree(&mut app);
+    let change = |app: &mut App, change: &dyn Fn(&mut Tree)| {
+        keys_read.store(0, Relaxed);
+        let mut at = app.world_mut().get_mut::<Table>(table).expect("a table");
+        change(&mut at.source_mut::<Counting>().expect("counting rows").tree);
+        settle(app);
+        keys_read.load(Relaxed)
+    };
+    assert!(
+        keys_read.load(Relaxed) >= rows_in_all,
+        "the first frame reads every row"
+    );
+
+    // A relabel reads no key at all, and the row in view shows it.
+    let shown = keys(&mut app)[2];
+    let read = change(&mut app, &|t| {
+        assert!(t.relabel(shown, "now: patched"));
+    });
+    assert_eq!(read, 0, "a relabel reads no key");
+    let row = row_of(&mut app, shown);
+    let words = app
+        .world()
+        .get::<Children>(row)
+        .and_then(|cells| cells.first().copied())
+        .and_then(|cell| app.world().get::<Children>(cell))
+        .and_then(|parts| parts.last().copied())
+        .and_then(|text| app.world().get::<Text>(text))
+        .map(|text| text.0.clone());
+    assert_eq!(words.as_deref(), Some("now: patched"));
+
+    // An append reads the one key it added.
+    let read = change(&mut app, &|t| {
+        assert!(t.insert(None, TreeNode::new(2_000_000, "Last")));
+    });
+    assert_eq!(read, 1, "an append reads the row it added");
+
+    // A removal is what the rebuild is for: every row is read again.
+    let read = change(&mut app, &|t| {
+        assert!(t.remove(2_000_000));
+    });
+    assert!(
+        read >= rows_in_all,
+        "a removal reads every row again: {read}"
+    );
+}
