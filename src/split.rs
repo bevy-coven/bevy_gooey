@@ -163,6 +163,33 @@ pub(crate) struct ToggleSplit {
     pub(crate) entity: Entity,
 }
 
+/// A request to collapse a split's first pane to its minimum (`collapsed: true`), or to give it back
+/// the width it had (`false`), as the divider's Enter key does: the same glide, the same
+/// [`SplitSaved`], and one [`ValueChange<f32>`] on the split. Trigger it on the split, so a game
+/// (an editor's Cmd+B) never has to synthesise a key.
+///
+/// Asking for the state the split is in does nothing: a collapsed split asked to collapse keeps what
+/// it saved. A split whose divider has `InteractionDisabled` keeps its layout, as it does for every
+/// other way to move it, and so does a split with no room yet (not laid out).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// fn toggle_sidebar(mut commands: Commands, splits: Query<(Entity, Has<SplitSaved>), With<Split>>) {
+///     for (split, collapsed) in &splits {
+///         commands.trigger(CollapseSplit { entity: split, collapsed: !collapsed });
+///     }
+/// }
+/// ```
+#[derive(EntityEvent, Clone, Copy, Debug)]
+pub struct CollapseSplit {
+    /// The split ([`crate::split`]'s root).
+    #[event_target]
+    pub entity: Entity,
+    /// `true` collapses the first pane, `false` restores it.
+    pub collapsed: bool,
+}
+
 /// What a divider's handlers need to know about its split.
 pub(crate) struct Reading {
     pub(crate) root: Entity,
@@ -177,6 +204,10 @@ pub(crate) struct Reading {
     /// while the pane floats over the second one.
     peeking: Option<f32>,
 }
+
+/// How near its smallest, in logical px, a first pane counts as collapsed: half a pixel, under what
+/// a divider can be dragged to or a layout rounds to.
+const COLLAPSED_SLACK_PX: f32 = 0.5;
 
 impl Reading {
     /// The fraction `delta` logical pixels from here, held to the minimums.
@@ -194,6 +225,12 @@ impl Reading {
     fn end(&self, large: bool) -> f32 {
         let to = if large { 1.0 } else { 0.0 };
         split_clamp(to, self.extent, self.min.first, self.min.second)
+    }
+
+    /// Whether the first pane is at its smallest, which is what collapsed means: within
+    /// [`COLLAPSED_SLACK_PX`] of it.
+    fn is_collapsed(&self) -> bool {
+        (self.fraction - self.end(false)) * self.extent < COLLAPSED_SLACK_PX
     }
 }
 
@@ -225,6 +262,11 @@ impl SplitGeometry<'_, '_> {
     fn enabled(&self, divider: Entity) -> Option<SplitAxis> {
         let (_, divider, _, disabled) = self.dividers.get(divider).ok()?;
         (!disabled).then_some(divider.axis)
+    }
+
+    /// The divider among `children`, the children of a split's root.
+    fn divider_in(&self, children: &Children) -> Option<Entity> {
+        children.iter().find(|&c| self.dividers.contains(c))
     }
 
     pub(crate) fn read(&self, divider: Entity) -> Option<Reading> {
@@ -505,7 +547,8 @@ pub(crate) fn divider_on_key_input(
     }
 }
 
-/// Collapses a split's first pane to its minimum, remembering where it was, or gives that back.
+/// Collapses a split's first pane to its minimum, remembering where it was, or gives that back:
+/// whichever the divider's split is not.
 pub(crate) fn toggle_split(
     event: On<ToggleSplit>,
     geometry: SplitGeometry,
@@ -517,20 +560,69 @@ pub(crate) fn toggle_split(
     let Some(reading) = geometry.read(event.entity) else {
         return;
     };
+    let collapse = !reading.is_collapsed();
+    slide_split(&reading, collapse, &saved, &motion, &glides, &mut commands);
+}
+
+/// [`CollapseSplit`]: the same collapse or restore as the divider's Enter, asked of the split.
+pub(crate) fn collapse_split(
+    event: On<CollapseSplit>,
+    geometry: SplitGeometry,
+    children: Query<&Children>,
+    saved: Query<&SplitSaved>,
+    motion: Res<crate::motion::MotionSettings>,
+    glides: Query<&SplitGlide>,
+    mut commands: Commands,
+) {
+    let Some(divider) = children
+        .get(event.entity)
+        .ok()
+        .and_then(|children| geometry.divider_in(children))
+    else {
+        debug!(
+            "`CollapseSplit` on {} does nothing: it is not a split with a divider",
+            event.entity
+        );
+        return;
+    };
+    let Some(reading) = geometry.read(divider) else {
+        return;
+    };
+    if reading.is_collapsed() != event.collapsed {
+        slide_split(
+            &reading,
+            event.collapsed,
+            &saved,
+            &motion,
+            &glides,
+            &mut commands,
+        );
+    }
+}
+
+/// Moves a split's first pane to its minimum (`collapse`, remembering where it was in
+/// [`SplitSaved`]) or back to what was remembered. A fixed split (a disabled divider) and one not
+/// laid out do nothing.
+fn slide_split(
+    reading: &Reading,
+    collapse: bool,
+    saved: &Query<&SplitSaved>,
+    motion: &crate::motion::MotionSettings,
+    glides: &Query<&SplitGlide>,
+    commands: &mut Commands,
+) {
     if reading.disabled || reading.extent <= 0.0 {
         return;
     }
-    let smallest = reading.end(false);
-    let at_smallest = (reading.fraction - smallest) * reading.extent < 0.5;
-    let to = if at_smallest {
-        let back = saved.get(reading.root).map_or(0.5, |s| s.0);
-        commands.entity(reading.root).remove::<SplitSaved>();
-        split_clamp(back, reading.extent, reading.min.first, reading.min.second)
-    } else {
+    let to = if collapse {
         commands
             .entity(reading.root)
             .insert(SplitSaved(reading.fraction));
-        smallest
+        reading.end(false)
+    } else {
+        let back = saved.get(reading.root).map_or(0.5, |s| s.0);
+        commands.entity(reading.root).remove::<SplitSaved>();
+        split_clamp(back, reading.extent, reading.min.first, reading.min.second)
     };
     // The panes slide there (size motion): from where they are laid out now, a glide on its way
     // included. The fraction is the new one at once.
@@ -542,7 +634,7 @@ pub(crate) fn toggle_split(
             .entity(reading.root)
             .insert(SplitGlide::new(from, to));
     }
-    report(&mut commands, &reading, to, true);
+    report(commands, reading, to, true);
 }
 
 /// The D-pad steps a focused divider along its axis, held to repeat like a slider's, and the pad's

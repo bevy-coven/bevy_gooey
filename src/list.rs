@@ -14,12 +14,13 @@ use crate::motion::MotionSettings;
 use crate::nav::show_focus;
 use crate::scroll_glide::{ScrollEdgeFade, ScrollGlide};
 use crate::skin::Role;
+use crate::tab_scroll::TabScroll;
 
 /// How much list to keep in sight beyond the focused widget, in rows (a widget's height and the gap
 /// beside it). One row would end the viewport flush with the next row and show no sign of more;
 /// one and a half shows the next row whole and the one after it cut, at every step, so the list
 /// always visibly goes on. In a viewport of `4.5` rows the focus stands the third from the top.
-const CONTEXT_ROWS: f32 = 1.5;
+pub(crate) const CONTEXT_ROWS: f32 = 1.5;
 
 /// The scrolling part of a [`crate::list`]: the clipped column its rows are children of. It stands
 /// `rows` rows tall (a row is a button's height, plus a [`crate::GooeySkin::gap`] between two:
@@ -48,7 +49,11 @@ pub struct ListView {
     pub rows: f32,
 }
 
-/// Shows each list's rail only while its content does not fit, the way a browser's bar comes and
+/// What a rail can scroll: a list's viewport or a tab strip's list.
+type Scrolls = Or<(With<ListView>, With<TabScroll>)>;
+
+/// Shows each list's rail (and each scrolling tab strip's, [`crate::TabScroll`]) only while its
+/// content does not fit, the way a browser's bar comes and
 /// goes: `Display::None` when there is nowhere to scroll, so it costs no draw and no hit test.
 /// Writes a rail's node only when the answer changes, so a list at rest costs a comparison.
 ///
@@ -56,7 +61,7 @@ pub struct ListView {
 /// its rail one frame later. Runs in [`crate::GooeySystems::Style`].
 pub fn update_lists(
     mut rails: Query<(&Role, &Scrollbar, &mut Node)>,
-    views: Query<&ComputedNode, With<ListView>>,
+    views: Query<&ComputedNode, Scrolls>,
 ) {
     for (role, bar, mut node) in &mut rails {
         if *role != Role::ListRail {

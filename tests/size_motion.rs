@@ -430,3 +430,105 @@ fn a_shrinking_body_takes_no_tab_stop_and_gives_them_back() {
         tab
     );
 }
+
+// `CollapseSplit`: the public call the editor makes instead of pressing Enter on a divider (G-77).
+
+#[test]
+fn a_collapse_split_call_slides_the_first_pane_to_its_least_and_a_restore_slides_it_back() {
+    let mut app = app(MotionSettings::default());
+    let (root, first, _) = focused_split(&mut app);
+    let wide = width(&app, first);
+    app.world_mut().trigger(CollapseSplit {
+        entity: root,
+        collapsed: true,
+    });
+    app.update();
+    assert!(
+        app.world().get::<SplitGlide>(root).is_some(),
+        "the public call runs the divider's glide"
+    );
+    assert!(
+        app.world().get::<SplitSaved>(root).is_some(),
+        "the width a restore gives back is kept"
+    );
+    assert!(
+        app.world()
+            .get::<SplitFraction>(root)
+            .expect("a fraction")
+            .0
+            < 0.5,
+        "the state is the collapsed one at once"
+    );
+    assert!(
+        width(&app, first) > 100.0 + (wide - 100.0) / 3.0,
+        "not there in one frame"
+    );
+    let mut widths = vec![wide];
+    for _ in 0..PATIENCE_FRAMES {
+        app.update();
+        widths.push(width(&app, first));
+    }
+    assert_glides(&widths, 100.0, "the first pane collapsing");
+    assert!((width(&app, first) - 100.0).abs() < 1.0);
+    assert!(app.world().get::<SplitGlide>(root).is_none(), "at rest");
+
+    app.world_mut().trigger(CollapseSplit {
+        entity: root,
+        collapsed: false,
+    });
+    app.update();
+    assert!(app.world().get::<SplitGlide>(root).is_some(), "restoring");
+    assert!(app.world().get::<SplitSaved>(root).is_none());
+    let mut widths = vec![100.0];
+    for _ in 0..PATIENCE_FRAMES {
+        app.update();
+        widths.push(width(&app, first));
+    }
+    assert_glides(&widths, 100.0, "the first pane restoring");
+    assert!(
+        (widths[widths.len() - 1] - wide).abs() < 1.0,
+        "back to where it was: {} of {wide}",
+        widths[widths.len() - 1]
+    );
+}
+
+#[test]
+fn collapsing_a_collapsed_split_or_restoring_an_open_one_does_nothing() {
+    let mut app = app(MotionSettings::default());
+    let (root, first, _) = focused_split(&mut app);
+    app.world_mut().trigger(CollapseSplit {
+        entity: root,
+        collapsed: false,
+    });
+    app.update();
+    assert!(app.world().get::<SplitGlide>(root).is_none());
+    assert!(app.world().get::<SplitSaved>(root).is_none());
+    let wide = width(&app, first);
+    app.world_mut().trigger(CollapseSplit {
+        entity: root,
+        collapsed: true,
+    });
+    frames(&mut app, PATIENCE_FRAMES);
+    let saved = app.world().get::<SplitSaved>(root).copied();
+    app.world_mut().trigger(CollapseSplit {
+        entity: root,
+        collapsed: true,
+    });
+    app.update();
+    assert!(app.world().get::<SplitGlide>(root).is_none());
+    assert_eq!(app.world().get::<SplitSaved>(root).copied(), saved);
+    assert!(wide > 100.0);
+}
+
+#[test]
+fn a_collapse_split_call_under_reduced_motion_lands_at_once() {
+    let mut app = app(MotionSettings::reduced());
+    let (root, first, _) = focused_split(&mut app);
+    app.world_mut().trigger(CollapseSplit {
+        entity: root,
+        collapsed: true,
+    });
+    app.update();
+    assert!(app.world().get::<SplitGlide>(root).is_none());
+    assert!((width(&app, first) - 100.0).abs() < 1.0);
+}

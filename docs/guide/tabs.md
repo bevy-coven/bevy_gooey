@@ -147,6 +147,12 @@ let bar = commands
 - **Everything else is `side_tabs`'s**: `TabsValue` and `ValueChange<usize>` on the entity it returns,
   Up and Down and the D-pad stepping it, Left and Right leaving it, `side_tab_page` for its pages
   anywhere, and the sliding indicator on the selected tab.
+- **Many tabs scroll.** Both side strips take the height their host leaves them (`max_height` 100%) and
+  scroll what does not fit, so an activity bar in a window shorter than its workspaces stays a bar: the
+  wheel and a trackpad move it, a rail shows down its side only while the tabs do not fit, and the tab
+  Up or Down moves to, or the one the game selects with `TabsValue`, is brought into sight with the next
+  tab in view. A strip in a host with no height of its own is as tall as its tabs and has nothing to
+  scroll. To scroll from code, set the `ScrollPosition` on its first child, the `TabScroll` list.
 
 ## What it does not do yet
 

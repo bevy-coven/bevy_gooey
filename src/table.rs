@@ -50,6 +50,27 @@ use crate::widgets::{ONE_LINE, list_rail};
 /// How many rows tall a table stands unless it carries its own [`TableRows`].
 const DEFAULT_ROWS: f32 = 8.5;
 
+/// What one change to a [`RowSource`] did to the rows the table shows, as the source reports it in
+/// [`RowSource::change_since`]. Every case leaves the rows the table already holds in the order they
+/// had, so the table keeps its sort, its selection, its cursor and its place.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum RowChange {
+    /// Nothing: no row's key, text or place is other than it was.
+    Unchanged,
+    /// The text of some cells changed (a relabel); the rows, their keys and their order did not.
+    Texts,
+    /// `count` rows were put in at display row `row`, the rows before it unmoved; the ones from
+    /// `row` on moved down by `count`. A `count` of 0 is a change to a row that is not shown (a
+    /// child added to a closed node).
+    Inserted {
+        /// The display row of the first row added.
+        row: usize,
+        /// How many rows were added.
+        count: usize,
+    },
+}
+
 /// The rows a [`crate::table`] shows: the one trait a game implements. The table asks for what is
 /// in view, so a source of ten thousand rows costs what ten cost; it holds no copy.
 ///
@@ -102,6 +123,23 @@ pub trait RowSource: Any + Send + Sync {
     /// override it for a column that is not text (a date, a size with a unit).
     fn compare(&self, column: usize, a: usize, b: usize) -> Ordering {
         natural_cmp(&self.cell(a, column), &self.cell(b, column))
+    }
+
+    /// A number that changes whenever the rows do, if the source can say what changed
+    /// ([`change_since`](RowSource::change_since)); 0, the default, when it cannot. A source that
+    /// answers draws its numbers from one counter for all of them, so two sources never agree on
+    /// one by accident.
+    fn revision(&self) -> u64 {
+        0
+    }
+
+    /// What changed since the table last looked, when it looked at [`revision`](RowSource::revision)
+    /// `seen`: `None` when the source cannot say, or more than one change happened, and the table
+    /// rebuilds its order as it always did. A source that answers lets the table touch only what
+    /// changed, so one row relabelled or appended costs one row, not ten thousand.
+    fn change_since(&self, seen: u64) -> Option<RowChange> {
+        let _ = seen;
+        None
     }
 }
 
@@ -456,6 +494,8 @@ pub struct TableCache {
     /// The body text size the widths were laid out at.
     text_px: f32,
     pitch: f32,
+    /// The source's [`RowSource::revision`] this cache was last made from.
+    seen: u64,
 }
 
 impl TableCache {
@@ -1056,7 +1096,28 @@ pub fn update_tables(
         let indent = tree_indent(text_px);
         let cache = &mut *cache;
         let fresh = !cache.built;
-        let rebuilt = fresh || table.is_changed() || sort.is_changed();
+        // A source that can say what changed since the table last looked (a `Tree` relabelled or
+        // appended to) is patched, not rebuilt: its keys and order are kept and only the rows the
+        // change added are read. Anything else (a sort, whose order a relabel can change; a
+        // removal, the first frame, a source with no answer, a count that does not add up, a row
+        // put at or above the one on top, whose place the rebuild keeps) takes the rebuild.
+        let sorted = sort.column.filter(|&c| c < columns).is_some();
+        let patch = if fresh || sort.is_changed() || !table.is_changed() {
+            None
+        } else {
+            match table.source.change_since(cache.seen) {
+                Some(RowChange::Unchanged) => Some((0, 0)),
+                Some(RowChange::Texts) if !sorted => Some((0, 0)),
+                Some(RowChange::Inserted { row, count })
+                    if count == 0 || (!sorted && row > cache.first && row <= cache.keys.len()) =>
+                {
+                    Some((row, count))
+                }
+                _ => None,
+            }
+            .filter(|&(_, count)| cache.keys.len() + count == len)
+        };
+        let rebuilt = fresh || sort.is_changed() || (table.is_changed() && patch.is_none());
         let Ok((mut scroll, mut view, mut glide)) = scrolls.get_mut(parts.view) else {
             continue;
         };
@@ -1068,6 +1129,14 @@ pub fn update_tables(
         let max = (len as f32 * pitch - view_h).max(0.0);
         let mut y = scroll.y.clamp(0.0, max);
 
+        if let Some((row, count @ 1..)) = patch {
+            // The rows the source added, at display row `row`. With no sort the order is the
+            // source's own, so the new rows are the last indexes.
+            let added: Vec<u64> = (row..row + count).map(|r| table.source.key(r)).collect();
+            cache.keys.splice(row..row, added);
+            let old = cache.order.len();
+            cache.order.extend(old..len);
+        }
         if rebuilt {
             let old_first = cache.first;
             let old_first_key = cache.keys.get(old_first).copied();
@@ -1121,6 +1190,9 @@ pub fn update_tables(
             }
             cache.built = true;
         }
+        if rebuilt || patch.is_some() {
+            cache.seen = table.source.revision();
+        }
         // The table moved the scroll itself this frame (a sort starts from the top, the rows
         // shrank): a glide that was running is over, and a request starts from `y`.
         if (scroll.y - y).abs() > 0.01 {
@@ -1156,7 +1228,7 @@ pub fn update_tables(
 
         let pool = (tall.ceil() as usize + 1).min(len);
         let first = table_window(y, pitch, pool, len);
-        let moved = first != cache.first || pool != cache.pool.len() || rebuilt;
+        let moved = first != cache.first || pool != cache.pool.len() || rebuilt || patch.is_some();
         let resized = cache.text_px != text_px || cache.pitch != pitch;
         cache.first = first;
 

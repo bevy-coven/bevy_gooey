@@ -7,6 +7,7 @@
 
 use std::borrow::Cow;
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use bevy::input::ButtonInput;
 use bevy::input::ButtonState;
@@ -24,8 +25,8 @@ use crate::model::{tree_ends, tree_heir, tree_parent, tree_visible};
 use crate::nav::show_focus;
 use crate::skin::Role;
 use crate::table::{
-    Chosen, Pick, RowSource, SelectMode, Table, TableCache, TableCursor, TableRow, TableSelection,
-    pick,
+    Chosen, Pick, RowChange, RowSource, SelectMode, Table, TableCache, TableCursor, TableRow,
+    TableSelection, pick,
 };
 use crate::widgets::CHEVRON_INK_SHIFT;
 
@@ -103,6 +104,7 @@ pub(crate) struct Outline {
 ///     for mut table in &mut tables {
 ///         if let Some(tree) = table.source_mut::<Tree>() {
 ///             tree.insert(Some(3), TreeNode::new(5, "Moon"));
+///             tree.relabel(3, "Lights (1 new)");
 ///             tree.set_open(3, true);
 ///             tree.remove(2);
 ///         }
@@ -123,7 +125,23 @@ pub struct Tree {
     /// `(gone, heir)` for every node `remove` took out, until [`update_trees`] moves the
     /// selection and cursor.
     heirs: Vec<(u64, u64)>,
+    /// A number that is new with every change, for [`RowSource::revision`].
+    revision: u64,
+    /// What the change that made `revision` did, when it was one a table can patch in.
+    last: Option<Delta>,
 }
+
+/// What one change did to the rows shown, and the revisions it came between.
+#[derive(Clone, Copy, Debug)]
+struct Delta {
+    from: u64,
+    to: u64,
+    change: RowChange,
+}
+
+/// The one counter every tree takes its revisions from, so a table that is handed another tree
+/// never mistakes it for the one it drew.
+static REVISIONS: AtomicU64 = AtomicU64::new(1);
 
 /// One node on its way into a [`Tree`].
 struct Flat {
@@ -133,18 +151,19 @@ struct Flat {
     open: bool,
 }
 
-/// `nodes` and everything under them, depth-first, `base` levels in. A key already in `seen` (or
+/// `nodes` and everything under them, depth-first, `base` levels in. A key already in `taken` (or
 /// seen earlier here) leaves its node and its subtree out.
 fn flatten(
     nodes: impl IntoIterator<Item = TreeNode>,
     base: u32,
-    seen: &mut HashSet<u64>,
+    taken: &HashMap<u64, usize>,
 ) -> Vec<Flat> {
+    let mut seen = HashSet::new();
     let mut out = Vec::new();
     let mut stack: Vec<(TreeNode, u32)> = nodes.into_iter().map(|n| (n, base)).collect();
     stack.reverse();
     while let Some((mut node, depth)) = stack.pop() {
-        if !seen.insert(node.key) {
+        if taken.contains_key(&node.key) || !seen.insert(node.key) {
             warn!(
                 "tree: key {} is used twice; the second node is left out",
                 node.key
@@ -173,35 +192,114 @@ impl Tree {
 
     /// Replaces every node. The selection keeps the keys that are still there.
     pub fn set_nodes(&mut self, nodes: impl IntoIterator<Item = TreeNode>) {
-        let flat = flatten(nodes, 0, &mut HashSet::new());
+        let flat = flatten(nodes, 0, &HashMap::new());
         self.keys = flat.iter().map(|f| f.key).collect();
         self.depths = flat.iter().map(|f| f.depth).collect();
         self.open = flat.iter().map(|f| f.open).collect();
         self.labels = flat.into_iter().map(|f| f.label).collect();
         self.relink();
+        self.touch(None);
     }
 
     /// Adds `node` and its children as the last child of the node `parent` (a root when `None`).
     /// `false` when there is no such parent or the node's key is taken.
+    ///
+    /// This is the append, and it touches what the new nodes touch: the nodes' own lists grow, the
+    /// ends of the parent and its ancestors and of every node after the new ones move up by their
+    /// count, and the rows shown after them shift. Appending a last root, as a history list does,
+    /// moves nothing but the new rows; nothing is rebuilt, and no key is hashed again but the new
+    /// ones and those of the nodes after them.
     pub fn insert(&mut self, parent: Option<u64>, node: TreeNode) -> bool {
-        let (at, depth) = match parent {
-            None => (self.keys.len(), 0),
+        let (parent_at, at, depth) = match parent {
+            None => (None, self.keys.len(), 0),
             Some(key) => match self.by_key.get(&key) {
-                Some(&i) => (self.ends[i], self.depths[i] + 1),
+                Some(&i) => (Some(i), self.ends[i], self.depths[i] + 1),
                 None => return false,
             },
         };
-        let mut seen: HashSet<u64> = self.by_key.keys().copied().collect();
-        let flat = flatten([node], depth, &mut seen);
+        let flat = flatten([node], depth, &self.by_key);
         if flat.is_empty() {
             return false;
         }
+        let count = flat.len();
+        let depths: Vec<u32> = flat.iter().map(|f| f.depth).collect();
+        let open: Vec<bool> = flat.iter().map(|f| f.open).collect();
+        // The new subtree's own ends, relative to its first node: `tree_visible` walks by them.
+        let ends = tree_ends(&depths);
+        // The new nodes are shown when the parent is shown and open, and then as far as their own
+        // open states go.
+        let visible =
+            parent_at.is_none_or(|p| self.open[p] && self.shown.binary_search(&p).is_ok());
+        let new_shown: Vec<usize> = if visible {
+            tree_visible(&ends, &open)
+                .into_iter()
+                .map(|i| i + at)
+                .collect()
+        } else {
+            Vec::new()
+        };
+
+        // What was there moves: every node from `at` on lies `count` further, and so do its end
+        // and its row; the parent and its ancestors (the only nodes before `at` whose subtree
+        // takes the new ones) end `count` later.
+        for end in &mut self.ends[at..] {
+            *end += count;
+        }
+        if let Some(p) = parent_at {
+            let mut above = self.depths[p] + 1;
+            for j in (0..=p).rev() {
+                if self.depths[j] < above {
+                    self.ends[j] += count;
+                    above = self.depths[j];
+                    if above == 0 {
+                        break;
+                    }
+                }
+            }
+        }
+        for key in &self.keys[at..] {
+            if let Some(index) = self.by_key.get_mut(key) {
+                *index += count;
+            }
+        }
+        let row = self.shown.partition_point(|&s| s < at);
+        for shown in &mut self.shown[row..] {
+            *shown += count;
+        }
+
+        let shown_count = new_shown.len();
+        self.shown.splice(row..row, new_shown);
+        let ends: Vec<usize> = ends.into_iter().map(|e| e + at).collect();
+        self.ends.splice(at..at, ends);
+        for (i, f) in flat.iter().enumerate() {
+            self.by_key.insert(f.key, at + i);
+        }
         self.keys.splice(at..at, flat.iter().map(|f| f.key));
-        self.depths.splice(at..at, flat.iter().map(|f| f.depth));
-        self.open.splice(at..at, flat.iter().map(|f| f.open));
+        self.depths.splice(at..at, depths);
+        self.open.splice(at..at, open);
         self.labels
             .splice(at..at, flat.into_iter().map(|f| f.label));
-        self.relink();
+        self.touch(Some(RowChange::Inserted {
+            row,
+            count: shown_count,
+        }));
+        true
+    }
+
+    /// Gives the node `key` another label: one text changes, and with it one row if the node is
+    /// shown. `true` when the label changed; `false` when there is no such node or it already
+    /// reads so. The place of the node, its open state, the selection and the cursor are as they
+    /// were.
+    pub fn relabel(&mut self, key: u64, label: impl Into<String>) -> bool {
+        let Some(&i) = self.by_key.get(&key) else {
+            return false;
+        };
+        let label = label.into();
+        if self.labels[i] == label {
+            return false;
+        }
+        self.labels[i] = label;
+        self.touch(Some(RowChange::Texts));
         true
     }
 
@@ -222,6 +320,7 @@ impl Tree {
         self.open.drain(i..end);
         self.labels.drain(i..end);
         self.relink();
+        self.touch(None);
         true
     }
 
@@ -236,7 +335,20 @@ impl Tree {
         }
         self.open[i] = open;
         self.shown = tree_visible(&self.ends, &self.open);
+        self.touch(None);
         true
+    }
+
+    /// Takes a new revision for a change, and keeps what the change did when a table can patch it
+    /// in (`None` when only a rebuild will do).
+    fn touch(&mut self, change: Option<RowChange>) {
+        let from = self.revision;
+        self.revision = REVISIONS.fetch_add(1, Ordering::Relaxed);
+        self.last = change.map(|change| Delta {
+            from,
+            to: self.revision,
+            change,
+        });
     }
 
     /// Whether the node `key` is open; `None` when there is no such node. An end node reports its
@@ -349,6 +461,19 @@ impl RowSource for Tree {
 
     fn key(&self, row: usize) -> u64 {
         self.keys[self.shown[row]]
+    }
+
+    fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    fn change_since(&self, seen: u64) -> Option<RowChange> {
+        if seen == self.revision {
+            return Some(RowChange::Unchanged);
+        }
+        self.last
+            .filter(|delta| delta.from == seen && delta.to == self.revision)
+            .map(|delta| delta.change)
     }
 }
 

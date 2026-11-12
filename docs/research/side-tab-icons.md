@@ -58,9 +58,24 @@ were classified, which is the check that keeps a new role from going silent.
   function and keeps both readable.
 - **The badge is a pill, not a bare dot.** A dot says "something"; the issue allows either and a count
   says more, so `count(4)` is a pill in the corner and the API accepts any short text.
-- **Many tabs scroll** is not built: like `side_tabs` before it, the strip is a column that grows. A
-  strip taller than the window is the host's to put in a `list`; the issue lists it as an edge case,
-  not the acceptance.
+- **Many tabs scroll** (built in the issue's remainder, after the first landing left it open). A strip
+  taller than the room its host gives it scrolls inside that room, and both side strips do it, since a
+  `side_tabs` taller than a sidebar is the same defect. The strip's own `TabList` is the viewport
+  (`TabScroll`: `Overflow::scroll_y()` and Bevy's `ScrollArea` for the wheel), not a wrapper inside the
+  root: the sliding indicator reads the list's rect and its tabs' rects, and a scrolled list moves the
+  tabs' rects with it, so the indicator needed no change, and every test that reads the root's first
+  child as the list still reads it. The root is `min_height: 0` and `max_height: 100%` so a host with a
+  height caps it and one without does not; the list keeps `flex_shrink: 0` (the horizontal strip's
+  rule, which `apply_skin` writes for `Role::TabList`) except while it scrolls. Each tab is
+  `flex_shrink: 0`: the list's own comment on a squeezed button (a row at its `min_height`, 44 against a
+  natural 46.8, clips its text) is the reason. The rail is the `list`'s (`list_rail`, `Role::ListRail`,
+  shown by `update_lists` only while the content does not fit), so its look, its drag and its
+  accessibility are not a second path. Reveal follows `scroll_to_focus`'s rule with the strip's own
+  geometry (`scroll_tabs_to_reveal`: `scroll_to_reveal`, a tab and a half of context, `ScrollGlide`
+  for the motion) for the focused tab, and the selected tab is revealed once when it changes (a click,
+  a key, `TabsValue` written by the game, the first layout), so a strip opens on its selected tab and a
+  wheel after it is left alone. A tooltip's box is `OverrideClip`, so the list's clip does not cut the
+  name beside a scrolled tab.
 
 ## Proof
 
@@ -71,3 +86,10 @@ narrow); the edge cases (no icon shows the label's initial "F" with the whole na
 badge of "0" shows nothing while "7" shows); the shape (square targets in one column, the badge at the
 tab's top-right, the strip's selection indicator present); and the announced name ("Debug (4)" for a
 badged tab, the bare label for one without).
+
+`tests/side_tabs_scroll.rs` holds the scrolling: a strip of twelve in a host of 220 px takes the host's
+height with a rail and square tabs; one of three has no rail and nothing to scroll; the wheel reaches
+both ends; Down and Up through all twelve keep each focused tab whole in view; focus leaves the next tab
+in sight; a `TabsValue` written by the game and a strip opened on its tenth tab are revealed and the
+wheel after is not undone; the labelled strip scrolls too; and with motion on a reveal glides and lands
+on its goal.

@@ -83,6 +83,7 @@ mod serde;
 mod shortcut;
 mod side_tab_icons;
 mod side_tabs;
+mod side_tabs_scroll;
 mod size_motion;
 mod skin;
 mod slots;

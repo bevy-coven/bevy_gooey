@@ -4,6 +4,37 @@
 
 ### Added
 
+- `CollapseSplit { entity, collapsed }` (G-77, #88): trigger it on a split and its first pane collapses
+  to its minimum (`true`) or is given back what it had (`false`) with the same slide as Enter on the
+  divider, so an editor's Cmd+B no longer has to synthesise a key. The divider's own Enter, South and
+  double press, and this call, are one path (`SplitSaved`, `SplitGlide`, reduced motion, the peek and
+  the one `ValueChange<f32>`); asking for the state the split is in does nothing, and a split with a
+  disabled divider keeps its layout. A dock's splits take it too.
+
+- `Tree::relabel(key, text)` and an append that touches one row (G-78, #89). `relabel` writes one label
+  and nothing else. `Tree::insert`, which is the append (last child of a parent, or a last root), no
+  longer rebuilds the tree: it splices the new nodes in, moves the ends of the parent chain and of the
+  nodes after, and shifts only the rows and keys after them, so a last root touches nothing but itself,
+  and it tests a key against the tree's own map instead of copying every key into a set first. The
+  table tells a source's small changes from big ones through the new `RowSource::revision` and
+  `RowSource::change_since` (defaults: no answer, rebuild as before) and `RowChange`: a `Tree` says
+  "texts changed" or "rows added at row r", and the table keeps its keys, order, selection, cursor and
+  scroll and rebinds the rows in view, where it used to read and sort all of them again. Removing a
+  node and opening or closing one still rebuild. Measured in a debug build at 10,110 nodes, the
+  crate's own part of the frame after one relabel and after one append is under 0.5 ms (a median of
+  15 frames, best of 5 windows, less the same frames at rest); against the old code the same test
+  reads 8.7 ms for the append.
+
+- `side_tabs` and `side_tabs_icons` scroll when they have more tabs than room (G-76, #87, the "many tabs
+  scroll" edge case). A strip takes the height its host leaves it (`max_height` 100% of a host that has
+  one) and scrolls the rest: the wheel and a trackpad move it, a rail (the `list`'s) shows down its
+  side only while the tabs do not fit, and the tab focus moves to, and the tab that becomes selected (a
+  click, a key, the game writing `TabsValue`, a strip's first layout), is kept in sight with the next
+  tab showing, gliding on the skin's spring. A strip in a host with no height is as tall as its tabs,
+  as before. The strip's `TabList` is the viewport (new public `TabScroll`, with the
+  `scroll_tabs_to_reveal` system); to scroll from code set the `ScrollPosition` on its first child.
+  `apply_skin` keeps a `Role::TabList` unable to shrink except one that scrolls.
+
 - `row(gap)`, `column(gap)`, `cell(width)`, `image_box(handle, size)` and `overlay()`: a panel's layout from widgets, with its spacing taken from the skin, so a tool's screen is built with no `Node` literal in it. A row and a column stand their children `gap` multiples of `GooeySkin::gap` apart (`LayoutGap`, so `row(1.0)` is the panel's own rhythm and an interface-size change moves all of it); `cell(width)` is a fixed-width label column in body text sizes whose children stand in a row, cutting what does not fit and shrinking in a narrow row rather than overlapping its neighbour (a cell of no width is not shown at all, its gap taken with it); `image_box` is a picture of a set size that keeps its box while it is being written, is never squeezed (the cells beside it give way) and draws nothing when it has not loaded; `overlay()` stacks its later children on its first, filling it (`stack_overlays`, and a child that becomes first or leaves is put back in the flow, so an overlay is never a box of nothing), for a hover readout over a plot. A zero-width cell takes no room. `tests/layout.rs` holds all of it; research `docs/research/layout-primitives.md`; guide [layout](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/layout.md).
 - `code_editor(label, text)` (G-71, #82, `docs/research/code-editor.md`, `docs/guide/code-editor.md`): a code editor that fills the room its host leaves. A line-number gutter, the current line lit, a caret that travels on `motion.snappy` and blinks on `CodeEditorSettings::blink_period_s` (steady under reduced motion), a selection by keyboard (Shift with the arrows, words with Ctrl or Alt, lines and the text's ends with Cmd, Home and End, Page Up and Down) and pointer (a drag, a double-click for a word, a triple-click for a line), undo and redo (edits grouped by pause and by word; a paste, cut, line break and indent are a step each), a clipboard (Cmd or Ctrl with A, C, X and V), IME (a commit types, a preedit draws at the caret), Tab and Shift+Tab (`CodeIndentation`: `Spaces(n)` or `Tab`, per editor; a block of lines when several are selected), Enter carrying the line's indent, and a view that glides on the wheel and the caret's reveal. Lines are a pool of rows re-pointed at the lines in view, so 20,000 lines cost what 20 do (`PERF_BUDGET`), a long line draws only the columns in view, CRLF endings are kept, and a tab is drawn at `CodeIndentation::tab_width`. `CodeEditorValue` (`text`, `revision`, `set`) is the host's copy and every edit is one `ValueChange<String>` (`is_final` on Cmd or Ctrl+S). Escape gives focus up: Tab is the editor's, so the exit is the key that is not (WCAG 2.1.2). The engine-free text is `CodeBuffer` (with `CodePos`, `CodeMove`, `CodeEdit`, `replace_ranges` and `apply_external`). `GooeyFonts::mono` is its face. Proved by `tests/code_editor.rs` and the unit tests in `src/code_buffer.rs`; the gallery clip is owed.
 - The code editor draws what the host says about the text (G-72, #83, `docs/guide/code-editor.md`): `Highlights` (byte ranges and a `SyntaxRole`, coloured by `GooeySkin::syntax`, derived from the skin's seeds and held at the contrast bar in every preset), `Diagnostics` (a wave under the range, a gutter mark, the message in a note on hover or Cmd/Ctrl+.), completion (`CodeCompletionRequested` out, `CodeCompletions` back; the list opens under the caret, narrows as the player types and Enter or Tab chooses it as one undo step), `CodeHover`, and `CodeEditor::apply_external_edit` for edits made by someone else (the player's caret and selection stay on their text, the changed lines glide in tinted in `CodeAuthor`'s colour and the tint fades over `EXTERNAL_EDIT_FADE_S`). Decorations carry the text's revision and are dropped, never drawn on new text. `tests/code_decor.rs`; the gallery clip is owed.
