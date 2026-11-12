@@ -474,8 +474,7 @@ fn tabs_taken_away_while_scrolled_to_the_end_leave_the_strip_in_range_and_reveal
         scroll_of(&app, ui.list),
         max_scroll(&app, ui.list)
     );
-    app.world_mut().entity_mut(ui.strip).insert(TabsValue(0));
-    settle(&mut app);
+    focus(&mut app, ui.tabs[0]);
     assert!(in_sight(&app, &ui, ui.tabs[0]), "tab 0 is brought back");
     assert_eq!(scroll_of(&app, ui.list), 0.0);
 }
