@@ -366,8 +366,8 @@ pub use slots::{
     update_slot_grids,
 };
 pub use split::{
-    Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin, SplitSaved,
-    split_by_pad, update_splits,
+    CollapseSplit, Split, SplitAxis, SplitDivider, SplitFraction, SplitGeometry, SplitMin,
+    SplitSaved, split_by_pad, update_splits,
 };
 pub use split_peek::{SplitPeek, SplitPeekSettings, update_split_peeks};
 pub use status::{StatusBar, StatusItem, StatusKind, StatusPriority};

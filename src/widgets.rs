@@ -77,9 +77,9 @@ use crate::selection_indicator::{Indicating, selection_indicator};
 use crate::skin::Role;
 use crate::slots::{Slot, SlotGrid, SlotItems};
 use crate::split::{
-    Split, SplitAxis, SplitDivider, divider_on_cancel, divider_on_click, divider_on_double_press,
-    divider_on_drag, divider_on_drag_end, divider_on_drag_start, divider_on_key_input,
-    divider_on_press, divider_on_release, split_self_update, toggle_split,
+    Split, SplitAxis, SplitDivider, collapse_split, divider_on_cancel, divider_on_click,
+    divider_on_double_press, divider_on_drag, divider_on_drag_end, divider_on_drag_start,
+    divider_on_key_input, divider_on_press, divider_on_release, split_self_update, toggle_split,
 };
 use crate::status::{StatusBar, StatusGroup, StatusItem};
 use crate::table::{Column, RowSource, table_bundle};
@@ -2883,6 +2883,7 @@ pub(crate) fn split_in(axis: SplitAxis, first: impl Bundle, second: impl Bundle)
         Split::new(axis),
         Role::Split,
         observe(split_self_update),
+        observe(collapse_split),
         children![split_pane(first), split_divider(axis), split_pane(second)],
     )
 }
