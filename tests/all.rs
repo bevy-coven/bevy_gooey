@@ -49,6 +49,7 @@ mod leaf;
 mod led;
 mod lines;
 mod list;
+mod markdown;
 mod menu;
 mod menu_exit;
 mod meter;
