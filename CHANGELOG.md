@@ -4,6 +4,23 @@
 
 ### Added
 
+- `markdown_view(source, base)` (G-79, #90, feature `markdown`, `docs/guide/markdown.md`,
+  `docs/research/markdown-view.md`, `examples/markdown.rs`): a page of CommonMark with tables,
+  strikethrough and task lists in the skin's type scale, in a viewport that scrolls with the list's rail.
+  Headings (`Role::MarkdownHeading(level)`) have stable ids, listed in `MarkdownOutline`, and
+  `scroll_to_heading(view, id)` glides there; links are focusable nodes that send
+  `MarkdownLink { dest, kind: Web | Relative | Anchor }` (the view opens nothing; an anchor also scrolls to
+  its heading); pictures are `image_box`es loaded through the `MarkdownBase` resolver (the directory its
+  paths are read against), and one that is not there, fails to load or leaves the base with `..` is a
+  box of the picture's size naming its alt text and path (`MarkdownImageRefused` for the last). Raw HTML is
+  text. The page is parsed and spawned when its `MarkdownView` source or base changes and never per frame
+  (`MarkdownBuilt` counts the builds). `bevy_gooey::markdown` is the engine-free parse: `images(source)`
+  (range, destination, alt), `links`, `outline`, `resolve(base, dest)` and `image_size`, from the same
+  `Document` the view draws, so the pictures are listed in the order they are drawn. The list's rail,
+  scroll-to-focus and PageUp and PageDown take the page's viewport too. One new dependency behind the
+  feature, `pulldown-cmark` 0.13 (MIT, no default features, wasm-compatible): `tests/leaf.rs`'s allowed
+  list gains it (an assumed owner exception, additive). Thirteen new `Role`s (all `Markdown…`).
+
 - `CollapseSplit { entity, collapsed }` (G-77, #88): trigger it on a split and its first pane collapses
   to its minimum (`true`) or is given back what it had (`false`) with the same slide as Enter on the
   divider, so an editor's Cmd+B no longer has to synthesise a key. The divider's own Enter, South and

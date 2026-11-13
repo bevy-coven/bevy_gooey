@@ -11,6 +11,10 @@
 //! (default 30) there as `f_%04d.png`. `GOOEY_JUMP=<id>,<id>…` scrolls to one heading every
 //! `GOOEY_JUMP_EVERY` (default 60) frames from frame 30. `GOOEY_SKIN=parchment`,
 //! `GOOEY_TEXT_SCALE=<f>` and `GOOEY_SIZE=<w>x<h>` set the start.
+//!
+//! `GOOEY_BUILD_TIME=1` opens no window: it builds a 75 KB page of 40 tables (the issue's size) in a
+//! bare app, once, and prints what the parse and the spawning of its blocks took, as
+//! `gooey: markdown parsed … spawned …`; run it with `--release` for the number the docs quote.
 
 use std::collections::HashMap;
 
@@ -95,7 +99,59 @@ struct Jumps {
 const WARM_FRAMES: u32 = 20;
 const JUMP_FROM: u32 = 30;
 
+/// A page like a style guide: `tables` tables of 22 rows each and prose between them (about 75 KB
+/// for 40).
+fn long_page(tables: usize) -> String {
+    let mut page = String::new();
+    for table in 0..tables {
+        page.push_str(&format!("## Section {table}\n\n"));
+        page.push_str(
+            "A paragraph of prose that explains the section at some length, with a \
+             **strong** word, a `code` word and an *emphasised* one, so that a reader has \
+             something to read between the tables of the guide.\n\n",
+        );
+        page.push_str("| Name | Value | Use | Note |\n|------|-------|-----|------|\n");
+        for row in 0..22 {
+            page.push_str(&format!(
+                "| token-{table}-{row} | #{row:02x}{row:02x}{row:02x} | surface {row} | the note for row {row} of table {table} |\n"
+            ));
+        }
+        page.push('\n');
+    }
+    page
+}
+
+/// `GOOEY_BUILD_TIME`: the cost of parsing and spawning a big page, with no window and no layout.
+fn build_time() {
+    let source = long_page(40);
+    let started = std::time::Instant::now();
+    let document = bevy_gooey::markdown::parse(&source);
+    let parsed = started.elapsed();
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+        .insert_resource(GooeySkin::dark())
+        .add_systems(Update, build_markdown);
+    app.world_mut().spawn(markdown_view(
+        &source,
+        MarkdownBase::new("guide", |_: &str| None),
+    ));
+    let before = app.world().entities().len();
+    let started = std::time::Instant::now();
+    app.update();
+    let spawned = started.elapsed();
+    println!(
+        "gooey: markdown parsed {} bytes, {} tables, in {parsed:?}; parsed again and spawned {} entities in {spawned:?}",
+        source.len(),
+        document.tables(),
+        app.world().entities().len() - before
+    );
+}
+
 fn main() {
+    if std::env::var("GOOEY_BUILD_TIME").is_ok() {
+        build_time();
+        return;
+    }
     let mut skin = match std::env::var("GOOEY_SKIN").as_deref() {
         Ok("parchment") => GooeySkin::parchment(),
         Ok("high_contrast") => GooeySkin::high_contrast(),

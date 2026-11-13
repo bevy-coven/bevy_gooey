@@ -76,7 +76,7 @@ for changes not released yet:
 bevy_gooey = { git = "https://github.com/bevy-coven/bevy_gooey" }
 ```
 
-Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data), `reflect` (`inspector(..)`, below), `testing` (`bevy_gooey::testing`: find a widget by its label, click it and type in a headless test).
+Features: `serde` (save and load a `GooeySkin` and `UiScaleSettings` as data), `reflect` (`inspector(..)`, below), `markdown` (`markdown_view(..)`, below: one dependency, `pulldown-cmark`), `testing` (`bevy_gooey::testing`: find a widget by its label, click it and type in a headless test).
 
 ## Try it
 
@@ -104,6 +104,7 @@ grow everything to 200%, and Controller renames the pad's buttons.
   `GooeySkin::from_seed(PaletteSeed { background, text, accent })` derives a whole checked skin from three colours, `GooeySkin::desk()` is a desktop tool's neutral look built that way, and `elevation` holds its shadows as CSS-style data:
   [skins and checks](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/skins.md).
 - **Lay a tool's panel out without a `Node` literal** — `row(1.0)`, `column(1.0)`, `cell(7.0)`, `image_box(plot, size)` and `overlay()` build a bench's slot rows, its label columns and its plot with the hover readout stacked on it, their gaps and widths taken from the skin so an interface size or a theme moves all of it ([layout](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/layout.md)).
+- **Read a page of Markdown, rendered, with its pictures** — `markdown_view(source, MarkdownBase::new("guide", |path| Some(assets.load(path))))` (feature `markdown`) draws CommonMark with tables, strikethrough and task lists in the skin's type scale in a viewport that scrolls: headings with stable ids (`MarkdownOutline`, `scroll_to_heading(view, "palette")`), links that are focusable nodes sending `MarkdownLink { dest, kind }` (the view opens nothing), pictures through `image_box` from your resolver, and a box naming its alt text and path for one that is missing, fails to load or climbs out of the base with `..` (`MarkdownImageRefused`); the page is built when its source changes, never per frame, and `markdown::images(source)`, `links` and `outline` list what the view draws from the same parse ([markdown](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/markdown.md)).
 - **Build an options screen from a few rows and tabs** — a `toggle`, a `choice` and a `slider` root on
   Bevy's own `Checkbox`, `Button` and `Slider`, so the entity you spawn carries its value, takes `observe`
   and says each change once in `ValueChange`, `ControlSize::Small`, `Regular` or `Large` makes a control 24, 28 or 36 px tall under a compact skin ([controls](https://github.com/bevy-coven/bevy_gooey/blob/main/docs/guide/controls.md)), `binding("Jump", Binding::Key(KeyCode::Space))` rebinds a

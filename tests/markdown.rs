@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+use bevy::input_focus::{FocusCause, InputFocus};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
@@ -17,7 +18,7 @@ use bevy::ui::{ComputedNode, ScrollPosition, UiGlobalTransform};
 use bevy::window::WindowResolution;
 use bevy::winit::WinitPlugin;
 use bevy_gooey::markdown::{self, Block, Inline, LinkKind, PathRefused};
-use bevy_gooey::testing::{click, find_by_label};
+use bevy_gooey::testing::{click, find_by_label, press};
 use bevy_gooey::*;
 
 /// One page with every block kind the view draws, in the order a style guide writes them.
@@ -314,12 +315,83 @@ fn clicking_a_link_sends_its_destination_and_the_view_opens_nothing() {
         "one event a click"
     );
 
+    let viewport = drawn_in_order::<MarkdownViewport>(&app, view)[0];
+    assert_eq!(
+        app.world().get::<ScrollPosition>(viewport).map(|s| s.y),
+        Some(0.0)
+    );
     let anchor = find_by_label(&mut app, "jump").expect("the anchor link is drawn");
     click(&mut app, anchor);
     assert_eq!(
         heard.lock().expect("the sink").last().cloned(),
         Some(("#sizes".to_owned(), LinkKind::Anchor))
     );
+    // An anchor is the page's own: the view also scrolls to the heading it names.
+    settle(&mut app);
+    assert!(
+        app.world()
+            .get::<ScrollPosition>(viewport)
+            .is_some_and(|s| s.y > 0.0),
+        "the anchor scrolled the page"
+    );
+}
+
+#[test]
+fn a_link_is_pressed_from_the_keyboard() {
+    let mut app = app();
+    let shelf = shelf(&mut app);
+    let view = page(&mut app, &shelf, PAGE, 600.0);
+    let heard: Arc<Mutex<Vec<String>>> = Arc::default();
+    let sink = heard.clone();
+    app.world_mut()
+        .entity_mut(view)
+        .observe(move |link: On<MarkdownLink>| {
+            sink.lock().expect("the sink").push(link.dest.clone());
+        });
+    let link = find_by_label(&mut app, "the palette").expect("the link is drawn");
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(link, FocusCause::Navigated);
+    press(&mut app, KeyCode::Enter);
+    assert_eq!(heard.lock().expect("the sink").as_slice(), ["palette.md"]);
+}
+
+#[test]
+fn a_picture_whose_image_fails_to_load_becomes_a_box_naming_its_path() {
+    let mut app = app();
+    // A handle to an image that no loader has and the asset server has never heard of: it is
+    // neither in the assets nor loading, which is what a failed load reads as too
+    // (`LoadState::Failed` and `NotLoaded` are the same box). A real file that is missing takes the
+    // same path; an app that is not given its async loaders never gets as far as `Failed`, which is
+    // why this test does not wait for a file.
+    let handle: Handle<Image> = app.world().resource::<Assets<Image>>().reserve_handle();
+    let base = MarkdownBase::new("guide", move |_: &str| Some(handle.clone()));
+    let host = app.world_mut().spawn(Node::default()).id();
+    let view = app
+        .world_mut()
+        .spawn((markdown_view("![Gone](nowhere.png)\n", base), ChildOf(host)))
+        .id();
+    let missing = |app: &App| {
+        drawn_in_order::<MarkdownPicture>(app, view)
+            .into_iter()
+            .find(|e| app.world().get::<Role>(*e) == Some(&Role::MarkdownMissing))
+    };
+    // The box shows the picture's size first, then the box that names its path.
+    let mut found = None;
+    for _ in 0..10 {
+        app.update();
+        found = missing(&app);
+        if found.is_some() {
+            break;
+        }
+    }
+    let found = found.expect("a picture that failed to load is a box that names its path");
+    let words = words_below(&app, found);
+    assert!(
+        words.iter().any(|w| w == "Gone") && words.iter().any(|w| w == "guide/nowhere.png"),
+        "{words:?}"
+    );
+    assert!(app.world().get::<ImageNode>(found).is_none());
 }
 
 #[test]
