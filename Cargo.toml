@@ -74,3 +74,7 @@ ron = "0.12"
 [[example]]
 name = "inspector"
 required-features = ["reflect"]
+
+[[example]]
+name = "markdown"
+required-features = ["markdown"]

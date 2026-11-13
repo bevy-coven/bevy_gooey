@@ -16,7 +16,7 @@ use bevy::render::settings::WgpuSettings;
 use bevy::ui::{ComputedNode, ScrollPosition, UiGlobalTransform};
 use bevy::window::WindowResolution;
 use bevy::winit::WinitPlugin;
-use bevy_gooey::markdown::{self, LinkKind, PathRefused};
+use bevy_gooey::markdown::{self, Block, Inline, LinkKind, PathRefused};
 use bevy_gooey::testing::{click, find_by_label};
 use bevy_gooey::*;
 
@@ -308,7 +308,11 @@ fn clicking_a_link_sends_its_destination_and_the_view_opens_nothing() {
             "clicking \"{words}\" sends its destination"
         );
     }
-    assert_eq!(heard.lock().expect("the sink").len(), 2, "one event a click");
+    assert_eq!(
+        heard.lock().expect("the sink").len(),
+        2,
+        "one event a click"
+    );
 
     let anchor = find_by_label(&mut app, "jump").expect("the anchor link is drawn");
     click(&mut app, anchor);
@@ -481,6 +485,40 @@ fn links_and_headings_are_listed_from_the_same_parse() {
 }
 
 #[test]
+fn a_tight_list_item_ends_its_emphasis_and_its_link() {
+    let document = markdown::parse("- **bold** then [a link](x.md) and `code`, *slanted* end\n");
+    let [Block::List { items, .. }] = document.blocks.as_slice() else {
+        panic!("one list: {:?}", document.blocks);
+    };
+    let [Block::Paragraph(inlines)] = items[0].blocks.as_slice() else {
+        panic!(
+            "a tight item's words are one paragraph: {:?}",
+            items[0].blocks
+        );
+    };
+    let linked: Vec<bool> = inlines
+        .iter()
+        .map(|i| match i {
+            Inline::Text { link, .. } | Inline::Code { link, .. } => link.is_some(),
+            _ => false,
+        })
+        .collect();
+    assert_eq!(
+        linked,
+        [false, false, true, false, false, false, false, false],
+        "only the link's own words are the link's: {inlines:?}"
+    );
+    let strong: Vec<bool> = inlines
+        .iter()
+        .filter_map(|i| match i {
+            Inline::Text { style, .. } => Some(style.strong),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(strong, [true, false, false, false, false, false, false]);
+}
+
+#[test]
 fn the_view_lists_its_headings_and_jumps_to_one() {
     let mut body = String::from("# Top\n\n");
     for i in 0..60 {
@@ -511,12 +549,18 @@ fn the_view_lists_its_headings_and_jumps_to_one() {
         rect_of(&app, heading).1 > view_box.3,
         "the heading starts below the viewport"
     );
-    assert_eq!(app.world().get::<ScrollPosition>(viewport).map(|s| s.y), Some(0.0));
+    assert_eq!(
+        app.world().get::<ScrollPosition>(viewport).map(|s| s.y),
+        Some(0.0)
+    );
 
     app.world_mut().trigger(scroll_to_heading(view, "far-down"));
     settle(&mut app);
 
-    let scrolled = app.world().get::<ScrollPosition>(viewport).map_or(0.0, |s| s.y);
+    let scrolled = app
+        .world()
+        .get::<ScrollPosition>(viewport)
+        .map_or(0.0, |s| s.y);
     assert!(scrolled > 0.0, "the view scrolled");
     let (_, top, _, bottom) = rect_of(&app, heading);
     let (_, view_top, _, view_bottom) = rect_of(&app, viewport);
@@ -591,7 +635,7 @@ fn long_page() -> String {
              something to read between the tables of the guide.\n\n",
         );
         page.push_str("| Name | Value | Use | Note |\n|------|-------|-----|------|\n");
-        for row in 0..12 {
+        for row in 0..22 {
             page.push_str(&format!(
                 "| token-{table}-{row} | #{row:02x}{row:02x}{row:02x} | surface {row} | the note for row {row} of table {table} |\n"
             ));
@@ -647,4 +691,39 @@ fn a_page_of_seventy_five_kilobytes_with_forty_tables_is_built_once() {
         Some(1),
         "thirty frames with the page on screen rebuild nothing"
     );
+}
+
+/// What the issue's 50 ms is about: parsing the page and spawning its blocks, with no layout and no
+/// text shaping in it (those are a frame's own cost and do not grow with a rebuild). A debug build
+/// is an order of magnitude slower than a release one, so the bound here only catches a build that
+/// is quadratic in the page; the release number is in `docs/research/markdown-view.md`.
+#[test]
+fn parsing_and_spawning_forty_tables_is_a_plain_cost() {
+    let source = long_page();
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+        .insert_resource(GooeySkin::dark())
+        .add_systems(Update, build_markdown);
+    let view = app
+        .world_mut()
+        .spawn(markdown_view(&source, Shelf::default().base()))
+        .id();
+    let before = app.world().entities().len();
+    let started = Instant::now();
+    app.update();
+    let spent = started.elapsed();
+    let nodes = app.world().entities().len() - before;
+    println!(
+        "markdown: parsed and spawned {} bytes, {nodes} entities, in {spent:?} (debug build)",
+        source.len()
+    );
+    assert_eq!(app.world().get::<MarkdownBuilt>(view).map(|b| b.0), Some(1));
+    assert!(nodes > 3_000, "the page is spawned: {nodes} entities");
+    assert!(spent.as_secs_f32() < 2.0, "built in {spent:?}");
+
+    // A second frame builds nothing and costs nothing like the first.
+    let started = Instant::now();
+    app.update();
+    assert!(started.elapsed() < spent / 10, "a built page is left alone");
+    assert_eq!(app.world().get::<MarkdownBuilt>(view).map(|b| b.0), Some(1));
 }

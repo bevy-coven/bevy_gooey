@@ -109,6 +109,13 @@ fn spec(role: Role) -> Spec {
         | Role::CardGrid
         | Role::CodeFind
         | Role::Led
+        | Role::MarkdownView
+        | Role::MarkdownViewport
+        | Role::MarkdownLine
+        | Role::MarkdownQuote
+        | Role::MarkdownTable
+        | Role::MarkdownCell
+        | Role::MarkdownHeadCell
         | Role::FieldMessage => Spec::Group,
         Role::Heading
         | Role::Label
@@ -156,6 +163,10 @@ fn spec(role: Role) -> Spec {
         | Role::CodeEditor
         | Role::ListView
         | Role::ListRail
+        | Role::MarkdownHeading(_)
+        | Role::MarkdownLink
+        | Role::MarkdownCode
+        | Role::MarkdownMissing
         | Role::IconTab => Spec::Node,
         Role::ButtonText
         | Role::MenuTitleText
@@ -263,7 +274,10 @@ fn spec(role: Role) -> Spec {
         | Role::RadialSlot
         | Role::RadialText
         | Role::RadialCentre
-        | Role::ToastActionText => Spec::Hidden,
+        | Role::ToastActionText
+        // A rule is a line, and a missing picture's path is read with the box that holds it.
+        | Role::MarkdownRule
+        | Role::MarkdownPath => Spec::Hidden,
     }
 }
 
@@ -366,6 +380,7 @@ pub(crate) struct Facts {
 pub(crate) struct Look<'w, 's> {
     sorts: Query<'w, 's, &'static crate::table::TableSort>,
     texts: Query<'w, 's, &'static Text>,
+    spans: Query<'w, 's, &'static TextSpan>,
     roles: Query<'w, 's, &'static Role>,
     children: Query<'w, 's, &'static Children>,
     parents: Query<'w, 's, &'static ChildOf>,
@@ -495,12 +510,16 @@ impl Look<'_, '_> {
         })
     }
 
+    /// The words an entity's own `Text` shows: its text and each `TextSpan` child's, so a paragraph
+    /// that changes face part way is read whole.
     fn own(&self, entity: Entity) -> Option<String> {
-        self.texts
-            .get(entity)
-            .ok()
-            .map(|text| text.0.clone())
-            .filter(|text| !text.is_empty())
+        let mut out = self.texts.get(entity).ok()?.0.clone();
+        for child in self.children.get(entity).into_iter().flatten() {
+            if let Ok(span) = self.spans.get(*child) {
+                out.push_str(&span.0);
+            }
+        }
+        (!out.is_empty()).then_some(out)
     }
 
     /// The option of a choice that is selected: the `index`th of its options, in layout order. It is
@@ -530,9 +549,30 @@ impl Look<'_, '_> {
 fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Option<Wanted> {
     let mut wanted = Wanted::default();
     match role {
-        Role::Heading => {
+        Role::Heading | Role::MarkdownHeading(_) => {
             wanted.role = Some(Ak::Heading);
             wanted.name = look.own(entity);
+        }
+        // A link reads as one, named by its words (a link round a picture, by the picture's).
+        Role::MarkdownLink => {
+            wanted.role = Some(Ak::Link);
+            wanted.name = look.own(entity).or_else(|| {
+                look.words(entity, |role| {
+                    matches!(role, Role::Label | Role::MarkdownPath)
+                })
+            });
+        }
+        // A code block is read as code, its words its value.
+        Role::MarkdownCode => {
+            wanted.role = Some(Ak::Code);
+            wanted.value = look.words(entity, |role| role == Role::CodeText);
+        }
+        // A picture that is not there is read as one, named by its alt text, else by its path.
+        Role::MarkdownMissing => {
+            wanted.role = Some(Ak::Image);
+            wanted.name = look
+                .words(entity, |role| role == Role::Label)
+                .or_else(|| look.words(entity, |role| role == Role::MarkdownPath));
         }
         Role::Label
         | Role::PromptKey

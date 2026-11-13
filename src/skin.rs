@@ -133,6 +133,20 @@ const COLOR_MARKER_TEXT_SIZES: f32 = 1.3;
 /// A list's row is a button: at least `min_target` high, or its text's line (this many text sizes),
 /// its vertical padding (this many paddings, `0.6` each side) and its frame, whichever is more.
 const LIST_LINE_TEXT_SIZES: f32 = 1.2;
+/// The step of [`GooeySkin::type_scale`] a Markdown heading of `level` is set in: the top step for 1,
+/// the one below for 2, and the third from the top for 3 to 6.
+fn markdown_heading_step(level: u8) -> usize {
+    match level {
+        0 | 1 => 4,
+        2 => 3,
+        _ => 2,
+    }
+}
+
+/// A Markdown line's gap between two words, in body text sizes (a space of the body face).
+const MARKDOWN_SPACE_TEXT_SIZES: f32 = 0.3;
+/// The bar down a Markdown quote's edge, in border widths.
+const MARKDOWN_QUOTE_LINES: f32 = 3.0;
 const LIST_PADDING_FACTOR: f32 = 1.2;
 
 /// A list's rail is this many line weights wide, and its thumb is as wide.
@@ -2057,6 +2071,39 @@ pub enum Role {
     /// An [`crate::overlay`]: a box its first child sizes, its later children stacked over it; not
     /// drawn.
     Overlay,
+    /// A [`crate::markdown_view`]: the column the viewport and its rail stand in; not drawn.
+    MarkdownView,
+    /// A [`crate::markdown_view`]'s scrolling part: a clipped column with the rail's lane to its
+    /// right; not drawn.
+    MarkdownViewport,
+    /// A heading of a Markdown page (level 1 to 6): [`GooeySkin::text`] in the heading face, level
+    /// 1 at the top step of [`GooeySkin::type_scale`], level 2 the next and 3 to 6 the third.
+    MarkdownHeading(u8),
+    /// A Markdown paragraph that has a link in it: a row of its words that wraps, a
+    /// space of the body face between them; not drawn.
+    MarkdownLine,
+    /// A link of a Markdown page: [`GooeySkin::text`], underlined, with a button's lit fill under
+    /// the pointer and the accent while pressed, and the focus ring when focused.
+    MarkdownLink,
+    /// A Markdown code block and a block of raw HTML shown as text: a frame in the outline round
+    /// [`GooeySkin::solid_surface`], with a padding of the skin's.
+    MarkdownCode,
+    /// A Markdown block quote: a bar in the outline down its left edge, set in by a padding.
+    MarkdownQuote,
+    /// A Markdown rule: a line the width of the page, in the outline.
+    MarkdownRule,
+    /// A Markdown table: a grid whose gaps are the lines between its cells, the outline showing
+    /// through them and round the edge.
+    MarkdownTable,
+    /// A Markdown table's body cell: [`GooeySkin::solid_surface`] with the skin's padding.
+    MarkdownCell,
+    /// A Markdown table's header cell: [`GooeySkin::surface_raised`], the row of titles.
+    MarkdownHeadCell,
+    /// A Markdown picture that is not there (not found, failed to load, or its path refused): a
+    /// box in the outline of the size the picture would be, holding its alt text and its path.
+    MarkdownMissing,
+    /// The path a [`Role::MarkdownMissing`] box names: [`GooeySkin::text_muted`], a small step.
+    MarkdownPath,
 }
 
 type Styled = (
@@ -2997,6 +3044,21 @@ fn restyle(
         Role::MeterFill | Role::HoldFill => Some(skin.accent),
         Role::MeterTrail => Some(skin.danger),
         Role::FieldMark => Some(problem_colour(skin, owner.problem)),
+        Role::MarkdownCode | Role::MarkdownCell | Role::MarkdownMissing => Some(skin.solid_surface()),
+        Role::MarkdownHeadCell => Some(skin.surface_raised),
+        // The table's fill is the line between its cells, the rule's the line itself.
+        Role::MarkdownTable | Role::MarkdownRule => Some(skin.outline),
+        // A link has no fill at rest; it lights like a button under the pointer and takes the
+        // accent while pressed.
+        Role::MarkdownLink => Some(if state.disabled {
+            Color::NONE
+        } else if state.pressed {
+            skin.accent
+        } else if state.hovered {
+            skin.hovered()
+        } else {
+            Color::NONE
+        }),
         Role::ListRail => Some(skin.surface_raised),
         // A row has no fill at rest but a quiet band on every second one (never the only mark of
         // anything): lit by the pointer like a button, and by the accent while selected, with
@@ -3236,6 +3298,12 @@ fn restyle(
         | Role::CodeCompletionDetail
         | Role::CodeChevron
         | Role::CodeExternal
+        | Role::MarkdownView
+        | Role::MarkdownViewport
+        | Role::MarkdownHeading(_)
+        | Role::MarkdownLine
+        | Role::MarkdownQuote
+        | Role::MarkdownPath
         | Role::PaletteCount => None,
     };
     if let (Some(fill), Some(mut background)) = (fill, background) {
@@ -3448,6 +3516,16 @@ fn restyle(
         // A ring of two tones, so it shows on any colour under it.
         Role::ColorAreaMarker => Some(BorderColor::all(skin.solid_surface())),
         Role::ColorAreaMarkerInner => Some(BorderColor::all(skin.text)),
+        Role::MarkdownCode | Role::MarkdownMissing => Some(BorderColor::all(skin.outline)),
+        Role::MarkdownQuote => Some(BorderColor {
+            left: skin.outline,
+            ..BorderColor::all(Color::NONE)
+        }),
+        Role::MarkdownLink => Some(BorderColor::all(if look.focused == Some(entity) {
+            skin.focus_ring
+        } else {
+            Color::NONE
+        })),
         Role::SplitDivider => Some(BorderColor::all(if look.focused == Some(entity) {
             skin.focus_ring
         } else {
@@ -4304,6 +4382,54 @@ fn restyle(
                 next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
             }
             Role::ListRows => next.row_gap = Val::Px(skin.gap),
+            // A page of Markdown: the viewport keeps the rail's lane like a list's; a line of words
+            // with a link in it wraps a space apart; a code block, a quote, a rule and a table are
+            // the frames the skin draws everything else in, and the table's gaps are the lines
+            // its outline shows through.
+            Role::MarkdownViewport => {
+                next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
+            }
+            Role::MarkdownLine => {
+                next.column_gap = Val::Px(text_px * MARKDOWN_SPACE_TEXT_SIZES);
+            }
+            Role::MarkdownCode => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad()));
+            }
+            Role::MarkdownQuote => {
+                next.border = UiRect::left(Val::Px(line * MARKDOWN_QUOTE_LINES));
+                next.padding = UiRect::left(Val::Px(skin.pad()));
+                next.row_gap = Val::Px(skin.gap);
+            }
+            Role::MarkdownRule => {
+                next.height = Val::Px(line);
+                next.flex_shrink = 0.0;
+            }
+            Role::MarkdownTable => {
+                next.padding = UiRect::all(Val::Px(line));
+                next.column_gap = Val::Px(line);
+                next.row_gap = Val::Px(line);
+            }
+            Role::MarkdownCell | Role::MarkdownHeadCell => {
+                next.padding = UiRect::axes(Val::Px(skin.pad()), Val::Px(skin.pad() * 0.5));
+                next.row_gap = Val::Px(skin.gap * 0.5);
+            }
+            // The box of the size the picture would be, cut to it, with its words inside.
+            Role::MarkdownMissing => {
+                next.width = Val::Px(state.image.x.max(0.0));
+                next.height = Val::Px(state.image.y.max(0.0));
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::all(Val::Px(skin.pad()));
+                next.row_gap = Val::Px(skin.gap * 0.5);
+                next.flex_shrink = 0.0;
+                next.overflow = Overflow::clip();
+            }
+            Role::MarkdownLink => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+            }
             // The header is as wide as the rows: the same lane on its right as the viewport's.
             Role::TableHeader => {
                 next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
@@ -4653,6 +4779,21 @@ fn restyle(
 
     let text = match role {
         Role::Heading => Some((skin.text, &look.fonts.heading, skin.heading_size)),
+        // A page's headings step down the type scale from its top: 1, 2 and 3 to 6.
+        Role::MarkdownHeading(level) => Some((
+            skin.text,
+            &look.fonts.heading,
+            skin.type_scale[markdown_heading_step(*level)],
+        )),
+        Role::MarkdownLink => {
+            let color = if state.pressed && !state.disabled {
+                skin.accent_text
+            } else {
+                skin.text
+            };
+            Some((color, &look.fonts.body, skin.text_size))
+        }
+        Role::MarkdownPath => Some((skin.text_muted, &look.fonts.body, skin.type_scale[1])),
         Role::Label | Role::ProgressLine => Some((skin.text, &look.fonts.body, skin.text_size)),
         Role::SectionNote => Some((skin.text_muted, &look.fonts.body, skin.text_size)),
         // The label of a toast's button follows the button: inverted on the accent, faded with

@@ -134,6 +134,8 @@
 
 #![warn(missing_docs)]
 
+#[cfg(feature = "markdown")]
+pub mod markdown;
 pub mod model;
 #[cfg(feature = "testing")]
 pub mod testing;
@@ -182,6 +184,8 @@ mod layout;
 mod layout_motion;
 mod led;
 mod list;
+#[cfg(feature = "markdown")]
+mod markdown_view;
 mod menu;
 mod meter;
 mod motion;
@@ -306,6 +310,13 @@ pub use layout_motion::{
 };
 pub use led::{Led, LedState, LedWord, update_leds};
 pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
+#[cfg(feature = "markdown")]
+pub use markdown_view::{
+    MarkdownBase, MarkdownBuilt, MarkdownBuiltFrom, MarkdownHeading, MarkdownImageRefused,
+    MarkdownLink, MarkdownOutline, MarkdownPicture, MarkdownView, MarkdownViewport,
+    ScrollToHeading, build_markdown, markdown_view, scroll_to_heading, scroll_to_heading_observer,
+    size_pictures,
+};
 pub use menu::{
     Disabled, MenuBar, MenuItem, MenuMarked, MenuOpen, MenuPanel, MenuTitle, fit_menus,
     focus_menu_bar, menu_by_input, scroll_menus_to_focus, switch_menus_on_hover,
@@ -750,6 +761,19 @@ impl Plugin for GooeyStylePlugin {
                     .chain()
                     .in_set(GooeySystems::Style),
             );
+        // A Markdown page is built (once) and its pictures sized before the skin writes what the
+        // parts look like; a request to scroll to a heading is answered by an observer.
+        #[cfg(feature = "markdown")]
+        {
+            app.add_systems(
+                Update,
+                (build_markdown, size_pictures)
+                    .chain()
+                    .in_set(GooeySystems::Style)
+                    .before(apply_skin),
+            );
+            app.add_observer(scroll_to_heading_observer);
+        }
         // The code editor reads the wheel, marks its focus for the host, and lays out its window
         // onto the text, all before the skin writes what the rows look like.
         app.add_systems(

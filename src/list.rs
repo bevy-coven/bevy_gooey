@@ -49,8 +49,22 @@ pub struct ListView {
     pub rows: f32,
 }
 
-/// What a rail can scroll: a list's viewport or a tab strip's list.
+/// What a rail can scroll: a list's viewport, a tab strip's list, or a Markdown page's viewport.
+#[cfg(feature = "markdown")]
+type Scrolls = Or<(
+    With<ListView>,
+    With<TabScroll>,
+    With<crate::markdown_view::MarkdownViewport>,
+)>;
+#[cfg(not(feature = "markdown"))]
 type Scrolls = Or<(With<ListView>, With<TabScroll>)>;
+
+/// What scrolls to follow focus and pages with PageUp and PageDown: a list's viewport, and a
+/// Markdown page's, whose links are tab stops like a list's rows.
+#[cfg(feature = "markdown")]
+type Viewport = Or<(With<ListView>, With<crate::markdown_view::MarkdownViewport>)>;
+#[cfg(not(feature = "markdown"))]
+type Viewport = With<ListView>;
 
 /// Shows each list's rail (and each scrolling tab strip's, [`crate::TabScroll`]) only while its
 /// content does not fit, the way a browser's bar comes and
@@ -91,11 +105,12 @@ pub(crate) fn span(node: &ComputedNode, transform: &UiGlobalTransform) -> (f32, 
     )
 }
 
-/// The list a widget is in, if any: its nearest ancestor with a [`ListView`].
+/// The list a widget is in, if any: its nearest ancestor with a [`ListView`] (or a Markdown
+/// page's viewport).
 fn list_of(
     entity: Entity,
     parents: &Query<&ChildOf>,
-    views: &Query<(), With<ListView>>,
+    views: &Query<(), Viewport>,
 ) -> Option<Entity> {
     parents.iter_ancestors(entity).find(|&a| views.contains(a))
 }
@@ -116,7 +131,7 @@ pub fn scroll_to_focus(
     focus: Res<InputFocus>,
     visible: Res<InputFocusVisible>,
     parents: Query<&ChildOf>,
-    lists: Query<(), With<ListView>>,
+    lists: Query<(), Viewport>,
     nodes: Query<(&ComputedNode, &UiGlobalTransform), Without<ListView>>,
     columns: Query<(&Node, &Children)>,
     mut views: Query<
@@ -127,7 +142,7 @@ pub fn scroll_to_focus(
             &mut ScrollPosition,
             &mut ScrollGlide,
         ),
-        With<ListView>,
+        Viewport,
     >,
     settings: Res<MotionSettings>,
     time: Option<Res<Time<Real>>>,
@@ -221,7 +236,7 @@ pub fn page_lists(
     mut focus: ResMut<InputFocus>,
     mut shown: ResMut<InputFocusVisible>,
     parents: Query<&ChildOf>,
-    lists: Query<(), With<ListView>>,
+    lists: Query<(), Viewport>,
     nodes: Query<PageNode>,
 ) {
     let ctrl = keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]);
