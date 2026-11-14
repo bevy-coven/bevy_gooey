@@ -28,7 +28,7 @@ use crate::drag::{DropCandidate, DropRefusing};
 use crate::elevation::{Elevation, ElevationLevel};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
 use crate::icon::{IconSize, IconTone};
-use crate::layout::{BoxSize, CellWidth, LayoutGap, OverlayStacked};
+use crate::layout::{BoxSize, CellWidth, LayoutGap, OverlayStacked, RowLayout};
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
@@ -2085,6 +2085,9 @@ pub enum Role {
     Row,
     /// A [`crate::column`]: a flex column a [`LayoutGap`](crate::LayoutGap) apart; not drawn.
     Column,
+    /// A [`crate::button_row`]: a flex row of buttons a [`LayoutGap`](crate::LayoutGap) apart on one
+    /// centred line that wraps when they do not fit; not drawn.
+    ButtonRow,
     /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
     /// drawn, so a label column lines up down a list of rows.
     Cell,
@@ -2277,6 +2280,8 @@ struct State {
     image: Vec2,
     /// An overlay's child drawn over its first one: another system owns its box.
     stacked: bool,
+    /// What a layout container was asked for beyond its gap ([`RowLayout`]); none leaves the node.
+    flow: Option<RowLayout>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
     /// because the selected one is the surface and not the accent.
     edge_tab: bool,
@@ -2316,6 +2321,7 @@ impl Default for State {
             indicating: false,
             control: None,
             multi_line: false,
+            flow: None,
             layout_gap: 1.0,
             cell: 0.0,
             image: Vec2::ZERO,
@@ -2354,7 +2360,8 @@ type StateQuery = (
         Option<&'static LayoutGap>,
         Option<&'static CellWidth>,
         Option<&'static BoxSize>,
-        Has<OverlayStacked>,
+        // A nested pair: a query tuple holds 15, and this one is at it.
+        (Has<OverlayStacked>, Option<&'static RowLayout>),
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -2403,6 +2410,7 @@ type Restyle = (
                 Changed<CellWidth>,
                 Changed<BoxSize>,
                 Added<OverlayStacked>,
+                Changed<RowLayout>,
             )>,
         )>,
     )>,
@@ -2574,7 +2582,7 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
-                        stacked,
+                        (stacked, flow),
                     ),
                     row,
                     role,
@@ -2626,6 +2634,7 @@ pub fn apply_skin(
                         cell: cell.map_or(0.0, |cell| cell.0),
                         image: image.map_or(Vec2::ZERO, |image| image.0),
                         stacked,
+                        flow: flow.copied(),
                     }
                 },
             )
@@ -3283,6 +3292,7 @@ fn restyle(
         Role::Screen
         | Role::Row
         | Role::Column
+        | Role::ButtonRow
         | Role::Cell
         | Role::ImageBox
         | Role::Overlay
@@ -4863,6 +4873,15 @@ fn restyle(
                 next.row_gap = Val::Px(state.layout_gap * skin.gap);
                 next.min_width = Val::ZERO;
             }
+            // Buttons side by side stand a gap apart on one line, centred on it, and a line that is
+            // full wraps, a gap below (`RowLayout` below overrides each).
+            Role::ButtonRow => {
+                next.column_gap = Val::Px(state.layout_gap * skin.gap);
+                next.row_gap = Val::Px(state.layout_gap * skin.gap);
+                next.min_width = Val::ZERO;
+                next.align_items = AlignItems::Center;
+                next.flex_wrap = FlexWrap::Wrap;
+            }
             // A cell is a fixed width in body text sizes, cuts what does not fit, and shrinks
             // before it ever runs onto its neighbour. A cell of no width is not shown at all, so it
             // takes no room and no gap stands where it would be; stacked in an overlay it is the
@@ -4896,6 +4915,18 @@ fn restyle(
                 next.overflow = Overflow::clip();
             }
             _ => {}
+        }
+        // What a container was asked for beyond its gap, written only when asked: a row with no
+        // `RowLayout` keeps a `Node` field its host patched.
+        if let (Some(flow), Role::Row | Role::Column | Role::ButtonRow) = (state.flow, role) {
+            next.align_items = flow.align;
+            next.flex_wrap = flow.wrap;
+            next.justify_content = flow.justify;
+            // Lines that wrap stand the same gap apart as the children on a line.
+            if flow.wrap != FlexWrap::NoWrap {
+                next.column_gap = Val::Px(state.layout_gap * skin.gap);
+                next.row_gap = Val::Px(state.layout_gap * skin.gap);
+            }
         }
         node.set_if_neq(next);
     }

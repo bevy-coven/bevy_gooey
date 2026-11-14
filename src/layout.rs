@@ -38,6 +38,31 @@ pub struct CellWidth(pub f32);
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BoxSize(pub Vec2);
 
+/// How a layout container lays its children out beyond its gap: the cross-axis alignment, whether
+/// a line that is full wraps, and how the children share the main axis. The three things the editor
+/// patched over a spawned [`row`](crate::row) or [`column`](crate::column).
+///
+/// It is a component, so it goes where a patched `Node` cannot: beside `row(1.0)` in a bundle
+/// (`(row(1.0), RowLayout { .. })`), in a `Children::spawn(SpawnWith(..))` tuple, on any
+/// [`row_with`](crate::row_with) or [`column_with`](crate::column_with). [`crate::apply_skin`] writes
+/// it on a [`Role::Row`], [`Role::Column`] and [`Role::ButtonRow`] **only when the component is there**, so a row with none keeps whatever the
+/// host patched on its `Node`. Change it and the node follows in the same frame.
+///
+/// `RowLayout::default()` is Bevy's own default for each: [`AlignItems::Default`] (stretch),
+/// [`FlexWrap::NoWrap`], [`JustifyContent::Default`] (start).
+///
+/// Not serde: it holds Bevy's own layout enums.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct RowLayout {
+    /// How the children stand on the cross axis (a row's height, a column's width).
+    pub align: AlignItems,
+    /// Whether children that do not fit go on another line.
+    pub wrap: FlexWrap,
+    /// How the children share the main axis.
+    pub justify: JustifyContent,
+}
+
 /// An [`overlay`](crate::overlay)'s child drawn over its first one: absolute, filling the box the
 /// first child gives the overlay.
 ///

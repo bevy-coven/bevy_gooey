@@ -344,6 +344,66 @@ pub fn row(gap: f32) -> impl Bundle {
     )
 }
 
+/// A [`row`] with a [`RowLayout`](crate::RowLayout): the cross-axis alignment, the wrap and the main-axis spread a
+/// host used to patch over a spawned row. It is one bundle, so it stands where a patched `Node`
+/// cannot: in a `children![..]` list or a `Children::spawn(SpawnWith(..))`.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     row_with(
+///         1.0,
+///         RowLayout { align: AlignItems::Center, wrap: FlexWrap::Wrap, ..default() },
+///     ),
+///     children![label("Modified;"), button("Reset")],
+/// ));
+/// # }
+/// ```
+pub fn row_with(gap: f32, layout: crate::RowLayout) -> impl Bundle {
+    (row(gap), layout)
+}
+
+/// A [`column()`] with a [`RowLayout`](crate::RowLayout): `align` is across the column's width (its children stretch
+/// by default), `justify` along its height.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     column_with(1.0, RowLayout { align: AlignItems::Center, ..default() }),
+///     children![heading("Saved"), label("All changes are on disk")],
+/// ));
+/// # }
+/// ```
+pub fn column_with(gap: f32, layout: crate::RowLayout) -> impl Bundle {
+    (column(gap), layout)
+}
+
+/// A row of buttons: `gap` multiples of the skin's gap apart (a tight `0.5` is the PLAY, BUILD
+/// line), centred on one line, wrapping onto the next when the room is too narrow for them, a
+/// gap below. A [`RowLayout`](crate::RowLayout) beside it changes any of the three.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((button_row(0.5), children![button("PLAY"), button("BUILD")]));
+/// # }
+/// ```
+pub fn button_row(gap: f32) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Row,
+            ..default()
+        },
+        Role::ButtonRow,
+        crate::LayoutGap(gap),
+    )
+}
+
 /// A stack of rows, the skin's gap between them: a panel's body, a form, a list of readings.
 /// `gap` is in multiples of [`GooeySkin::gap`](crate::GooeySkin::gap), as for [`row`]. Its children
 /// stretch to its width; like a [`row`] it is as wide as the room it is given and no wider, so a

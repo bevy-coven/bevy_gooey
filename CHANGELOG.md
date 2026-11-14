@@ -4,6 +4,13 @@
 
 ### Added
 
+- Layout constructors for what the editor still built by hand (G-84, #95, `docs/research/layout-gaps.md`,
+  `docs/guide/layout.md`, `tests/layout_gaps.rs`). `RowLayout { align, wrap, justify }` (a public component: Bevy's
+  `AlignItems`, `FlexWrap`, `JustifyContent`), `row_with(gap, layout)`, `column_with(gap, layout)` and
+  `button_row(gap)` (a row of buttons centred on one line, a gap apart, that wraps a gap below): `RowLayout` goes
+  beside `row(1.0)` in a bundle or a `Children::spawn(SpawnWith(..))`, and is written only when it is on the node, so
+  a row with none keeps a `Node` field the host patched. One new `Role` (`ButtonRow`).
+
 - The parts a tool's lists and strips were still building from raw `Node`s (G-82, #93, `docs/research/kit-parts.md`,
   `docs/guide/layout.md`, `cargo run --example kit`). `glyph_button(glyph, name)`: a button for a caret or a
   cross with no padding and a hit area of `GooeySkin::target()` on each side (a `ControlSize` taller) however

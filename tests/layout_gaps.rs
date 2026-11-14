@@ -1,0 +1,383 @@
+//! The seven layout gaps the editor hit when it retired its hand-built `Node`s (G-84, #95): each
+//! constructor laid out for real in a headless window and read back from the drawn rectangles.
+
+use bevy::ecs::relationship::RelatedSpawner;
+use bevy::prelude::*;
+use bevy::render::RenderPlugin;
+use bevy::render::settings::WgpuSettings;
+use bevy::ui::UiGlobalTransform;
+use bevy::window::WindowResolution;
+use bevy::winit::WinitPlugin;
+use bevy_gooey::*;
+
+fn headless() -> App {
+    let mut app = App::new();
+    app.insert_resource(MotionSettings::off());
+    app.add_plugins((
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: WindowResolution::new(1280, 720).with_scale_factor_override(1.0),
+                    ..default()
+                }),
+                ..default()
+            })
+            .set(RenderPlugin {
+                render_creation: WgpuSettings {
+                    backends: None,
+                    ..default()
+                }
+                .into(),
+                ..default()
+            })
+            .disable::<WinitPlugin>(),
+        GooeyPlugins,
+    ));
+    app.world_mut().spawn(Camera2d);
+    app
+}
+
+fn settle(app: &mut App) {
+    for _ in 0..6 {
+        app.update();
+    }
+}
+
+/// A node's rectangle in the window, logical px.
+fn rect(app: &App, entity: Entity) -> Rect {
+    let node = app.world().get::<ComputedNode>(entity).expect("laid out");
+    let at = app
+        .world()
+        .get::<UiGlobalTransform>(entity)
+        .expect("placed")
+        .translation;
+    let scale = node.inverse_scale_factor();
+    Rect::from_center_size(at * scale, node.size() * scale)
+}
+
+fn children(app: &App, entity: Entity) -> Vec<Entity> {
+    app.world()
+        .get::<Children>(entity)
+        .map(|c| c.iter().collect())
+        .unwrap_or_default()
+}
+
+/// A real image in the app's assets, so a box draws something.
+fn image(app: &mut App) -> Handle<Image> {
+    app.world_mut()
+        .resource_mut::<Assets<Image>>()
+        .add(Image::default())
+}
+
+/// A fixed box `w` × `h` logical px that never shrinks: a probe for where a row puts its children.
+fn probe(app: &mut App, w: f32, h: f32) -> impl Bundle + use<> {
+    image_box(image(app), Vec2::new(w, h))
+}
+
+/// A plain node `width` wide that holds `child` and never gives way: the room a layout is put in.
+fn room(app: &mut App, width: f32, child: Entity) -> Entity {
+    let room = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(width),
+            min_width: Val::Px(width),
+            max_width: Val::Px(width),
+            flex_direction: FlexDirection::Column,
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .add_child(child)
+        .id();
+    app.world_mut().spawn(screen()).add_child(room);
+    room
+}
+
+// ---- 1. layout-aware row and column ----------------------------------------------------------
+
+/// `row_with` carries the cross-axis alignment the editor patched over the spawned bundle: a short
+/// box and a tall one share a centre line, and with `FlexStart` they share a top.
+#[test]
+fn row_with_aligns_its_children_on_the_cross_axis() {
+    for (align, centred) in [(AlignItems::Center, true), (AlignItems::FlexStart, false)] {
+        let mut app = headless();
+        let (short, tall) = (probe(&mut app, 40.0, 20.0), probe(&mut app, 40.0, 60.0));
+        let row = app
+            .world_mut()
+            .spawn(row_with(1.0, RowLayout { align, ..default() }))
+            .with_children(|row| {
+                row.spawn(short);
+                row.spawn(tall);
+            })
+            .id();
+        room(&mut app, 400.0, row);
+        settle(&mut app);
+        let boxes = children(&app, row);
+        let (a, b) = (rect(&app, boxes[0]), rect(&app, boxes[1]));
+        assert!((a.height() - 20.0).abs() < 0.5 && (b.height() - 60.0).abs() < 0.5);
+        if centred {
+            assert!(
+                (a.center().y - b.center().y).abs() < 0.5,
+                "centred on one line: {a:?} {b:?}"
+            );
+        } else {
+            assert!(
+                (a.min.y - b.min.y).abs() < 0.5,
+                "tops together: {a:?} {b:?}"
+            );
+        }
+    }
+}
+
+/// `wrap` puts what does not fit on a line of its own, a skin gap under the first.
+#[test]
+fn row_with_wraps_what_does_not_fit() {
+    let mut app = headless();
+    let boxes: Vec<_> = (0..3).map(|_| probe(&mut app, 100.0, 30.0)).collect();
+    let row = app
+        .world_mut()
+        .spawn(row_with(
+            1.0,
+            RowLayout {
+                wrap: FlexWrap::Wrap,
+                ..default()
+            },
+        ))
+        .with_children(|row| {
+            for b in boxes {
+                row.spawn(b);
+            }
+        })
+        .id();
+    room(&mut app, 250.0, row);
+    settle(&mut app);
+    let boxes: Vec<_> = children(&app, row).iter().map(|b| rect(&app, *b)).collect();
+    assert!(
+        (boxes[0].min.y - boxes[1].min.y).abs() < 0.5,
+        "two on the first line"
+    );
+    assert!(
+        boxes[2].min.y > boxes[0].max.y - 0.5,
+        "the third wraps below: {boxes:?}"
+    );
+    let gap = GooeySkin::dark().gap;
+    assert!(
+        (boxes[2].min.y - boxes[0].max.y - gap).abs() < 0.5,
+        "lines stand a skin gap apart: {boxes:?} gap {gap}"
+    );
+    assert!(
+        boxes[2].min.x < boxes[0].min.x + 0.5,
+        "the new line starts at the left"
+    );
+}
+
+/// The same row without `wrap` runs on in one line: that is what `wrap` changes.
+#[test]
+fn a_row_without_wrap_stays_on_one_line() {
+    let mut app = headless();
+    let boxes: Vec<_> = (0..3).map(|_| probe(&mut app, 100.0, 30.0)).collect();
+    let row = app
+        .world_mut()
+        .spawn(row(1.0))
+        .with_children(|row| {
+            for b in boxes {
+                row.spawn(b);
+            }
+        })
+        .id();
+    room(&mut app, 250.0, row);
+    settle(&mut app);
+    let boxes: Vec<_> = children(&app, row).iter().map(|b| rect(&app, *b)).collect();
+    assert!(
+        (boxes[0].min.y - boxes[2].min.y).abs() < 0.5,
+        "one line: {boxes:?}"
+    );
+}
+
+/// `justify` spreads the row's children along its main axis.
+#[test]
+fn row_with_justifies_along_the_main_axis() {
+    let mut app = headless();
+    let b = probe(&mut app, 100.0, 30.0);
+    let row = app
+        .world_mut()
+        .spawn(row_with(
+            1.0,
+            RowLayout {
+                justify: JustifyContent::End,
+                ..default()
+            },
+        ))
+        .with_children(|row| {
+            row.spawn(b);
+        })
+        .id();
+    let room = room(&mut app, 400.0, row);
+    settle(&mut app);
+    let at = rect(&app, children(&app, row)[0]);
+    let host = rect(&app, room);
+    assert!(
+        (at.max.x - host.max.x).abs() < 0.5,
+        "flush right: {at:?} in {host:?}"
+    );
+}
+
+/// The layout is a component, so it joins a plain `row(..)`, a bundle position and a
+/// `Children::spawn(SpawnWith(..))` the editor's settings screen uses, none of which can take a
+/// patched `Node`.
+#[test]
+fn row_layout_works_in_a_bundle_and_through_a_related_spawner() {
+    let mut app = headless();
+    let b = probe(&mut app, 40.0, 20.0);
+    let tall = probe(&mut app, 40.0, 60.0);
+    let row = app
+        .world_mut()
+        .spawn((
+            row(1.0),
+            RowLayout {
+                align: AlignItems::Center,
+                ..default()
+            },
+            Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
+                parent.spawn(b);
+                parent.spawn(tall);
+            })),
+        ))
+        .id();
+    room(&mut app, 400.0, row);
+    settle(&mut app);
+    let kids = children(&app, row);
+    assert_eq!(kids.len(), 2);
+    let (a, b) = (rect(&app, kids[0]), rect(&app, kids[1]));
+    assert!(
+        (a.center().y - b.center().y).abs() < 0.5,
+        "centred: {a:?} {b:?}"
+    );
+}
+
+/// A column takes the same layout: it centres its children across its width.
+#[test]
+fn column_with_aligns_across_its_width() {
+    let mut app = headless();
+    let b = probe(&mut app, 40.0, 20.0);
+    let column = app
+        .world_mut()
+        .spawn(column_with(
+            1.0,
+            RowLayout {
+                align: AlignItems::Center,
+                ..default()
+            },
+        ))
+        .with_children(|column| {
+            column.spawn(b);
+        })
+        .id();
+    let room = room(&mut app, 400.0, column);
+    settle(&mut app);
+    let at = rect(&app, children(&app, column)[0]);
+    let host = rect(&app, room);
+    assert!(
+        (at.center().x - host.center().x).abs() < 0.5,
+        "centred across: {at:?} in {host:?}"
+    );
+}
+
+/// A row with no `RowLayout` keeps a `Node` field the host patched itself: the skin writes the
+/// layout only when it is asked to.
+#[test]
+fn a_plain_row_keeps_a_patched_node() {
+    let mut app = headless();
+    let (short, tall) = (probe(&mut app, 40.0, 20.0), probe(&mut app, 40.0, 60.0));
+    let row = app
+        .world_mut()
+        .spawn(row(1.0))
+        .with_children(|row| {
+            row.spawn(short);
+            row.spawn(tall);
+        })
+        .id();
+    room(&mut app, 400.0, row);
+    settle(&mut app);
+    app.world_mut()
+        .get_mut::<Node>(row)
+        .expect("a node")
+        .align_items = AlignItems::Center;
+    app.world_mut()
+        .get_mut::<Role>(row)
+        .expect("a role")
+        .set_changed();
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(row).expect("a node").align_items,
+        AlignItems::Center,
+        "a restyle leaves what the host wrote"
+    );
+}
+
+/// A `RowLayout` changed after the spawn moves the row in the same frame.
+#[test]
+fn a_changed_row_layout_restyles() {
+    let mut app = headless();
+    let b = probe(&mut app, 40.0, 20.0);
+    let row = app
+        .world_mut()
+        .spawn(row_with(1.0, RowLayout::default()))
+        .with_children(|row| {
+            row.spawn(b);
+        })
+        .id();
+    let room = room(&mut app, 400.0, row);
+    settle(&mut app);
+    assert!(rect(&app, children(&app, row)[0]).min.x < rect(&app, room).min.x + 0.5);
+    app.world_mut()
+        .get_mut::<RowLayout>(row)
+        .expect("a layout")
+        .justify = JustifyContent::End;
+    settle(&mut app);
+    assert!(rect(&app, children(&app, row)[0]).max.x > rect(&app, room).max.x - 0.5);
+}
+
+/// `button_row(gap)`: buttons a tight gap apart on one centred line, wrapping when they do not fit.
+#[test]
+fn button_row_keeps_buttons_a_gap_apart_and_wraps() {
+    let mut app = headless();
+    let row = app
+        .world_mut()
+        .spawn(button_row(0.5))
+        .with_children(|row| {
+            row.spawn(button("PLAY"));
+            row.spawn(button("BUILD"));
+            row.spawn(button("A button with a rather long name"));
+        })
+        .id();
+    room(&mut app, 4000.0, row);
+    settle(&mut app);
+    let wide: Vec<_> = children(&app, row).iter().map(|b| rect(&app, *b)).collect();
+    let gap = GooeySkin::dark().gap * 0.5;
+    assert!(
+        ((wide[1].min.x - wide[0].max.x) - gap).abs() < 0.5,
+        "half a skin gap between buttons: {wide:?} {gap}"
+    );
+    assert!(
+        (wide[0].min.y - wide[2].min.y).abs() < 0.5,
+        "one line when they fit"
+    );
+
+    let mut app = headless();
+    let row = app
+        .world_mut()
+        .spawn(button_row(0.5))
+        .with_children(|row| {
+            row.spawn(button("PLAY"));
+            row.spawn(button("BUILD"));
+            row.spawn(button("A button with a rather long name"));
+        })
+        .id();
+    room(&mut app, 220.0, row);
+    settle(&mut app);
+    let narrow: Vec<_> = children(&app, row).iter().map(|b| rect(&app, *b)).collect();
+    assert!(
+        narrow[2].min.y > narrow[0].max.y - 0.5,
+        "the last button wraps below: {narrow:?}"
+    );
+}

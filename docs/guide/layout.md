@@ -1,6 +1,6 @@
 # Layout primitives
 
-Five widgets that lay a panel out without a `Node` literal anywhere in the caller: `row(gap)`,
+Five widgets (and `row_with`, `column_with` and `button_row`) that lay a panel out without a `Node` literal anywhere in the caller: `row(gap)`,
 `column(gap)`, `cell(width)`, `image_box(handle, size)` and `overlay()`.
 
 ```rust
@@ -39,6 +39,34 @@ Their spacing is the skin's, so a step of `GooeySkin::text_scale` or a theme cha
 | `cell(width)` | a box `width` **body text sizes** wide, so a label column lines up down a list of readings; what does not fit is cut. A width of 0 is not shown at all: no room, no gap |
 | `image_box(handle, size)` | a picture of `size` logical px, whatever the image is: a plot being written keeps its room, an image that has not loaded draws nothing and still holds the box |
 | `overlay()` | a box its first child sizes, with every later child stacked over it filling it |
+
+## How a row lays out
+
+`row(gap)` and `column(gap)` take a gap only. What else a container does, which way its children
+stand across it, whether a full line wraps and how they share the rest, is a `RowLayout`:
+
+```rust
+use bevy::prelude::*;
+use bevy_gooey::*;
+
+fn settings_row(mut commands: Commands) {
+    commands.spawn((
+        row_with(
+            1.0,
+            RowLayout { align: AlignItems::Center, wrap: FlexWrap::Wrap, justify: JustifyContent::SpaceBetween },
+        ),
+        children![label("Modified; without it the chord is Ctrl+S"), button("Reset")],
+    ));
+    // The same component on a plain row, so it works in a bundle or a `Children::spawn(SpawnWith(..))`.
+    commands.spawn((row(1.0), RowLayout { align: AlignItems::Center, ..default() }));
+    // A line of buttons with a tight gap: centred, wrapping a gap below when the room runs out.
+    commands.spawn((button_row(0.5), children![button("PLAY"), button("BUILD")]));
+}
+```
+
+`RowLayout` is written **only when it is on the node**: a plain `row(1.0)` keeps a `Node` field you
+patched yourself. A wrapping container puts the skin's gap between its lines as well as between its
+children. `column_with(gap, layout)` is the same for a column (`align` is across its width).
 
 ## The parts of a list and a strip
 
