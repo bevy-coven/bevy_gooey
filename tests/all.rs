@@ -42,6 +42,7 @@ mod hover_group;
 mod icon;
 mod inspect_mixed;
 mod inspector;
+mod kit_parts;
 mod large_text;
 mod layout;
 mod layout_motion;

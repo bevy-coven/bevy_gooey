@@ -144,6 +144,10 @@ const ICON_TAB_PAD: f32 = 0.6;
 const CORNER_BADGE_OFFSET: f32 = 0.5;
 const CORNER_BADGE_TEXT_SIZES: f32 = 1.2;
 
+/// An [`Role::EdgeTab`]'s bottom edge is this many line weights: heavier than a frame, because it
+/// is read across the width of a whole tab rather than down the side of one box.
+const EDGE_TAB_LINES: f32 = 1.5;
+
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
 
@@ -1816,6 +1820,24 @@ pub enum Role {
     /// A corner badge of a [`crate::side_tabs_icons`] tab: a [`Role::TabBadge`] set in the tab's
     /// top-right corner, over the picture's corner.
     CornerBadge,
+    /// A [`crate::glyph_button`]: a button for a mark too small to press (a caret, a close cross),
+    /// whose hit area is a target (the skin's [`GooeySkin::target`], a [`ControlSize`] taller) on
+    /// each side whatever the glyph's size, the glyph centred in it. A button's fill and frame.
+    GlyphButton,
+    /// An [`crate::edge_tab`]: a tab of a strip the host selects ([`bevy::ui::Selected`]), with an
+    /// edge along its bottom that is always reserved and lit in [`GooeySkin::accent`] while it is
+    /// the selected one, so the selection moves no neighbour. The selected tab is the panel's own
+    /// surface, the others a button's raised fill.
+    EdgeTab,
+    /// A [`crate::band`]: a full-width row that is a button, a grouped list's header, in a
+    /// button's fill (the raised fill at rest, [`GooeySkin::hovered`] under the pointer).
+    Band,
+    /// A [`crate::fill_text`]: a text that is a flex item of its own which takes the room its row
+    /// leaves and wraps inside it, so a long name never pushes its row wider.
+    FillText,
+    /// A [`crate::count_text`]: a text that is a flex item of its own which never shrinks and never
+    /// wraps, a gap off what is before it, so a tally keeps a column of its own.
+    CountText,
     /// A card's picture across its width at 16:9, on a [`GooeySkin::surface_raised`] placeholder;
     /// half transparent on a disabled card.
     CardImage,
@@ -2204,6 +2226,9 @@ struct State {
     image: Vec2,
     /// An overlay's child drawn over its first one: another system owns its box.
     stacked: bool,
+    /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
+    /// because the selected one is the surface and not the accent.
+    edge_tab: bool,
 }
 
 impl Default for State {
@@ -2244,6 +2269,7 @@ impl Default for State {
             cell: 0.0,
             image: Vec2::ZERO,
             stacked: false,
+            edge_tab: false,
         }
     }
 }
@@ -2361,6 +2387,9 @@ fn owns_parts(role: Option<&Role>) -> bool {
         role,
         Some(
             Role::Button
+                | Role::GlyphButton
+                | Role::Band
+                | Role::EdgeTab
                 | Role::CardCell
                 | Role::Toggle
                 | Role::Slider
@@ -2515,6 +2544,7 @@ pub fn apply_skin(
                         status: status.copied(),
                         anchor: anchor.copied().unwrap_or_default(),
                         status_item: role == Some(&Role::StatusItem),
+                        edge_tab: role == Some(&Role::EdgeTab),
                         band: row.is_some_and(|r| r.index % 2 == 1),
                         primary: primary || variant.is_some_and(|v| *v == ButtonVariant::Submit),
                         variant: variant.copied().unwrap_or(if primary {
@@ -2649,6 +2679,8 @@ pub fn apply_skin(
                     matches!(
                         item.1,
                         Role::Button
+                            | Role::GlyphButton
+                            | Role::Band
                             | Role::Toggle
                             | Role::Slider
                             | Role::Choice
@@ -2840,7 +2872,16 @@ fn restyle(
         Role::Button if !state.disabled && !matches!(state.variant, ButtonVariant::Neutral | ButtonVariant::Submit) => {
             Some(skin.variant_fill(state.variant, phase_of(&state)))
         }
-        Role::Button | Role::TableHeaderCell => Some(if state.disabled {
+        // A selected edge tab continues the surface under it, which is what the edge along its
+        // bottom marks; the rest are a button's raised fill, lifted under the pointer.
+        Role::EdgeTab => Some(if state.selected {
+            skin.surface
+        } else if state.hovered {
+            skin.hovered()
+        } else {
+            skin.surface_raised
+        }),
+        Role::Button | Role::GlyphButton | Role::Band | Role::TableHeaderCell => Some(if state.disabled {
             skin.surface
         } else if state.primary {
             // The main action is the accent at rest and lifts from it, where a plain button
@@ -3131,6 +3172,8 @@ fn restyle(
         | Role::Label
         | Role::ButtonText
         | Role::MenuTitleText
+        | Role::FillText
+        | Role::CountText
         | Role::Toggle
         | Role::Slider
         | Role::Choice
@@ -3291,6 +3334,8 @@ fn restyle(
             Color::NONE
         })),
         Role::Button
+        | Role::GlyphButton
+        | Role::Band
         | Role::Tab
         | Role::IconTab
         | Role::GroupOption
@@ -3304,11 +3349,23 @@ fn restyle(
             Some(BorderColor::all(skin.outline))
         }
         Role::Button
+        | Role::GlyphButton
+        | Role::Band
         | Role::Tab
         | Role::IconTab
         | Role::GroupOption
         | Role::StatusItem
         | Role::TableHeaderCell => Some(BorderColor::all(Color::NONE)),
+        // The edge lit along the bottom is the selected tab's mark; the other sides, and every
+        // side of a tab that is not selected, stay clear.
+        Role::EdgeTab => Some(BorderColor {
+            bottom: if state.selected {
+                skin.accent
+            } else {
+                Color::NONE
+            },
+            ..BorderColor::all(Color::NONE)
+        }),
         // The ring on the cursor's row; a sort mark is drawn in its header's ink.
         Role::TableRow => Some(BorderColor::all(if state.focused {
             skin.focus_ring
@@ -3644,6 +3701,58 @@ fn restyle(
                 if next.overflow.y != OverflowAxis::Scroll {
                     next.flex_shrink = 0.0;
                 }
+            }
+            // A glyph's button owns no padding: its box is the hit area, a target on each side
+            // (a sized control's height if that is taller) however small the mark in it, and a row
+            // never squeezes it under that.
+            Role::GlyphButton => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::ZERO;
+                next.min_width = Val::Px(skin.target());
+                next.min_height = Val::Px(control);
+                next.flex_shrink = 0.0;
+            }
+            // A band is as wide as the room its host gives it and stands half a gap off what is
+            // above it; what is in it is a row, a half gap apart.
+            Role::Band => {
+                next.width = Val::Percent(100.0);
+                next.min_width = Val::ZERO;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad()),
+                    Val::Px(air(set_px * LIST_LINE_TEXT_SIZES, skin.pad() * 0.6)),
+                );
+                next.column_gap = Val::Px(skin.gap * 0.5);
+                next.margin = UiRect::top(Val::Px(skin.gap * 0.5));
+                next.min_height = Val::Px(control);
+            }
+            // An edge tab's own inset is a tab's. Its bottom edge is always there, a heavier line
+            // than a frame, so lighting it (`BorderColor`) changes a colour and no size.
+            Role::EdgeTab => {
+                next.border = UiRect::bottom(Val::Px(snap_line_width(
+                    skin.border * EDGE_TAB_LINES,
+                    scale,
+                )));
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad() * 1.5),
+                    Val::Px(air(set_px * LIST_LINE_TEXT_SIZES, skin.pad() * 0.6)),
+                );
+                next.align_items = AlignItems::Center;
+                next.flex_shrink = 0.0;
+            }
+            // The name takes what the row leaves and gives way to it: with no least width a text
+            // is as wide as its longest line and pushes the row out.
+            Role::FillText => {
+                next.flex_grow = 1.0;
+                next.flex_shrink = 1.0;
+                next.min_width = Val::ZERO;
+            }
+            // The tally keeps the width of its words, whole, on one line.
+            Role::CountText => {
+                next.flex_grow = 0.0;
+                next.flex_shrink = 0.0;
             }
             Role::Button
             | Role::Tab
@@ -4666,7 +4775,7 @@ fn restyle(
             };
             Some((faded(color, owner.alpha), &look.fonts.body, skin.text_size))
         }
-        Role::ButtonText | Role::MenuTitleText => {
+        Role::ButtonText | Role::MenuTitleText | Role::FillText | Role::CountText => {
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted
@@ -4750,7 +4859,7 @@ fn restyle(
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted
-            } else if parent.selected || parent.pressed {
+            } else if !parent.edge_tab && (parent.selected || parent.pressed) {
                 skin.accent_text
             } else {
                 skin.text

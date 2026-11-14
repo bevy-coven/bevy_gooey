@@ -49,6 +49,8 @@ pub(crate) fn feedback_on_activate(
     if matches!(
         roles.get(event.entity),
         Ok(Role::Button
+            | Role::GlyphButton
+            | Role::Band
             | Role::ToastAction
             | Role::StatusItem
             | Role::MenuTitle
@@ -109,6 +111,8 @@ pub fn feedback_on_focus(
         && matches!(
             roles.get(entity),
             Ok(Role::Button
+                | Role::GlyphButton
+                | Role::Band
                 | Role::ToastAction
                 | Role::Toggle
                 | Role::Slider

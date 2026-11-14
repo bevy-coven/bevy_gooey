@@ -3671,6 +3671,145 @@ pub fn icon_button(source: IconSource, tooltip: Tooltip) -> impl Bundle {
     )
 }
 
+/// A button for a mark too small to press: a caret, a close cross, a chevron. Its hit area is the
+/// skin's [`target`](crate::GooeySkin::target) on each side (a [`ControlSize`](crate::ControlSize)
+/// taller) **whatever the size of the glyph**, with the glyph centred in it and no padding of its
+/// own, so a 6 px mark is as easy to hit as a 48 px one. `name` is what a screen reader says and
+/// the tooltip's line; the glyph is only what is drawn. Observe [`Activate`](crate::Activate) on it
+/// like any [`button`]; it has a button's fill, frame, focus ring and states.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     glyph_button("v", "Fold the group"),
+///     observe(|_: On<Activate>| info!("fold")),
+/// ));
+/// # }
+/// ```
+pub fn glyph_button(glyph: impl Into<String>, name: impl Into<String>) -> impl Bundle {
+    let name = name.into();
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::GlyphButton,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+        Tooltip::new(name.clone()),
+        AccessibleLabel(name),
+        children![(Text::new(glyph), ONE_LINE, Role::ButtonText)],
+    )
+}
+
+/// A tab for a strip the host selects itself (a workspace's modes, a pane's kinds): its own inset
+/// and, along its bottom, an edge that is **always there** and lit in the accent while the tab
+/// carries Bevy's [`Selected`](bevy::ui::Selected), so selecting another changes a colour and moves
+/// no neighbour. The selected tab is the surface under it, the others a button's raised fill,
+/// lifted under the pointer. Put the tabs in a [`row`] and write `Selected` on the one that is on
+/// (and take it off the one that was); listen for `PointerClick` on a tab for the player.
+///
+/// It is not a button: it takes no focus and answers no Enter, so a host whose keys already move
+/// the strip (chords, say) is not heard twice. For a strip that owns its keys and its pages use
+/// [`tabs`].
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((row(0.0), children![
+///     (edge_tab("Meshes"), bevy::ui::Selected),
+///     edge_tab("Tiles"),
+/// ]));
+/// # }
+/// ```
+pub fn edge_tab(label: impl Into<String>) -> impl Bundle {
+    (
+        Node::default(),
+        Role::EdgeTab,
+        Hovered::default(),
+        children![(Text::new(label), ONE_LINE, Role::TabText)],
+    )
+}
+
+/// A full-width row that is a button: a grouped list's header that folds the group, a "show more"
+/// line. It is as wide as its host, stands half a gap off what is above it, and has a button's
+/// fill, frame, focus ring and states, so it shades under the pointer exactly as a list's row does.
+/// Fill it with words ([`fill_text`], [`count_text`], or a mark as `(Text::new("v"),
+/// Role::ButtonText)`); they follow the band's state. Observe
+/// [`Activate`](crate::Activate) on it to fold or open.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     band(),
+///     children![
+///         (Text::new("v"), Role::ButtonText),
+///         fill_text("kenney_prototype-kit"),
+///         count_text("145"),
+///     ],
+///     observe(|_: On<Activate>| info!("fold")),
+/// ));
+/// # }
+/// ```
+pub fn band() -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::Band,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+    )
+}
+
+/// Text that is a flex item of its own and takes the room its row leaves: it grows, gives way to
+/// its neighbours and has no least width, and wraps at a word or, for one that is longer than the
+/// room, at a letter. So a long name wraps **inside its own column** and never pushes its row wider
+/// or out of its host. Beside it put a [`count_text`], which keeps its own.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((row(1.0), children![fill_text("low_poly_furniture/glb/"), count_text("8")]));
+/// # }
+/// ```
+pub fn fill_text(text: impl Into<String>) -> impl Bundle {
+    (
+        Text::new(text),
+        TextLayout::new(Justify::Left, LineBreak::WordOrCharacter),
+        Role::FillText,
+        Pickable::IGNORE,
+    )
+}
+
+/// Text that is a flex item of its own and keeps its words whole: it never shrinks and never wraps,
+/// so a tally ("145", "8 pack(s), 120 mesh(es)") holds a column of its own at the end of a row
+/// whose [`fill_text`] gives way to it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((row(1.0), children![fill_text("Electronics"), count_text("145")]));
+/// # }
+/// ```
+pub fn count_text(text: impl Into<String>) -> impl Bundle {
+    (Text::new(text), ONE_LINE, Role::CountText, Pickable::IGNORE)
+}
+
 /// A row of options of which exactly one is on, like a toolbar's tool modes: the one on is lit in
 /// the accent, like the selected tab. Choosing another with Enter, Space, South or a click sends
 /// one [`ValueChange<usize>`](crate::ValueChange) on the group (the index of the option) and moves
