@@ -251,6 +251,8 @@ pub fn page_lists(
     parents: Query<&ChildOf>,
     lists: Query<(), Viewport>,
     nodes: Query<PageNode>,
+    regions: Query<(), With<crate::box_model::ScrollGutter>>,
+    roles: Query<&Role>,
 ) {
     let ctrl = keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]);
     let pressed = |key: KeyCode, pad: GamepadButton| {
@@ -267,6 +269,11 @@ pub fn page_lists(
     let Some(list) = list_of(from, &parents, &lists) else {
         return;
     };
+    // A scroll region holds forms and panes, not only rows: a widget in it that pages itself keeps
+    // its keys (`keeps_nav_keys`), as it does for Home and End.
+    if regions.contains(list) && keeps_nav_keys(from, list, &roles, &parents) {
+        return;
+    }
     let (Ok((_, from_node, from_transform, ..)), Ok((_, view, view_transform, ..))) =
         (nodes.get(from), nodes.get(list))
     else {
@@ -328,25 +335,12 @@ pub fn scroll_region_ends(
     let Some(from) = focus.get() else {
         return;
     };
-    if roles.get(from).is_ok_and(|role| {
-        matches!(
-            role,
-            Role::Slider
-                | Role::Choice
-                | Role::Binding
-                | Role::SplitDivider
-                | Role::Tab
-                | Role::IconTab
-                | Role::TextInput
-                | Role::TextArea
-                | Role::NumberPart
-        )
-    }) {
-        return;
-    }
     let Some(region) = parents.iter_ancestors(from).find(|&a| regions.contains(a)) else {
         return;
     };
+    if keeps_nav_keys(from, region, &roles, &parents) {
+        return;
+    }
     let mut candidates: Vec<(Entity, f32)> = nodes
         .iter()
         .filter(
@@ -374,4 +368,57 @@ pub fn scroll_region_ends(
         show_focus(&mut shown);
         focus.set(to, FocusCause::Navigated);
     }
+}
+
+/// Whether the widget that has focus keeps PageUp, PageDown, Home and End for itself, so a
+/// [`crate::scroll_region`] around it must not take them: the one predicate [`page_lists`] (for a
+/// region's viewport) and [`scroll_region_ends`] share. True when the focused widget **or any widget
+/// between it and the region** is one that handles those keys: a slider, a choice, a binding, a split
+/// divider, a tab, a radial, a text input, text area or number field (and their cells), a table or tree
+/// (and its rows and header), a code editor, a colour area, a palette (field and rows), a menu item,
+/// or a slot. A plain button, a toggle or a card is not: the region pages and ends over them.
+pub(crate) fn keeps_nav_keys(
+    from: Entity,
+    region: Entity,
+    roles: &Query<&Role>,
+    parents: &Query<&ChildOf>,
+) -> bool {
+    std::iter::once(from)
+        .chain(parents.iter_ancestors(from).take_while(|&a| a != region))
+        .any(|e| {
+            roles.get(e).is_ok_and(|role| {
+                matches!(
+                    role,
+                    Role::Slider
+                        | Role::Choice
+                        | Role::ChoiceCell
+                        | Role::ChoiceOption
+                        | Role::Binding
+                        | Role::SplitDivider
+                        | Role::Tab
+                        | Role::IconTab
+                        | Role::Radial
+                        | Role::TextInput
+                        | Role::TextArea
+                        | Role::TextCell
+                        | Role::NumberPart
+                        | Role::NumberParts
+                        | Role::Table
+                        | Role::TableView
+                        | Role::TableRow
+                        | Role::TableHeaderCell
+                        | Role::CodeEditor
+                        | Role::CodeArea
+                        | Role::CodeContent
+                        | Role::ColorArea
+                        | Role::ColorStripBox
+                        | Role::Palette
+                        | Role::PaletteField
+                        | Role::PaletteRow
+                        | Role::MenuItem
+                        | Role::Slot
+                        | Role::SlotEmpty
+                )
+            })
+        })
 }

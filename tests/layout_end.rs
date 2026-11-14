@@ -102,7 +102,11 @@ fn a_node_spawned_with_shown_false_is_closed_before_any_frame_runs() {
         app.world().get::<Visibility>(page),
         Some(&Visibility::Hidden)
     );
-    app.world_mut().spawn(screen()).add_child(page);
+    let outside = app.world_mut().spawn(button("Outside")).id();
+    app.world_mut()
+        .spawn(screen())
+        .add_child(page)
+        .add_child(outside);
     app.update();
     assert!(
         rect(&app, page).size().length() < 0.5,
@@ -110,8 +114,12 @@ fn a_node_spawned_with_shown_false_is_closed_before_any_frame_runs() {
     );
     let stops = tab_stops(&mut app, 3);
     assert!(
+        stops.iter().any(|s| s.as_deref() == Some("Outside")),
+        "the control IS reachable, so the next assertion is not vacuous: {stops:?}"
+    );
+    assert!(
         stops.iter().all(|s| s.as_deref() != Some("In")),
-        "and no stop: {stops:?}"
+        "no stop in the closed node: {stops:?}"
     );
     // Opening it later gives back what it had.
     app.world_mut().entity_mut(page).insert(Shown(true));
@@ -146,13 +154,21 @@ fn shown_follow_closed_spawns_a_closed_node_the_host_can_open() {
         app.world().get::<StartsClosed>(page).is_none(),
         "the marker is one-shot"
     );
-    app.world_mut().spawn(screen()).add_child(page);
+    let outside = app.world_mut().spawn(button("Outside")).id();
+    app.world_mut()
+        .spawn(screen())
+        .add_child(page)
+        .add_child(outside);
     app.update();
     assert!(rect(&app, page).size().length() < 0.5);
     let stops = tab_stops(&mut app, 3);
     assert!(
+        stops.iter().any(|s| s.as_deref() == Some("Outside")),
+        "the control IS reachable, so the next assertion is not vacuous: {stops:?}"
+    );
+    assert!(
         stops.iter().all(|s| s.as_deref() != Some("In")),
-        "{stops:?}"
+        "no stop in the closed node: {stops:?}"
     );
     app.world_mut()
         .get_mut::<Node>(page)
@@ -467,5 +483,204 @@ fn a_scroll_view_whose_children_the_host_replaces_every_frame_keeps_its_offset()
     assert!(
         (computed.scroll_position.y * computed.inverse_scale_factor - 300.0).abs() < 1.5,
         "what is drawn is scrolled too"
+    );
+}
+
+// ---- review: widgets inside a region keep their own keys ---------------------------------------
+
+/// A region holding `widget` first and thirty buttons after it, settled; the app and the viewport.
+fn region_with(widget: impl Bundle) -> (App, Entity) {
+    let mut app = headless();
+    let region = app
+        .world_mut()
+        .spawn(scroll_region(
+            0.5,
+            None,
+            Children::spawn(SpawnWith(move |p: &mut RelatedSpawner<ChildOf>| {
+                p.spawn(widget);
+                for i in 0..30 {
+                    p.spawn(button(format!("Row {i}")));
+                }
+            })),
+        ))
+        .id();
+    let host = app
+        .world_mut()
+        .spawn(sized(Sizing {
+            width: Some(Extent::Px(500.0)),
+            height: Some(Extent::Px(300.0)),
+            ..default()
+        }))
+        .add_child(region)
+        .id();
+    app.world_mut().spawn(screen()).add_child(host);
+    settle(&mut app);
+    let view = children(&app, region)[0];
+    (app, view)
+}
+
+fn within(app: &App, e: Entity, root: Entity) -> bool {
+    e == root
+        || app
+            .world()
+            .entity(e)
+            .get::<ChildOf>()
+            .is_some_and(|p| within(app, p.parent(), root))
+}
+
+fn first_with_role(app: &App, role: Role) -> Entity {
+    app.world()
+        .iter_entities()
+        .find(|e| e.get::<Role>() == Some(&role))
+        .map(|e| e.id())
+        .expect("a widget with that role")
+}
+
+/// Focus the widget with Tab (it is the region's first stop) and press every key the region would
+/// otherwise take: focus stays in the widget and the region does not scroll.
+fn keeps_its_keys(role: Role, widget: impl Bundle, what: &str) {
+    let (mut app, view) = region_with(widget);
+    bevy_gooey::testing::press(&mut app, KeyCode::Tab);
+    let at = bevy_gooey::testing::focused(&app).expect("a focus");
+    let root = first_with_role(&app, role);
+    assert!(
+        within(&app, at, root),
+        "{what}: Tab reached the widget first"
+    );
+    for key in [
+        KeyCode::PageDown,
+        KeyCode::PageUp,
+        KeyCode::End,
+        KeyCode::Home,
+    ] {
+        bevy_gooey::testing::press(&mut app, key);
+        let now = bevy_gooey::testing::focused(&app).expect("a focus");
+        assert!(
+            within(&app, now, root),
+            "{what}: {key:?} took focus out of the widget to {now:?}"
+        );
+        assert!(
+            scroll_y(&app, view).abs() < 0.5,
+            "{what}: {key:?} scrolled the region: {}",
+            scroll_y(&app, view)
+        );
+    }
+}
+
+#[test]
+fn a_text_area_in_a_scroll_region_keeps_its_page_home_and_end() {
+    keeps_its_keys(
+        Role::TextArea,
+        text_area("Notes", "one\ntwo\nthree", 4),
+        "text area",
+    );
+}
+
+#[test]
+fn a_table_in_a_scroll_region_keeps_its_page_home_and_end() {
+    let rows: Vec<Vec<String>> = (0..50).map(|i| vec![format!("Item {i}")]).collect();
+    keeps_its_keys(Role::Table, table([Column::new("Name")], rows), "table");
+}
+
+#[test]
+fn a_slider_in_a_scroll_region_keeps_its_home_and_end() {
+    keeps_its_keys(Role::Slider, slider("Volume", 0.5, 0.0..=1.0), "slider");
+}
+
+#[test]
+fn a_code_editor_in_a_scroll_region_keeps_its_page_home_and_end() {
+    let text = (0..40).map(|i| format!("line {i}\n")).collect::<String>();
+    keeps_its_keys(Role::CodeEditor, code_editor("Script", text), "code editor");
+}
+
+/// A palette's field has focus (set by hand: the palette is a modal card) inside a region: the Page
+/// keys are the palette's, not the region's.
+#[test]
+fn a_palette_field_in_a_scroll_region_keeps_its_page_keys() {
+    let (mut app, view) = region_with(command_palette());
+    // An open palette puts focus in its own field; that field is inside the `PaletteField` row.
+    let root = first_with_role(&app, Role::PaletteField);
+    let field = bevy_gooey::testing::focused(&app).expect("the palette took focus");
+    assert!(within(&app, field, root), "focus is in the palette's field");
+    for key in [
+        KeyCode::PageDown,
+        KeyCode::PageUp,
+        KeyCode::End,
+        KeyCode::Home,
+    ] {
+        bevy_gooey::testing::press(&mut app, key);
+        let now = bevy_gooey::testing::focused(&app).expect("a focus");
+        assert!(
+            within(&app, now, root),
+            "{key:?} took focus out of the palette field to {:?}",
+            bevy_gooey::testing::focused_label(&app)
+        );
+        assert!(
+            scroll_y(&app, view).abs() < 0.5,
+            "{key:?} scrolled the region"
+        );
+    }
+}
+
+/// The control: a plain button row in the same kind of region still pages, and ends.
+#[test]
+fn a_plain_button_row_in_a_scroll_region_still_pages_and_ends() {
+    let (mut app, view) = region_with(button("First"));
+    bevy_gooey::testing::press(&mut app, KeyCode::Tab);
+    bevy_gooey::testing::press(&mut app, KeyCode::PageDown);
+    assert!(
+        scroll_y(&app, view) > 0.5,
+        "paged: {}",
+        scroll_y(&app, view)
+    );
+    bevy_gooey::testing::press(&mut app, KeyCode::End);
+    assert_eq!(
+        bevy_gooey::testing::focused_label(&app).as_deref(),
+        Some("Row 29")
+    );
+}
+
+/// Two `Shown(false)` inserts in one command flush: the second must not record the first's
+/// `Display::None` as the display to come back to.
+#[test]
+fn two_shown_false_inserts_in_one_flush_still_open_to_the_original_display() {
+    let mut app = headless();
+    let page = app
+        .world_mut()
+        .spawn((panel(), children![button("In")]))
+        .id();
+    let outside = app.world_mut().spawn(button("Outside")).id();
+    app.world_mut()
+        .spawn(screen())
+        .add_child(page)
+        .add_child(outside);
+    settle(&mut app);
+    {
+        let mut commands = app.world_mut().commands();
+        commands.entity(page).insert(Shown(false));
+        commands.entity(page).insert(Shown(false));
+    }
+    app.world_mut().flush();
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(page).expect("a node").display,
+        Display::None
+    );
+    app.world_mut().entity_mut(page).insert(Shown(true));
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(page).expect("a node").display,
+        Display::Flex,
+        "not flattened to None"
+    );
+    assert_eq!(
+        app.world().get::<Visibility>(page),
+        Some(&Visibility::Inherited)
+    );
+    assert!(rect(&app, page).height() > 1.0);
+    assert!(
+        tab_stops(&mut app, 3)
+            .iter()
+            .any(|s| s.as_deref() == Some("In"))
     );
 }

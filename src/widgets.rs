@@ -2687,8 +2687,9 @@ where
 /// with `flex_grow`, so inside a content-sized parent (another scroll) it collapses to nothing.
 /// [`list`] is the other one: a stated number of rows tall. **It follows keyboard focus into view** the
 /// way a list's rows do, and answers PageUp and PageDown (focus a viewport away), Home and End (focus
-/// the first and last widget; not while a slider, choice, tab, divider or text field has focus, which
-/// keep those keys).
+/// the first and last widget). None of the three acts while a widget that handles those keys itself has
+/// focus (a slider, choice, tab, divider, text field or area, table or tree, code editor, palette, colour
+/// area...): it keeps them, and the region does not scroll or move focus.
 ///
 /// **A pane whose rows the host rebuilds every frame** (a terminal body, a log) puts them in the
 /// region's items column (the viewport's first child) and replaces them there, despawning and spawning

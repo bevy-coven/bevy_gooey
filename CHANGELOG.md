@@ -9,7 +9,10 @@
   `Shown` closes a node when it is inserted (a hook) and `Shown::closed()`; `ShownFollow::closed()` (and the
   one-shot `StartsClosed`): a node that starts closed with no frame open; `ShownFollow` keeps a visibility the host
   set while closed; `scroll_region` follows keyboard focus and answers PageUp, PageDown, Home and End
-  (`scroll_region_ends`); a `ScrollGutter` that is not a number falls back to the default lane.
+  (`scroll_region_ends`) unless the focused widget keeps those keys itself (one shared predicate); a
+  `ScrollGutter` that is not a number falls back to the default lane. **Breaking (pre-1.0, minor):** the public
+  system `page_lists` takes two more parameters; a host that schedules it by hand is unaffected, one that calls it
+  as a plain function is not.
 
 - G-88 (#99, `docs/research/layout-tail.md`, `docs/guide/layout.md`, `tests/layout_tail.rs`), what was left of
   the editor's hand-built nodes after G-87:

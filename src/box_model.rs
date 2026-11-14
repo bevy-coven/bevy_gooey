@@ -204,15 +204,25 @@ fn shown_inserted(mut world: DeferredWorld, HookContext { entity, .. }: HookCont
             .get::<Node>(entity)
             .map_or(Display::Flex, |node| node.display);
         let visibility = world.get::<Visibility>(entity).copied().unwrap_or_default();
-        if memory.is_none() && display != Display::None {
-            world.commands().entity(entity).insert(ShownMemory {
-                display,
+        if memory.is_none() {
+            // A node already `None` (the host closed it) comes back as the flex every constructor is.
+            let remembered = ShownMemory {
+                display: if display == Display::None {
+                    Display::Flex
+                } else {
+                    display
+                },
                 visibility,
-            });
-        } else if memory.is_none() {
-            world.commands().entity(entity).insert(ShownMemory {
-                display: Display::Flex,
-                visibility,
+            };
+            // Applied only if no memory has landed by then: two inserts in one flush both see none
+            // here, and the first (which read the real display) must win over the second (which
+            // reads the `None` the first wrote).
+            world.commands().queue(move |world: &mut World| {
+                if let Ok(mut entity) = world.get_entity_mut(entity)
+                    && !entity.contains::<ShownMemory>()
+                {
+                    entity.insert(remembered);
+                }
             });
         }
         if let Some(mut node) = world.get_mut::<Node>(entity)
