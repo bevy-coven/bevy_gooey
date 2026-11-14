@@ -1073,3 +1073,297 @@ fn a_text_flow_changes_only_what_it_sets() {
     );
     assert_eq!(node(counted).flex_grow, 0.0, "grow untouched");
 }
+
+// ---- 7. the chrome builders: what gooey has, and the list row it lacked -----------------------
+
+#[derive(Resource, Default)]
+struct Clicks(u32);
+
+/// A list row is full width, with its left rail reserved: selecting it lights the rail and changes
+/// the fill, and moves nothing in it.
+#[test]
+fn a_list_row_lights_a_rail_when_selected_and_moves_nothing() {
+    let mut app = headless();
+    let text = app.world_mut().spawn(label("a row of a list")).id();
+    let row = app.world_mut().spawn(list_row()).add_child(text).id();
+    let host = room(&mut app, 400.0, row);
+    settle(&mut app);
+    let skin = GooeySkin::dark();
+    let (before_row, before_text) = (rect(&app, row), rect(&app, text));
+    assert!(
+        (before_row.width() - rect(&app, host).width()).abs() < 0.5,
+        "full width: {before_row:?}"
+    );
+    let node = app.world().get::<Node>(row).expect("a node");
+    let reserved = match node.border.left {
+        Val::Px(px) => px,
+        _ => 0.0,
+    };
+    assert!(
+        reserved >= skin.border,
+        "the rail is reserved: {:?}",
+        node.border
+    );
+    let rest_fill = app.world().get::<BackgroundColor>(row).expect("a fill").0;
+    assert_eq!(
+        app.world().get::<BorderColor>(row).expect("an edge").left,
+        Color::NONE,
+        "no rail at rest"
+    );
+
+    app.world_mut().entity_mut(row).insert(bevy::ui::Selected);
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BorderColor>(row).expect("an edge").left,
+        skin.accent,
+        "the rail is the accent"
+    );
+    assert_ne!(
+        app.world().get::<BackgroundColor>(row).expect("a fill").0,
+        rest_fill,
+        "and the fill changes"
+    );
+    assert_eq!(rect(&app, row), before_row, "the row does not move");
+    assert_eq!(rect(&app, text), before_text, "and neither does its text");
+}
+
+/// A list row is on the `Activate` bus; the quiet one looks the same and is not.
+#[test]
+fn a_quiet_list_row_looks_like_a_list_row_and_stays_off_the_activate_bus() {
+    let mut app = headless();
+    app.init_resource::<Clicks>();
+    let count = |_: On<Activate>, mut n: ResMut<Clicks>| n.0 += 1;
+    let on = app.world_mut().spawn((list_row(), observe(count))).id();
+    let off = app
+        .world_mut()
+        .spawn((quiet_list_row(), observe(count)))
+        .id();
+    let holder = app
+        .world_mut()
+        .spawn(column(0.0))
+        .add_child(on)
+        .add_child(off)
+        .id();
+    room(&mut app, 400.0, holder);
+    settle(&mut app);
+    assert!(app.world().get::<bevy::ui_widgets::Button>(off).is_none());
+    assert_eq!(
+        app.world().get::<BackgroundColor>(on),
+        app.world().get::<BackgroundColor>(off)
+    );
+    assert_eq!(rect(&app, on).height(), rect(&app, off).height());
+    bevy_gooey::testing::click(&mut app, off);
+    settle(&mut app);
+    assert_eq!(
+        app.world().resource::<Clicks>().0,
+        0,
+        "a quiet row sends no Activate"
+    );
+    bevy_gooey::testing::click(&mut app, on);
+    settle(&mut app);
+    assert_eq!(app.world().resource::<Clicks>().0, 1, "a list row does");
+}
+
+/// The severity rail is a column with a border on its left in the severity's ink, padding and a
+/// margin below, all from the skin: no hand-built node.
+#[test]
+fn a_severity_rail_is_a_column_with_a_shape_and_spacing() {
+    let mut app = headless();
+    let skin = GooeySkin::dark();
+    let b = probe(&mut app, 40.0, 20.0);
+    let rail = app
+        .world_mut()
+        .spawn((
+            column(0.0),
+            Shape {
+                border: Sides {
+                    left: Some(1.0),
+                    ..default()
+                },
+                ink: Some(Ink::Danger),
+                ..default()
+            },
+            Spacing {
+                padding: Sides {
+                    left: Some(Space::Step(1)),
+                    ..default()
+                },
+                margin: Sides {
+                    bottom: Some(Space::Step(1)),
+                    ..default()
+                },
+            },
+        ))
+        .with_children(|r| {
+            r.spawn(b);
+        })
+        .id();
+    room(&mut app, 400.0, rail);
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BorderColor>(rail).expect("an edge").left,
+        skin.danger
+    );
+    let (r, c) = (rect(&app, rail), rect(&app, children(&app, rail)[0]));
+    assert!(
+        (c.min.x - r.min.x - skin.border - skin.space(1)).abs() < 0.5,
+        "{c:?} in {r:?}"
+    );
+}
+
+/// A modal is the dialog gooey has: hidden until shown with `Shown`, its card a width of its own.
+#[test]
+fn a_modal_is_a_dialog_hidden_until_shown_with_a_card_of_its_own_width() {
+    let mut app = headless();
+    let card = app
+        .world_mut()
+        .spawn((
+            sized_panel(CardWidth::Text(20.0)),
+            children![label("Name it")],
+        ))
+        .id();
+    let modal = app
+        .world_mut()
+        .spawn((dialog(), Shown(false)))
+        .add_child(card)
+        .id();
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(modal).expect("a node").display,
+        Display::None
+    );
+    *app.world_mut().get_mut::<Shown>(modal).expect("shown") = Shown(true);
+    settle(&mut app);
+    let skin = GooeySkin::dark();
+    assert_eq!(
+        app.world().get::<Node>(modal).expect("a node").display,
+        Display::Flex
+    );
+    assert!(
+        (rect(&app, card).width() - 20.0 * skin.text_size).abs() < 1.0,
+        "{:?}",
+        rect(&app, card)
+    );
+}
+
+/// The frame of an editor is built from parts gooey has: a bar, a body row (a dock, a viewport that
+/// takes the rest, a second dock that can be hidden) and a status band, in a box of the window's size.
+#[test]
+fn a_frame_is_built_from_gooey_parts() {
+    let mut app = headless();
+    let (bar, band, left_panel) = (
+        probe(&mut app, 100.0, 30.0),
+        probe(&mut app, 100.0, 20.0),
+        probe(&mut app, 50.0, 900.0),
+    );
+    let panel_node = app
+        .world_mut()
+        .spawn((
+            panel(),
+            Sizing {
+                width: Some(Extent::Px(200.0)),
+                min_height: Some(Extent::Px(0.0)),
+                ..default()
+            },
+            TextFlow {
+                grow: Some(1.0),
+                ..default()
+            },
+        ))
+        .with_children(|p| {
+            p.spawn(left_panel);
+        })
+        .id();
+    let left = app
+        .world_mut()
+        .spawn(sized(Sizing {
+            width: Some(Extent::Px(200.0)),
+            min_height: Some(Extent::Px(0.0)),
+            ..default()
+        }))
+        .add_child(panel_node)
+        .id();
+    let centre = app.world_mut().spawn(fill_column(0.0)).id();
+    let right = app
+        .world_mut()
+        .spawn((
+            sized(Sizing {
+                width: Some(Extent::Px(150.0)),
+                ..default()
+            }),
+            Shown(false),
+        ))
+        .id();
+    let body = app
+        .world_mut()
+        .spawn((
+            fill_region(),
+            RowLayout {
+                direction: Some(FlexDirection::Row),
+                ..default()
+            },
+        ))
+        .add_child(left)
+        .add_child(centre)
+        .add_child(right)
+        .id();
+    let bar = app.world_mut().spawn(bar).id();
+    let band = app.world_mut().spawn(band).id();
+    let frame = app
+        .world_mut()
+        .spawn(sized(Sizing {
+            width: Some(Extent::Percent(100.0)),
+            height: Some(Extent::Percent(100.0)),
+            min_height: Some(Extent::Px(0.0)),
+            ..default()
+        }))
+        .add_child(bar)
+        .add_child(body)
+        .add_child(band)
+        .id();
+    // The window's root takes the window's height and no less: like every box in the chain it may
+    // give way to nothing (`min_height` 0), or the tall child below would hold the whole chain open.
+    let window_root = app
+        .world_mut()
+        .spawn((
+            screen(),
+            Sizing {
+                min_height: Some(Extent::Px(0.0)),
+                ..default()
+            },
+        ))
+        .add_child(frame)
+        .id();
+    settle(&mut app);
+    let (f, b, l, c) = (
+        rect(&app, frame),
+        rect(&app, body),
+        rect(&app, left),
+        rect(&app, centre),
+    );
+    assert!(
+        (f.height() - 720.0).abs() < 0.5 && (f.width() - 1280.0).abs() < 0.5,
+        "root {:?} frame {f:?} body {b:?} left {l:?} centre {c:?} panel {:?}",
+        rect(&app, window_root),
+        rect(&app, panel_node)
+    );
+    assert!(
+        (b.height() - (720.0 - 30.0 - 20.0)).abs() < 0.5,
+        "the body takes what the bar and the band leave: {b:?}"
+    );
+    assert!(
+        (l.width() - 200.0).abs() < 0.5 && (c.width() - 1080.0).abs() < 0.5,
+        "{l:?} {c:?}"
+    );
+    assert!(
+        (rect(&app, panel_node).height() - b.height()).abs() < 0.5,
+        "the dock's panel takes the dock's whole height, a tall child notwithstanding"
+    );
+    *app.world_mut().get_mut::<Shown>(right).expect("shown") = Shown(true);
+    settle(&mut app);
+    assert!(
+        (rect(&app, centre).width() - 930.0).abs() < 0.5,
+        "the second dock takes room when shown: {:?}",
+        rect(&app, centre)
+    );
+}

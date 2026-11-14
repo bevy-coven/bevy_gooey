@@ -164,6 +164,10 @@ const CORNER_BADGE_TEXT_SIZES: f32 = 1.2;
 
 /// An [`Role::EdgeTab`]'s bottom edge is this many line weights: heavier than a frame, because it
 /// is read across the width of a whole tab rather than down the side of one box.
+/// How many line weights wide a list row's selection rail is: heavier than a frame, because it is
+/// read down a whole list, and a little lighter than a tab's edge.
+const LIST_RAIL_LINES: f32 = 1.5;
+
 const EDGE_TAB_LINES: f32 = 1.5;
 
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
@@ -2104,6 +2108,9 @@ pub enum Role {
     Spacer,
     /// A [`crate::sized`] box: a flex column of the [`Sizing`](crate::Sizing) it was given; not drawn.
     Sized,
+    /// A [`crate::list_row`] or [`crate::quiet_list_row`]: a full-width row that is a button, with a
+    /// left rail reserved that Bevy's `Selected` lights in the accent.
+    ListRow,
     /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
     /// drawn, so a label column lines up down a list of rows.
     Cell,
@@ -2530,6 +2537,7 @@ fn owns_parts(role: Option<&Role>) -> bool {
             Role::Button
                 | Role::GlyphButton
                 | Role::Band
+                | Role::ListRow
                 | Role::EdgeTab
                 | Role::CardCell
                 | Role::Toggle
@@ -2865,6 +2873,7 @@ pub fn apply_skin(
                         Role::Button
                             | Role::GlyphButton
                             | Role::Band
+                            | Role::ListRow
                             | Role::Toggle
                             | Role::Slider
                             | Role::Choice
@@ -3079,6 +3088,19 @@ fn restyle(
             skin.hovered()
         } else {
             skin.surface_raised
+        }),
+        // A list row rests on the surface, a button's quiet cousin: the pointer lifts it, a press is the
+        // accent, and the selected row is the raised surface with its rail lit.
+        Role::ListRow => Some(if state.disabled {
+            skin.surface
+        } else if state.pressed {
+            skin.accent
+        } else if state.hovered {
+            skin.hovered()
+        } else if state.selected {
+            skin.surface_raised
+        } else {
+            skin.surface
         }),
         Role::Button | Role::GlyphButton | Role::Band | Role::TableHeaderCell => Some(if state.disabled {
             skin.surface
@@ -3569,6 +3591,7 @@ fn restyle(
         Role::Button
         | Role::GlyphButton
         | Role::Band
+        | Role::ListRow
         | Role::Tab
         | Role::IconTab
         | Role::GroupOption
@@ -3581,6 +3604,16 @@ fn restyle(
         Role::Button if state.variant.is_framed() && !state.disabled => {
             Some(BorderColor::all(skin.outline))
         }
+        // The rail is the left border, reserved whether or not the row is selected, so selecting it
+        // changes a colour and moves nothing.
+        Role::ListRow => Some(BorderColor {
+            left: if state.selected {
+                skin.accent
+            } else {
+                Color::NONE
+            },
+            ..BorderColor::all(Color::NONE)
+        }),
         Role::Button
         | Role::GlyphButton
         | Role::Band
@@ -3996,6 +4029,24 @@ fn restyle(
                 );
                 next.column_gap = Val::Px(skin.gap * 0.5);
                 next.margin = UiRect::top(Val::Px(skin.gap * 0.5));
+                next.min_height = Val::Px(control);
+            }
+            // A list row is as wide as its host, a button's air inside, a line all round and a rail's
+            // width on the left: that width is always there, lit only while selected, so selecting
+            // moves no word. What is in it is a row, a half gap apart.
+            Role::ListRow => {
+                next.width = Val::Percent(100.0);
+                next.min_width = Val::ZERO;
+                next.border = UiRect {
+                    left: Val::Px(line * LIST_RAIL_LINES),
+                    ..UiRect::all(Val::Px(line))
+                };
+                next.border_radius = radius;
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad()),
+                    Val::Px(air(set_px * LIST_LINE_TEXT_SIZES, skin.pad() * 0.6)),
+                );
+                next.column_gap = Val::Px(skin.gap * 0.5);
                 next.min_height = Val::Px(control);
             }
             // An edge tab's own inset is a tab's. Its bottom edge is always there, a heavier line

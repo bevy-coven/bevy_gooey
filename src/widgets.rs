@@ -4089,6 +4089,67 @@ pub fn band() -> impl Bundle {
     )
 }
 
+/// A selectable row of a list: as wide as its host, a button's air inside, a rail reserved at its
+/// left that Bevy's `Selected` lights in the accent and lifts the fill for, so choosing a row changes
+/// a colour and moves no word. At rest it is the surface, under the pointer the hovered fill, pressed
+/// the accent. It is a button: focus, `Activate`, and its words (a [`fill_text`], [`count_text`], a
+/// [`cell`]) follow its state. For a row that brings its own click handling and must stay off the
+/// `Activate` bus use [`quiet_list_row`].
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     list_row(),
+///     bevy::ui::Selected,
+///     children![fill_text("agent_view.rs"), count_text("12")],
+///     observe(|_: On<Activate>| info!("open the file")),
+/// ));
+/// # }
+/// ```
+pub fn list_row() -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::ListRow,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+    )
+}
+
+/// A [`list_row`] that is not on the `Activate` bus: the same look, but not Bevy's `Button`, so no
+/// `Activate` is sent, it is no tab stop and it has no pressed state; the host listens for
+/// `PointerClick` itself.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     quiet_list_row(),
+///     children![fill_text("A row with its own click")],
+///     observe(|_: On<PointerClick>| info!("clicked")),
+/// ));
+/// # }
+/// ```
+pub fn quiet_list_row() -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Role::ListRow,
+        Hovered::default(),
+    )
+}
+
 /// Text that is a flex item of its own and takes the room its row leaves: it grows, gives way to
 /// its neighbours and has no least width, and wraps at a word or, for one that is longer than the
 /// room, at a letter. So a long name wraps **inside its own column** and never pushes its row wider

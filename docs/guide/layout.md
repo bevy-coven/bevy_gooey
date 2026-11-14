@@ -180,6 +180,33 @@ A rail is a border on one side (`Sides { right: Some(1.0), ..default() }`); a pi
 narrow to nothing, `align` is where it stands across the row. `label_with(text, flow)` and
 `fill_text_with(text, flow)` carry it; a field left `None` leaves the role's own.
 
+## A list row, and the editor's chrome from these parts
+
+`list_row()` is a selectable full-width row of a list: Bevy's `Selected` on it lights a rail on its
+left in the accent and raises its fill, and nothing moves because the rail's width is always
+reserved. `quiet_list_row()` looks the same and is not on the `Activate` bus.
+
+```rust
+use bevy::prelude::*;
+use bevy_gooey::*;
+
+fn files(mut commands: Commands) {
+    commands.spawn((column(0.0), children![
+        (list_row(), bevy::ui::Selected, children![fill_text("agent_view.rs"), count_text("12")]),
+        (list_row(), children![fill_text("chrome.rs"), count_text("3")]),
+    ]));
+}
+```
+
+A tool's frame is built from the parts above: a `sized(100% x 100%)` frame, a bar, a body
+(`fill_region()` with `RowLayout { direction: Some(FlexDirection::Row), .. }`), docks as
+`sized(width)` (hide one with `Shown(false)`), a viewport slot as `fill_column`, a band as
+`status_bar`. **Every box between a tall list and the window needs `min_height` 0**
+(`Sizing { min_height: Some(Extent::Px(0.0)), .. }`, the window's root too): a flex item's automatic
+minimum is its content, and a tall child would hold the whole chain open. A modal is `dialog()` +
+`Shown(false)` + `sized_panel`; a severity rail is a `column` with a `Shape` border on its left and a
+`Spacing`. The mapping, builder by builder, is in `docs/research/layout-more.md`.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

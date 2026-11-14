@@ -6,6 +6,13 @@
 
 - G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
   the editor's hand-built nodes after G-84:
+  `list_row()` and `quiet_list_row()` (`Role::ListRow`): a selectable full-width row with a reserved left rail that
+  Bevy's `Selected` lights, the quiet one off the `Activate` bus. The editor's other chrome builders (`chip`,
+  `button`, `modal_card`, `text_field`, `severity_rail`, `panel_root`, `spawn_frame`) are mapped in
+  `docs/research/layout-more.md`: gooey has each, now that the parts above exist. One more new `Role` (`ListRow`).
+
+- G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
+  the editor's hand-built nodes after G-84:
   `TextFlow { grow, shrink, min_width, align }` with `label_with` and `fill_text_with`: a text that is rigid, grows
   and may narrow to nothing, or aligns itself, with no `Node` patched.
 

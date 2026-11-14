@@ -178,6 +178,7 @@ fn spec(role: Role) -> Spec {
         | Role::GlyphButton
         | Role::EdgeTab
         | Role::Band
+        | Role::ListRow
         | Role::FillText
         | Role::CountText => Spec::Node,
         Role::ButtonText
@@ -600,7 +601,7 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.role = Some(Ak::Label);
             wanted.value = look.own(entity);
         }
-        Role::Button | Role::GlyphButton | Role::Band => {
+        Role::Button | Role::GlyphButton | Role::Band | Role::ListRow => {
             wanted.name = look.name_of(entity);
             // A list's row is a button the list owns: it reads as a list item with its place.
             if let Some((_, count, at)) = look.list_place(entity) {
