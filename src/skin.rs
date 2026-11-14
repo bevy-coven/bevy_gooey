@@ -13,7 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
-use crate::box_model::{Shape, Shown, Sizing, Spacing, TextFlow, lined, spaced};
+use crate::box_model::{Shape, Shown, ShownMemory, Sizing, Spacing, TextFlow, lined, spaced};
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
@@ -164,11 +164,11 @@ const CORNER_BADGE_TEXT_SIZES: f32 = 1.2;
 
 /// An [`Role::EdgeTab`]'s bottom edge is this many line weights: heavier than a frame, because it
 /// is read across the width of a whole tab rather than down the side of one box.
+const EDGE_TAB_LINES: f32 = 1.5;
+
 /// How many line weights wide a list row's selection rail is: heavier than a frame, because it is
 /// read down a whole list, and a little lighter than a tab's edge.
 const LIST_RAIL_LINES: f32 = 1.5;
-
-const EDGE_TAB_LINES: f32 = 1.5;
 
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
@@ -2318,6 +2318,10 @@ struct State {
     spacing: Option<Spacing>,
     /// Whether a node is shown ([`Shown`]); none leaves its display.
     shown: Option<bool>,
+    /// What a hidden node had before [`Shown`] hid it ([`ShownMemory`]).
+    hidden: Option<ShownMemory>,
+    /// The node's own visibility, to remember when it is hidden.
+    visibility: Visibility,
     /// The size a node was asked for ([`Sizing`]).
     sizing: Option<Sizing>,
     /// The look of a node's box ([`Shape`]).
@@ -2371,6 +2375,8 @@ impl Default for State {
             aspect: None,
             spacing: None,
             shown: None,
+            hidden: None,
+            visibility: Visibility::Inherited,
             sizing: None,
             shape: None,
             text_flow: None,
@@ -2425,6 +2431,8 @@ type StateQuery = (
             Option<&'static Sizing>,
             Option<&'static Shape>,
             Option<&'static TextFlow>,
+            Option<&'static ShownMemory>,
+            Option<&'static Visibility>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2483,6 +2491,7 @@ type Restyle = (
                     Changed<Shown>,
                     Changed<Sizing>,
                     Changed<Shape>,
+                    Changed<TextFlow>,
                 )>,
             )>,
         )>,
@@ -2667,6 +2676,8 @@ pub fn apply_skin(
                             sizing,
                             shape,
                             text_flow,
+                            hidden,
+                            visibility,
                         ),
                     ),
                     row,
@@ -2728,6 +2739,8 @@ pub fn apply_skin(
                         sizing: sizing.copied(),
                         shape: shape.copied(),
                         text_flow: text_flow.copied(),
+                        hidden: hidden.copied(),
+                        visibility: visibility.copied().unwrap_or_default(),
                         region_gap: gap.map(|gap| gap.0),
                     }
                 },
@@ -3793,6 +3806,8 @@ fn restyle(
     // A shape's ink draws its border; a border with no ink is the outline unless the role has an
     // edge of its own; no border and no ink leaves the role's.
     let edge = match state.shape {
+        // The focus ring is never painted over: it is how a keyboard player sees where they are.
+        Some(Shape { ink: Some(_), .. }) if look.focused == Some(entity) && edge.is_some() => edge,
         Some(Shape { ink: Some(ink), .. }) => Some(BorderColor::all(ink.color(skin))),
         Some(shape) if edge.is_none() && shape.border != Default::default() => {
             Some(BorderColor::all(skin.outline))
@@ -5189,9 +5204,23 @@ fn restyle(
         // constructor is, put back only over a `None`.
         if let Some(shown) = state.shown {
             if !shown {
+                // Hidden from layout, from the eye and from focus: `Display::None` alone leaves
+                // `InheritedVisibility`, which the tab order, the regions and the dialogs read. What
+                // the node had is remembered once, so showing it gives that back.
+                if state.hidden.is_none() {
+                    commands.entity(entity).insert(ShownMemory {
+                        display: next.display,
+                        visibility: state.visibility,
+                    });
+                }
                 next.display = Display::None;
-            } else if next.display == Display::None {
-                next.display = Display::Flex;
+                if state.visibility != Visibility::Hidden {
+                    commands.entity(entity).insert(Visibility::Hidden);
+                }
+            } else if let Some(memory) = state.hidden {
+                next.display = memory.display;
+                commands.entity(entity).insert(memory.visibility);
+                commands.entity(entity).remove::<ShownMemory>();
             }
         }
         // What a container was asked for beyond its gap, written only when asked: a row with no

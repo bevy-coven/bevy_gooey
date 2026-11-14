@@ -133,8 +133,9 @@ theme or a skin change moves all of it.
 
 `spacer()` takes what its row or column leaves: `children![button("Back"), spacer(), button("Next")]`
 puts one button at each end, and two spacers centre what stands between them. `fill_region_with(gap)`
-is a `fill_region()` whose children stand `gap` skin gaps apart, and `Shown(false)` is
-`Display::None` through the skin (the page takes no room and what follows closes up):
+is a `fill_region()` whose children stand `gap` skin gaps apart, and `Shown(false)` hides
+it through the skin (`Display::None` and `Visibility::Hidden`: the page takes no room, what follows
+closes up, and nothing in it is a tab stop or an open dialog):
 
 ```rust
 use bevy::prelude::*;
@@ -146,7 +147,7 @@ fn pages(mut commands: Commands) {
 }
 ```
 
-Set `Shown(true)` to bring the page back. Pages are `Display::Flex`: a list viewport is not one.
+Set `Shown(true)` to bring the page back: it gets back the display and visibility it had.
 
 ## Size and shape
 

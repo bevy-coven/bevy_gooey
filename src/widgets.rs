@@ -4093,7 +4093,9 @@ pub fn band() -> impl Bundle {
 /// left that Bevy's `Selected` lights in the accent and lifts the fill for, so choosing a row changes
 /// a colour and moves no word. At rest it is the surface, under the pointer the hovered fill, pressed
 /// the accent. It is a button: focus, `Activate`, and its words (a [`fill_text`], [`count_text`], a
-/// [`cell`]) follow its state. For a row that brings its own click handling and must stay off the
+/// `Role::ButtonText`) follow its state, so they are readable on the pressed fill. **A plain
+/// [`label`] in it keeps the text colour** (it is not a part of the row), so use those for the
+/// words of a row that can be pressed. For a row that brings its own click handling and must stay off the
 /// `Activate` bus use [`quiet_list_row`].
 ///
 /// ```

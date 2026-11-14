@@ -27,8 +27,9 @@
 - G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
   the editor's hand-built nodes after G-84:
   `spacer()` (a node that takes what its row or column leaves, `Pickable::IGNORE`), `fill_region_with(gap)` (a
-  region whose children stand a gap apart) and `Shown(bool)` (a component the skin writes as `Display::None` or
-  `Flex`, so a host hides a page without patching `Node`). One new `Role` (`Spacer`).
+  region whose children stand a gap apart) and `Shown(bool)` (a component the skin writes as `Display::None` and
+  `Visibility::Hidden`, remembering and restoring what the node had, so a host hides a page or a modal without
+  patching `Node` and nothing in it keeps a tab stop or traps focus). One new `Role` (`Spacer`).
 
 - G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
   the editor's hand-built nodes after G-84:

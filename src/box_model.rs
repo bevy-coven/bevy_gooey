@@ -138,12 +138,14 @@ pub(crate) fn spaced(mut rect: UiRect, sides: &Sides<Space>, skin: &GooeySkin) -
 }
 
 /// Whether a node is shown, written by [`crate::apply_skin`] so the host never patches `Node`:
-/// `Shown(false)` is `Display::None` (the node takes no room, what follows closes up, nothing in it
-/// is drawn or picked), `Shown(true)` puts back `Display::Flex`, which is what every layout
-/// constructor in the crate is. A node with no `Shown` is left as it is. It is for a page, a batch
-/// column or a section that comes and goes; a list viewport (`Display::Block`) or a zero-width
-/// [`cell`](crate::cell) has its display from its role and is not what this is for. Removing the
-/// component leaves the node as it was last written: set `Shown(true)` instead.
+/// `Shown(false)` is `Display::None` **and** `Visibility::Hidden` (the node takes no room, what
+/// follows closes up, nothing in it is drawn or picked, and none of its widgets is a tab stop, a
+/// focus region or an open dialog: Bevy's `Display::None` alone leaves a node's
+/// `InheritedVisibility`, which focus navigation reads, untouched). `Shown(true)` gives back what the
+/// node had when it was hidden, its display (a grid stays a grid) and its visibility (a `Visible` stays
+/// visible). So `(dialog(), Shown(false))` is a modal that is hidden until shown and traps nothing.
+/// A node with no `Shown` is left as it is. Removing the component while hidden leaves the node
+/// hidden: set `Shown(true)` instead.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -180,8 +182,10 @@ impl Extent {
             Extent::Percent(percent) => Val::Percent(percent),
             Extent::Text(sizes) => Val::Px(sizes * text_px),
         };
+        // Not finite is refused; below zero is zero, as a card's width is.
         match val {
-            Val::Px(v) | Val::Percent(v) if v.is_finite() => Some(val),
+            Val::Px(v) if v.is_finite() => Some(Val::Px(v.max(0.0))),
+            Val::Percent(v) if v.is_finite() => Some(Val::Percent(v.max(0.0))),
             _ => None,
         }
     }
@@ -316,24 +320,17 @@ pub struct Shape {
 /// `rect` with every side `sides` names set to its weight times `line`; a weight that is not a finite
 /// number, or is negative, is none.
 pub(crate) fn lined(mut rect: UiRect, sides: &Sides<f32>, line: f32) -> UiRect {
-    let px = |weight: f32| {
-        Val::Px(if weight.is_finite() {
-            weight.max(0.0) * line
-        } else {
-            0.0
-        })
-    };
-    if let Some(top) = sides.top {
-        rect.top = px(top);
-    }
-    if let Some(right) = sides.right {
-        rect.right = px(right);
-    }
-    if let Some(bottom) = sides.bottom {
-        rect.bottom = px(bottom);
-    }
-    if let Some(left) = sides.left {
-        rect.left = px(left);
+    // A weight that is not a finite number leaves its side alone; below zero is none.
+    let px = |weight: f32| weight.is_finite().then(|| Val::Px(weight.max(0.0) * line));
+    for (field, weight) in [
+        (&mut rect.top, sides.top),
+        (&mut rect.right, sides.right),
+        (&mut rect.bottom, sides.bottom),
+        (&mut rect.left, sides.left),
+    ] {
+        if let Some(val) = weight.and_then(px) {
+            *field = val;
+        }
     }
     rect
 }
@@ -382,4 +379,13 @@ pub struct TextFlow {
     pub min_width: Option<Extent>,
     /// Where it stands on the cross axis, on its own (`AlignSelf::Center`).
     pub align: Option<AlignSelf>,
+}
+
+/// What a node had before [`Shown`] hid it, so showing it again gives that back and not a guess: the
+/// display (a grid stays a grid) and the visibility (a `Visible` stays visible). Private; put on by
+/// [`crate::apply_skin`] the first time a `Shown(false)` is written and taken off when it is shown.
+#[derive(Component, Clone, Copy, Debug)]
+pub struct ShownMemory {
+    pub(crate) display: Display,
+    pub(crate) visibility: Visibility,
 }

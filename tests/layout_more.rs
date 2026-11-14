@@ -1367,3 +1367,272 @@ fn a_frame_is_built_from_gooey_parts() {
         rect(&app, centre)
     );
 }
+
+// ---- review of the first cut: Shown hides from focus, restyle triggers, edges ------------------
+
+/// The labels Tab reaches in `presses` presses.
+fn tab_stops(app: &mut App, presses: usize) -> Vec<Option<String>> {
+    (0..presses)
+        .map(|_| {
+            bevy_gooey::testing::press(app, KeyCode::Tab);
+            bevy_gooey::testing::focused_label(app)
+        })
+        .collect()
+}
+
+/// A page hidden with `Shown(false)` keeps no tab stop: Tab never lands in it, and showing it again
+/// brings its stops back.
+#[test]
+fn a_hidden_page_has_no_tab_stops_and_a_shown_one_does() {
+    let mut app = headless();
+    let page = app
+        .world_mut()
+        .spawn((column(0.0), Shown(false), children![button("In the page")]))
+        .id();
+    let visible = app.world_mut().spawn(button("Outside")).id();
+    let root = app
+        .world_mut()
+        .spawn(screen())
+        .add_child(page)
+        .add_child(visible)
+        .id();
+    let _ = root;
+    settle(&mut app);
+    let stops = tab_stops(&mut app, 4);
+    assert!(
+        stops.iter().all(|s| s.as_deref() != Some("In the page")),
+        "Tab reached a hidden page: {stops:?}"
+    );
+    assert!(
+        stops.iter().any(|s| s.as_deref() == Some("Outside")),
+        "{stops:?}"
+    );
+
+    *app.world_mut().get_mut::<Shown>(page).expect("shown") = Shown(true);
+    settle(&mut app);
+    let stops = tab_stops(&mut app, 4);
+    assert!(
+        stops.iter().any(|s| s.as_deref() == Some("In the page")),
+        "the page's stop is back: {stops:?}"
+    );
+}
+
+/// A `dialog()` under `Shown(false)` is not an open dialog: it does not trap focus. Shown, it is,
+/// and Tab stays inside it.
+#[test]
+fn a_hidden_dialog_does_not_trap_focus_and_a_shown_one_does() {
+    let mut app = headless();
+    let card = app
+        .world_mut()
+        .spawn((panel(), children![button("In the dialog")]))
+        .id();
+    let modal = app
+        .world_mut()
+        .spawn((dialog(), Shown(false)))
+        .add_child(card)
+        .id();
+    let behind = app.world_mut().spawn(button("Behind")).id();
+    app.world_mut().spawn(screen()).add_child(behind);
+    settle(&mut app);
+    let stops = tab_stops(&mut app, 4);
+    assert!(
+        stops.iter().any(|s| s.as_deref() == Some("Behind")),
+        "focus is free while the dialog is hidden: {stops:?}"
+    );
+    assert!(
+        stops.iter().all(|s| s.as_deref() != Some("In the dialog")),
+        "{stops:?}"
+    );
+
+    *app.world_mut().get_mut::<Shown>(modal).expect("shown") = Shown(true);
+    settle(&mut app);
+    let stops = tab_stops(&mut app, 4);
+    assert!(
+        stops.iter().all(|s| s.as_deref() != Some("Behind")),
+        "the shown dialog holds focus: {stops:?}"
+    );
+    assert!(
+        stops.iter().any(|s| s.as_deref() == Some("In the dialog")),
+        "{stops:?}"
+    );
+}
+
+/// Showing a node again gives back what it had: a grid stays a grid and a `Visible` stays visible.
+#[test]
+fn shown_restores_the_display_and_the_visibility_the_node_had() {
+    let mut app = headless();
+    let node = app.world_mut().spawn((row(0.0), Visibility::Visible)).id();
+    app.world_mut().spawn(screen()).add_child(node);
+    settle(&mut app);
+    app.world_mut()
+        .get_mut::<Node>(node)
+        .expect("a node")
+        .display = Display::Grid;
+    app.world_mut().entity_mut(node).insert(Shown(false));
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(node).expect("a node").display,
+        Display::None
+    );
+    assert_eq!(
+        app.world().get::<Visibility>(node),
+        Some(&Visibility::Hidden)
+    );
+    app.world_mut().entity_mut(node).insert(Shown(true));
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(node).expect("a node").display,
+        Display::Grid,
+        "not flattened to flex"
+    );
+    assert_eq!(
+        app.world().get::<Visibility>(node),
+        Some(&Visibility::Visible),
+        "not reset to inherited"
+    );
+}
+
+/// A `TextFlow` changed after the spawn restyles in the same frame.
+#[test]
+fn a_changed_text_flow_restyles() {
+    let mut app = headless();
+    let text = app
+        .world_mut()
+        .spawn((
+            label("x"),
+            TextFlow {
+                grow: Some(0.0),
+                shrink: Some(1.0),
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut().spawn(screen()).add_child(text);
+    settle(&mut app);
+    let node = |app: &App| app.world().get::<Node>(text).expect("a node").clone();
+    assert_eq!((node(&app).flex_grow, node(&app).flex_shrink), (0.0, 1.0));
+    *app.world_mut().get_mut::<TextFlow>(text).expect("a flow") = TextFlow {
+        grow: Some(2.0),
+        shrink: Some(0.0),
+        ..default()
+    };
+    settle(&mut app);
+    assert_eq!((node(&app).flex_grow, node(&app).flex_shrink), (2.0, 0.0));
+}
+
+/// A `Spacing` changed after the spawn moves the padding too, and a `RowLayout::direction` turns a
+/// column over.
+#[test]
+fn a_changed_padding_and_a_changed_direction_restyle() {
+    let mut app = headless();
+    let node = app
+        .world_mut()
+        .spawn((
+            placed_at(0.0, 0.0),
+            Spacing {
+                padding: Sides::all(Space::Step(1)),
+                ..default()
+            },
+            RowLayout {
+                direction: Some(FlexDirection::Column),
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut().spawn(screen()).add_child(node);
+    settle(&mut app);
+    let read = |app: &App| app.world().get::<Node>(node).expect("a node").clone();
+    assert_eq!(read(&app).padding, UiRect::all(Val::Px(step(1))));
+    assert_eq!(read(&app).flex_direction, FlexDirection::Column);
+    app.world_mut()
+        .get_mut::<Spacing>(node)
+        .expect("spacing")
+        .padding = Sides::all(Space::Step(3));
+    app.world_mut()
+        .get_mut::<RowLayout>(node)
+        .expect("layout")
+        .direction = Some(FlexDirection::Row);
+    settle(&mut app);
+    assert_eq!(read(&app).padding, UiRect::all(Val::Px(step(3))));
+    assert_eq!(read(&app).flex_direction, FlexDirection::Row);
+}
+
+/// A length below zero is zero, as a card's width is; a border weight that is not a number leaves
+/// its side alone.
+#[test]
+fn a_negative_extent_is_zero_and_a_non_finite_border_is_left_alone() {
+    let mut app = headless();
+    let plain = app.world_mut().spawn(panel()).id();
+    let odd = app
+        .world_mut()
+        .spawn((
+            panel(),
+            Sizing {
+                min_width: Some(Extent::Px(-5.0)),
+                max_height: Some(Extent::Percent(-10.0)),
+                ..default()
+            },
+            Shape {
+                border: Sides {
+                    left: Some(f32::NAN),
+                    right: Some(f32::INFINITY),
+                    ..default()
+                },
+                ..default()
+            },
+        ))
+        .id();
+    for e in [plain, odd] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    let node = |e| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(node(odd).min_width, Val::Px(0.0));
+    assert_eq!(node(odd).max_height, Val::Percent(0.0));
+    assert_eq!(
+        node(odd).border.left,
+        node(plain).border.left,
+        "NaN leaves the side"
+    );
+    assert_eq!(
+        node(odd).border.right,
+        node(plain).border.right,
+        "infinity leaves the side"
+    );
+}
+
+/// A shape's ink does not paint over a focused button's ring: the focus ring wins.
+#[test]
+fn the_focus_ring_wins_over_a_shapes_ink() {
+    use bevy::input_focus::{InputFocus, InputFocusVisible};
+    let mut app = headless();
+    let b = app
+        .world_mut()
+        .spawn((
+            button("Go"),
+            Shape {
+                border: Sides::all(1.0),
+                ink: Some(Ink::Accent),
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut().spawn(screen()).add_child(b);
+    settle(&mut app);
+    let skin = GooeySkin::dark();
+    assert_eq!(
+        app.world().get::<BorderColor>(b).expect("an edge").top,
+        skin.accent,
+        "the ink at rest"
+    );
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(b, bevy::input_focus::FocusCause::Navigated);
+    app.world_mut().resource_mut::<InputFocusVisible>().0 = true;
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BorderColor>(b).expect("an edge").top,
+        skin.focus_ring,
+        "the ring while focused"
+    );
+}
