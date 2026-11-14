@@ -253,7 +253,8 @@ widget's ring still wins over the edge. It does not cascade: give each text its 
 Writing `PlacedAt` or `Sizing` every frame makes the skin restyle the node every frame: about two thirds
 more per frame than writing `Node`, measured for 500 nodes. Write them **only for the nodes that moved and
 only when the value differs**, and for a node that moves every frame (a gizmo, a caret, terminal rows) write
-its own `Node` and add `HostGeometry`: the skin then leaves its position and size alone, still writes its
+its own `Node` and add `HostGeometry` at spawn: the skin then leaves the insets of a `placed` node and the
+lengths of a `Sizing` alone (not a `CardWidth`, an `AspectBox` or a role's own widths), still writes the
 border, radius, padding and colours, and a skin change does not reset what you wrote.
 
 ## The parts of a list and a strip

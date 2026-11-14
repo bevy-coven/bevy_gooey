@@ -609,7 +609,7 @@ fn a_quiet_status_item_looks_like_a_status_item_and_stays_off_the_activate_bus()
     assert_eq!(app.world().resource::<Pressed>().0, 1);
 }
 
-/// `Shown` hides a quiet item inside a status bar (no room, hidden from layout and focus) and brings
+/// `Shown` hides a quiet item inside a status bar (no room, `Display::None`, `Visibility::Hidden`) and brings
 /// it back; the same toggle works on an item that was shown at spawn.
 #[test]
 fn a_quiet_status_item_can_be_hidden_with_shown_in_a_bar() {
@@ -829,7 +829,7 @@ enum Way {
     DirectAll,
     /// Write `PlacedAt` and `Sizing`, all nodes.
     ComponentsAll,
-    /// Write `PlacedAt` and `Sizing`, only the nodes that moved (a tenth), through `Changed` gating.
+    /// Write `PlacedAt` and `Sizing`, only the nodes that moved (a tenth), gated on a change.
     ComponentsMoved,
     /// Write `Node` fields directly, only the nodes that moved.
     DirectMoved,
@@ -837,6 +837,12 @@ enum Way {
 
 #[derive(Resource, Default)]
 struct Tick(f32);
+
+/// How many nodes had the field the way writes changed this frame, counted by a system that runs
+/// right after the mover: the deterministic half of the cost (every `PlacedAt` that changes makes the
+/// skin restyle its node).
+#[derive(Resource, Default)]
+struct Written(usize);
 
 fn move_nodes(
     way: Res<Way>,
@@ -879,15 +885,32 @@ fn move_nodes(
     }
 }
 
+/// Counts what the way wrote this frame: a changed `Node` for the direct ways, a changed `PlacedAt`
+/// for the component ways (nothing else writes either before this system runs).
+fn count_written(
+    way: Res<Way>,
+    nodes: Query<(), Changed<Node>>,
+    placed: Query<(), Changed<PlacedAt>>,
+    mut written: ResMut<Written>,
+) {
+    written.0 = match *way {
+        Way::DirectAll | Way::DirectMoved => nodes.iter().count(),
+        Way::ComponentsAll | Way::ComponentsMoved => placed.iter().count(),
+    };
+}
+
 #[derive(Component)]
 struct Mover(usize);
 
-/// The median wall time of one `Update` over `frames` frames, after a warm-up.
-fn median_frame(way: Way) -> Duration {
+/// Builds an app that moves `MOVERS` nodes a frame the given way (`host_geometry` puts the marker on
+/// them), runs a warm-up, and returns the median wall time of one `Update` over 15 frames and how many
+/// nodes the way wrote in the last of them.
+fn run_way(way: Way, host_geometry: bool) -> (Duration, usize) {
     let mut app = headless();
     app.insert_resource(way)
         .init_resource::<Tick>()
-        .add_systems(Update, move_nodes);
+        .init_resource::<Written>()
+        .add_systems(Update, (move_nodes, count_written).chain());
     let host = app
         .world_mut()
         .spawn(Node {
@@ -897,18 +920,19 @@ fn median_frame(way: Way) -> Duration {
         })
         .id();
     for i in 0..MOVERS {
-        let n = app
-            .world_mut()
-            .spawn((
-                placed_at(0.0, 0.0),
-                Sizing {
-                    width: Some(Extent::Px(20.0)),
-                    height: Some(Extent::Px(10.0)),
-                    ..default()
-                },
-                Mover(i),
-            ))
-            .id();
+        let mut n = app.world_mut().spawn((
+            placed_at(0.0, 0.0),
+            Sizing {
+                width: Some(Extent::Px(20.0)),
+                height: Some(Extent::Px(10.0)),
+                ..default()
+            },
+            Mover(i),
+        ));
+        if host_geometry {
+            n.insert(HostGeometry);
+        }
+        let n = n.id();
         app.world_mut().entity_mut(host).add_child(n);
     }
     app.world_mut().spawn(screen()).add_child(host);
@@ -924,72 +948,37 @@ fn median_frame(way: Way) -> Duration {
         })
         .collect();
     times.sort();
-    times[times.len() / 2]
+    (times[times.len() / 2], app.world().resource::<Written>().0)
 }
 
-/// The same moves written to a node that carries `HostGeometry`: `Node` directly, the skin leaving
-/// the geometry alone.
-fn host_median() -> Duration {
-    let mut app = headless();
-    app.insert_resource(Way::DirectAll)
-        .init_resource::<Tick>()
-        .add_systems(Update, move_nodes);
-    let host = app
-        .world_mut()
-        .spawn(Node {
-            width: Val::Px(400.0),
-            height: Val::Px(300.0),
-            ..default()
-        })
-        .id();
-    for i in 0..MOVERS {
-        let n = app
-            .world_mut()
-            .spawn((
-                placed_at(0.0, 0.0),
-                Sizing::default(),
-                HostGeometry,
-                Mover(i),
-            ))
-            .id();
-        app.world_mut().entity_mut(host).add_child(n);
-    }
-    app.world_mut().spawn(screen()).add_child(host);
-    settle(&mut app);
-    for _ in 0..5 {
-        app.update();
-    }
-    let mut times: Vec<Duration> = (0..15)
-        .map(|_| {
-            let start = Instant::now();
-            app.update();
-            start.elapsed()
-        })
-        .collect();
-    times.sort();
-    times[times.len() / 2]
-}
-
-/// What moving 500 nodes every frame costs, five ways. Measured (an unoptimized build on an Apple
-/// M-series, `docs/research/layout-last.md`): `Node` written for every node 5.5 ms a frame, `PlacedAt`
-/// and `Sizing` written for every node 9.2 ms (the skin restyles each of them), and for only the tenth
-/// that moved 5.5 ms against 5.1 ms for `Node`. So writing the components is NOT as cheap as writing
-/// `Node` when every node moves every frame, and is nearly free when only the movers are written
-/// (gate on a change: write a component only when its value differs). The assertion is the ratio,
-/// which does not depend on the machine: gating must cut the cost of the component path.
+/// What moving 500 nodes every frame costs, five ways. The assertions are **counts**, which do not
+/// depend on the machine or its load: the way that writes `PlacedAt` for every node writes 500 a frame
+/// (each makes the skin restyle that node), and gating on a change and writing only the movers writes a
+/// tenth of that. The timing is printed, not asserted. Measured once (an unoptimized build on an Apple
+/// M-series, median of 15 frames, `docs/research/layout-last.md`): `Node` for every node 5.5 ms,
+/// `PlacedAt` and `Sizing` for every node 9.2 ms, for the tenth that moved 5.5 ms against 5.1 ms for
+/// `Node`, and `HostGeometry` with `Node` 5.5 ms.
 #[test]
-fn writing_only_what_moved_is_what_makes_the_component_path_cheap() {
-    let all = median_frame(Way::ComponentsAll);
-    let gated = median_frame(Way::ComponentsMoved);
-    let direct = median_frame(Way::DirectAll);
-    let direct_moved = median_frame(Way::DirectMoved);
-    let host = host_median();
+fn writing_only_what_moved_writes_a_tenth_as_many_components() {
+    let (all_time, all) = run_way(Way::ComponentsAll, false);
+    let (moved_time, moved) = run_way(Way::ComponentsMoved, false);
+    let (direct_time, direct) = run_way(Way::DirectAll, false);
+    let (direct_moved_time, direct_moved) = run_way(Way::DirectMoved, false);
+    let (host_time, host) = run_way(Way::DirectAll, true);
     eprintln!(
-        "MEASURE {MOVERS} nodes a frame: components all {all:?}, components moved {gated:?}, Node all {direct:?}, Node moved {direct_moved:?}, HostGeometry + Node all {host:?}"
+        "MEASURE {MOVERS} nodes a frame: components all {all_time:?}, components moved {moved_time:?}, Node all {direct_time:?}, Node moved {direct_moved_time:?}, HostGeometry + Node all {host_time:?}"
     );
-    assert!(
-        gated.as_secs_f64() * 1.25 < all.as_secs_f64(),
-        "writing only the movers ({gated:?}) must cost well under writing every node ({all:?})"
+    assert_eq!(all, MOVERS, "every PlacedAt written: every node restyles");
+    assert_eq!(
+        moved,
+        MOVERS / 10,
+        "only the movers' PlacedAt written, gated on a change"
+    );
+    assert_eq!(direct, MOVERS);
+    assert_eq!(direct_moved, MOVERS / 10);
+    assert_eq!(
+        host, MOVERS,
+        "the marker does not change what the host writes"
     );
 }
 
@@ -1054,4 +1043,137 @@ fn host_geometry_survives_a_restyle_and_the_skin_still_writes_the_rest() {
         "and the skin still writes what is not geometry"
     );
     assert_eq!(node(ids[0]).border_radius, BorderRadius::MAX);
+}
+
+// ---- review: names, hover under an override, the ring ----------------------------------------
+
+/// A button box is named by its `fill_text` or `count_text` child, else by its `Tooltip`; one that
+/// holds only a picture and plain labels has no name (so name it).
+#[test]
+fn a_button_box_is_named_by_its_fill_text_or_its_tooltip() {
+    use bevy::a11y::{AccessibilityNode, AccessibilityRequested};
+    let mut app = headless();
+    app.world().resource::<AccessibilityRequested>().set(true);
+    let picture = probe(&mut app, 20.0, 20.0);
+    let by_text = app
+        .world_mut()
+        .spawn((
+            button_box(),
+            children![fill_text("agent_view"), count_text("12")],
+        ))
+        .id();
+    let by_tip = app
+        .world_mut()
+        .spawn((button_box(), Tooltip::new("Open the project")))
+        .with_children(|b| {
+            b.spawn(picture);
+        })
+        .id();
+    let unnamed = app
+        .world_mut()
+        .spawn((button_box(), children![label("only a label")]))
+        .id();
+    let holder = app
+        .world_mut()
+        .spawn(column(0.0))
+        .add_child(by_text)
+        .add_child(by_tip)
+        .add_child(unnamed)
+        .id();
+    room(&mut app, 400.0, holder);
+    settle(&mut app);
+    let name = |app: &App, e: Entity| {
+        app.world()
+            .get::<AccessibilityNode>(e)
+            .expect("an accessibility node")
+            .0
+            .label()
+            .map(str::to_owned)
+    };
+    assert!(
+        name(&app, by_text).is_some_and(|n| n.contains("agent_view")),
+        "{:?}",
+        name(&app, by_text)
+    );
+    assert_eq!(name(&app, by_tip).as_deref(), Some("Open the project"));
+    assert_eq!(
+        name(&app, unnamed),
+        None,
+        "a plain label is not a name: use fill_text or a Tooltip"
+    );
+}
+
+/// Under an `InkOverride` fill the host owns hover and press feedback: the override's colour is the
+/// fill whatever the state, where the role's own fill changes with it. A decision, pinned. (Pressed
+/// is what a headless test can hold: Bevy's picking rewrites `Hovered` every frame; the hover fill is
+/// chosen in the same arm as the pressed one, which the override replaces whole.)
+#[test]
+fn under_an_ink_override_fill_press_does_not_change_the_fill() {
+    use bevy::ui::Pressed;
+    let mut app = headless();
+    let plain = app.world_mut().spawn(button("A")).id();
+    let owned = app
+        .world_mut()
+        .spawn((
+            button("B"),
+            InkOverride {
+                fill: Some(RED),
+                ..default()
+            },
+        ))
+        .id();
+    for e in [plain, owned] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    let rest = app.world().get::<BackgroundColor>(plain).expect("a fill").0;
+    for e in [plain, owned] {
+        app.world_mut().entity_mut(e).insert(Pressed);
+    }
+    settle(&mut app);
+    assert_ne!(
+        app.world().get::<BackgroundColor>(plain).expect("a fill").0,
+        rest,
+        "the role's fill answers a press"
+    );
+    assert_eq!(
+        app.world().get::<BackgroundColor>(owned).expect("a fill").0,
+        RED,
+        "an override fill does not"
+    );
+}
+
+/// The edge override yields only to a focus ring: a focused node whose role edge is not the ring
+/// (a dialog's panel has the outline) takes the override.
+#[test]
+fn an_edge_override_yields_only_to_the_ring_not_to_any_role_edge() {
+    use bevy::input_focus::{FocusCause, InputFocus, InputFocusVisible};
+    let mut app = headless();
+    let card = app
+        .world_mut()
+        .spawn((
+            panel(),
+            InkOverride {
+                edge: Some(GREEN),
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut().spawn(dialog()).add_child(card);
+    settle(&mut app);
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(card, FocusCause::Navigated);
+    app.world_mut().resource_mut::<InputFocusVisible>().0 = true;
+    // A panel is not restyled by a focus move (it is no focus widget): touch the override.
+    app.world_mut()
+        .get_mut::<InkOverride>(card)
+        .expect("an override")
+        .set_changed();
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BorderColor>(card).expect("an edge").top,
+        GREEN,
+        "the role's outline is not a ring"
+    );
 }

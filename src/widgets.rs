@@ -848,7 +848,12 @@ pub fn button(text: impl Into<String>) -> impl Bundle {
 /// press, focus ring and `Activate`, a tab stop, laid out as a row with its children from the left
 /// (a [`button`]'s label is centred), and **it puts `Role::ButtonText` on nothing**: its children are
 /// yours. Words that should follow its state (readable on the pressed fill) are a [`fill_text`] or a
-/// [`count_text`]; a plain [`label`] keeps the text colour, which is yours to manage. A
+/// [`count_text`]; a plain [`label`] keeps the text colour, which is yours to manage.
+///
+/// **Name it.** A screen reader names a button from its `fill_text`, `count_text` or `ButtonText` child,
+/// else from its [`Tooltip`](crate::Tooltip): a box that holds only a picture and plain labels has no
+/// name, so give it a `fill_text` or `count_text` child or a `Tooltip`
+/// (`a_button_box_is_named_by_its_fill_text_or_its_tooltip`). A
 /// [`RowLayout`](crate::RowLayout) beside it changes how they stand (`justify`, `align`, `direction`).
 ///
 /// ```

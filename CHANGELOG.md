@@ -6,8 +6,8 @@
 
 - G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
   the editor's hand-built nodes after G-85:
-  `HostGeometry`: a marker for a node a system moves every frame, whose geometry the skin then leaves alone
-  (`PlacedAt` and `Sizing` lengths ignored, the rest still written); `docs/research/layout-last.md` has the
+  `HostGeometry`: a marker for a node a system moves every frame, whose `PlacedAt` insets and `Sizing`
+  lengths the skin then leaves alone (nothing else is guarded; add it at spawn); `docs/research/layout-last.md` has the
   measurement (components written every frame cost about two thirds more than `Node`; only the nodes that moved,
   gated on a change, cost next to nothing more) and the guidance. No new `Role` in G-86, so nothing new under
   Breaking.

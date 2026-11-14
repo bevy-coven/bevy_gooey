@@ -3834,16 +3834,20 @@ fn restyle(
         .shape
         .is_some_and(|shape| shape.border != Default::default())
         || state.border_px.is_some_and(|px| px.0 != Default::default());
+    // The focus ring is never painted over: it is how a keyboard player sees where they are. It is
+    // the ring only when the role drew it, not any edge a focused role happens to have.
+    let on_ring = |edge: &Option<BorderColor>| {
+        look.focused == Some(entity) && *edge == Some(BorderColor::all(skin.focus_ring))
+    };
     let edge = match state.shape {
-        // The focus ring is never painted over: it is how a keyboard player sees where they are.
-        Some(Shape { ink: Some(_), .. }) if look.focused == Some(entity) && edge.is_some() => edge,
+        Some(Shape { ink: Some(_), .. }) if on_ring(&edge) => edge,
         Some(Shape { ink: Some(ink), .. }) => Some(BorderColor::all(ink.color(skin))),
         _ if edge.is_none() && bordered => Some(BorderColor::all(skin.outline)),
         _ => edge,
     };
     // The host's edge colour wins over the shape's, but never over a focus ring.
     let edge = match state.ink_override.and_then(|o| o.edge) {
-        Some(_) if look.focused == Some(entity) && edge.is_some() => edge,
+        Some(_) if on_ring(&edge) => edge,
         Some(colour) => Some(BorderColor::all(colour)),
         None => edge,
     };

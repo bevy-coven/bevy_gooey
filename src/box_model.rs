@@ -316,7 +316,7 @@ pub enum Radius {
 /// The look of a node's box, written by [`crate::apply_skin`] on **any** node with a
 /// [`Role`](crate::Role), so a placed chip, a gizmo or a rail is not a hand-built `Node`: a border
 /// (per side, in multiples of the skin's line weight [`border`](crate::GooeySkin::border), so `1.0` is
-/// the skin's line and `0.0` none), the colour it is drawn in, a corner radius and a fill. Every field
+/// the skin's line and `0.0` none; **a role whose focus ring is its border, a [`button`](crate::button), has no ring if a `0.0` zeroes that side's width**), the colour it is drawn in, a corner radius and a fill. Every field
 /// is an `Option` (and a side of `border` too): `None` leaves the node and what its role draws, so a
 /// shape with only a `radius` changes only the corners, and a border with no `ink` is the
 /// [`Ink::Outline`] unless the role has an edge of its own. `fill` is a level of
@@ -434,7 +434,7 @@ pub struct ShownMemory {
 /// logical px it says (`3.0` is 3 px at any scale; Bevy's layout then rounds it to its own device
 /// pixels like any `Node` border). Use it where an exact visible width is the requirement, a drag box
 /// or a pick outline; use a `Shape` weight everywhere else. Every side is an `Option` (`None` leaves
-/// the side, a number that is not finite leaves it, below zero is none). A side set here wins over a
+/// the side, a number that is not finite leaves it, below zero is none). **A role whose focus ring is its border (a [`button`](crate::button)) loses the ring if this zeroes its width.** A side set here wins over a
 /// `Shape`'s on the same side; the colour is the `Shape`'s `ink`, else the outline unless the role has
 /// an edge of its own. Removing the component leaves the node as it was last written.
 ///
@@ -474,15 +474,20 @@ pub(crate) fn pixeled(mut rect: UiRect, sides: &Sides<f32>) -> UiRect {
 /// colour of **this node**, replacing what [`crate::apply_skin`] would draw for its role, a
 /// [`Shape`] or a state. Every field is an `Option` and a field left `None` leaves the role's own
 /// colour. It is honoured for any [`Role`](crate::Role) and survives a skin change, which restyles
-/// every node: the skin does not overwrite it. It is constant across states (hover, press): a host
-/// that colours by state changes the component, and the change restyles in the same frame.
+/// every node: the skin does not overwrite it. **The host owns hover and press feedback under an
+/// override**: the `fill` replaces the role's whole fill chain, so the fill is the same whatever the
+/// state (`under_an_ink_override_fill_press_does_not_change_the_fill` pins it); a host that colours by
+/// state changes the component, and the change restyles in the same frame.
 ///
 /// - `fill` is the background. Over a [`Shape::fill`] and a role's fill.
 /// - `ink` is the text colour of a text node's own role ([`label`](crate::label),
 ///   [`fill_text`](crate::fill_text), a button's `Role::ButtonText`); a node that is not text has none
 ///   to replace. It does not cascade to children: each text carries its own.
 /// - `edge` is the border colour, over a [`Shape::ink`]. A focused widget's focus ring still wins over
-///   it, because it is how a keyboard player sees where they are.
+///   it (only the ring: any other edge a role has is replaced), because it is how a keyboard player
+///   sees where they are. **A role whose ring IS its border (a [`button`](crate::button)) has no ring
+///   if its border width is zero**, so do not zero such a role's border with a [`Shape`] weight of
+///   `0.0` or a [`BorderPx`] of `0.0`.
 ///
 /// It sets colours only: size, border width and spacing stay [`Sizing`], [`Shape`], [`BorderPx`] and
 /// [`Spacing`]. Removing the component leaves the node as it was last written.
@@ -514,9 +519,13 @@ pub struct InkOverride {
 }
 
 /// Marks a node whose **geometry the host writes itself, every frame**: [`crate::apply_skin`] then
-/// leaves its `left`, `top`, `right`, `bottom` (a [`PlacedAt`](crate::PlacedAt)) and its `width`,
-/// `height`, `min_*` and `max_*` (a [`Sizing`]) alone, and still writes everything that is not
-/// geometry (borders, radius, padding, colours, overflow). It is the light path for a gizmo, a caret,
+/// leaves alone exactly two things, the insets a [`PlacedAt`](crate::PlacedAt) would write on a
+/// [`placed`](crate::placed) node (`left`, `top`, `right`, `bottom`) and the lengths a [`Sizing`] would
+/// write (`width`, `height`, `min_*`, `max_*`), and still writes everything else (borders, radius,
+/// padding, colours, overflow, and the widths a role gives itself or a
+/// [`CardWidth`](crate::CardWidth), [`AspectBox`](crate::AspectBox) or [`BoxSize`](crate::BoxSize) says:
+/// those are not guarded). Adding or removing the marker does not restyle the node by itself (it has no
+/// change trigger): the node is read as it is at its next restyle, so add it when you spawn the node. It is the light path for a gizmo, a caret,
 /// a terminal's rows or a badge cluster that a system moves each frame: writing `PlacedAt` or `Sizing`
 /// every frame makes the skin restyle the node every frame (measured in `docs/research/layout-last.md`:
 /// about two thirds more per frame than writing `Node`, for a node that moves every frame, and next to
