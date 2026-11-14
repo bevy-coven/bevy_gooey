@@ -51,6 +51,9 @@ use crate::widgets::{image_box, list_rail, row};
 const MARKER_TEXT_SIZES: f32 = 1.6;
 const MARKER_DIGIT_TEXT_SIZES: f32 = 0.7;
 
+/// The least width of a task item's marker (`[x]`), in body text sizes.
+const TASK_MARKER_TEXT_SIZES: f32 = 2.4;
+
 /// The widest a picture is drawn, in body text sizes: a bigger one is scaled down to this.
 const IMAGE_MAX_TEXT_SIZES: f32 = 40.0;
 
@@ -63,8 +66,9 @@ const IMAGE_CLASS_TEXT_SIZES: [f32; 2] = [16.0, 9.0];
 /// `dir/path`, so the host decides whether that is the asset server, an embedded table or a
 /// test's own images.
 ///
-/// A web picture (`https://...`) is handed to the resolver as written, and a path that leaves the
-/// directory with `..` is refused before the resolver sees it ([`markdown::resolve`]).
+/// A web picture (`http://` or `https://`) is handed to the resolver as written; a path that leaves the
+/// directory with `..`, one that starts at a root and any other scheme (`embedded://`, `file://`) are
+/// refused before the resolver sees them ([`markdown::image_path`]).
 #[derive(Clone)]
 pub struct MarkdownBase {
     dir: String,
@@ -476,11 +480,20 @@ impl Build<'_, '_, '_> {
     fn block(&mut self, parent: Entity, block: &Block) {
         match block {
             Block::Heading { level, id, inlines } => {
-                self.spawn(
+                // The heading's words go through the same inline path as a paragraph's, set in the
+                // heading's step of the type scale, so a picture or a link in it is drawn (and is in
+                // `images()` and `links()` because it is drawn).
+                let heading = self.spawn(
                     parent,
                     (
-                        Text::new(markdown::plain_text(inlines)),
-                        Role::MarkdownHeading(*level),
+                        Node {
+                            flex_direction: FlexDirection::Column,
+                            align_items: AlignItems::Stretch,
+                            min_width: Val::Px(0.0),
+                            ..default()
+                        },
+                        Role::Column,
+                        LayoutGap(0.5),
                         MarkdownHeading {
                             view: self.view,
                             level: *level,
@@ -488,8 +501,9 @@ impl Build<'_, '_, '_> {
                         },
                     ),
                 );
+                self.inlines(heading, inlines, Align::Start, Face::Heading(*level));
             }
-            Block::Paragraph(inlines) => self.inlines(parent, inlines, Align::Start),
+            Block::Paragraph(inlines) => self.inlines(parent, inlines, Align::Start, Face::Body),
             Block::Code { text, .. } | Block::Html(text) => {
                 let code = self.spawn(
                     parent,
@@ -557,7 +571,7 @@ impl Build<'_, '_, '_> {
                             },
                             Role::Cell,
                             CellWidth(if item.task.is_some() {
-                                width.max(2.4)
+                                width.max(TASK_MARKER_TEXT_SIZES)
                             } else {
                                 width
                             }),
@@ -639,26 +653,31 @@ impl Build<'_, '_, '_> {
                 role,
             ),
         );
-        self.inlines(cell, inlines, align.copied().unwrap_or_default());
+        self.inlines(
+            cell,
+            inlines,
+            align.copied().unwrap_or_default(),
+            Face::Body,
+        );
     }
 
     /// A paragraph's worth of inlines into `parent`, a picture standing as a block of its own
     /// between the words before it and the words after.
-    fn inlines(&mut self, parent: Entity, inlines: &[Inline], align: Align) {
+    fn inlines(&mut self, parent: Entity, inlines: &[Inline], align: Align, face: Face) {
         let mut from = 0;
         for (at, inline) in inlines.iter().enumerate() {
             if let Inline::Image { index, link } = inline {
-                self.run(parent, &inlines[from..at], align);
+                self.run(parent, &inlines[from..at], align, face);
                 self.picture(parent, *index, *link);
                 from = at + 1;
             }
         }
-        self.run(parent, &inlines[from..], align);
+        self.run(parent, &inlines[from..], align, face);
     }
 
     /// Words with no picture among them: one `Text`, or a wrapping row of nodes when a link is in
     /// it.
-    fn run(&mut self, parent: Entity, run: &[Inline], align: Align) {
+    fn run(&mut self, parent: Entity, run: &[Inline], align: Align, face: Face) {
         if run.iter().all(|inline| match inline {
             Inline::Text { text, .. } => text.trim().is_empty(),
             _ => false,
@@ -672,14 +691,14 @@ impl Build<'_, '_, '_> {
             )
         });
         if has_link {
-            self.line(parent, run, align);
+            self.line(parent, run, align, face);
         } else {
-            self.words(parent, run, align);
+            self.words(parent, run, align, face);
         }
     }
 
     /// One `Text` for the run, with a span for each change of look.
-    fn words(&mut self, parent: Entity, run: &[Inline], align: Align) {
+    fn words(&mut self, parent: Entity, run: &[Inline], align: Align, face: Face) {
         let mut segs: Vec<Seg> = Vec::new();
         for inline in run {
             let (text, style, code) = match inline {
@@ -712,7 +731,7 @@ impl Build<'_, '_, '_> {
                     parent,
                     (
                         Text::new(only.text.clone()),
-                        role_of(only),
+                        role_of(only, face),
                         font_of(only.style),
                         layout,
                     ),
@@ -722,13 +741,16 @@ impl Build<'_, '_, '_> {
                 }
             }
             many => {
-                let root = self.spawn(parent, (Text::new(""), Role::Label, layout));
+                let root = self.spawn(
+                    parent,
+                    (Text::new(""), role_of(&Seg::plain(), face), layout),
+                );
                 for seg in many {
                     let span = self.spawn(
                         root,
                         (
                             TextSpan::new(seg.text.clone()),
-                            role_of(seg),
+                            role_of(seg, face),
                             font_of(seg.style),
                             TextColor::default(),
                         ),
@@ -743,7 +765,7 @@ impl Build<'_, '_, '_> {
 
     /// A wrapping row of the run's words, each a node, so a link among them is a widget. A word
     /// glued to a link (a comma after it, a bracket before it) shares a no-wrap row with it.
-    fn line(&mut self, parent: Entity, run: &[Inline], align: Align) {
+    fn line(&mut self, parent: Entity, run: &[Inline], align: Align, face: Face) {
         enum Unit {
             Glued(Vec<Word>),
             Break,
@@ -876,7 +898,7 @@ impl Build<'_, '_, '_> {
                     };
                     for word in words {
                         match word.link {
-                            Some(link) => self.link_word(holder, word.text, word.style, link),
+                            Some(link) => self.link_word(holder, word.text, word.style, link, face),
                             None => {
                                 let seg = Seg {
                                     text: word.text,
@@ -887,7 +909,7 @@ impl Build<'_, '_, '_> {
                                     holder,
                                     (
                                         Text::new(seg.text.clone()),
-                                        role_of(&seg),
+                                        role_of(&seg, face),
                                         font_of(seg.style),
                                     ),
                                 );
@@ -903,7 +925,7 @@ impl Build<'_, '_, '_> {
     }
 
     /// A link's words as a focusable node that sends [`MarkdownLink`].
-    fn link_word(&mut self, parent: Entity, text: String, style: Style, link: usize) {
+    fn link_word(&mut self, parent: Entity, text: String, style: Style, link: usize, face: Face) {
         let target = self.target(link);
         self.spawn(
             parent,
@@ -915,7 +937,10 @@ impl Build<'_, '_, '_> {
                 },
                 font_of(style),
                 Button,
-                Role::MarkdownLink,
+                match face {
+                    Face::Body => Role::MarkdownLink,
+                    Face::Heading(level) => Role::MarkdownHeadingLink(level),
+                },
                 Hovered::default(),
                 TabIndex(0),
                 AutoDirectionalNavigation::default(),
@@ -939,12 +964,7 @@ impl Build<'_, '_, '_> {
     fn picture(&mut self, parent: Entity, index: usize, link: Option<usize>) {
         let image = &self.doc.images[index];
         let class = IMAGE_CLASS_TEXT_SIZES.map(|size| size * self.text_px);
-        let kind = LinkKind::of(&image.dest);
-        let path = if kind == LinkKind::Web {
-            Ok(image.dest.clone())
-        } else {
-            markdown::resolve(self.base.dir(), &image.dest)
-        };
+        let path = markdown::image_path(self.base.dir(), &image.dest);
         let mut picture = MarkdownPicture {
             index,
             dest: image.dest.clone(),
@@ -1030,11 +1050,29 @@ fn justify_of(align: Align) -> Justify {
     }
 }
 
-fn role_of(seg: &Seg) -> Role {
-    if seg.code {
-        Role::CodeText
-    } else {
-        Role::Label
+/// What the words of a run are set as: the body's, or a heading's step of the type scale.
+#[derive(Clone, Copy)]
+enum Face {
+    Body,
+    Heading(u8),
+}
+
+impl Seg {
+    /// No words, no emphasis: the root of a `Text` whose words are all in spans.
+    fn plain() -> Self {
+        Seg {
+            text: String::new(),
+            style: Style::default(),
+            code: false,
+        }
+    }
+}
+
+fn role_of(seg: &Seg, face: Face) -> Role {
+    match (seg.code, face) {
+        (true, _) => Role::CodeText,
+        (false, Face::Body) => Role::Label,
+        (false, Face::Heading(level)) => Role::MarkdownHeading(level),
     }
 }
 
@@ -1079,12 +1117,9 @@ pub fn size_pictures(
             picture.sized = true;
             continue;
         }
-        let gone = server.as_ref().is_some_and(|server| {
-            matches!(
-                server.load_state(&image.image),
-                LoadState::Failed(_) | LoadState::NotLoaded
-            )
-        });
+        let gone = server
+            .as_ref()
+            .is_some_and(|server| matches!(server.load_state(&image.image), LoadState::Failed(_)));
         if gone {
             picture.sized = true;
             let (alt, path) = (picture.alt.clone(), picture.path.clone());

@@ -33,7 +33,7 @@ The view takes the room its host leaves, as a `list` does: give the host a heigh
 
 | Markdown | Drawn as |
 |---|---|
-| `#` to `######` | `Role::MarkdownHeading(level)`: the heading face at the top three steps of `type_scale` (1, 2, then 3 to 6), with a stable id |
+| `#` to `######` | `Role::MarkdownHeading(level)`: the heading face at the top three steps of `type_scale` (1, 2, then 3 to 6), with a stable id; its words go through the paragraph's path, so a link or a picture in a heading is drawn and listed |
 | paragraphs, `**strong**`, `*emphasis*`, `~~strike~~`, `` `code` `` | one `Text` with a `TextSpan` for each change of look (bold and italic are the face's weight and slant; the host's font decides what they look like) |
 | `[words](dest)` | a node of its own (below), underlined |
 | `- item`, `1. item`, `- [x] done` | rows of a marker (`-`, `1.`, `[x]`, `[ ]`) and a column of the item's blocks; items nest |
@@ -67,10 +67,10 @@ A picture is drawn as a box of that size, in the outline, naming its alt text an
 
 - the resolver returns `None`;
 - the image fails to load (a handle the asset server reports `Failed`);
-- its path leaves `dir` with `..`, or starts at a root. The resolver is not asked, the page logs one
+- its path leaves `dir` with `..`, starts at a root, or has a scheme other than http(s). The resolver is not asked, the page logs one
   warning and the view is sent `MarkdownImageRefused { dest, reason }`.
 
-A web picture (`https://…`) is handed to the resolver as written; the view does not fetch.
+An `http://` or `https://` picture is handed to the resolver as written; the view does not fetch. Any other scheme (`embedded://`, `file://`, `data:`) is refused like a path that leaves `dir` (`PathRefused::Scheme`), because it would reach an asset source the directory does not hold. `markdown::image_path(dir, dest)` is the whole rule.
 
 `markdown::images(source)` lists a page's pictures as `(range in the source, dest, alt)`, and
 `markdown::links(source)` and `markdown::outline(source)` its links and headings, from the same parse the

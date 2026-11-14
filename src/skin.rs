@@ -2085,6 +2085,9 @@ pub enum Role {
     /// A link of a Markdown page: [`GooeySkin::text`], underlined, with a button's lit fill under
     /// the pointer and the accent while pressed, and the focus ring when focused.
     MarkdownLink,
+    /// A link inside a Markdown heading of level 1 to 6: a [`Role::MarkdownLink`] in the heading
+    /// face at the heading's step of the type scale.
+    MarkdownHeadingLink(u8),
     /// A Markdown code block and a block of raw HTML shown as text: a frame in the outline round
     /// [`GooeySkin::solid_surface`], with a padding of the skin's.
     MarkdownCode,
@@ -2717,6 +2720,8 @@ pub fn apply_skin(
                             | Role::ColorSwatch
                             | Role::ColorArea
                             | Role::Viewport
+                            | Role::MarkdownLink
+                            | Role::MarkdownHeadingLink(_)
                     )
                 })
                 .map(|item| item.0),
@@ -3050,7 +3055,7 @@ fn restyle(
         Role::MarkdownTable | Role::MarkdownRule => Some(skin.outline),
         // A link has no fill at rest; it lights like a button under the pointer and takes the
         // accent while pressed.
-        Role::MarkdownLink => Some(if state.disabled {
+        Role::MarkdownLink | Role::MarkdownHeadingLink(_) => Some(if state.disabled {
             Color::NONE
         } else if state.pressed {
             skin.accent
@@ -3521,11 +3526,13 @@ fn restyle(
             left: skin.outline,
             ..BorderColor::all(Color::NONE)
         }),
-        Role::MarkdownLink => Some(BorderColor::all(if look.focused == Some(entity) {
-            skin.focus_ring
-        } else {
-            Color::NONE
-        })),
+        Role::MarkdownLink | Role::MarkdownHeadingLink(_) => {
+            Some(BorderColor::all(if look.focused == Some(entity) {
+                skin.focus_ring
+            } else {
+                Color::NONE
+            }))
+        }
         Role::SplitDivider => Some(BorderColor::all(if look.focused == Some(entity) {
             skin.focus_ring
         } else {
@@ -4426,7 +4433,7 @@ fn restyle(
                 next.flex_shrink = 0.0;
                 next.overflow = Overflow::clip();
             }
-            Role::MarkdownLink => {
+            Role::MarkdownLink | Role::MarkdownHeadingLink(_) => {
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
             }
@@ -4785,13 +4792,20 @@ fn restyle(
             &look.fonts.heading,
             skin.type_scale[markdown_heading_step(*level)],
         )),
-        Role::MarkdownLink => {
+        Role::MarkdownLink | Role::MarkdownHeadingLink(_) => {
             let color = if state.pressed && !state.disabled {
                 skin.accent_text
             } else {
                 skin.text
             };
-            Some((color, &look.fonts.body, skin.text_size))
+            Some(match role {
+                Role::MarkdownHeadingLink(level) => (
+                    color,
+                    &look.fonts.heading,
+                    skin.type_scale[markdown_heading_step(*level)],
+                ),
+                _ => (color, &look.fonts.body, skin.text_size),
+            })
         }
         Role::MarkdownPath => Some((skin.text_muted, &look.fonts.body, skin.type_scale[1])),
         Role::Label | Role::ProgressLine => Some((skin.text, &look.fonts.body, skin.text_size)),

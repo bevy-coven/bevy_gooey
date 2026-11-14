@@ -19,7 +19,9 @@
   `Document` the view draws, so the pictures are listed in the order they are drawn. The list's rail,
   scroll-to-focus and PageUp and PageDown take the page's viewport too. One new dependency behind the
   feature, `pulldown-cmark` 0.13 (MIT, no default features, wasm-compatible): `tests/leaf.rs`'s allowed
-  list gains it (an assumed owner exception, additive). Thirteen new `Role`s (all `Markdown…`).
+  list gains it (an assumed owner exception, additive). Fourteen new `Role`s (all `Markdown…`). A picture whose destination has a scheme other than http(s) (`embedded://`, `file://`) is refused like a `..` path (`PathRefused::Scheme`, `markdown::image_path`).
+
+- **Breaking:** `Role` has new variants for the Markdown view: `MarkdownView`, `MarkdownViewport`, `MarkdownHeading(u8)`, `MarkdownHeadingLink(u8)`, `MarkdownLine`, `MarkdownLink`, `MarkdownCode`, `MarkdownQuote`, `MarkdownRule`, `MarkdownTable`, `MarkdownCell`, `MarkdownHeadCell`, `MarkdownMissing`, `MarkdownPath`, so an exhaustive `match` on `Role` needs arms for them (`PathRefused` is only there with the `markdown` feature).
 
 - `CollapseSplit { entity, collapsed }` (G-77, #88): trigger it on a split and its first pane collapses
   to its minimum (`true`) or is given back what it had (`false`) with the same slide as Enter on the

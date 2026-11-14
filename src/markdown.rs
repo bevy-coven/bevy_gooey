@@ -100,6 +100,9 @@ pub enum PathRefused {
     EscapesBase,
     /// The path starts at a root (`/`, or a backslash): it is not relative to the page.
     Absolute,
+    /// The destination has a scheme other than `http` and `https` (`embedded://`, `file://`,
+    /// `data:`): it would reach an asset source the page's directory does not hold.
+    Scheme,
 }
 
 impl fmt::Display for PathRefused {
@@ -107,6 +110,7 @@ impl fmt::Display for PathRefused {
         f.write_str(match self {
             Self::EscapesBase => "the path leaves the page's directory with `..`",
             Self::Absolute => "the path is absolute, not relative to the page",
+            Self::Scheme => "the destination has a scheme other than http or https",
         })
     }
 }
@@ -333,6 +337,30 @@ pub fn resolve(base: &str, dest: &str) -> Result<String, PathRefused> {
     } else {
         format!("{base}/{path}")
     })
+}
+
+/// What the view asks its resolver for when a picture's destination is `dest`: a web address
+/// (`http://` or `https://`) as written, any other scheme refused ([`PathRefused::Scheme`]: an
+/// `embedded://` or `file://` source is not under the page's directory), and anything else the path
+/// [`resolve`]d against `base`.
+///
+/// ```
+/// # use bevy_gooey::markdown::{image_path, PathRefused};
+/// assert_eq!(image_path("guide", "img/x.png").as_deref(), Ok("guide/img/x.png"));
+/// assert_eq!(image_path("guide", "https://a.b/x.png").as_deref(), Ok("https://a.b/x.png"));
+/// assert_eq!(image_path("guide", "embedded://a/x.png"), Err(PathRefused::Scheme));
+/// assert_eq!(image_path("guide", "../x.png"), Err(PathRefused::EscapesBase));
+/// ```
+pub fn image_path(base: &str, dest: &str) -> Result<String, PathRefused> {
+    if LinkKind::of(dest) != LinkKind::Web {
+        return resolve(base, dest);
+    }
+    let lower = dest.to_ascii_lowercase();
+    if lower.starts_with("http://") || lower.starts_with("https://") {
+        Ok(dest.to_owned())
+    } else {
+        Err(PathRefused::Scheme)
+    }
 }
 
 /// The size a picture is drawn at, logical px: its own size when the image is known, scaled down

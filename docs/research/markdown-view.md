@@ -57,8 +57,9 @@ own is 74,733 bytes and uses tables throughout). At `57d3d49` the crate has `ima
   grows with the player's text size at the next build). A picture that is not there, fails to load or has
   a refused path is a box (`Role::MarkdownMissing`) naming its alt text and its path, never nothing; a
   path that climbs out of `dir` with `..`, or starts at a root, is not given to the resolver, warns once
-  and sends `MarkdownImageRefused`. A web picture is handed to the resolver as written; the view fetches
-  nothing.
+  and sends `MarkdownImageRefused`. An `http(s)` picture is handed to the resolver as written and the view fetches
+  nothing; any other scheme (`embedded://`, `file://`: an asset source the directory does not hold) is
+  refused like `..` (`PathRefused::Scheme`, `markdown::image_path`).
 - **Headings** have ids: the page's `{#id}`, else the lower-cased words with dashes (the way forges name
   them), a repeat counting up. `MarkdownOutline` lists them; `scroll_to_heading(view, id)` stands the
   heading at the top of the viewport on the list's own spring (`ScrollGlide`), or as near as the end of
@@ -66,7 +67,7 @@ own is 74,733 bytes and uses tables throughout). At `57d3d49` the crate has `ima
 - **Tables are a grid whose gaps are the lines.** `Display::Grid`, `minmax(0, 1fr)` columns, the table's
   fill the outline and the gap one border wide, every cell opaque: one line between two cells, not two
   borders, and no per-cell border arithmetic.
-- **The look is the skin's.** Thirteen `Role::Markdown…` variants, all styled in `apply_skin`: headings
+- **The look is the skin's.** Fourteen `Role::Markdown…` variants, all styled in `apply_skin`: headings
   step down `type_scale` from its top (1, 2, then 3 to 6), code is `Role::CodeText` (the mono face), a
   code block, quote and rule are the frames every other widget is drawn in. Bold and italic are the
   face's weight and slant, set where the words are spawned.
@@ -85,9 +86,17 @@ own is 74,733 bytes and uses tables throughout). At `57d3d49` the crate has `ima
   word's sat on different lines); `Center` does, because a link's border only makes its node a little
   taller.
 - **A headless test app never finishes an asset load**: a handle from `AssetServer::load` of a missing
-  file stays `Loading` in the crate's test windows (checked over 600 frames), so the test of a picture
-  whose image is gone uses a handle the server has never heard of (`NotLoaded`, the same box as `Failed`
-  in `size_pictures`).
+  file (or of an unknown extension) stays `Loading` in the crate's test windows (checked over 600 and
+  400 frames), so `LoadState::Failed`, the one state `size_pictures` turns into the box, cannot be
+  reached by a test here; the branch is one `matches!` and is not covered. A handle nobody has filled
+  yet (`NotLoaded`) is deliberately **not** gone: it is a picture still to come, keeps its room and is
+  drawn at its own size when the image arrives (`a_picture_whose_image_arrives_late_is_drawn_when_it_is_there`).
+- **A heading goes through the paragraph's inline path** in the heading's face (`Face::Heading`): the first
+  version drew `plain_text(inlines)`, so a picture in a heading vanished and a link in it was plain
+  words while `images()` and `links()` listed them. Review caught it; `a_picture_and_a_link_in_a_heading_are_drawn_and_listed`
+  holds it. A heading with a link is then word nodes, each a heading node in the access tree.
+- **Focus rings need the focus list.** `apply_skin` restyles on a focus change only the roles in its
+  list; `Role::MarkdownLink` and `Role::MarkdownHeadingLink` are in it (`a_focused_link_wears_the_ring_and_loses_it_with_focus`).
 - **`find_by_label` reads a `Text`'s own string**, so a paragraph that is one run is findable by its
   words and one with several looks reads as its first run there; the access tree reads the `Text` and
   its `TextSpan` children together (`Look::own`), so a screen reader hears all of it.

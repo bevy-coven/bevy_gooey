@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use bevy::input_focus::{FocusCause, InputFocus};
+use bevy::input_focus::{FocusCause, InputFocus, InputFocusVisible};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
@@ -357,41 +357,148 @@ fn a_link_is_pressed_from_the_keyboard() {
 }
 
 #[test]
-fn a_picture_whose_image_fails_to_load_becomes_a_box_naming_its_path() {
+fn a_picture_whose_image_arrives_late_is_drawn_when_it_is_there() {
     let mut app = app();
-    // A handle to an image that no loader has and the asset server has never heard of: it is
-    // neither in the assets nor loading, which is what a failed load reads as too
-    // (`LoadState::Failed` and `NotLoaded` are the same box). A real file that is missing takes the
-    // same path; an app that is not given its async loaders never gets as far as `Failed`, which is
-    // why this test does not wait for a file.
-    let handle: Handle<Image> = app.world().resource::<Assets<Image>>().reserve_handle();
+    // A handle nobody has filled yet is a picture still to come, not a missing one (it is neither
+    // in the assets nor `Failed`): the page keeps its room, and the image is drawn at its own size
+    // when it arrives.
+    let late: Handle<Image> = app.world().resource::<Assets<Image>>().reserve_handle();
+    let handle = late.clone();
     let base = MarkdownBase::new("guide", move |_: &str| Some(handle.clone()));
     let host = app.world_mut().spawn(Node::default()).id();
     let view = app
         .world_mut()
-        .spawn((markdown_view("![Gone](nowhere.png)\n", base), ChildOf(host)))
+        .spawn((markdown_view("![Late](late.png)\n", base), ChildOf(host)))
         .id();
-    let missing = |app: &App| {
-        drawn_in_order::<MarkdownPicture>(app, view)
-            .into_iter()
-            .find(|e| app.world().get::<Role>(*e) == Some(&Role::MarkdownMissing))
-    };
-    // The box shows the picture's size first, then the box that names its path.
-    let mut found = None;
-    for _ in 0..10 {
-        app.update();
-        found = missing(&app);
-        if found.is_some() {
-            break;
-        }
-    }
-    let found = found.expect("a picture that failed to load is a box that names its path");
-    let words = words_below(&app, found);
-    assert!(
-        words.iter().any(|w| w == "Gone") && words.iter().any(|w| w == "guide/nowhere.png"),
-        "{words:?}"
+    settle(&mut app);
+    let picture = drawn_in_order::<MarkdownPicture>(&app, view)[0];
+    assert_eq!(app.world().get::<Role>(picture), Some(&Role::ImageBox));
+    let class = app.world().get::<BoxSize>(picture).expect("a box").0;
+    assert!(class.x > 100.0, "it holds its room meanwhile: {class:?}");
+
+    let image = Image::new_fill(
+        bevy::render::render_resource::Extent3d {
+            width: 40,
+            height: 20,
+            depth_or_array_layers: 1,
+        },
+        bevy::render::render_resource::TextureDimension::D2,
+        &[255, 0, 0, 255],
+        bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
+        bevy::asset::RenderAssetUsages::default(),
     );
-    assert!(app.world().get::<ImageNode>(found).is_none());
+    app.world_mut()
+        .resource_mut::<Assets<Image>>()
+        .insert(&late, image)
+        .expect("the reserved handle takes an image");
+    settle(&mut app);
+    assert_eq!(app.world().get::<Role>(picture), Some(&Role::ImageBox));
+    assert_eq!(
+        app.world().get::<BoxSize>(picture).map(|b| b.0),
+        Some(Vec2::new(40.0, 20.0)),
+        "drawn at its own size once it is there"
+    );
+}
+
+#[test]
+fn a_destination_with_a_scheme_but_http_never_reaches_the_resolver() {
+    let mut app = app();
+    let shelf = shelf(&mut app);
+    let refused: Arc<Mutex<Vec<(String, PathRefused)>>> = Arc::default();
+    let host = app.world_mut().spawn(Node::default()).id();
+    let source =
+        "![E](embedded://a/b.png)\n\n![F](file:///etc/x.png)\n\n![W](https://example.com/w.png)\n";
+    let view = app
+        .world_mut()
+        .spawn((markdown_view(source, shelf.base()), ChildOf(host)))
+        .id();
+    let sink = refused.clone();
+    app.world_mut()
+        .entity_mut(view)
+        .observe(move |event: On<MarkdownImageRefused>| {
+            sink.lock()
+                .expect("the sink")
+                .push((event.dest.clone(), event.reason));
+        });
+    settle(&mut app);
+    assert_eq!(
+        refused.lock().expect("the sink").as_slice(),
+        [
+            ("embedded://a/b.png".to_owned(), PathRefused::Scheme),
+            ("file:///etc/x.png".to_owned(), PathRefused::Scheme)
+        ]
+    );
+    assert_eq!(
+        shelf.asked(),
+        ["https://example.com/w.png"],
+        "a web address is the resolver's as written, nothing else with a scheme is"
+    );
+}
+
+#[test]
+fn a_focused_link_wears_the_ring_and_loses_it_with_focus() {
+    let mut app = app();
+    let shelf = shelf(&mut app);
+    page(&mut app, &shelf, PAGE, 600.0);
+    let ring = app.world().resource::<GooeySkin>().focus_ring;
+    let palette = find_by_label(&mut app, "the palette").expect("a link");
+    let web = find_by_label(&mut app, "the web").expect("a link");
+    let border = |app: &App, e: Entity| app.world().get::<BorderColor>(e).copied();
+    assert_eq!(border(&app, palette), Some(BorderColor::all(Color::NONE)));
+
+    app.world_mut().resource_mut::<InputFocusVisible>().0 = true;
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(palette, FocusCause::Navigated);
+    settle(&mut app);
+    assert_eq!(border(&app, palette), Some(BorderColor::all(ring)));
+    assert_eq!(border(&app, web), Some(BorderColor::all(Color::NONE)));
+
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(web, FocusCause::Navigated);
+    settle(&mut app);
+    assert_eq!(border(&app, palette), Some(BorderColor::all(Color::NONE)));
+    assert_eq!(border(&app, web), Some(BorderColor::all(ring)));
+}
+
+#[test]
+fn a_picture_and_a_link_in_a_heading_are_drawn_and_listed() {
+    let source =
+        "# Intro ![Logo](img/icon.png) and [home](index.md)\n\nBody.\n\n![Tail](img/cell.png)\n";
+    let mut app = app();
+    let shelf = shelf(&mut app);
+    let view = page(&mut app, &shelf, source, 600.0);
+    let heard: Arc<Mutex<Vec<String>>> = Arc::default();
+    let sink = heard.clone();
+    app.world_mut()
+        .entity_mut(view)
+        .observe(move |link: On<MarkdownLink>| {
+            sink.lock().expect("the sink").push(link.dest.clone());
+        });
+
+    let listed: Vec<String> = markdown::images(source)
+        .into_iter()
+        .map(|(_, dest, _)| dest)
+        .collect();
+    let drawn: Vec<String> = drawn_in_order::<MarkdownPicture>(&app, view)
+        .into_iter()
+        .filter_map(|e| app.world().get::<MarkdownPicture>(e))
+        .map(|p| p.dest().to_owned())
+        .collect();
+    assert_eq!(listed, ["img/icon.png", "img/cell.png"]);
+    assert_eq!(drawn, listed, "the heading's picture is drawn, in order");
+    assert_eq!(markdown::links(source).len(), 1);
+    assert_eq!(drawn_in_order::<MarkdownHeading>(&app, view).len(), 1);
+
+    let home = find_by_label(&mut app, "home").expect("the heading's link is drawn");
+    assert_eq!(
+        app.world().get::<Role>(home),
+        Some(&Role::MarkdownHeadingLink(1))
+    );
+    click(&mut app, home);
+    assert_eq!(heard.lock().expect("the sink").as_slice(), ["index.md"]);
+    find_by_label(&mut app, "Intro").expect("the heading's words are drawn");
 }
 
 #[test]

@@ -165,6 +165,7 @@ fn spec(role: Role) -> Spec {
         | Role::ListRail
         | Role::MarkdownHeading(_)
         | Role::MarkdownLink
+        | Role::MarkdownHeadingLink(_)
         | Role::MarkdownCode
         | Role::MarkdownMissing
         | Role::IconTab => Spec::Node,
@@ -554,7 +555,7 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.name = look.own(entity);
         }
         // A link reads as one, named by its words (a link round a picture, by the picture's).
-        Role::MarkdownLink => {
+        Role::MarkdownLink | Role::MarkdownHeadingLink(_) => {
             wanted.role = Some(Ak::Link);
             wanted.name = look.own(entity).or_else(|| {
                 look.words(entity, |role| {
