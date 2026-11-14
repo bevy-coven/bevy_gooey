@@ -89,6 +89,10 @@ stands in and it is the accent for a warning, the danger colour for an error and
 `plain_button("Cancel")` is a button's fill, frame, height and hover with none of its behaviour (no
 Bevy `Button`): no `Activate`, no tab stop, no pressed state; listen for `PointerClick` yourself.
 
+`aspect_image(handle, 480.0, 16.0 / 9.0)` is a picture sized by its ratio: 480 px wide while its host
+has the room, no wider than the host when it does not, its height following (`image_box` is a fixed
+size that never gives way).
+
 `RowLayout` is written **only when it is on the node**: a plain `row(1.0)` keeps a `Node` field you
 patched yourself. A wrapping container puts the skin's gap between its lines as well as between its
 children. `column_with(gap, layout)` is the same for a column (`align` is across its width).

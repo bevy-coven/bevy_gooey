@@ -640,6 +640,40 @@ pub fn image_box(image: Handle<Image>, size: Vec2) -> impl Bundle {
     )
 }
 
+/// A picture sized by its aspect ratio: `width` logical px wide while its host has the room, and no
+/// wider than the host (`max_width: 100%`) when it does not, its height following the width at
+/// `aspect` (width over height, `2.0` is twice as wide as high), so a splash shrinks with a narrow
+/// window and never distorts. [`image_box`] is a fixed size; this is the one that gives way. Like it,
+/// the picture is `Pickable::IGNORE`, and an image that has not loaded draws nothing and keeps the
+/// box. [`AspectBox`](crate::AspectBox) is the component to change it afterwards.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, splash: Handle<Image>) {
+/// commands.spawn(aspect_image(splash, 480.0, 16.0 / 9.0));
+/// # }
+/// ```
+pub fn aspect_image(image: Handle<Image>, width: f32, aspect: f32) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        ImageNode {
+            image,
+            image_mode: NodeImageMode::Stretch,
+            ..default()
+        },
+        Role::AspectImage,
+        crate::AspectBox {
+            width,
+            ratio: aspect,
+        },
+        Pickable::IGNORE,
+    )
+}
+
 /// A box its first child sizes, with every later child stacked over it: a hover image over a plot,
 /// a readout over a chart, a badge over a thumbnail. The stacked children fill the box and take no
 /// room of their own (the crate stacks them), so the overlay is exactly as large as what it

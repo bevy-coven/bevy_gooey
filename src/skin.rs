@@ -29,7 +29,7 @@ use crate::elevation::{Elevation, ElevationLevel};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
 use crate::icon::{IconSize, IconTone};
 use crate::layout::{
-    BoxSize, CardWidth, CellWidth, LayoutGap, OverlayStacked, PlacedAt, RowLayout,
+    AspectBox, BoxSize, CardWidth, CellWidth, LayoutGap, OverlayStacked, PlacedAt, RowLayout,
 };
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
@@ -2105,6 +2105,9 @@ pub enum Role {
     /// An [`crate::image_box`]: a picture of a fixed size, cut to its box; not drawn but the
     /// picture itself, so a box that has not loaded keeps its room and draws nothing.
     ImageBox,
+    /// An [`crate::aspect_image`]: a picture of a width at an aspect ratio, never wider than its
+    /// host, cut to its box; not drawn but the picture itself.
+    AspectImage,
     /// An [`crate::overlay`]: a box its first child sizes, its later children stacked over it; not
     /// drawn.
     Overlay,
@@ -2297,6 +2300,8 @@ struct State {
     card_width: Option<CardWidth>,
     /// Where a placed node stands ([`PlacedAt`]); none pins no side.
     inset: Option<UiRect>,
+    /// The width and ratio of an aspect image ([`AspectBox`]).
+    aspect: Option<AspectBox>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
     /// because the selected one is the surface and not the accent.
     edge_tab: bool,
@@ -2339,6 +2344,7 @@ impl Default for State {
             flow: None,
             card_width: None,
             inset: None,
+            aspect: None,
             layout_gap: 1.0,
             cell: 0.0,
             image: Vec2::ZERO,
@@ -2383,6 +2389,7 @@ type StateQuery = (
             Option<&'static RowLayout>,
             Option<&'static CardWidth>,
             Option<&'static PlacedAt>,
+            Option<&'static AspectBox>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2435,6 +2442,7 @@ type Restyle = (
                 Changed<RowLayout>,
                 Changed<CardWidth>,
                 Changed<PlacedAt>,
+                Changed<AspectBox>,
             )>,
         )>,
     )>,
@@ -2606,7 +2614,7 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
-                        (stacked, flow, card_width, inset),
+                        (stacked, flow, card_width, inset, aspect),
                     ),
                     row,
                     role,
@@ -2661,6 +2669,7 @@ pub fn apply_skin(
                         flow: flow.copied(),
                         card_width: card_width.copied(),
                         inset: inset.map(|inset| inset.0),
+                        aspect: aspect.copied(),
                     }
                 },
             )
@@ -3323,6 +3332,7 @@ fn restyle(
         | Role::FillRegion
         | Role::Placed
         | Role::Cell
+        | Role::AspectImage
         | Role::ImageBox
         | Role::Overlay
         | Role::Menu
@@ -4972,6 +4982,18 @@ fn restyle(
                 next.width = Val::Px(width);
                 next.min_width = Val::ZERO;
                 next.flex_shrink = 1.0;
+                next.overflow = Overflow::clip();
+            }
+            // A picture a width wide at an aspect ratio, no wider than its host: the height follows
+            // the width (`aspect_ratio`), so a splash scales down with a narrow host and never
+            // distorts. Stacked in an overlay it is the first child's box, which `stack_overlays` owns.
+            Role::AspectImage if !state.stacked => {
+                let aspect = state.aspect.unwrap_or_default();
+                next.width = Val::Px(aspect.width.max(0.0));
+                next.height = Val::Auto;
+                next.max_width = Val::Percent(100.0);
+                next.aspect_ratio =
+                    (aspect.ratio.is_finite() && aspect.ratio > 0.0).then_some(aspect.ratio);
                 next.overflow = Overflow::clip();
             }
             // A picture of its own size, cut to its box, and never squeezed by a narrow row: a cell

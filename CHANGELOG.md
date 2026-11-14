@@ -19,7 +19,8 @@
   filling it; a node that follows a point of the world is a `WorldAnchor`, as before, now held by a test for a
   balloon, a label and a badge. `status_mark()` (the mark of a `status_item`, read from the `StatusKind` of the node
   it stands in, which `status_item` now uses) and `plain_button(text)` (a button's look, no Bevy `Button`: no
-  `Activate`, no tab stop, no pressed state). Four new `Role`s (`ButtonRow`, `FillColumn`, `FillRegion`, `Placed`).
+  `Activate`, no tab stop, no pressed state). `aspect_image(handle, width, aspect)` with `AspectBox`: a picture `width` px wide at an aspect
+  ratio, never wider than its host (`max_width: 100%`), its height following. Five new `Role`s (`ButtonRow`, `FillColumn`, `FillRegion`, `Placed`, `AspectImage`).
 
 - The parts a tool's lists and strips were still building from raw `Node`s (G-82, #93, `docs/research/kit-parts.md`,
   `docs/guide/layout.md`, `cargo run --example kit`). `glyph_button(glyph, name)`: a button for a caret or a

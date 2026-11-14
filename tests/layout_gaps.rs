@@ -923,13 +923,11 @@ fn a_plain_button_looks_like_a_button_and_stays_off_the_activate_bus() {
         (a.height() - b.height()).abs() < 0.5,
         "a button's height: {a:?} {b:?}"
     );
-    for (name, got, want) in [(
-        "fill",
+    assert_eq!(
         app.world().get::<BackgroundColor>(plain).map(|c| c.0),
         app.world().get::<BackgroundColor>(real).map(|c| c.0),
-    )] {
-        assert_eq!(got, want, "{name} is a button's");
-    }
+        "the fill is a button's"
+    );
     let words = children(&app, plain);
     assert_eq!(
         app.world().get::<Text>(words[0]).map(|t| t.0.as_str()),
@@ -949,5 +947,54 @@ fn a_plain_button_looks_like_a_button_and_stays_off_the_activate_bus() {
         app.world().resource::<Activated>().0,
         1,
         "a real button does: the control"
+    );
+}
+
+// ---- 7. an image sized by its aspect ratio with a maximum width ------------------------------
+
+/// A splash: 300 px wide at an aspect of 2 (width over height) while its host has the room, and no
+/// wider than the host when it does not, its height following.
+#[test]
+fn an_aspect_image_is_its_width_and_keeps_its_ratio_when_the_host_is_narrower() {
+    for (host, want) in [(400.0, (300.0, 150.0)), (150.0, (150.0, 75.0))] {
+        let mut app = headless();
+        let image = image(&mut app);
+        let splash = app.world_mut().spawn(aspect_image(image, 300.0, 2.0)).id();
+        room(&mut app, host, splash);
+        settle(&mut app);
+        let got = rect(&app, splash);
+        assert!(
+            (got.width() - want.0).abs() < 0.5 && (got.height() - want.1).abs() < 0.5,
+            "in {host}: {got:?}, wanted {want:?}"
+        );
+    }
+}
+
+/// A picture is not a surface: it takes no pointer, as every picture in the crate.
+#[test]
+fn an_aspect_image_takes_no_pointer() {
+    let mut app = headless();
+    let image = image(&mut app);
+    let splash = app.world_mut().spawn(aspect_image(image, 300.0, 2.0)).id();
+    assert_eq!(app.world().get::<Pickable>(splash), Some(&Pickable::IGNORE));
+}
+
+/// A changed width moves it in the same frame.
+#[test]
+fn a_changed_aspect_box_restyles() {
+    let mut app = headless();
+    let image = image(&mut app);
+    let splash = app.world_mut().spawn(aspect_image(image, 300.0, 2.0)).id();
+    room(&mut app, 600.0, splash);
+    settle(&mut app);
+    app.world_mut()
+        .get_mut::<AspectBox>(splash)
+        .expect("a box")
+        .width = 400.0;
+    settle(&mut app);
+    let got = rect(&app, splash);
+    assert!(
+        (got.width() - 400.0).abs() < 0.5 && (got.height() - 200.0).abs() < 0.5,
+        "{got:?}"
     );
 }

@@ -95,6 +95,21 @@ pub enum CardWidth {
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 pub struct PlacedAt(pub UiRect);
 
+/// What an [`aspect_image`](crate::aspect_image) is, written by [`crate::apply_skin`]: its `width`
+/// in logical px and its `ratio`, width over height. The box is that wide unless its host is
+/// narrower (`max_width: 100%`), and its height follows the width at the ratio, so a splash scales
+/// down with its host and never distorts. A ratio that is not a number above zero is no ratio (the
+/// height is then the image's own). Removing the component leaves the node as it is.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct AspectBox {
+    /// The width it is drawn at, logical px, while its host has the room.
+    pub width: f32,
+    /// Width over height.
+    pub ratio: f32,
+}
+
 /// An [`overlay`](crate::overlay)'s child drawn over its first one: absolute, filling the box the
 /// first child gives the overlay.
 ///
