@@ -443,3 +443,115 @@ fn a_changed_border_px_restyles() {
         UiRect::all(Val::Px(5.0))
     );
 }
+
+// ---- 3. a button box: a button that holds the host's children ---------------------------------
+
+#[derive(Resource, Default)]
+struct Pressed(u32);
+
+/// A button box is a focusable, hoverable, pressable button that takes any children, and puts
+/// `Role::ButtonText` on none of them.
+#[test]
+fn a_button_box_holds_children_and_has_no_button_text() {
+    let mut app = headless();
+    app.init_resource::<Pressed>();
+    let picture = probe(&mut app, 40.0, 40.0);
+    let boxed = app
+        .world_mut()
+        .spawn((
+            button_box(),
+            observe(|_: On<Activate>, mut n: ResMut<Pressed>| n.0 += 1),
+            children![fill_text("agent_view"), count_text("12")],
+        ))
+        .with_children(|b| {
+            b.spawn(picture);
+        })
+        .id();
+    let plain = app.world_mut().spawn(button("Plain")).id();
+    let holder = app
+        .world_mut()
+        .spawn(column(0.0))
+        .add_child(boxed)
+        .add_child(plain)
+        .id();
+    room(&mut app, 400.0, holder);
+    settle(&mut app);
+
+    assert!(
+        app.world().get::<bevy::ui_widgets::Button>(boxed).is_some(),
+        "Bevy's Button: Activate and focus"
+    );
+    assert!(
+        app.world()
+            .get::<bevy::input_focus::tab_navigation::TabIndex>(boxed)
+            .is_some()
+    );
+    assert_eq!(app.world().get::<Role>(boxed), Some(&Role::Button));
+    let mut texts = app.world_mut().query::<&Role>();
+    let in_box: Vec<Entity> = {
+        let mut stack = vec![boxed];
+        let mut all = Vec::new();
+        while let Some(e) = stack.pop() {
+            for c in children(&app, e) {
+                all.push(c);
+                stack.push(c);
+            }
+        }
+        all
+    };
+    assert!(
+        in_box.iter().all(|e| texts
+            .get(app.world(), *e)
+            .is_ok_and(|r| *r != Role::ButtonText)),
+        "no Role::ButtonText anywhere in a button box"
+    );
+    // The children start at the box's left, not centred: a card, not a label.
+    let (b, first) = (rect(&app, boxed), rect(&app, children(&app, boxed)[0]));
+    assert!(first.min.x - b.min.x < 40.0, "{first:?} in {b:?}");
+    // The plain button still centres its label.
+    assert_eq!(
+        app.world()
+            .get::<Node>(plain)
+            .expect("a node")
+            .justify_content,
+        JustifyContent::Center
+    );
+
+    assert_eq!(
+        app.world().get::<BackgroundColor>(boxed),
+        app.world().get::<BackgroundColor>(plain),
+        "a button's fill"
+    );
+    bevy_gooey::testing::click(&mut app, boxed);
+    settle(&mut app);
+    assert_eq!(app.world().resource::<Pressed>().0, 1, "one Activate");
+}
+
+/// Tab reaches a button box, and a host's `RowLayout` lays its children out.
+#[test]
+fn a_button_box_is_a_tab_stop_and_takes_a_row_layout() {
+    let mut app = headless();
+    let b = probe(&mut app, 30.0, 20.0);
+    let boxed = app
+        .world_mut()
+        .spawn((
+            button_box(),
+            RowLayout {
+                justify: Some(JustifyContent::End),
+                ..default()
+            },
+        ))
+        .with_children(|c| {
+            c.spawn(b);
+        })
+        .id();
+    room(&mut app, 400.0, boxed);
+    settle(&mut app);
+    let (r, kid) = (rect(&app, boxed), rect(&app, children(&app, boxed)[0]));
+    assert!(
+        r.max.x - kid.max.x < 30.0,
+        "the child is at the end: {kid:?} in {r:?}"
+    );
+    bevy_gooey::testing::press(&mut app, KeyCode::Tab);
+    assert_eq!(bevy_gooey::testing::focused(&app), Some(boxed));
+}

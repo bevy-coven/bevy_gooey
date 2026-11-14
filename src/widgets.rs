@@ -843,6 +843,43 @@ pub fn button(text: impl Into<String>) -> impl Bundle {
     )
 }
 
+/// A button that holds the host's own children and none of gooey's: a card, a project entry, a row
+/// with a picture, two texts and a badge. It is Bevy's `Button` with a button's frame, fill, hover,
+/// press, focus ring and `Activate`, a tab stop, laid out as a row with its children from the left
+/// (a [`button`]'s label is centred), and **it puts `Role::ButtonText` on nothing**: its children are
+/// yours. Words that should follow its state (readable on the pressed fill) are a [`fill_text`] or a
+/// [`count_text`]; a plain [`label`] keeps the text colour, which is yours to manage. A
+/// [`RowLayout`](crate::RowLayout) beside it changes how they stand (`justify`, `align`, `direction`).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands, picture: Handle<Image>) {
+/// commands.spawn((
+///     button_box(),
+///     observe(|_: On<Activate>| info!("open the project")),
+///     children![
+///         image_box(picture, Vec2::splat(48.0)),
+///         (column(0.0), children![fill_text("agent_view"), count_text("12 problems")]),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn button_box() -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        bevy::ui_widgets::Button,
+        Role::Button,
+        Hovered::default(),
+        TabIndex(0),
+        AutoDirectionalNavigation::default(),
+    )
+}
+
 /// The screen's one main action ("Create", "Start", "Save"): a [`button`] filled with
 /// [`crate::GooeySkin::accent`] and labelled in [`crate::GooeySkin::accent_text`] at rest, so a
 /// first-time player sees the one thing to press. Under the pointer it is

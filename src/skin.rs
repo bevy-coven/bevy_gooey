@@ -5247,7 +5247,8 @@ fn restyle(
             | Role::ButtonRow
             | Role::FillColumn
             | Role::FillRegion
-            | Role::Placed,
+            | Role::Placed
+            | Role::Button,
         ) = (state.flow, role)
         {
             // A field left `None` keeps what the role gave the node.

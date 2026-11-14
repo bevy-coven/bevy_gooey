@@ -6,6 +6,11 @@
 
 - G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
   the editor's hand-built nodes after G-85:
+  `button_box()`: a Bevy `Button` with `Role::Button` that holds the host's own children, with no
+  `Role::ButtonText` on anything; a `RowLayout` now applies to a `Role::Button`.
+
+- G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
+  the editor's hand-built nodes after G-85:
   `BorderPx(Sides<f32>)`: a border in logical px, not snapped to device pixels, beside `Shape` (a `Shape` border
   weight and every role's frame are snapped; the docs list which is which).
 

@@ -51,7 +51,7 @@ pub struct BoxSize(pub Vec2);
 /// (`(row(1.0), RowLayout { .. })`), in a `Children::spawn(SpawnWith(..))` tuple, on any
 /// [`row_with`](crate::row_with) or [`column_with`](crate::column_with). [`crate::apply_skin`] writes
 /// it on a [`Role::Row`], [`Role::Column`], [`Role::ButtonRow`], [`Role::FillColumn`],
-/// [`Role::FillRegion`] and [`Role::Placed`] **only when the component is there**, so a row with none
+/// [`Role::FillRegion`], [`Role::Placed`] and a [`button_box`](crate::button_box)'s [`Role::Button`] **only when the component is there**, so a row with none
 /// keeps whatever the host patched on its `Node`. Change it and the node follows in the same frame;
 /// setting a field back to `None` leaves the node as it was last written.
 ///

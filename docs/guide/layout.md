@@ -229,6 +229,13 @@ Every border the skin draws is a whole number of device pixels (a 2 px line at 1
 outline whose width is the requirement (Bevy's layout still rounds it to its own device pixels). A
 border you write on a `Node` yourself is left alone unless a `Shape` or `BorderPx` names that side.
 
+## A button that holds your children
+
+`button_box()` is a focusable button (`Activate`, hover, press, focus ring, a tab stop) that holds
+whatever you put in it and puts `Role::ButtonText` on none of it: a card with a picture, two texts and a
+badge. Use `fill_text` and `count_text` for words that follow its state; a `RowLayout` beside it sets
+`justify`, `align` or `direction`.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look
