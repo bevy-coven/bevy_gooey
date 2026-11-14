@@ -145,6 +145,7 @@ mod access_actions;
 mod anchor;
 mod badges;
 mod binding;
+mod box_model;
 mod button_variant;
 mod cancel;
 mod card;
@@ -238,6 +239,7 @@ pub use binding::{
     Binding, BindingSettings, BindingValue, Capturing, bind_by_input, catch_pointer, not_capturing,
     update_bindings,
 };
+pub use box_model::{Sides, Space, Spacing};
 pub use button_variant::{
     ButtonPhase, ButtonVariant, Loading, LoadingHold, LoadingSpinner, note_host_disable,
     update_loading,
@@ -523,6 +525,9 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<CellWidth>()
             .register_type::<BoxSize>()
             .register_type::<RowLayout>()
+            .register_type::<Space>()
+            .register_type::<Sides<Space>>()
+            .register_type::<Spacing>()
             .register_type::<CardWidth>()
             .register_type::<AspectBox>()
             .register_type::<PlacedAt>()

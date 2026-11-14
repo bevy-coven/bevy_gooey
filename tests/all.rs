@@ -46,6 +46,7 @@ mod kit_parts;
 mod large_text;
 mod layout;
 mod layout_gaps;
+mod layout_more;
 mod layout_motion;
 mod leaf;
 mod led;

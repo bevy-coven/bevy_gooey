@@ -13,6 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
+use crate::box_model::{Spacing, spaced};
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
@@ -2302,6 +2303,8 @@ struct State {
     inset: Option<UiRect>,
     /// The width and ratio of an aspect image ([`AspectBox`]).
     aspect: Option<AspectBox>,
+    /// The margin and padding a node was asked for ([`Spacing`]); none leaves the node.
+    spacing: Option<Spacing>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
     /// because the selected one is the surface and not the accent.
     edge_tab: bool,
@@ -2345,6 +2348,7 @@ impl Default for State {
             card_width: None,
             inset: None,
             aspect: None,
+            spacing: None,
             layout_gap: 1.0,
             cell: 0.0,
             image: Vec2::ZERO,
@@ -2390,6 +2394,7 @@ type StateQuery = (
             Option<&'static CardWidth>,
             Option<&'static PlacedAt>,
             Option<&'static AspectBox>,
+            Option<&'static Spacing>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2443,6 +2448,7 @@ type Restyle = (
                 Changed<CardWidth>,
                 Changed<PlacedAt>,
                 Changed<AspectBox>,
+                Changed<Spacing>,
             )>,
         )>,
     )>,
@@ -2614,7 +2620,7 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
-                        (stacked, flow, card_width, inset, aspect),
+                        (stacked, flow, card_width, inset, aspect, spacing),
                     ),
                     row,
                     role,
@@ -2670,6 +2676,7 @@ pub fn apply_skin(
                         card_width: card_width.copied(),
                         inset: inset.map(|inset| inset.0),
                         aspect: aspect.copied(),
+                        spacing: spacing.copied(),
                     }
                 },
             )
@@ -5010,6 +5017,12 @@ fn restyle(
                 next.overflow = Overflow::clip();
             }
             _ => {}
+        }
+        // Margin and padding in steps of the skin's scale, on any role, after the role's own: a side
+        // that is set wins, a side left `None` leaves the node.
+        if let Some(spacing) = state.spacing {
+            next.margin = spaced(next.margin, &spacing.margin, skin);
+            next.padding = spaced(next.padding, &spacing.padding, skin);
         }
         // What a container was asked for beyond its gap, written only when asked: a row with no
         // `RowLayout` keeps a `Node` field its host patched.

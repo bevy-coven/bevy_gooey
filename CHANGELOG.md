@@ -4,6 +4,12 @@
 
 ### Added
 
+- G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
+  the editor's hand-built nodes after G-84:
+  `Spacing { margin, padding }` (a public component, a side left `None` leaves the node), `Sides<T>` and
+  `Space::{Zero, Step(n)}`: margin and padding in steps of `GooeySkin::spacing`, written on any node with a `Role`,
+  so a text, a row, a panel or a placed node takes them.
+
 - Layout constructors for what the editor still built by hand (G-84, #95, `docs/research/layout-gaps.md`,
   `docs/guide/layout.md`, `tests/layout_gaps.rs`). `RowLayout { align, wrap, justify, shrink }` (a public component: Bevy's
   `AlignItems`, `FlexWrap`, `JustifyContent` and `flex_shrink`, each an `Option` where `None` leaves the role's value), `row_with(gap, layout)`, `column_with(gap, layout)` and

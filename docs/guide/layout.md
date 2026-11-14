@@ -104,6 +104,31 @@ size that never gives way).
 patched yourself. A wrapping container puts the skin's gap between its lines as well as between its
 children. `column_with(gap, layout)` is the same for a column (`align` is across its width).
 
+## Room in the skin's steps
+
+`Spacing` is margin and padding in steps of `GooeySkin::spacing`, on any node that has a `Role`:
+
+```rust
+use bevy::prelude::*;
+use bevy_gooey::*;
+
+fn section(mut commands: Commands) {
+    commands.spawn((
+        label("Section"),
+        // A step of the skin's scale under the text; a side left `None` leaves the node alone.
+        Spacing {
+            margin: Sides { bottom: Some(Space::Step(2)), ..default() },
+            padding: Sides::default(),
+        },
+    ));
+    // A padded column; `Space::Zero` is how to ask for none where a role gives some.
+    commands.spawn((column(0.0), Spacing { padding: Sides::all(Space::Step(1)), ..default() }));
+}
+```
+
+A side that is set wins over the role's own (a `panel`'s padding); the unit is the skin's step, so a
+theme or a skin change moves all of it.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look
