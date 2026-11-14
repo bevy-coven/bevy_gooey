@@ -4,6 +4,11 @@
 
 ### Added
 
+- G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
+  the editor's hand-built nodes after G-85:
+  `Space::Px(f32)`: a literal logical px of margin or padding, off the skin's scale, finite-checked and never
+  negative (`Space` loses `Eq`).
+
 - G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
   the editor's hand-built nodes after G-84:
   `list_row()` and `quiet_list_row()` (`Role::ListRow`): a selectable full-width row with a reserved left rail that

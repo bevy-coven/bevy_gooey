@@ -208,6 +208,13 @@ minimum is its content, and a tall child would hold the whole chain open. A moda
 `Shown(false)` + `sized_panel`; a severity rail is a `column` with a `Shape` border on its left and a
 `Spacing`. The mapping, builder by builder, is in `docs/research/layout-more.md`.
 
+## Spacing off the scale
+
+`Space::Px(6.0)` is a literal logical px for the measures that are not on the skin's spacing scale (a
+chip's `6 x 3`, a tab's `12 x 8`): `Spacing { padding: Sides { left: Some(Space::Px(6.0)), .. }, .. }`. It is
+written by the skin and finite-checked (below zero is zero, not a number leaves the side alone) but does
+not follow the scale or the text size: prefer a `Step`.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

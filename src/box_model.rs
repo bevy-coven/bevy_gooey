@@ -7,11 +7,22 @@ use bevy::prelude::*;
 
 use crate::skin::GooeySkin;
 
-/// One amount of room, in the skin's own terms: a step of [`GooeySkin::spacing`] (read with
-/// [`GooeySkin::space`]; a step past the end is the last), or none. `Zero` is how to ask for none
-/// where a role would otherwise give some (a [`panel`](crate::panel)'s padding); `None` in a
-/// [`Sides`] leaves what the node has.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+/// One amount of room: a step of the skin's spacing scale ([`GooeySkin::spacing`], read with
+/// [`GooeySkin::space`]; a step past the end is the last), a literal logical px for the few
+/// measures that are not on the scale (a chip's 6 by 3, a tab's 12 by 8), or none. `Zero` is how to
+/// ask for none where a role would otherwise give some (a [`panel`](crate::panel)'s padding); `None` in
+/// a [`Sides`] leaves what the node has. A `Px` is still written by [`crate::apply_skin`] and
+/// finite-checked: below zero is zero, a number that is not finite leaves its side alone. It does
+/// **not** follow the skin's scale or the text size: prefer a `Step` where a step will do.
+///
+/// ```
+/// # use bevy_gooey::*;
+/// let skin = GooeySkin::dark();
+/// assert_eq!(Space::Step(1).px(&skin), skin.space(1));
+/// assert_eq!(Space::Px(6.0).px(&skin), 6.0);
+/// assert_eq!(Space::Zero.px(&skin), 0.0);
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Reflect)]
 #[reflect(Debug, Default, PartialEq, Clone)]
 pub enum Space {
     /// No room.
@@ -19,14 +30,23 @@ pub enum Space {
     Zero,
     /// A step of the skin's spacing scale, smallest first.
     Step(usize),
+    /// A literal number of logical px, off the scale.
+    Px(f32),
 }
 
 impl Space {
-    /// The room in logical px under `skin`.
+    /// The room in logical px under `skin`; a `Px` that is not a finite number is 0 here (it is left
+    /// alone, not written, by [`crate::apply_skin`]).
     pub fn px(self, skin: &GooeySkin) -> f32 {
+        self.resolve(skin).unwrap_or(0.0)
+    }
+
+    /// The room, or `None` for a literal that is not a finite number (refused, not written).
+    pub(crate) fn resolve(self, skin: &GooeySkin) -> Option<f32> {
         match self {
-            Space::Zero => 0.0,
-            Space::Step(step) => skin.space(step),
+            Space::Zero => Some(0.0),
+            Space::Step(step) => Some(skin.space(step)),
+            Space::Px(px) => px.is_finite().then(|| px.max(0.0)),
         }
     }
 }
@@ -121,18 +141,15 @@ pub struct Spacing {
 
 /// `rect` with every side `sides` names set to its room under `skin`.
 pub(crate) fn spaced(mut rect: UiRect, sides: &Sides<Space>, skin: &GooeySkin) -> UiRect {
-    let px = |space: Space| Val::Px(space.px(skin));
-    if let Some(top) = sides.top {
-        rect.top = px(top);
-    }
-    if let Some(right) = sides.right {
-        rect.right = px(right);
-    }
-    if let Some(bottom) = sides.bottom {
-        rect.bottom = px(bottom);
-    }
-    if let Some(left) = sides.left {
-        rect.left = px(left);
+    for (field, space) in [
+        (&mut rect.top, sides.top),
+        (&mut rect.right, sides.right),
+        (&mut rect.bottom, sides.bottom),
+        (&mut rect.left, sides.left),
+    ] {
+        if let Some(px) = space.and_then(|space| space.resolve(skin)) {
+            *field = Val::Px(px);
+        }
     }
     rect
 }

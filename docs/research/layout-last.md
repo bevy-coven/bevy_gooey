@@ -1,0 +1,10 @@
+# What was left of the editor's hand-built nodes after G-85
+
+Researched 2026-11-14 for issue #97 (G-86), asked by bevy_dark_factory (the Cauldron), #260 (UI-99), tracking #208. After the editor adopted G-84 and G-85 its raw `Node` literals and hand patches went from 230 to 80; what was left that gooey can solve is here. Each item is a general need; the editor is the example and its name is in no API.
+
+## Method
+
+The rules of G-84 (`docs/research/layout-gaps.md`) stand: a layout choice is data on the node, never a literal in the host and never a number in `apply_skin`; the constructor or component puts it on the node and `apply_skin` writes the `Node`, so it follows the skin and the player's text size. G-84's review added one: **every field is an `Option`, and a field left `None` leaves the node alone** (`RowLayout`), so a component sets only what it names and never resets what a role or a host gave. Components that set a size, a space or a shape go on any node with a `Role`; where a unit is needed it is the skin's own (a step of `GooeySkin::spacing`, a multiple of the line weight `GooeySkin::border`, a step of `GooeySkin::radii`). Pointer defaults are documented on each constructor (a mark or a gap is `Pickable::IGNORE` like `screen()`).
+
+## Items
+2. **Padding and margin off the skin's scale: `Space::Px(f32)`.** `Space` was `Zero` or a `Step` of `GooeySkin::spacing`; the editor's chip (6 by 3), button, document tab (12 by 8), follow chip, folded palette header and cost readout are measures that are not on the scale. `Space::Px(f32)` is a literal logical px, written by `apply_skin` like the others and finite-checked: below zero is zero, a number that is not finite leaves its side alone (`Space::resolve`, `a_px_space_is_finite_checked_and_never_negative`). It does **not** follow the skin's scale (`a_px_space_does_not_follow_the_skin_scale`) or the text size, which is the point and the cost: prefer a `Step` where one will do. `Space` is no longer `Eq` (an `f32`).
