@@ -561,6 +561,38 @@ pub fn placed_at(left: f32, top: f32) -> impl Bundle {
     })
 }
 
+/// A layer over its host that **takes the pointer**: absolute at `0` on every side, so it covers
+/// exactly the rectangle its host has, filled with [`GooeySkin::scrim`](crate::GooeySkin::scrim), what
+/// it holds centred (a modal card). Its `Pickable` is the default, which blocks: the pointer over it
+/// never reaches the map or the world under it, where [`cover`] is `Pickable::IGNORE` and lets it
+/// through. It is **not a dialog**: it traps no focus and answers no Escape (a [`dialog`] does both);
+/// it is the plain blocking layer a host that handles those itself needs. Hide it with
+/// [`Shown`](crate::Shown), which also takes its children out of the tab order. Its colour is the
+/// skin's; an [`InkOverride`](crate::InkOverride) or [`InkFollow`](crate::InkFollow) gives it the host's.
+/// Put your own `GlobalZIndex` on it to stack it.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     scrim(),
+///     Shown(false),
+///     GlobalZIndex(900),
+///     children![(panel(), children![heading("Name it")])],
+/// ));
+/// # }
+/// ```
+pub fn scrim() -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Backdrop,
+    )
+}
+
 /// A node that fills its host: absolute at `0` on every side, so it takes no room and covers
 /// exactly the rectangle its host has, whatever size that is: an empty state over a viewport, a
 /// scrim over a pane. [`placed`] with every side pinned at zero; like it, `Pickable::IGNORE`.

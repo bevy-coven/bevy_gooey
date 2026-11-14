@@ -270,6 +270,12 @@ box and a `placed` node (and on the layout containers and a `button_box`), but n
 table, a list or a text. Its gap is a `LayoutGap` beside it, which replaces the role's own:
 `(panel(), LayoutGap(0.5), RowLayout { direction: Some(FlexDirection::Row), ..default() })`.
 
+## A layer that takes the pointer
+
+`scrim()` is a full-size layer over its host filled with the skin's scrim colour, what it holds centred,
+and it **blocks** the pointer (`cover()` lets it through). It is not a dialog: no focus trap, no Escape.
+Hide it with `Shown(false)`; give it your own `GlobalZIndex`.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

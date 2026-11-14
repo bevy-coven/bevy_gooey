@@ -2,11 +2,16 @@
 //! on container roles and placed nodes, a blocking scrim and the frame, each laid out for real in a
 //! headless window.
 
+use std::collections::HashSet;
+
+use bevy::camera::NormalizedRenderTarget;
+use bevy::picking::hover::HoverMap;
+use bevy::picking::pointer::{Location, PointerAction, PointerId, PointerInput};
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
 use bevy::ui::UiGlobalTransform;
-use bevy::window::WindowResolution;
+use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 use bevy::winit::WinitPlugin;
 use bevy_gooey::*;
 
@@ -412,4 +417,162 @@ fn a_changed_layout_gap_and_row_layout_restyle_a_panel() {
     let node = app.world().get::<Node>(e).expect("a node").clone();
     assert_eq!(node.row_gap, Val::Px(3.0 * GooeySkin::dark().gap));
     assert_eq!(node.flex_direction, FlexDirection::Row);
+}
+
+// ---- 4. a layer that blocks the pointer: scrim() ----------------------------------------------
+
+/// Moves the mouse to `at` in window px as the window's own pointer input, and returns every entity
+/// it is over.
+fn hovered_at(app: &mut App, at: Vec2) -> HashSet<Entity> {
+    let window = app
+        .world_mut()
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(app.world())
+        .expect("one primary window");
+    let location = Location {
+        target: NormalizedRenderTarget::Window(
+            WindowRef::Entity(window)
+                .normalize(None)
+                .expect("a window ref"),
+        ),
+        position: at,
+    };
+    app.world_mut().write_message(PointerInput::new(
+        PointerId::Mouse,
+        location,
+        PointerAction::Move { delta: Vec2::ZERO },
+    ));
+    for _ in 0..3 {
+        app.update();
+    }
+    app.world()
+        .resource::<HoverMap>()
+        .get(&PointerId::Mouse)
+        .map(|hits| hits.keys().copied().collect())
+        .unwrap_or_default()
+}
+
+/// A full-window node under the layer: stands in for the map the pointer must not reach.
+fn world_below(app: &mut App) -> Entity {
+    app.world_mut()
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                ..default()
+            },
+            GlobalZIndex(-1),
+        ))
+        .id()
+}
+
+/// A `scrim()` blocks the pointer: over it the world under it is not hovered. A `cover()` lets it
+/// through. The two are different on purpose.
+#[test]
+fn a_scrim_blocks_the_pointer_and_a_cover_does_not() {
+    let mut app = headless();
+    let world = world_below(&mut app);
+    let layer = app.world_mut().spawn((scrim(), GlobalZIndex(5))).id();
+    settle(&mut app);
+    let at = Vec2::new(40.0, 40.0);
+    let over = hovered_at(&mut app, at);
+    assert!(over.contains(&layer), "the scrim is hit");
+    assert!(
+        !over.contains(&world),
+        "and the world under it is not: it blocks"
+    );
+
+    app.world_mut().entity_mut(layer).despawn();
+    let overlay = app.world_mut().spawn((cover(), GlobalZIndex(5))).id();
+    settle(&mut app);
+    let over = hovered_at(&mut app, Vec2::new(41.0, 41.0));
+    assert!(!over.contains(&overlay), "a cover is never hit");
+    assert!(over.contains(&world), "so the world is");
+}
+
+/// It is the skin's scrim colour, full size, centring what it holds, and the host's own colour
+/// replaces it with an override.
+#[test]
+fn a_scrim_is_the_skins_colour_full_size_and_centres_its_child() {
+    let mut app = headless();
+    let b = probe(&mut app, 100.0, 50.0);
+    let layer = app
+        .world_mut()
+        .spawn((scrim(), GlobalZIndex(5)))
+        .with_children(|l| {
+            l.spawn(b);
+        })
+        .id();
+    let owned = app
+        .world_mut()
+        .spawn((
+            scrim(),
+            InkOverride {
+                fill: Some(RED),
+                ..default()
+            },
+        ))
+        .id();
+    settle(&mut app);
+    let r = rect(&app, layer);
+    assert!(
+        (r.width() - 1280.0).abs() < 0.5 && (r.height() - 720.0).abs() < 0.5,
+        "{r:?}"
+    );
+    assert!(
+        (rect(&app, children(&app, layer)[0]).center() - r.center()).length() < 0.5,
+        "centred"
+    );
+    assert_eq!(
+        app.world().get::<BackgroundColor>(layer).expect("a fill").0,
+        GooeySkin::dark().scrim
+    );
+    assert_eq!(
+        app.world().get::<BackgroundColor>(owned).expect("a fill").0,
+        RED
+    );
+}
+
+/// A hidden scrim (`Shown(false)`) is not hit, takes no room and keeps no tab stop; shown, it is
+/// hit again. It is not a dialog: it traps no focus.
+#[test]
+fn a_hidden_scrim_is_not_hit_and_a_shown_one_traps_no_focus() {
+    let mut app = headless();
+    let world = world_below(&mut app);
+    let behind = app.world_mut().spawn(button("Behind")).id();
+    app.world_mut().spawn(screen()).add_child(behind);
+    let inside = app.world_mut().spawn(button("Inside")).id();
+    let layer = app
+        .world_mut()
+        .spawn((scrim(), Shown(false), GlobalZIndex(5)))
+        .add_child(inside)
+        .id();
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Visibility>(layer),
+        Some(&Visibility::Hidden)
+    );
+    let over = hovered_at(&mut app, Vec2::new(40.0, 40.0));
+    assert!(
+        over.contains(&world) && !over.contains(&layer),
+        "a hidden scrim is not hit"
+    );
+    let stops: Vec<_> = (0..4)
+        .map(|_| {
+            bevy_gooey::testing::press(&mut app, KeyCode::Tab);
+            bevy_gooey::testing::focused_label(&app)
+        })
+        .collect();
+    assert!(
+        stops.iter().all(|s| s.as_deref() != Some("Inside")),
+        "no stop in a hidden layer: {stops:?}"
+    );
+
+    *app.world_mut().get_mut::<Shown>(layer).expect("shown") = Shown(true);
+    settle(&mut app);
+    let over = hovered_at(&mut app, Vec2::new(41.0, 41.0));
+    assert!(
+        over.contains(&layer) && !over.contains(&world),
+        "shown, it blocks again"
+    );
 }

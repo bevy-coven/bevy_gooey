@@ -2114,6 +2114,9 @@ pub enum Role {
     /// A [`crate::list_row`] or [`crate::quiet_list_row`]: a full-width row that is a button, with a
     /// left rail reserved that Bevy's `Selected` lights in the accent.
     ListRow,
+    /// A [`crate::scrim`]: a full-size absolute layer filled with [`GooeySkin::scrim`] that blocks the
+    /// pointer; not a dialog (no focus trap, no cancel).
+    Backdrop,
     /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
     /// drawn, so a label column lines up down a list of rows.
     Cell,
@@ -3035,6 +3038,7 @@ fn takes_a_row_layout(role: &Role) -> bool {
             | Role::Menu
             | Role::SectionBody
             | Role::Screen
+            | Role::Backdrop
     )
 }
 
@@ -3052,6 +3056,7 @@ fn takes_a_gap(role: &Role) -> bool {
             | Role::Menu
             | Role::SectionBody
             | Role::Screen
+            | Role::Backdrop
     )
 }
 
@@ -3402,7 +3407,7 @@ fn restyle(
         } else {
             skin.text_muted
         }),
-        Role::Scrim => Some(skin.scrim),
+        Role::Scrim | Role::Backdrop => Some(skin.scrim),
         Role::Surface(level) => Some(skin.surface_at(*level)),
         Role::Tone(name) => Some(skin.tone(name).unwrap_or(Color::NONE)),
         Role::Hovered => Some(skin.hovered()),
@@ -5179,6 +5184,17 @@ fn restyle(
             // A node placed in its host: absolute at its inset, so it takes no room in the flow and
             // a host's other children stand where they would without it. Stacked in an overlay it
             // is the first child's box, which `stack_overlays` owns.
+            // A layer over its host that takes the pointer: absolute at 0 on every side, what it holds
+            // centred (a modal card); its fill is the skin's scrim.
+            Role::Backdrop if !state.stacked => {
+                next.position_type = PositionType::Absolute;
+                next.left = Val::ZERO;
+                next.top = Val::ZERO;
+                next.right = Val::ZERO;
+                next.bottom = Val::ZERO;
+                next.align_items = AlignItems::Center;
+                next.justify_content = JustifyContent::Center;
+            }
             Role::Placed if !state.stacked => {
                 next.position_type = PositionType::Absolute;
                 // A host that moves the node every frame writes the insets itself.
