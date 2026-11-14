@@ -5350,11 +5350,11 @@ fn restyle(
         // A container that is not a row or a column has no gap of its own to ask for: a
         // `LayoutGap` on it (a panel, a surface, a card, a placed cluster...) is the host's, as many
         // skin gaps between its children, down and across, replacing the role's own.
-        if let (Some(gap), true) = (state.region_gap, takes_a_gap(role)) {
-            if gap.is_finite() {
-                next.row_gap = Val::Px(gap.max(0.0) * skin.gap);
-                next.column_gap = Val::Px(gap.max(0.0) * skin.gap);
-            }
+        if let (Some(gap), true) = (state.region_gap, takes_a_gap(role))
+            && gap.is_finite()
+        {
+            next.row_gap = Val::Px(gap.max(0.0) * skin.gap);
+            next.column_gap = Val::Px(gap.max(0.0) * skin.gap);
         }
         // A gap in logical px, on the roles that have a gap, wins over a multiple of the skin's.
         if let Some(px) = state.gap_px.filter(|px| px.is_finite())
