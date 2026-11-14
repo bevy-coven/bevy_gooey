@@ -234,6 +234,7 @@ fn spec(role: Role) -> Spec {
         | Role::FieldMark
         | Role::ProgressLine
         | Role::StatusMark
+        | Role::Spacer
         | Role::MenuSeparator
         | Role::ToolbarSeparator
         | Role::RadialTrack

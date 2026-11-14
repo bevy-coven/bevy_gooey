@@ -129,6 +129,25 @@ fn section(mut commands: Commands) {
 A side that is set wins over the role's own (a `panel`'s padding); the unit is the skin's step, so a
 theme or a skin change moves all of it.
 
+## A spacer, a gap, a hidden page
+
+`spacer()` takes what its row or column leaves: `children![button("Back"), spacer(), button("Next")]`
+puts one button at each end, and two spacers centre what stands between them. `fill_region_with(gap)`
+is a `fill_region()` whose children stand `gap` skin gaps apart, and `Shown(false)` is
+`Display::None` through the skin (the page takes no room and what follows closes up):
+
+```rust
+use bevy::prelude::*;
+use bevy_gooey::*;
+
+fn pages(mut commands: Commands) {
+    commands.spawn((row(1.0), children![button("Back"), spacer(), button("Next")]));
+    commands.spawn((fill_region_with(1.0), Shown(false), children![heading("Home"), label("Recent")]));
+}
+```
+
+Set `Shown(true)` to bring the page back. Pages are `Display::Flex`: a list viewport is not one.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

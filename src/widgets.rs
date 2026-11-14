@@ -580,6 +580,43 @@ pub fn cover() -> impl Bundle {
     placed(UiRect::all(Val::ZERO))
 }
 
+/// Nothing, that takes the room its row or column leaves: `flex_grow` 1 with no content, so what
+/// is before it stands at the start and what is after it at the end, and two of them centre what is
+/// between. It draws nothing and is `Pickable::IGNORE` like [`screen`] (it is a gap, not a surface).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     row(1.0),
+///     children![button("Back"), spacer(), button("Next")],
+/// ));
+/// # }
+/// ```
+pub fn spacer() -> impl Bundle {
+    (Node::default(), Role::Spacer, Pickable::IGNORE)
+}
+
+/// A [`fill_region`] that stacks its children `gap` multiples of the skin's gap apart (a page with a
+/// group gap): `fill_region` is `fill_region_with(0.0)`. The gap is the same [`LayoutGap`](crate::LayoutGap)
+/// a [`column`] has. Pair it with [`Shown`](crate::Shown) for a page that can be hidden.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     fill_region_with(1.0),
+///     Shown(true),
+///     children![heading("Home"), label("Recent projects")],
+/// ));
+/// # }
+/// ```
+pub fn fill_region_with(gap: f32) -> impl Bundle {
+    (fill_region(), crate::LayoutGap(gap))
+}
+
 /// A box of a fixed width, in body text sizes, so a label column lines up down a list of rows: the
 /// words start at one edge whatever they say, and what does not fit is cut rather than drawn over
 /// the next column. What it holds stands in a row, stretched to its height (a label and a value side

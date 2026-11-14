@@ -136,3 +136,25 @@ pub(crate) fn spaced(mut rect: UiRect, sides: &Sides<Space>, skin: &GooeySkin) -
     }
     rect
 }
+
+/// Whether a node is shown, written by [`crate::apply_skin`] so the host never patches `Node`:
+/// `Shown(false)` is `Display::None` (the node takes no room, what follows closes up, nothing in it
+/// is drawn or picked), `Shown(true)` puts back `Display::Flex`, which is what every layout
+/// constructor in the crate is. A node with no `Shown` is left as it is. It is for a page, a batch
+/// column or a section that comes and goes; a list viewport (`Display::Block`) or a zero-width
+/// [`cell`](crate::cell) has its display from its role and is not what this is for. Removing the
+/// component leaves the node as it was last written: set `Shown(true)` instead.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// let page = commands.spawn((fill_region(), Shown(false), children![label("Hidden until shown")])).id();
+/// // Later: commands.entity(page).insert(Shown(true));
+/// # let _ = page;
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Shown(pub bool);

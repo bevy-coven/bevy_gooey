@@ -239,7 +239,7 @@ pub use binding::{
     Binding, BindingSettings, BindingValue, Capturing, bind_by_input, catch_pointer, not_capturing,
     update_bindings,
 };
-pub use box_model::{Sides, Space, Spacing};
+pub use box_model::{Shown, Sides, Space, Spacing};
 pub use button_variant::{
     ButtonPhase, ButtonVariant, Loading, LoadingHold, LoadingSpinner, note_host_disable,
     update_loading,
@@ -449,15 +449,16 @@ pub use type_select::{TypeSelectGroup, TypedPrefix};
 pub use widgets::{
     aspect_image, band, binding, button, button_row, card_grid, cell, check_item, choice,
     color_field, column, column_with, combobox, command_palette, context_menu, count_text, cover,
-    dialog, dock, edge_tab, fill_column, fill_region, fill_text, glyph_button, heading,
-    hold_button, icon, icon_button, image_box, interface_size, label, led, list, menu, menu_bar,
-    menu_item, menu_title, meter, motion_row, notification_center, number_field, overlay,
+    dialog, dock, edge_tab, fill_column, fill_region, fill_region_with, fill_text, glyph_button,
+    heading, hold_button, icon, icon_button, image_box, interface_size, label, led, list, menu,
+    menu_bar, menu_item, menu_title, meter, motion_row, notification_center, number_field, overlay,
     pad_style, panel, placed, placed_at, plain_button, popover, popover_modal, primary_button,
     progress, prompt, prompts, prompts_at, radial, radio_item, row, row_with, screen, section,
     select, separator, side_tab_page, side_tabs, side_tabs_icons, sized_panel, skin_preset, slider,
-    slot_grid, spinner, split, status_bar, status_item, status_mark, status_progress, submenu,
-    surface, tab_page, table, tabs, text_area, text_area_fill, text_input, text_size, toast,
-    toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field, viewport,
+    slot_grid, spacer, spinner, split, status_bar, status_item, status_mark, status_progress,
+    submenu, surface, tab_page, table, tabs, text_area, text_area_fill, text_input, text_size,
+    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
+    viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -528,6 +529,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Space>()
             .register_type::<Sides<Space>>()
             .register_type::<Spacing>()
+            .register_type::<Shown>()
             .register_type::<CardWidth>()
             .register_type::<AspectBox>()
             .register_type::<PlacedAt>()

@@ -13,7 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
-use crate::box_model::{Spacing, spaced};
+use crate::box_model::{Shown, Spacing, spaced};
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
@@ -2100,6 +2100,8 @@ pub enum Role {
     /// A [`crate::placed`], [`crate::placed_at`] or [`crate::cover`] node: absolute in its host at
     /// its [`PlacedAt`](crate::PlacedAt), taking no room of its own; not drawn.
     Placed,
+    /// A [`crate::spacer`]: takes the room its row or column leaves; draws nothing.
+    Spacer,
     /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
     /// drawn, so a label column lines up down a list of rows.
     Cell,
@@ -2305,6 +2307,10 @@ struct State {
     aspect: Option<AspectBox>,
     /// The margin and padding a node was asked for ([`Spacing`]); none leaves the node.
     spacing: Option<Spacing>,
+    /// Whether a node is shown ([`Shown`]); none leaves its display.
+    shown: Option<bool>,
+    /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
+    region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
     /// because the selected one is the surface and not the accent.
     edge_tab: bool,
@@ -2349,6 +2355,8 @@ impl Default for State {
             inset: None,
             aspect: None,
             spacing: None,
+            shown: None,
+            region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
             image: Vec2::ZERO,
@@ -2395,6 +2403,7 @@ type StateQuery = (
             Option<&'static PlacedAt>,
             Option<&'static AspectBox>,
             Option<&'static Spacing>,
+            Option<&'static Shown>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2448,7 +2457,7 @@ type Restyle = (
                 Changed<CardWidth>,
                 Changed<PlacedAt>,
                 Changed<AspectBox>,
-                Changed<Spacing>,
+                Or<(Changed<Spacing>, Changed<Shown>)>,
             )>,
         )>,
     )>,
@@ -2620,7 +2629,7 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
-                        (stacked, flow, card_width, inset, aspect, spacing),
+                        (stacked, flow, card_width, inset, aspect, spacing, shown),
                     ),
                     row,
                     role,
@@ -2677,6 +2686,8 @@ pub fn apply_skin(
                         inset: inset.map(|inset| inset.0),
                         aspect: aspect.copied(),
                         spacing: spacing.copied(),
+                        shown: shown.map(|shown| shown.0),
+                        region_gap: gap.map(|gap| gap.0),
                     }
                 },
             )
@@ -3338,6 +3349,7 @@ fn restyle(
         | Role::FillColumn
         | Role::FillRegion
         | Role::Placed
+        | Role::Spacer
         | Role::Cell
         | Role::AspectImage
         | Role::ImageBox
@@ -4951,6 +4963,14 @@ fn restyle(
                 next.flex_grow = 1.0;
                 next.flex_shrink = 1.0;
                 next.min_height = Val::ZERO;
+                if let Some(gap) = state.region_gap {
+                    next.row_gap = Val::Px(gap * skin.gap);
+                }
+            }
+            // Nothing, that takes what its row or column leaves: its neighbours stand at the ends.
+            Role::Spacer => {
+                next.flex_grow = 1.0;
+                next.flex_shrink = 1.0;
             }
             // A node placed in its host: absolute at its inset, so it takes no room in the flow and
             // a host's other children stand where they would without it. Stacked in an overlay it
@@ -5023,6 +5043,15 @@ fn restyle(
         if let Some(spacing) = state.spacing {
             next.margin = spaced(next.margin, &spacing.margin, skin);
             next.padding = spaced(next.padding, &spacing.padding, skin);
+        }
+        // A page that comes and goes: `Display::None` takes no room; shown is the flex every
+        // constructor is, put back only over a `None`.
+        if let Some(shown) = state.shown {
+            if !shown {
+                next.display = Display::None;
+            } else if next.display == Display::None {
+                next.display = Display::Flex;
+            }
         }
         // What a container was asked for beyond its gap, written only when asked: a row with no
         // `RowLayout` keeps a `Node` field its host patched.

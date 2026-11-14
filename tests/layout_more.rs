@@ -3,6 +3,7 @@
 //! the chrome parts, each laid out for real in a headless window and read back from the drawn
 //! rectangles.
 
+use bevy::picking::Pickable;
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
@@ -283,5 +284,221 @@ fn spacing_is_on_every_layout_constructor_and_follows_the_skin() {
     assert_eq!(
         app.world().get::<Node>(all[0]).expect("a node").margin.left,
         Val::Px(6.0)
+    );
+}
+
+// ---- 3. a spacer ------------------------------------------------------------------------------
+
+/// A spacer takes what its row leaves: the box after it is pushed to the far edge.
+#[test]
+fn a_spacer_takes_the_room_its_row_leaves() {
+    let mut app = headless();
+    let (a, b) = (probe(&mut app, 50.0, 20.0), probe(&mut app, 50.0, 20.0));
+    let row = app
+        .world_mut()
+        .spawn(row(0.0))
+        .with_children(|row| {
+            row.spawn(a);
+            row.spawn(spacer());
+            row.spawn(b);
+        })
+        .id();
+    let host = room(&mut app, 400.0, row);
+    settle(&mut app);
+    let kids = children(&app, row);
+    assert!(
+        (rect(&app, kids[2]).max.x - rect(&app, host).max.x).abs() < 0.5,
+        "pushed to the far edge"
+    );
+    assert!(
+        (rect(&app, kids[1]).width() - 300.0).abs() < 0.5,
+        "{:?}",
+        rect(&app, kids[1])
+    );
+}
+
+/// Two spacers share the room equally, so what stands between them is centred.
+#[test]
+fn two_spacers_centre_what_is_between_them() {
+    let mut app = headless();
+    let middle = probe(&mut app, 100.0, 20.0);
+    let row = app
+        .world_mut()
+        .spawn(row(0.0))
+        .with_children(|row| {
+            row.spawn(spacer());
+            row.spawn(middle);
+            row.spawn(spacer());
+        })
+        .id();
+    let host = room(&mut app, 400.0, row);
+    settle(&mut app);
+    let mid = rect(&app, children(&app, row)[1]);
+    assert!(
+        (mid.center().x - rect(&app, host).center().x).abs() < 0.5,
+        "{mid:?}"
+    );
+}
+
+/// In a column it takes the height; it draws nothing and lets the pointer through.
+#[test]
+fn a_spacer_grows_in_a_column_and_is_not_pickable() {
+    let mut app = headless();
+    let (a, b) = (probe(&mut app, 50.0, 20.0), probe(&mut app, 50.0, 20.0));
+    let spacer_entity = app.world_mut().spawn(spacer()).id();
+    let column = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(100.0),
+            height: Val::Px(300.0),
+            flex_direction: FlexDirection::Column,
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .with_children(|column| {
+            column.spawn(a);
+        })
+        .add_child(spacer_entity)
+        .with_children(|column| {
+            column.spawn(b);
+        })
+        .id();
+    app.world_mut().spawn(screen()).add_child(column);
+    settle(&mut app);
+    assert!(
+        (rect(&app, spacer_entity).height() - 260.0).abs() < 0.5,
+        "{:?}",
+        rect(&app, spacer_entity)
+    );
+    assert_eq!(
+        app.world().get::<Pickable>(spacer_entity),
+        Some(&Pickable::IGNORE)
+    );
+    assert!(
+        app.world()
+            .get::<BackgroundColor>(spacer_entity)
+            .is_none_or(|c| c.0 == Color::NONE)
+    );
+}
+
+// ---- 4. a fill region with a gap and a page that can be hidden --------------------------------
+
+/// `fill_region_with(gap)` stacks its children a skin gap apart; `fill_region()` has none.
+#[test]
+fn a_fill_region_can_carry_a_gap() {
+    let mut app = headless();
+    let mut gap_between = Vec::new();
+    for gapped in [true, false] {
+        let (a, b) = (probe(&mut app, 50.0, 20.0), probe(&mut app, 50.0, 20.0));
+        let region = if gapped {
+            app.world_mut().spawn(fill_region_with(1.5)).id()
+        } else {
+            app.world_mut().spawn(fill_region()).id()
+        };
+        app.world_mut().entity_mut(region).with_children(|r| {
+            r.spawn(a);
+            r.spawn(b);
+        });
+        room(&mut app, 300.0, region);
+        settle(&mut app);
+        let kids = children(&app, region);
+        gap_between.push(rect(&app, kids[1]).min.y - rect(&app, kids[0]).max.y);
+    }
+    assert!(
+        (gap_between[0] - 1.5 * GooeySkin::dark().gap).abs() < 0.5,
+        "{gap_between:?}"
+    );
+    assert!(
+        gap_between[1].abs() < 0.5,
+        "no gap without it: {gap_between:?}"
+    );
+}
+
+/// A gap keeps the region's grow and its least height of nothing.
+#[test]
+fn a_gapped_fill_region_still_shrinks_to_zero() {
+    let mut app = headless();
+    let region = app.world_mut().spawn(fill_region_with(1.0)).id();
+    let node = |app: &App| app.world().get::<Node>(region).expect("a node").clone();
+    app.world_mut().spawn(screen()).add_child(region);
+    settle(&mut app);
+    assert_eq!(node(&app).flex_grow, 1.0);
+    assert_eq!(node(&app).min_height, Val::ZERO);
+    assert_eq!(node(&app).row_gap, Val::Px(GooeySkin::dark().gap));
+}
+
+/// `Shown(false)` is `Display::None` through the skin: the page takes no room and what follows
+/// closes up, and `Shown(true)` brings it back, with the host never touching `Node`.
+#[test]
+fn a_hidden_page_takes_no_room_and_shown_brings_it_back() {
+    let mut app = headless();
+    let (strip, page, after) = (
+        probe(&mut app, 100.0, 50.0),
+        probe(&mut app, 100.0, 80.0),
+        probe(&mut app, 100.0, 30.0),
+    );
+    let page = app.world_mut().spawn(page).id();
+    let region = app
+        .world_mut()
+        .spawn((fill_region(), Shown(false)))
+        .add_child(page)
+        .id();
+    let host = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(300.0),
+            height: Val::Px(300.0),
+            flex_direction: FlexDirection::Column,
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .with_children(|host| {
+            host.spawn(strip);
+        })
+        .add_child(region)
+        .with_children(|host| {
+            host.spawn(after);
+        })
+        .id();
+    app.world_mut().spawn(screen()).add_child(host);
+    settle(&mut app);
+    let after_entity = children(&app, host)[2];
+    assert_eq!(
+        app.world().get::<Node>(region).expect("a node").display,
+        Display::None
+    );
+    assert!(
+        (rect(&app, after_entity).min.y - rect(&app, children(&app, host)[0]).max.y).abs() < 0.5,
+        "closed up"
+    );
+    *app.world_mut().get_mut::<Shown>(region).expect("shown") = Shown(true);
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(region).expect("a node").display,
+        Display::Flex
+    );
+    assert!(
+        rect(&app, region).height() > 1.0,
+        "the page is back: {:?}",
+        rect(&app, region)
+    );
+}
+
+/// A node with no `Shown` is left as it is.
+#[test]
+fn a_node_with_no_shown_keeps_its_display() {
+    let mut app = headless();
+    let e = app.world_mut().spawn(row(1.0)).id();
+    app.world_mut().spawn(screen()).add_child(e);
+    settle(&mut app);
+    app.world_mut().get_mut::<Node>(e).expect("a node").display = Display::None;
+    app.world_mut()
+        .get_mut::<Role>(e)
+        .expect("a role")
+        .set_changed();
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(e).expect("a node").display,
+        Display::None
     );
 }

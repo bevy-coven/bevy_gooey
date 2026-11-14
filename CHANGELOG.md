@@ -6,6 +6,12 @@
 
 - G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
   the editor's hand-built nodes after G-84:
+  `spacer()` (a node that takes what its row or column leaves, `Pickable::IGNORE`), `fill_region_with(gap)` (a
+  region whose children stand a gap apart) and `Shown(bool)` (a component the skin writes as `Display::None` or
+  `Flex`, so a host hides a page without patching `Node`). One new `Role` (`Spacer`).
+
+- G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
+  the editor's hand-built nodes after G-84:
   `Spacing { margin, padding }` (a public component, a side left `None` leaves the node), `Sides<T>` and
   `Space::{Zero, Step(n)}`: margin and padding in steps of `GooeySkin::spacing`, written on any node with a `Role`,
   so a text, a row, a panel or a placed node takes them.
