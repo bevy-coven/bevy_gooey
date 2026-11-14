@@ -34,6 +34,10 @@ testing = []
 # Nothing enables this in normal use. `tests/readme.rs` checks the README's quick start against the
 # crate-root doctest, so the two cannot drift.
 readme-example = []
+# `markdown_view`: a page of CommonMark with tables, strikethrough and task lists, parsed once with
+# `pulldown-cmark` (MIT, no default features, so no HTML renderer and no command line) and drawn in the
+# skin's type scale. `bevy_gooey::markdown` is its engine-free parse: `images`, `links`, `outline`.
+markdown = ["dep:pulldown-cmark"]
 
 [dependencies]
 # The umbrella with defaults off. The widgets need bevy_ui + bevy_text, Bevy's headless widgets and
@@ -56,6 +60,9 @@ serde = { version = "1", features = ["derive"], optional = true }
 # The node type and roles Bevy's `AccessibilityNode` wraps; the same version as Bevy's, or its types do
 # not match. `bevy::a11y` does not re-export it.
 accesskit = "0.24"
+# The CommonMark parser behind the `markdown` feature. No default features: the HTML renderer and the
+# command-line tool are not needed, and it builds for wasm32 like the rest of the crate.
+pulldown-cmark = { version = "0.13", default-features = false, optional = true }
 
 # **Tests and examples only.** The gallery needs a window, an event loop and a renderer, so it takes the
 # full umbrella here, where it cannot reach a consumer's dependency graph. `ron` round-trips the skin in
@@ -67,3 +74,7 @@ ron = "0.12"
 [[example]]
 name = "inspector"
 required-features = ["reflect"]
+
+[[example]]
+name = "markdown"
+required-features = ["markdown"]

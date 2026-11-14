@@ -31,6 +31,9 @@ per subject. The README links each bullet to its page.
   for a line, Ctrl+Enter or Cmd+Enter to end the edit, the arrow keys the caret's.
 - [Code editor](code-editor.md) — `code_editor(label, text)`: a gutter, a caret on a spring, selection by word and line,
   undo grouped by word and pause, a clipboard, IME, Tab indentation, `CodeEditorValue`, and 20,000 lines for the price of 20.
+- [Markdown](markdown.md) — `markdown_view(source, base)` (feature `markdown`): CommonMark with tables, strikethrough and task
+  lists in the skin's type scale, links that send `MarkdownLink`, pictures from your resolver with a box naming the path for
+  one that is missing or climbs out of the base, headings with ids and `scroll_to_heading`, built when the source changes.
 - [Numbers](numbers.md) — `number_field(label, value, step, range)` and `vec_field`: a number the player
   scrubs with a drag, types or steps with the keys and the D-pad, held to a range, `MixedValue` for a
   multi-selection, and the reason a typed expression is refused.

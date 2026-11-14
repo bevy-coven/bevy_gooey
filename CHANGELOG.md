@@ -18,6 +18,24 @@
   `WorldAnchor` with `.camera(stage)` as a child of the pane that stands on the camera's viewport (documented in
   `docs/guide/world-anchor.md` and held by a test).
 
+- `markdown_view(source, base)` (G-79, #90, feature `markdown`, `docs/guide/markdown.md`,
+  `docs/research/markdown-view.md`, `examples/markdown.rs`): a page of CommonMark with tables,
+  strikethrough and task lists in the skin's type scale, in a viewport that scrolls with the list's rail.
+  Headings (`Role::MarkdownHeading(level)`) have stable ids, listed in `MarkdownOutline`, and
+  `scroll_to_heading(view, id)` glides there; links are focusable nodes that send
+  `MarkdownLink { dest, kind: Web | Relative | Anchor }` (the view opens nothing; an anchor also scrolls to
+  its heading); pictures are `image_box`es loaded through the `MarkdownBase` resolver (the directory its
+  paths are read against), and one that is not there, fails to load or leaves the base with `..` is a
+  box of the picture's size naming its alt text and path (`MarkdownImageRefused` for the last). Raw HTML is
+  text. The page is parsed and spawned when its `MarkdownView` source or base changes and never per frame
+  (`MarkdownBuilt` counts the builds). `bevy_gooey::markdown` is the engine-free parse: `images(source)`
+  (range, destination, alt), `links`, `outline`, `resolve(base, dest)` and `image_size`, from the same
+  `Document` the view draws, so the pictures are listed in the order they are drawn. The list's rail,
+  scroll-to-focus and PageUp and PageDown take the page's viewport too. One new dependency behind the
+  feature, `pulldown-cmark` 0.13 (MIT, no default features, wasm-compatible): `tests/leaf.rs`'s allowed
+  list gains it (an assumed owner exception, additive). Fourteen new `Role`s (all `Markdown…`). A picture whose destination has a scheme other than http(s) (`embedded://`, `file://`) is refused like a `..` path (`PathRefused::Scheme`, `markdown::image_path`).
+
+
 - `CollapseSplit { entity, collapsed }` (G-77, #88): trigger it on a split and its first pane collapses
   to its minimum (`true`) or is given back what it had (`false`) with the same slide as Enter on the
   divider, so an editor's Cmd+B no longer has to synthesise a key. The divider's own Enter, South and
@@ -87,8 +105,7 @@
 - `SideTab::badge` draws no badge for an empty text **or for a count of zero** ("0"), in a plain
   `side_tabs` too: a badge means "something needs you", so nothing is drawn when there is nothing.
 - A dock the host places itself now shows its panels. `dock(layout)` brings the `Role::DockBody` its layout is built in, so a host that spawned a bare `Dock(layout)` on its own node — a bottom strip under a map, a sidebar beside a tree — had no body, and `update_docks` returned early: no registered panel was ever built. `update_docks` now grows the parts `dock()`'s bundle brings that the node lacks — the body the layout is built in, the landing a carried tab lights and the card that follows the pointer, and `Role::Dock` itself — in the same frame it first sees the dock, and leaves the host's own `Node`, its `DropTarget<T>` and any other child exactly as written; a body the host despawns grows again with its panels rebuilt into it; a dock with no panel registered for its layout builds an empty body and reports each id as `DockPanelSkipped`. One path for a dock, whichever way it was spawned. `tests/dock_body.rs` holds it (9 tests).
-- **Breaking:** `Role` has new variants for the code editor: `CodeEditor`, `CodeGutter`, `CodeGutterRows`, `CodeNumber`, `CodeNumberLit`, `CodeArea`, `CodeContent`, `CodeText`, `CodeLineLit`, `CodeSelection`, `CodeCaret`, and the overlays' `CodeNote`, `CodeNoteText`, `CodeCompletion`, `CodeCompletionRow`, `CodeCompletionRowLit`, `CodeCompletionLabel`, `CodeCompletionDetail`, `CodeSyntax(SyntaxRole)`, `CodeSquiggle(CodeSeverity)`, `CodeMark(CodeSeverity)`, `CodeExternal`, `CodeMinimap`, `CodeMinimapBar`, `CodeMinimapBand`, `CodeMinimapMark(CodeSeverity)`, `CodeGuide`, `CodeBracket`, `CodeChevron`, `CodeFind`, `CodeFindMatch`, `CodeFindMatchLit`, so an exhaustive `match` on `Role` needs arms for them. `GooeyFonts` has a new field, `mono` (the code editor's monospace face; a struct literal naming every field needs `mono` or `..default()`). `GooeySkin::problems()` also checks every syntax colour at the text-contrast bar. Bevy's `bevy_clipboard` feature is on for the code editor's copy and paste. Find's regular expressions are the crate's own small engine (`code_regex`), so no dependency is added.
-- **Breaking:** `Role` has new variants for the kit parts (G-82, #93): `GlyphButton`, `EdgeTab`, `Band`, `FillText` and `CountText`, so an exhaustive `match` on `Role` needs arms for them.
+- **Breaking:** `Role` has new variants for the kit parts (G-82, #93): `GlyphButton`, `EdgeTab`, `Band`, `FillText` and `CountText`; for the Markdown view (G-79, #90): `MarkdownView`, `MarkdownViewport`, `MarkdownHeading(u8)`, `MarkdownHeadingLink(u8)`, `MarkdownLine`, `MarkdownLink`, `MarkdownCode`, `MarkdownQuote`, `MarkdownRule`, `MarkdownTable`, `MarkdownCell`, `MarkdownHeadCell`, `MarkdownMissing`, `MarkdownPath` (`PathRefused` is only there with the `markdown` feature); and for the code editor: `CodeEditor`, `CodeGutter`, `CodeGutterRows`, `CodeNumber`, `CodeNumberLit`, `CodeArea`, `CodeContent`, `CodeText`, `CodeLineLit`, `CodeSelection`, `CodeCaret`, and the overlays' `CodeNote`, `CodeNoteText`, `CodeCompletion`, `CodeCompletionRow`, `CodeCompletionRowLit`, `CodeCompletionLabel`, `CodeCompletionDetail`, `CodeSyntax(SyntaxRole)`, `CodeSquiggle(CodeSeverity)`, `CodeMark(CodeSeverity)`, `CodeExternal`, `CodeMinimap`, `CodeMinimapBar`, `CodeMinimapBand`, `CodeMinimapMark(CodeSeverity)`, `CodeGuide`, `CodeBracket`, `CodeChevron`, `CodeFind`, `CodeFindMatch`, `CodeFindMatchLit`, so an exhaustive `match` on `Role` needs arms for them. `GooeyFonts` has a new field, `mono` (the code editor's monospace face; a struct literal naming every field needs `mono` or `..default()`). `GooeySkin::problems()` also checks every syntax colour at the text-contrast bar. Bevy's `bevy_clipboard` feature is on for the code editor's copy and paste. Find's regular expressions are the crate's own small engine (`code_regex`), so no dependency is added.
 
 ### Fixed
 

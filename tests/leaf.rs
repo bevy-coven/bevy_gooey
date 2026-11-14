@@ -1,8 +1,9 @@
 //! **The crate boundary, enforced.**
 //!
 //! `bevy_gooey` is a game-UI kit: a skin, widgets, navigation and feedback any game can take. It
-//! takes `bevy` (a trimmed feature set) and, behind its `serde` feature, `serde` for the skin as
-//! data, and it must never name a game, a game's camera or a game's states. (`ron` is a
+//! takes `bevy` (a trimmed feature set), `accesskit` and, behind its `serde` feature, `serde` for
+//! the skin as data and, behind its `markdown` feature, `pulldown-cmark` for the Markdown view, and
+//! it must never name a game, a game's camera or a game's states. (`ron` is a
 //! dev-dependency of the tests, outside the table this scan reads.)
 //!
 //! The source scan below forbids more than crate names: `MainCamera` is there because a UI kit
@@ -13,7 +14,7 @@
 use std::path::{Path, PathBuf};
 
 /// Everything this crate is allowed to depend on.
-const ALLOWED_DEPS: &[&str] = &["bevy", "serde", "accesskit"];
+const ALLOWED_DEPS: &[&str] = &["bevy", "serde", "accesskit", "pulldown-cmark"];
 
 /// Crate and type names that would mean the boundary has been crossed: a physics engine, the
 /// editor, a particular game, or a particular game's camera.
