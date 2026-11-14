@@ -11,7 +11,10 @@
 //! A move also lands while a node is settling in: in its first [`LAYOUT_QUIET_FRAMES`] frames, in
 //! the frames after a new window size, scale or skin, and when it is given a new parent, because a
 //! fitting pass (a toolbar's overflow, a status bar hiding what does not fit) reads one frame's
-//! layout and moves things in the next.
+//! layout and moves things in the next. The skin's own first look is not one of those moves: a node
+//! is skinned for the render target it is about to be laid out in (never Bevy's placeholder one),
+//! so its text size, frames and widths are the same on its second frame as on its first, and a
+//! tab spawned again by a rebuild that is given a [`TravelFrom`] keeps its glide (G-83).
 //!
 //! The crate marks tabs and a toggle's knob; a game marks its own. A knob travels on the skin's
 //! snappy spring ([`TravelSpring`]), a small control answering a press; every other node travels on

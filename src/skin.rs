@@ -10,6 +10,7 @@ use bevy::text::{FontSize, FontSource, TextCursorStyle};
 use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed, Selected};
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
+use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
@@ -2357,6 +2358,22 @@ type Restyle = (
     )>,
 );
 
+/// What `apply_skin` reads to put a node whose real render target has not arrived yet in the one it
+/// is about to have: the laid-out nodes with their target, the primary window and the interface
+/// size.
+type Placement<'w, 's> = (
+    Query<
+        'w,
+        's,
+        (
+            &'static ComputedNode,
+            Option<&'static ComputedUiRenderTargetInfo>,
+        ),
+    >,
+    Query<'w, 's, &'static Window, With<PrimaryWindow>>,
+    Option<Res<'w, UiScale>>,
+);
+
 /// The components whose removal restyles a widget.
 type Removals<'w, 's> = (
     RemovedComponents<'w, 's, Pressed>,
@@ -2435,10 +2452,11 @@ pub fn apply_skin(
     parents: Query<&ChildOf>,
     children: Query<&Children>,
     roles: Query<&Role>,
-    anchors: Query<&ComputedNode>,
+    placement: Placement<'_, '_>,
     mut commands: Commands,
     mut styled: Query<Styled>,
 ) {
+    let (anchors, windows, ui_scale) = placement;
     if skin.is_changed() {
         for problem in skin.problems() {
             warn!("bevy_gooey: {problem}");
@@ -2602,6 +2620,26 @@ pub fn apply_skin(
         }
         owner
     };
+    // The scale and logical size of the render target a node with no real target info yet will be
+    // laid out in: its nearest ancestor's real one, or, for a root spawned this frame, the primary
+    // window's (its scale factor times the interface size).
+    let unplaced = |entity: Entity| -> Option<(f32, Vec2)> {
+        parents
+            .iter_ancestors(entity)
+            .find_map(|up| {
+                anchors
+                    .get(up)
+                    .ok()
+                    .and_then(|(_, info)| info)
+                    .filter(|info| info.physical_size() != UVec2::ZERO)
+            })
+            .map(|info| (info.scale_factor(), info.logical_size()))
+            .or_else(|| {
+                let window = windows.single().ok()?;
+                let scale = window.scale_factor() * ui_scale.as_ref().map_or(1.0, |ui| ui.0);
+                Some((scale, window.physical_size().as_vec2() / scale))
+            })
+    };
 
     if skin.is_changed() || fonts.is_changed() {
         unpressed.clear();
@@ -2634,9 +2672,10 @@ pub fn apply_skin(
                 parent.is_some_and(|p| {
                     anchors
                         .get(p)
-                        .is_ok_and(|node| node.size().x > 1.0 && node.size().y > 1.0)
+                        .is_ok_and(|(node, _)| node.size().x > 1.0 && node.size().y > 1.0)
                 }),
                 &mut commands,
+                || unplaced(entity),
             );
         }
         return;
@@ -2738,9 +2777,10 @@ pub fn apply_skin(
             parent.is_some_and(|p| {
                 anchors
                     .get(p)
-                    .is_ok_and(|node| node.size().x > 1.0 && node.size().y > 1.0)
+                    .is_ok_and(|(node, _)| node.size().x > 1.0 && node.size().y > 1.0)
             }),
             &mut commands,
+            || unplaced(entity),
         );
     }
 }
@@ -2803,9 +2843,22 @@ fn restyle(
     // big as its size, which is what every widget looks like on the frame it is spawned.
     anchor_sized: bool,
     commands: &mut Commands,
+    // The scale and logical size of a render target for a node that has none of its own yet.
+    unplaced: impl FnOnce() -> Option<(f32, Vec2)>,
 ) {
     let skin = look.skin;
-    let scale = target.map_or(1.0, |t| t.scale_factor());
+    // A node's first frame carries Bevy's placeholder target (a `Node` requires one, scale 1 and no
+    // size): the real one is propagated in `PostUpdate`, after this run. Skin it at the scale and
+    // window size it is about to have (the nearest ancestor's, or the primary window's times
+    // `UiScale`), not at 1 and 0, or its text, frames and widths change the frame after and a move
+    // in layout reads as a change (G-83).
+    let placed = match target {
+        Some(info) if info.physical_size() != UVec2::ZERO => {
+            Some((info.scale_factor(), info.logical_size()))
+        }
+        _ => unplaced(),
+    };
+    let scale = placed.map_or(1.0, |(scale, _)| scale);
     // How opaque this node is drawn: the product of every `Opacity` at and above it (a fade), and
     // whole for a node outside one.
     let alpha = presence.map_or(1.0, |alpha| alpha.0);
@@ -2847,8 +2900,7 @@ fn restyle(
     // A wheel is the player's text size until 26 of them would pass `RADIAL_WINDOW_SHARE` of the
     // window's shorter side: past that the whole wheel (disc, labels and name) stops growing, so
     // it is always whole on the screen, which 200% text on a 720p window would not be.
-    let wheel_px = target.map_or(text_px, |t| {
-        let size = t.logical_size();
+    let wheel_px = placed.map_or(text_px, |(_, size)| {
         text_px.min(RADIAL_WINDOW_SHARE * size.x.min(size.y) / RADIAL_DIAMETER_TEXT_SIZES)
     });
     let rail = skin.meter_height * skin.text_scale;
@@ -3538,9 +3590,9 @@ fn restyle(
                     // legend beside it). A panel in a dock group, a split pane or a dialog is sized by
                     // its container and is left alone (iteration 93 measured a cap there breaking a
                     // dock drag).
-                    if let Some(window) = target {
-                        let edge = window.logical_size().x * SAFE_EDGE_PERCENT / 100.0;
-                        next.max_width = Val::Px((window.logical_size().x - 2.0 * edge).max(0.0));
+                    if let Some((_, window)) = placed {
+                        let edge = window.x * SAFE_EDGE_PERCENT / 100.0;
+                        next.max_width = Val::Px((window.x - 2.0 * edge).max(0.0));
                     }
                 }
             }
@@ -3917,8 +3969,8 @@ fn restyle(
                 next.align_items = AlignItems::Stretch;
                 // Never wider than the window leaves room for, so a long line wraps and the panel
                 // can always be placed inside it.
-                if let Some(window) = target {
-                    next.max_width = Val::Px((window.logical_size().x - 2.0 * skin.gap).max(0.0));
+                if let Some((_, window)) = placed {
+                    next.max_width = Val::Px((window.x - 2.0 * skin.gap).max(0.0));
                 }
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
@@ -4374,7 +4426,7 @@ fn restyle(
             // frame) is never covered; its text is the smallest of the type scale and its own
             // frame one device pixel, so it is smaller than the least target it stands in.
             Role::ShortcutBadge => {
-                let hair = snap_line_width(1.0, target.map_or(1.0, |t| t.scale_factor()));
+                let hair = snap_line_width(1.0, scale);
                 next.position_type = PositionType::Absolute;
                 next.right = Val::Px(skin.pad() * 0.5);
                 next.align_self = AlignSelf::Center;
@@ -4524,8 +4576,8 @@ fn restyle(
             Role::MenuPanel => {
                 next.flex_direction = FlexDirection::Column;
                 next.align_items = AlignItems::Stretch;
-                if let Some(window) = target {
-                    next.max_width = Val::Px((window.logical_size().x - 2.0 * skin.gap).max(0.0));
+                if let Some((_, window)) = placed {
+                    next.max_width = Val::Px((window.x - 2.0 * skin.gap).max(0.0));
                 }
                 next.min_width = Val::Px(text_px * MENU_MIN_TEXT_SIZES);
                 next.border = UiRect::all(Val::Px(line));

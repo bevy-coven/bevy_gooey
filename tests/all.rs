@@ -93,6 +93,7 @@ mod split_pane_hover;
 mod split_peek;
 mod state_roles;
 mod status_bar;
+mod strip_glide;
 mod switch_motion;
 mod table;
 mod tabs;
