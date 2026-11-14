@@ -293,6 +293,13 @@ layer that blocks it. The piece-by-piece mapping is in `docs/research/layout-fin
 `Shown`, not both). `scroll_region(gap, gutter, items)` is a scrolling column that fills its parent with
 a rail lane you choose. A bare `Dock` on your own grid-placed `Node` keeps that placement.
 
+## Starting closed, and a scroll region that follows focus
+
+`(panel(), ShownFollow::closed())` and `(panel(), Shown::closed())` spawn a node closed with no frame
+open (a hook closes it at insertion). `ShownFollow` follows the host's `display` the frame its systems
+write it before the Style set, a frame later if they write after. A `scroll_region` follows keyboard
+focus, answers PageUp, PageDown, Home and End, and keeps its offset when the host replaces its rows.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

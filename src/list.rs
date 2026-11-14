@@ -67,9 +67,13 @@ type Scrolls = Or<(
 /// What scrolls to follow focus and pages with PageUp and PageDown: a list's viewport, and a
 /// Markdown page's, whose links are tab stops like a list's rows.
 #[cfg(feature = "markdown")]
-type Viewport = Or<(With<ListView>, With<crate::markdown_view::MarkdownViewport>)>;
+type Viewport = Or<(
+    With<ListView>,
+    With<crate::box_model::ScrollGutter>,
+    With<crate::markdown_view::MarkdownViewport>,
+)>;
 #[cfg(not(feature = "markdown"))]
-type Viewport = With<ListView>;
+type Viewport = Or<(With<ListView>, With<crate::box_model::ScrollGutter>)>;
 
 /// Shows each list's rail (and each scrolling tab strip's, [`crate::TabScroll`]) only while its
 /// content does not fit, the way a browser's bar comes and
@@ -137,7 +141,10 @@ pub fn scroll_to_focus(
     visible: Res<InputFocusVisible>,
     parents: Query<&ChildOf>,
     lists: Query<(), Viewport>,
-    nodes: Query<(&ComputedNode, &UiGlobalTransform), Without<ListView>>,
+    nodes: Query<
+        (&ComputedNode, &UiGlobalTransform),
+        (Without<ListView>, Without<crate::box_model::ScrollGutter>),
+    >,
     columns: Query<(&Node, &Children)>,
     mut views: Query<
         (
@@ -228,6 +235,7 @@ type PageNode = (
     &'static InheritedVisibility,
     Has<AutoDirectionalNavigation>,
     Has<ListView>,
+    Has<crate::box_model::ScrollGutter>,
 );
 
 /// PageUp and PageDown, and the pad's left and right triggers, move focus a viewport up or down
@@ -270,13 +278,16 @@ pub fn page_lists(
     let page = (view_height - from_height).max(from_height);
     let candidates: Vec<(Entity, f32)> = nodes
         .iter()
-        .filter(|&(entity, node, _, visible, navigable, is_list)| {
-            navigable
-                && !is_list
-                && !node.is_empty()
-                && visible.get()
-                && list_of(entity, &parents, &lists) == Some(list)
-        })
+        .filter(
+            |&(entity, node, _, visible, navigable, is_list, is_region)| {
+                navigable
+                    && !is_list
+                    && !is_region
+                    && !node.is_empty()
+                    && visible.get()
+                    && list_of(entity, &parents, &lists) == Some(list)
+            },
+        )
         .map(|(entity, node, transform, ..)| {
             let (top, height) = span(node, transform);
             (entity, top + height * 0.5)
@@ -286,5 +297,81 @@ pub fn page_lists(
     let signed = if down { page } else { -page };
     if let Some(to) = page_target(from_top + from_height * 0.5, &centres, signed) {
         focus.set(candidates[to].0, FocusCause::Navigated);
+    }
+}
+
+/// Home and End in a [`crate::scroll_region`]: focus goes to the first or last widget of the region
+/// that can take it and the region follows ([`scroll_to_focus`]), so the content is at its start or
+/// its end. Acts only when focus is on a widget inside a region **and that widget does not keep Home
+/// and End for itself** (a slider, a choice, a tab, a divider, a text field: their own handlers have
+/// them). Show focus. Runs in [`crate::GooeySystems::Navigate`] under the same conditions as paging.
+pub fn scroll_region_ends(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut focus: ResMut<InputFocus>,
+    mut shown: ResMut<InputFocusVisible>,
+    parents: Query<&ChildOf>,
+    regions: Query<(), With<crate::box_model::ScrollGutter>>,
+    roles: Query<&Role>,
+    nodes: Query<PageNode>,
+) {
+    let ctrl = keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]);
+    if ctrl {
+        return;
+    }
+    let (home, end) = (
+        keys.just_pressed(KeyCode::Home),
+        keys.just_pressed(KeyCode::End),
+    );
+    if home == end {
+        return;
+    }
+    let Some(from) = focus.get() else {
+        return;
+    };
+    if roles.get(from).is_ok_and(|role| {
+        matches!(
+            role,
+            Role::Slider
+                | Role::Choice
+                | Role::Binding
+                | Role::SplitDivider
+                | Role::Tab
+                | Role::IconTab
+                | Role::TextInput
+                | Role::TextArea
+                | Role::NumberPart
+        )
+    }) {
+        return;
+    }
+    let Some(region) = parents.iter_ancestors(from).find(|&a| regions.contains(a)) else {
+        return;
+    };
+    let mut candidates: Vec<(Entity, f32)> = nodes
+        .iter()
+        .filter(
+            |&(entity, node, _, visible, navigable, is_list, is_region)| {
+                navigable
+                    && !is_list
+                    && !is_region
+                    && !node.is_empty()
+                    && visible.get()
+                    && parents.iter_ancestors(entity).any(|a| a == region)
+            },
+        )
+        .map(|(entity, node, transform, ..)| {
+            let (top, height) = span(node, transform);
+            (entity, top + height * 0.5)
+        })
+        .collect();
+    candidates.sort_by(|a, b| a.1.total_cmp(&b.1));
+    let to = if home {
+        candidates.first()
+    } else {
+        candidates.last()
+    };
+    if let Some(&(to, _)) = to {
+        show_focus(&mut shown);
+        focus.set(to, FocusCause::Navigated);
     }
 }

@@ -4879,7 +4879,7 @@ fn restyle(
                 next.display = Display::Block;
                 next.overflow = Overflow::scroll_y();
                 let lane = match state.scroll_gutter.flatten() {
-                    Some(space) => space.resolve(skin).unwrap_or(0.0),
+                    Some(space) => space.resolve(skin).unwrap_or(RAIL_LINES * line + skin.gap),
                     None => RAIL_LINES * line + skin.gap,
                 };
                 next.padding = UiRect::right(Val::Px(lane));

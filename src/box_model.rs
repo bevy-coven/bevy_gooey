@@ -3,6 +3,8 @@
 //! `Option`: a field left `None` leaves the node alone, so a component sets only what it names.
 //! Research: `docs/research/layout-more.md`.
 
+use bevy::ecs::lifecycle::HookContext;
+use bevy::ecs::world::DeferredWorld;
 use bevy::prelude::*;
 
 use crate::skin::GooeySkin;
@@ -178,7 +180,57 @@ pub(crate) fn spaced(mut rect: UiRect, sides: &Sides<Space>, skin: &GooeySkin) -
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[component(on_insert = shown_inserted)]
 pub struct Shown(pub bool);
+
+impl Shown {
+    /// `Shown(false)`: a node that **starts closed**. Closing happens when the component is inserted
+    /// (a hook), not at the next restyle, so a node spawned after a frame's style pass is already
+    /// `Display::None` and `Visibility::Hidden` before any layout could draw it: no frame open.
+    pub const fn closed() -> Self {
+        Shown(false)
+    }
+}
+
+/// Closes or opens a node the moment its [`Shown`] is inserted (the hook), so a node that starts closed
+/// is never drawn or focusable for a frame; `apply_skin` writes the same and finds it done.
+fn shown_inserted(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    let Some(shown) = world.get::<Shown>(entity).map(|shown| shown.0) else {
+        return;
+    };
+    let memory = world.get::<ShownMemory>(entity).copied();
+    if !shown {
+        let display = world
+            .get::<Node>(entity)
+            .map_or(Display::Flex, |node| node.display);
+        let visibility = world.get::<Visibility>(entity).copied().unwrap_or_default();
+        if memory.is_none() && display != Display::None {
+            world.commands().entity(entity).insert(ShownMemory {
+                display,
+                visibility,
+            });
+        } else if memory.is_none() {
+            world.commands().entity(entity).insert(ShownMemory {
+                display: Display::Flex,
+                visibility,
+            });
+        }
+        if let Some(mut node) = world.get_mut::<Node>(entity)
+            && node.display != Display::None
+        {
+            node.display = Display::None;
+        }
+        if visibility != Visibility::Hidden {
+            world.commands().entity(entity).insert(Visibility::Hidden);
+        }
+    } else if let Some(memory) = memory {
+        if let Some(mut node) = world.get_mut::<Node>(entity) {
+            node.display = memory.display;
+        }
+        world.commands().entity(entity).insert(memory.visibility);
+        world.commands().entity(entity).remove::<ShownMemory>();
+    }
+}
 
 /// A length in the skin's own terms: logical px, a share of the host, body text sizes, or a share of
 /// the viewport.
@@ -640,7 +692,10 @@ pub struct FollowMemory(Visibility);
 /// open dialogs: `Display::None` alone leaves `InheritedVisibility`, which focus reads), anything else
 /// gives back the visibility the node had. Nothing of gooey's rewrites the host's `display` (the skin
 /// leaves a node's display to the roles that own one; a `Panel`, `Surface`, `Card`, a row and the other
-/// containers do not). Adding it to a node that is already closed hides it, removing it gives the
+/// containers do not). **Timing:** the visibility follows the display the host wrote when
+/// `follow_display` next runs, which is the same frame if the host's systems run before
+/// [`GooeySystems::Style`](crate::GooeySystems), and **one frame later** if they run after it (or in
+/// `PostUpdate`): that one frame the node is laid out closed but still `Visible` to focus. Adding it to a node that is already closed hides it, removing it gives the
 /// visibility back and leaves the display the host's. Use **either** `Shown` or `ShownFollow` on a
 /// node, not both (`Shown` wins).
 ///
@@ -655,7 +710,67 @@ pub struct FollowMemory(Visibility);
 /// ```
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
+#[component(on_add = follow_added)]
 pub struct ShownFollow;
+
+impl ShownFollow {
+    /// A [`ShownFollow`] node that **starts closed** (`Display::None` and `Visibility::Hidden` from the
+    /// moment it is spawned, no frame open): for a panel whose `display` is its open/closed state and
+    /// is closed until a host system opens it by writing `display`.
+    ///
+    /// ```
+    /// # use bevy::prelude::*;
+    /// # use bevy_gooey::*;
+    /// # fn ui(mut commands: Commands) {
+    /// commands.spawn((panel(), ShownFollow::closed(), children![button("In the page")]));
+    /// # }
+    /// ```
+    pub fn closed() -> impl Bundle {
+        (ShownFollow, StartsClosed)
+    }
+}
+
+/// One-shot: a node that is closed (`Display::None`) at the moment it is spawned. Put on by
+/// [`ShownFollow::closed`]; taken off again as soon as it has acted, so the host's later writes of
+/// `display` are never second-guessed.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+#[component(on_add = starts_closed)]
+pub struct StartsClosed;
+
+/// Closes a [`ShownFollow`] node: remembers the visibility it had and hides it.
+fn close_followed(world: &mut DeferredWorld, entity: Entity) {
+    if world.get::<FollowMemory>(entity).is_some() {
+        return;
+    }
+    let current = world.get::<Visibility>(entity).copied().unwrap_or_default();
+    world
+        .commands()
+        .entity(entity)
+        .insert(FollowMemory(current));
+    if current != Visibility::Hidden {
+        world.commands().entity(entity).insert(Visibility::Hidden);
+    }
+}
+
+fn follow_added(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    if world
+        .get::<Node>(entity)
+        .is_some_and(|node| node.display == Display::None)
+    {
+        close_followed(&mut world, entity);
+    }
+}
+
+fn starts_closed(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    if let Some(mut node) = world.get_mut::<Node>(entity) {
+        node.display = Display::None;
+    }
+    if world.get::<ShownFollow>(entity).is_some() {
+        close_followed(&mut world, entity);
+    }
+    world.commands().entity(entity).remove::<StartsClosed>();
+}
 
 /// Makes a [`ShownFollow`] node's visibility follow the display its host wrote.
 #[allow(clippy::type_complexity)]
@@ -683,7 +798,11 @@ pub fn follow_display(
                 }
             }
             (false, Some(memory)) => {
-                commands.entity(entity).insert(memory.0);
+                // A visibility the host set while the node was closed is the host's: only the
+                // `Hidden` this system wrote is replaced by what the node had.
+                if visibility.copied().unwrap_or_default() == Visibility::Hidden {
+                    commands.entity(entity).insert(memory.0);
+                }
                 commands.entity(entity).remove::<FollowMemory>();
             }
             _ => {}

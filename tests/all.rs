@@ -45,6 +45,7 @@ mod inspector;
 mod kit_parts;
 mod large_text;
 mod layout;
+mod layout_end;
 mod layout_final;
 mod layout_gaps;
 mod layout_last;

@@ -4,6 +4,13 @@
 
 ### Added
 
+- G-89 (#100, `docs/research/layout-end.md`, `docs/guide/layout.md`, `tests/layout_end.rs`), what was left of
+  the editor's hand-built nodes after G-88:
+  `Shown` closes a node when it is inserted (a hook) and `Shown::closed()`; `ShownFollow::closed()` (and the
+  one-shot `StartsClosed`): a node that starts closed with no frame open; `ShownFollow` keeps a visibility the host
+  set while closed; `scroll_region` follows keyboard focus and answers PageUp, PageDown, Home and End
+  (`scroll_region_ends`); a `ScrollGutter` that is not a number falls back to the default lane.
+
 - G-88 (#99, `docs/research/layout-tail.md`, `docs/guide/layout.md`, `tests/layout_tail.rs`), what was left of
   the editor's hand-built nodes after G-87:
   `Extent::Auto` (the content's size; with `TextFlow { grow }` a filling split) and `Extent::LinesCeil(n)` (lines

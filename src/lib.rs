@@ -241,7 +241,8 @@ pub use binding::{
 };
 pub use box_model::{
     BorderPx, Extent, GapPx, HostGeometry, Ink, InkFollow, InkOverride, Radius, ScrollGutter,
-    Shape, Shown, ShownFollow, Sides, Sizing, Space, Spacing, TextFlow, follow_display,
+    Shape, Shown, ShownFollow, Sides, Sizing, Space, Spacing, StartsClosed, TextFlow,
+    follow_display,
 };
 pub use button_variant::{
     ButtonPhase, ButtonVariant, Loading, LoadingHold, LoadingSpinner, note_host_disable,
@@ -316,7 +317,7 @@ pub use layout_motion::{
     update_layout_motion,
 };
 pub use led::{Led, LedState, LedWord, update_leds};
-pub use list::{ListView, page_lists, scroll_to_focus, update_lists};
+pub use list::{ListView, page_lists, scroll_region_ends, scroll_to_focus, update_lists};
 #[cfg(feature = "markdown")]
 pub use markdown_view::{
     MarkdownBase, MarkdownBuilt, MarkdownBuiltFrom, MarkdownHeading, MarkdownImageRefused,
@@ -546,6 +547,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<GapPx>()
             .register_type::<ScrollGutter>()
             .register_type::<ShownFollow>()
+            .register_type::<StartsClosed>()
             .register_type::<InkOverride>()
             .register_type::<TextFlow>()
             .register_type::<CardWidth>()
@@ -984,7 +986,14 @@ impl Plugin for GooeyNavPlugin {
                             .run_if(not(is_dragging)),
                     )
                         .chain(),
-                    (page_lists.run_if(not_capturing), palette_by_input).chain(),
+                    (
+                        page_lists.run_if(not_capturing),
+                        scroll_region_ends
+                            .run_if(not_capturing)
+                            .run_if(not(is_text_editing)),
+                        palette_by_input,
+                    )
+                        .chain(),
                     (bind_by_input, combobox_by_input).chain(),
                     catch_pointer,
                     (drag::track_drag, scroll_to_focus).chain(),
