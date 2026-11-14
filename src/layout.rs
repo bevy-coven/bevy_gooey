@@ -39,28 +39,36 @@ pub struct CellWidth(pub f32);
 pub struct BoxSize(pub Vec2);
 
 /// How a layout container lays its children out beyond its gap: the cross-axis alignment, whether
-/// a line that is full wraps, and how the children share the main axis. The three things the editor
-/// patched over a spawned [`row`](crate::row) or [`column`](crate::column).
+/// a line that is full wraps, how the children share the main axis, and whether the container
+/// itself gives way when its own host is short of room. The four things the editor patched over a
+/// spawned [`row`](crate::row) or [`column`](crate::column).
+///
+/// Every field is an `Option`, and **`None` leaves the value the role gives the node**: a
+/// [`button_row`](crate::button_row) keeps its centring and its wrapping when a `RowLayout` sets only
+/// `justify`, and a plain row keeps Bevy's own default for a field nothing sets. `Some` writes it.
 ///
 /// It is a component, so it goes where a patched `Node` cannot: beside `row(1.0)` in a bundle
 /// (`(row(1.0), RowLayout { .. })`), in a `Children::spawn(SpawnWith(..))` tuple, on any
 /// [`row_with`](crate::row_with) or [`column_with`](crate::column_with). [`crate::apply_skin`] writes
-/// it on a [`Role::Row`], [`Role::Column`], [`Role::ButtonRow`], [`Role::FillColumn`], [`Role::FillRegion`] and [`Role::Placed`] **only when the component is there**, so a row with none keeps whatever the
-/// host patched on its `Node`. Change it and the node follows in the same frame.
-///
-/// `RowLayout::default()` is Bevy's own default for each: [`AlignItems::Default`] (stretch),
-/// [`FlexWrap::NoWrap`], [`JustifyContent::Default`] (start).
+/// it on a [`Role::Row`], [`Role::Column`], [`Role::ButtonRow`], [`Role::FillColumn`],
+/// [`Role::FillRegion`] and [`Role::Placed`] **only when the component is there**, so a row with none
+/// keeps whatever the host patched on its `Node`. Change it and the node follows in the same frame;
+/// setting a field back to `None` leaves the node as it was last written.
 ///
 /// Not serde: it holds Bevy's own layout enums.
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 pub struct RowLayout {
     /// How the children stand on the cross axis (a row's height, a column's width).
-    pub align: AlignItems,
-    /// Whether children that do not fit go on another line.
-    pub wrap: FlexWrap,
+    pub align: Option<AlignItems>,
+    /// Whether children that do not fit go on another line. `Some` of anything but
+    /// [`FlexWrap::NoWrap`] also puts the skin gap between the lines.
+    pub wrap: Option<FlexWrap>,
     /// How the children share the main axis.
-    pub justify: JustifyContent,
+    pub justify: Option<JustifyContent>,
+    /// The node's `flex_shrink`: `Some(0.0)` is a rigid container that keeps its size when its host
+    /// squeezes, `Some(1.0)` is Bevy's own default.
+    pub shrink: Option<f32>,
 }
 
 /// The width a [`sized_panel`](crate::sized_panel) is, written by [`crate::apply_skin`]: a number of

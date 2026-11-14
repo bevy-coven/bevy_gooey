@@ -104,7 +104,13 @@ fn row_with_aligns_its_children_on_the_cross_axis() {
         let (short, tall) = (probe(&mut app, 40.0, 20.0), probe(&mut app, 40.0, 60.0));
         let row = app
             .world_mut()
-            .spawn(row_with(1.0, RowLayout { align, ..default() }))
+            .spawn(row_with(
+                1.0,
+                RowLayout {
+                    align: Some(align),
+                    ..default()
+                },
+            ))
             .with_children(|row| {
                 row.spawn(short);
                 row.spawn(tall);
@@ -139,7 +145,7 @@ fn row_with_wraps_what_does_not_fit() {
         .spawn(row_with(
             1.0,
             RowLayout {
-                wrap: FlexWrap::Wrap,
+                wrap: Some(FlexWrap::Wrap),
                 ..default()
             },
         ))
@@ -204,7 +210,7 @@ fn row_with_justifies_along_the_main_axis() {
         .spawn(row_with(
             1.0,
             RowLayout {
-                justify: JustifyContent::End,
+                justify: Some(JustifyContent::End),
                 ..default()
             },
         ))
@@ -235,7 +241,7 @@ fn row_layout_works_in_a_bundle_and_through_a_related_spawner() {
         .spawn((
             row(1.0),
             RowLayout {
-                align: AlignItems::Center,
+                align: Some(AlignItems::Center),
                 ..default()
             },
             Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
@@ -265,7 +271,7 @@ fn column_with_aligns_across_its_width() {
         .spawn(column_with(
             1.0,
             RowLayout {
-                align: AlignItems::Center,
+                align: Some(AlignItems::Center),
                 ..default()
             },
         ))
@@ -333,7 +339,7 @@ fn a_changed_row_layout_restyles() {
     app.world_mut()
         .get_mut::<RowLayout>(row)
         .expect("a layout")
-        .justify = JustifyContent::End;
+        .justify = Some(JustifyContent::End);
     settle(&mut app);
     assert!(rect(&app, children(&app, row)[0]).max.x > rect(&app, room).max.x - 0.5);
 }
@@ -560,8 +566,8 @@ fn fill_region_centres_what_it_holds_with_a_row_layout() {
         .spawn((
             fill_region(),
             RowLayout {
-                align: AlignItems::Center,
-                justify: JustifyContent::Center,
+                align: Some(AlignItems::Center),
+                justify: Some(JustifyContent::Center),
                 ..default()
             },
         ))
@@ -777,10 +783,11 @@ fn cover_fills_its_host() {
     );
 }
 
-/// A placed node is a mark, not a surface: the pointer goes through it to what is under it, like a
-/// `screen()`.
+/// A placed node is a mark, not a surface: it carries `Pickable::IGNORE`, like a `screen()`. This
+/// reads the component, not a picking run: that the pointer then goes through is Bevy's picking and
+/// `screen()`'s own tests' to hold.
 #[test]
-fn a_placed_node_lets_the_pointer_through() {
+fn a_placed_node_is_marked_to_let_the_pointer_through() {
     let mut app = headless();
     let a = app.world_mut().spawn(placed_at(1.0, 2.0)).id();
     let b = app.world_mut().spawn(cover()).id();
@@ -997,4 +1004,139 @@ fn a_changed_aspect_box_restyles() {
         (got.width() - 400.0).abs() < 0.5 && (got.height() - 200.0).abs() < 0.5,
         "{got:?}"
     );
+}
+
+// ---- review of the first cut: shrink, button_row + RowLayout, non-finite widths ----------------
+
+/// `shrink` is the node's `flex_shrink`: a `row_with` that sets it is rigid in a row that squeezes,
+/// and a plain `row(1.0)` beside it is untouched and still gives way.
+#[test]
+fn row_with_shrink_makes_a_row_rigid_and_a_plain_row_is_untouched() {
+    let mut app = headless();
+    let (a, b) = (probe(&mut app, 150.0, 20.0), probe(&mut app, 150.0, 20.0));
+    let world = app.world_mut();
+    let rigid = world
+        .spawn(row_with(
+            0.0,
+            RowLayout {
+                shrink: Some(0.0),
+                ..default()
+            },
+        ))
+        .with_children(|row| {
+            row.spawn(a);
+        })
+        .id();
+    let plain = world
+        .spawn(row(0.0))
+        .with_children(|row| {
+            row.spawn(b);
+        })
+        .id();
+    let host = world
+        .spawn(Node {
+            width: Val::Px(200.0),
+            min_width: Val::Px(200.0),
+            max_width: Val::Px(200.0),
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .add_child(rigid)
+        .add_child(plain)
+        .id();
+    world.spawn(screen()).add_child(host);
+    settle(&mut app);
+    let shrink = |e| app.world().get::<Node>(e).expect("a node").flex_shrink;
+    assert_eq!(shrink(rigid), 0.0, "the layout wrote flex_shrink");
+    assert_eq!(shrink(plain), 1.0, "a plain row is untouched");
+    assert!(
+        (rect(&app, rigid).width() - 150.0).abs() < 0.5,
+        "rigid keeps its width: {:?}",
+        rect(&app, rigid)
+    );
+    assert!(
+        (rect(&app, plain).width() - 50.0).abs() < 0.5,
+        "the plain row gives way: {:?}",
+        rect(&app, plain)
+    );
+}
+
+/// The same field on a column.
+#[test]
+fn column_with_shrink_writes_flex_shrink() {
+    let mut app = headless();
+    let column = app
+        .world_mut()
+        .spawn(column_with(
+            1.0,
+            RowLayout {
+                shrink: Some(0.0),
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut().spawn(screen()).add_child(column);
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(column).expect("a node").flex_shrink,
+        0.0
+    );
+}
+
+/// A field left `None` leaves the role's own value, so `justify` on a `button_row` keeps its
+/// centring and its wrapping.
+#[test]
+fn a_row_layout_beside_a_button_row_changes_only_what_it_sets() {
+    let mut app = headless();
+    let row = app
+        .world_mut()
+        .spawn((
+            button_row(0.5),
+            RowLayout {
+                justify: Some(JustifyContent::End),
+                ..default()
+            },
+        ))
+        .with_children(|row| {
+            row.spawn(button("PLAY"));
+            row.spawn(button("BUILD"));
+            row.spawn(button("A button with a rather long name"));
+        })
+        .id();
+    let host = room(&mut app, 220.0, row);
+    settle(&mut app);
+    let node = app.world().get::<Node>(row).expect("a node");
+    assert_eq!(node.align_items, AlignItems::Center, "still centred");
+    assert_eq!(node.flex_wrap, FlexWrap::Wrap, "still wraps");
+    assert_eq!(node.justify_content, JustifyContent::End);
+    let last = rect(&app, children(&app, row)[2]);
+    assert!(
+        last.min.y > rect(&app, children(&app, row)[0]).max.y - 0.5,
+        "the last button wraps"
+    );
+    assert!(
+        (last.max.x - rect(&app, host).max.x).abs() < 0.5,
+        "flush right: {last:?}"
+    );
+}
+
+/// A width that is not a finite number is refused: the card keeps the dialog's own measure.
+#[test]
+fn a_card_width_that_is_not_finite_is_refused() {
+    let skin = GooeySkin::dark();
+    let measure = 21.0 * skin.text_size;
+    for width in [
+        CardWidth::Px(f32::NAN),
+        CardWidth::Px(f32::INFINITY),
+        CardWidth::Px(f32::NEG_INFINITY),
+        CardWidth::Text(f32::NAN),
+        CardWidth::Text(f32::INFINITY),
+    ] {
+        let (app, card) = dialog_of(skin.clone(), width);
+        assert!(
+            (rect(&app, card).width() - measure).abs() < 1.0,
+            "{width:?}: {:?} wanted the measure {measure}",
+            rect(&app, card)
+        );
+    }
 }

@@ -43,7 +43,9 @@ Their spacing is the skin's, so a step of `GooeySkin::text_scale` or a theme cha
 ## How a row lays out
 
 `row(gap)` and `column(gap)` take a gap only. What else a container does, which way its children
-stand across it, whether a full line wraps and how they share the rest, is a `RowLayout`:
+stand across it, whether a full line wraps, how they share the rest and whether the container itself shrinks, is a
+`RowLayout`. Each field is an `Option`: `None` leaves what the role gives the node (a `button_row` keeps
+its centring and its wrapping when you set only `justify`), `Some` writes it:
 
 ```rust
 use bevy::prelude::*;
@@ -53,12 +55,17 @@ fn settings_row(mut commands: Commands) {
     commands.spawn((
         row_with(
             1.0,
-            RowLayout { align: AlignItems::Center, wrap: FlexWrap::Wrap, justify: JustifyContent::SpaceBetween },
+            RowLayout {
+                align: Some(AlignItems::Center),
+                wrap: Some(FlexWrap::Wrap),
+                justify: Some(JustifyContent::SpaceBetween),
+                shrink: Some(0.0), // a rigid row: it keeps its size when its host squeezes
+            },
         ),
         children![label("Modified; without it the chord is Ctrl+S"), button("Reset")],
     ));
     // The same component on a plain row, so it works in a bundle or a `Children::spawn(SpawnWith(..))`.
-    commands.spawn((row(1.0), RowLayout { align: AlignItems::Center, ..default() }));
+    commands.spawn((row(1.0), RowLayout { align: Some(AlignItems::Center), ..default() }));
     // A line of buttons with a tight gap: centred, wrapping a gap below when the room runs out.
     commands.spawn((button_row(0.5), children![button("PLAY"), button("BUILD")]));
 }

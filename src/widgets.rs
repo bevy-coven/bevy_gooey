@@ -365,8 +365,8 @@ pub fn row(gap: f32) -> impl Bundle {
     )
 }
 
-/// A [`row`] with a [`RowLayout`](crate::RowLayout): the cross-axis alignment, the wrap and the main-axis spread a
-/// host used to patch over a spawned row. It is one bundle, so it stands where a patched `Node`
+/// A [`row`] with a [`RowLayout`](crate::RowLayout): the cross-axis alignment, the wrap, the main-axis spread and the
+/// shrink a host used to patch over a spawned row. It is one bundle, so it stands where a patched `Node`
 /// cannot: in a `children![..]` list or a `Children::spawn(SpawnWith(..))`.
 ///
 /// ```
@@ -376,7 +376,7 @@ pub fn row(gap: f32) -> impl Bundle {
 /// commands.spawn((
 ///     row_with(
 ///         1.0,
-///         RowLayout { align: AlignItems::Center, wrap: FlexWrap::Wrap, ..default() },
+///         RowLayout { align: Some(AlignItems::Center), wrap: Some(FlexWrap::Wrap), ..default() },
 ///     ),
 ///     children![label("Modified;"), button("Reset")],
 /// ));
@@ -394,7 +394,7 @@ pub fn row_with(gap: f32, layout: crate::RowLayout) -> impl Bundle {
 /// # use bevy_gooey::*;
 /// # fn ui(mut commands: Commands) {
 /// commands.spawn((
-///     column_with(1.0, RowLayout { align: AlignItems::Center, ..default() }),
+///     column_with(1.0, RowLayout { align: Some(AlignItems::Center), ..default() }),
 ///     children![heading("Saved"), label("All changes are on disk")],
 /// ));
 /// # }
@@ -405,7 +405,8 @@ pub fn column_with(gap: f32, layout: crate::RowLayout) -> impl Bundle {
 
 /// A row of buttons: `gap` multiples of the skin's gap apart (a tight `0.5` is the PLAY, BUILD
 /// line), centred on one line, wrapping onto the next when the room is too narrow for them, a
-/// gap below. A [`RowLayout`](crate::RowLayout) beside it changes any of the three.
+/// gap below. A [`RowLayout`](crate::RowLayout) beside it changes only the fields it sets (`Some`): `justify` alone
+/// keeps the centring and the wrapping.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -570,7 +571,7 @@ pub fn placed_at(left: f32, top: f32) -> impl Bundle {
 /// # fn ui(mut commands: Commands) {
 /// commands.spawn((
 ///     cover(),
-///     RowLayout { align: AlignItems::Center, justify: JustifyContent::Center, ..default() },
+///     RowLayout { align: Some(AlignItems::Center), justify: Some(JustifyContent::Center), ..default() },
 ///     children![label("Nothing here yet")],
 /// ));
 /// # }

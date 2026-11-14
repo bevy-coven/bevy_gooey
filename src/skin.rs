@@ -4957,7 +4957,7 @@ fn restyle(
                 next.bottom = inset.bottom;
             }
             // Buttons side by side stand a gap apart on one line, centred on it, and a line that is
-            // full wraps, a gap below (`RowLayout` below overrides each).
+            // full wraps, a gap below (`RowLayout` below overrides what it sets).
             Role::ButtonRow => {
                 next.column_gap = Val::Px(state.layout_gap * skin.gap);
                 next.row_gap = Val::Px(state.layout_gap * skin.gap);
@@ -5023,13 +5023,23 @@ fn restyle(
             | Role::Placed,
         ) = (state.flow, role)
         {
-            next.align_items = flow.align;
-            next.flex_wrap = flow.wrap;
-            next.justify_content = flow.justify;
-            // Lines that wrap stand the same gap apart as the children on a line.
-            if flow.wrap != FlexWrap::NoWrap {
-                next.column_gap = Val::Px(state.layout_gap * skin.gap);
-                next.row_gap = Val::Px(state.layout_gap * skin.gap);
+            // A field left `None` keeps what the role gave the node.
+            if let Some(align) = flow.align {
+                next.align_items = align;
+            }
+            if let Some(justify) = flow.justify {
+                next.justify_content = justify;
+            }
+            if let Some(shrink) = flow.shrink.filter(|shrink| shrink.is_finite()) {
+                next.flex_shrink = shrink.max(0.0);
+            }
+            if let Some(wrap) = flow.wrap {
+                next.flex_wrap = wrap;
+                // Lines that wrap stand the same gap apart as the children on a line.
+                if wrap != FlexWrap::NoWrap {
+                    next.column_gap = Val::Px(state.layout_gap * skin.gap);
+                    next.row_gap = Val::Px(state.layout_gap * skin.gap);
+                }
             }
         }
         node.set_if_neq(next);
