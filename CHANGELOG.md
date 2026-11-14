@@ -6,6 +6,11 @@
 
 - G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
   the editor's hand-built nodes after G-85:
+  `BorderPx(Sides<f32>)`: a border in logical px, not snapped to device pixels, beside `Shape` (a `Shape` border
+  weight and every role's frame are snapped; the docs list which is which).
+
+- G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
+  the editor's hand-built nodes after G-85:
   `Extent::{Vh, Vw, VMin, VMax}`: a length as a share of the viewport (the window-sized frame root); no `Dvh`,
   Bevy has no such unit.
 

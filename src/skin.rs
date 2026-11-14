@@ -13,7 +13,9 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
-use crate::box_model::{Shape, Shown, ShownMemory, Sizing, Spacing, TextFlow, lined, spaced};
+use crate::box_model::{
+    BorderPx, Shape, Shown, ShownMemory, Sizing, Spacing, TextFlow, lined, pixeled, spaced,
+};
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
@@ -2328,6 +2330,8 @@ struct State {
     shape: Option<Shape>,
     /// How a text takes part in its flex ([`TextFlow`]).
     text_flow: Option<TextFlow>,
+    /// A border in logical px, unsnapped ([`BorderPx`]).
+    border_px: Option<BorderPx>,
     /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
     region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
@@ -2380,6 +2384,7 @@ impl Default for State {
             sizing: None,
             shape: None,
             text_flow: None,
+            border_px: None,
             region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
@@ -2433,6 +2438,7 @@ type StateQuery = (
             Option<&'static TextFlow>,
             Option<&'static ShownMemory>,
             Option<&'static Visibility>,
+            Option<&'static BorderPx>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2492,6 +2498,7 @@ type Restyle = (
                     Changed<Sizing>,
                     Changed<Shape>,
                     Changed<TextFlow>,
+                    Changed<BorderPx>,
                 )>,
             )>,
         )>,
@@ -2678,6 +2685,7 @@ pub fn apply_skin(
                             text_flow,
                             hidden,
                             visibility,
+                            border_px,
                         ),
                     ),
                     row,
@@ -2740,6 +2748,7 @@ pub fn apply_skin(
                         shape: shape.copied(),
                         text_flow: text_flow.copied(),
                         hidden: hidden.copied(),
+                        border_px: border_px.copied(),
                         visibility: visibility.copied().unwrap_or_default(),
                         region_gap: gap.map(|gap| gap.0),
                     }
@@ -3805,13 +3814,15 @@ fn restyle(
     };
     // A shape's ink draws its border; a border with no ink is the outline unless the role has an
     // edge of its own; no border and no ink leaves the role's.
+    let bordered = state
+        .shape
+        .is_some_and(|shape| shape.border != Default::default())
+        || state.border_px.is_some_and(|px| px.0 != Default::default());
     let edge = match state.shape {
         // The focus ring is never painted over: it is how a keyboard player sees where they are.
         Some(Shape { ink: Some(_), .. }) if look.focused == Some(entity) && edge.is_some() => edge,
         Some(Shape { ink: Some(ink), .. }) => Some(BorderColor::all(ink.color(skin))),
-        Some(shape) if edge.is_none() && shape.border != Default::default() => {
-            Some(BorderColor::all(skin.outline))
-        }
+        _ if edge.is_none() && bordered => Some(BorderColor::all(skin.outline)),
         _ => edge,
     };
     if let (Some(edge), Some(mut border)) = (edge, border) {
@@ -5193,6 +5204,10 @@ fn restyle(
             if let Some(radius) = shape.radius {
                 next.border_radius = radius.border_radius(skin);
             }
+        }
+        // A border in logical px, after the shape's weights: that side is exactly that, unsnapped.
+        if let Some(px) = state.border_px {
+            next.border = pixeled(next.border, &px.0);
         }
         // Margin and padding in steps of the skin's scale, on any role, after the role's own: a side
         // that is set wins, a side left `None` leaves the node.

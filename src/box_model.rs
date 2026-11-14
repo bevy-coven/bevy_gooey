@@ -424,3 +424,46 @@ pub struct ShownMemory {
     pub(crate) display: Display,
     pub(crate) visibility: Visibility,
 }
+
+/// A border in logical px, **not snapped to device pixels**, per side, beside a [`Shape`]. Every
+/// border the crate writes from the skin is a whole number of device pixels (a role's frame, a focus
+/// ring, a [`Shape::border`] weight: [`snap_line_width`](crate::snap_line_width) rounds a 2 px line at
+/// 1.25x to 2 device px, 1.6 logical), which keeps a line one weight on every side; a `BorderPx` is the
+/// logical px it says (`3.0` is 3 px at any scale; Bevy's layout then rounds it to its own device
+/// pixels like any `Node` border). Use it where an exact visible width is the requirement, a drag box
+/// or a pick outline; use a `Shape` weight everywhere else. Every side is an `Option` (`None` leaves
+/// the side, a number that is not finite leaves it, below zero is none). A side set here wins over a
+/// `Shape`'s on the same side; the colour is the `Shape`'s `ink`, else the outline unless the role has
+/// an edge of its own. Removing the component leaves the node as it was last written.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// // The drag rectangle: 3 px, exactly, in the accent.
+/// commands.spawn((
+///     placed_at(10.0, 10.0),
+///     BorderPx(Sides::all(3.0)),
+///     Shape { ink: Some(Ink::Accent), ..default() },
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct BorderPx(pub Sides<f32>);
+
+/// `rect` with every side `sides` names set to that many logical px, unsnapped; a number that is not
+/// finite leaves its side alone, below zero is none.
+pub(crate) fn pixeled(mut rect: UiRect, sides: &Sides<f32>) -> UiRect {
+    for (field, px) in [
+        (&mut rect.top, sides.top),
+        (&mut rect.right, sides.right),
+        (&mut rect.bottom, sides.bottom),
+        (&mut rect.left, sides.left),
+    ] {
+        if let Some(px) = px.filter(|px| px.is_finite()) {
+            *field = Val::Px(px.max(0.0));
+        }
+    }
+    rect
+}

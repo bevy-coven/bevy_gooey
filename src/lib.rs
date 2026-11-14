@@ -239,7 +239,9 @@ pub use binding::{
     Binding, BindingSettings, BindingValue, Capturing, bind_by_input, catch_pointer, not_capturing,
     update_bindings,
 };
-pub use box_model::{Extent, Ink, Radius, Shape, Shown, Sides, Sizing, Space, Spacing, TextFlow};
+pub use box_model::{
+    BorderPx, Extent, Ink, Radius, Shape, Shown, Sides, Sizing, Space, Spacing, TextFlow,
+};
 pub use button_variant::{
     ButtonPhase, ButtonVariant, Loading, LoadingHold, LoadingSpinner, note_host_disable,
     update_loading,
@@ -535,6 +537,8 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Ink>()
             .register_type::<Radius>()
             .register_type::<Shape>()
+            .register_type::<Sides<f32>>()
+            .register_type::<BorderPx>()
             .register_type::<TextFlow>()
             .register_type::<CardWidth>()
             .register_type::<AspectBox>()

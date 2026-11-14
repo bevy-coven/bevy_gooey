@@ -221,6 +221,14 @@ not follow the scale or the text size: prefer a `Step`.
 host is (`VMin` and `VMax` are the smaller and larger side): the root of a window-sized frame. Like
 every extent it is finite-checked and never negative. Remember `min_height` 0 down the chain.
 
+## Which borders snap
+
+Every border the skin draws is a whole number of device pixels (a 2 px line at 1.25x is 2 device px,
+1.6 logical): the frame of every widget, the focus ring, an edge tab's edge, and a `Shape` border weight.
+**`BorderPx(Sides::all(3.0))` is not snapped**: it is the logical px it says, for a drag box or a pick
+outline whose width is the requirement (Bevy's layout still rounds it to its own device pixels). A
+border you write on a `Node` yourself is left alone unless a `Shape` or `BorderPx` names that side.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

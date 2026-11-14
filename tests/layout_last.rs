@@ -12,13 +12,22 @@ use bevy::winit::WinitPlugin;
 use bevy_gooey::*;
 
 fn headless() -> App {
+    headless_at(1.0)
+}
+
+/// The same at a window scale factor, so a device pixel is not a logical one.
+fn headless_at(scale: f32) -> App {
     let mut app = App::new();
     app.insert_resource(MotionSettings::off());
     app.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
-                    resolution: WindowResolution::new(1280, 720).with_scale_factor_override(1.0),
+                    resolution: WindowResolution::new(
+                        (1280.0 * scale) as u32,
+                        (720.0 * scale) as u32,
+                    )
+                    .with_scale_factor_override(scale),
                     ..default()
                 }),
                 ..default()
@@ -308,5 +317,129 @@ fn a_viewport_extent_is_finite_checked_and_never_negative() {
         node(e).min_height,
         node(plain).min_height,
         "infinity leaves the node"
+    );
+}
+
+// ---- 1. a border in logical px, unsnapped ----------------------------------------------------
+
+/// At a window scale of 1.25 the skin's 2 px line is 2.5 device px: it is drawn 2 (1.6 logical px).
+/// `BorderPx` is not snapped: 3 px stays 3 px, the width the editor's drag box needs, in the skin's
+/// outline colour.
+#[test]
+fn a_border_px_is_not_snapped_to_device_pixels_and_a_shape_border_is() {
+    let mut app = headless_at(1.25);
+    let snapped = app
+        .world_mut()
+        .spawn((
+            placed_at(0.0, 0.0),
+            Shape {
+                border: Sides::all(1.0),
+                ..default()
+            },
+        ))
+        .id();
+    let plain_px = app
+        .world_mut()
+        .spawn((placed_at(0.0, 0.0), BorderPx(Sides::all(3.0))))
+        .id();
+    for e in [snapped, plain_px] {
+        let host = app
+            .world_mut()
+            .spawn(Node {
+                width: Val::Px(200.0),
+                height: Val::Px(100.0),
+                ..default()
+            })
+            .add_child(e)
+            .id();
+        app.world_mut().spawn(screen()).add_child(host);
+    }
+    settle(&mut app);
+    let skin = GooeySkin::dark();
+    let width = |e| match app.world().get::<Node>(e).expect("a node").border.left {
+        Val::Px(px) => px,
+        other => panic!("not px: {other:?}"),
+    };
+    assert!(
+        width(snapped) < skin.border,
+        "a shape's weight snaps down to whole device px: {}",
+        width(snapped)
+    );
+    assert!(
+        (width(snapped) * 1.25 - (width(snapped) * 1.25).round()).abs() < 0.01,
+        "on a device pixel: {}",
+        width(snapped)
+    );
+    assert_eq!(width(plain_px), 3.0, "a BorderPx is the px it says");
+    assert_eq!(
+        app.world()
+            .get::<BorderColor>(plain_px)
+            .expect("an edge")
+            .left,
+        skin.outline,
+        "in the skin's outline"
+    );
+}
+
+/// It is per side, finite-checked and never negative; a side left `None` is left alone; and the ink
+/// of a `Shape` on the same node colours it.
+#[test]
+fn a_border_px_is_per_side_finite_checked_and_inked_by_a_shape() {
+    let mut app = headless();
+    let plain = app.world_mut().spawn(panel()).id();
+    let odd = app
+        .world_mut()
+        .spawn((
+            panel(),
+            BorderPx(Sides {
+                left: Some(-2.0),
+                right: Some(f32::NAN),
+                top: Some(4.0),
+                bottom: None,
+            }),
+            Shape {
+                ink: Some(Ink::Danger),
+                ..default()
+            },
+        ))
+        .id();
+    for e in [plain, odd] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    let node = |e| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(node(odd).border.left, Val::Px(0.0));
+    assert_eq!(
+        node(odd).border.right,
+        node(plain).border.right,
+        "NaN leaves the side"
+    );
+    assert_eq!(node(odd).border.top, Val::Px(4.0));
+    assert_eq!(
+        node(odd).border.bottom,
+        node(plain).border.bottom,
+        "None leaves the side"
+    );
+    assert_eq!(
+        app.world().get::<BorderColor>(odd).expect("an edge").top,
+        GooeySkin::dark().danger
+    );
+}
+
+/// A changed `BorderPx` restyles; a focused widget's ring still wins over its colour.
+#[test]
+fn a_changed_border_px_restyles() {
+    let mut app = headless();
+    let e = app
+        .world_mut()
+        .spawn((placed_at(0.0, 0.0), BorderPx(Sides::all(2.0))))
+        .id();
+    app.world_mut().spawn(screen()).add_child(e);
+    settle(&mut app);
+    app.world_mut().get_mut::<BorderPx>(e).expect("a border").0 = Sides::all(5.0);
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(e).expect("a node").border,
+        UiRect::all(Val::Px(5.0))
     );
 }
