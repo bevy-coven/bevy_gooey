@@ -236,6 +236,12 @@ whatever you put in it and puts `Role::ButtonText` on none of it: a card with a 
 badge. Use `fill_text` and `count_text` for words that follow its state; a `RowLayout` beside it sets
 `justify`, `align` or `direction`.
 
+## A quiet status item you can hide
+
+`status_item_quiet("Jobs")` is a status item that is not on the `Activate` bus (no `Button`, no tab
+stop). `Shown(false)` hides it (no room, no focus) and `Shown(true)` brings it back; to toggle a node that
+already exists, insert or change its `Shown`: never write `Node::display`.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

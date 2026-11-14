@@ -555,3 +555,106 @@ fn a_button_box_is_a_tab_stop_and_takes_a_row_layout() {
     bevy_gooey::testing::press(&mut app, KeyCode::Tab);
     assert_eq!(bevy_gooey::testing::focused(&app), Some(boxed));
 }
+
+// ---- 4. a quiet status item that can be hidden -----------------------------------------------
+
+/// A quiet status item looks like a status item and is off the `Activate` bus: no Bevy `Button`, no
+/// tab stop.
+#[test]
+fn a_quiet_status_item_looks_like_a_status_item_and_stays_off_the_activate_bus() {
+    let mut app = headless();
+    app.init_resource::<Pressed>();
+    let count = |_: On<Activate>, mut n: ResMut<Pressed>| n.0 += 1;
+    let loud = app
+        .world_mut()
+        .spawn((status_item("Saving"), StatusKind::Warning, observe(count)))
+        .id();
+    let quiet = app
+        .world_mut()
+        .spawn((
+            status_item_quiet("Saving"),
+            StatusKind::Warning,
+            observe(count),
+        ))
+        .id();
+    let bar = app
+        .world_mut()
+        .spawn(row(1.0))
+        .add_child(loud)
+        .add_child(quiet)
+        .id();
+    room(&mut app, 600.0, bar);
+    settle(&mut app);
+    assert!(app.world().get::<bevy::ui_widgets::Button>(quiet).is_none());
+    assert!(
+        app.world()
+            .get::<bevy::input_focus::tab_navigation::TabIndex>(quiet)
+            .is_none(),
+        "no tab stop"
+    );
+    assert_eq!(app.world().get::<Role>(quiet), Some(&Role::StatusItem));
+    assert_eq!(
+        rect(&app, quiet).size(),
+        rect(&app, loud).size(),
+        "the same look"
+    );
+    bevy_gooey::testing::click(&mut app, quiet);
+    settle(&mut app);
+    assert_eq!(
+        app.world().resource::<Pressed>().0,
+        0,
+        "a quiet item sends no Activate"
+    );
+    bevy_gooey::testing::click(&mut app, loud);
+    settle(&mut app);
+    assert_eq!(app.world().resource::<Pressed>().0, 1);
+}
+
+/// `Shown` hides a quiet item inside a status bar (no room, hidden from layout and focus) and brings
+/// it back; the same toggle works on an item that was shown at spawn.
+#[test]
+fn a_quiet_status_item_can_be_hidden_with_shown_in_a_bar() {
+    let mut app = headless();
+    let bar = app
+        .world_mut()
+        .spawn(status_bar(
+            children![
+                status_item_quiet("First"),
+                (status_item_quiet("Jobs"), Shown(false)),
+                status_item_quiet("Last"),
+            ],
+            (),
+        ))
+        .id();
+    room(&mut app, 600.0, bar);
+    settle(&mut app);
+    let left = children(&app, bar)[0];
+    let (first, hidden, last) = {
+        let kids = children(&app, left);
+        (kids[0], kids[1], kids[2])
+    };
+    let node = |app: &App, e| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(node(&app, hidden).display, Display::None);
+    assert_eq!(
+        app.world().get::<Visibility>(hidden),
+        Some(&Visibility::Hidden)
+    );
+    let closed = rect(&app, last).min.x - rect(&app, first).max.x;
+    assert!(
+        closed < 10.0,
+        "closed up, one gap and no item between: {closed}"
+    );
+    *app.world_mut().get_mut::<Shown>(hidden).expect("shown") = Shown(true);
+    settle(&mut app);
+    assert_eq!(node(&app, hidden).display, Display::Flex);
+    assert!(
+        rect(&app, hidden).width() > 1.0 && rect(&app, last).min.x > rect(&app, hidden).max.x - 0.5
+    );
+    // An item shown at spawn is hidden by inserting `Shown(false)` on the existing node.
+    app.world_mut().entity_mut(last).insert(Shown(false));
+    settle(&mut app);
+    assert_eq!(node(&app, last).display, Display::None);
+    app.world_mut().entity_mut(last).insert(Shown(true));
+    settle(&mut app);
+    assert!(rect(&app, last).width() > 1.0, "back");
+}

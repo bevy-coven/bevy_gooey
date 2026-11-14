@@ -4430,6 +4430,34 @@ pub fn status_mark() -> impl Bundle {
     (Node::default(), Role::StatusMark, Pickable::IGNORE)
 }
 
+/// A [`status_item`] that is not on the `Activate` bus: the same mark and words and the same look, but
+/// no Bevy `Button`, no tab stop and no directional navigation, so a screen-wide `Activate` handler
+/// never hears it (the host listens for `PointerClick` itself, or none: a plain readout). It is a bundle
+/// [`Shown`](crate::Shown) works on: `(status_item_quiet("Jobs"), Shown(false))` is hidden from
+/// layout, sight and focus, and `Shown(true)` brings it back; to hide or show one that exists, insert
+/// or change its `Shown` (any node with a `Role` takes it), never `Node::display`.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     status_item_quiet("2 jobs running"),
+///     StatusKind::Warning,
+///     Shown(false),
+/// ));
+/// # }
+/// ```
+pub fn status_item_quiet(text: impl Into<String>) -> impl Bundle {
+    (
+        Node::default(),
+        Role::StatusItem,
+        StatusItem,
+        Hovered::default(),
+        children![status_mark(), (Text::new(text), Role::ButtonText, ONE_LINE),],
+    )
+}
+
 /// A [`status_item`] that also shows a short [`progress`] bar after its words, for a task that
 /// runs while the player works: change the [`Progress`](crate::Progress) on the bar (the item's
 /// second child's child) or query for it.

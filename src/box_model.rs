@@ -161,8 +161,10 @@ pub(crate) fn spaced(mut rect: UiRect, sides: &Sides<Space>, skin: &GooeySkin) -
 /// `InheritedVisibility`, which focus navigation reads, untouched). `Shown(true)` gives back what the
 /// node had when it was hidden, its display (a grid stays a grid) and its visibility (a `Visible` stays
 /// visible). So `(dialog(), Shown(false))` is a modal that is hidden until shown and traps nothing.
-/// A node with no `Shown` is left as it is. Removing the component while hidden leaves the node
-/// hidden: set `Shown(true)` instead.
+/// A node with no `Shown` is left as it is. **To hide or show a node that already exists, insert or
+/// change its `Shown`** (`commands.entity(e).insert(Shown(false))`, or `*shown = Shown(true)` through a
+/// query): any node with a [`Role`](crate::Role) takes it, never write `Node::display` yourself. Removing
+/// the component while hidden leaves the node hidden: set `Shown(true)` instead.
 ///
 /// ```
 /// # use bevy::prelude::*;

@@ -458,10 +458,10 @@ pub use widgets::{
     placed_at, plain_button, popover, popover_modal, primary_button, progress, prompt, prompts,
     prompts_at, quiet_list_row, radial, radio_item, row, row_with, screen, section, select,
     separator, side_tab_page, side_tabs, side_tabs_icons, sized, sized_panel, skin_preset, slider,
-    slot_grid, spacer, spinner, split, status_bar, status_item, status_mark, status_progress,
-    submenu, surface, tab_page, table, tabs, text_area, text_area_fill, text_input, text_size,
-    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
-    viewport,
+    slot_grid, spacer, spinner, split, status_bar, status_item, status_item_quiet, status_mark,
+    status_progress, submenu, surface, tab_page, table, tabs, text_area, text_area_fill,
+    text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator,
+    tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;

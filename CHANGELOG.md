@@ -6,6 +6,11 @@
 
 - G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
   the editor's hand-built nodes after G-85:
+  `status_item_quiet(text)`: a `status_item` off the `Activate` bus (no `Button`, no tab stop) that `Shown`
+  hides; the docs say to toggle an existing node by inserting or changing its `Shown`.
+
+- G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
+  the editor's hand-built nodes after G-85:
   `button_box()`: a Bevy `Button` with `Role::Button` that holds the host's own children, with no
   `Role::ButtonText` on anything; a `RowLayout` now applies to a `Role::Button`.
 
