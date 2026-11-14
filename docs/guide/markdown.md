@@ -13,7 +13,7 @@ use bevy::prelude::*;
 use bevy_gooey::*;
 
 fn page(mut commands: Commands, assets: Res<AssetServer>) {
-    let assets = assets.clone();
+    let assets = AssetServer::clone(&assets);
     // Pictures are loaded by the host: the view asks for `guide/img/swatch.png` and keeps the handle.
     let base = MarkdownBase::new("guide", move |path: &str| Some(assets.load(path.to_owned())));
     commands.spawn((

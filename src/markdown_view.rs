@@ -83,8 +83,8 @@ impl MarkdownBase {
     /// # use bevy::prelude::*;
     /// # use bevy_gooey::*;
     /// # fn ui(mut commands: Commands, assets: Res<AssetServer>) {
-    /// let assets = assets.clone();
-    /// let base = MarkdownBase::new("guide", move |path: &str| Some(assets.load(path)));
+    /// let assets = AssetServer::clone(&assets);
+    /// let base = MarkdownBase::new("guide", move |path: &str| Some(assets.load(path.to_owned())));
     /// commands.spawn(markdown_view("# Guide\n\n![Swatch](img/swatch.png)\n", base));
     /// # }
     /// ```
@@ -300,8 +300,8 @@ pub fn scroll_to_heading(view: Entity, id: impl Into<String>) -> ScrollToHeading
 /// # use bevy::prelude::*;
 /// # use bevy_gooey::*;
 /// # fn ui(mut commands: Commands, assets: Res<AssetServer>) {
-/// let assets = assets.clone();
-/// let base = MarkdownBase::new("guide", move |path: &str| Some(assets.load(path)));
+/// let assets = AssetServer::clone(&assets);
+/// let base = MarkdownBase::new("guide", move |path: &str| Some(assets.load(path.to_owned())));
 /// commands.spawn((
 ///     Node { width: Val::Px(640.0), height: Val::Px(480.0), ..default() },
 ///     children![markdown_view("# Style guide\n\nSee [the palette](palette.md).\n", base)],
@@ -1056,7 +1056,7 @@ fn font_of(style: Style) -> TextFont {
     }
 }
 
-/// Sizes each picture that loaded to its own size (scaled down to [`IMAGE_MAX_TEXT_SIZES`]), and
+/// Sizes each picture that loaded to its own size (scaled down to 40 body text sizes), and
 /// turns one whose image failed to load into a box naming its path. A picture that is still
 /// loading keeps the box it was given. Runs in [`crate::GooeySystems::Style`] before
 /// [`crate::apply_skin`].

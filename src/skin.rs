@@ -2071,9 +2071,9 @@ pub enum Role {
     /// An [`crate::overlay`]: a box its first child sizes, its later children stacked over it; not
     /// drawn.
     Overlay,
-    /// A [`crate::markdown_view`]: the column the viewport and its rail stand in; not drawn.
+    /// A `markdown_view` (feature `markdown`): the column the viewport and its rail stand in; not drawn.
     MarkdownView,
-    /// A [`crate::markdown_view`]'s scrolling part: a clipped column with the rail's lane to its
+    /// A `markdown_view`'s scrolling part: a clipped column with the rail's lane to its
     /// right; not drawn.
     MarkdownViewport,
     /// A heading of a Markdown page (level 1 to 6): [`GooeySkin::text`] in the heading face, level
