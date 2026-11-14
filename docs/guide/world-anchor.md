@@ -34,6 +34,12 @@ fn health_bar(mut commands: Commands, enemy: Entity) {
   middle there.
 - **Uses the node's camera.** By default the camera the node is laid out for (a `UiTargetCamera`, or the
   default UI camera). A world camera under a separate UI camera is named: `WorldAnchor::new(e).camera(cam)`.
+- **Works over a viewport pane.** A 3D view that is a rectangle of the window (a camera with a
+  `Viewport`) is the camera's own: `left` and `top` are that viewport's pixels, so the label
+  `(label("slot 3"), WorldAnchor::new(slot).camera(stage))` is a **child of the node that stands on
+  exactly that rectangle** (the pane), not a root; the same label as a root of a full-window UI lands
+  the viewport's offset too far up and left. `tests/kit_parts.rs` holds it: a 600 x 400 pane at
+  (300, 100), a slot at world (100, 50), the foot of the label on window (700, 250).
 
 ## Out of view
 

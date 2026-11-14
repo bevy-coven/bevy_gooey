@@ -10,6 +10,7 @@ use bevy::text::{FontSize, FontSource, TextCursorStyle};
 use bevy::ui::{Checked, ComputedUiRenderTargetInfo, InteractionDisabled, Pressed, Selected};
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
+use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
@@ -143,6 +144,10 @@ const RAIL_LINES: f32 = 2.0;
 const ICON_TAB_PAD: f32 = 0.6;
 const CORNER_BADGE_OFFSET: f32 = 0.5;
 const CORNER_BADGE_TEXT_SIZES: f32 = 1.2;
+
+/// An [`Role::EdgeTab`]'s bottom edge is this many line weights: heavier than a frame, because it
+/// is read across the width of a whole tab rather than down the side of one box.
+const EDGE_TAB_LINES: f32 = 1.5;
 
 /// A slider's thumb stands this many rails tall, a little over the rail on each side.
 const THUMB_RAIL_RATIO: f32 = 1.25;
@@ -1816,6 +1821,24 @@ pub enum Role {
     /// A corner badge of a [`crate::side_tabs_icons`] tab: a [`Role::TabBadge`] set in the tab's
     /// top-right corner, over the picture's corner.
     CornerBadge,
+    /// A [`crate::glyph_button`]: a button for a mark too small to press (a caret, a close cross),
+    /// whose hit area is a target (the skin's [`GooeySkin::target`], a [`ControlSize`] taller) on
+    /// each side whatever the glyph's size, the glyph centred in it. A button's fill and frame.
+    GlyphButton,
+    /// An [`crate::edge_tab`]: a tab of a strip the host selects ([`bevy::ui::Selected`]), with an
+    /// edge along its bottom that is always reserved and lit in [`GooeySkin::accent`] while it is
+    /// the selected one, so the selection moves no neighbour. The selected tab is the panel's own
+    /// surface, the others a button's raised fill.
+    EdgeTab,
+    /// A [`crate::band`]: a full-width row that is a button, a grouped list's header, in a
+    /// button's fill (the raised fill at rest, [`GooeySkin::hovered`] under the pointer).
+    Band,
+    /// A [`crate::fill_text`]: a text that is a flex item of its own which takes the room its row
+    /// leaves and wraps inside it, so a long name never pushes its row wider.
+    FillText,
+    /// A [`crate::count_text`]: a text that is a flex item of its own which never shrinks and never
+    /// wraps, a gap off what is before it, so a tally keeps a column of its own.
+    CountText,
     /// A card's picture across its width at 16:9, on a [`GooeySkin::surface_raised`] placeholder;
     /// half transparent on a disabled card.
     CardImage,
@@ -2204,6 +2227,9 @@ struct State {
     image: Vec2,
     /// An overlay's child drawn over its first one: another system owns its box.
     stacked: bool,
+    /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
+    /// because the selected one is the surface and not the accent.
+    edge_tab: bool,
 }
 
 impl Default for State {
@@ -2244,6 +2270,7 @@ impl Default for State {
             cell: 0.0,
             image: Vec2::ZERO,
             stacked: false,
+            edge_tab: false,
         }
     }
 }
@@ -2331,6 +2358,22 @@ type Restyle = (
     )>,
 );
 
+/// What `apply_skin` reads to put a node whose real render target has not arrived yet in the one it
+/// is about to have: the laid-out nodes with their target, the primary window and the interface
+/// size.
+type Placement<'w, 's> = (
+    Query<
+        'w,
+        's,
+        (
+            &'static ComputedNode,
+            Option<&'static ComputedUiRenderTargetInfo>,
+        ),
+    >,
+    Query<'w, 's, &'static Window, With<PrimaryWindow>>,
+    Option<Res<'w, UiScale>>,
+);
+
 /// The components whose removal restyles a widget.
 type Removals<'w, 's> = (
     RemovedComponents<'w, 's, Pressed>,
@@ -2361,6 +2404,9 @@ fn owns_parts(role: Option<&Role>) -> bool {
         role,
         Some(
             Role::Button
+                | Role::GlyphButton
+                | Role::Band
+                | Role::EdgeTab
                 | Role::CardCell
                 | Role::Toggle
                 | Role::Slider
@@ -2406,10 +2452,11 @@ pub fn apply_skin(
     parents: Query<&ChildOf>,
     children: Query<&Children>,
     roles: Query<&Role>,
-    anchors: Query<&ComputedNode>,
+    placement: Placement<'_, '_>,
     mut commands: Commands,
     mut styled: Query<Styled>,
 ) {
+    let (anchors, windows, ui_scale) = placement;
     if skin.is_changed() {
         for problem in skin.problems() {
             warn!("bevy_gooey: {problem}");
@@ -2515,6 +2562,7 @@ pub fn apply_skin(
                         status: status.copied(),
                         anchor: anchor.copied().unwrap_or_default(),
                         status_item: role == Some(&Role::StatusItem),
+                        edge_tab: role == Some(&Role::EdgeTab),
                         band: row.is_some_and(|r| r.index % 2 == 1),
                         primary: primary || variant.is_some_and(|v| *v == ButtonVariant::Submit),
                         variant: variant.copied().unwrap_or(if primary {
@@ -2572,6 +2620,26 @@ pub fn apply_skin(
         }
         owner
     };
+    // The scale and logical size of the render target a node with no real target info yet will be
+    // laid out in: its nearest ancestor's real one, or, for a root spawned this frame, the primary
+    // window's (its scale factor times the interface size).
+    let unplaced = |entity: Entity| -> Option<(f32, Vec2)> {
+        parents
+            .iter_ancestors(entity)
+            .find_map(|up| {
+                anchors
+                    .get(up)
+                    .ok()
+                    .and_then(|(_, info)| info)
+                    .filter(|info| info.physical_size() != UVec2::ZERO)
+            })
+            .map(|info| (info.scale_factor(), info.logical_size()))
+            .or_else(|| {
+                let window = windows.single().ok()?;
+                let scale = window.scale_factor() * ui_scale.as_ref().map_or(1.0, |ui| ui.0);
+                Some((scale, window.physical_size().as_vec2() / scale))
+            })
+    };
 
     if skin.is_changed() || fonts.is_changed() {
         unpressed.clear();
@@ -2604,9 +2672,10 @@ pub fn apply_skin(
                 parent.is_some_and(|p| {
                     anchors
                         .get(p)
-                        .is_ok_and(|node| node.size().x > 1.0 && node.size().y > 1.0)
+                        .is_ok_and(|(node, _)| node.size().x > 1.0 && node.size().y > 1.0)
                 }),
                 &mut commands,
+                || unplaced(entity),
             );
         }
         return;
@@ -2649,6 +2718,8 @@ pub fn apply_skin(
                     matches!(
                         item.1,
                         Role::Button
+                            | Role::GlyphButton
+                            | Role::Band
                             | Role::Toggle
                             | Role::Slider
                             | Role::Choice
@@ -2706,9 +2777,10 @@ pub fn apply_skin(
             parent.is_some_and(|p| {
                 anchors
                     .get(p)
-                    .is_ok_and(|node| node.size().x > 1.0 && node.size().y > 1.0)
+                    .is_ok_and(|(node, _)| node.size().x > 1.0 && node.size().y > 1.0)
             }),
             &mut commands,
+            || unplaced(entity),
         );
     }
 }
@@ -2771,9 +2843,22 @@ fn restyle(
     // big as its size, which is what every widget looks like on the frame it is spawned.
     anchor_sized: bool,
     commands: &mut Commands,
+    // The scale and logical size of a render target for a node that has none of its own yet.
+    unplaced: impl FnOnce() -> Option<(f32, Vec2)>,
 ) {
     let skin = look.skin;
-    let scale = target.map_or(1.0, |t| t.scale_factor());
+    // A node's first frame carries Bevy's placeholder target (a `Node` requires one, scale 1 and no
+    // size): the real one is propagated in `PostUpdate`, after this run. Skin it at the scale and
+    // window size it is about to have (the nearest ancestor's, or the primary window's times
+    // `UiScale`), not at 1 and 0, or its text, frames and widths change the frame after and a move
+    // in layout reads as a change (G-83).
+    let placed = match target {
+        Some(info) if info.physical_size() != UVec2::ZERO => {
+            Some((info.scale_factor(), info.logical_size()))
+        }
+        _ => unplaced(),
+    };
+    let scale = placed.map_or(1.0, |(scale, _)| scale);
     // How opaque this node is drawn: the product of every `Opacity` at and above it (a fade), and
     // whole for a node outside one.
     let alpha = presence.map_or(1.0, |alpha| alpha.0);
@@ -2815,8 +2900,7 @@ fn restyle(
     // A wheel is the player's text size until 26 of them would pass `RADIAL_WINDOW_SHARE` of the
     // window's shorter side: past that the whole wheel (disc, labels and name) stops growing, so
     // it is always whole on the screen, which 200% text on a 720p window would not be.
-    let wheel_px = target.map_or(text_px, |t| {
-        let size = t.logical_size();
+    let wheel_px = placed.map_or(text_px, |(_, size)| {
         text_px.min(RADIAL_WINDOW_SHARE * size.x.min(size.y) / RADIAL_DIAMETER_TEXT_SIZES)
     });
     let rail = skin.meter_height * skin.text_scale;
@@ -2840,7 +2924,16 @@ fn restyle(
         Role::Button if !state.disabled && !matches!(state.variant, ButtonVariant::Neutral | ButtonVariant::Submit) => {
             Some(skin.variant_fill(state.variant, phase_of(&state)))
         }
-        Role::Button | Role::TableHeaderCell => Some(if state.disabled {
+        // A selected edge tab continues the surface under it, which is what the edge along its
+        // bottom marks; the rest are a button's raised fill, lifted under the pointer.
+        Role::EdgeTab => Some(if state.selected {
+            skin.surface
+        } else if state.hovered {
+            skin.hovered()
+        } else {
+            skin.surface_raised
+        }),
+        Role::Button | Role::GlyphButton | Role::Band | Role::TableHeaderCell => Some(if state.disabled {
             skin.surface
         } else if state.primary {
             // The main action is the accent at rest and lifts from it, where a plain button
@@ -3131,6 +3224,8 @@ fn restyle(
         | Role::Label
         | Role::ButtonText
         | Role::MenuTitleText
+        | Role::FillText
+        | Role::CountText
         | Role::Toggle
         | Role::Slider
         | Role::Choice
@@ -3291,6 +3386,8 @@ fn restyle(
             Color::NONE
         })),
         Role::Button
+        | Role::GlyphButton
+        | Role::Band
         | Role::Tab
         | Role::IconTab
         | Role::GroupOption
@@ -3304,11 +3401,23 @@ fn restyle(
             Some(BorderColor::all(skin.outline))
         }
         Role::Button
+        | Role::GlyphButton
+        | Role::Band
         | Role::Tab
         | Role::IconTab
         | Role::GroupOption
         | Role::StatusItem
         | Role::TableHeaderCell => Some(BorderColor::all(Color::NONE)),
+        // The edge lit along the bottom is the selected tab's mark; the other sides, and every
+        // side of a tab that is not selected, stay clear.
+        Role::EdgeTab => Some(BorderColor {
+            bottom: if state.selected {
+                skin.accent
+            } else {
+                Color::NONE
+            },
+            ..BorderColor::all(Color::NONE)
+        }),
         // The ring on the cursor's row; a sort mark is drawn in its header's ink.
         Role::TableRow => Some(BorderColor::all(if state.focused {
             skin.focus_ring
@@ -3481,9 +3590,9 @@ fn restyle(
                     // legend beside it). A panel in a dock group, a split pane or a dialog is sized by
                     // its container and is left alone (iteration 93 measured a cap there breaking a
                     // dock drag).
-                    if let Some(window) = target {
-                        let edge = window.logical_size().x * SAFE_EDGE_PERCENT / 100.0;
-                        next.max_width = Val::Px((window.logical_size().x - 2.0 * edge).max(0.0));
+                    if let Some((_, window)) = placed {
+                        let edge = window.x * SAFE_EDGE_PERCENT / 100.0;
+                        next.max_width = Val::Px((window.x - 2.0 * edge).max(0.0));
                     }
                 }
             }
@@ -3644,6 +3753,58 @@ fn restyle(
                 if next.overflow.y != OverflowAxis::Scroll {
                     next.flex_shrink = 0.0;
                 }
+            }
+            // A glyph's button owns no padding: its box is the hit area, a target on each side
+            // (a sized control's height if that is taller) however small the mark in it, and a row
+            // never squeezes it under that.
+            Role::GlyphButton => {
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::ZERO;
+                next.min_width = Val::Px(skin.target());
+                next.min_height = Val::Px(control);
+                next.flex_shrink = 0.0;
+            }
+            // A band is as wide as the room its host gives it and stands half a gap off what is
+            // above it; what is in it is a row, a half gap apart.
+            Role::Band => {
+                next.width = Val::Percent(100.0);
+                next.min_width = Val::ZERO;
+                next.border = UiRect::all(Val::Px(line));
+                next.border_radius = radius;
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad()),
+                    Val::Px(air(set_px * LIST_LINE_TEXT_SIZES, skin.pad() * 0.6)),
+                );
+                next.column_gap = Val::Px(skin.gap * 0.5);
+                next.margin = UiRect::top(Val::Px(skin.gap * 0.5));
+                next.min_height = Val::Px(control);
+            }
+            // An edge tab's own inset is a tab's. Its bottom edge is always there, a heavier line
+            // than a frame, so lighting it (`BorderColor`) changes a colour and no size.
+            Role::EdgeTab => {
+                next.border = UiRect::bottom(Val::Px(snap_line_width(
+                    skin.border * EDGE_TAB_LINES,
+                    scale,
+                )));
+                next.padding = UiRect::axes(
+                    Val::Px(skin.pad() * 1.5),
+                    Val::Px(air(set_px * LIST_LINE_TEXT_SIZES, skin.pad() * 0.6)),
+                );
+                next.align_items = AlignItems::Center;
+                next.flex_shrink = 0.0;
+            }
+            // The name takes what the row leaves and gives way to it: with no least width a text
+            // is as wide as its longest line and pushes the row out.
+            Role::FillText => {
+                next.flex_grow = 1.0;
+                next.flex_shrink = 1.0;
+                next.min_width = Val::ZERO;
+            }
+            // The tally keeps the width of its words, whole, on one line.
+            Role::CountText => {
+                next.flex_grow = 0.0;
+                next.flex_shrink = 0.0;
             }
             Role::Button
             | Role::Tab
@@ -3808,8 +3969,8 @@ fn restyle(
                 next.align_items = AlignItems::Stretch;
                 // Never wider than the window leaves room for, so a long line wraps and the panel
                 // can always be placed inside it.
-                if let Some(window) = target {
-                    next.max_width = Val::Px((window.logical_size().x - 2.0 * skin.gap).max(0.0));
+                if let Some((_, window)) = placed {
+                    next.max_width = Val::Px((window.x - 2.0 * skin.gap).max(0.0));
                 }
                 next.border = UiRect::all(Val::Px(line));
                 next.border_radius = radius;
@@ -4265,7 +4426,7 @@ fn restyle(
             // frame) is never covered; its text is the smallest of the type scale and its own
             // frame one device pixel, so it is smaller than the least target it stands in.
             Role::ShortcutBadge => {
-                let hair = snap_line_width(1.0, target.map_or(1.0, |t| t.scale_factor()));
+                let hair = snap_line_width(1.0, scale);
                 next.position_type = PositionType::Absolute;
                 next.right = Val::Px(skin.pad() * 0.5);
                 next.align_self = AlignSelf::Center;
@@ -4415,8 +4576,8 @@ fn restyle(
             Role::MenuPanel => {
                 next.flex_direction = FlexDirection::Column;
                 next.align_items = AlignItems::Stretch;
-                if let Some(window) = target {
-                    next.max_width = Val::Px((window.logical_size().x - 2.0 * skin.gap).max(0.0));
+                if let Some((_, window)) = placed {
+                    next.max_width = Val::Px((window.x - 2.0 * skin.gap).max(0.0));
                 }
                 next.min_width = Val::Px(text_px * MENU_MIN_TEXT_SIZES);
                 next.border = UiRect::all(Val::Px(line));
@@ -4666,7 +4827,7 @@ fn restyle(
             };
             Some((faded(color, owner.alpha), &look.fonts.body, skin.text_size))
         }
-        Role::ButtonText | Role::MenuTitleText => {
+        Role::ButtonText | Role::MenuTitleText | Role::FillText | Role::CountText => {
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted
@@ -4750,7 +4911,7 @@ fn restyle(
             let parent = parent.unwrap_or_default();
             let color = if parent.disabled {
                 skin.text_muted
-            } else if parent.selected || parent.pressed {
+            } else if !parent.edge_tab && (parent.selected || parent.pressed) {
                 skin.accent_text
             } else {
                 skin.text

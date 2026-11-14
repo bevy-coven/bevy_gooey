@@ -156,7 +156,12 @@ fn spec(role: Role) -> Spec {
         | Role::CodeEditor
         | Role::ListView
         | Role::ListRail
-        | Role::IconTab => Spec::Node,
+        | Role::IconTab
+        | Role::GlyphButton
+        | Role::EdgeTab
+        | Role::Band
+        | Role::FillText
+        | Role::CountText => Spec::Node,
         Role::ButtonText
         | Role::MenuTitleText
         | Role::MeterFill
@@ -275,6 +280,8 @@ fn names(role: Role) -> bool {
         Role::ButtonText
             | Role::MenuTitleText
             | Role::TabText
+            | Role::FillText
+            | Role::CountText
             | Role::TabBadge
             | Role::CornerBadge
             | Role::MenuText
@@ -535,6 +542,8 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.name = look.own(entity);
         }
         Role::Label
+        | Role::FillText
+        | Role::CountText
         | Role::PromptKey
         | Role::PromptButton
         | Role::MenuNote
@@ -543,7 +552,7 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             wanted.role = Some(Ak::Label);
             wanted.value = look.own(entity);
         }
-        Role::Button => {
+        Role::Button | Role::GlyphButton | Role::Band => {
             wanted.name = look.name_of(entity);
             // A list's row is a button the list owns: it reads as a list item with its place.
             if let Some((_, count, at)) = look.list_place(entity) {
@@ -707,6 +716,11 @@ fn describe(entity: Entity, role: Role, facts: &FactsItem, look: &Look) -> Optio
             }
         }
         Role::Tab | Role::IconTab => wanted.name = look.name_of(entity),
+        // The host selects it and Bevy does not know it is a tab, so the role is said here.
+        Role::EdgeTab => {
+            wanted.role = Some(Ak::Tab);
+            wanted.name = look.name_of(entity);
+        }
         Role::TableEdge => {
             wanted.role = Some(Ak::Splitter);
             wanted.name = Some(COLUMN_EDGE.to_owned());
