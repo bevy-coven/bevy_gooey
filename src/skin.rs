@@ -2091,6 +2091,9 @@ pub enum Role {
     /// A [`crate::fill_column`]: a flex column that takes the room its row leaves, can narrow to
     /// nothing and stacks its children a [`LayoutGap`](crate::LayoutGap) apart; not drawn.
     FillColumn,
+    /// A [`crate::fill_region`]: a flex column that takes the height its column leaves and can
+    /// shrink to nothing, around a tree or a list; not drawn.
+    FillRegion,
     /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
     /// drawn, so a label column lines up down a list of rows.
     Cell,
@@ -3297,6 +3300,7 @@ fn restyle(
         | Role::Column
         | Role::ButtonRow
         | Role::FillColumn
+        | Role::FillRegion
         | Role::Cell
         | Role::ImageBox
         | Role::Overlay
@@ -4886,6 +4890,14 @@ fn restyle(
                 next.flex_shrink = 1.0;
                 next.min_width = Val::ZERO;
             }
+            // A region of a column that takes the height its siblings leave and can shrink to
+            // nothing (`min_height` 0): a tree or a list inside it keeps its own scroll, so it is
+            // the viewport and never what makes its host taller. Its children stretch across it.
+            Role::FillRegion => {
+                next.flex_grow = 1.0;
+                next.flex_shrink = 1.0;
+                next.min_height = Val::ZERO;
+            }
             // Buttons side by side stand a gap apart on one line, centred on it, and a line that is
             // full wraps, a gap below (`RowLayout` below overrides each).
             Role::ButtonRow => {
@@ -4931,8 +4943,10 @@ fn restyle(
         }
         // What a container was asked for beyond its gap, written only when asked: a row with no
         // `RowLayout` keeps a `Node` field its host patched.
-        if let (Some(flow), Role::Row | Role::Column | Role::ButtonRow | Role::FillColumn) =
-            (state.flow, role)
+        if let (
+            Some(flow),
+            Role::Row | Role::Column | Role::ButtonRow | Role::FillColumn | Role::FillRegion,
+        ) = (state.flow, role)
         {
             next.align_items = flow.align;
             next.flex_wrap = flow.wrap;

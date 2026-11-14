@@ -68,6 +68,10 @@ fn settings_row(mut commands: Commands) {
 (`flex_grow` 1, `min_width` 0): beside a fixed picture or a `count_text`, the text in it wraps inside
 it and never pushes the row out (`fill_text` is the same for one text; this holds several parts).
 
+`fill_region()` is its twin on the height axis (`flex_grow` 1, `min_height` 0) for what holds a tree
+or a list: a region of a column that takes the height its siblings leave and can shrink to nothing,
+so a tall tree scrolls inside it and never makes its host taller.
+
 `RowLayout` is written **only when it is on the node**: a plain `row(1.0)` keeps a `Node` field you
 patched yourself. A wrapping container puts the skin's gap between its lines as well as between its
 children. `column_with(gap, layout)` is the same for a column (`align` is across its width).

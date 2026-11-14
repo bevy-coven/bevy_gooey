@@ -459,6 +459,36 @@ pub fn fill_column(gap: f32) -> impl Bundle {
     )
 }
 
+/// A vertical region that takes the height its column leaves and can shrink to nothing
+/// (`flex_grow` 1, `min_height` 0), for what holds a [`tree`] or a [`list`]: those scroll inside
+/// it, so it is the viewport and a tall tree never makes its host taller. A flex item of a column;
+/// its children stretch across it, and a [`RowLayout`](crate::RowLayout) beside it centres or
+/// spreads them (a loading screen's centred cell).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     column(1.0),
+///     children![
+///         heading("Files"),
+///         (fill_region(), children![tree([TreeNode::new(1, "src")])]),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn fill_region() -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::Stretch,
+            ..default()
+        },
+        Role::FillRegion,
+    )
+}
+
 /// A box of a fixed width, in body text sizes, so a label column lines up down a list of rows: the
 /// words start at one edge whatever they say, and what does not fit is cut rather than drawn over
 /// the next column. What it holds stands in a row, stretched to its height (a label and a value side

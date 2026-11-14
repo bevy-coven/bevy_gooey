@@ -478,3 +478,112 @@ fn fill_column_keeps_a_gap_between_its_children() {
         "a skin gap apart: {gap}"
     );
 }
+
+// ---- 3. a vertical region that grows and can shrink to zero ----------------------------------
+
+/// A `height`-tall host holding a fixed 50 px strip and a `fill_region` around a 1000 px box, which
+/// stands for a tree that is taller than the room.
+fn region_host(app: &mut App, height: f32, layout: Option<RowLayout>) -> (Entity, Entity, Entity) {
+    let strip = probe(app, 100.0, 50.0);
+    let tall = probe(app, 100.0, 1000.0);
+    let world = app.world_mut();
+    let inside = world.spawn(tall).id();
+    let region = world.spawn(fill_region()).add_child(inside).id();
+    if let Some(layout) = layout {
+        world.entity_mut(region).insert(layout);
+    }
+    let host = world
+        .spawn(Node {
+            width: Val::Px(300.0),
+            height: Val::Px(height),
+            flex_direction: FlexDirection::Column,
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .with_children(|host| {
+            host.spawn(strip);
+        })
+        .add_child(region)
+        .id();
+    world.spawn(screen()).add_child(host);
+    (host, region, inside)
+}
+
+/// The region takes the height the strip above it leaves, not its content's.
+#[test]
+fn fill_region_takes_the_height_its_host_leaves() {
+    let mut app = headless();
+    let (host, region, _) = region_host(&mut app, 300.0, None);
+    settle(&mut app);
+    assert!(
+        (rect(&app, region).height() - 250.0).abs() < 0.5,
+        "{:?}",
+        rect(&app, region)
+    );
+    assert!(
+        (rect(&app, region).width() - 300.0).abs() < 0.5,
+        "stretches across"
+    );
+    assert!(
+        (rect(&app, host).height() - 300.0).abs() < 0.5,
+        "the host keeps its height"
+    );
+}
+
+/// Under less room than the strip alone the region shrinks to nothing.
+#[test]
+fn fill_region_shrinks_to_zero() {
+    let mut app = headless();
+    let (host, region, _) = region_host(&mut app, 40.0, None);
+    settle(&mut app);
+    assert!(
+        rect(&app, region).height() < 0.5,
+        "{:?}",
+        rect(&app, region)
+    );
+    assert!(
+        (rect(&app, host).height() - 40.0).abs() < 0.5,
+        "the host keeps its height"
+    );
+}
+
+/// A `RowLayout` on the region centres what it holds: loading's centred growing cell.
+#[test]
+fn fill_region_centres_what_it_holds_with_a_row_layout() {
+    let mut app = headless();
+    let strip = probe(&mut app, 100.0, 50.0);
+    let small = probe(&mut app, 40.0, 20.0);
+    let world = app.world_mut();
+    let inside = world.spawn(small).id();
+    let region = world
+        .spawn((
+            fill_region(),
+            RowLayout {
+                align: AlignItems::Center,
+                justify: JustifyContent::Center,
+                ..default()
+            },
+        ))
+        .add_child(inside)
+        .id();
+    let host = world
+        .spawn(Node {
+            width: Val::Px(300.0),
+            height: Val::Px(300.0),
+            flex_direction: FlexDirection::Column,
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .with_children(|host| {
+            host.spawn(strip);
+        })
+        .add_child(region)
+        .id();
+    world.spawn(screen()).add_child(host);
+    settle(&mut app);
+    let (region, inside) = (rect(&app, region), rect(&app, inside));
+    assert!(
+        (inside.center() - region.center()).length() < 0.5,
+        "{inside:?} in {region:?}"
+    );
+}
