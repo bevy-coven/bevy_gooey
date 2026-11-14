@@ -17,7 +17,9 @@
   than its host (`max_width: 100%`) and no least width. `placed(inset)`, `placed_at(left, top)` and `cover()` with
   `PlacedAt(UiRect)`: a node placed at its host's edges (absolute, no room in the flow, `Pickable::IGNORE`) or
   filling it; a node that follows a point of the world is a `WorldAnchor`, as before, now held by a test for a
-  balloon, a label and a badge. Four new `Role`s (`ButtonRow`, `FillColumn`, `FillRegion`, `Placed`).
+  balloon, a label and a badge. `status_mark()` (the mark of a `status_item`, read from the `StatusKind` of the node
+  it stands in, which `status_item` now uses) and `plain_button(text)` (a button's look, no Bevy `Button`: no
+  `Activate`, no tab stop, no pressed state). Four new `Role`s (`ButtonRow`, `FillColumn`, `FillRegion`, `Placed`).
 
 - The parts a tool's lists and strips were still building from raw `Node`s (G-82, #93, `docs/research/kit-parts.md`,
   `docs/guide/layout.md`, `cargo run --example kit`). `glyph_button(glyph, name)`: a button for a caret or a

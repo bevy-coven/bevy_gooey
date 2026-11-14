@@ -84,6 +84,11 @@ absolute, so they take no room in the flow and the host's other children stay wh
 it). A node that follows a point **in the world** (a balloon, a label on a map area, a badge on a mesh)
 is not this: it is a [`WorldAnchor`](world-anchor.md).
 
+`status_mark()` is the dot at the start of a status item on its own: put a `StatusKind` on the row it
+stands in and it is the accent for a warning, the danger colour for an error and gone for information.
+`plain_button("Cancel")` is a button's fill, frame, height and hover with none of its behaviour (no
+Bevy `Button`): no `Activate`, no tab stop, no pressed state; listen for `PointerClick` yourself.
+
 `RowLayout` is written **only when it is on the node**: a plain `row(1.0)` keeps a `Node` field you
 patched yourself. A wrapping container puts the skin's gap between its lines as well as between its
 children. `column_with(gap, layout)` is the same for a column (`align` is across its width).

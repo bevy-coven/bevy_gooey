@@ -2,6 +2,7 @@
 //! constructor laid out for real in a headless window and read back from the drawn rectangles.
 
 use bevy::ecs::relationship::RelatedSpawner;
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
@@ -842,4 +843,111 @@ fn a_node_on_a_world_point_is_a_world_anchor() {
     );
     let at = rect(&app, badge);
     assert!((at.min - Vec2::new(740.0, 310.0)).length() < 1.0, "{at:?}");
+}
+
+// ---- 6. a bare Role node ---------------------------------------------------------------------
+
+#[derive(Resource, Default)]
+struct Activated(u32);
+
+/// A `status_mark()` is lit by the `StatusKind` of the node it stands in: a dot for a warning or an
+/// error, nothing for plain information; it is not pickable.
+#[test]
+fn a_status_mark_follows_the_kind_of_its_parent() {
+    let mut app = headless();
+    let mark = app.world_mut().spawn(status_mark()).id();
+    let row = app
+        .world_mut()
+        .spawn((row(1.0), StatusKind::Error, children![label("Failed")]))
+        .add_child(mark)
+        .id();
+    app.world_mut().spawn(screen()).add_child(row);
+    settle(&mut app);
+    let shown = |app: &App| app.world().get::<Node>(mark).expect("a node").display;
+    let ground = |app: &App| app.world().get::<BackgroundColor>(mark).expect("a fill").0;
+    assert_eq!(shown(&app), Display::Flex, "an error shows its mark");
+    assert_eq!(ground(&app), GooeySkin::dark().danger);
+    assert!(rect(&app, mark).width() > 0.5);
+    assert_eq!(app.world().get::<Pickable>(mark), Some(&Pickable::IGNORE));
+
+    *app.world_mut().get_mut::<StatusKind>(row).expect("a kind") = StatusKind::Warning;
+    settle(&mut app);
+    assert_eq!(shown(&app), Display::Flex);
+    assert_eq!(
+        ground(&app),
+        GooeySkin::dark().accent,
+        "a warning is the accent"
+    );
+
+    *app.world_mut().get_mut::<StatusKind>(row).expect("a kind") = StatusKind::Info;
+    settle(&mut app);
+    assert_eq!(
+        shown(&app),
+        Display::None,
+        "plain information shows no mark"
+    );
+}
+
+/// `plain_button` has a button's look (its fill, its frame, its height) and none of its behaviour:
+/// no Bevy `Button`, so no `Activate` and no tab stop; a real button beside it is the control.
+#[test]
+fn a_plain_button_looks_like_a_button_and_stays_off_the_activate_bus() {
+    let mut app = headless();
+    app.init_resource::<Activated>();
+    let count = |_: On<Activate>, mut n: ResMut<Activated>| n.0 += 1;
+    let plain = app
+        .world_mut()
+        .spawn((plain_button("Cancel"), observe(count)))
+        .id();
+    let real = app
+        .world_mut()
+        .spawn((button("Cancel"), observe(count)))
+        .id();
+    let holder = app
+        .world_mut()
+        .spawn(row(1.0))
+        .add_child(plain)
+        .add_child(real)
+        .id();
+    app.world_mut().spawn(screen()).add_child(holder);
+    settle(&mut app);
+
+    assert!(app.world().get::<bevy::ui_widgets::Button>(plain).is_none());
+    assert!(
+        app.world().get::<TabIndex>(plain).is_none(),
+        "nothing for Tab to do on it"
+    );
+    assert_eq!(app.world().get::<Role>(plain), Some(&Role::Button));
+    let (a, b) = (rect(&app, plain), rect(&app, real));
+    assert!(
+        (a.height() - b.height()).abs() < 0.5,
+        "a button's height: {a:?} {b:?}"
+    );
+    for (name, got, want) in [(
+        "fill",
+        app.world().get::<BackgroundColor>(plain).map(|c| c.0),
+        app.world().get::<BackgroundColor>(real).map(|c| c.0),
+    )] {
+        assert_eq!(got, want, "{name} is a button's");
+    }
+    let words = children(&app, plain);
+    assert_eq!(
+        app.world().get::<Text>(words[0]).map(|t| t.0.as_str()),
+        Some("Cancel")
+    );
+
+    bevy_gooey::testing::click(&mut app, plain);
+    settle(&mut app);
+    assert_eq!(
+        app.world().resource::<Activated>().0,
+        0,
+        "a plain button never sends Activate"
+    );
+    bevy_gooey::testing::click(&mut app, real);
+    settle(&mut app);
+    assert_eq!(
+        app.world().resource::<Activated>().0,
+        1,
+        "a real button does: the control"
+    );
 }

@@ -4167,11 +4167,29 @@ pub fn status_item(text: impl Into<String>) -> impl Bundle {
         Hovered::default(),
         TabIndex(0),
         AutoDirectionalNavigation::default(),
-        children![
-            (Node::default(), Role::StatusMark, Pickable::IGNORE),
-            (Text::new(text), Role::ButtonText, ONE_LINE),
-        ],
+        children![status_mark(), (Text::new(text), Role::ButtonText, ONE_LINE),],
     )
+}
+
+/// The mark at the start of a [`status_item`], on its own: a thin bar the height of its line that
+/// is the accent for a [`StatusKind::Warning`](crate::StatusKind::Warning) and the danger colour
+/// for an error and is not shown at all for plain information. It reads the
+/// [`StatusKind`](crate::StatusKind) of **the node it stands in**, so a job row that is not a status
+/// item puts `StatusKind` on its own row and a `status_mark()` inside it. It takes no pointer.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     row(1.0),
+///     StatusKind::Error,
+///     children![status_mark(), fill_text("bake_navmesh failed: 3 errors")],
+/// ));
+/// # }
+/// ```
+pub fn status_mark() -> impl Bundle {
+    (Node::default(), Role::StatusMark, Pickable::IGNORE)
 }
 
 /// A [`status_item`] that also shows a short [`progress`] bar after its words, for a task that
@@ -4195,10 +4213,41 @@ pub fn status_progress(text: impl Into<String>, fraction: f32) -> impl Bundle {
         TabIndex(0),
         AutoDirectionalNavigation::default(),
         children![
-            (Node::default(), Role::StatusMark, Pickable::IGNORE),
+            status_mark(),
             (Text::new(text), Role::ButtonText, ONE_LINE),
             progress(fraction),
         ],
+    )
+}
+
+/// A button's look with none of its behaviour: the fill, frame, height and hover of a [`button`]
+/// and its words, but not Bevy's `Button`, so it sends no [`Activate`](crate::Activate), takes no
+/// focus (no tab stop, no Enter or Space) and has no pressed state. It is for the control that is
+/// not an action of the interface's own: a "Cancel" on a job row whose host listens for the
+/// pointer click itself (`On<PointerClick>` through [`observe`](crate::observe)) and keeps it
+/// off the `Activate` bus that screen-wide handlers hear. For anything a keyboard or a pad should
+/// reach, use [`button`].
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     plain_button("Cancel"),
+///     observe(|_: On<PointerClick>| info!("cancel the job")),
+/// ));
+/// # }
+/// ```
+pub fn plain_button(text: impl Into<String>) -> impl Bundle {
+    (
+        Node {
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Role::Button,
+        Hovered::default(),
+        children![(Text::new(text), Role::ButtonText)],
     )
 }
 
