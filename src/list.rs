@@ -243,6 +243,7 @@ type PageNode = (
 /// follows ([`scroll_to_focus`]). A single press, as every navigation here is. Focus outside a list
 /// is left alone. With Ctrl held the page keys are [`crate::step_tabs`]'s: they turn the page of a
 /// [`crate::tabs`] widget and never also page a list. Runs in [`crate::GooeySystems::Navigate`].
+#[allow(clippy::too_many_arguments)]
 pub fn page_lists(
     keys: Res<ButtonInput<KeyCode>>,
     gamepads: Query<&Gamepad>,
