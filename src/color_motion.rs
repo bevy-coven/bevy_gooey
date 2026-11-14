@@ -15,6 +15,7 @@ use bevy::ui::Pressed;
 use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 
 use crate::MotionTokens;
+use crate::box_model::InkFollow;
 use crate::model::{Spring, SpringState, spring_settled, spring_step};
 use crate::motion::MotionSettings;
 use crate::selection_indicator::Indicating;
@@ -241,9 +242,11 @@ type Colored = (
     Option<&'static mut TextColor>,
     Option<&'static mut ImageNode>,
     Option<&'static InheritedVisibility>,
+    Has<InkFollow>,
 );
 
-/// Moves every styled node's colours toward the last ones written to it, on the skin's springs and
+/// Moves every styled node's colours toward the last ones written to it (a node with [`InkFollow`]
+/// shows the fill and edge its host writes at once; only its text and icon ease), on the skin's springs and
 /// the clock of [`Time<Real>`] times [`MotionSettings::duration_scale`]. A node's first two frames,
 /// a node that is not drawn, a pressed or dragged one, one whose table row was rebound, a fade's
 /// change of alpha and the colours that are data land (and so does a colour on its way when motion
@@ -271,7 +274,9 @@ pub fn update_color_motion(
             || bars.get(at).is_ok_and(|d| d.dragging)
             || rows.get(at).is_ok_and(|r| r.is_changed())
     };
-    for (entity, role, mut track, background, border, text, image, visible) in &mut tracks {
+    for (entity, role, mut track, background, border, text, image, visible, host_paints) in
+        &mut tracks
+    {
         // A settled node whose colours nobody wrote costs nothing: it is skipped before any lookup.
         if track.age >= QUIET_FRAMES
             && !track.is_moving()
@@ -323,7 +328,11 @@ pub fn update_color_motion(
                 Some(motion.snappy.scaled(settings.duration_scale))
             }
         };
-        let fill = Choice { spring: ground };
+        // A node the host paints (`InkFollow`) shows the colour the host wrote, at once: its fill and
+        // edge are the host's, so nothing eases them. Its text and icon are still the skin's.
+        let fill = Choice {
+            spring: ground.filter(|_| !host_paints),
+        };
         let label = Choice {
             spring: ground.map(|spring| spring.scaled(TEXT_DURATION_FACTOR)),
         };

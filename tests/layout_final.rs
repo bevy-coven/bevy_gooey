@@ -1047,3 +1047,222 @@ fn the_frame_is_built_from_gooey_parts_and_lets_the_pointer_through() {
         "the second dock takes room when shown"
     );
 }
+
+// ---- review: motion, focus and the gap on a button box ----------------------------------------
+
+/// A headless app with colour motion ON, on a 60 Hz clock the test sets.
+fn headless_moving() -> App {
+    let mut app = headless();
+    app.insert_resource(MotionSettings::default());
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs_f32(1.0 / 60.0),
+    ));
+    app
+}
+
+fn near(a: Color, b: Color) -> bool {
+    let (a, b) = (a.to_srgba(), b.to_srgba());
+    (a.red - b.red).abs() < 0.004
+        && (a.green - b.green).abs() < 0.004
+        && (a.blue - b.blue).abs() < 0.004
+        && (a.alpha - b.alpha).abs() < 0.004
+}
+
+/// With colour motion ON a host's colours on an `InkFollow` node are what is drawn on the next frame:
+/// nothing eases them. A node without the marker eases the same write (the control), so the test
+/// would notice.
+#[test]
+fn with_motion_on_an_ink_follow_node_shows_the_colour_the_host_wrote_at_once() {
+    let mut app = headless_moving();
+    let followed = app
+        .world_mut()
+        .spawn((
+            button("B"),
+            InkFollow,
+            BackgroundColor(RED),
+            BorderColor::all(RED),
+        ))
+        .id();
+    let eased = app.world_mut().spawn(button("A")).id();
+    for e in [followed, eased] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    for _ in 0..20 {
+        app.update();
+    }
+    for target in [GREEN, RED, GREEN, RED] {
+        app.world_mut()
+            .entity_mut(followed)
+            .insert((BackgroundColor(target), BorderColor::all(target)));
+        app.update();
+        let fill = app
+            .world()
+            .get::<BackgroundColor>(followed)
+            .expect("a fill")
+            .0;
+        let edge = app.world().get::<BorderColor>(followed).expect("an edge");
+        assert!(
+            near(fill, target),
+            "the fill is what the host wrote: {fill:?} for {target:?}"
+        );
+        assert!(
+            near(edge.top, target) && near(edge.left, target),
+            "and the edge: {edge:?}"
+        );
+    }
+    // The control: the same write on a node the skin owns is eased, so it reads an in-between colour.
+    app.world_mut()
+        .entity_mut(eased)
+        .insert(BackgroundColor(GREEN));
+    app.update();
+    assert!(
+        !near(
+            app.world().get::<BackgroundColor>(eased).expect("a fill").0,
+            GREEN
+        ),
+        "a node without the marker eases"
+    );
+}
+
+/// Taking the marker off leaves no easing state behind: the node eases from the colour it shows to
+/// the skin's, rather than jumping or springing from a stale one.
+#[test]
+fn removing_ink_follow_with_motion_on_eases_from_the_shown_colour_to_the_skins() {
+    let mut app = headless_moving();
+    let b = app
+        .world_mut()
+        .spawn((button("B"), InkFollow, BackgroundColor(RED)))
+        .id();
+    let plain = app.world_mut().spawn(button("A")).id();
+    for e in [b, plain] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    for _ in 0..20 {
+        app.update();
+    }
+    for target in [GREEN, RED] {
+        app.world_mut()
+            .entity_mut(b)
+            .insert(BackgroundColor(target));
+        app.update();
+    }
+    app.world_mut().entity_mut(b).remove::<InkFollow>();
+    app.update();
+    let skin_fill = app.world().get::<BackgroundColor>(plain).expect("a fill").0;
+    let first = app.world().get::<BackgroundColor>(b).expect("a fill").0;
+    assert!(
+        !near(first, skin_fill),
+        "it does not jump to the skin's colour"
+    );
+    assert!(
+        near(first, RED) || !near(first, GREEN),
+        "and does not start from a stale colour: {first:?}"
+    );
+    for _ in 0..180 {
+        app.update();
+    }
+    assert!(
+        near(
+            app.world().get::<BackgroundColor>(b).expect("a fill").0,
+            skin_fill
+        ),
+        "it settles on the skin's colour"
+    );
+}
+
+/// The host paints the focus ring on an `InkFollow` node: the skin writes none, where a plain button
+/// gets the ring.
+#[test]
+fn the_skin_writes_no_focus_ring_on_an_ink_follow_button() {
+    use bevy::input_focus::{FocusCause, InputFocus, InputFocusVisible};
+    let mut app = headless();
+    let followed = app
+        .world_mut()
+        .spawn((button("B"), InkFollow, BorderColor::all(GREEN)))
+        .id();
+    let plain = app.world_mut().spawn(button("A")).id();
+    for e in [followed, plain] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    app.world_mut().resource_mut::<InputFocusVisible>().0 = true;
+    for e in [followed, plain] {
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(e, FocusCause::Navigated);
+        settle(&mut app);
+        let ring = app.world().get::<BorderColor>(e).expect("an edge").top;
+        if e == plain {
+            assert_eq!(
+                ring,
+                GooeySkin::dark().focus_ring,
+                "the skin draws the plain button's ring"
+            );
+        } else {
+            assert_eq!(
+                ring, GREEN,
+                "the host's colour stays: the host paints the ring"
+            );
+        }
+    }
+}
+
+/// A shown `scrim()` blocks the pointer only: Tab still reaches a control beneath it, which is the
+/// host's to manage (use a `dialog()` for a focus trap).
+#[test]
+fn a_shown_scrim_does_not_trap_tab() {
+    let mut app = headless();
+    let behind = app.world_mut().spawn(button("Behind")).id();
+    app.world_mut().spawn(screen()).add_child(behind);
+    app.world_mut().spawn((scrim(), GlobalZIndex(5)));
+    settle(&mut app);
+    let stops: Vec<_> = (0..3)
+        .map(|_| {
+            bevy_gooey::testing::press(&mut app, KeyCode::Tab);
+            bevy_gooey::testing::focused_label(&app)
+        })
+        .collect();
+    assert!(
+        stops.iter().any(|s| s.as_deref() == Some("Behind")),
+        "Tab reaches the control beneath: {stops:?}"
+    );
+}
+
+/// `GapPx` and `LayoutGap` are honoured on a `button_box` (a `Role::Button`) like `RowLayout`.
+#[test]
+fn a_button_box_takes_a_gap_px_and_a_layout_gap() {
+    let mut app = headless();
+    let mut boxes = Vec::new();
+    for gap in 0..2 {
+        let (a, b) = (probe(&mut app, 20.0, 20.0), probe(&mut app, 20.0, 20.0));
+        let mut e = app.world_mut().spawn(button_box());
+        if gap == 0 {
+            e.insert(GapPx(11.0));
+        } else {
+            e.insert(LayoutGap(2.0));
+        }
+        e.with_children(|c| {
+            c.spawn(a);
+            c.spawn(b);
+        });
+        let id = e.id();
+        let host = app.world_mut().spawn(column(0.0)).add_child(id).id();
+        room(&mut app, 400.0, host);
+        boxes.push(id);
+    }
+    settle(&mut app);
+    let gap_of = |app: &App, e: Entity| {
+        let kids = children(app, e);
+        rect(app, kids[1]).min.x - rect(app, kids[0]).max.x
+    };
+    assert!(
+        (gap_of(&app, boxes[0]) - 11.0).abs() < 0.5,
+        "{}",
+        gap_of(&app, boxes[0])
+    );
+    assert!(
+        (gap_of(&app, boxes[1]) - 2.0 * GooeySkin::dark().gap).abs() < 0.5,
+        "{}",
+        gap_of(&app, boxes[1])
+    );
+}

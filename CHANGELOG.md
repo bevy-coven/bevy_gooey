@@ -30,7 +30,8 @@
 - G-87 (#98, `docs/research/layout-final.md`, `docs/guide/layout.md`, `tests/layout_final.rs`), what was left of
   the editor's hand-built nodes after G-86:
   `InkFollow`: the colour twin of `HostGeometry`, a marker for a node whose fill and edge the host paints by
-  state: the skin writes neither and still writes every other field; removing it restyles the node.
+  state: the skin writes neither (and colour motion no longer eases them: the host's colour is drawn on the next
+  frame) and still writes every other field; removing it restyles the node, easing from the colour shown.
 
 - G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
   the editor's hand-built nodes after G-85:

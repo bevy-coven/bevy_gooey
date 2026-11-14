@@ -564,8 +564,13 @@ pub struct HostGeometry;
 /// state with as many colours as it has. The host's colours are the ones on the node: put them there
 /// at spawn or from a system (the skin gives the node no colours of its own until the marker is
 /// taken off, so a node that is spawned without any is drawn transparent). Removing the marker
-/// restyles the node in the same frame and the skin paints it again; adding it leaves the colours as
-/// they are. A focus ring that is the node's border colour is the host's to paint too.
+/// restyles the node in the same frame and the skin paints it again, easing from the colour shown (no easing
+/// state is left behind); adding it leaves the colours as they are. **Colour motion does not touch the
+/// fill and edge of such a node either**: with motion on, the colour the host writes is the one drawn on
+/// the next frame (only its text and icon colours still ease), so a host that diff-checks its target
+/// never fights a spring. **Keyboard focus: the host paints the focus ring** (a button's ring is its
+/// border colour): the skin writes none on an `InkFollow` node, so light it from your own system when
+/// the node has focus (`the_skin_writes_no_focus_ring_on_an_ink_follow_button`).
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -588,7 +593,8 @@ pub struct InkFollow;
 /// strip's 2 px). Written by [`crate::apply_skin`] as both `row_gap` and `column_gap` on a
 /// [`row`](crate::row), a [`column`](crate::column), a [`button_row`](crate::button_row), a
 /// [`fill_column`](crate::fill_column), a [`fill_region`](crate::fill_region) and the containers that
-/// take a [`LayoutGap`](crate::LayoutGap) (a panel, a surface, a card, a placed cluster...); it wins over
+/// take a [`LayoutGap`](crate::LayoutGap) (a panel, a surface, a card, a placed cluster, a
+/// [`button_box`](crate::button_box)...); it wins over
 /// a `LayoutGap` on the same node, including the gap a wrapping flow puts between its lines. A number
 /// that is not finite leaves the role's own gap, below zero is none. It does not follow the skin or the
 /// text size (prefer a `LayoutGap` where a multiple will do). Removing it leaves the node as it was last

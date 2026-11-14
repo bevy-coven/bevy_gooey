@@ -34,3 +34,10 @@ The mapping: (worker `g87` on bmb, branch `fleet/g87`). Read from `crates/bevy_c
 
 So the one gap in the frame is the unit of a gap: **`GapPx`**, built next with a test that lays the frame out from these parts.
 
+
+## Review notes (the first cut of G-87)
+
+- **`InkFollow` and colour motion.** `update_color_motion` runs on every `Role` + `ColorTrack` node and treats any new `BackgroundColor`/`BorderColor` value as "a new colour from the skin, the widget or the game": it springs to it. So with motion on a host's per-state paint on an `InkFollow` node was eased, contradicting "the host owns fill and edge". The motion system now lands the background and border lanes of a node that carries `InkFollow` (`Has<InkFollow>` in its query; the value the host writes is the value shown on the next frame) and keeps the text and icon lanes (the skin still draws those). Taking the marker off leaves no easing state: the lanes were landed on every frame, so the node eases from the colour it shows to the skin's. Tests with motion ON on a 60 Hz test clock: `with_motion_on_an_ink_follow_node_shows_the_colour_the_host_wrote_at_once` (fill and edge, four alternating writes, each equal on the next frame; a plain node eases the same write: the control) and `removing_ink_follow_with_motion_on_eases_from_the_shown_colour_to_the_skins`.
+- **`InkFollow` and keyboard focus.** A button's focus ring is its border colour, so on an `InkFollow` node the host paints the ring (the skin writes none): `the_skin_writes_no_focus_ring_on_an_ink_follow_button`, in the `InkFollow` docs.
+- **`scrim()` blocks the pointer only.** It is no dialog: Tab still reaches the controls beneath (`a_shown_scrim_does_not_trap_tab`); a focus trap is the host's, or a `dialog()`.
+- **`GapPx` and `LayoutGap` on a `button_box`.** `Role::Button` now takes both (`takes_a_gap`), like `RowLayout` since G-86: `a_button_box_takes_a_gap_px_and_a_layout_gap`. A plain `button` carries neither component, so it keeps its own half-gap beside an icon.

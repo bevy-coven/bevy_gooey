@@ -3048,11 +3048,13 @@ fn takes_a_row_layout(role: &Role) -> bool {
 }
 
 /// The roles that take a [`LayoutGap`] they did not already have: the containers of
-/// [`takes_a_row_layout`] that are not a row or a column (those always have one).
+/// [`takes_a_row_layout`] that are not a row or a column (those always have one), and a `Button` (a
+/// [`crate::button_box`] holding children).
 fn takes_a_gap(role: &Role) -> bool {
     matches!(
         role,
         Role::Placed
+            | Role::Button
             | Role::Sized
             | Role::Panel
             | Role::Surface(_)

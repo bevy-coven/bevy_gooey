@@ -565,8 +565,10 @@ pub fn placed_at(left: f32, top: f32) -> impl Bundle {
 /// exactly the rectangle its host has, filled with [`GooeySkin::scrim`](crate::GooeySkin::scrim), what
 /// it holds centred (a modal card). Its `Pickable` is the default, which blocks: the pointer over it
 /// never reaches the map or the world under it, where [`cover`] is `Pickable::IGNORE` and lets it
-/// through. It is **not a dialog**: it traps no focus and answers no Escape (a [`dialog`] does both);
-/// it is the plain blocking layer a host that handles those itself needs. Hide it with
+/// through. **It blocks the pointer only.** It is **not a dialog**: it traps no focus and answers no
+/// Escape (a [`dialog`] does both), so Tab still reaches the controls beneath it
+/// (`a_shown_scrim_does_not_trap_tab`) and managing that is the host's; it is the plain blocking layer
+/// a host that handles those itself needs. Hide it with
 /// [`Shown`](crate::Shown), which also takes its children out of the tab order. Its colour is the
 /// skin's; an [`InkOverride`](crate::InkOverride) or [`InkFollow`](crate::InkFollow) gives it the host's.
 /// Put your own `GlobalZIndex` on it to stack it.
