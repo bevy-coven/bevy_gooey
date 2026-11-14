@@ -14,8 +14,8 @@ use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
 use crate::box_model::{
-    BorderPx, InkOverride, Shape, Shown, ShownMemory, Sizing, Spacing, TextFlow, lined, pixeled,
-    spaced,
+    BorderPx, HostGeometry, InkOverride, Shape, Shown, ShownMemory, Sizing, Spacing, TextFlow,
+    lined, pixeled, spaced,
 };
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
@@ -2335,6 +2335,8 @@ struct State {
     border_px: Option<BorderPx>,
     /// The colours the host owns on this node ([`InkOverride`]).
     ink_override: Option<InkOverride>,
+    /// The host writes this node's geometry itself ([`HostGeometry`]).
+    host_geometry: bool,
     /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
     region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
@@ -2389,6 +2391,7 @@ impl Default for State {
             text_flow: None,
             border_px: None,
             ink_override: None,
+            host_geometry: false,
             region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
@@ -2444,6 +2447,7 @@ type StateQuery = (
             Option<&'static Visibility>,
             Option<&'static BorderPx>,
             Option<&'static InkOverride>,
+            Has<HostGeometry>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2693,6 +2697,7 @@ pub fn apply_skin(
                             visibility,
                             border_px,
                             ink_override,
+                            host_geometry,
                         ),
                     ),
                     row,
@@ -2757,6 +2762,7 @@ pub fn apply_skin(
                         hidden: hidden.copied(),
                         border_px: border_px.copied(),
                         ink_override: ink_override.copied(),
+                        host_geometry,
                         visibility: visibility.copied().unwrap_or_default(),
                         region_gap: gap.map(|gap| gap.0),
                     }
@@ -5118,12 +5124,15 @@ fn restyle(
             // a host's other children stand where they would without it. Stacked in an overlay it
             // is the first child's box, which `stack_overlays` owns.
             Role::Placed if !state.stacked => {
-                let inset = state.inset.unwrap_or(UiRect::all(Val::Auto));
                 next.position_type = PositionType::Absolute;
-                next.left = inset.left;
-                next.top = inset.top;
-                next.right = inset.right;
-                next.bottom = inset.bottom;
+                // A host that moves the node every frame writes the insets itself.
+                if !state.host_geometry {
+                    let inset = state.inset.unwrap_or(UiRect::all(Val::Auto));
+                    next.left = inset.left;
+                    next.top = inset.top;
+                    next.right = inset.right;
+                    next.bottom = inset.bottom;
+                }
             }
             // Buttons side by side stand a gap apart on one line, centred on it, and a line that is
             // full wraps, a gap below (`RowLayout` below overrides what it sets).
@@ -5187,12 +5196,14 @@ fn restyle(
                     *field = val;
                 }
             };
-            set(&mut next.width, sizing.width);
-            set(&mut next.height, sizing.height);
-            set(&mut next.min_width, sizing.min_width);
-            set(&mut next.min_height, sizing.min_height);
-            set(&mut next.max_width, sizing.max_width);
-            set(&mut next.max_height, sizing.max_height);
+            if !state.host_geometry {
+                set(&mut next.width, sizing.width);
+                set(&mut next.height, sizing.height);
+                set(&mut next.min_width, sizing.min_width);
+                set(&mut next.min_height, sizing.min_height);
+                set(&mut next.max_width, sizing.max_width);
+                set(&mut next.max_height, sizing.max_height);
+            }
             if let Some(clip) = sizing.clip {
                 next.overflow = if clip {
                     Overflow::clip()

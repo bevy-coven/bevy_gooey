@@ -512,3 +512,32 @@ pub struct InkOverride {
     /// The border colour.
     pub edge: Option<Color>,
 }
+
+/// Marks a node whose **geometry the host writes itself, every frame**: [`crate::apply_skin`] then
+/// leaves its `left`, `top`, `right`, `bottom` (a [`PlacedAt`](crate::PlacedAt)) and its `width`,
+/// `height`, `min_*` and `max_*` (a [`Sizing`]) alone, and still writes everything that is not
+/// geometry (borders, radius, padding, colours, overflow). It is the light path for a gizmo, a caret,
+/// a terminal's rows or a badge cluster that a system moves each frame: writing `PlacedAt` or `Sizing`
+/// every frame makes the skin restyle the node every frame (measured in `docs/research/layout-last.md`:
+/// about two thirds more per frame than writing `Node`, for a node that moves every frame, and next to
+/// nothing when only the nodes that moved are written), so a node that moves every frame writes its own
+/// `Node` and carries this marker, which also keeps a skin change from resetting the geometry it wrote.
+/// A node with no marker is positioned and sized by its `PlacedAt` and `Sizing`, as before.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((placed_at(0.0, 0.0), HostGeometry, Shape { radius: Some(Radius::Full), ..default() }));
+/// // A system then writes this node's `Node::left`, `top`, `width` and `height` each frame.
+/// # }
+/// fn follow(mut dots: Query<&mut Node, With<HostGeometry>>) {
+///     for mut node in &mut dots {
+///         node.left = Val::Px(12.0);
+///     }
+/// }
+/// # let _ = follow;
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct HostGeometry;

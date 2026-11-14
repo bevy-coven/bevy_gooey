@@ -248,6 +248,14 @@ already exists, insert or change its `Shown`: never write `Node::display`.
 any role; a field left `None` keeps the role's, a skin change does not overwrite it, and a focused
 widget's ring still wins over the edge. It does not cascade: give each text its own `ink`.
 
+## Geometry a system writes every frame
+
+Writing `PlacedAt` or `Sizing` every frame makes the skin restyle the node every frame: about two thirds
+more per frame than writing `Node`, measured for 500 nodes. Write them **only for the nodes that moved and
+only when the value differs**, and for a node that moves every frame (a gizmo, a caret, terminal rows) write
+its own `Node` and add `HostGeometry`: the skin then leaves its position and size alone, still writes its
+border, radius, padding and colours, and a skin change does not reset what you wrote.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

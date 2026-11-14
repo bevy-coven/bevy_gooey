@@ -2,7 +2,6 @@
 //! in viewport units, a border in logical px, a button box, a hideable quiet status item, an ink
 //! override and the cost of per-frame geometry, each laid out for real in a headless window.
 
-use bevy::picking::Pickable;
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::WgpuSettings;
@@ -815,4 +814,244 @@ fn a_changed_ink_override_restyles_and_none_gives_the_role_back() {
         app.world().get::<BackgroundColor>(b),
         app.world().get::<BackgroundColor>(plain)
     );
+}
+
+// ---- 6. per-frame geometry: what writing PlacedAt and Sizing costs against writing Node ------
+
+use std::time::{Duration, Instant};
+
+const MOVERS: usize = 500;
+
+/// How a system moves the nodes each frame.
+#[derive(Resource, Clone, Copy, PartialEq, Eq, Debug)]
+enum Way {
+    /// Write `Node` fields directly, all nodes.
+    DirectAll,
+    /// Write `PlacedAt` and `Sizing`, all nodes.
+    ComponentsAll,
+    /// Write `PlacedAt` and `Sizing`, only the nodes that moved (a tenth), through `Changed` gating.
+    ComponentsMoved,
+    /// Write `Node` fields directly, only the nodes that moved.
+    DirectMoved,
+}
+
+#[derive(Resource, Default)]
+struct Tick(f32);
+
+fn move_nodes(
+    way: Res<Way>,
+    mut tick: ResMut<Tick>,
+    mut nodes: Query<(&mut Node, &mut PlacedAt, &mut Sizing, &Mover)>,
+) {
+    tick.0 += 1.0;
+    for (mut node, mut at, mut sizing, mover) in &mut nodes {
+        let moves = match *way {
+            Way::DirectAll | Way::ComponentsAll => true,
+            Way::DirectMoved | Way::ComponentsMoved => mover.0 % 10 == 0,
+        };
+        if !moves {
+            continue;
+        }
+        let x = (tick.0 + mover.0 as f32) % 300.0;
+        let y = (mover.0 as f32 * 1.7) % 200.0;
+        match *way {
+            Way::DirectAll | Way::DirectMoved => {
+                node.left = Val::Px(x);
+                node.top = Val::Px(y);
+                node.width = Val::Px(20.0 + x % 5.0);
+                node.height = Val::Px(10.0);
+            }
+            Way::ComponentsAll | Way::ComponentsMoved => {
+                let inset = UiRect {
+                    left: Val::Px(x),
+                    top: Val::Px(y),
+                    ..UiRect::all(Val::Auto)
+                };
+                if at.0 != inset {
+                    at.0 = inset;
+                }
+                let want = Some(Extent::Px(20.0 + x % 5.0));
+                if sizing.width != want {
+                    sizing.width = want;
+                }
+            }
+        }
+    }
+}
+
+#[derive(Component)]
+struct Mover(usize);
+
+/// The median wall time of one `Update` over `frames` frames, after a warm-up.
+fn median_frame(way: Way) -> Duration {
+    let mut app = headless();
+    app.insert_resource(way)
+        .init_resource::<Tick>()
+        .add_systems(Update, move_nodes);
+    let host = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(400.0),
+            height: Val::Px(300.0),
+            ..default()
+        })
+        .id();
+    for i in 0..MOVERS {
+        let n = app
+            .world_mut()
+            .spawn((
+                placed_at(0.0, 0.0),
+                Sizing {
+                    width: Some(Extent::Px(20.0)),
+                    height: Some(Extent::Px(10.0)),
+                    ..default()
+                },
+                Mover(i),
+            ))
+            .id();
+        app.world_mut().entity_mut(host).add_child(n);
+    }
+    app.world_mut().spawn(screen()).add_child(host);
+    settle(&mut app);
+    for _ in 0..5 {
+        app.update();
+    }
+    let mut times: Vec<Duration> = (0..15)
+        .map(|_| {
+            let start = Instant::now();
+            app.update();
+            start.elapsed()
+        })
+        .collect();
+    times.sort();
+    times[times.len() / 2]
+}
+
+/// The same moves written to a node that carries `HostGeometry`: `Node` directly, the skin leaving
+/// the geometry alone.
+fn host_median() -> Duration {
+    let mut app = headless();
+    app.insert_resource(Way::DirectAll)
+        .init_resource::<Tick>()
+        .add_systems(Update, move_nodes);
+    let host = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(400.0),
+            height: Val::Px(300.0),
+            ..default()
+        })
+        .id();
+    for i in 0..MOVERS {
+        let n = app
+            .world_mut()
+            .spawn((
+                placed_at(0.0, 0.0),
+                Sizing::default(),
+                HostGeometry,
+                Mover(i),
+            ))
+            .id();
+        app.world_mut().entity_mut(host).add_child(n);
+    }
+    app.world_mut().spawn(screen()).add_child(host);
+    settle(&mut app);
+    for _ in 0..5 {
+        app.update();
+    }
+    let mut times: Vec<Duration> = (0..15)
+        .map(|_| {
+            let start = Instant::now();
+            app.update();
+            start.elapsed()
+        })
+        .collect();
+    times.sort();
+    times[times.len() / 2]
+}
+
+/// What moving 500 nodes every frame costs, five ways. Measured (an unoptimized build on an Apple
+/// M-series, `docs/research/layout-last.md`): `Node` written for every node 5.5 ms a frame, `PlacedAt`
+/// and `Sizing` written for every node 9.2 ms (the skin restyles each of them), and for only the tenth
+/// that moved 5.5 ms against 5.1 ms for `Node`. So writing the components is NOT as cheap as writing
+/// `Node` when every node moves every frame, and is nearly free when only the movers are written
+/// (gate on a change: write a component only when its value differs). The assertion is the ratio,
+/// which does not depend on the machine: gating must cut the cost of the component path.
+#[test]
+fn writing_only_what_moved_is_what_makes_the_component_path_cheap() {
+    let all = median_frame(Way::ComponentsAll);
+    let gated = median_frame(Way::ComponentsMoved);
+    let direct = median_frame(Way::DirectAll);
+    let direct_moved = median_frame(Way::DirectMoved);
+    let host = host_median();
+    eprintln!(
+        "MEASURE {MOVERS} nodes a frame: components all {all:?}, components moved {gated:?}, Node all {direct:?}, Node moved {direct_moved:?}, HostGeometry + Node all {host:?}"
+    );
+    assert!(
+        gated.as_secs_f64() * 1.25 < all.as_secs_f64(),
+        "writing only the movers ({gated:?}) must cost well under writing every node ({all:?})"
+    );
+}
+
+/// The light path: a node with `HostGeometry` keeps the geometry the host wrote through a skin change
+/// and a restyle, where one without the marker has it reset by its `PlacedAt`; the skin still writes
+/// what is not geometry.
+#[test]
+fn host_geometry_survives_a_restyle_and_the_skin_still_writes_the_rest() {
+    let mut app = headless();
+    let mut ids = Vec::new();
+    for host_owned in [true, false] {
+        let mut node = app.world_mut().spawn((
+            placed_at(5.0, 5.0),
+            Sizing {
+                width: Some(Extent::Px(30.0)),
+                clip: Some(true),
+                ..default()
+            },
+            Shape {
+                radius: Some(Radius::Full),
+                ..default()
+            },
+        ));
+        if host_owned {
+            node.insert(HostGeometry);
+        }
+        ids.push(node.id());
+        let id = node.id();
+        let host = app
+            .world_mut()
+            .spawn(Node {
+                width: Val::Px(200.0),
+                height: Val::Px(100.0),
+                ..default()
+            })
+            .add_child(id)
+            .id();
+        app.world_mut().spawn(screen()).add_child(host);
+    }
+    settle(&mut app);
+    for e in &ids {
+        let mut node = app.world_mut().get_mut::<Node>(*e).expect("a node");
+        node.left = Val::Px(77.0);
+        node.width = Val::Px(66.0);
+    }
+    app.world_mut().resource_mut::<GooeySkin>().radii = [1.0, 2.0, 3.0];
+    settle(&mut app);
+    let node = |e: Entity| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(
+        (node(ids[0]).left, node(ids[0]).width),
+        (Val::Px(77.0), Val::Px(66.0)),
+        "the host's geometry stays"
+    );
+    assert_eq!(
+        (node(ids[1]).left, node(ids[1]).width),
+        (Val::Px(5.0), Val::Px(30.0)),
+        "without the marker the components own it"
+    );
+    assert_eq!(
+        node(ids[0]).overflow,
+        Overflow::clip(),
+        "and the skin still writes what is not geometry"
+    );
+    assert_eq!(node(ids[0]).border_radius, BorderRadius::MAX);
 }

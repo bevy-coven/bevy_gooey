@@ -6,6 +6,14 @@
 
 - G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
   the editor's hand-built nodes after G-85:
+  `HostGeometry`: a marker for a node a system moves every frame, whose geometry the skin then leaves alone
+  (`PlacedAt` and `Sizing` lengths ignored, the rest still written); `docs/research/layout-last.md` has the
+  measurement (components written every frame cost about two thirds more than `Node`; only the nodes that moved,
+  gated on a change, cost next to nothing more) and the guidance. No new `Role` in G-86, so nothing new under
+  Breaking.
+
+- G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
+  the editor's hand-built nodes after G-85:
   `InkOverride { fill, ink, edge }`: a per-node colour the skin honours for any `Role` and does not overwrite
   (a `None` field leaves the role's colour), so a colour system the host owns can share a node with gooey's
   layout.
