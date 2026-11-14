@@ -6,6 +6,11 @@
 
 - G-87 (#98, `docs/research/layout-final.md`, `docs/guide/layout.md`, `tests/layout_final.rs`), what was left of
   the editor's hand-built nodes after G-86:
+  `GapPx(f32)`: a gap between a container's children in logical px (a bar's 8 px, a tab strip's 2 px), on any
+  role that has a gap, winning over `LayoutGap`, finite-checked.
+
+- G-87 (#98, `docs/research/layout-final.md`, `docs/guide/layout.md`, `tests/layout_final.rs`), what was left of
+  the editor's hand-built nodes after G-86:
   `Extent::Lines(n)`: a length in lines of body text (the skin's list-line height), so a least height follows the
   text size; the leftovers of the editor's per-site nodes (a rail, a computed margin, a placed label's display)
   are mapped to existing parts in `docs/research/layout-final.md`.

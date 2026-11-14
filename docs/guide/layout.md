@@ -276,6 +276,15 @@ table, a list or a text. Its gap is a `LayoutGap` beside it, which replaces the 
 and it **blocks** the pointer (`cover()` lets it through). It is not a dialog: no focus trap, no Escape.
 Hide it with `Shown(false)`; give it your own `GlobalZIndex`.
 
+## A frame from these parts
+
+A tool's frame is `sized` with `Extent::Vh(100.0)`, a bar and a door strip (a `row` with `GapPx(8.0)`,
+`Spacing` padding in `Space::Px`, a one-sided `BorderPx` and `InkFollow` if your own system paints it),
+a body (`fill_region()` with `RowLayout { direction: Some(FlexDirection::Row), .. }`) of docks, a
+viewport (`fill_column`) and a dock you hide with `Shown(false)`, and a status band. Put
+`Pickable::IGNORE` on every container the pointer must pass through to the world; `scrim()` is the
+layer that blocks it. The piece-by-piece mapping is in `docs/research/layout-final.md`.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

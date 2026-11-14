@@ -5,6 +5,7 @@
 use std::collections::HashSet;
 
 use bevy::camera::NormalizedRenderTarget;
+use bevy::picking::Pickable;
 use bevy::picking::hover::HoverMap;
 use bevy::picking::pointer::{Location, PointerAction, PointerId, PointerInput};
 use bevy::prelude::*;
@@ -738,4 +739,311 @@ fn a_placed_world_label_is_hidden_and_shown_with_shown() {
     app.world_mut().entity_mut(label_node).insert(Shown(true));
     settle(&mut app);
     assert_eq!(display(&app), Display::Flex);
+}
+
+// ---- 5. the frame: a gap in logical px, and the frame built from gooey's parts -----------------
+
+/// A gap in logical px: `GapPx(2.0)` between a row's children is 2 px, not a multiple of the skin's
+/// gap, on a row, a column, a panel and a placed cluster.
+#[test]
+fn a_gap_px_is_that_many_px_between_children() {
+    let mut app = headless();
+    let mut made = Vec::new();
+    for kind in 0..4 {
+        let (a, b) = (probe(&mut app, 30.0, 20.0), probe(&mut app, 30.0, 20.0));
+        let mut e = match kind {
+            0 => app.world_mut().spawn(row(1.0)),
+            1 => app.world_mut().spawn(column(1.0)),
+            2 => app.world_mut().spawn((
+                panel(),
+                RowLayout {
+                    direction: Some(FlexDirection::Row),
+                    ..default()
+                },
+            )),
+            _ => app.world_mut().spawn((
+                placed_at(0.0, 0.0),
+                RowLayout {
+                    direction: Some(FlexDirection::Row),
+                    ..default()
+                },
+            )),
+        };
+        e.insert(GapPx(2.0)).with_children(|p| {
+            p.spawn(a);
+            p.spawn(b);
+        });
+        let id = e.id();
+        let host = app.world_mut().spawn(column(0.0)).add_child(id).id();
+        room(&mut app, 400.0, host);
+        made.push(id);
+    }
+    settle(&mut app);
+    for (kind, e) in made.iter().enumerate() {
+        let kids = children(&app, *e);
+        let (a, b) = (rect(&app, kids[0]), rect(&app, kids[1]));
+        let gap = if kind == 1 {
+            b.min.y - a.max.y
+        } else {
+            b.min.x - a.max.x
+        };
+        assert!((gap - 2.0).abs() < 0.5, "kind {kind}: {gap}");
+    }
+}
+
+/// It beats a `LayoutGap`, is finite-checked (not a number leaves the role's own gap, below zero is
+/// none), reaches both axes of a wrapping flow, and a change restyles.
+#[test]
+fn a_gap_px_beats_a_layout_gap_is_finite_checked_and_restyles() {
+    let mut app = headless();
+    let both = app
+        .world_mut()
+        .spawn((
+            row(3.0),
+            GapPx(4.0),
+            RowLayout {
+                wrap: Some(FlexWrap::Wrap),
+                ..default()
+            },
+        ))
+        .id();
+    let odd = app.world_mut().spawn((row(1.0), GapPx(f32::NAN))).id();
+    let negative = app.world_mut().spawn((row(1.0), GapPx(-5.0))).id();
+    for e in [both, odd, negative] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    let skin = GooeySkin::dark();
+    let node = |app: &App, e| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(
+        (node(&app, both).column_gap, node(&app, both).row_gap),
+        (Val::Px(4.0), Val::Px(4.0)),
+        "over LayoutGap, on both axes of a wrap"
+    );
+    assert_eq!(
+        node(&app, odd).column_gap,
+        Val::Px(skin.gap),
+        "NaN leaves the role's own gap"
+    );
+    assert_eq!(node(&app, negative).column_gap, Val::Px(0.0));
+    app.world_mut().get_mut::<GapPx>(both).expect("a gap").0 = 9.0;
+    settle(&mut app);
+    assert_eq!(
+        node(&app, both).column_gap,
+        Val::Px(9.0),
+        "a changed GapPx restyles"
+    );
+}
+
+/// The editor's frame from gooey's parts: a window-sized root, a bar and a door strip with px gaps
+/// and the host's own colours, a body of a dock, a viewport that takes the rest and a dock that
+/// can be hidden, and a status band. Every container lets the pointer through to the world under it.
+#[test]
+fn the_frame_is_built_from_gooey_parts_and_lets_the_pointer_through() {
+    let mut app = headless();
+    let world = world_below(&mut app);
+    let ignore = Pickable::IGNORE;
+    let (a, b, c) = (
+        probe(&mut app, 60.0, 20.0),
+        probe(&mut app, 60.0, 20.0),
+        probe(&mut app, 80.0, 20.0),
+    );
+    let bar = app
+        .world_mut()
+        .spawn((
+            row(0.0),
+            GapPx(8.0),
+            Sizing {
+                width: Some(Extent::Percent(100.0)),
+                height: Some(Extent::Px(40.0)),
+                ..default()
+            },
+            Spacing {
+                padding: Sides {
+                    left: Some(Space::Px(12.0)),
+                    right: Some(Space::Px(12.0)),
+                    ..default()
+                },
+                ..default()
+            },
+            RowLayout {
+                align: Some(AlignItems::Center),
+                shrink: Some(0.0),
+                ..default()
+            },
+            BorderPx(Sides {
+                bottom: Some(1.0),
+                ..default()
+            }),
+            InkFollow,
+            ignore,
+        ))
+        .with_children(|r| {
+            r.spawn(a);
+            r.spawn(b);
+        })
+        .id();
+    let strip = app
+        .world_mut()
+        .spawn((
+            row(0.0),
+            GapPx(2.0),
+            Sizing {
+                width: Some(Extent::Percent(100.0)),
+                height: Some(Extent::Px(30.0)),
+                ..default()
+            },
+            RowLayout {
+                shrink: Some(0.0),
+                ..default()
+            },
+            ignore,
+        ))
+        .id();
+    let dock = |app: &mut App, width: f32| {
+        app.world_mut()
+            .spawn((
+                column(0.0),
+                Sizing {
+                    width: Some(Extent::Px(width)),
+                    min_height: Some(Extent::Px(0.0)),
+                    ..default()
+                },
+                RowLayout {
+                    shrink: Some(0.0),
+                    align: Some(AlignItems::FlexStart),
+                    ..default()
+                },
+                ignore,
+            ))
+            .id()
+    };
+    let left = dock(&mut app, 200.0);
+    let right = dock(&mut app, 150.0);
+    app.world_mut().entity_mut(right).insert(Shown(false));
+    let viewport = app
+        .world_mut()
+        .spawn((
+            fill_column(0.0),
+            Sizing {
+                min_height: Some(Extent::Px(0.0)),
+                ..default()
+            },
+            ignore,
+        ))
+        .id();
+    let body = app
+        .world_mut()
+        .spawn((
+            fill_region(),
+            RowLayout {
+                direction: Some(FlexDirection::Row),
+                align: Some(AlignItems::Stretch),
+                ..default()
+            },
+            ignore,
+        ))
+        .add_child(left)
+        .add_child(viewport)
+        .add_child(right)
+        .id();
+    let status = app
+        .world_mut()
+        .spawn((
+            row(0.0),
+            Sizing {
+                width: Some(Extent::Percent(100.0)),
+                height: Some(Extent::Px(24.0)),
+                ..default()
+            },
+            RowLayout {
+                shrink: Some(0.0),
+                ..default()
+            },
+            ignore,
+        ))
+        .with_children(|r| {
+            r.spawn(c);
+        })
+        .id();
+    let root = app
+        .world_mut()
+        .spawn((
+            sized(Sizing {
+                width: Some(Extent::Percent(100.0)),
+                height: Some(Extent::Vh(100.0)),
+                min_height: Some(Extent::Px(0.0)),
+                ..default()
+            }),
+            ignore,
+        ))
+        .add_child(bar)
+        .add_child(strip)
+        .add_child(body)
+        .add_child(status)
+        .id();
+    app.world_mut()
+        .spawn((
+            screen(),
+            Sizing {
+                min_height: Some(Extent::Px(0.0)),
+                ..default()
+            },
+        ))
+        .add_child(root);
+    settle(&mut app);
+
+    let (r, bd, l, v) = (
+        rect(&app, root),
+        rect(&app, body),
+        rect(&app, left),
+        rect(&app, viewport),
+    );
+    assert!(
+        (r.height() - 720.0).abs() < 0.5 && (r.width() - 1280.0).abs() < 0.5,
+        "{r:?}"
+    );
+    assert!(
+        (bd.height() - (720.0 - 40.0 - 30.0 - 24.0)).abs() < 0.5,
+        "the body takes what the bars leave: {bd:?}"
+    );
+    assert!(
+        (l.width() - 200.0).abs() < 0.5 && (v.width() - 1080.0).abs() < 0.5,
+        "{l:?} {v:?}"
+    );
+    let kids = children(&app, bar);
+    assert!(
+        ((rect(&app, kids[1]).min.x - rect(&app, kids[0]).max.x) - 8.0).abs() < 0.5,
+        "the bar's px gap"
+    );
+    assert!(
+        (rect(&app, kids[0]).min.x - rect(&app, bar).min.x - 12.0).abs() < 0.5,
+        "and its padding"
+    );
+    assert_eq!(
+        app.world().get::<Node>(bar).expect("a node").border.bottom,
+        Val::Px(1.0)
+    );
+    // Every container lets the pointer through: over the bar, the body and the status band the
+    // world under them is what is hovered.
+    for at in [
+        Vec2::new(900.0, 20.0),
+        Vec2::new(640.0, 300.0),
+        Vec2::new(900.0, 710.0),
+    ] {
+        let over = hovered_at(&mut app, at);
+        assert!(over.contains(&world), "the world is reached at {at}");
+        assert!(
+            ![bar, body, status, root, viewport]
+                .iter()
+                .any(|e| over.contains(e)),
+            "no container is hit at {at}"
+        );
+    }
+    *app.world_mut().get_mut::<Shown>(right).expect("shown") = Shown(true);
+    settle(&mut app);
+    assert!(
+        (rect(&app, viewport).width() - 930.0).abs() < 0.5,
+        "the second dock takes room when shown"
+    );
 }

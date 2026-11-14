@@ -582,3 +582,26 @@ pub struct HostGeometry;
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 pub struct InkFollow;
+
+/// A gap between a container's children in **logical px**, where [`LayoutGap`](crate::LayoutGap) is a
+/// multiple of the skin's gap: for the measures a host keeps in its own tokens (a bar's 8 px, a tab
+/// strip's 2 px). Written by [`crate::apply_skin`] as both `row_gap` and `column_gap` on a
+/// [`row`](crate::row), a [`column`](crate::column), a [`button_row`](crate::button_row), a
+/// [`fill_column`](crate::fill_column), a [`fill_region`](crate::fill_region) and the containers that
+/// take a [`LayoutGap`](crate::LayoutGap) (a panel, a surface, a card, a placed cluster...); it wins over
+/// a `LayoutGap` on the same node, including the gap a wrapping flow puts between its lines. A number
+/// that is not finite leaves the role's own gap, below zero is none. It does not follow the skin or the
+/// text size (prefer a `LayoutGap` where a multiple will do). Removing it leaves the node as it was last
+/// written: set it to another value instead.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((row(0.0), GapPx(2.0), children![edge_tab("Meshes"), edge_tab("Tiles")]));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct GapPx(pub f32);

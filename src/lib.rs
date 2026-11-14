@@ -240,8 +240,8 @@ pub use binding::{
     update_bindings,
 };
 pub use box_model::{
-    BorderPx, Extent, HostGeometry, Ink, InkFollow, InkOverride, Radius, Shape, Shown, Sides,
-    Sizing, Space, Spacing, TextFlow,
+    BorderPx, Extent, GapPx, HostGeometry, Ink, InkFollow, InkOverride, Radius, Shape, Shown,
+    Sides, Sizing, Space, Spacing, TextFlow,
 };
 pub use button_variant::{
     ButtonPhase, ButtonVariant, Loading, LoadingHold, LoadingSpinner, note_host_disable,
@@ -543,6 +543,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<BorderPx>()
             .register_type::<HostGeometry>()
             .register_type::<InkFollow>()
+            .register_type::<GapPx>()
             .register_type::<InkOverride>()
             .register_type::<TextFlow>()
             .register_type::<CardWidth>()

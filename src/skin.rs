@@ -14,8 +14,8 @@ use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
 use crate::box_model::{
-    BorderPx, HostGeometry, InkFollow, InkOverride, Shape, Shown, ShownMemory, Sizing, Spacing,
-    TextFlow, lined, pixeled, spaced,
+    BorderPx, GapPx, HostGeometry, InkFollow, InkOverride, Shape, Shown, ShownMemory, Sizing,
+    Spacing, TextFlow, lined, pixeled, spaced,
 };
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
@@ -2342,6 +2342,8 @@ struct State {
     host_geometry: bool,
     /// The host paints this node's fill and edge ([`InkFollow`]).
     ink_follow: bool,
+    /// A gap in logical px ([`GapPx`]); none leaves the role's own.
+    gap_px: Option<f32>,
     /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
     region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
@@ -2398,6 +2400,7 @@ impl Default for State {
             ink_override: None,
             host_geometry: false,
             ink_follow: false,
+            gap_px: None,
             region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
@@ -2453,7 +2456,7 @@ type StateQuery = (
             Option<&'static Visibility>,
             Option<&'static BorderPx>,
             Option<&'static InkOverride>,
-            (Has<HostGeometry>, Has<InkFollow>),
+            (Has<HostGeometry>, Has<InkFollow>, Option<&'static GapPx>),
         ),
     ),
     Option<&'static TableRow>,
@@ -2516,6 +2519,7 @@ type Restyle = (
                     Changed<BorderPx>,
                     Changed<InkOverride>,
                     Changed<InkFollow>,
+                    Changed<GapPx>,
                 )>,
             )>,
         )>,
@@ -2705,7 +2709,7 @@ pub fn apply_skin(
                             visibility,
                             border_px,
                             ink_override,
-                            (host_geometry, ink_follow),
+                            (host_geometry, ink_follow, gap_px),
                         ),
                     ),
                     row,
@@ -2772,6 +2776,7 @@ pub fn apply_skin(
                         ink_override: ink_override.copied(),
                         host_geometry,
                         ink_follow,
+                        gap_px: gap_px.map(|gap| gap.0),
                         visibility: visibility.copied().unwrap_or_default(),
                         region_gap: gap.map(|gap| gap.0),
                     }
@@ -5351,6 +5356,21 @@ fn restyle(
                 next.column_gap = Val::Px(gap.max(0.0) * skin.gap);
             }
         }
+        // A gap in logical px, on the roles that have a gap, wins over a multiple of the skin's.
+        if let Some(px) = state.gap_px.filter(|px| px.is_finite())
+            && (takes_a_gap(role)
+                || matches!(
+                    role,
+                    Role::Row
+                        | Role::Column
+                        | Role::ButtonRow
+                        | Role::FillColumn
+                        | Role::FillRegion
+                ))
+        {
+            next.row_gap = Val::Px(px.max(0.0));
+            next.column_gap = Val::Px(px.max(0.0));
+        }
         // What a container was asked for beyond its gap, written only when asked: a row with no
         // `RowLayout` keeps a `Node` field its host patched. See [`takes_a_row_layout`] for the roles.
         if let (Some(flow), true) = (state.flow, takes_a_row_layout(role)) {
@@ -5371,8 +5391,12 @@ fn restyle(
                 next.flex_wrap = wrap;
                 // Lines that wrap stand the same gap apart as the children on a line.
                 if wrap != FlexWrap::NoWrap {
-                    next.column_gap = Val::Px(state.layout_gap * skin.gap);
-                    next.row_gap = Val::Px(state.layout_gap * skin.gap);
+                    let gap = state
+                        .gap_px
+                        .filter(|px| px.is_finite())
+                        .map_or(state.layout_gap * skin.gap, |px| px.max(0.0));
+                    next.column_gap = Val::Px(gap);
+                    next.row_gap = Val::Px(gap);
                 }
             }
         }
