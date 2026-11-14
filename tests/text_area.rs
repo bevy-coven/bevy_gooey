@@ -554,6 +554,12 @@ fn at_200_percent_text_nothing_leaves_the_panel() {
 #[test]
 fn nothing_is_written_while_idle() {
     let mut app = app();
+    // No eases, and a clock the test steps itself: what a frame writes cannot depend on how fast
+    // the host runs 30 frames.
+    app.insert_resource(MotionSettings::off());
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_millis(16),
+    ));
     let f = form(&mut app);
     let notes_field = field(&app, f.notes);
     focus_on(&mut app, notes_field);
