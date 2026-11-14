@@ -600,7 +600,7 @@ pub fn spacer() -> impl Bundle {
 
 /// A [`fill_region`] that stacks its children `gap` multiples of the skin's gap apart (a page with a
 /// group gap): `fill_region` is `fill_region_with(0.0)`. The gap is the same [`LayoutGap`](crate::LayoutGap)
-/// a [`column`] has. Pair it with [`Shown`](crate::Shown) for a page that can be hidden.
+/// a [`column()`] has. Pair it with [`Shown`](crate::Shown) for a page that can be hidden.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -620,7 +620,7 @@ pub fn fill_region_with(gap: f32) -> impl Bundle {
 /// A plain flex column of a size you give it: a [`Sizing`](crate::Sizing) with a width and a height,
 /// their least and greatest, and whether it clips. For a holder whose height is a number or a bar
 /// that is the full height of its host with a border (add a [`Shape`](crate::Shape)); a
-/// [`row`] or [`column`] takes the same `Sizing` as a component. Not drawn, and it takes the pointer
+/// [`row`] or [`column()`] takes the same `Sizing` as a component. Not drawn, and it takes the pointer
 /// like any container.
 ///
 /// ```
