@@ -4110,6 +4110,40 @@ pub fn fill_text(text: impl Into<String>) -> impl Bundle {
     )
 }
 
+/// A [`label`] with a [`TextFlow`](crate::TextFlow): whether it grows, gives way, its least width
+/// and where it stands on the cross axis, each only if set.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     row(1.0),
+///     children![label_with("Title", TextFlow { grow: Some(1.0), min_width: Some(Extent::Px(0.0)), ..default() })],
+/// ));
+/// # }
+/// ```
+pub fn label_with(text: impl Into<String>, flow: crate::TextFlow) -> impl Bundle {
+    (label(text), flow)
+}
+
+/// A [`fill_text`] with a [`TextFlow`](crate::TextFlow): it keeps growing and giving way unless the
+/// flow says otherwise.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     row(1.0),
+///     children![fill_text_with("receipt", TextFlow { align: Some(AlignSelf::Center), ..default() })],
+/// ));
+/// # }
+/// ```
+pub fn fill_text_with(text: impl Into<String>, flow: crate::TextFlow) -> impl Bundle {
+    (fill_text(text), flow)
+}
+
 /// Text that is a flex item of its own and keeps its words whole: it never shrinks and never wraps,
 /// so a tally ("145", "8 pack(s), 120 mesh(es)") holds a column of its own at the end of a row
 /// whose [`fill_text`] gives way to it.

@@ -6,6 +6,11 @@
 
 - G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
   the editor's hand-built nodes after G-84:
+  `TextFlow { grow, shrink, min_width, align }` with `label_with` and `fill_text_with`: a text that is rigid, grows
+  and may narrow to nothing, or aligns itself, with no `Node` patched.
+
+- G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
+  the editor's hand-built nodes after G-84:
   `Sizing { width, height, min/max, clip }` with `Extent::{Px, Percent, Text}` and `sized(sizing)`: a size on any
   node with a `Role`; `Shape { border, ink, radius, fill }` with `Ink` and `Radius::{Step, Full}`: a per-side border
   in line weights, its skin colour, a radius step and a surface fill, so a placed chip or a rail has a size, a

@@ -346,3 +346,40 @@ impl Radius {
         }
     }
 }
+
+/// How a text (or any node) takes part in its row's or column's flex: whether it grows into what
+/// the row leaves, whether it gives way, its least width, and where it stands on the cross axis by
+/// its own field. A text that is rigid beside a name that gives way, a title that grows and may
+/// narrow to nothing, a value that aligns itself to the centre of a tall neighbour. Written by
+/// [`crate::apply_skin`] on any node with a [`Role`](crate::Role), after a [`Sizing`], so its
+/// `min_width` wins over that one's; every field is an `Option` and a field left `None` leaves the
+/// role's own (a [`fill_text`](crate::fill_text) keeps growing when only `align` is set). A number
+/// that is not finite is refused. Use it on [`label_with`](crate::label_with) and
+/// [`fill_text_with`](crate::fill_text_with), or beside any text as a component. Removing the
+/// component leaves the node as it was last written.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     row(1.0),
+///     children![
+///         label_with("Reviewer", TextFlow { shrink: Some(0.0), ..default() }),
+///         fill_text("a long name that gives way"),
+///     ],
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct TextFlow {
+    /// The node's `flex_grow`: `Some(1.0)` takes what the row leaves.
+    pub grow: Option<f32>,
+    /// The node's `flex_shrink`: `Some(0.0)` keeps its words' width, `Some(1.0)` gives way.
+    pub shrink: Option<f32>,
+    /// The least width: `Some(Extent::Px(0.0))` lets it narrow to nothing.
+    pub min_width: Option<Extent>,
+    /// Where it stands on the cross axis, on its own (`AlignSelf::Center`).
+    pub align: Option<AlignSelf>,
+}

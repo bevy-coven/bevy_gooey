@@ -881,3 +881,195 @@ fn a_placed_node_can_lay_its_children_out_as_a_row() {
     );
     assert!(rect(&app, kids[1]).min.x > rect(&app, kids[0]).max.x - 0.5);
 }
+
+// ---- 6. a text with its own flex measure -------------------------------------------------------
+
+/// A text that is rigid (`shrink` 0) keeps the width its words have, beside a text that gives way.
+#[test]
+fn a_text_can_refuse_to_shrink() {
+    let mut app = headless();
+    let alone = app.world_mut().spawn(label("Reviewer")).id();
+    let natural = app.world_mut().spawn(row(0.0)).add_child(alone).id();
+    room(&mut app, 600.0, natural);
+    let rigid = app
+        .world_mut()
+        .spawn(label_with(
+            "Reviewer",
+            TextFlow {
+                shrink: Some(0.0),
+                ..default()
+            },
+        ))
+        .id();
+    let long = app
+        .world_mut()
+        .spawn(fill_text(
+            "A long line of words that has to wrap inside the room that is left over",
+        ))
+        .id();
+    let row = app
+        .world_mut()
+        .spawn(row(1.0))
+        .add_child(rigid)
+        .add_child(long)
+        .id();
+    room(&mut app, 200.0, row);
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(rigid).expect("a node").flex_shrink,
+        0.0
+    );
+    assert!(
+        (rect(&app, rigid).width() - rect(&app, alone).width()).abs() < 0.5,
+        "keeps its own width: {:?} vs {:?}",
+        rect(&app, rigid),
+        rect(&app, alone)
+    );
+}
+
+/// A title that grows and may narrow to nothing takes what the row leaves.
+#[test]
+fn a_text_can_grow_and_narrow_to_zero() {
+    let mut app = headless();
+    let picture = probe(&mut app, 100.0, 20.0);
+    let title = app
+        .world_mut()
+        .spawn(label_with(
+            "A long title",
+            TextFlow {
+                grow: Some(1.0),
+                min_width: Some(Extent::Px(0.0)),
+                ..default()
+            },
+        ))
+        .id();
+    let row = app
+        .world_mut()
+        .spawn(row(1.0))
+        .with_children(|r| {
+            r.spawn(picture);
+        })
+        .add_child(title)
+        .id();
+    room(&mut app, 400.0, row);
+    settle(&mut app);
+    assert!(
+        (rect(&app, title).width() - (400.0 - 100.0 - GooeySkin::dark().gap)).abs() < 0.5,
+        "{:?}",
+        rect(&app, title)
+    );
+    let mut narrow = headless();
+    let picture = probe(&mut narrow, 100.0, 20.0);
+    let title = narrow
+        .world_mut()
+        .spawn(label_with(
+            "A long title",
+            TextFlow {
+                grow: Some(1.0),
+                shrink: Some(1.0),
+                min_width: Some(Extent::Px(0.0)),
+                ..default()
+            },
+        ))
+        .id();
+    let row = narrow
+        .world_mut()
+        .spawn(bevy_gooey::row(1.0))
+        .with_children(|r| {
+            r.spawn(picture);
+        })
+        .add_child(title)
+        .id();
+    let host = room(&mut narrow, 60.0, row);
+    settle(&mut narrow);
+    assert!(
+        rect(&narrow, title).width() < 0.5,
+        "{:?}",
+        rect(&narrow, title)
+    );
+    assert!(
+        rect(&narrow, row).width() < rect(&narrow, host).width() + 0.5,
+        "the row is no wider than its host"
+    );
+}
+
+/// A text aligns itself on the cross axis, by its own field.
+#[test]
+fn a_text_can_align_itself() {
+    let mut app = headless();
+    let tall = probe(&mut app, 40.0, 80.0);
+    let text = app
+        .world_mut()
+        .spawn(label_with(
+            "Name",
+            TextFlow {
+                align: Some(AlignSelf::Center),
+                ..default()
+            },
+        ))
+        .id();
+    let row = app
+        .world_mut()
+        .spawn((
+            row(1.0),
+            RowLayout {
+                align: Some(AlignItems::FlexStart),
+                ..default()
+            },
+        ))
+        .with_children(|r| {
+            r.spawn(tall);
+        })
+        .add_child(text)
+        .id();
+    room(&mut app, 400.0, row);
+    settle(&mut app);
+    let kids = children(&app, row);
+    assert!((rect(&app, kids[1]).center().y - rect(&app, kids[0]).center().y).abs() < 0.5);
+}
+
+/// A field left `None` leaves the role's own: a `fill_text` keeps growing, and it takes the flow
+/// too.
+#[test]
+fn a_text_flow_changes_only_what_it_sets() {
+    let mut app = headless();
+    let plain = app.world_mut().spawn(fill_text("a")).id();
+    let aligned = app
+        .world_mut()
+        .spawn(fill_text_with(
+            "b",
+            TextFlow {
+                align: Some(AlignSelf::Center),
+                ..default()
+            },
+        ))
+        .id();
+    let counted = app
+        .world_mut()
+        .spawn((
+            count_text("3"),
+            TextFlow {
+                shrink: Some(1.0),
+                ..default()
+            },
+        ))
+        .id();
+    for e in [plain, aligned, counted] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    let node = |e| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(
+        node(aligned).flex_grow,
+        node(plain).flex_grow,
+        "still grows"
+    );
+    assert_eq!(node(aligned).min_width, node(plain).min_width);
+    assert_eq!(node(aligned).align_self, AlignSelf::Center);
+    assert_eq!(
+        node(counted).flex_shrink,
+        1.0,
+        "the flow beats the count's no-shrink"
+    );
+    assert_eq!(node(counted).flex_grow, 0.0, "grow untouched");
+}

@@ -13,7 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
-use crate::box_model::{Shape, Shown, Sizing, Spacing, lined, spaced};
+use crate::box_model::{Shape, Shown, Sizing, Spacing, TextFlow, lined, spaced};
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
@@ -2315,6 +2315,8 @@ struct State {
     sizing: Option<Sizing>,
     /// The look of a node's box ([`Shape`]).
     shape: Option<Shape>,
+    /// How a text takes part in its flex ([`TextFlow`]).
+    text_flow: Option<TextFlow>,
     /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
     region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
@@ -2364,6 +2366,7 @@ impl Default for State {
             shown: None,
             sizing: None,
             shape: None,
+            text_flow: None,
             region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
@@ -2414,6 +2417,7 @@ type StateQuery = (
             Option<&'static Shown>,
             Option<&'static Sizing>,
             Option<&'static Shape>,
+            Option<&'static TextFlow>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2644,7 +2648,18 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
-                        (stacked, flow, card_width, inset, aspect, spacing, shown, sizing, shape),
+                        (
+                            stacked,
+                            flow,
+                            card_width,
+                            inset,
+                            aspect,
+                            spacing,
+                            shown,
+                            sizing,
+                            shape,
+                            text_flow,
+                        ),
                     ),
                     row,
                     role,
@@ -2704,6 +2719,7 @@ pub fn apply_skin(
                         shown: shown.map(|shown| shown.0),
                         sizing: sizing.copied(),
                         shape: shape.copied(),
+                        text_flow: text_flow.copied(),
                         region_gap: gap.map(|gap| gap.0),
                     }
                 },
@@ -5090,6 +5106,20 @@ fn restyle(
                 } else {
                     Overflow::visible()
                 };
+            }
+        }
+        if let Some(flow) = state.text_flow {
+            if let Some(grow) = flow.grow.filter(|grow| grow.is_finite()) {
+                next.flex_grow = grow.max(0.0);
+            }
+            if let Some(shrink) = flow.shrink.filter(|shrink| shrink.is_finite()) {
+                next.flex_shrink = shrink.max(0.0);
+            }
+            if let Some(val) = flow.min_width.and_then(|extent| extent.val(text_px)) {
+                next.min_width = val;
+            }
+            if let Some(align) = flow.align {
+                next.align_self = align;
             }
         }
         if let Some(shape) = state.shape {

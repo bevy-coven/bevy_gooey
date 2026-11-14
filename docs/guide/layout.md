@@ -173,6 +173,13 @@ fn chip(mut commands: Commands) {
 A rail is a border on one side (`Sides { right: Some(1.0), ..default() }`); a pill is
 `Radius::Full`. A shape with only a radius leaves a button's own fill and edge.
 
+## A text with its own flex
+
+`TextFlow` says how a text takes part in its row: `shrink: Some(0.0)` keeps its words' width,
+`grow: Some(1.0)` with `min_width: Some(Extent::Px(0.0))` is a title that takes what is left and may
+narrow to nothing, `align` is where it stands across the row. `label_with(text, flow)` and
+`fill_text_with(text, flow)` carry it; a field left `None` leaves the role's own.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look
