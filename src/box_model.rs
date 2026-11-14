@@ -178,7 +178,8 @@ pub(crate) fn spaced(mut rect: UiRect, sides: &Sides<Space>, skin: &GooeySkin) -
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Shown(pub bool);
 
-/// A length in the skin's own terms: logical px, a share of the host, or body text sizes.
+/// A length in the skin's own terms: logical px, a share of the host, body text sizes, or a share of
+/// the viewport.
 #[derive(Clone, Copy, Debug, PartialEq, Reflect)]
 #[reflect(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -189,6 +190,15 @@ pub enum Extent {
     Percent(f32),
     /// Body text sizes times the skin's `text_scale`, like a [`cell`](crate::cell)'s width.
     Text(f32),
+    /// A percentage of the viewport's height (`100.0` is the whole window): a root that is the
+    /// window's size whatever its host is. Bevy has no dynamic-viewport unit, so there is no `Dvh`.
+    Vh(f32),
+    /// A percentage of the viewport's width.
+    Vw(f32),
+    /// A percentage of the viewport's smaller side.
+    VMin(f32),
+    /// A percentage of the viewport's larger side.
+    VMax(f32),
 }
 
 impl Extent {
@@ -198,11 +208,19 @@ impl Extent {
             Extent::Px(px) => Val::Px(px),
             Extent::Percent(percent) => Val::Percent(percent),
             Extent::Text(sizes) => Val::Px(sizes * text_px),
+            Extent::Vh(v) => Val::Vh(v),
+            Extent::Vw(v) => Val::Vw(v),
+            Extent::VMin(v) => Val::VMin(v),
+            Extent::VMax(v) => Val::VMax(v),
         };
         // Not finite is refused; below zero is zero, as a card's width is.
         match val {
             Val::Px(v) if v.is_finite() => Some(Val::Px(v.max(0.0))),
             Val::Percent(v) if v.is_finite() => Some(Val::Percent(v.max(0.0))),
+            Val::Vh(v) if v.is_finite() => Some(Val::Vh(v.max(0.0))),
+            Val::Vw(v) if v.is_finite() => Some(Val::Vw(v.max(0.0))),
+            Val::VMin(v) if v.is_finite() => Some(Val::VMin(v.max(0.0))),
+            Val::VMax(v) if v.is_finite() => Some(Val::VMax(v.max(0.0))),
             _ => None,
         }
     }

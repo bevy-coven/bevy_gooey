@@ -6,6 +6,11 @@
 
 - G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
   the editor's hand-built nodes after G-85:
+  `Extent::{Vh, Vw, VMin, VMax}`: a length as a share of the viewport (the window-sized frame root); no `Dvh`,
+  Bevy has no such unit.
+
+- G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
+  the editor's hand-built nodes after G-85:
   `Space::Px(f32)`: a literal logical px of margin or padding, off the skin's scale, finite-checked and never
   negative (`Space` loses `Eq`).
 

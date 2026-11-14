@@ -215,6 +215,12 @@ chip's `6 x 3`, a tab's `12 x 8`): `Spacing { padding: Sides { left: Some(Space:
 written by the skin and finite-checked (below zero is zero, not a number leaves the side alone) but does
 not follow the scale or the text size: prefer a `Step`.
 
+## Viewport lengths
+
+`Extent::Vh(100.0)` is the window's whole height and `Extent::Vw(50.0)` half its width, whatever the
+host is (`VMin` and `VMax` are the smaller and larger side): the root of a window-sized frame. Like
+every extent it is finite-checked and never negative. Remember `min_height` 0 down the chain.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

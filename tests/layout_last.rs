@@ -227,3 +227,86 @@ fn a_changed_px_space_restyles() {
         UiRect::all(Val::Px(9.0))
     );
 }
+
+// ---- 5. extents in viewport units ------------------------------------------------------------
+
+/// `Vh(100.0)` is the window's whole height and `Vw(50.0)` half its width, whatever the host is:
+/// the frame root of a window.
+#[test]
+fn an_extent_can_be_in_viewport_units() {
+    let mut app = headless();
+    let tall = app
+        .world_mut()
+        .spawn(sized(Sizing {
+            width: Some(Extent::Vw(50.0)),
+            height: Some(Extent::Vh(100.0)),
+            min_height: Some(Extent::Px(0.0)),
+            ..default()
+        }))
+        .id();
+    let small = app
+        .world_mut()
+        .spawn(sized(Sizing {
+            width: Some(Extent::VMin(10.0)),
+            height: Some(Extent::VMax(10.0)),
+            ..default()
+        }))
+        .id();
+    for e in [tall, small] {
+        app.world_mut()
+            .spawn((
+                screen(),
+                Sizing {
+                    min_height: Some(Extent::Px(0.0)),
+                    ..default()
+                },
+            ))
+            .add_child(e);
+    }
+    settle(&mut app);
+    let r = rect(&app, tall);
+    assert!(
+        (r.width() - 640.0).abs() < 0.5 && (r.height() - 720.0).abs() < 0.5,
+        "{r:?}"
+    );
+    let s = rect(&app, small);
+    assert!(
+        (s.width() - 72.0).abs() < 0.5 && (s.height() - 128.0).abs() < 0.5,
+        "10 vmin of 720 and 10 vmax of 1280: {s:?}"
+    );
+}
+
+/// A viewport length is finite-checked and never negative, like every extent.
+#[test]
+fn a_viewport_extent_is_finite_checked_and_never_negative() {
+    let mut app = headless();
+    let e = app
+        .world_mut()
+        .spawn((
+            panel(),
+            Sizing {
+                min_width: Some(Extent::Vw(-5.0)),
+                max_width: Some(Extent::Vw(f32::NAN)),
+                min_height: Some(Extent::Vh(f32::INFINITY)),
+                ..default()
+            },
+        ))
+        .id();
+    let plain = app.world_mut().spawn(panel()).id();
+    for x in [e, plain] {
+        app.world_mut().spawn(screen()).add_child(x);
+    }
+    settle(&mut app);
+    let node = |x| app.world().get::<Node>(x).expect("a node").clone();
+    assert_eq!(node(e).min_width, Val::Vw(0.0));
+    assert_eq!(
+        node(e).max_width,
+        node(plain).max_width,
+        "NaN leaves the node"
+    );
+    assert_eq!(
+        node(e).min_height,
+        node(plain).min_height,
+        "infinity leaves the node"
+    );
+}
