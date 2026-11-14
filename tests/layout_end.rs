@@ -72,36 +72,6 @@ fn children(app: &App, entity: Entity) -> Vec<Entity> {
         .unwrap_or_default()
 }
 
-/// A real image in the app's assets, so a box draws something.
-fn image(app: &mut App) -> Handle<Image> {
-    app.world_mut()
-        .resource_mut::<Assets<Image>>()
-        .add(Image::default())
-}
-
-/// A fixed box `w` × `h` logical px that never shrinks: a probe for where a row puts its children.
-fn probe(app: &mut App, w: f32, h: f32) -> impl Bundle + use<> {
-    image_box(image(app), Vec2::new(w, h))
-}
-
-/// A plain node `width` wide that holds `child` and never gives way: the room a layout is put in.
-fn room(app: &mut App, width: f32, child: Entity) -> Entity {
-    let room = app
-        .world_mut()
-        .spawn(Node {
-            width: Val::Px(width),
-            min_width: Val::Px(width),
-            max_width: Val::Px(width),
-            flex_direction: FlexDirection::Column,
-            flex_shrink: 0.0,
-            ..default()
-        })
-        .add_child(child)
-        .id();
-    app.world_mut().spawn(screen()).add_child(room);
-    room
-}
-
 // ---- 1. a node that starts closed --------------------------------------------------------------
 
 fn tab_stops(app: &mut App, presses: usize) -> Vec<Option<String>> {
