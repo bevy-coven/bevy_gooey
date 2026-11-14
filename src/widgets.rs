@@ -2678,6 +2678,71 @@ where
     )
 }
 
+/// A scrolling column that **fills the room its parent leaves**: the pane that owns the rest of its
+/// dock. It is a [`Role::ScrollRegion`] (grows, can shrink to nothing) around a viewport that scrolls
+/// vertically ([`Role::ScrollView`]: the wheel, a drag on the thumb, glide and edge fade) and a rail
+/// that shows only while the content does not fit. `gap` is a [`LayoutGap`](crate::LayoutGap) multiple
+/// between the items, `gutter` the lane kept clear for the rail ([`ScrollGutter`](crate::ScrollGutter):
+/// `None` the list's own, `Some(Space::Px(14.0))` the host's). Needs a bounded parent: it bounds itself
+/// with `flex_grow`, so inside a content-sized parent (another scroll) it collapses to nothing.
+/// [`list`] is the other one: a stated number of rows tall. It does not follow keyboard focus the way a
+/// list's rows do (scroll with `ScrollGlide::go` or the viewport's `ScrollPosition`).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     column(0.0),
+///     children![
+///         heading("Tags"),
+///         scroll_region(0.5, Some(Space::Px(12.0)), children![label("one"), label("two")]),
+///     ],
+/// ));
+/// # }
+/// ```
+///
+/// The entity this returns is the region; its first child is the viewport, its last the rail.
+pub fn scroll_region<L>(
+    gap: f32,
+    gutter: Option<crate::Space>,
+    items: SpawnRelatedBundle<ChildOf, L>,
+) -> impl Bundle
+where
+    L: SpawnableList<ChildOf> + Send + Sync + 'static,
+{
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::ScrollRegion,
+        Children::spawn(SpawnWith(move |parent: &mut RelatedSpawner<ChildOf>| {
+            let view = parent
+                .spawn((
+                    Node::default(),
+                    Role::ScrollView,
+                    crate::ScrollGutter(gutter),
+                    ScrollArea,
+                    // The rows sit in one column that never shrinks, as a list's do: a viewport
+                    // holding them directly squeezes them to its height.
+                    children![(
+                        Node {
+                            flex_direction: FlexDirection::Column,
+                            flex_shrink: 0.0,
+                            ..default()
+                        },
+                        Role::Column,
+                        crate::LayoutGap(gap),
+                        items,
+                    )],
+                ))
+                .id();
+            parent.spawn(list_rail(view));
+        })),
+    )
+}
+
 /// A list's rail: the scrollbar down the viewport's right edge. The thumb has no `Node`: Bevy
 /// lays it out itself, after layout, from the viewport. The rail is hidden until `update_lists`
 /// finds the rows do not fit.
@@ -3439,6 +3504,10 @@ pub fn dialog() -> impl Bundle {
 ///     ));
 /// }
 /// ```
+///
+/// A host that places the dock itself (a bottom strip in its own grid) spawns a bare `Dock(layout)` on a
+/// `Node` of its own: nothing of gooey writes that node, so its grid placement stays its own through a
+/// restyle and `Shown`. `a_dock_the_host_places_in_its_own_grid_keeps_its_placement` holds it.
 ///
 /// The dock fills its parent. Every group is a [`panel`] with a strip of tabs; each divider is a
 /// [`split`]'s, with its keys and its 96 px minimum pane. The player rearranges the layout by

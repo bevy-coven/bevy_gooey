@@ -50,6 +50,7 @@ mod layout_gaps;
 mod layout_last;
 mod layout_more;
 mod layout_motion;
+mod layout_tail;
 mod leaf;
 mod led;
 mod lines;

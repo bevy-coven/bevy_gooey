@@ -192,6 +192,13 @@ pub enum Extent {
     Percent(f32),
     /// Body text sizes times the skin's `text_scale`, like a [`cell`](crate::cell)'s width.
     Text(f32),
+    /// The content's size (`Val::Auto`): as wide or as tall as what the node holds. With a
+    /// [`TextFlow`] `grow` it is "what my siblings leave" (a filling split).
+    Auto,
+    /// Lines of body text rounded **up** to a whole device pixel at the node's scale, so it is never
+    /// short of the text it holds (an unrounded [`Extent::Lines`] can be a fraction of a pixel short)
+    /// and follows the text size live: a skin change restyles every node.
+    LinesCeil(f32),
     /// Lines of body text: `n` times the skin's list-line height (1.2 body text sizes), so a least
     /// height that follows the player's text size (a receipt row two lines tall).
     Lines(f32),
@@ -208,12 +215,21 @@ pub enum Extent {
 
 impl Extent {
     /// The length as Bevy's `Val`, or `None` for a number that is not finite (refused, not written).
-    pub(crate) fn val(self, text_px: f32, line_px: f32) -> Option<Val> {
+    pub(crate) fn val(self, text_px: f32, line_px: f32, scale: f32) -> Option<Val> {
         let val = match self {
             Extent::Px(px) => Val::Px(px),
             Extent::Percent(percent) => Val::Percent(percent),
             Extent::Text(sizes) => Val::Px(sizes * text_px),
             Extent::Lines(lines) => Val::Px(lines * line_px),
+            Extent::LinesCeil(lines) => {
+                let px = lines * line_px;
+                if px.is_finite() && scale.is_finite() && scale > 0.0 {
+                    Val::Px(((px.max(0.0) * scale) - 0.001).ceil().max(0.0) / scale)
+                } else {
+                    Val::Px(px)
+                }
+            }
+            Extent::Auto => return Some(Val::Auto),
             Extent::Vh(v) => Val::Vh(v),
             Extent::Vw(v) => Val::Vw(v),
             Extent::VMin(v) => Val::VMin(v),
@@ -611,3 +627,85 @@ pub struct InkFollow;
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GapPx(pub f32);
+
+/// The visibility a node had before [`ShownFollow`] hid it, so showing it again gives that back.
+#[derive(Component, Clone, Copy, Debug)]
+pub struct FollowMemory(Visibility);
+
+/// For a host that **owns `Node::display`** (an open/closed panel written by its own systems):
+/// makes gooey hide the node from focus and sight whenever the host's `display` is `Display::None`.
+/// [`Shown`] writes `display` itself, which a host that already writes it in several systems cannot
+/// adopt; with `ShownFollow` the host keeps writing `display` and `follow_display` follows it:
+/// `Display::None` is `Visibility::Hidden` (the page's widgets are no tab stops, focus regions or
+/// open dialogs: `Display::None` alone leaves `InheritedVisibility`, which focus reads), anything else
+/// gives back the visibility the node had. Nothing of gooey's rewrites the host's `display` (the skin
+/// leaves a node's display to the roles that own one; a `Panel`, `Surface`, `Card`, a row and the other
+/// containers do not). Adding it to a node that is already closed hides it, removing it gives the
+/// visibility back and leaves the display the host's. Use **either** `Shown` or `ShownFollow` on a
+/// node, not both (`Shown` wins).
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// let page = commands.spawn((panel(), ShownFollow, children![button("In the page")])).id();
+/// // Any of the host's systems: `node.display = Display::None;` closes it, `Display::Flex` opens it.
+/// # let _ = page;
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct ShownFollow;
+
+/// Makes a [`ShownFollow`] node's visibility follow the display its host wrote.
+#[allow(clippy::type_complexity)]
+pub fn follow_display(
+    mut nodes: Query<
+        (Entity, &Node, Option<&Visibility>, Option<&FollowMemory>),
+        (
+            With<ShownFollow>,
+            Without<Shown>,
+            Or<(Changed<Node>, Added<ShownFollow>)>,
+        ),
+    >,
+    mut gone: RemovedComponents<ShownFollow>,
+    mut remembered: Query<(Option<&Visibility>, &FollowMemory), Without<ShownFollow>>,
+    mut commands: Commands,
+) {
+    for (entity, node, visibility, memory) in &mut nodes {
+        let closed = node.display == Display::None;
+        match (closed, memory) {
+            (true, None) => {
+                let current = visibility.copied().unwrap_or_default();
+                commands.entity(entity).insert(FollowMemory(current));
+                if current != Visibility::Hidden {
+                    commands.entity(entity).insert(Visibility::Hidden);
+                }
+            }
+            (false, Some(memory)) => {
+                commands.entity(entity).insert(memory.0);
+                commands.entity(entity).remove::<FollowMemory>();
+            }
+            _ => {}
+        }
+    }
+    for entity in gone.read() {
+        if let Ok((_, memory)) = remembered.get_mut(entity) {
+            commands.entity(entity).insert(memory.0);
+            commands.entity(entity).remove::<FollowMemory>();
+        }
+    }
+}
+
+/// The lane a [`scroll_region`](crate::scroll_region)'s rail keeps clear on the right of its content:
+/// `None` is the list's own (the rail's width and a skin gap), `Some(Space)` the host's (a step, or a
+/// literal px). It is on the region's scrolling viewport, **requires** a [`ScrollGlide`](crate::ScrollGlide)
+/// and [`ScrollEdgeFade`](crate::ScrollEdgeFade) (a scroll the crate makes glides, an edge that hides
+/// content fades), and marks the viewport the rail scrolls. Written by [`crate::apply_skin`] as the
+/// viewport's right padding (inside the clip, so the content stops short of the rail and still counts
+/// toward what scrolls); a [`Spacing`] on the same node still wins over it. Change it and the viewport
+/// restyles in the same frame.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+#[require(crate::ScrollGlide, crate::ScrollEdgeFade)]
+pub struct ScrollGutter(pub Option<Space>);

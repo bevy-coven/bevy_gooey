@@ -87,6 +87,8 @@ fn spec(role: Role) -> Spec {
         | Role::ShortcutLegend
         | Role::List
         | Role::ListRows
+        | Role::ScrollRegion
+        | Role::ScrollView
         | Role::TableView
         | Role::TableRows
         | Role::TableHeader

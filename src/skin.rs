@@ -14,8 +14,8 @@ use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
 use crate::box_model::{
-    BorderPx, GapPx, HostGeometry, InkFollow, InkOverride, Shape, Shown, ShownMemory, Sizing,
-    Spacing, TextFlow, lined, pixeled, spaced,
+    BorderPx, GapPx, HostGeometry, InkFollow, InkOverride, ScrollGutter, Shape, Shown, ShownMemory,
+    Sizing, Spacing, TextFlow, lined, pixeled, spaced,
 };
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
@@ -2117,6 +2117,11 @@ pub enum Role {
     /// A [`crate::scrim`]: a full-size absolute layer filled with [`GooeySkin::scrim`] that blocks the
     /// pointer; not a dialog (no focus trap, no cancel).
     Backdrop,
+    /// A [`crate::scroll_region`]'s outer box: a column that fills the room its parent leaves and can
+    /// shrink to nothing, holding the scrolling viewport and its rail; not drawn.
+    ScrollRegion,
+    /// A [`crate::scroll_region`]'s viewport: scrolls vertically, keeps a lane for the rail; not drawn.
+    ScrollView,
     /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
     /// drawn, so a label column lines up down a list of rows.
     Cell,
@@ -2344,6 +2349,8 @@ struct State {
     ink_follow: bool,
     /// A gap in logical px ([`GapPx`]); none leaves the role's own.
     gap_px: Option<f32>,
+    /// The rail lane of a scroll region's viewport ([`ScrollGutter`]).
+    scroll_gutter: Option<Option<crate::box_model::Space>>,
     /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
     region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
@@ -2401,6 +2408,7 @@ impl Default for State {
             host_geometry: false,
             ink_follow: false,
             gap_px: None,
+            scroll_gutter: None,
             region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
@@ -2456,7 +2464,12 @@ type StateQuery = (
             Option<&'static Visibility>,
             Option<&'static BorderPx>,
             Option<&'static InkOverride>,
-            (Has<HostGeometry>, Has<InkFollow>, Option<&'static GapPx>),
+            (
+                Has<HostGeometry>,
+                Has<InkFollow>,
+                Option<&'static GapPx>,
+                Option<&'static ScrollGutter>,
+            ),
         ),
     ),
     Option<&'static TableRow>,
@@ -2520,6 +2533,7 @@ type Restyle = (
                     Changed<InkOverride>,
                     Changed<InkFollow>,
                     Changed<GapPx>,
+                    Changed<ScrollGutter>,
                 )>,
             )>,
         )>,
@@ -2709,7 +2723,7 @@ pub fn apply_skin(
                             visibility,
                             border_px,
                             ink_override,
-                            (host_geometry, ink_follow, gap_px),
+                            (host_geometry, ink_follow, gap_px, scroll_gutter),
                         ),
                     ),
                     row,
@@ -2777,6 +2791,7 @@ pub fn apply_skin(
                         host_geometry,
                         ink_follow,
                         gap_px: gap_px.map(|gap| gap.0),
+                        scroll_gutter: scroll_gutter.map(|gutter| gutter.0),
                         visibility: visibility.copied().unwrap_or_default(),
                         region_gap: gap.map(|gap| gap.0),
                     }
@@ -3540,6 +3555,8 @@ fn restyle(
         | Role::List
         | Role::ListView
         | Role::ListRows
+        | Role::ScrollRegion
+        | Role::ScrollView
         | Role::Table
         | Role::TableHeader
         | Role::TableSortUp
@@ -4850,6 +4867,23 @@ fn restyle(
                 next.padding = UiRect::right(Val::Px(RAIL_LINES * line + skin.gap));
             }
             Role::ListRows => next.row_gap = Val::Px(skin.gap),
+            // A scroll region fills what its parent leaves and may be nothing tall; its viewport
+            // scrolls, with a lane at its right for the rail, the host's width if it chose one.
+            Role::ScrollRegion => {
+                next.flex_direction = FlexDirection::Column;
+                next.flex_grow = 1.0;
+                next.flex_shrink = 1.0;
+                next.min_height = Val::ZERO;
+            }
+            Role::ScrollView => {
+                next.display = Display::Block;
+                next.overflow = Overflow::scroll_y();
+                let lane = match state.scroll_gutter.flatten() {
+                    Some(space) => space.resolve(skin).unwrap_or(0.0),
+                    None => RAIL_LINES * line + skin.gap,
+                };
+                next.padding = UiRect::right(Val::Px(lane));
+            }
             // A page of Markdown: the viewport keeps the rail's lane like a list's; a line of words
             // with a link in it wraps a space apart; a code block, a quote, a rule and a table are
             // the frames the skin draws everything else in, and the table's gaps are the lines
@@ -5271,8 +5305,8 @@ fn restyle(
         // A size, then a shape, on any role, after the role's own: a field left `None` leaves the node.
         if let Some(sizing) = state.sizing {
             let set = |field: &mut Val, extent: Option<crate::box_model::Extent>| {
-                if let Some(val) =
-                    extent.and_then(|extent| extent.val(text_px, text_px * LIST_LINE_TEXT_SIZES))
+                if let Some(val) = extent
+                    .and_then(|extent| extent.val(text_px, text_px * LIST_LINE_TEXT_SIZES, scale))
                 {
                     *field = val;
                 }
@@ -5302,7 +5336,7 @@ fn restyle(
             }
             if let Some(val) = flow
                 .min_width
-                .and_then(|extent| extent.val(text_px, text_px * LIST_LINE_TEXT_SIZES))
+                .and_then(|extent| extent.val(text_px, text_px * LIST_LINE_TEXT_SIZES, scale))
             {
                 next.min_width = val;
             }

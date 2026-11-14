@@ -54,10 +54,15 @@ pub struct ListView {
 type Scrolls = Or<(
     With<ListView>,
     With<TabScroll>,
+    With<crate::box_model::ScrollGutter>,
     With<crate::markdown_view::MarkdownViewport>,
 )>;
 #[cfg(not(feature = "markdown"))]
-type Scrolls = Or<(With<ListView>, With<TabScroll>)>;
+type Scrolls = Or<(
+    With<ListView>,
+    With<TabScroll>,
+    With<crate::box_model::ScrollGutter>,
+)>;
 
 /// What scrolls to follow focus and pages with PageUp and PageDown: a list's viewport, and a
 /// Markdown page's, whose links are tab stops like a list's rows.

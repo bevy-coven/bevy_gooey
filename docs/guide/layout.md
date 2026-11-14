@@ -285,6 +285,14 @@ viewport (`fill_column`) and a dock you hide with `Shown(false)`, and a status b
 `Pickable::IGNORE` on every container the pointer must pass through to the world; `scrim()` is the
 layer that blocks it. The piece-by-piece mapping is in `docs/research/layout-final.md`.
 
+## Auto, rounded lines, a host-owned display, a scroll region
+
+`Extent::Auto` is the content's size; with `TextFlow { grow: Some(1.0), .. }` it is a filling split.
+`Extent::LinesCeil(n)` is `n` lines rounded up to a whole device pixel. `ShownFollow` leaves
+`Node::display` to your systems and hides the node from focus while it is `Display::None` (use it or
+`Shown`, not both). `scroll_region(gap, gutter, items)` is a scrolling column that fills its parent with
+a rail lane you choose. A bare `Dock` on your own grid-placed `Node` keeps that placement.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look
