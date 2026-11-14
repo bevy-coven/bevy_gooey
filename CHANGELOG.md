@@ -6,6 +6,12 @@
 
 - G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
   the editor's hand-built nodes after G-85:
+  `InkOverride { fill, ink, edge }`: a per-node colour the skin honours for any `Role` and does not overwrite
+  (a `None` field leaves the role's colour), so a colour system the host owns can share a node with gooey's
+  layout.
+
+- G-86 (#97, `docs/research/layout-last.md`, `docs/guide/layout.md`, `tests/layout_last.rs`), what was left of
+  the editor's hand-built nodes after G-85:
   `status_item_quiet(text)`: a `status_item` off the `Activate` bus (no `Button`, no tab stop) that `Shown`
   hides; the docs say to toggle an existing node by inserting or changing its `Shown`.
 

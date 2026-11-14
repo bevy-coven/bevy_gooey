@@ -14,7 +14,8 @@ use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
 use crate::box_model::{
-    BorderPx, Shape, Shown, ShownMemory, Sizing, Spacing, TextFlow, lined, pixeled, spaced,
+    BorderPx, InkOverride, Shape, Shown, ShownMemory, Sizing, Spacing, TextFlow, lined, pixeled,
+    spaced,
 };
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
@@ -2332,6 +2333,8 @@ struct State {
     text_flow: Option<TextFlow>,
     /// A border in logical px, unsnapped ([`BorderPx`]).
     border_px: Option<BorderPx>,
+    /// The colours the host owns on this node ([`InkOverride`]).
+    ink_override: Option<InkOverride>,
     /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
     region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
@@ -2385,6 +2388,7 @@ impl Default for State {
             shape: None,
             text_flow: None,
             border_px: None,
+            ink_override: None,
             region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
@@ -2439,6 +2443,7 @@ type StateQuery = (
             Option<&'static ShownMemory>,
             Option<&'static Visibility>,
             Option<&'static BorderPx>,
+            Option<&'static InkOverride>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2499,6 +2504,7 @@ type Restyle = (
                     Changed<Shape>,
                     Changed<TextFlow>,
                     Changed<BorderPx>,
+                    Changed<InkOverride>,
                 )>,
             )>,
         )>,
@@ -2686,6 +2692,7 @@ pub fn apply_skin(
                             hidden,
                             visibility,
                             border_px,
+                            ink_override,
                         ),
                     ),
                     row,
@@ -2749,6 +2756,7 @@ pub fn apply_skin(
                         text_flow: text_flow.copied(),
                         hidden: hidden.copied(),
                         border_px: border_px.copied(),
+                        ink_override: ink_override.copied(),
                         visibility: visibility.copied().unwrap_or_default(),
                         region_gap: gap.map(|gap| gap.0),
                     }
@@ -3558,6 +3566,8 @@ fn restyle(
         .and_then(|shape| shape.fill)
         .map(|level| skin.surface_at(level))
         .or(fill);
+    // The host's own colour wins over the shape's and the role's.
+    let fill = state.ink_override.and_then(|o| o.fill).or(fill);
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(faded(fill, alpha)));
     }
@@ -3824,6 +3834,12 @@ fn restyle(
         Some(Shape { ink: Some(ink), .. }) => Some(BorderColor::all(ink.color(skin))),
         _ if edge.is_none() && bordered => Some(BorderColor::all(skin.outline)),
         _ => edge,
+    };
+    // The host's edge colour wins over the shape's, but never over a focus ring.
+    let edge = match state.ink_override.and_then(|o| o.edge) {
+        Some(_) if look.focused == Some(entity) && edge.is_some() => edge,
+        Some(colour) => Some(BorderColor::all(colour)),
+        None => edge,
     };
     if let (Some(edge), Some(mut border)) = (edge, border) {
         border.set_if_neq(faded_edge(edge, alpha));
@@ -5520,6 +5536,8 @@ fn restyle(
         _ => None,
     };
     if let Some((color, font, size)) = text {
+        // The host's ink replaces the role's text colour on this node.
+        let color = state.ink_override.and_then(|o| o.ink).unwrap_or(color);
         if let Some(mut text_color) = text_color {
             text_color.set_if_neq(TextColor(faded(color, alpha)));
         }

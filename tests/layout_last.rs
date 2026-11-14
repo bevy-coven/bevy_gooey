@@ -658,3 +658,161 @@ fn a_quiet_status_item_can_be_hidden_with_shown_in_a_bar() {
     settle(&mut app);
     assert!(rect(&app, last).width() > 1.0, "back");
 }
+
+// ---- 7. an ink override for a colour system the host owns -------------------------------------
+
+const RED: Color = Color::srgb(0.9, 0.1, 0.1);
+const GREEN: Color = Color::srgb(0.1, 0.8, 0.2);
+
+/// An override's fill, ink and edge replace the role's colours on that node, and survive a skin
+/// change; a field left `None` leaves the role's own.
+#[test]
+fn an_ink_override_replaces_only_the_colours_it_names() {
+    let mut app = headless();
+    let plain = app.world_mut().spawn(button("A")).id();
+    let filled = app
+        .world_mut()
+        .spawn((
+            button("B"),
+            InkOverride {
+                fill: Some(RED),
+                ..default()
+            },
+        ))
+        .id();
+    let edged = app
+        .world_mut()
+        .spawn((
+            button("C"),
+            InkOverride {
+                edge: Some(GREEN),
+                ..default()
+            },
+        ))
+        .id();
+    let text = app
+        .world_mut()
+        .spawn((
+            label("D"),
+            InkOverride {
+                ink: Some(GREEN),
+                ..default()
+            },
+        ))
+        .id();
+    let plain_text = app.world_mut().spawn(label("E")).id();
+    for e in [plain, filled, edged, text, plain_text] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    let fill = |app: &App, e| app.world().get::<BackgroundColor>(e).expect("a fill").0;
+    let edge = |app: &App, e| app.world().get::<BorderColor>(e).expect("an edge").top;
+    assert_eq!(fill(&app, filled), RED);
+    assert_eq!(
+        edge(&app, filled),
+        edge(&app, plain),
+        "the edge is the role's"
+    );
+    assert_eq!(edge(&app, edged), GREEN);
+    assert_eq!(
+        fill(&app, edged),
+        fill(&app, plain),
+        "the fill is the role's"
+    );
+    assert_eq!(app.world().get::<TextColor>(text).expect("ink").0, GREEN);
+    assert_eq!(
+        app.world().get::<TextColor>(plain_text).expect("ink").0,
+        GooeySkin::dark().text
+    );
+
+    // A skin change restyles every node and the override still wins.
+    app.world_mut().resource_mut::<GooeySkin>().surface_raised = Color::srgb(0.5, 0.5, 0.5);
+    settle(&mut app);
+    assert_eq!(fill(&app, filled), RED, "survives a skin change");
+    assert_ne!(fill(&app, plain), RED);
+}
+
+/// It beats a `Shape` on the same node, and a focused widget's ring still wins over its edge.
+#[test]
+fn an_ink_override_beats_a_shape_and_the_focus_ring_beats_it() {
+    use bevy::input_focus::{FocusCause, InputFocus, InputFocusVisible};
+    let mut app = headless();
+    let b = app
+        .world_mut()
+        .spawn((
+            button("Go"),
+            Shape {
+                border: Sides::all(1.0),
+                ink: Some(Ink::Accent),
+                fill: Some(2),
+                ..default()
+            },
+            InkOverride {
+                fill: Some(RED),
+                edge: Some(GREEN),
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut().spawn(screen()).add_child(b);
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BackgroundColor>(b).expect("a fill").0,
+        RED,
+        "over the shape's fill"
+    );
+    assert_eq!(
+        app.world().get::<BorderColor>(b).expect("an edge").top,
+        GREEN,
+        "over the shape's ink"
+    );
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(b, FocusCause::Navigated);
+    app.world_mut().resource_mut::<InputFocusVisible>().0 = true;
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BorderColor>(b).expect("an edge").top,
+        GooeySkin::dark().focus_ring,
+        "the ring"
+    );
+}
+
+/// A changed override restyles in the same frame; clearing a field gives the role's colour back.
+#[test]
+fn a_changed_ink_override_restyles_and_none_gives_the_role_back() {
+    let mut app = headless();
+    let plain = app.world_mut().spawn(button("A")).id();
+    let b = app
+        .world_mut()
+        .spawn((
+            button("B"),
+            InkOverride {
+                fill: Some(RED),
+                ..default()
+            },
+        ))
+        .id();
+    for e in [plain, b] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    app.world_mut()
+        .get_mut::<InkOverride>(b)
+        .expect("an override")
+        .fill = Some(GREEN);
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BackgroundColor>(b).expect("a fill").0,
+        GREEN
+    );
+    app.world_mut()
+        .get_mut::<InkOverride>(b)
+        .expect("an override")
+        .fill = None;
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BackgroundColor>(b),
+        app.world().get::<BackgroundColor>(plain)
+    );
+}

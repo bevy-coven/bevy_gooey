@@ -469,3 +469,46 @@ pub(crate) fn pixeled(mut rect: UiRect, sides: &Sides<f32>) -> UiRect {
     }
     rect
 }
+
+/// A colour system the host owns, sharing a node with gooey's layout: the fill, the ink and the edge
+/// colour of **this node**, replacing what [`crate::apply_skin`] would draw for its role, a
+/// [`Shape`] or a state. Every field is an `Option` and a field left `None` leaves the role's own
+/// colour. It is honoured for any [`Role`](crate::Role) and survives a skin change, which restyles
+/// every node: the skin does not overwrite it. It is constant across states (hover, press): a host
+/// that colours by state changes the component, and the change restyles in the same frame.
+///
+/// - `fill` is the background. Over a [`Shape::fill`] and a role's fill.
+/// - `ink` is the text colour of a text node's own role ([`label`](crate::label),
+///   [`fill_text`](crate::fill_text), a button's `Role::ButtonText`); a node that is not text has none
+///   to replace. It does not cascade to children: each text carries its own.
+/// - `edge` is the border colour, over a [`Shape::ink`]. A focused widget's focus ring still wins over
+///   it, because it is how a keyboard player sees where they are.
+///
+/// It sets colours only: size, border width and spacing stay [`Sizing`], [`Shape`], [`BorderPx`] and
+/// [`Spacing`]. Removing the component leaves the node as it was last written.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// // A tag chip: gooey's button and layout, the host's own colours for this one node.
+/// commands.spawn((
+///     button("rust"),
+///     InkOverride {
+///         fill: Some(Color::srgb(0.2, 0.3, 0.5)),
+///         edge: Some(Color::srgb(0.4, 0.5, 0.8)),
+///         ..default()
+///     },
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct InkOverride {
+    /// The background colour.
+    pub fill: Option<Color>,
+    /// The text colour of a text node.
+    pub ink: Option<Color>,
+    /// The border colour.
+    pub edge: Option<Color>,
+}

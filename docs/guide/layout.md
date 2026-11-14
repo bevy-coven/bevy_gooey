@@ -242,6 +242,12 @@ badge. Use `fill_text` and `count_text` for words that follow its state; a `RowL
 stop). `Shown(false)` hides it (no room, no focus) and `Shown(true)` brings it back; to toggle a node that
 already exists, insert or change its `Shown`: never write `Node::display`.
 
+## Your own colours on one node
+
+`InkOverride { fill, ink, edge }` replaces the fill, the text colour and the edge colour of that node for
+any role; a field left `None` keeps the role's, a skin change does not overwrite it, and a focused
+widget's ring still wins over the edge. It does not cascade: give each text its own `ink`.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look
