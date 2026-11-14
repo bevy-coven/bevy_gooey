@@ -445,8 +445,8 @@ pub use type_select::{TypeSelectGroup, TypedPrefix};
 pub use widgets::{
     band, binding, button, button_row, card_grid, cell, check_item, choice, color_field, column,
     column_with, combobox, command_palette, context_menu, count_text, dialog, dock, edge_tab,
-    fill_text, glyph_button, heading, hold_button, icon, icon_button, image_box, interface_size,
-    label, led, list, menu, menu_bar, menu_item, menu_title, meter, motion_row,
+    fill_column, fill_text, glyph_button, heading, hold_button, icon, icon_button, image_box,
+    interface_size, label, led, list, menu, menu_bar, menu_item, menu_title, meter, motion_row,
     notification_center, number_field, overlay, pad_style, panel, popover, popover_modal,
     primary_button, progress, prompt, prompts, prompts_at, radial, radio_item, row, row_with,
     screen, section, select, separator, side_tab_page, side_tabs, side_tabs_icons, skin_preset,

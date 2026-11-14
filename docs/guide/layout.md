@@ -64,6 +64,10 @@ fn settings_row(mut commands: Commands) {
 }
 ```
 
+`fill_column(gap)` is a column that takes the room its row leaves and can narrow to zero
+(`flex_grow` 1, `min_width` 0): beside a fixed picture or a `count_text`, the text in it wraps inside
+it and never pushes the row out (`fill_text` is the same for one text; this holds several parts).
+
 `RowLayout` is written **only when it is on the node**: a plain `row(1.0)` keeps a `Node` field you
 patched yourself. A wrapping container puts the skin's gap between its lines as well as between its
 children. `column_with(gap, layout)` is the same for a column (`align` is across its width).

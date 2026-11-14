@@ -428,6 +428,37 @@ pub fn column(gap: f32) -> impl Bundle {
     )
 }
 
+/// A column that is a flex item of its own: it takes the room its row leaves, gives way to its
+/// neighbours down to nothing (`min_width` 0), and stacks its children `gap` multiples of the
+/// skin's gap apart, stretched across it. Text in it wraps inside it, so a name and its details
+/// stand in a column beside a fixed picture or a [`count_text`] and never push the row out.
+/// [`fill_text`] is a text that does this alone; this is the column that holds several parts.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     row(1.0),
+///     children![
+///         glyph_button(">", "Open"),
+///         (fill_column(0.5), children![heading("agent_view.rs"), label("12 problems in this file")]),
+///     ],
+/// ));
+/// # }
+/// ```
+pub fn fill_column(gap: f32) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::Stretch,
+            ..default()
+        },
+        Role::FillColumn,
+        crate::LayoutGap(gap),
+    )
+}
+
 /// A box of a fixed width, in body text sizes, so a label column lines up down a list of rows: the
 /// words start at one edge whatever they say, and what does not fit is cut rather than drawn over
 /// the next column. What it holds stands in a row, stretched to its height (a label and a value side

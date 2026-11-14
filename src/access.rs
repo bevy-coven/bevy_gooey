@@ -59,6 +59,7 @@ fn spec(role: Role) -> Spec {
         | Role::Row
         | Role::Column
         | Role::ButtonRow
+        | Role::FillColumn
         | Role::Cell
         | Role::ImageBox
         | Role::Overlay

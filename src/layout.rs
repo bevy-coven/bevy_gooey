@@ -45,7 +45,7 @@ pub struct BoxSize(pub Vec2);
 /// It is a component, so it goes where a patched `Node` cannot: beside `row(1.0)` in a bundle
 /// (`(row(1.0), RowLayout { .. })`), in a `Children::spawn(SpawnWith(..))` tuple, on any
 /// [`row_with`](crate::row_with) or [`column_with`](crate::column_with). [`crate::apply_skin`] writes
-/// it on a [`Role::Row`], [`Role::Column`] and [`Role::ButtonRow`] **only when the component is there**, so a row with none keeps whatever the
+/// it on a [`Role::Row`], [`Role::Column`], [`Role::ButtonRow`] and [`Role::FillColumn`] **only when the component is there**, so a row with none keeps whatever the
 /// host patched on its `Node`. Change it and the node follows in the same frame.
 ///
 /// `RowLayout::default()` is Bevy's own default for each: [`AlignItems::Default`] (stretch),
