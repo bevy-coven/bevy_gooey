@@ -135,7 +135,7 @@ fn list_of(
 /// row, so a click focuses a half-visible row where it stands and the next key brings it in.
 /// Writes `ScrollPosition` only when it must move by more than half a pixel. Runs in
 /// [`crate::GooeySystems::Navigate`], after the systems that move focus.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn scroll_to_focus(
     focus: Res<InputFocus>,
     visible: Res<InputFocusVisible>,
