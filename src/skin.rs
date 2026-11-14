@@ -5264,7 +5264,9 @@ fn restyle(
         // A size, then a shape, on any role, after the role's own: a field left `None` leaves the node.
         if let Some(sizing) = state.sizing {
             let set = |field: &mut Val, extent: Option<crate::box_model::Extent>| {
-                if let Some(val) = extent.and_then(|extent| extent.val(text_px)) {
+                if let Some(val) =
+                    extent.and_then(|extent| extent.val(text_px, text_px * LIST_LINE_TEXT_SIZES))
+                {
                     *field = val;
                 }
             };
@@ -5291,7 +5293,10 @@ fn restyle(
             if let Some(shrink) = flow.shrink.filter(|shrink| shrink.is_finite()) {
                 next.flex_shrink = shrink.max(0.0);
             }
-            if let Some(val) = flow.min_width.and_then(|extent| extent.val(text_px)) {
+            if let Some(val) = flow
+                .min_width
+                .and_then(|extent| extent.val(text_px, text_px * LIST_LINE_TEXT_SIZES))
+            {
                 next.min_width = val;
             }
             if let Some(align) = flow.align {

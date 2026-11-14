@@ -576,3 +576,166 @@ fn a_hidden_scrim_is_not_hit_and_a_shown_one_traps_no_focus() {
         "shown, it blocks again"
     );
 }
+
+// ---- 6. per-site leftovers --------------------------------------------------------------------
+
+/// A least height of lines of text follows the text size (the receipt row's `LinesRoom`): `Lines(2.0)`
+/// is two body lines at the skin's list-line height, and grows with the player's text scale.
+#[test]
+fn an_extent_in_lines_follows_the_text_scale() {
+    let mut heights = Vec::new();
+    for scale in [1.0, 1.5] {
+        let mut app = headless();
+        let mut skin = GooeySkin::dark();
+        skin.text_scale = scale;
+        app.insert_resource(skin);
+        let e = app
+            .world_mut()
+            .spawn((
+                row(0.0),
+                Sizing {
+                    min_height: Some(Extent::Lines(2.0)),
+                    ..default()
+                },
+            ))
+            .id();
+        app.world_mut().spawn(screen()).add_child(e);
+        settle(&mut app);
+        let Val::Px(h) = app.world().get::<Node>(e).expect("a node").min_height else {
+            panic!("not px");
+        };
+        assert!(
+            (rect(&app, e).height() - h).abs() < 0.5,
+            "an empty row is as tall as its least height"
+        );
+        heights.push(h);
+    }
+    assert!(
+        heights[0] > 0.0 && ((heights[1] / heights[0]) - 1.5).abs() < 0.02,
+        "{heights:?}"
+    );
+}
+
+/// A negative or non-finite number of lines is refused like every extent.
+#[test]
+fn lines_are_finite_checked_and_never_negative() {
+    let mut app = headless();
+    let e = app
+        .world_mut()
+        .spawn((
+            row(0.0),
+            Sizing {
+                min_height: Some(Extent::Lines(-3.0)),
+                max_height: Some(Extent::Lines(f32::NAN)),
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut().spawn(screen()).add_child(e);
+    settle(&mut app);
+    let node = app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(node.min_height, Val::Px(0.0));
+    assert_eq!(node.max_height, Val::Auto, "NaN leaves the node");
+}
+
+/// A role-less colour system needs a handle: a rail built from `placed_at`, `Sizing` and `InkFollow`
+/// is found by `With<InkFollow>`, keeps the colours the host paints and has the skin's size.
+#[test]
+fn a_rail_is_a_placed_sizing_and_ink_follow_found_by_the_marker() {
+    let mut app = headless();
+    let rail = app
+        .world_mut()
+        .spawn((
+            placed_at(0.0, 0.0),
+            Sizing {
+                width: Some(Extent::Px(3.0)),
+                height: Some(Extent::Percent(100.0)),
+                ..default()
+            },
+            InkFollow,
+        ))
+        .id();
+    let host = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(200.0),
+            height: Val::Px(120.0),
+            ..default()
+        })
+        .add_child(rail)
+        .id();
+    app.world_mut().spawn(screen()).add_child(host);
+    settle(&mut app);
+    // The host's colour system queries the marker, not `Without<Role>`.
+    let mut found = app.world_mut().query_filtered::<Entity, With<InkFollow>>();
+    let ids: Vec<Entity> = found.iter(app.world()).collect();
+    assert_eq!(ids, vec![rail]);
+    app.world_mut()
+        .entity_mut(rail)
+        .insert(BackgroundColor(GREEN));
+    app.world_mut().resource_mut::<GooeySkin>().surface = Color::srgb(0.3, 0.3, 0.3);
+    settle(&mut app);
+    let r = rect(&app, rail);
+    assert!(
+        (r.width() - 3.0).abs() < 0.5 && (r.height() - 120.0).abs() < 0.5,
+        "{r:?}"
+    );
+    assert_eq!(
+        app.world().get::<BackgroundColor>(rail).expect("a fill").0,
+        GREEN
+    );
+}
+
+/// A margin the host computes (the toolbar's edge) is a `Space::Px` written from a system.
+#[test]
+fn a_computed_margin_is_a_px_space_written_by_a_system() {
+    let mut app = headless();
+    let e = app.world_mut().spawn((row(0.0), Spacing::default())).id();
+    let host = app.world_mut().spawn(column(0.0)).add_child(e).id();
+    room(&mut app, 400.0, host);
+    settle(&mut app);
+    for computed in [10.0_f32, 37.5] {
+        app.world_mut()
+            .get_mut::<Spacing>(e)
+            .expect("spacing")
+            .margin
+            .left = Some(Space::Px(computed));
+        settle(&mut app);
+        assert_eq!(
+            app.world().get::<Node>(e).expect("a node").margin.left,
+            Val::Px(computed)
+        );
+    }
+}
+
+/// A placed label whose visibility the host decides each frame (a slot label) uses `Shown` instead of
+/// writing `Node::display`: hidden, it is `Display::None`; shown, the display it had.
+#[test]
+fn a_placed_world_label_is_hidden_and_shown_with_shown() {
+    let mut app = headless();
+    let target = app
+        .world_mut()
+        .spawn(Transform::from_translation(Vec3::new(100.0, 50.0, 0.0)))
+        .id();
+    let label_node = app
+        .world_mut()
+        .spawn((
+            placed_at(0.0, 0.0),
+            WorldAnchor::new(target),
+            children![label("Slot 2")],
+        ))
+        .id();
+    settle(&mut app);
+    let display = |app: &App| app.world().get::<Node>(label_node).expect("a node").display;
+    assert_eq!(display(&app), Display::Flex);
+    app.world_mut().entity_mut(label_node).insert(Shown(false));
+    settle(&mut app);
+    assert_eq!(
+        display(&app),
+        Display::None,
+        "hidden by Shown, no Node patched"
+    );
+    app.world_mut().entity_mut(label_node).insert(Shown(true));
+    settle(&mut app);
+    assert_eq!(display(&app), Display::Flex);
+}

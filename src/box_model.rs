@@ -192,6 +192,9 @@ pub enum Extent {
     Percent(f32),
     /// Body text sizes times the skin's `text_scale`, like a [`cell`](crate::cell)'s width.
     Text(f32),
+    /// Lines of body text: `n` times the skin's list-line height (1.2 body text sizes), so a least
+    /// height that follows the player's text size (a receipt row two lines tall).
+    Lines(f32),
     /// A percentage of the viewport's height (`100.0` is the whole window): a root that is the
     /// window's size whatever its host is. Bevy has no dynamic-viewport unit, so there is no `Dvh`.
     Vh(f32),
@@ -205,11 +208,12 @@ pub enum Extent {
 
 impl Extent {
     /// The length as Bevy's `Val`, or `None` for a number that is not finite (refused, not written).
-    pub(crate) fn val(self, text_px: f32) -> Option<Val> {
+    pub(crate) fn val(self, text_px: f32, line_px: f32) -> Option<Val> {
         let val = match self {
             Extent::Px(px) => Val::Px(px),
             Extent::Percent(percent) => Val::Percent(percent),
             Extent::Text(sizes) => Val::Px(sizes * text_px),
+            Extent::Lines(lines) => Val::Px(lines * line_px),
             Extent::Vh(v) => Val::Vh(v),
             Extent::Vw(v) => Val::Vw(v),
             Extent::VMin(v) => Val::VMin(v),

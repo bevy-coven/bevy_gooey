@@ -6,6 +6,12 @@
 
 - G-87 (#98, `docs/research/layout-final.md`, `docs/guide/layout.md`, `tests/layout_final.rs`), what was left of
   the editor's hand-built nodes after G-86:
+  `Extent::Lines(n)`: a length in lines of body text (the skin's list-line height), so a least height follows the
+  text size; the leftovers of the editor's per-site nodes (a rail, a computed margin, a placed label's display)
+  are mapped to existing parts in `docs/research/layout-final.md`.
+
+- G-87 (#98, `docs/research/layout-final.md`, `docs/guide/layout.md`, `tests/layout_final.rs`), what was left of
+  the editor's hand-built nodes after G-86:
   `scrim()` (`Role::Backdrop`): a full-size layer filled with the skin's scrim colour that blocks the pointer
   (unlike `cover()`, which lets it through), centres what it holds, hides with `Shown` and is not a dialog (no
   focus trap). One new `Role` (`Backdrop`), listed under Breaking.
