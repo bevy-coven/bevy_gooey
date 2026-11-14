@@ -3012,6 +3012,49 @@ fn on_screen(parent: Option<Entity>, roles: &Query<&Role>, parents: &Query<&Chil
         .is_ok_and(|up| roles.get(up.parent()) == Ok(&Role::Screen))
 }
 
+/// The roles a [`RowLayout`] is written on: the layout containers (`Row`, `Column`, `ButtonRow`,
+/// `FillColumn`, `FillRegion`), a placed node, a button (so a [`crate::button_box`] can be a card),
+/// a [`crate::sized`] box, and the plain containers a host fills with its own children: `Panel`,
+/// `Surface`, `Card`, `Tone`, `Menu`, `SectionBody` and `Screen`. **Not** a `Dock` or a `DockBody` (the
+/// dock writes their grid), a `Split` or its panes, a table, a list or a text, whose layout is theirs.
+fn takes_a_row_layout(role: &Role) -> bool {
+    matches!(
+        role,
+        Role::Row
+            | Role::Column
+            | Role::ButtonRow
+            | Role::FillColumn
+            | Role::FillRegion
+            | Role::Placed
+            | Role::Button
+            | Role::Sized
+            | Role::Panel
+            | Role::Surface(_)
+            | Role::Card
+            | Role::Tone(_)
+            | Role::Menu
+            | Role::SectionBody
+            | Role::Screen
+    )
+}
+
+/// The roles that take a [`LayoutGap`] they did not already have: the containers of
+/// [`takes_a_row_layout`] that are not a row or a column (those always have one).
+fn takes_a_gap(role: &Role) -> bool {
+    matches!(
+        role,
+        Role::Placed
+            | Role::Sized
+            | Role::Panel
+            | Role::Surface(_)
+            | Role::Card
+            | Role::Tone(_)
+            | Role::Menu
+            | Role::SectionBody
+            | Role::Screen
+    )
+}
+
 #[allow(clippy::too_many_arguments)]
 fn restyle(
     (
@@ -5278,19 +5321,18 @@ fn restyle(
                 commands.entity(entity).remove::<ShownMemory>();
             }
         }
+        // A container that is not a row or a column has no gap of its own to ask for: a
+        // `LayoutGap` on it (a panel, a surface, a card, a placed cluster...) is the host's, as many
+        // skin gaps between its children, down and across, replacing the role's own.
+        if let (Some(gap), true) = (state.region_gap, takes_a_gap(role)) {
+            if gap.is_finite() {
+                next.row_gap = Val::Px(gap.max(0.0) * skin.gap);
+                next.column_gap = Val::Px(gap.max(0.0) * skin.gap);
+            }
+        }
         // What a container was asked for beyond its gap, written only when asked: a row with no
-        // `RowLayout` keeps a `Node` field its host patched.
-        if let (
-            Some(flow),
-            Role::Row
-            | Role::Column
-            | Role::ButtonRow
-            | Role::FillColumn
-            | Role::FillRegion
-            | Role::Placed
-            | Role::Button,
-        ) = (state.flow, role)
-        {
+        // `RowLayout` keeps a `Node` field its host patched. See [`takes_a_row_layout`] for the roles.
+        if let (Some(flow), true) = (state.flow, takes_a_row_layout(role)) {
             // A field left `None` keeps what the role gave the node.
             if let Some(align) = flow.align {
                 next.align_items = align;

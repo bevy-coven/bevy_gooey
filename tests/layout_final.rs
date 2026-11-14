@@ -229,3 +229,187 @@ fn ink_follow_beats_an_override_and_removing_it_restyles() {
         "the skin no longer writes it"
     );
 }
+
+// ---- 3 and 2. RowLayout and LayoutGap on container roles and on placed nodes ------------------
+
+/// A `RowLayout` turns a panel, a surface, a card, a tone box, a menu, a section body, a sized box and
+/// a screen into the flow the host asks for.
+#[test]
+fn a_row_layout_applies_to_the_container_roles() {
+    let mut app = headless();
+    let roles: Vec<(&str, Entity)> = vec![
+        ("panel", app.world_mut().spawn(panel()).id()),
+        ("surface", app.world_mut().spawn(surface(1)).id()),
+        (
+            "card",
+            app.world_mut().spawn((Node::default(), Role::Card)).id(),
+        ),
+        (
+            "tone",
+            app.world_mut()
+                .spawn((Node::default(), Role::Tone("x")))
+                .id(),
+        ),
+        ("menu", app.world_mut().spawn(menu()).id()),
+        (
+            "section body",
+            app.world_mut()
+                .spawn((Node::default(), Role::SectionBody))
+                .id(),
+        ),
+        (
+            "sized",
+            app.world_mut().spawn(sized(Sizing::default())).id(),
+        ),
+        ("screen", app.world_mut().spawn(screen()).id()),
+    ];
+    for (_, e) in &roles {
+        app.world_mut().entity_mut(*e).insert(RowLayout {
+            direction: Some(FlexDirection::Row),
+            align: Some(AlignItems::Center),
+            justify: Some(JustifyContent::End),
+            wrap: Some(FlexWrap::Wrap),
+            shrink: Some(0.0),
+        });
+    }
+    settle(&mut app);
+    for (name, e) in &roles {
+        let node = app.world().get::<Node>(*e).expect("a node");
+        assert_eq!(node.flex_direction, FlexDirection::Row, "{name}");
+        assert_eq!(node.align_items, AlignItems::Center, "{name}");
+        assert_eq!(node.justify_content, JustifyContent::End, "{name}");
+        assert_eq!(node.flex_wrap, FlexWrap::Wrap, "{name}");
+        assert_eq!(node.flex_shrink, 0.0, "{name}");
+    }
+}
+
+/// A panel that is a row with children: they stand in a line, a gap of the host's own apart, and
+/// the panel keeps its own frame and padding.
+#[test]
+fn a_panel_can_be_a_row_with_its_own_gap() {
+    let mut app = headless();
+    let (a, b) = (probe(&mut app, 30.0, 20.0), probe(&mut app, 30.0, 20.0));
+    let card = app
+        .world_mut()
+        .spawn((
+            panel(),
+            LayoutGap(2.0),
+            RowLayout {
+                direction: Some(FlexDirection::Row),
+                ..default()
+            },
+        ))
+        .with_children(|p| {
+            p.spawn(a);
+            p.spawn(b);
+        })
+        .id();
+    room(&mut app, 400.0, card);
+    settle(&mut app);
+    let kids = children(&app, card);
+    let (first, second) = (rect(&app, kids[0]), rect(&app, kids[1]));
+    assert!((first.min.y - second.min.y).abs() < 0.5, "a line");
+    assert!(
+        ((second.min.x - first.max.x) - 2.0 * GooeySkin::dark().gap).abs() < 0.5,
+        "two skin gaps: {first:?} {second:?}"
+    );
+    assert!(
+        app.world().get::<Node>(card).expect("a node").padding != UiRect::ZERO,
+        "the panel keeps its own padding"
+    );
+}
+
+/// Without `LayoutGap` a panel keeps the gap it has; with it, the gap is the host's multiple.
+#[test]
+fn a_layout_gap_on_a_panel_replaces_its_own_row_gap() {
+    let mut app = headless();
+    let plain = app.world_mut().spawn(panel()).id();
+    let gapped = app.world_mut().spawn((panel(), LayoutGap(0.5))).id();
+    for e in [plain, gapped] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    let skin = GooeySkin::dark();
+    let node = |e| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(node(plain).row_gap, Val::Px(skin.gap), "the panel's own");
+    assert_eq!(node(gapped).row_gap, Val::Px(0.5 * skin.gap));
+    assert_eq!(node(gapped).column_gap, Val::Px(0.5 * skin.gap));
+}
+
+/// A placed node that is also a flow: `LayoutGap` and `RowLayout` are honoured beside its `PlacedAt`,
+/// which keeps owning its place.
+#[test]
+fn a_placed_node_can_be_a_flow_with_a_gap_beside_its_place() {
+    let mut app = headless();
+    let (a, b) = (probe(&mut app, 30.0, 20.0), probe(&mut app, 30.0, 20.0));
+    let flow = probe(&mut app, 100.0, 50.0);
+    let cluster = app
+        .world_mut()
+        .spawn((
+            placed_at(40.0, 30.0),
+            LayoutGap(1.5),
+            RowLayout {
+                direction: Some(FlexDirection::Row),
+                ..default()
+            },
+        ))
+        .with_children(|p| {
+            p.spawn(a);
+            p.spawn(b);
+        })
+        .id();
+    let host = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(400.0),
+            height: Val::Px(300.0),
+            ..default()
+        })
+        .with_children(|h| {
+            h.spawn(flow);
+        })
+        .add_child(cluster)
+        .id();
+    app.world_mut().spawn(screen()).add_child(host);
+    settle(&mut app);
+    let (h, c) = (rect(&app, host), rect(&app, cluster));
+    assert!(
+        (c.min - (h.min + Vec2::new(40.0, 30.0))).length() < 0.5,
+        "its place: {c:?} in {h:?}"
+    );
+    let kids = children(&app, cluster);
+    let (first, second) = (rect(&app, kids[0]), rect(&app, kids[1]));
+    assert!(
+        ((second.min.x - first.max.x) - 1.5 * GooeySkin::dark().gap).abs() < 0.5,
+        "{first:?} {second:?}"
+    );
+    assert!((first.min.y - second.min.y).abs() < 0.5, "a row");
+}
+
+/// A changed `LayoutGap` and a changed `RowLayout` on a panel restyle it in the same frame.
+#[test]
+fn a_changed_layout_gap_and_row_layout_restyle_a_panel() {
+    let mut app = headless();
+    let e = app
+        .world_mut()
+        .spawn((
+            panel(),
+            LayoutGap(1.0),
+            RowLayout {
+                direction: Some(FlexDirection::Column),
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut().spawn(screen()).add_child(e);
+    settle(&mut app);
+    app.world_mut().get_mut::<LayoutGap>(e).expect("a gap").0 = 3.0;
+    app.world_mut()
+        .get_mut::<RowLayout>(e)
+        .expect("a layout")
+        .direction = Some(FlexDirection::Row);
+    settle(&mut app);
+    let node = app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(node.row_gap, Val::Px(3.0 * GooeySkin::dark().gap));
+    assert_eq!(node.flex_direction, FlexDirection::Row);
+}

@@ -263,6 +263,13 @@ border, radius, padding and colours, and a skin change does not reset what you w
 nor the edge (whatever the role, state, `Shape` or `InkOverride`), and still writes every other field. Put
 your colours on the node yourself; take the marker off and the skin paints it again.
 
+## A panel, a card or a placed cluster that is also a flow
+
+A `RowLayout` is honoured on `Panel`, `Surface`, `Card`, `Tone`, `Menu`, `SectionBody`, `Screen`, a `sized`
+box and a `placed` node (and on the layout containers and a `button_box`), but not on a `Dock`, a split, a
+table, a list or a text. Its gap is a `LayoutGap` beside it, which replaces the role's own:
+`(panel(), LayoutGap(0.5), RowLayout { direction: Some(FlexDirection::Row), ..default() })`.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

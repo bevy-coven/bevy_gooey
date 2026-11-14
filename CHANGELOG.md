@@ -6,6 +6,12 @@
 
 - G-87 (#98, `docs/research/layout-final.md`, `docs/guide/layout.md`, `tests/layout_final.rs`), what was left of
   the editor's hand-built nodes after G-86:
+  `RowLayout` on container roles (`Panel`, `Surface`, `Card`, `Tone`, `Menu`, `SectionBody`, `Screen`, a `sized`
+  box; not a `Dock`) and `LayoutGap` on them and on `Placed`: a panel, a card or a placed cluster that is also a
+  flow, with a gap of its own; the rustdoc lists the roles.
+
+- G-87 (#98, `docs/research/layout-final.md`, `docs/guide/layout.md`, `tests/layout_final.rs`), what was left of
+  the editor's hand-built nodes after G-86:
   `InkFollow`: the colour twin of `HostGeometry`, a marker for a node whose fill and edge the host paints by
   state: the skin writes neither and still writes every other field; removing it restyles the node.
 

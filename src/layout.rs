@@ -50,9 +50,16 @@ pub struct BoxSize(pub Vec2);
 /// It is a component, so it goes where a patched `Node` cannot: beside `row(1.0)` in a bundle
 /// (`(row(1.0), RowLayout { .. })`), in a `Children::spawn(SpawnWith(..))` tuple, on any
 /// [`row_with`](crate::row_with) or [`column_with`](crate::column_with). [`crate::apply_skin`] writes
-/// it on a [`Role::Row`], [`Role::Column`], [`Role::ButtonRow`], [`Role::FillColumn`],
-/// [`Role::FillRegion`], [`Role::Placed`] and a [`button_box`](crate::button_box)'s [`Role::Button`] **only when the component is there**, so a row with none
-/// keeps whatever the host patched on its `Node`. Change it and the node follows in the same frame;
+/// it **only when the component is there**, on these roles: [`Role::Row`], [`Role::Column`],
+/// [`Role::ButtonRow`], [`Role::FillColumn`], [`Role::FillRegion`], [`Role::Placed`], a
+/// [`button_box`](crate::button_box)'s [`Role::Button`], a [`sized`](crate::sized) box, and the plain
+/// containers a host fills with its own children: [`Role::Panel`], [`Role::Surface`], [`Role::Card`],
+/// [`Role::Tone`], [`Role::Menu`], [`Role::SectionBody`] and [`Role::Screen`]. **Not** on a `Dock`
+/// or a `DockBody` (the dock writes their grid), a `Split` and its panes, a table, a list or a text,
+/// whose layout is their own. The gap between children is a [`LayoutGap`](crate::LayoutGap) beside it
+/// (honoured on every role above, and on a panel, surface, card, placed node... it replaces the role's
+/// own gap), so a row with none keeps
+/// whatever the host patched on its `Node`. Change it and the node follows in the same frame;
 /// setting a field back to `None` leaves the node as it was last written.
 ///
 /// Not serde: it holds Bevy's own layout enums.
