@@ -510,6 +510,75 @@ pub fn fill_region() -> impl Bundle {
     )
 }
 
+/// A node placed in its host by its edges: absolute, so it takes no room in the flow and the host's
+/// other children stand where they would without it, `inset` from the host's sides. A side left
+/// [`Val::Auto`] is not pinned (`UiRect::default()` is zero on every side, not `Auto`: start from
+/// `UiRect::all(Val::Auto)`), so a node pinned at one corner is the size of what it holds. Use it for
+/// a mark, a label or a drag rectangle at a pixel place of a pane; a node that follows a point in
+/// the world is a [`WorldAnchor`](crate::WorldAnchor) instead (do not put both on one node).
+///
+/// It is layout, not a surface: it is [`Pickable::IGNORE`] like [`screen`], so the pointer goes
+/// through it to what is under it; for one that must take the pointer, `.insert(Pickable::default())`
+/// on the entity after spawning it. A [`RowLayout`](crate::RowLayout) beside it lays out what it holds.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// // The compass: 12 px in from the host's top right corner.
+/// let corner = UiRect { top: Val::Px(12.0), right: Val::Px(12.0), ..UiRect::all(Val::Auto) };
+/// commands.spawn((placed(corner), children![label("N")]));
+/// # }
+/// ```
+pub fn placed(inset: UiRect) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Placed,
+        crate::PlacedAt(inset),
+        Pickable::IGNORE,
+    )
+}
+
+/// A node placed `left` and `top` logical px in from its host's top left corner: a drag rectangle
+/// or an area's label. [`placed`] with only those two sides pinned.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((placed_at(30.0, 40.0), children![label("Stage 2")]));
+/// # }
+/// ```
+pub fn placed_at(left: f32, top: f32) -> impl Bundle {
+    placed(UiRect {
+        left: Val::Px(left),
+        top: Val::Px(top),
+        ..UiRect::all(Val::Auto)
+    })
+}
+
+/// A node that fills its host: absolute at `0` on every side, so it takes no room and covers
+/// exactly the rectangle its host has, whatever size that is: an empty state over a viewport, a
+/// scrim over a pane. [`placed`] with every side pinned at zero; like it, `Pickable::IGNORE`.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     cover(),
+///     RowLayout { align: AlignItems::Center, justify: JustifyContent::Center, ..default() },
+///     children![label("Nothing here yet")],
+/// ));
+/// # }
+/// ```
+pub fn cover() -> impl Bundle {
+    placed(UiRect::all(Val::ZERO))
+}
+
 /// A box of a fixed width, in body text sizes, so a label column lines up down a list of rows: the
 /// words start at one edge whatever they say, and what does not fit is cut rather than drawn over
 /// the next column. What it holds stands in a row, stretched to its height (a label and a value side

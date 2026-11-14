@@ -77,6 +77,13 @@ with a width of its own: a dialog's card, or a form on a screen, that is not 21 
 is never wider than the room it stands in (a dialog's card: the window less the scrim's 5% on each
 side) and has no least width.
 
+`placed_at(30.0, 40.0)` puts a node that many px in from its host's top left corner, `placed(UiRect { right:
+.., bottom: .., ..UiRect::all(Val::Auto) })` at any corner or edge, and `cover()` fills its host: all
+absolute, so they take no room in the flow and the host's other children stay where they were, and
+`Pickable::IGNORE`, so the pointer goes through (`insert(Pickable::default())` for one that must take
+it). A node that follows a point **in the world** (a balloon, a label on a map area, a badge on a mesh)
+is not this: it is a [`WorldAnchor`](world-anchor.md).
+
 `RowLayout` is written **only when it is on the node**: a plain `row(1.0)` keeps a `Node` field you
 patched yourself. A wrapping container puts the skin's gap between its lines as well as between its
 children. `column_with(gap, layout)` is the same for a column (`align` is across its width).

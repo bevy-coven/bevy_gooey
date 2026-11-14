@@ -41,6 +41,14 @@ fn health_bar(mut commands: Commands, enemy: Entity) {
   the viewport's offset too far up and left. `tests/kit_parts.rs` holds it: a 600 x 400 pane at
   (300, 100), a slot at world (100, 50), the foot of the label on window (700, 250).
 
+## A balloon, a label, a badge: already this
+
+Anything that stands on a point of the world is a `WorldAnchor` on any bundle with a `Node`: a
+`panel()` with a label in it for a balloon over a thing, a `label()` for the name of an area, a badge
+on a mesh (`.pivot(Vec2::ZERO)` puts the node's top left on the point). `a_node_on_a_world_point_is_a_world_anchor`
+holds it. A node at a **pixel place of its host** (a drag rectangle, a corner mark, a full-pane
+overlay) has no world point: that is `placed_at(left, top)` and `cover()`, see [layout](layout.md).
+
 ## Out of view
 
 `WorldAnchor::off_screen` is `OffScreen::Hide` (the default) or `OffScreen::Pin` (`.pinned()`).

@@ -694,3 +694,152 @@ fn a_changed_card_width_restyles() {
         rect(&app, card)
     );
 }
+
+// ---- 5. absolutely placed nodes --------------------------------------------------------------
+
+/// A 400 × 300 host holding a 100 × 50 flow box and `placed`.
+fn placed_host(app: &mut App, placed: impl Bundle, inside: Entity) -> (Entity, Entity, Entity) {
+    let flow = probe(app, 100.0, 50.0);
+    let world = app.world_mut();
+    let placed = world.spawn(placed).add_child(inside).id();
+    let host = world
+        .spawn(Node {
+            width: Val::Px(400.0),
+            height: Val::Px(300.0),
+            flex_direction: FlexDirection::Column,
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .with_children(|host| {
+            host.spawn(flow);
+        })
+        .add_child(placed)
+        .id();
+    let first = children(app, host)[0];
+    app.world_mut().spawn(screen()).add_child(host);
+    (host, first, placed)
+}
+
+/// `placed_at(left, top)` puts a node that many px in from its host's top left corner and takes no
+/// room of its own: the host's flow child stays where it was.
+#[test]
+fn placed_at_puts_a_node_at_left_and_top_and_takes_no_room() {
+    let mut app = headless();
+    let mark = app.world_mut().spawn(label("area")).id();
+    let (host, flow, placed) = placed_host(&mut app, placed_at(30.0, 40.0), mark);
+    settle(&mut app);
+    let (host, flow, placed) = (rect(&app, host), rect(&app, flow), rect(&app, placed));
+    assert!(
+        (placed.min - (host.min + Vec2::new(30.0, 40.0))).length() < 0.5,
+        "{placed:?} in {host:?}"
+    );
+    assert!(
+        (flow.min - host.min).length() < 0.5,
+        "the flow child is not pushed: {flow:?}"
+    );
+}
+
+/// A node placed by its right and bottom edges stands that far in from the far corner.
+#[test]
+fn placed_can_hold_a_corner() {
+    let mut app = headless();
+    let mark = app.world_mut().spawn(label("N")).id();
+    let inset = UiRect {
+        right: Val::Px(10.0),
+        bottom: Val::Px(20.0),
+        ..UiRect::all(Val::Auto)
+    };
+    let (host, _, placed) = placed_host(&mut app, placed(inset), mark);
+    settle(&mut app);
+    let (host, placed) = (rect(&app, host), rect(&app, placed));
+    assert!(
+        (placed.max.x - (host.max.x - 10.0)).abs() < 0.5,
+        "{placed:?} in {host:?}"
+    );
+    assert!(
+        (placed.max.y - (host.max.y - 20.0)).abs() < 0.5,
+        "{placed:?} in {host:?}"
+    );
+}
+
+/// `cover()` fills its host, whatever size that is: a full-viewport overlay.
+#[test]
+fn cover_fills_its_host() {
+    let mut app = headless();
+    let mark = app.world_mut().spawn(label("Nothing here yet")).id();
+    let (host, _, cover_node) = placed_host(&mut app, cover(), mark);
+    settle(&mut app);
+    let (host, cover_rect) = (rect(&app, host), rect(&app, cover_node));
+    assert!(
+        (cover_rect.min - host.min).length() < 0.5 && (cover_rect.max - host.max).length() < 0.5,
+        "{cover_rect:?} over {host:?}"
+    );
+}
+
+/// A placed node is a mark, not a surface: the pointer goes through it to what is under it, like a
+/// `screen()`.
+#[test]
+fn a_placed_node_lets_the_pointer_through() {
+    let mut app = headless();
+    let a = app.world_mut().spawn(placed_at(1.0, 2.0)).id();
+    let b = app.world_mut().spawn(cover()).id();
+    for e in [a, b] {
+        assert_eq!(app.world().get::<Pickable>(e), Some(&Pickable::IGNORE));
+    }
+}
+
+/// A changed inset moves the node in the same frame.
+#[test]
+fn a_changed_inset_restyles() {
+    let mut app = headless();
+    let mark = app.world_mut().spawn(label("area")).id();
+    let (host, _, placed) = placed_host(&mut app, placed_at(30.0, 40.0), mark);
+    settle(&mut app);
+    app.world_mut()
+        .get_mut::<PlacedAt>(placed)
+        .expect("an inset")
+        .0
+        .left = Val::Px(80.0);
+    settle(&mut app);
+    let (host, placed) = (rect(&app, host), rect(&app, placed));
+    assert!(
+        (placed.min.x - (host.min.x + 80.0)).abs() < 0.5,
+        "{placed:?} in {host:?}"
+    );
+}
+
+/// A node that follows a point in the world (a balloon over a thing, a label over a map area, a
+/// badge on a mesh) is already a `WorldAnchor` on any bundle with a `Node`: its foot stands on the
+/// projected point. Documented, not rebuilt.
+#[test]
+fn a_node_on_a_world_point_is_a_world_anchor() {
+    let mut app = headless();
+    let target = app
+        .world_mut()
+        .spawn(Transform::from_translation(Vec3::new(100.0, 50.0, 0.0)))
+        .id();
+    let balloon = app
+        .world_mut()
+        .spawn((
+            panel(),
+            children![label("Hello")],
+            WorldAnchor::above(target, 0.0),
+        ))
+        .id();
+    let badge = app
+        .world_mut()
+        .spawn((
+            label("3"),
+            WorldAnchor::new(target).pivot(Vec2::new(0.0, 0.0)),
+        ))
+        .id();
+    settle(&mut app);
+    let at = rect(&app, balloon);
+    // The camera is at the origin looking at a 1280 × 720 window: world (100, 50) is (740, 310).
+    assert!(
+        (at.center().x - 740.0).abs() < 1.0 && (at.max.y - 310.0).abs() < 1.0,
+        "{at:?}"
+    );
+    let at = rect(&app, badge);
+    assert!((at.min - Vec2::new(740.0, 310.0)).length() < 1.0, "{at:?}");
+}

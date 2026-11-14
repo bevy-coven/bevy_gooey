@@ -45,7 +45,7 @@ pub struct BoxSize(pub Vec2);
 /// It is a component, so it goes where a patched `Node` cannot: beside `row(1.0)` in a bundle
 /// (`(row(1.0), RowLayout { .. })`), in a `Children::spawn(SpawnWith(..))` tuple, on any
 /// [`row_with`](crate::row_with) or [`column_with`](crate::column_with). [`crate::apply_skin`] writes
-/// it on a [`Role::Row`], [`Role::Column`], [`Role::ButtonRow`], [`Role::FillColumn`] and [`Role::FillRegion`] **only when the component is there**, so a row with none keeps whatever the
+/// it on a [`Role::Row`], [`Role::Column`], [`Role::ButtonRow`], [`Role::FillColumn`], [`Role::FillRegion`] and [`Role::Placed`] **only when the component is there**, so a row with none keeps whatever the
 /// host patched on its `Node`. Change it and the node follows in the same frame.
 ///
 /// `RowLayout::default()` is Bevy's own default for each: [`AlignItems::Default`] (stretch),
@@ -82,6 +82,18 @@ pub enum CardWidth {
     /// Body text sizes, times the player's text scale.
     Text(f32),
 }
+
+/// Where a [`placed`](crate::placed) node stands in its host, written by [`crate::apply_skin`] as
+/// the node's `left`, `top`, `right` and `bottom`. A side left [`Val::Auto`] is not pinned: with
+/// `left` and `top` set and the rest `Auto` the node is the size of what it holds; with all four set
+/// it fills the rectangle between them, which is what [`cover`](crate::cover) is.
+///
+/// Note `UiRect::default()` is `Val::ZERO` on every side, not `Auto`: write a corner as
+/// `UiRect { right: Val::Px(10.0), bottom: Val::Px(20.0), ..UiRect::all(Val::Auto) }`. Not serde
+/// (Bevy's `UiRect`). Removing the component leaves the node as it is.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct PlacedAt(pub UiRect);
 
 /// An [`overlay`](crate::overlay)'s child drawn over its first one: absolute, filling the box the
 /// first child gives the overlay.

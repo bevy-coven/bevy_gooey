@@ -28,7 +28,9 @@ use crate::drag::{DropCandidate, DropRefusing};
 use crate::elevation::{Elevation, ElevationLevel};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
 use crate::icon::{IconSize, IconTone};
-use crate::layout::{BoxSize, CardWidth, CellWidth, LayoutGap, OverlayStacked, RowLayout};
+use crate::layout::{
+    BoxSize, CardWidth, CellWidth, LayoutGap, OverlayStacked, PlacedAt, RowLayout,
+};
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
@@ -2094,6 +2096,9 @@ pub enum Role {
     /// A [`crate::fill_region`]: a flex column that takes the height its column leaves and can
     /// shrink to nothing, around a tree or a list; not drawn.
     FillRegion,
+    /// A [`crate::placed`], [`crate::placed_at`] or [`crate::cover`] node: absolute in its host at
+    /// its [`PlacedAt`](crate::PlacedAt), taking no room of its own; not drawn.
+    Placed,
     /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
     /// drawn, so a label column lines up down a list of rows.
     Cell,
@@ -2290,6 +2295,8 @@ struct State {
     flow: Option<RowLayout>,
     /// The width a panel was asked to be ([`CardWidth`]); none leaves the panel's own measure.
     card_width: Option<CardWidth>,
+    /// Where a placed node stands ([`PlacedAt`]); none pins no side.
+    inset: Option<UiRect>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
     /// because the selected one is the surface and not the accent.
     edge_tab: bool,
@@ -2331,6 +2338,7 @@ impl Default for State {
             multi_line: false,
             flow: None,
             card_width: None,
+            inset: None,
             layout_gap: 1.0,
             cell: 0.0,
             image: Vec2::ZERO,
@@ -2374,6 +2382,7 @@ type StateQuery = (
             Has<OverlayStacked>,
             Option<&'static RowLayout>,
             Option<&'static CardWidth>,
+            Option<&'static PlacedAt>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2425,6 +2434,7 @@ type Restyle = (
                 Added<OverlayStacked>,
                 Changed<RowLayout>,
                 Changed<CardWidth>,
+                Changed<PlacedAt>,
             )>,
         )>,
     )>,
@@ -2596,7 +2606,7 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
-                        (stacked, flow, card_width),
+                        (stacked, flow, card_width, inset),
                     ),
                     row,
                     role,
@@ -2650,6 +2660,7 @@ pub fn apply_skin(
                         stacked,
                         flow: flow.copied(),
                         card_width: card_width.copied(),
+                        inset: inset.map(|inset| inset.0),
                     }
                 },
             )
@@ -3310,6 +3321,7 @@ fn restyle(
         | Role::ButtonRow
         | Role::FillColumn
         | Role::FillRegion
+        | Role::Placed
         | Role::Cell
         | Role::ImageBox
         | Role::Overlay
@@ -4923,6 +4935,17 @@ fn restyle(
                 next.flex_shrink = 1.0;
                 next.min_height = Val::ZERO;
             }
+            // A node placed in its host: absolute at its inset, so it takes no room in the flow and
+            // a host's other children stand where they would without it. Stacked in an overlay it
+            // is the first child's box, which `stack_overlays` owns.
+            Role::Placed if !state.stacked => {
+                let inset = state.inset.unwrap_or(UiRect::all(Val::Auto));
+                next.position_type = PositionType::Absolute;
+                next.left = inset.left;
+                next.top = inset.top;
+                next.right = inset.right;
+                next.bottom = inset.bottom;
+            }
             // Buttons side by side stand a gap apart on one line, centred on it, and a line that is
             // full wraps, a gap below (`RowLayout` below overrides each).
             Role::ButtonRow => {
@@ -4970,7 +4993,12 @@ fn restyle(
         // `RowLayout` keeps a `Node` field its host patched.
         if let (
             Some(flow),
-            Role::Row | Role::Column | Role::ButtonRow | Role::FillColumn | Role::FillRegion,
+            Role::Row
+            | Role::Column
+            | Role::ButtonRow
+            | Role::FillColumn
+            | Role::FillRegion
+            | Role::Placed,
         ) = (state.flow, role)
         {
             next.align_items = flow.align;
