@@ -14,8 +14,8 @@ use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
 use crate::box_model::{
-    BorderPx, HostGeometry, InkOverride, Shape, Shown, ShownMemory, Sizing, Spacing, TextFlow,
-    lined, pixeled, spaced,
+    BorderPx, HostGeometry, InkFollow, InkOverride, Shape, Shown, ShownMemory, Sizing, Spacing,
+    TextFlow, lined, pixeled, spaced,
 };
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
@@ -2337,6 +2337,8 @@ struct State {
     ink_override: Option<InkOverride>,
     /// The host writes this node's geometry itself ([`HostGeometry`]).
     host_geometry: bool,
+    /// The host paints this node's fill and edge ([`InkFollow`]).
+    ink_follow: bool,
     /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
     region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
@@ -2392,6 +2394,7 @@ impl Default for State {
             border_px: None,
             ink_override: None,
             host_geometry: false,
+            ink_follow: false,
             region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
@@ -2447,7 +2450,7 @@ type StateQuery = (
             Option<&'static Visibility>,
             Option<&'static BorderPx>,
             Option<&'static InkOverride>,
-            Has<HostGeometry>,
+            (Has<HostGeometry>, Has<InkFollow>),
         ),
     ),
     Option<&'static TableRow>,
@@ -2509,6 +2512,7 @@ type Restyle = (
                     Changed<TextFlow>,
                     Changed<BorderPx>,
                     Changed<InkOverride>,
+                    Changed<InkFollow>,
                 )>,
             )>,
         )>,
@@ -2552,6 +2556,7 @@ type Removals<'w, 's> = (
     (
         RemovedComponents<'w, 's, LoadingHold>,
         RemovedComponents<'w, 's, OverlayStacked>,
+        RemovedComponents<'w, 's, InkFollow>,
     ),
 );
 
@@ -2641,7 +2646,7 @@ pub fn apply_skin(
         unprimed,
         unsized_controls,
         unvaried,
-        (unheld, unstacked),
+        (unheld, unstacked, uninked),
     ) = &mut removed;
     let any_scope = !scopes.is_empty();
     let look = Look {
@@ -2697,7 +2702,7 @@ pub fn apply_skin(
                             visibility,
                             border_px,
                             ink_override,
-                            host_geometry,
+                            (host_geometry, ink_follow),
                         ),
                     ),
                     row,
@@ -2763,6 +2768,7 @@ pub fn apply_skin(
                         border_px: border_px.copied(),
                         ink_override: ink_override.copied(),
                         host_geometry,
+                        ink_follow,
                         visibility: visibility.copied().unwrap_or_default(),
                         region_gap: gap.map(|gap| gap.0),
                     }
@@ -2846,6 +2852,7 @@ pub fn apply_skin(
         unvaried.clear();
         unheld.clear();
         unstacked.clear();
+        uninked.clear();
         unscoped.clear();
         orphaned.clear();
         for item in &mut styled {
@@ -2899,6 +2906,7 @@ pub fn apply_skin(
     dirty.extend(unvaried.read());
     dirty.extend(unheld.read());
     dirty.extend(unstacked.read());
+    dirty.extend(uninked.read());
     if focus.is_changed() || visible.is_changed() {
         dirty.extend(
             styled
@@ -3574,7 +3582,8 @@ fn restyle(
         .or(fill);
     // The host's own colour wins over the shape's and the role's.
     let fill = state.ink_override.and_then(|o| o.fill).or(fill);
-    if let (Some(fill), Some(mut background)) = (fill, background) {
+    // A node the host paints (`InkFollow`) gets neither a fill nor an edge from the skin.
+    if let (Some(fill), Some(mut background), false) = (fill, background, state.ink_follow) {
         background.set_if_neq(BackgroundColor(faded(fill, alpha)));
     }
 
@@ -3851,7 +3860,7 @@ fn restyle(
         Some(colour) => Some(BorderColor::all(colour)),
         None => edge,
     };
-    if let (Some(edge), Some(mut border)) = (edge, border) {
+    if let (Some(edge), Some(mut border), false) = (edge, border, state.ink_follow) {
         border.set_if_neq(faded_edge(edge, alpha));
     }
 

@@ -257,6 +257,12 @@ its own `Node` and add `HostGeometry` at spawn: the skin then leaves the insets 
 lengths of a `Sizing` alone (not a `CardWidth`, an `AspectBox` or a role's own widths), still writes the
 border, radius, padding and colours, and a skin change does not reset what you wrote.
 
+## Colours you paint by state
+
+`InkFollow` is the colour twin of `HostGeometry`: on a node that has it the skin writes neither the fill
+nor the edge (whatever the role, state, `Shape` or `InkOverride`), and still writes every other field. Put
+your colours on the node yourself; take the marker off and the skin paints it again.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

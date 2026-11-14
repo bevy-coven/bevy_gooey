@@ -550,3 +550,31 @@ pub struct InkOverride {
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 pub struct HostGeometry;
+
+/// The colour twin of [`HostGeometry`]: marks a node whose **fill and edge the host paints itself,
+/// by state**, from a colour system of its own (a chip held, a row selected or hovered, a field
+/// failing). [`crate::apply_skin`] then writes neither its `BackgroundColor` nor its `BorderColor`,
+/// whatever the node's role, state, [`Shape`] or [`InkOverride`] say and whatever skin change
+/// restyles it, and still writes **every other field**: size, border width, radius, padding, text
+/// colour, overflow. Where an [`InkOverride`] pins one colour, `InkFollow` lets the host follow the
+/// state with as many colours as it has. The host's colours are the ones on the node: put them there
+/// at spawn or from a system (the skin gives the node no colours of its own until the marker is
+/// taken off, so a node that is spawned without any is drawn transparent). Removing the marker
+/// restyles the node in the same frame and the skin paints it again; adding it leaves the colours as
+/// they are. A focus ring that is the node's border colour is the host's to paint too.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     button("held"),
+///     InkFollow,
+///     BackgroundColor(Color::srgb(0.2, 0.3, 0.5)),
+///     BorderColor::all(Color::srgb(0.4, 0.5, 0.8)),
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct InkFollow;
