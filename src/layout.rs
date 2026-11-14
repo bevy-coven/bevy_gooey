@@ -63,6 +63,26 @@ pub struct RowLayout {
     pub justify: JustifyContent,
 }
 
+/// The width a [`sized_panel`](crate::sized_panel) is, written by [`crate::apply_skin`]: a number of
+/// logical px, or of body text sizes (an `em`, so it grows with the player's text size and the skin's
+/// `text_scale`). The card is never wider than the room its host leaves (`max_width: 100%`: for a
+/// dialog's card the window less the 5% the scrim keeps clear on each side) and has no least width,
+/// so a card narrower than a dialog's usual measure is that narrow.
+///
+/// Put it on any [`panel`](crate::panel): a dialog's card (a direct child of
+/// [`dialog`](crate::dialog)), or a form on a [`screen`](crate::screen), which keeps its cap of the
+/// window less the safe edge. A width that is not finite is not written. Removing the component
+/// leaves the node as it is; set it to another width instead.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Component, Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum CardWidth {
+    /// Logical px, whatever the text size.
+    Px(f32),
+    /// Body text sizes, times the player's text scale.
+    Text(f32),
+}
+
 /// An [`overlay`](crate::overlay)'s child drawn over its first one: absolute, filling the box the
 /// first child gives the overlay.
 ///

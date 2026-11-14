@@ -28,7 +28,7 @@ use crate::drag::{DropCandidate, DropRefusing};
 use crate::elevation::{Elevation, ElevationLevel};
 use crate::field::{FieldProblem, FieldProblemKind, ProblemRoom};
 use crate::icon::{IconSize, IconTone};
-use crate::layout::{BoxSize, CellWidth, LayoutGap, OverlayStacked, RowLayout};
+use crate::layout::{BoxSize, CardWidth, CellWidth, LayoutGap, OverlayStacked, RowLayout};
 use crate::list::ListView;
 use crate::menu::{MenuMarked, MenuOpen};
 use crate::model::{
@@ -2288,6 +2288,8 @@ struct State {
     stacked: bool,
     /// What a layout container was asked for beyond its gap ([`RowLayout`]); none leaves the node.
     flow: Option<RowLayout>,
+    /// The width a panel was asked to be ([`CardWidth`]); none leaves the panel's own measure.
+    card_width: Option<CardWidth>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
     /// because the selected one is the surface and not the accent.
     edge_tab: bool,
@@ -2328,6 +2330,7 @@ impl Default for State {
             control: None,
             multi_line: false,
             flow: None,
+            card_width: None,
             layout_gap: 1.0,
             cell: 0.0,
             image: Vec2::ZERO,
@@ -2367,7 +2370,11 @@ type StateQuery = (
         Option<&'static CellWidth>,
         Option<&'static BoxSize>,
         // A nested pair: a query tuple holds 15, and this one is at it.
-        (Has<OverlayStacked>, Option<&'static RowLayout>),
+        (
+            Has<OverlayStacked>,
+            Option<&'static RowLayout>,
+            Option<&'static CardWidth>,
+        ),
     ),
     Option<&'static TableRow>,
     Option<&'static Role>,
@@ -2417,6 +2424,7 @@ type Restyle = (
                 Changed<BoxSize>,
                 Added<OverlayStacked>,
                 Changed<RowLayout>,
+                Changed<CardWidth>,
             )>,
         )>,
     )>,
@@ -2588,7 +2596,7 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
-                        (stacked, flow),
+                        (stacked, flow, card_width),
                     ),
                     row,
                     role,
@@ -2641,6 +2649,7 @@ pub fn apply_skin(
                         image: image.map_or(Vec2::ZERO, |image| image.0),
                         stacked,
                         flow: flow.copied(),
+                        card_width: card_width.copied(),
                     }
                 },
             )
@@ -3696,6 +3705,22 @@ fn restyle(
                     if let Some((_, window)) = placed {
                         let edge = window.x * SAFE_EDGE_PERCENT / 100.0;
                         next.max_width = Val::Px((window.x - 2.0 * edge).max(0.0));
+                    }
+                }
+                // A width the host asked for replaces the measure: no least width, and no wider
+                // than the room it stands in (a dialog's card, a dock group's or a split pane's
+                // panel); a screen's own card keeps its cap of the window less the safe edge.
+                if let Some(card) = state.card_width {
+                    let width = match card {
+                        CardWidth::Px(px) => px,
+                        CardWidth::Text(sizes) => sizes * text_px,
+                    };
+                    if width.is_finite() {
+                        next.width = Val::Px(width.max(0.0));
+                        next.min_width = Val::ZERO;
+                        if in_dialog || !parent_screen {
+                            next.max_width = Val::Percent(100.0);
+                        }
                     }
                 }
             }

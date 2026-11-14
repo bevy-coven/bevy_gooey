@@ -288,6 +288,27 @@ pub fn panel() -> impl Bundle {
     )
 }
 
+/// A [`panel`] with a width of its own, for a dialog's card or a form on a screen: logical px
+/// ([`CardWidth::Px`](crate::CardWidth::Px)) or body text sizes
+/// ([`CardWidth::Text`](crate::CardWidth::Text), which follows the player's text size). It is the
+/// width and nothing else: a card never outgrows the room it stands in (`max_width: 100%`) and has
+/// no least width, so it may be narrower than a dialog's usual 21 text sizes. A direct child of a
+/// [`dialog`] is still the dialog; its frame, padding and fill are unchanged.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     dialog(),
+///     children![(sized_panel(CardWidth::Px(520.0)), children![heading("New project"), button("Create")])],
+/// ));
+/// # }
+/// ```
+pub fn sized_panel(width: crate::CardWidth) -> impl Bundle {
+    (panel(), width)
+}
+
 /// A column filled with one step of the skin's surface ladder, [`crate::GooeySkin::surfaces`], and
 /// nothing else: no padding, frame or corner, which a host takes from the skin's tokens
 /// ([`crate::GooeySkin::space`], [`crate::GooeySkin::corner`]). `level` 0 is the lowest step; a level past the top

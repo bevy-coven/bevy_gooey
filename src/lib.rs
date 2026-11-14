@@ -303,7 +303,7 @@ pub use inspector::{
     InspectMixed, InspectRow, InspectStep, InspectTarget, Inspector, InspectorChange,
     build_inspectors, inspector, sync_inspect_mixed, sync_inspectors,
 };
-pub use layout::{BoxSize, CellWidth, LayoutGap, OverlayStacked, RowLayout};
+pub use layout::{BoxSize, CardWidth, CellWidth, LayoutGap, OverlayStacked, RowLayout};
 pub use layout_motion::{
     LAYOUT_QUIET_FRAMES, LayoutTravel, MovesSmoothly, TravelFrom, TravelSpring, mark_moving_parts,
     update_layout_motion,
@@ -450,10 +450,10 @@ pub use widgets::{
     motion_row, notification_center, number_field, overlay, pad_style, panel, popover,
     popover_modal, primary_button, progress, prompt, prompts, prompts_at, radial, radio_item, row,
     row_with, screen, section, select, separator, side_tab_page, side_tabs, side_tabs_icons,
-    skin_preset, slider, slot_grid, spinner, split, status_bar, status_item, status_progress,
-    submenu, surface, tab_page, table, tabs, text_area, text_area_fill, text_input, text_size,
-    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
-    viewport,
+    sized_panel, skin_preset, slider, slot_grid, spinner, split, status_bar, status_item,
+    status_progress, submenu, surface, tab_page, table, tabs, text_area, text_area_fill,
+    text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator,
+    tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -521,6 +521,7 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<CellWidth>()
             .register_type::<BoxSize>()
             .register_type::<RowLayout>()
+            .register_type::<CardWidth>()
             .register_type::<OverlayStacked>()
             .register_type::<Meter>()
             .register_type::<WorldAnchor>()

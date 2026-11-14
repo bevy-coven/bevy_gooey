@@ -587,3 +587,110 @@ fn fill_region_centres_what_it_holds_with_a_row_layout() {
         "{inside:?} in {region:?}"
     );
 }
+
+// ---- 4. a card with a width of its own -------------------------------------------------------
+
+#[derive(Component)]
+struct Card;
+
+/// A dialog whose panel is `sized_panel(width)`, under `skin`; the panel's rectangle.
+fn dialog_of(skin: GooeySkin, width: CardWidth) -> (App, Entity) {
+    let mut app = headless();
+    app.insert_resource(skin);
+    let card = app
+        .world_mut()
+        .spawn((
+            dialog(),
+            children![((sized_panel(width), Card), children![label("Sure?")])],
+        ))
+        .id();
+    settle(&mut app);
+    let card = children(&app, card)[0];
+    (app, card)
+}
+
+/// A width in logical px is that many px, whatever the text size: past the 21 to 36 text size
+/// measure a dialog's panel otherwise has.
+#[test]
+fn a_dialog_card_can_be_a_width_in_px() {
+    for width in [300.0, 520.0, 900.0] {
+        let (app, card) = dialog_of(GooeySkin::dark(), CardWidth::Px(width));
+        assert!(
+            (rect(&app, card).width() - width).abs() < 1.0,
+            "{width}: {:?}",
+            rect(&app, card)
+        );
+    }
+}
+
+/// A width in text sizes follows the player's text size.
+#[test]
+fn a_dialog_card_can_be_a_width_in_text_sizes() {
+    for scale in [1.0, 1.5] {
+        let skin = GooeySkin {
+            text_scale: scale,
+            ..GooeySkin::dark()
+        };
+        let want = 30.0 * skin.text_size * scale;
+        let (app, card) = dialog_of(skin, CardWidth::Text(30.0));
+        assert!(
+            (rect(&app, card).width() - want).abs() < 1.0,
+            "x{scale}: {:?} wanted {want}",
+            rect(&app, card)
+        );
+    }
+}
+
+/// Never wider than the room the scrim leaves, the window less its 5% on each side: `max_width:
+/// 100%`.
+#[test]
+fn a_dialog_card_never_outgrows_the_window() {
+    let (app, card) = dialog_of(GooeySkin::dark(), CardWidth::Px(5000.0));
+    let width = rect(&app, card).width();
+    assert!(
+        (width - 1280.0 * 0.9).abs() < 1.5,
+        "capped at the scrim's inside: {width}"
+    );
+}
+
+/// A card narrower than the dialog's least measure takes the width it was given.
+#[test]
+fn a_dialog_card_can_be_narrower_than_the_least_measure() {
+    let skin = GooeySkin::dark();
+    let (app, card) = dialog_of(skin.clone(), CardWidth::Text(12.0));
+    assert!(
+        (rect(&app, card).width() - 12.0 * skin.text_size).abs() < 1.0,
+        "{:?}",
+        rect(&app, card)
+    );
+}
+
+/// A width on a panel that is not a dialog's sizes it too (a form on a screen).
+#[test]
+fn a_sized_panel_on_a_screen_takes_its_width() {
+    let mut app = headless();
+    let card = app
+        .world_mut()
+        .spawn((sized_panel(CardWidth::Px(420.0)), children![label("Name")]))
+        .id();
+    app.world_mut().spawn(screen()).add_child(card);
+    settle(&mut app);
+    assert!(
+        (rect(&app, card).width() - 420.0).abs() < 1.0,
+        "{:?}",
+        rect(&app, card)
+    );
+}
+
+/// A changed width moves the card in the same frame.
+#[test]
+fn a_changed_card_width_restyles() {
+    let (mut app, card) = dialog_of(GooeySkin::dark(), CardWidth::Px(400.0));
+    *app.world_mut().get_mut::<CardWidth>(card).expect("a width") = CardWidth::Px(600.0);
+    settle(&mut app);
+    assert!(
+        (rect(&app, card).width() - 600.0).abs() < 1.0,
+        "{:?}",
+        rect(&app, card)
+    );
+}

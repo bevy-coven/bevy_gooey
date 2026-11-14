@@ -12,8 +12,10 @@
   a row with none keeps a `Node` field the host patched. `fill_column(gap)`: a column that takes the room its row
   leaves and can narrow to zero (`flex_grow` 1, `min_width` 0), so text in it wraps inside it and never pushes the
   row out. `fill_region()`: the same on the height axis (`flex_grow` 1, `min_height` 0), a region around a tree or
-  a list that takes the height its column leaves and can shrink to nothing. Three new `Role`s (`ButtonRow`,
-  `FillColumn`, `FillRegion`).
+  a list that takes the height its column leaves and can shrink to nothing. `CardWidth::{Px, Text}` and
+  `sized_panel(width)`: a dialog's card (or a form's panel) with an explicit px or text-size width, never wider
+  than its host (`max_width: 100%`) and no least width. Three new `Role`s (`ButtonRow`, `FillColumn`,
+  `FillRegion`).
 
 - The parts a tool's lists and strips were still building from raw `Node`s (G-82, #93, `docs/research/kit-parts.md`,
   `docs/guide/layout.md`, `cargo run --example kit`). `glyph_button(glyph, name)`: a button for a caret or a

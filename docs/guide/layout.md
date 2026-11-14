@@ -72,6 +72,11 @@ it and never pushes the row out (`fill_text` is the same for one text; this hold
 or a list: a region of a column that takes the height its siblings leave and can shrink to nothing,
 so a tall tree scrolls inside it and never makes its host taller.
 
+`sized_panel(CardWidth::Px(520.0))` (or `CardWidth::Text(30.0)`, in body text sizes) is a `panel()`
+with a width of its own: a dialog's card, or a form on a screen, that is not 21 to 36 text sizes. It
+is never wider than the room it stands in (a dialog's card: the window less the scrim's 5% on each
+side) and has no least width.
+
 `RowLayout` is written **only when it is on the node**: a plain `row(1.0)` keeps a `Node` field you
 patched yourself. A wrapping container puts the skin's gap between its lines as well as between its
 children. `column_with(gap, layout)` is the same for a column (`align` is across its width).
