@@ -40,7 +40,7 @@ pub struct BoxSize(pub Vec2);
 
 /// How a layout container lays its children out beyond its gap: the cross-axis alignment, whether
 /// a line that is full wraps, how the children share the main axis, and whether the container
-/// itself gives way when its own host is short of room. The four things the editor patched over a
+/// itself gives way when its own host is short of room. The five things the editor patched over a
 /// spawned [`row`](crate::row) or [`column`](crate::column).
 ///
 /// Every field is an `Option`, and **`None` leaves the value the role gives the node**: a
@@ -66,6 +66,10 @@ pub struct RowLayout {
     pub wrap: Option<FlexWrap>,
     /// How the children share the main axis.
     pub justify: Option<JustifyContent>,
+    /// Which way the children run: `Some(FlexDirection::Row)` for a [`placed`](crate::placed) cluster
+    /// that is a line, `Some(FlexDirection::Column)` for a stack. A [`row`](crate::row) and a
+    /// [`column`](crate::column) have theirs by their name; set it on those only to turn one over.
+    pub direction: Option<FlexDirection>,
     /// The node's `flex_shrink`: `Some(0.0)` is a rigid container that keeps its size when its host
     /// squeezes, `Some(1.0)` is Bevy's own default.
     pub shrink: Option<f32>,

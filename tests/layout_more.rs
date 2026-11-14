@@ -502,3 +502,382 @@ fn a_node_with_no_shown_keeps_its_display() {
         Display::None
     );
 }
+
+// ---- 5. a size on any node, and a plain sized box ---------------------------------------------
+
+fn px(width: f32, height: f32) -> Sizing {
+    Sizing {
+        width: Some(Extent::Px(width)),
+        height: Some(Extent::Px(height)),
+        ..default()
+    }
+}
+
+/// `sized(sizing)` is a box of that width and height, whatever it holds.
+#[test]
+fn a_sized_box_is_its_width_and_height() {
+    let mut app = headless();
+    let big = probe(&mut app, 300.0, 300.0);
+    let boxed = app
+        .world_mut()
+        .spawn(sized(px(120.0, 60.0)))
+        .with_children(|b| {
+            b.spawn(big);
+        })
+        .id();
+    room(&mut app, 400.0, boxed);
+    settle(&mut app);
+    let r = rect(&app, boxed);
+    assert!(
+        (r.width() - 120.0).abs() < 0.5 && (r.height() - 60.0).abs() < 0.5,
+        "{r:?}"
+    );
+}
+
+/// A row that is the host's whole width and a px tall, that never shrinks: a terminal's line.
+#[test]
+fn a_row_can_be_a_percent_wide_and_a_px_tall_and_rigid() {
+    let mut app = headless();
+    let line = app
+        .world_mut()
+        .spawn((
+            row(0.0),
+            Sizing {
+                width: Some(Extent::Percent(100.0)),
+                height: Some(Extent::Px(30.0)),
+                ..default()
+            },
+            RowLayout {
+                shrink: Some(0.0),
+                ..default()
+            },
+        ))
+        .id();
+    let host = room(&mut app, 400.0, line);
+    settle(&mut app);
+    let (l, h) = (rect(&app, line), rect(&app, host));
+    assert!(
+        (l.width() - h.width()).abs() < 0.5 && (l.height() - 30.0).abs() < 0.5,
+        "{l:?} in {h:?}"
+    );
+}
+
+/// A width in text sizes follows the skin's text scale.
+#[test]
+fn an_extent_in_text_sizes_follows_the_text_scale() {
+    for scale in [1.0, 1.5] {
+        let mut app = headless();
+        let mut skin = GooeySkin::dark();
+        skin.text_scale = scale;
+        let want = 10.0 * skin.text_size * scale;
+        app.insert_resource(skin);
+        let boxed = app
+            .world_mut()
+            .spawn(sized(Sizing {
+                width: Some(Extent::Text(10.0)),
+                height: Some(Extent::Px(10.0)),
+                ..default()
+            }))
+            .id();
+        room(&mut app, 600.0, boxed);
+        settle(&mut app);
+        assert!(
+            (rect(&app, boxed).width() - want).abs() < 0.5,
+            "x{scale}: {:?} wanted {want}",
+            rect(&app, boxed)
+        );
+    }
+}
+
+/// Least and greatest sizes clamp a column the room would stretch or shrink.
+#[test]
+fn min_and_max_sizes_clamp() {
+    let mut app = headless();
+    let small = probe(&mut app, 20.0, 10.0);
+    let column = app
+        .world_mut()
+        .spawn((
+            column(0.0),
+            Sizing {
+                max_width: Some(Extent::Px(100.0)),
+                min_height: Some(Extent::Px(80.0)),
+                ..default()
+            },
+        ))
+        .with_children(|c| {
+            c.spawn(small);
+        })
+        .id();
+    room(&mut app, 400.0, column);
+    settle(&mut app);
+    let r = rect(&app, column);
+    assert!(
+        (r.width() - 100.0).abs() < 0.5 && (r.height() - 80.0).abs() < 0.5,
+        "{r:?}"
+    );
+}
+
+/// A side left `None` leaves the node, and `clip` is the overflow.
+#[test]
+fn a_size_left_none_leaves_the_node_and_clip_is_overflow() {
+    let mut app = headless();
+    let plain = app.world_mut().spawn(panel()).id();
+    let only_width = app
+        .world_mut()
+        .spawn((
+            panel(),
+            Sizing {
+                width: Some(Extent::Px(90.0)),
+                clip: Some(true),
+                ..default()
+            },
+        ))
+        .id();
+    for e in [plain, only_width] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    let node = |e| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(node(only_width).width, Val::Px(90.0));
+    assert_eq!(
+        node(only_width).height,
+        node(plain).height,
+        "height untouched"
+    );
+    assert_eq!(node(only_width).min_width, node(plain).min_width);
+    assert_eq!(node(only_width).overflow, Overflow::clip());
+    assert_ne!(node(plain).overflow, Overflow::clip());
+}
+
+/// A changed sizing moves the node in the same frame.
+#[test]
+fn a_changed_sizing_restyles() {
+    let mut app = headless();
+    let boxed = app.world_mut().spawn(sized(px(100.0, 50.0))).id();
+    room(&mut app, 400.0, boxed);
+    settle(&mut app);
+    app.world_mut()
+        .get_mut::<Sizing>(boxed)
+        .expect("sizing")
+        .width = Some(Extent::Px(200.0));
+    settle(&mut app);
+    assert!((rect(&app, boxed).width() - 200.0).abs() < 0.5);
+}
+
+// ---- 2. a placed node with a size, a border, a radius and a fill ------------------------------
+
+fn host_with(app: &mut App, placed: impl Bundle) -> (Entity, Entity) {
+    let flow = probe(app, 100.0, 50.0);
+    let placed = app.world_mut().spawn(placed).id();
+    let host = app
+        .world_mut()
+        .spawn(Node {
+            width: Val::Px(400.0),
+            height: Val::Px(300.0),
+            flex_direction: FlexDirection::Column,
+            flex_shrink: 0.0,
+            ..default()
+        })
+        .with_children(|h| {
+            h.spawn(flow);
+        })
+        .add_child(placed)
+        .id();
+    app.world_mut().spawn(screen()).add_child(host);
+    (host, placed)
+}
+
+/// `placed_at` with a size, a border, a radius and a fill is the chip the editor hand-built:
+/// everything from the skin.
+#[test]
+fn a_placed_node_can_have_a_size_a_border_a_radius_and_a_fill() {
+    let mut app = headless();
+    let (host, chip) = host_with(
+        &mut app,
+        (
+            placed_at(30.0, 40.0),
+            px(120.0, 60.0),
+            Shape {
+                border: Sides::all(1.0),
+                ink: Some(Ink::Accent),
+                radius: Some(Radius::Step(1)),
+                fill: Some(1),
+            },
+        ),
+    );
+    settle(&mut app);
+    let skin = GooeySkin::dark();
+    let (h, c) = (rect(&app, host), rect(&app, chip));
+    assert!(
+        (c.min - (h.min + Vec2::new(30.0, 40.0))).length() < 0.5,
+        "{c:?} in {h:?}"
+    );
+    assert!(
+        (c.width() - 120.0).abs() < 0.5 && (c.height() - 60.0).abs() < 0.5,
+        "{c:?}"
+    );
+    let node = app.world().get::<Node>(chip).expect("a node");
+    assert_eq!(node.border, UiRect::all(Val::Px(skin.border)));
+    assert_eq!(
+        node.border_radius,
+        BorderRadius::all(Val::Px(skin.corner(1)))
+    );
+    assert_eq!(
+        app.world().get::<BorderColor>(chip).expect("a colour").top,
+        skin.accent
+    );
+    assert_eq!(
+        app.world().get::<BackgroundColor>(chip).expect("a fill").0,
+        skin.surface_at(1)
+    );
+}
+
+/// Fields left `None` leave the node: a radius alone changes no border, colour or fill, and a
+/// border on one side is that side.
+#[test]
+fn a_shape_changes_only_what_it_sets() {
+    let mut app = headless();
+    let (_, rounded) = host_with(
+        &mut app,
+        (
+            placed_at(0.0, 0.0),
+            Shape {
+                radius: Some(Radius::Full),
+                ..default()
+            },
+        ),
+    );
+    let (_, plain) = host_with(&mut app, placed_at(0.0, 0.0));
+    let (_, rail) = host_with(
+        &mut app,
+        (
+            placed_at(0.0, 0.0),
+            Shape {
+                border: Sides {
+                    right: Some(1.0),
+                    ..default()
+                },
+                ..default()
+            },
+        ),
+    );
+    settle(&mut app);
+    let node = |e| app.world().get::<Node>(e).expect("a node").clone();
+    assert_eq!(node(rounded).border_radius, BorderRadius::MAX);
+    assert_eq!(node(rounded).border, node(plain).border);
+    assert_eq!(
+        app.world().get::<BorderColor>(rounded),
+        app.world().get::<BorderColor>(plain)
+    );
+    assert_eq!(
+        app.world().get::<BackgroundColor>(rounded),
+        app.world().get::<BackgroundColor>(plain)
+    );
+    assert_eq!(node(rail).border.right, Val::Px(GooeySkin::dark().border));
+    assert_eq!(
+        node(rail).border.left,
+        node(plain).border.left,
+        "the other sides untouched"
+    );
+    assert_eq!(
+        app.world()
+            .get::<BorderColor>(rail)
+            .expect("a colour")
+            .right,
+        GooeySkin::dark().outline,
+        "a border with no ink is the outline"
+    );
+}
+
+/// A shape on a widget changes only its radius: a button keeps its own fill and edge.
+#[test]
+fn a_shape_on_a_button_keeps_its_fill() {
+    let mut app = headless();
+    let a = app.world_mut().spawn(button("A")).id();
+    let b = app
+        .world_mut()
+        .spawn((
+            button("B"),
+            Shape {
+                radius: Some(Radius::Step(0)),
+                ..default()
+            },
+        ))
+        .id();
+    for e in [a, b] {
+        app.world_mut().spawn(screen()).add_child(e);
+    }
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<BackgroundColor>(a),
+        app.world().get::<BackgroundColor>(b)
+    );
+    assert_eq!(
+        app.world().get::<BorderColor>(a),
+        app.world().get::<BorderColor>(b)
+    );
+    assert_eq!(
+        app.world().get::<Node>(b).expect("a node").border_radius,
+        BorderRadius::all(Val::Px(GooeySkin::dark().corner(0)))
+    );
+}
+
+/// A changed shape restyles and follows the skin.
+#[test]
+fn a_changed_shape_restyles_and_follows_the_skin() {
+    let mut app = headless();
+    let (_, chip) = host_with(
+        &mut app,
+        (
+            placed_at(0.0, 0.0),
+            Shape {
+                radius: Some(Radius::Step(1)),
+                ..default()
+            },
+        ),
+    );
+    settle(&mut app);
+    app.world_mut().resource_mut::<GooeySkin>().radii = [1.0, 7.0, 9.0];
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(chip).expect("a node").border_radius,
+        BorderRadius::all(Val::Px(7.0))
+    );
+    app.world_mut()
+        .get_mut::<Shape>(chip)
+        .expect("a shape")
+        .radius = Some(Radius::Step(2));
+    settle(&mut app);
+    assert_eq!(
+        app.world().get::<Node>(chip).expect("a node").border_radius,
+        BorderRadius::all(Val::Px(9.0))
+    );
+}
+
+/// A placed cluster can run as a line: `RowLayout::direction` turns its children into a row.
+#[test]
+fn a_placed_node_can_lay_its_children_out_as_a_row() {
+    let mut app = headless();
+    let (a, b) = (probe(&mut app, 30.0, 20.0), probe(&mut app, 30.0, 20.0));
+    let (_, chip) = host_with(
+        &mut app,
+        (
+            placed_at(0.0, 0.0),
+            RowLayout {
+                direction: Some(FlexDirection::Row),
+                ..default()
+            },
+        ),
+    );
+    app.world_mut().entity_mut(chip).with_children(|c| {
+        c.spawn(a);
+        c.spawn(b);
+    });
+    settle(&mut app);
+    let kids = children(&app, chip);
+    assert!(
+        (rect(&app, kids[0]).min.y - rect(&app, kids[1]).min.y).abs() < 0.5,
+        "one line"
+    );
+    assert!(rect(&app, kids[1]).min.x > rect(&app, kids[0]).max.x - 0.5);
+}

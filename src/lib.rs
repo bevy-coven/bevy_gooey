@@ -239,7 +239,7 @@ pub use binding::{
     Binding, BindingSettings, BindingValue, Capturing, bind_by_input, catch_pointer, not_capturing,
     update_bindings,
 };
-pub use box_model::{Shown, Sides, Space, Spacing};
+pub use box_model::{Extent, Ink, Radius, Shape, Shown, Sides, Sizing, Space, Spacing};
 pub use button_variant::{
     ButtonPhase, ButtonVariant, Loading, LoadingHold, LoadingSpinner, note_host_disable,
     update_loading,
@@ -454,11 +454,11 @@ pub use widgets::{
     menu_bar, menu_item, menu_title, meter, motion_row, notification_center, number_field, overlay,
     pad_style, panel, placed, placed_at, plain_button, popover, popover_modal, primary_button,
     progress, prompt, prompts, prompts_at, radial, radio_item, row, row_with, screen, section,
-    select, separator, side_tab_page, side_tabs, side_tabs_icons, sized_panel, skin_preset, slider,
-    slot_grid, spacer, spinner, split, status_bar, status_item, status_mark, status_progress,
-    submenu, surface, tab_page, table, tabs, text_area, text_area_fill, text_input, text_size,
-    toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator, tree, vec_field,
-    viewport,
+    select, separator, side_tab_page, side_tabs, side_tabs_icons, sized, sized_panel, skin_preset,
+    slider, slot_grid, spacer, spinner, split, status_bar, status_item, status_mark,
+    status_progress, submenu, surface, tab_page, table, tabs, text_area, text_area_fill,
+    text_input, text_size, toast, toast_alert, toggle, toggle_group, toolbar, toolbar_separator,
+    tree, vec_field, viewport,
 };
 
 use bevy::app::PluginGroupBuilder;
@@ -530,6 +530,11 @@ impl Plugin for GooeyStylePlugin {
             .register_type::<Sides<Space>>()
             .register_type::<Spacing>()
             .register_type::<Shown>()
+            .register_type::<Extent>()
+            .register_type::<Sizing>()
+            .register_type::<Ink>()
+            .register_type::<Radius>()
+            .register_type::<Shape>()
             .register_type::<CardWidth>()
             .register_type::<AspectBox>()
             .register_type::<PlacedAt>()

@@ -6,6 +6,14 @@
 
 - G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
   the editor's hand-built nodes after G-84:
+  `Sizing { width, height, min/max, clip }` with `Extent::{Px, Percent, Text}` and `sized(sizing)`: a size on any
+  node with a `Role`; `Shape { border, ink, radius, fill }` with `Ink` and `Radius::{Step, Full}`: a per-side border
+  in line weights, its skin colour, a radius step and a surface fill, so a placed chip or a rail has a size, a
+  border and rounded corners from the skin; `RowLayout::direction`. Every field an `Option`, a field left `None`
+  leaves the node. One new `Role` (`Sized`).
+
+- G-85 (#96, `docs/research/layout-more.md`, `docs/guide/layout.md`, `tests/layout_more.rs`), what was left of
+  the editor's hand-built nodes after G-84:
   `spacer()` (a node that takes what its row or column leaves, `Pickable::IGNORE`), `fill_region_with(gap)` (a
   region whose children stand a gap apart) and `Shown(bool)` (a component the skin writes as `Display::None` or
   `Flex`, so a host hides a page without patching `Node`). One new `Role` (`Spacer`).

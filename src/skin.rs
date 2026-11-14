@@ -13,7 +13,7 @@ use bevy::ui_widgets::{ScrollbarDragState, SliderDragState};
 use bevy::window::PrimaryWindow;
 
 use crate::binding::Capturing;
-use crate::box_model::{Shown, Spacing, spaced};
+use crate::box_model::{Shape, Shown, Sizing, Spacing, lined, spaced};
 use crate::button_variant::{ButtonPhase, ButtonVariant, LoadingHold};
 use crate::choice::{ChoiceCount, ChoiceValue};
 use crate::code_editor::{CODE_MIN_LINES, CODE_SELECTION_ALPHA, CodeMetrics};
@@ -2102,6 +2102,8 @@ pub enum Role {
     Placed,
     /// A [`crate::spacer`]: takes the room its row or column leaves; draws nothing.
     Spacer,
+    /// A [`crate::sized`] box: a flex column of the [`Sizing`](crate::Sizing) it was given; not drawn.
+    Sized,
     /// A [`crate::cell`]: a fixed-width box, in body text sizes, that cuts what does not fit; not
     /// drawn, so a label column lines up down a list of rows.
     Cell,
@@ -2309,6 +2311,10 @@ struct State {
     spacing: Option<Spacing>,
     /// Whether a node is shown ([`Shown`]); none leaves its display.
     shown: Option<bool>,
+    /// The size a node was asked for ([`Sizing`]).
+    sizing: Option<Sizing>,
+    /// The look of a node's box ([`Shape`]).
+    shape: Option<Shape>,
     /// The gap of a [`crate::fill_region_with`], a multiple of the skin's gap; none is no gap.
     region_gap: Option<f32>,
     /// The entity is an [`crate::edge_tab`]: its words stay the plain text when it is selected,
@@ -2356,6 +2362,8 @@ impl Default for State {
             aspect: None,
             spacing: None,
             shown: None,
+            sizing: None,
+            shape: None,
             region_gap: None,
             layout_gap: 1.0,
             cell: 0.0,
@@ -2404,6 +2412,8 @@ type StateQuery = (
             Option<&'static AspectBox>,
             Option<&'static Spacing>,
             Option<&'static Shown>,
+            Option<&'static Sizing>,
+            Option<&'static Shape>,
         ),
     ),
     Option<&'static TableRow>,
@@ -2457,7 +2467,12 @@ type Restyle = (
                 Changed<CardWidth>,
                 Changed<PlacedAt>,
                 Changed<AspectBox>,
-                Or<(Changed<Spacing>, Changed<Shown>)>,
+                Or<(
+                    Changed<Spacing>,
+                    Changed<Shown>,
+                    Changed<Sizing>,
+                    Changed<Shape>,
+                )>,
             )>,
         )>,
     )>,
@@ -2629,7 +2644,7 @@ pub fn apply_skin(
                         gap,
                         cell,
                         image,
-                        (stacked, flow, card_width, inset, aspect, spacing, shown),
+                        (stacked, flow, card_width, inset, aspect, spacing, shown, sizing, shape),
                     ),
                     row,
                     role,
@@ -2687,6 +2702,8 @@ pub fn apply_skin(
                         aspect: aspect.copied(),
                         spacing: spacing.copied(),
                         shown: shown.map(|shown| shown.0),
+                        sizing: sizing.copied(),
+                        shape: shape.copied(),
                         region_gap: gap.map(|gap| gap.0),
                     }
                 },
@@ -3350,6 +3367,7 @@ fn restyle(
         | Role::FillRegion
         | Role::Placed
         | Role::Spacer
+        | Role::Sized
         | Role::Cell
         | Role::AspectImage
         | Role::ImageBox
@@ -3474,6 +3492,12 @@ fn restyle(
         | Role::MarkdownPath
         | Role::PaletteCount => None,
     };
+    // A shape's fill is a level of the surface ladder; none leaves what the role draws.
+    let fill = state
+        .shape
+        .and_then(|shape| shape.fill)
+        .map(|level| skin.surface_at(level))
+        .or(fill);
     if let (Some(fill), Some(mut background)) = (fill, background) {
         background.set_if_neq(BackgroundColor(faded(fill, alpha)));
     }
@@ -3716,6 +3740,15 @@ fn restyle(
             Color::NONE
         })),
         _ => None,
+    };
+    // A shape's ink draws its border; a border with no ink is the outline unless the role has an
+    // edge of its own; no border and no ink leaves the role's.
+    let edge = match state.shape {
+        Some(Shape { ink: Some(ink), .. }) => Some(BorderColor::all(ink.color(skin))),
+        Some(shape) if edge.is_none() && shape.border != Default::default() => {
+            Some(BorderColor::all(skin.outline))
+        }
+        _ => edge,
     };
     if let (Some(edge), Some(mut border)) = (edge, border) {
         border.set_if_neq(faded_edge(edge, alpha));
@@ -5038,6 +5071,33 @@ fn restyle(
             }
             _ => {}
         }
+        // A size, then a shape, on any role, after the role's own: a field left `None` leaves the node.
+        if let Some(sizing) = state.sizing {
+            let set = |field: &mut Val, extent: Option<crate::box_model::Extent>| {
+                if let Some(val) = extent.and_then(|extent| extent.val(text_px)) {
+                    *field = val;
+                }
+            };
+            set(&mut next.width, sizing.width);
+            set(&mut next.height, sizing.height);
+            set(&mut next.min_width, sizing.min_width);
+            set(&mut next.min_height, sizing.min_height);
+            set(&mut next.max_width, sizing.max_width);
+            set(&mut next.max_height, sizing.max_height);
+            if let Some(clip) = sizing.clip {
+                next.overflow = if clip {
+                    Overflow::clip()
+                } else {
+                    Overflow::visible()
+                };
+            }
+        }
+        if let Some(shape) = state.shape {
+            next.border = lined(next.border, &shape.border, line);
+            if let Some(radius) = shape.radius {
+                next.border_radius = radius.border_radius(skin);
+            }
+        }
         // Margin and padding in steps of the skin's scale, on any role, after the role's own: a side
         // that is set wins, a side left `None` leaves the node.
         if let Some(spacing) = state.spacing {
@@ -5068,6 +5128,9 @@ fn restyle(
             // A field left `None` keeps what the role gave the node.
             if let Some(align) = flow.align {
                 next.align_items = align;
+            }
+            if let Some(direction) = flow.direction {
+                next.flex_direction = direction;
             }
             if let Some(justify) = flow.justify {
                 next.justify_content = justify;

@@ -158,3 +158,191 @@ pub(crate) fn spaced(mut rect: UiRect, sides: &Sides<Space>, skin: &GooeySkin) -
 #[reflect(Component, Debug, Default, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Shown(pub bool);
+
+/// A length in the skin's own terms: logical px, a share of the host, or body text sizes.
+#[derive(Clone, Copy, Debug, PartialEq, Reflect)]
+#[reflect(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum Extent {
+    /// Logical px, whatever the text size.
+    Px(f32),
+    /// A percentage of the host's size on that axis (`100.0` is all of it).
+    Percent(f32),
+    /// Body text sizes times the skin's `text_scale`, like a [`cell`](crate::cell)'s width.
+    Text(f32),
+}
+
+impl Extent {
+    /// The length as Bevy's `Val`, or `None` for a number that is not finite (refused, not written).
+    pub(crate) fn val(self, text_px: f32) -> Option<Val> {
+        let val = match self {
+            Extent::Px(px) => Val::Px(px),
+            Extent::Percent(percent) => Val::Percent(percent),
+            Extent::Text(sizes) => Val::Px(sizes * text_px),
+        };
+        match val {
+            Val::Px(v) | Val::Percent(v) if v.is_finite() => Some(val),
+            _ => None,
+        }
+    }
+}
+
+/// The size of a node, written by [`crate::apply_skin`] on **any** node with a [`Role`](crate::Role):
+/// a width and height, their least and greatest, and whether it clips what overflows. Every field is
+/// an `Option` and a field left `None` leaves the node alone, so a [`panel`](crate::panel) given only
+/// a width keeps its own height. A length that is not a finite number is refused. Use it on a
+/// [`sized`](crate::sized) box, a [`row`](crate::row), a [`column`](crate::column), a
+/// [`placed_at`](crate::placed_at) node, a [`label`](crate::label); a card's width stays
+/// [`CardWidth`](crate::CardWidth). Removing the component leaves the node as it was last written.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// // A terminal's line: all of its host's width, 18 px tall, clipped.
+/// commands.spawn((
+///     row(0.0),
+///     Sizing {
+///         width: Some(Extent::Percent(100.0)),
+///         height: Some(Extent::Px(18.0)),
+///         clip: Some(true),
+///         ..default()
+///     },
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Sizing {
+    /// The width.
+    pub width: Option<Extent>,
+    /// The height.
+    pub height: Option<Extent>,
+    /// The least width (`Some(Extent::Px(0.0))` lets a text shrink to nothing).
+    pub min_width: Option<Extent>,
+    /// The least height.
+    pub min_height: Option<Extent>,
+    /// The greatest width.
+    pub max_width: Option<Extent>,
+    /// The greatest height.
+    pub max_height: Option<Extent>,
+    /// `Some(true)` clips what overflows the box, `Some(false)` lets it show.
+    pub clip: Option<bool>,
+}
+
+/// Which of the skin's colours a [`Shape`]'s border is drawn in.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Debug, Default, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum Ink {
+    /// [`GooeySkin::outline`](crate::GooeySkin::outline), the edge of a panel.
+    #[default]
+    Outline,
+    /// [`GooeySkin::accent`](crate::GooeySkin::accent).
+    Accent,
+    /// [`GooeySkin::danger`](crate::GooeySkin::danger).
+    Danger,
+    /// [`GooeySkin::text`](crate::GooeySkin::text).
+    Text,
+    /// [`GooeySkin::text_muted`](crate::GooeySkin::text_muted).
+    Muted,
+}
+
+impl Ink {
+    pub(crate) fn color(self, skin: &GooeySkin) -> Color {
+        match self {
+            Ink::Outline => skin.outline,
+            Ink::Accent => skin.accent,
+            Ink::Danger => skin.danger,
+            Ink::Text => skin.text,
+            Ink::Muted => skin.text_muted,
+        }
+    }
+}
+
+/// How round a [`Shape`]'s corners are.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+#[reflect(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum Radius {
+    /// A step of the skin's radius scale, [`GooeySkin::radii`](crate::GooeySkin::radii), smallest first.
+    Step(usize),
+    /// As round as the box allows: a pill, a disc when it is square.
+    Full,
+}
+
+/// The look of a node's box, written by [`crate::apply_skin`] on **any** node with a
+/// [`Role`](crate::Role), so a placed chip, a gizmo or a rail is not a hand-built `Node`: a border
+/// (per side, in multiples of the skin's line weight [`border`](crate::GooeySkin::border), so `1.0` is
+/// the skin's line and `0.0` none), the colour it is drawn in, a corner radius and a fill. Every field
+/// is an `Option` (and a side of `border` too): `None` leaves the node and what its role draws, so a
+/// shape with only a `radius` changes only the corners, and a border with no `ink` is the
+/// [`Ink::Outline`] unless the role has an edge of its own. `fill` is a level of
+/// [`GooeySkin::surfaces`](crate::GooeySkin::surfaces), like [`surface`](crate::surface), lowest first.
+/// Changing it restyles in the same frame; removing the component leaves the node as it was last
+/// written.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// // A chip 30 px in from its host's corner: a size, a border, rounded corners, a raised fill.
+/// commands.spawn((
+///     placed_at(30.0, 40.0),
+///     Sizing { width: Some(Extent::Px(120.0)), height: Some(Extent::Px(60.0)), ..default() },
+///     Shape {
+///         border: Sides::all(1.0),
+///         ink: Some(Ink::Accent),
+///         radius: Some(Radius::Step(1)),
+///         fill: Some(1),
+///     },
+/// ));
+/// # }
+/// ```
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Reflect)]
+#[reflect(Component, Debug, Default, PartialEq, Clone)]
+pub struct Shape {
+    /// The border of each side, in line weights; `Some(0.0)` is none.
+    pub border: Sides<f32>,
+    /// The colour of the border.
+    pub ink: Option<Ink>,
+    /// The corner radius.
+    pub radius: Option<Radius>,
+    /// The fill, a level of the skin's surface ladder.
+    pub fill: Option<u8>,
+}
+
+/// `rect` with every side `sides` names set to its weight times `line`; a weight that is not a finite
+/// number, or is negative, is none.
+pub(crate) fn lined(mut rect: UiRect, sides: &Sides<f32>, line: f32) -> UiRect {
+    let px = |weight: f32| {
+        Val::Px(if weight.is_finite() {
+            weight.max(0.0) * line
+        } else {
+            0.0
+        })
+    };
+    if let Some(top) = sides.top {
+        rect.top = px(top);
+    }
+    if let Some(right) = sides.right {
+        rect.right = px(right);
+    }
+    if let Some(bottom) = sides.bottom {
+        rect.bottom = px(bottom);
+    }
+    if let Some(left) = sides.left {
+        rect.left = px(left);
+    }
+    rect
+}
+
+impl Radius {
+    pub(crate) fn border_radius(self, skin: &GooeySkin) -> BorderRadius {
+        match self {
+            Radius::Step(step) => BorderRadius::all(Val::Px(skin.corner(step))),
+            Radius::Full => BorderRadius::MAX,
+        }
+    }
+}

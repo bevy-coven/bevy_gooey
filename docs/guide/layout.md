@@ -148,6 +148,31 @@ fn pages(mut commands: Commands) {
 
 Set `Shown(true)` to bring the page back. Pages are `Display::Flex`: a list viewport is not one.
 
+## Size and shape
+
+`Sizing` is a width and a height (px, a percentage of the host, or body text sizes), their least and
+greatest, and a clip; `Shape` is a border per side in the skin's line weights, its colour, a corner
+radius and a fill. Both go on any node, every field is an `Option`, a field left `None` leaves the
+node alone, and `sized(sizing)` is a plain box that carries a `Sizing`:
+
+```rust
+use bevy::prelude::*;
+use bevy_gooey::*;
+
+fn chip(mut commands: Commands) {
+    commands.spawn((
+        placed_at(30.0, 40.0),
+        Sizing { width: Some(Extent::Px(120.0)), height: Some(Extent::Px(60.0)), ..default() },
+        Shape { border: Sides::all(1.0), ink: Some(Ink::Accent), radius: Some(Radius::Step(1)), fill: Some(1) },
+        RowLayout { direction: Some(FlexDirection::Row), ..default() },
+        children![label("Look"), label("Free")],
+    ));
+}
+```
+
+A rail is a border on one side (`Sides { right: Some(1.0), ..default() }`); a pill is
+`Radius::Full`. A shape with only a radius leaves a button's own fill and edge.
+
 ## The parts of a list and a strip
 
 Five more widgets for what a tool's panels are made of between those primitives, each with the look

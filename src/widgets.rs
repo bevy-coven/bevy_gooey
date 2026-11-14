@@ -617,6 +617,38 @@ pub fn fill_region_with(gap: f32) -> impl Bundle {
     (fill_region(), crate::LayoutGap(gap))
 }
 
+/// A plain flex column of a size you give it: a [`Sizing`](crate::Sizing) with a width and a height,
+/// their least and greatest, and whether it clips. For a holder whose height is a number or a bar
+/// that is the full height of its host with a border (add a [`Shape`](crate::Shape)); a
+/// [`row`] or [`column`] takes the same `Sizing` as a component. Not drawn, and it takes the pointer
+/// like any container.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_gooey::*;
+/// # fn ui(mut commands: Commands) {
+/// commands.spawn((
+///     sized(Sizing {
+///         width: Some(Extent::Px(48.0)),
+///         height: Some(Extent::Percent(100.0)),
+///         ..default()
+///     }),
+///     Shape { border: Sides { right: Some(1.0), ..default() }, ..default() },
+///     children![icon_button(IconSource::Image(default()), Tooltip::new("Files"))],
+/// ));
+/// # }
+/// ```
+pub fn sized(sizing: crate::Sizing) -> impl Bundle {
+    (
+        Node {
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Role::Sized,
+        sizing,
+    )
+}
+
 /// A box of a fixed width, in body text sizes, so a label column lines up down a list of rows: the
 /// words start at one edge whatever they say, and what does not fit is cut rather than drawn over
 /// the next column. What it holds stands in a row, stretched to its height (a label and a value side
